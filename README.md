@@ -60,6 +60,7 @@ Each response should include the content received (preloaded content) and a meth
 ### Write API:
 
 - publishPost(post)
+- publishComment(comment)
 
 ### Usage:
 
