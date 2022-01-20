@@ -23,7 +23,7 @@ Post (IPFS file): {
   nestedCommentsHelper: ? // something to help fetch nested comments faster, like an index
 }
 Comments (IPNS record): {
-  lastestCommentCid: string, // the most recent comment in the linked list of posts
+  latestCommentCid: string, // the most recent comment in the linked list of posts
   preloadedComments: Comment[] // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include preloaded nested comments
   nestedCommentsHelper: ? // something to help fetch nested comments faster, like an index
 }
