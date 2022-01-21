@@ -24,6 +24,20 @@ class Plebbit {
                 .catch(err => reject(err));
         });
     }
+
+    async getSubplebbit(subplebbitIpnsName) {
+        return new Promise((resolve, reject) => {
+            const resolveNameUrl = `${this.ipfsApiUrl}/api/v0/name/resolve?arg=${subplebbitIpnsName}`;
+            fetch(resolveNameUrl, {method: "POST"}).then(res => res.json())
+                .then(pathRes => {
+                    const ipfsPath = pathRes["Path"].split("/ipfs/")[1];
+                    const ipfsSubplebbitUrl = `${this.ipfsApiUrl}/api/v0/cat?arg=${ipfsPath}`;
+                    fetch(ipfsSubplebbitUrl, {method: "POST"}).then(res => res.json())
+                        .then(res => resolve(res))
+                        .catch(err => reject(err));
+                }).catch(reject);
+        });
+    }
 }
 
 export default Plebbit;
