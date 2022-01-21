@@ -1,6 +1,8 @@
 import fetch from 'node-fetch';
 import Subplebbit from "./Subplebbit.js";
 import Post from "./Post.js";
+import Comment from "./Comment.js";
+
 class Plebbit {
 
     constructor(options) {
@@ -39,6 +41,15 @@ class Plebbit {
                 }).catch(reject);
         });
     }
+
+    async getComment(commentCid) {
+        return new Promise((resolve, reject) => {
+            const url = `${this.ipfsApiUrl}/api/v0/cat?arg=${commentCid}`;
+            fetch(url, {method: "POST"}).then(res => res.json())
+                .then(res => resolve(new Comment(res)))
+                .catch(err => reject(err));
+        });
+    };
 }
 
 export default Plebbit;
