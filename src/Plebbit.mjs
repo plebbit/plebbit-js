@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
-
+import Subplebbit from "./Subplebbit.js";
+import Post from "./Post.js";
 class Plebbit {
 
     constructor(options) {
@@ -20,7 +21,7 @@ class Plebbit {
         return new Promise((resolve, reject) => {
             const url = `${this.ipfsApiUrl}/api/v0/cat?arg=${postCid}`;
             fetch(url, {method: "POST"}).then(res => res.json())
-                .then(res => resolve(res))
+                .then(res => resolve(new Post(res)))
                 .catch(err => reject(err));
         });
     }
@@ -33,7 +34,7 @@ class Plebbit {
                     const ipfsPath = pathRes["Path"].split("/ipfs/")[1];
                     const ipfsSubplebbitUrl = `${this.ipfsApiUrl}/api/v0/cat?arg=${ipfsPath}`;
                     fetch(ipfsSubplebbitUrl, {method: "POST"}).then(res => res.json())
-                        .then(res => resolve(res))
+                        .then(res => resolve(new Subplebbit(res)))
                         .catch(err => reject(err));
                 }).catch(reject);
         });
