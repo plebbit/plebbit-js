@@ -24,4 +24,18 @@ describe("Test Plebbit", async () => {
         const loadedPost = await plebbit.getPost(postCid);
         assert.equal(JSON.stringify(loadedPost), JSON.stringify(expectedPost), "Failed to load test post correctly");
     });
+
+    it("getSubplebbit is working as intended", async () => {
+        const subplebbitIpns = "k51qzi5uqu5dlbi1ixc95ybwek0grhhjx2b80ji52nzeeh8zb9o2p4rw7xo8mg";
+        const expectedSubplebbit = {
+            "title": "Test subplebbit",
+            "description": "This is for testing plebbit-js",
+            "moderatorsIpnsNames": [],
+            "latestPostCid": null,
+            "preloadedPosts": [],
+            "pubsubTopic": null
+        };
+        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitIpns);
+        assert.equal(JSON.stringify(expectedSubplebbit), JSON.stringify(loadedSubplebbit), "Failed to load test subplebbit");
+    });
 });
