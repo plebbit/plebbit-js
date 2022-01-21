@@ -1,0 +1,29 @@
+{
+  "name": "plebbit.js",
+  "version": "0.0.1",
+  "description": "plebbit.js will be an NPM module to wrap around the IPFS APIs used by Plebbit. It will be used in all clients: CLI, Electron (Desktop GUI) and Web.",
+  "main": "src/Plebbit.mjs",
+  "scripts": {
+    "test": "mocha --timeout 5000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plebbit/plebbit-js.git"
+  },
+  "keywords": [
+    "plebbit"
+  ],
+  "author": "Esteban Abaroa, Rinse",
+  "license": "GPL-2.0-only",
+  "bugs": {
+    "url": "https://github.com/plebbit/plebbit-js/issues"
+  },
+  "homepage": "https://github.com/plebbit/plebbit-js#readme",
+  "dependencies": {
+    "node-fetch": "^3.1.1"
+  },
+  "devDependencies": {
+    "mocha": "^9.1.4"
+  },
+  "type": "module"
+}
