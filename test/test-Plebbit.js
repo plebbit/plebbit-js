@@ -1,6 +1,8 @@
 import Plebbit from "../src/Plebbit.mjs";
 import Post from "../src/Post.js";
 import Author from "../src/Author.js";
+import Comment from "../src/Comment.js";
+import Subplebbit from "../src/Subplebbit.js";
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
 import assert from 'assert';
 
@@ -28,14 +30,14 @@ describe("Test Plebbit", async () => {
 
     it("getSubplebbit is working as intended", async () => {
         const subplebbitIpns = "k51qzi5uqu5dlbi1ixc95ybwek0grhhjx2b80ji52nzeeh8zb9o2p4rw7xo8mg";
-        const expectedSubplebbit = {
+        const expectedSubplebbit = new Subplebbit({
             "title": "Test subplebbit",
             "description": "This is for testing plebbit-js",
             "moderatorsIpnsNames": [],
             "latestPostCid": null,
             "preloadedPosts": [],
             "pubsubTopic": null
-        };
+        });
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitIpns);
         assert.equal(JSON.stringify(expectedSubplebbit), JSON.stringify(loadedSubplebbit), "Failed to load test subplebbit");
     });
