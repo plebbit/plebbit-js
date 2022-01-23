@@ -20,7 +20,12 @@
   },
   "homepage": "https://github.com/plebbit/plebbit-js#readme",
   "dependencies": {
-    "node-fetch": "^3.1.1"
+    "ipfs-core": "^0.13.0",
+    "ipfs-http-client": "^55.0.0",
+    "it-all": "^1.0.6",
+    "it-last": "^1.0.6",
+    "node-fetch": "^2.6.7",
+    "uint8arrays": "^3.0.0"
   },
   "devDependencies": {
     "mocha": "^9.1.4"
