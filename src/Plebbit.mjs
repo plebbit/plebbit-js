@@ -38,9 +38,8 @@ class Plebbit {
 
     async getPost(postCid) {
         // TODO add verification
-        const plebbit = this;
         return new Promise((resolve, reject) => {
-            plebbit.#loadIpfsFileAsJson(postCid)
+            this.#loadIpfsFileAsJson(postCid)
                 .then(jsonFile => resolve(new Post(jsonFile)))
                 .catch(reject);
         });
@@ -49,19 +48,17 @@ class Plebbit {
     async getSubplebbit(subplebbitIpnsName) {
         if (!subplebbitIpnsName.includes("/ipns/"))
             subplebbitIpnsName = `/ipns/${subplebbitIpnsName}`;
-        const plebbit = this;
         return new Promise(async (resolve, reject) => {
             const subplebbitCid = await last(this.ipfsClient.name.resolve(subplebbitIpnsName));
-            plebbit.#loadIpfsFileAsJson(subplebbitCid)
+            this.#loadIpfsFileAsJson(subplebbitCid)
                 .then(jsonFile => resolve(new Subplebbit(jsonFile)))
                 .catch(reject);
         });
     }
 
     async getComment(commentCid) {
-        const plebbit = this;
         return new Promise((resolve, reject) => {
-            plebbit.#loadIpfsFileAsJson(commentCid)
+            this.#loadIpfsFileAsJson(commentCid)
                 .then(jsonFile => resolve(new Comment(jsonFile)))
                 .catch(reject);
         });
