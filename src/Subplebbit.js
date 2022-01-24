@@ -1,5 +1,6 @@
 import Post from "./Post.js";
 import {create as createIpfsClient} from "ipfs-http-client";
+import last from "it-last";
 
 class Subplebbit {
     constructor(props) {
@@ -79,6 +80,9 @@ class Subplebbit {
         // For development purposes ONLY
         // Call this only if you know what you're doing
         // rm ipns and ipfs
+        const ipfsPath = (await last(this.ipfsClient.name.resolve(this.ipnsKeyId)));
+        await this.ipfsClient.pin.rm(ipfsPath);
+        await this.ipfsClient.key.rm(this.ipnsKeyName);
     }
 
 
