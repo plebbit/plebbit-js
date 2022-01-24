@@ -37,6 +37,12 @@ Comment (IPFS file): {
   commentsIpnsName: string, // each comment can have infinitely nested comments
   signature: string, // sign immutable fields like author, title, content, timestamp to prevent tampering
 }
+Vote {
+  postOrCommentCid: string,
+  author: Author, // need author in case the subplebbit owner uses users reputation for filtering votes
+  type: 'upvote' || 'downvote',
+  signature: string // we need a signature to prove the author is the author
+}
 Author {
   displayName: string,
   ipnsName: string
@@ -63,6 +69,7 @@ Each response should include the content received (preloaded content) and a meth
 
 - publishPost(post)
 - publishComment(comment)
+- publishVote(vote)
 
 ### Usage:
 
