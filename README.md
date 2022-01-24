@@ -19,21 +19,23 @@ Post (IPFS file): {
   content: string,
   timestamp: number,
   previousPostCid: string, // each post is a linked list
-  commentsIpnsName: string,
-  nestedCommentsHelper: ? // something to help fetch nested comments faster, like an index
+  postIpnsName: string, // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
+  signature: string, // sign immutable fields like author, title, content, timestamp to prevent tampering
 }
-Comments (IPNS record): {
+PostIPNS (IPNS record): {
   latestCommentCid: string, // the most recent comment in the linked list of posts
-  preloadedComments: Comment[] // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include preloaded nested comments
-  nestedCommentsHelper: ? // something to help fetch nested comments faster, like an index
+  preloadedComments: Comment[] // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include preloaded nested comments and vote counts
+  upvoteCount: number,
+  downvoteCount: number
 }
-Comment (IPFS file): {
-  parentPostOrCommentCid: string,
-  author: Author,
-  timestamp: number,
-  content: string,
-  previousCommentCid: string, // each comment is a linked list,
-  commentsIpnsName: string, // each comment can have infinitely nested comments
+Comment extends Post (IPFS file): {
+  parentPostOrCommentCid: string // comment is same as a post but has a parent
+}
+Vote {
+  postOrCommentCid: string,
+  author: Author, // need author in case the subplebbit owner uses users reputation for filtering votes
+  type: 'upvote' || 'downvote',
+  signature: string // we need a signature to prove the author is the author
 }
 Author {
   displayName: string,
@@ -44,12 +46,12 @@ Subplebbit (IPNS record): {
   description: string,
   moderatorsIpnsNames: string[],
   latestPostCid: string, // the most recent post in the linked list of posts
-  preloadedPosts: Post[], // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include some preloaded comments for each post as well
+  preloadedPosts: Post[], // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include some preloaded comments for each post as well and vote counts
   pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
 }
 ```
 
-### Read API:
+### Plebbit Read API:
 
 - getPost(postCid)
 - getSubplebbit(subplebbitIpnsName)
@@ -57,12 +59,13 @@ Subplebbit (IPNS record): {
 
 Each response should include the content received (preloaded content) and a method to scroll the entire linked list of posts/comments.
 
-### Write API:
+### Plebbit Write API:
 
 - publishPost(post)
 - publishComment(comment)
+- publishVote(vote)
 
-### Usage:
+### Plebbit Usage:
 
 ```javascript
 const Plebbit = require('@plebbit/plebbit-js')
@@ -75,4 +78,33 @@ plebbit.setIpfsGatewayUrl('http://localhost:8080') // should be able to change o
 
 const postCid = 'QmbWqxBEKC3P8tqsKc98xmWNzrzDtRLMiMPL8wBuTGsMnR'
 const post = await plebbit.getPost(postCid)
+```
+
+### Subplebbit API:
+
+- update() // publish new posts or update subplebbit details
+- start() // start listening for new posts on the pubsub and publish them every 5 minutes
+- stop()
+
+### Subplebbit events:
+
+- 'post'
+
+### Subplebbit Usage:
+
+```javascript
+const {Subplebbit} = require('@plebbit/plebbit-js')
+const options = {
+  ipfsGatewayUrl: 'https://cloudflare-ipfs/ipfs/',
+  ipfsApiUrl: 'http://localhost:5001',
+  subplebbitIpnsName: 'Qmb...'
+}
+const subplebbit = Subplebbit(options) // should be independent instance, not singleton
+subplebbit.update({
+  title: 'Memes',
+  description: 'Post your memes here.',
+  pubsubTopic: 'Qmb...'
+})
+subplebbit.on('post', (post) => console.log(post))
+subplebbit.start()
 ```
