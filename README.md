@@ -20,7 +20,8 @@ Post (IPFS file): {
   timestamp: number,
   previousPostCid: string, // each post is a linked list
   commentsIpnsName: string,
-  nestedCommentsHelper: ? // something to help fetch nested comments faster, like an index
+  nestedCommentsHelper: ?, // something to help fetch nested comments faster, like an index
+  signature: string, // sign immutable fields like author, title, content, timestamp to prevent tampering
 }
 Comments (IPNS record): {
   latestCommentCid: string, // the most recent comment in the linked list of posts
@@ -34,6 +35,7 @@ Comment (IPFS file): {
   content: string,
   previousCommentCid: string, // each comment is a linked list,
   commentsIpnsName: string, // each comment can have infinitely nested comments
+  signature: string, // sign immutable fields like author, title, content, timestamp to prevent tampering
 }
 Author {
   displayName: string,
