@@ -3,7 +3,7 @@ import Author from "./Author.js";
 class Post {
 
     constructor(props) {
-        this.subplebbitIpnsName = props["subplebbitIpnsName"];
+        this.subplebbitIpnsId = props["subplebbitIpnsId"];
         this.author = new Author(props["author"]);
         this.title = props["title"];
         this.content = props["content"];
