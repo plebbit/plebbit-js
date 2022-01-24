@@ -88,8 +88,8 @@ const post = await plebbit.getPost(postCid)
 
 ### Subplebbit API:
 
-- update()
-- start()
+- update() // publish new posts or update subplebbit details
+- start() // start listening for new posts on the pubsub and publish them every 5 minutes
 - stop()
 
 ### Subplebbit events:
