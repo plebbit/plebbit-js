@@ -1,4 +1,4 @@
-import Plebbit from "../src/Plebbit.mjs";
+import Plebbit from "../src/Plebbit.js";
 import Post from "../src/Post.js";
 import Author from "../src/Author.js";
 import Comment from "../src/Comment.js";
