@@ -57,7 +57,7 @@ Subplebbit (IPNS record): {
 }
 ```
 
-### Read API:
+### Plebbit Read API:
 
 - getPost(postCid)
 - getSubplebbit(subplebbitIpnsName)
@@ -65,13 +65,13 @@ Subplebbit (IPNS record): {
 
 Each response should include the content received (preloaded content) and a method to scroll the entire linked list of posts/comments.
 
-### Write API:
+### Plebbit Write API:
 
 - publishPost(post)
 - publishComment(comment)
 - publishVote(vote)
 
-### Usage:
+### Plebbit Usage:
 
 ```javascript
 const Plebbit = require('@plebbit/plebbit-js')
@@ -84,4 +84,34 @@ plebbit.setIpfsGatewayUrl('http://localhost:8080') // should be able to change o
 
 const postCid = 'QmbWqxBEKC3P8tqsKc98xmWNzrzDtRLMiMPL8wBuTGsMnR'
 const post = await plebbit.getPost(postCid)
+```
+
+### Subplebbit API:
+
+- create()
+- update()
+- start()
+- stop()
+
+### Subplebbit events:
+
+- 'post'
+
+### Subplebbit Usage:
+
+```javascript
+const {Subplebbit} = require('@plebbit/plebbit-js')
+const options = {
+  ipfsGatewayUrl: 'https://cloudflare-ipfs/ipfs/',
+  ipfsApiUrl: 'http://localhost:5001',
+  subplebbitIpnsName: 'Qmb...'
+}
+const subplebbit = Subplebbit(options) // should be independent instance, not singleton
+subplebbit.create({
+  title: 'Memes',
+  description: 'Post your memes here.',
+  pubsubTopic: 'Qmb...'
+})
+subplebbit.on('post', (post) => console.log(post))
+subplebbit.start()
 ```
