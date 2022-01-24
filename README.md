@@ -88,7 +88,6 @@ const post = await plebbit.getPost(postCid)
 
 ### Subplebbit API:
 
-- create()
 - update()
 - start()
 - stop()
@@ -107,7 +106,7 @@ const options = {
   subplebbitIpnsName: 'Qmb...'
 }
 const subplebbit = Subplebbit(options) // should be independent instance, not singleton
-subplebbit.create({
+subplebbit.update({
   title: 'Memes',
   description: 'Post your memes here.',
   pubsubTopic: 'Qmb...'
