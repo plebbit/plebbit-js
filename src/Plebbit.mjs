@@ -8,7 +8,6 @@ import all from 'it-all';
 import last from 'it-last';
 
 class Plebbit {
-
     constructor(options) {
         this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
         this.ipfsApiUrl = options["ipfsApiUrl"];
@@ -51,7 +50,12 @@ class Plebbit {
         return new Promise(async (resolve, reject) => {
             const subplebbitCid = await last(this.ipfsClient.name.resolve(subplebbitIpnsName));
             this.#loadIpfsFileAsJson(subplebbitCid)
-                .then(jsonFile => resolve(new Subplebbit(jsonFile)))
+                .then(jsonFile => resolve(new Subplebbit({
+                    ...jsonFile, ...{
+                        "ipfsApiUrl": this.ipfsApiUrl,
+                        "ipfsGatewayUrl": this.ipfsGatewayUrl
+                    }
+                })))
                 .catch(reject);
         });
     }
