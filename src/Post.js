@@ -11,7 +11,7 @@ class Post {
         this.previousPostCid = props["previousPostCid"];
         this.commentsIpnsName = props["commentsIpnsName"];
         this.nestedCommentsHelper = props["nestedCommentsHelper"];
-
+        this.cid = props["cid"];
     }
 }
 
