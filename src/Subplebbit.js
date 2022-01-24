@@ -1,10 +1,10 @@
 import Post from "./Post.js";
-import {create as createIpfsClient} from "ipfs-http-client";
 import last from "it-last";
 
 class Subplebbit {
-    constructor(props) {
+    constructor(props, plebbit) {
         this.#initSubplebbit(props);
+        this.plebbit = plebbit;
     }
 
     #initSubplebbit(newProps) {
@@ -15,8 +15,6 @@ class Subplebbit {
         this.moderatorsIpnsNames = mergedProps["moderatorsIpnsNames"];
         this.latestPostCid = mergedProps["latestPostCid"];
         this.preloadedPosts = mergedProps["preloadedPosts"]?.map(post => new Post(post));
-        this.setIpfsGatewayUrl(mergedProps["ipfsGatewayUrl"]);
-        this.setIpfsApiUrl(mergedProps["ipfsApiUrl"]);
         this.setIpnsKey(mergedProps["ipnsKeyId"], mergedProps["ipnsKeyName"]);
     }
 
@@ -25,19 +23,14 @@ class Subplebbit {
         this.ipnsKeyName = newIpnsKeyName;
     }
 
-    setIpfsGatewayUrl(newGatewayUrl) {
-        this.ipfsGatewayUrl = newGatewayUrl;
-    }
-
-    setIpfsApiUrl(newApiUrl) {
-        this.ipfsApiUrl = newApiUrl;
-        this.ipfsClient = createIpfsClient(newApiUrl);
+    setPlebbit(newPlebbit){
+        this.plebbit = newPlebbit;
     }
 
     publishAsNewSubplebbit() {
         // TODO Add a check for key existence
         return new Promise((resolve, reject) => {
-            this.ipfsClient.key.gen(this.title).then(ipnsKey => {
+            this.plebbit.ipfsClient.key.gen(this.title).then(ipnsKey => {
                 // TODO add to db
                 this.update({"ipnsKeyId": ipnsKey["id"], "ipnsKeyName": ipnsKey["name"]}).then(resolve).catch(reject)
             }).catch(reject);
@@ -48,8 +41,6 @@ class Subplebbit {
         return {
             ...this.toJSON(),
             "ipnsKeyName": this.ipnsKeyName,
-            "ipfsGatewayUrl": this.ipfsGatewayUrl,
-            "ipfsApiUrl": this.ipfsApiUrl
         };
 
     }
@@ -66,8 +57,8 @@ class Subplebbit {
         this.#initSubplebbit(newSubplebbitOptions);
         const subplebbitWithNewContent = JSON.stringify(this);
         return new Promise((resolve, reject) => {
-            this.ipfsClient.add(subplebbitWithNewContent).then(file => {
-                this.ipfsClient.name.publish(file["cid"], {
+            this.plebbit.ipfsClient.add(subplebbitWithNewContent).then(file => {
+                this.plebbit.ipfsClient.name.publish(file["cid"], {
                     "lifetime": "5h", // TODO decide on optimal time later
                     "key": this.ipnsKeyName
                 }).then(resolve).catch(reject);
@@ -80,9 +71,9 @@ class Subplebbit {
         // For development purposes ONLY
         // Call this only if you know what you're doing
         // rm ipns and ipfs
-        const ipfsPath = (await last(this.ipfsClient.name.resolve(this.ipnsKeyId)));
-        await this.ipfsClient.pin.rm(ipfsPath);
-        await this.ipfsClient.key.rm(this.ipnsKeyName);
+        const ipfsPath = (await last(this.plebbit.ipfsClient.name.resolve(this.ipnsKeyId)));
+        await this.plebbit.ipfsClient.pin.rm(ipfsPath);
+        await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
     }
 
 
