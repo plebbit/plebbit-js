@@ -93,6 +93,11 @@ class Subplebbit {
         await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, processPubsub);
     }
 
+    async stopPublishing() {
+        await this.plebbit.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
+        this._eventEmitter.removeAllListeners();
+    }
+
     on(event, callback) {
         this._eventEmitter.on(event, callback);
     }
