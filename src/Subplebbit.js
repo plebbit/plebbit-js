@@ -81,6 +81,7 @@ class Subplebbit {
         const processPubsub = async (pubsubMsg) => {
             const post = new Post(JSON.parse(uint8ArrayToString(pubsubMsg["data"])));
             post.setSubplebbit(this);
+            post.setPreviousPostCid(this.latestPostCid);
             const newSubplebbitOptions = {
                 "preloadedPosts": [post, ...this.preloadedPosts],
                 "latestPostCid": post.cid

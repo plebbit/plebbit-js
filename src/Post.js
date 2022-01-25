@@ -27,6 +27,10 @@ class Post {
         this.plebbit = newPlebbit;
     }
 
+    setPreviousPostCid(previousPostCid){
+        this.previousPostCid = previousPostCid;
+    }
+
     toJSON() {
         return {
             "author": this.author,
