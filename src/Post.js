@@ -1,4 +1,5 @@
 import Author from "./Author.js";
+import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string'
 
 class Post {
 
@@ -14,6 +15,43 @@ class Post {
         this.plebbit = plebbit;
         this.subplebbit = subplebbit;
     }
+
+    setCid(newCid) {
+        this.cid = newCid;
+    }
+
+    setSubplebbit(newSubplebbit){
+        this.subplebbit = newSubplebbit;
+    }
+    setPlebbit(newPlebbit) {
+        this.plebbit = newPlebbit;
+    }
+
+    toJSON() {
+        return {
+            "author": this.author,
+            "title": this.title,
+            "content": this.content,
+            "timestamp": this.timestamp,
+            "previousPostCid": this.previousPostCid,
+            "commentsIpnsName": this.commentsIpnsName,
+            "nestedCommentsHelper": this.nestedCommentsHelper,
+            "cid": this.cid,
+            "subplebbitIpnsName": this.subplebbit.ipnsKeyId
+        };
+    }
+
+    async publishPost() {
+        // Assumes post has not been added to ipfs
+        return new Promise(async (resolve, reject) => {
+            this.plebbit.ipfsClient.add(JSON.stringify(this)).then(file => {
+                this.setCid(file["cid"]);
+                const postEncoded = uint8ArrayFromString(JSON.stringify(this));
+                this.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, postEncoded).then(resolve).catch(reject);
+            }).catch(reject);
+        });
+    }
+
 }
 
 export default Post;

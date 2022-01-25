@@ -1,10 +1,13 @@
 import Post from "./Post.js";
 import last from "it-last";
+import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
+import EventEmitter from "events";
 
 class Subplebbit {
     constructor(props, plebbit) {
         this.#initSubplebbit(props);
         this.plebbit = plebbit;
+        this._eventEmitter = new EventEmitter();
     }
 
     #initSubplebbit(newProps) {
@@ -14,7 +17,7 @@ class Subplebbit {
         this.description = mergedProps["description"];
         this.moderatorsIpnsNames = mergedProps["moderatorsIpnsNames"];
         this.latestPostCid = mergedProps["latestPostCid"];
-        this.preloadedPosts = mergedProps["preloadedPosts"]?.map(post => new Post(post));
+        this.preloadedPosts = mergedProps["preloadedPosts"] || [];
         this.setIpnsKey(mergedProps["ipnsKeyId"], mergedProps["ipnsKeyName"]);
     }
 
@@ -23,7 +26,7 @@ class Subplebbit {
         this.ipnsKeyName = newIpnsKeyName;
     }
 
-    setPlebbit(newPlebbit){
+    setPlebbit(newPlebbit) {
         this.plebbit = newPlebbit;
     }
 
@@ -42,7 +45,6 @@ class Subplebbit {
             ...this.toJSON(),
             "ipnsKeyName": this.ipnsKeyName,
         };
-
     }
 
     toJSON() {
@@ -64,7 +66,6 @@ class Subplebbit {
                 }).then(resolve).catch(reject);
             }).catch(reject);
         });
-
     }
 
     async destroy() {
@@ -74,6 +75,25 @@ class Subplebbit {
         const ipfsPath = (await last(this.plebbit.ipfsClient.name.resolve(this.ipnsKeyId)));
         await this.plebbit.ipfsClient.pin.rm(ipfsPath);
         await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
+    }
+
+    async startPublishing() {
+        const processPubsub = async (pubsubMsg) => {
+            const post = new Post(JSON.parse(uint8ArrayToString(pubsubMsg["data"])));
+            post.setSubplebbit(this);
+            const newSubplebbitOptions = {
+                "preloadedPosts": [post, ...this.preloadedPosts],
+                "latestPostCid": post.cid
+            }
+            await this.update(newSubplebbitOptions);
+            this._eventEmitter.emit("post", post);
+        };
+
+        await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, processPubsub);
+    }
+
+    on(event, callback) {
+        this._eventEmitter.on(event, callback);
     }
 
 
