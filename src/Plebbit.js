@@ -39,7 +39,8 @@ class Plebbit {
         // TODO add verification
         return new Promise((resolve, reject) => {
             this.#loadIpfsFileAsJson(postCid)
-                .then(jsonFile => resolve(new Post(jsonFile)))
+                .then(jsonFile =>
+                    resolve(new Post({...jsonFile, "cid": postCid}, this)))
                 .catch(reject);
         });
     }
@@ -50,12 +51,7 @@ class Plebbit {
         return new Promise(async (resolve, reject) => {
             const subplebbitCid = await last(this.ipfsClient.name.resolve(subplebbitIpnsName));
             this.#loadIpfsFileAsJson(subplebbitCid)
-                .then(jsonFile => resolve(new Subplebbit({
-                    ...jsonFile, ...{
-                        "ipfsApiUrl": this.ipfsApiUrl,
-                        "ipfsGatewayUrl": this.ipfsGatewayUrl
-                    }
-                })))
+                .then(jsonFile => resolve(new Subplebbit(jsonFile, this)))
                 .catch(reject);
         });
     }

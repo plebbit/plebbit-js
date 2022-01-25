@@ -2,8 +2,7 @@ import Author from "./Author.js";
 
 class Post {
 
-    constructor(props) {
-        this.subplebbitIpnsId = props["subplebbitIpnsId"];
+    constructor(props, plebbit, subplebbit) {
         this.author = new Author(props["author"]);
         this.title = props["title"];
         this.content = props["content"];
@@ -12,6 +11,8 @@ class Post {
         this.commentsIpnsName = props["commentsIpnsName"];
         this.nestedCommentsHelper = props["nestedCommentsHelper"];
         this.cid = props["cid"];
+        this.plebbit = plebbit;
+        this.subplebbit = subplebbit;
     }
 }
 
