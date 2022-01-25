@@ -6,8 +6,19 @@ import Post from "../src/Post.js";
 
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 const subplebbit = new Subplebbit({
-    "title": `Test subplebbit - ${new Date().getMilliseconds()}`
+    "title": `Test subplebbit - ${Date.now()}`
 }, plebbit);
+
+// const subplebbit = await plebbit.getSubplebbit("k2k4r8llrfmbcn1h7byyokfr6xbbsp1kgmxq3xgik73lkjpw4y7w12qd");
+const mockPosts = [];
+
+async function generateMockPost() {
+    const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${Date.now()}`);
+    return new Post({
+        "author": {"displayName": `Mock Author - ${Date.now()}`, "ipnsId": mockAuthorIpns["id"]},
+        "title": `Mock Post - ${Date.now()}`, "content": `Mock content - ${Date.now()}`, "timestamp": Date.now(),
+    }, plebbit, subplebbit);
+}
 describe("Test Subplebbit", async () => {
 
     // Destroy subplebbit once we're done with tests
@@ -22,24 +33,31 @@ describe("Test Subplebbit", async () => {
     });
 
     it("Can publish new posts", async function () {
-
-        // Ready subplebbit for post
-        await subplebbit.startPublishing();
-
-        const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${Date.now()}`);
-        const mockPost = new Post({
-            "author": {"displayName": "Mock Author", "ipnsId": mockAuthorIpns["id"]},
-            "title": "Mock Post", "content": "Mock content", "timestamp": Date.now(),
-        }, plebbit, subplebbit);
-
-        await mockPost.publishPost();
-
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
+            const mockPost = await generateMockPost();
             subplebbit.on('post', (post) => {
                 assert.equal(post.title, mockPost.title, "Failed to publish correct post");
                 assert.equal(post.cid, subplebbit.latestPostCid, "Failed to update subplebbit latestPostCid");
+                mockPosts.push(post);
+                subplebbit.stopPublishing();
                 resolve();
             });
+            // Ready subplebbit for post
+            await subplebbit.startPublishing();
+            await mockPost.publishPost();
+        });
+    });
+
+    it("Sets previousPostCid correctly", async function () {
+        return new Promise(async (resolve, reject) => {
+            subplebbit.on("post", (post) => {
+                assert.equal(JSON.stringify(post.previousPostCid), JSON.stringify(mockPosts[0].cid), "Failed to set previousPostCid");
+                mockPosts.push(post);
+                resolve();
+            });
+            await subplebbit.startPublishing();
+            const secondMockPost = await generateMockPost();
+            await secondMockPost.publishPost();
         });
     });
 });
