@@ -82,12 +82,15 @@ class Subplebbit extends EventEmitter{
             const post = new Post(JSON.parse(uint8ArrayToString(pubsubMsg["data"])));
             post.setSubplebbit(this);
             post.setPreviousPostCid(this.latestPostCid);
-            const newSubplebbitOptions = {
-                "preloadedPosts": [post, ...this.preloadedPosts],
-                "latestPostCid": post.cid
-            }
-            await this.update(newSubplebbitOptions);
-            this.emit("post", post);
+            this.plebbit.ipfsClient.add(JSON.stringify(post)).then(async file => {
+                post.setCid(file["cid"]);
+                const newSubplebbitOptions = {
+                    "preloadedPosts": [post, ...this.preloadedPosts],
+                    "latestPostCid": post.cid
+                }
+                await this.update(newSubplebbitOptions);
+                this.emit("post", post);
+            }).catch(err => console.error(`Failed to publish post: ${post}`));
         };
 
         await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, processPubsub);

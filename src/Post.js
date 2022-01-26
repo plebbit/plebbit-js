@@ -8,8 +8,7 @@ class Post {
         this.title = props["title"];
         this.content = props["content"];
         this.timestamp = props["timestamp"];
-        this.previousPostCid = props["previousPostCid"];
-        this.commentsIpnsName = props["commentsIpnsName"];
+        this.previousPostCid = props["previousPostCid"]; // each post is a linked list
         this.nestedCommentsHelper = props["nestedCommentsHelper"];
         this.cid = props["cid"];
         this.plebbit = plebbit;
@@ -48,11 +47,8 @@ class Post {
     async publish() {
         // Assumes post has not been added to ipfs
         return new Promise(async (resolve, reject) => {
-            this.plebbit.ipfsClient.add(JSON.stringify(this)).then(file => {
-                this.setCid(file["cid"]);
-                const postEncoded = uint8ArrayFromString(JSON.stringify(this));
-                this.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, postEncoded).then(resolve).catch(reject);
-            }).catch(reject);
+            const postEncoded = uint8ArrayFromString(JSON.stringify(this));
+            this.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, postEncoded).then(resolve).catch(reject);
         });
     }
 
