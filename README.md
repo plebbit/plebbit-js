@@ -121,10 +121,11 @@ subplebbit.start()
 
 ```javascript
 const libp2pCrypto = require('libp2p-crypto')
+const cborg = require('cborg')
 const encryptedPemPassword = ''
 const rsaInstance = await libp2pCrypto.keys.import(privateKeyPemString, encryptedPemPassword)
 
-const messageToSign = JSON.stringify({subplebbitIpnsName, author, title, content, timestamp})
+const messageToSign = cborg.encode({subplebbitIpnsName, author, title, content, timestamp}) // use cborg to stringify deterministically instead of JSON.stringify
 const rsaInstanceSignature = await rsaInstance.sign(messageToSign)
 const rsaInstanceSignatureVerification = await rsaInstance.public.verify(messageToSign, rsaInstanceSignature)
 
