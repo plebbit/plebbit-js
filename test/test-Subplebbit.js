@@ -9,7 +9,6 @@ const subplebbit = new Subplebbit({
     "title": `Test subplebbit - ${Date.now()}`
 }, plebbit);
 
-// const subplebbit = await plebbit.getSubplebbit("k2k4r8llrfmbcn1h7byyokfr6xbbsp1kgmxq3xgik73lkjpw4y7w12qd");
 const mockPosts = [];
 
 async function generateMockPost() {
@@ -19,6 +18,8 @@ async function generateMockPost() {
         "title": `Mock Post - ${Date.now()}`, "content": `Mock content - ${Date.now()}`, "timestamp": Date.now(),
     }, plebbit, subplebbit);
 }
+
+
 describe("Test Subplebbit", async () => {
 
     // Destroy subplebbit once we're done with tests

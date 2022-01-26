@@ -3,8 +3,9 @@ import last from "it-last";
 import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
 import EventEmitter from "events";
 
-class Subplebbit {
+class Subplebbit extends EventEmitter{
     constructor(props, plebbit) {
+        super();
         this.#initSubplebbit(props);
         this.plebbit = plebbit;
         this._eventEmitter = new EventEmitter();
@@ -87,7 +88,7 @@ class Subplebbit {
                 "latestPostCid": post.cid
             }
             await this.update(newSubplebbitOptions);
-            this._eventEmitter.emit("post", post);
+            this.emit("post", post);
         };
 
         await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, processPubsub);
@@ -95,13 +96,8 @@ class Subplebbit {
 
     async stopPublishing() {
         await this.plebbit.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
-        this._eventEmitter.removeAllListeners();
+        this.removeAllListeners();
     }
-
-    on(event, callback) {
-        this._eventEmitter.on(event, callback);
-    }
-
 
 }
 
