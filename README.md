@@ -8,7 +8,7 @@
 - Pubsub topic: the string to publish/subscribe to in the pubsub https://github.com/ipfs/js-ipfs/blob/master/docs/core-api/PUBSUB.md#ipfspubsubsubscribetopic-handler-options and https://github.com/libp2p/specs/blob/master/pubsub/gossipsub/gossipsub-v1.0.md#topic-membership
 - IPNS record: https://github.com/ipfs/specs/blob/master/IPNS.md#ipns-record
 - IPNS signature: https://github.com/ipfs/notes/issues/249
-- Examples of how to sign with node: https://github.com/plebbit/whitepaper/blob/main/signature-examples/sign.js
+- Examples of how to sign: https://github.com/plebbit/whitepaper/blob/main/signature-examples/sign.js
 
 Note: IPFS files are immutable, fetched by their CID, which is a hash of their content. IPNS records are mutable, fetched by their IPNS name, which is the hash of a public key. The private key's owner can update the content. Always use IPFS files over IPNS records when possible because they are much faster to fetch.
 
@@ -45,7 +45,7 @@ Author {
   ipnsName: string
 }
 Signature {
-  signature: string, // for version 'plebbit1', the algo is: require('crypto').sign('sha256', JSON.stringify({subplebbitIpnsName, author, title, content, timestamp}), privateKeyPemString)
+  signature: string, // data in base64
   version: string // we need multiple versions to allow signing with metamask or to change the signature fields or algorithm
 }
 Subplebbit (IPNS record): {
@@ -114,4 +114,20 @@ subplebbit.update({
 })
 subplebbit.on('post', (post) => console.log(post))
 subplebbit.start()
+```
+### Message signature versions:
+
+- 'plebbit1':
+
+```
+const libp2pCrypto = require('libp2p-crypto')
+const encryptedPemPassword = ''
+const rsaInstance = await libp2pCrypto.keys.import(privateKeyPemString, encryptedPemPassword)
+
+const messageToSign = JSON.stringify({subplebbitIpnsName, author, title, content, timestamp})
+const rsaInstanceSignature = await rsaInstance.sign(messageToSign)
+const rsaInstanceSignatureVerification = await rsaInstance.public.verify(messageToSign, rsaInstanceSignature)
+
+// can also be done in node (but not browser compatible)
+require('crypto').sign('sha256', messageToSign, privateKeyPemString)
 ```
