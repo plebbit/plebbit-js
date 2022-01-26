@@ -47,7 +47,7 @@ Author {
 Signature {
   signature: string, // data in base64
   publicKey: buffer, // include public key (marshalled, like IPNS does it) because the IPNS name is just a hash of it
-  version: string // multiple versions to allow signing with metamask or to change the signature fields or algorithm
+  type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
 }
 Subplebbit (IPNS record): {
   title: string,
@@ -116,7 +116,7 @@ subplebbit.update({
 subplebbit.on('post', (post) => console.log(post))
 subplebbit.start()
 ```
-### Message signature versions:
+### Message signature types:
 
 - 'plebbit1':
 
