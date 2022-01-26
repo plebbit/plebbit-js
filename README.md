@@ -8,6 +8,7 @@
 - Pubsub topic: the string to publish/subscribe to in the pubsub https://github.com/ipfs/js-ipfs/blob/master/docs/core-api/PUBSUB.md#ipfspubsubsubscribetopic-handler-options and https://github.com/libp2p/specs/blob/master/pubsub/gossipsub/gossipsub-v1.0.md#topic-membership
 - IPNS record: https://github.com/ipfs/specs/blob/master/IPNS.md#ipns-record
 - IPNS signature: https://github.com/ipfs/notes/issues/249
+- Examples of how to sign with node: https://github.com/plebbit/whitepaper/blob/main/signature-examples/sign.js
 
 Note: IPFS files are immutable, fetched by their CID, which is a hash of their content. IPNS records are mutable, fetched by their IPNS name, which is the hash of a public key. The private key's owner can update the content. Always use IPFS files over IPNS records when possible because they are much faster to fetch.
 
