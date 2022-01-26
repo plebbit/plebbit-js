@@ -22,7 +22,7 @@ Post (IPFS file): {
   timestamp: number,
   previousPostCid: string, // each post is a linked list
   postIpnsName: string, // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
-  signature: string, // sign immutable fields like author, title, content, timestamp to prevent tampering
+  signature: Signature, // sign immutable fields like author, title, content, timestamp to prevent tampering
 }
 PostIPNS (IPNS record): {
   latestCommentCid: string, // the most recent comment in the linked list of posts
@@ -37,11 +37,15 @@ Vote {
   postOrCommentCid: string,
   author: Author, // need author in case the subplebbit owner uses users reputation for filtering votes
   type: 'upvote' || 'downvote',
-  signature: string // we need a signature to prove the author is the author
+  signature: Signature // we need a signature to prove the author is the author
 }
 Author {
   displayName: string,
   ipnsName: string
+}
+Signature {
+  signature: string, // for version 'plebbit1', the algo is: require('crypto').sign('sha256', JSON.stringify({subplebbitIpnsName, author, title, content, timestamp}), privateKeyPemString)
+  version: string // we need multiple versions to allow signing with metamask or to change the signature fields or algorithm
 }
 Subplebbit (IPNS record): {
   title: string,
