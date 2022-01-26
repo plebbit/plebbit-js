@@ -8,7 +8,6 @@ class Subplebbit extends EventEmitter{
         super();
         this.#initSubplebbit(props);
         this.plebbit = plebbit;
-        this._eventEmitter = new EventEmitter();
     }
 
     #initSubplebbit(newProps) {
@@ -51,7 +50,7 @@ class Subplebbit extends EventEmitter{
     toJSON() {
         return {
             "title": this.title, "description": this.description,
-            "moderatorsIpnsNames": this.moderatorsIpnsNames, "latestPostCid": this.latestPostCid,
+            "moderatorsIpnsNames": this.moderatorsIpnsNames, "latestPostCid": this.latestPostCid?.toString(),
             "preloadedPosts": this.preloadedPosts, "pubsubTopic": this.pubsubTopic, "ipnsKeyId": this.ipnsKeyId
         };
     }

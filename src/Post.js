@@ -37,15 +37,15 @@ class Post {
             "title": this.title,
             "content": this.content,
             "timestamp": this.timestamp,
-            "previousPostCid": this.previousPostCid,
-            "commentsIpnsName": this.commentsIpnsName,
+            "previousPostCid": this.previousPostCid?.toString(),
+            "postIpnsId": this.postIpnsId,
             "nestedCommentsHelper": this.nestedCommentsHelper,
-            "cid": this.cid,
+            "cid": this.cid?.toString(),
             "subplebbitIpnsName": this.subplebbit.ipnsKeyId
         };
     }
 
-    async publishPost() {
+    async publish() {
         // Assumes post has not been added to ipfs
         return new Promise(async (resolve, reject) => {
             this.plebbit.ipfsClient.add(JSON.stringify(this)).then(file => {

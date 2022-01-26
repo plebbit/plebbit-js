@@ -36,29 +36,26 @@ describe("Test Subplebbit", async () => {
     it("Can publish new posts", async function () {
         return new Promise(async (resolve, reject) => {
             const mockPost = await generateMockPost();
-            subplebbit.on('post', (post) => {
+            subplebbit.once('post', (post) => {
                 assert.equal(post.title, mockPost.title, "Failed to publish correct post");
                 assert.equal(post.cid, subplebbit.latestPostCid, "Failed to update subplebbit latestPostCid");
                 mockPosts.push(post);
-                subplebbit.stopPublishing();
                 resolve();
             });
-            // Ready subplebbit for post
             await subplebbit.startPublishing();
-            await mockPost.publishPost();
+            await mockPost.publish();
         });
     });
 
     it("Sets previousPostCid correctly", async function () {
         return new Promise(async (resolve, reject) => {
-            subplebbit.on("post", (post) => {
+            const secondMockPost = await generateMockPost();
+            subplebbit.once("post", (post) => {
                 assert.equal(JSON.stringify(post.previousPostCid), JSON.stringify(mockPosts[0].cid), "Failed to set previousPostCid");
                 mockPosts.push(post);
                 resolve();
             });
-            await subplebbit.startPublishing();
-            const secondMockPost = await generateMockPost();
-            await secondMockPost.publishPost();
+            await secondMockPost.publish();
         });
     });
 });
