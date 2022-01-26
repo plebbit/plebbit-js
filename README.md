@@ -37,7 +37,7 @@ Comment extends Post (IPFS file): {
 Vote {
   postOrCommentCid: string,
   author: Author, // need author in case the subplebbit owner uses users reputation for filtering votes
-  type: 'upvote' || 'downvote',
+  vote: 1 || -1,
   signature: Signature // we need a signature to prove the author is the author
 }
 Author {
