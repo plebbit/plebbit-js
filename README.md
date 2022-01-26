@@ -46,7 +46,8 @@ Author {
 }
 Signature {
   signature: string, // data in base64
-  version: string // we need multiple versions to allow signing with metamask or to change the signature fields or algorithm
+  publicKey: buffer, // include public key (marshalled, like IPNS does it) because the IPNS name is just a hash of it
+  version: string // multiple versions to allow signing with metamask or to change the signature fields or algorithm
 }
 Subplebbit (IPNS record): {
   title: string,
@@ -122,13 +123,25 @@ subplebbit.start()
 ```javascript
 const libp2pCrypto = require('libp2p-crypto')
 const cborg = require('cborg')
+const PeerId = require('peer-id')
+
 const encryptedPemPassword = ''
 const rsaInstance = await libp2pCrypto.keys.import(privateKeyPemString, encryptedPemPassword)
 
 const messageToSign = cborg.encode({subplebbitIpnsName, author, title, content, timestamp}) // use cborg to stringify deterministically instead of JSON.stringify
 const rsaInstanceSignature = await rsaInstance.sign(messageToSign)
-const rsaInstanceSignatureVerification = await rsaInstance.public.verify(messageToSign, rsaInstanceSignature)
 
 // can also be done in node (but not browser compatible)
 require('crypto').sign('sha256', messageToSign, privateKeyPemString)
+
+// to get marshalled (serialized) public key for signature.publicKey field
+signature.publicKey = rsaInstance.public.marshal()
+// or
+signature.publicKey = libp2pCrypto.keys.marshalPublicKey(rsaInstance.public, 'RSA')
+
+// to verify a signed post
+const post = {/* ...some post */}
+const postToVerify = cborg.encode({subplebbitIpnsName: post.subplebbitIpnsName, author: post.author, title: post.title, content: post.content, timestamp: post.timestamp})
+const rsaPublicKeyInstance = (await PeerId.createFromPubKey(post.signature.publicKey)).pubKey
+const signatureIsValid = await rsaPublicKeyInstance.verify(postToVerify, post.signature.signature)
 ```
