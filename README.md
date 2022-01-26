@@ -32,7 +32,7 @@ PostIPNS (IPNS record): {
   downvoteCount: number
 }
 Comment extends Post (IPFS file): {
-  parentPostOrCommentCid: string // comment is same as a post but has a parent
+  parentPostOrCommentCid: string // comment is same as a post but has a parent and no title
 }
 Vote {
   postOrCommentCid: string,
