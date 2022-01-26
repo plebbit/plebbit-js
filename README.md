@@ -119,7 +119,7 @@ subplebbit.start()
 
 - 'plebbit1':
 
-```
+```javascript
 const libp2pCrypto = require('libp2p-crypto')
 const encryptedPemPassword = ''
 const rsaInstance = await libp2pCrypto.keys.import(privateKeyPemString, encryptedPemPassword)
