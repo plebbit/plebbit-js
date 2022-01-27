@@ -170,11 +170,14 @@ ChallengeMessage (sent by subplebbit owner) {
 }
 ChallengeAnswerMessage (sent by post author) {
   challengeRequestId: string,
-  challengeAnswerId: string // random string choosen by sender
+  challengeAnswerId: string, // random string choosen by sender
+  challengeAnswer: string // for example 2+2=4
 }
 ChallengeVerificationMessage (sent by subplebbit owner) {
   challengeRequestId: string, // include in verification in case a peer is missing it
-  challengeAnswerId: string // include in verification in case a peer is missing it
+  challengeAnswerId: string, // include in verification in case a peer is missing it
+  challengeAnswerIsVerified: bool,
+  reason: string // reason for failed verification, for example post content is too long. could also be used for successful verification that bypass the challenge, for example because an author has good history
 }
 Challenge {
   type: 'captcha1', // will be dozens of challenge types, like holding a certain amount of a token
