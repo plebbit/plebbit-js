@@ -61,7 +61,7 @@ describe("Test Subplebbit", async () => {
 
     it("Downloaded post is same as written post", async function (){
        const actualPost = mockPosts[1];
-       const loadedPost = await plebbit.getPost(actualPost.cid);
+       const loadedPost = await plebbit.getPostOrComment(actualPost.cid);
        assert.equal(JSON.stringify(actualPost), JSON.stringify(loadedPost), "Downloaded post is missing info");
     });
 });

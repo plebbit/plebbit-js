@@ -20,18 +20,6 @@ class Plebbit {
         this.ipfsClient = createIpfsClient(this.ipfsApiUrl);
     }
 
-    async getPost(postCid) {
-        // TODO add verification
-        return new Promise((resolve, reject) => {
-            loadIpfsFileAsJson(postCid, this.ipfsClient)
-                .then(async jsonFile => {
-                    const subplebbit = await this.getSubplebbit(jsonFile["subplebbitIpnsId"]);
-                    resolve(new Post({...jsonFile, "cid": postCid}, this, subplebbit));
-                })
-                .catch(reject);
-        });
-    }
-
     async getSubplebbit(subplebbitIpnsName) {
         if (!subplebbitIpnsName.includes("/ipns/"))
             subplebbitIpnsName = `/ipns/${subplebbitIpnsName}`;
@@ -42,13 +30,19 @@ class Plebbit {
         });
     }
 
-    async getComment(commentCid) {
-        return new Promise((resolve, reject) => {
-            loadIpfsFileAsJson(commentCid, this.ipfsClient)
-                .then(jsonFile => resolve(new Comment(jsonFile)))
-                .catch(reject);
+    async getPostOrComment(cid) {
+        return new Promise(async (resolve, reject) => {
+            loadIpfsFileAsJson(cid, this.ipfsClient).then(async jsonFile => {
+                if (jsonFile["parentPostOrCommentCid"]) {
+                    const parentPostOrComment = await this.getPostOrComment(jsonFile["parentPostOrCommentCid"]);
+                    resolve(new Comment({...jsonFile, "cid": cid}, this, parentPostOrComment));
+                } else {
+                    const subplebbit = await this.getSubplebbit(jsonFile["subplebbitIpnsId"]);
+                    resolve(new Post({...jsonFile, "cid": cid}, this, subplebbit));
+                }
+            }).catch(reject);
         });
-    };
+    }
 }
 
 export default Plebbit;
