@@ -2,10 +2,7 @@ import Comment from "./Comment.js";
 import Post from "./Post.js";
 import Subplebbit from "./Subplebbit.js";
 import {create as createIpfsClient} from 'ipfs-http-client';
-import {concat as uint8ArrayConcat} from 'uint8arrays/concat';
-import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
-import all from 'it-all';
-import last from 'it-last';
+import {loadIpfsFileAsJson, loadIpnsAsJson} from "./Util.js";
 
 class Plebbit {
     constructor(options) {
@@ -23,22 +20,10 @@ class Plebbit {
         this.ipfsClient = createIpfsClient(this.ipfsApiUrl);
     }
 
-    async #loadIpfsFileAsJson(cid) {
-        return new Promise((resolve, reject) => {
-            all(this.ipfsClient.cat(cid))
-                .then(rawData => uint8ArrayConcat(rawData))
-                .catch(reject)
-                .then(data => {
-                    const jsonObject = JSON.parse(uint8ArrayToString(data));
-                    resolve(jsonObject);
-                }).catch(reject);
-        });
-    }
-
     async getPost(postCid) {
         // TODO add verification
         return new Promise((resolve, reject) => {
-            this.#loadIpfsFileAsJson(postCid)
+            loadIpfsFileAsJson(postCid, this.ipfsClient)
                 .then(async jsonFile => {
                     const subplebbit = await this.getSubplebbit(jsonFile["subplebbitIpnsId"]);
                     resolve(new Post({...jsonFile, "cid": postCid}, this, subplebbit));
@@ -51,8 +36,7 @@ class Plebbit {
         if (!subplebbitIpnsName.includes("/ipns/"))
             subplebbitIpnsName = `/ipns/${subplebbitIpnsName}`;
         return new Promise(async (resolve, reject) => {
-            const subplebbitCid = await last(this.ipfsClient.name.resolve(subplebbitIpnsName));
-            this.#loadIpfsFileAsJson(subplebbitCid)
+            loadIpnsAsJson(subplebbitIpnsName, this.ipfsClient)
                 .then(jsonFile => resolve(new Subplebbit(jsonFile, this)))
                 .catch(reject);
         });
@@ -60,7 +44,7 @@ class Plebbit {
 
     async getComment(commentCid) {
         return new Promise((resolve, reject) => {
-            this.#loadIpfsFileAsJson(commentCid)
+            loadIpfsFileAsJson(commentCid, this.ipfsClient)
                 .then(jsonFile => resolve(new Comment(jsonFile)))
                 .catch(reject);
         });
