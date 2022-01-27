@@ -15,31 +15,36 @@ Note: IPFS files are immutable, fetched by their CID, which is a hash of their c
 ### Data:
 
 ```
-Post (IPFS file): {
-  subplebbitIpnsName: string, // required to prevent malicious subplebbits republishing as original
+Publication: {
   author: Author,
+  timestamp: number,
+  signature: Signature // sign immutable fields like author, title, content, timestamp to prevent tampering
+}
+Post (IPFS file): {
+  ...Publication,
+  subplebbitIpnsName: string, // required to prevent malicious subplebbits republishing as original
   title: string,
   content: string,
-  timestamp: number,
   previousPostCid: string, // each post is a linked list
-  postIpnsName: string, // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
-  signature: Signature, // sign immutable fields like author, title, content, timestamp to prevent tampering
+  postOrCommentIpnsName: string // each post/comment needs its own IPNS record for its mutable data like edits, vote counts, comments
 }
-PostIPNS (IPNS record): {
-  latestCommentCid: string, // the most recent comment in the linked list of posts
-  preloadedComments: Comment[] // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include preloaded nested comments and vote counts
-  upvoteCount: number,
-  downvoteCount: number
-}
-Comment extends Post (IPFS file): {
-  parentPostOrCommentCid: string // comment is same as a post but has a parent and no title
+Comment (IPFS file): {
+  ...Publication,
+  parentPostOrCommentCid: string, // comment is same as a post but has a parent and no title
+  content: string,
+  previousCommentCid: string, // each post is a linked list
+  postOrCommentIpnsName: string // each post/comment needs its own IPNS record for its mutable data like edits, vote counts, comments
 }
 Vote {
+  ...Publication,
   postOrCommentCid: string,
-  author: Author, // need author in case the subplebbit owner uses users reputation for filtering votes
-  vote: 1 | -1 | 0, // 0 is needed to cancel a vote
-  timestamp: number, // needed to edit a vote, last timestamp is the valid one
-  signature: Signature // we need a signature to prove the author is the author
+  vote: 1 | -1 | 0 // 0 is needed to cancel a vote
+}
+PostOrCommentIpns (IPNS record): {
+  latestCommentCid: string, // the most recent comment in the linked list of posts
+  preloadedComments: Comment[], // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include preloaded nested comments and vote counts
+  upvoteCount: number,
+  downvoteCount: number
 }
 Author {
   displayName: string,
@@ -56,7 +61,7 @@ Subplebbit (IPNS record): {
   moderatorsIpnsNames: string[],
   latestPostCid: string, // the most recent post in the linked list of posts
   preloadedPosts: Post[], // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include some preloaded comments for each post as well and vote counts
-  pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
+  pubsubTopic: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
 }
 ```
 
