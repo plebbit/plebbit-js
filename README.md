@@ -151,3 +151,32 @@ const postToVerify = cborg.encode({subplebbitIpnsName: post.subplebbitIpnsName, 
 const rsaPublicKeyInstance = (await PeerId.createFromPubKey(post.signature.publicKey)).pubKey
 const signatureIsValid = await rsaPublicKeyInstance.verify(postToVerify, post.signature.signature)
 ```
+
+### Pubsub message types
+
+```
+PubsubMessage: {
+  type: 'CHALLENGEREQUEST' | 'CHALLENGE' | 'CHALLENGEANSWER' | 'CHALLENGEVERIFICATION'
+}
+ChallengeRequestMessage (sent by post author) {
+  ...PubsubMessage,
+  challengeRequestId: string // random string choosen by sender
+  post: Post, // include the post so the nodes and subplebbit owner can blacklist it outright
+}
+ChallengeMessage (sent by subplebbit owner) {
+  challengeRequestId: string,
+  challenge: Challenge
+}
+ChallengeAnswerMessage (sent by post author) {
+  challengeRequestId: string,
+  challengeAnswerId: string // random string choosen by sender
+}
+ChallengeVerificationMessage (sent by subplebbit owner) {
+  challengeRequestId: string, // include in verification in case a peer is missing it
+  challengeAnswerId: string // include in verification in case a peer is missing it
+}
+Challenge {
+  type: 'captcha1', // will be dozens of challenge types, like holding a certain amount of a token
+  challenge: buffer // data required to complete the challenge, could be html, png, etc.
+}
+```
