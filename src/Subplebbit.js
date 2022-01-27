@@ -1,9 +1,10 @@
-import Post from "./Post.js";
+import Post, {PostIPNS} from "./Post.js";
+import Comment from "./Comment.js";
 import last from "it-last";
 import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
 import EventEmitter from "events";
 
-class Subplebbit extends EventEmitter{
+class Subplebbit extends EventEmitter {
     constructor(props, plebbit) {
         super();
         this.#initSubplebbit(props);
@@ -77,20 +78,44 @@ class Subplebbit extends EventEmitter{
         await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
     }
 
+    async #updateSubplebbitPosts(post) {
+        const newSubplebbitOptions = {
+            "preloadedPosts": [post, ...this.preloadedPosts],
+            "latestPostCid": post.cid
+        }
+        await this.update(newSubplebbitOptions);
+        this.emit("post", post);
+    }
+
+    async #updatePostComments(comment) {
+        // TODO Check if comment is already added
+        await comment.fetchParentPostOrComment();
+        await comment.parentPostOrComment.fetchPostIpns();
+        const newPostIpns = new PostIPNS({
+            ...comment.parentPostOrComment.postIpns?.toJSON(),
+            "latestCommentCid": comment.cid,
+            "preloadedComments": [comment, ...comment.parentPostOrComment.postIpns?.preloadedComments],
+        });
+        await comment.parentPostOrComment.updatePostIpns(newPostIpns);
+        this.emit("comment", comment);
+    }
+
+
     async startPublishing() {
         const processPubsub = async (pubsubMsg) => {
-            const post = new Post(JSON.parse(uint8ArrayToString(pubsubMsg["data"])));
-            post.setSubplebbit(this);
-            post.setPreviousPostCid(this.latestPostCid);
-            this.plebbit.ipfsClient.add(JSON.stringify(post)).then(async file => {
-                post.setCid(file["cid"]);
-                const newSubplebbitOptions = {
-                    "preloadedPosts": [post, ...this.preloadedPosts],
-                    "latestPostCid": post.cid
-                }
-                await this.update(newSubplebbitOptions);
-                this.emit("post", post);
-            }).catch(err => console.error(`Failed to publish post: ${post}`));
+            const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]))
+            const postOrComment = msgParsed["parentPostOrCommentCid"] ? new Comment(msgParsed, this.plebbit, null) : new Post(msgParsed, this.plebbit, this);
+            postOrComment.setSubplebbit(this);
+            if (postOrComment.isPost())
+                postOrComment.setPreviousPostCid(this.latestPostCid);
+            this.plebbit.ipfsClient.add(JSON.stringify(postOrComment)).then(async file => {
+                postOrComment.setCid(file["cid"]);
+                if (postOrComment.isPost())
+                    await this.#updateSubplebbitPosts(postOrComment);
+                else
+                    await this.#updatePostComments(postOrComment);
+
+            }).catch(err => console.error(`Failed to publish post or comment: ${postOrComment}\nError:${err}`));
         };
 
         await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, processPubsub);
