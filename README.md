@@ -8,40 +8,52 @@
 - Pubsub topic: the string to publish/subscribe to in the pubsub https://github.com/ipfs/js-ipfs/blob/master/docs/core-api/PUBSUB.md#ipfspubsubsubscribetopic-handler-options and https://github.com/libp2p/specs/blob/master/pubsub/gossipsub/gossipsub-v1.0.md#topic-membership
 - IPNS record: https://github.com/ipfs/specs/blob/master/IPNS.md#ipns-record
 - IPNS signature: https://github.com/ipfs/notes/issues/249
+- Examples of how to sign: https://github.com/plebbit/whitepaper/blob/main/signature-examples/sign.js
 
 Note: IPFS files are immutable, fetched by their CID, which is a hash of their content. IPNS records are mutable, fetched by their IPNS name, which is the hash of a public key. The private key's owner can update the content. Always use IPFS files over IPNS records when possible because they are much faster to fetch.
 
 ### Data:
 
 ```
-Post (IPFS file): {
-  subplebbitIpnsName: string, // required to prevent malicious subplebbits republishing as original
+Publication: {
   author: Author,
+  timestamp: number,
+  signature: Signature // sign immutable fields like author, title, content, timestamp to prevent tampering
+}
+Post (IPFS file): {
+  ...Publication,
+  subplebbitIpnsName: string, // required to prevent malicious subplebbits republishing as original
   title: string,
   content: string,
-  timestamp: number,
   previousPostCid: string, // each post is a linked list
-  postIpnsName: string, // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
-  signature: string, // sign immutable fields like author, title, content, timestamp to prevent tampering
+  postOrCommentIpnsName: string // each post/comment needs its own IPNS record for its mutable data like edits, vote counts, comments
 }
-PostIPNS (IPNS record): {
-  latestCommentCid: string, // the most recent comment in the linked list of posts
-  preloadedComments: Comment[] // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include preloaded nested comments and vote counts
-  upvoteCount: number,
-  downvoteCount: number
-}
-Comment extends Post (IPFS file): {
-  parentPostOrCommentCid: string // comment is same as a post but has a parent
+Comment (IPFS file): {
+  ...Publication,
+  parentPostOrCommentCid: string, // comment is same as a post but has a parent and no title
+  content: string,
+  previousCommentCid: string, // each post is a linked list
+  postOrCommentIpnsName: string // each post/comment needs its own IPNS record for its mutable data like edits, vote counts, comments
 }
 Vote {
+  ...Publication,
   postOrCommentCid: string,
-  author: Author, // need author in case the subplebbit owner uses users reputation for filtering votes
-  type: 'upvote' || 'downvote',
-  signature: string // we need a signature to prove the author is the author
+  vote: 1 | -1 | 0 // 0 is needed to cancel a vote
+}
+PostOrCommentIpns (IPNS record): {
+  latestCommentCid: string, // the most recent comment in the linked list of posts
+  preloadedComments: Comment[], // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include preloaded nested comments and vote counts
+  upvoteCount: number,
+  downvoteCount: number
 }
 Author {
   displayName: string,
   ipnsName: string
+}
+Signature {
+  signature: string, // data in base64
+  publicKey: buffer, // include public key (marshalled, like IPNS does it) because the IPNS name is just a hash of it
+  type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
 }
 Subplebbit (IPNS record): {
   title: string,
@@ -49,7 +61,7 @@ Subplebbit (IPNS record): {
   moderatorsIpnsNames: string[],
   latestPostCid: string, // the most recent post in the linked list of posts
   preloadedPosts: Post[], // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include some preloaded comments for each post as well and vote counts
-  pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
+  pubsubTopic: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
 }
 ```
 
@@ -109,4 +121,66 @@ subplebbit.update({
 })
 subplebbit.on('post', (post) => console.log(post))
 subplebbit.start()
+```
+### Message signature types:
+
+- 'plebbit1':
+
+```javascript
+const libp2pCrypto = require('libp2p-crypto')
+const cborg = require('cborg')
+const PeerId = require('peer-id')
+
+const encryptedPemPassword = ''
+const rsaInstance = await libp2pCrypto.keys.import(privateKeyPemString, encryptedPemPassword)
+
+const messageToSign = cborg.encode({subplebbitIpnsName, author, title, content, timestamp}) // use cborg to stringify deterministically instead of JSON.stringify
+const rsaInstanceSignature = await rsaInstance.sign(messageToSign)
+
+// can also be done in node (but not browser compatible)
+require('crypto').sign('sha256', messageToSign, privateKeyPemString)
+
+// to get marshalled (serialized) public key for signature.publicKey field
+signature.publicKey = rsaInstance.public.marshal()
+// or
+signature.publicKey = libp2pCrypto.keys.marshalPublicKey(rsaInstance.public, 'RSA')
+
+// to verify a signed post
+const post = {/* ...some post */}
+const postToVerify = cborg.encode({subplebbitIpnsName: post.subplebbitIpnsName, author: post.author, title: post.title, content: post.content, timestamp: post.timestamp})
+const rsaPublicKeyInstance = (await PeerId.createFromPubKey(post.signature.publicKey)).pubKey
+const signatureIsValid = await rsaPublicKeyInstance.verify(postToVerify, post.signature.signature)
+```
+
+### Pubsub message types
+
+```
+PubsubMessage: {
+  type: 'CHALLENGEREQUEST' | 'CHALLENGE' | 'CHALLENGEANSWER' | 'CHALLENGEVERIFICATION'
+}
+ChallengeRequestMessage (sent by post author) {
+  ...PubsubMessage,
+  challengeRequestId: string, // random string choosen by sender
+  acceptedChallengeTypes: string[], // list of challenge types the client can do, for example cli clients or old clients won't do all types
+  publication: Publication // include the post so the nodes and subplebbit owner can blacklist it outright
+}
+ChallengeMessage (sent by subplebbit owner) {
+  challengeRequestId: string,
+  challenge: Challenge
+}
+ChallengeAnswerMessage (sent by post author) {
+  challengeRequestId: string,
+  challengeAnswerId: string, // random string choosen by sender
+  challengeAnswer: string // for example 2+2=4
+}
+ChallengeVerificationMessage (sent by subplebbit owner) {
+  challengeRequestId: string, // include in verification in case a peer is missing it
+  challengeAnswerId: string, // include in verification in case a peer is missing it
+  challengeAnswerIsVerified: bool,
+  reason: string // reason for failed verification, for example post content is too long. could also be used for successful verification that bypass the challenge, for example because an author has good history
+}
+Challenge {
+  type: 'captcha1', // will be dozens of challenge types, like holding a certain amount of a token
+  challenge: buffer // data required to complete the challenge, could be html, png, etc.
+}
 ```
