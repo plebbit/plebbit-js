@@ -160,8 +160,9 @@ PubsubMessage: {
 }
 ChallengeRequestMessage (sent by post author) {
   ...PubsubMessage,
-  challengeRequestId: string // random string choosen by sender
-  post: Post, // include the post so the nodes and subplebbit owner can blacklist it outright
+  challengeRequestId: string, // random string choosen by sender
+  acceptedChallengeTypes: string[], // list of challenge types the client can do, for example cli clients or old clients won't do all types
+  publication: Publication // include the post so the nodes and subplebbit owner can blacklist it outright
 }
 ChallengeMessage (sent by subplebbit owner) {
   challengeRequestId: string,
