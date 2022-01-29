@@ -131,48 +131,17 @@ Challenge {
 
 - [Plebbit API](#plebbit-api)
   - [`Plebbit(options)`](#plebbitoptions)
-    - [Parameters](#parameters)
-      - [object](#options)
-    - [Returns](#returns)
-    - [Example](#example)
   - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
-    - [Parameters](#parameters)
-      - string
-    - [Returns](#returns)
-    - [Example](#example)
   - [`plebbit.getSubplebbit(subplebbitIpnsName)`](#plebbitgetsubplebbitsubplebbitipnsname)
-    - [Parameters](#parameters)
-      - string
-    - [Returns](#returns)
-    - [Example](#example)
   - [`plebbit.publishComment(comment)`](#plebbitpublishcommentcomment)
-    - [Parameters](#parameters)
-      - [object](#comment)
-    - [Returns](#returns)
-    - [Example](#example)
   - [`plebbit.publishVote(vote)`](#plebbitpublishvotevote)
-    - [Parameters](#parameters)
-      - [object](#vote)
-    - [Returns](#returns)
-    - [Example](#example)
 - [Subplebbit API](#subplebbit-api)
   - [`Subplebbit(options)`](#subplebbitoptions)
-    - [Parameters](#parameters)
-      - [object](#options)
-    - [Returns](#returns)
-    - [Example](#example)
   - [`subplebbit.update(subplebbit)`](#subplebbitupdatesubplebbit)
-    - [Parameters](#parameters)
-      - [object](#subplebbit)
-    - [Returns](#returns)
-    - [Example](#example)
   - [`subplebbit.start()`](#subplebbitstart)
-    - [Example](#example)
   - [`subplebbit.stop()`](#subplebbitstop)
 - [Subplebbit Events](#subplebbit-events)
   - [`post`](#post)
-    - [Emits](#emits)
-    - [Example](#example)
 
 ## Plebbit API
 The plebbit API for reading and writing to and from subplebbits.
@@ -222,7 +191,7 @@ plebbit.setIpfsGatewayUrl('http://localhost:8080') // should be able to change o
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| commentCid | string | the IPFS CID of the comment |
+| commentCid | `string` | the IPFS CID of the comment |
 
 #### Returns
 
@@ -277,7 +246,7 @@ Prints:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| subplebbitIpnsName | string | the IPNS name of the subplebbit |
+| subplebbitIpnsName | `string` | the IPNS name of the subplebbit |
 
 #### Returns
 
@@ -330,7 +299,7 @@ Prints:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| comment | Comment | the comment to publish |
+| comment | `Comment` | the comment to publish |
 
 ##### Comment
 
@@ -339,17 +308,17 @@ An object which may have the following keys:
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | subplebbitIpnsName | `string` | IPNS name of the subplebbit |
-| postCid | `string | null` | The post CID, null if comment is a post |
-| parentCommentCid | `string | null` | The parent comment CID, null if comment is a post, same as postCid if comment is top level |
+| postCid | `string` or `null` | The post CID, null if comment is a post |
+| parentCommentCid | `string` or `null` | The parent comment CID, null if comment is a post, same as postCid if comment is top level |
 | content | `string` | Content of the comment |
-| timestamp | `number | null` | Time of publishing in ms, `Date.now()` if null |
+| timestamp | `number` or `null` | Time of publishing in ms, `Date.now()` if null |
 | author | `Author` | Author of the comment |
 
 #### Returns
 
 | Type | Description |
 | -------- | -------- |
-| `Promise<PublishCommentResponse>` | TODO |
+| `Promise<PublishCommentResponse>` | The publish comment response |
 
 Object is of the form:
 
@@ -371,7 +340,7 @@ Object is of the form:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| vote | Vote | the vote to publish |
+| vote | `Vote` | the vote to publish |
 
 ##### Vote
 
@@ -381,15 +350,15 @@ An object which may have the following keys:
 | ---- | ---- | ----------- |
 | subplebbitIpnsName | `string` | IPNS name of the subplebbit |
 | commentCid | `string` | The comment or post to vote on |
-| timestamp | `number | null` | Time of publishing in ms, `Date.now()` if null |
+| timestamp | `number` or `null` | Time of publishing in ms, `Date.now()` if null |
 | author | `Author` | Author of the comment, will be needed for voting with NFTs or tokens |
-| vote | `1 | 0 | -1` | 0 is for resetting a vote |
+| vote | `1` or `0` or `-1` | 0 is for resetting a vote |
 
 #### Returns
 
 | Type | Description |
 | -------- | -------- |
-| `Promise<PublishVoteResponse>` | TODO |
+| `Promise<PublishVoteResponse>` | The publish vote response |
 
 Object is of the form:
 
@@ -414,7 +383,7 @@ The subplebbit API for creating, updating and running subplebbits.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| options | object | Options for the subplebbit instance |
+| options | `object` | Options for the subplebbit instance |
 
 ##### Options
 
@@ -459,7 +428,7 @@ subplebbit.start()
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| subplebbit | Subplebbit | the content of the subplebbit |
+| subplebbit | `Subplebbit` | the content of the subplebbit |
 
 ##### Subplebbit
 
@@ -478,7 +447,7 @@ An object which may have the following keys:
 
 | Type | Description |
 | -------- | -------- |
-| `Promise<SubplebbitUpdateResponse>` | TODO |
+| `Promise<SubplebbitUpdateResponse>` | The update subplebbit response |
 
 Object is of the form:
 
