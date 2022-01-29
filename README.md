@@ -36,7 +36,7 @@ Post (IPFS file): {
 }
 Vote {
   ...Publication,
-  postOrCommentCid: string,
+  commentCid: string,
   vote: 1 | -1 | 0 // 0 is needed to cancel a vote
 }
 CommentIpns (IPNS record): {
