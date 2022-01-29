@@ -1,7 +1,7 @@
 class Author {
     constructor(props) {
         this.displayName = props["displayName"];
-        this.ipnsId = props["ipnsId"];
+        this.ipnsKeyId = props["ipnsKeyId"];
     }
 }
 

@@ -33,13 +33,11 @@ class Plebbit {
     async getPostOrComment(cid) {
         return new Promise(async (resolve, reject) => {
             loadIpfsFileAsJson(cid, this.ipfsClient).then(async jsonFile => {
-                if (jsonFile["parentPostOrCommentCid"]) {
-                    const parentPostOrComment = await this.getPostOrComment(jsonFile["parentPostOrCommentCid"]);
-                    resolve(new Comment({...jsonFile, "cid": cid}, this, parentPostOrComment));
-                } else {
-                    const subplebbit = await this.getSubplebbit(jsonFile["subplebbitIpnsId"]);
-                    resolve(new Post({...jsonFile, "cid": cid}, this, subplebbit));
-                }
+                const subplebbit = await this.getSubplebbit(jsonFile["subplebbitIpnsKeyId"]);
+                if (jsonFile["title"])
+                    resolve(new Post({...jsonFile, "postCid": cid}, this, subplebbit));
+                else
+                    resolve(new Comment({...jsonFile, "commentCid": cid}, this, subplebbit));
             }).catch(reject);
         });
     }

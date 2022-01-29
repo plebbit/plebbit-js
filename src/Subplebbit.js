@@ -1,8 +1,9 @@
-import Post, {PostIPNS} from "./Post.js";
-import Comment from "./Comment.js";
+import Post from "./Post.js";
+import Comment, {CommentIPNS} from "./Comment.js";
 import last from "it-last";
 import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
 import EventEmitter from "events";
+import {sha256} from "js-sha256";
 
 class Subplebbit extends EventEmitter {
     constructor(props, plebbit) {
@@ -81,7 +82,7 @@ class Subplebbit extends EventEmitter {
     async #updateSubplebbitPosts(post) {
         const newSubplebbitOptions = {
             "preloadedPosts": [post, ...this.preloadedPosts],
-            "latestPostCid": post.cid
+            "latestPostCid": post.postCid
         }
         await this.update(newSubplebbitOptions);
         this.emit("post", post);
@@ -89,31 +90,49 @@ class Subplebbit extends EventEmitter {
 
     async #updatePostComments(comment) {
         // TODO Check if comment is already added
-        await comment.fetchParentPostOrComment();
-        await comment.parentPostOrComment.fetchPostIpns();
-        const newPostIpns = new PostIPNS({
-            ...comment.parentPostOrComment.postIpns?.toJSON(),
-            "latestCommentCid": comment.cid,
-            "preloadedComments": [comment, ...comment.parentPostOrComment.postIpns?.preloadedComments],
+        if (comment.isParentComment()) {
+            await comment.fetchParentComment();
+            await comment.parentComment.fetchCommentIpns();
+        } else {
+            await comment.fetchParentPost();
+            await comment.parentPost.fetchCommentIpns();
+        }
+        const newCommentIpns = new CommentIPNS({
+            ...(comment.parentPost?.commentIpns?.toJSON() || comment.parentComment?.commentIpns?.toJSON()),
+            "latestCommentCid": comment.commentCid,
+            "preloadedComments": [comment, ...(comment.parentPost?.commentIpns?.preloadedComments || comment.parentComment?.commentIpns?.preloadedComments)],
         });
-        await comment.parentPostOrComment.updatePostIpns(newPostIpns);
+        if (comment.isParentComment())
+            await comment.parentComment.updateCommentIpns(newCommentIpns);
+        else
+            await comment.parentPost.updateCommentIpns(newCommentIpns)
         this.emit("comment", comment);
     }
 
 
     async startPublishing() {
         const processPubsub = async (pubsubMsg) => {
+            //TODO check if post has been posted before
             const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]))
-            const postOrComment = msgParsed["parentPostOrCommentCid"] ? new Comment(msgParsed, this.plebbit, null) : new Post(msgParsed, this.plebbit, this);
-            postOrComment.setSubplebbit(this);
+            const postOrComment = msgParsed["title"] ? new Post(msgParsed, this.plebbit, this): new Comment(msgParsed, this.plebbit, this) ;
             if (postOrComment.isPost())
                 postOrComment.setPreviousPostCid(this.latestPostCid);
+
+            const keyName = sha256(JSON.stringify(msgParsed));
+
+            postOrComment.setCommentIpnsKey(await this.plebbit.ipfsClient.key.gen(keyName));
+            if (postOrComment.isPost())
+                await postOrComment.updateCommentIpns(new CommentIPNS({}));
+
             this.plebbit.ipfsClient.add(JSON.stringify(postOrComment)).then(async file => {
-                postOrComment.setCid(file["cid"]);
-                if (postOrComment.isPost())
+                if (postOrComment.isPost()) {
+                    postOrComment.setPostCid(file["cid"]);
                     await this.#updateSubplebbitPosts(postOrComment);
-                else
+                } else {
+                    // Comment
+                    postOrComment.setCommentCid(file["cid"]);
                     await this.#updatePostComments(postOrComment);
+                }
 
             }).catch(err => console.error(`Failed to publish post or comment: ${postOrComment}\nError:${err}`));
         };
