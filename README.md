@@ -12,7 +12,7 @@
 
 Note: IPFS files are immutable, fetched by their CID, which is a hash of their content. IPNS records are mutable, fetched by their IPNS name, which is the hash of a public key. The private key's owner can update the content. Always use IPFS files over IPNS records when possible because they are much faster to fetch.
 
-### Data:
+### Schema:
 
 ```
 Publication: {
@@ -31,7 +31,7 @@ Post (IPFS file): {
   ...Comment,
   parentCommentCid: null, // post is same as comment but has no parent and some extra fields
   subplebbitIpnsName: string, // required to prevent malicious subplebbits republishing as original
-  title: string,
+  title: string
 }
 Vote {
   ...Publication,
