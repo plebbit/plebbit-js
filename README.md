@@ -64,63 +64,6 @@ Subplebbit (IPNS record): {
 }
 ```
 
-### Plebbit Read API:
-
-- getPost(postCid)
-- getSubplebbit(subplebbitIpnsName)
-- getComment(commentCid)
-
-Each response should include the content received (preloaded content) and a method to scroll the entire linked list of posts/comments.
-
-### Plebbit Write API:
-
-- publishPost(post)
-- publishComment(comment)
-- publishVote(vote)
-
-### Plebbit Usage:
-
-```javascript
-const Plebbit = require('@plebbit/plebbit-js')
-const options = {
-  ipfsGatewayUrl: 'https://cloudflare-ipfs/ipfs/',
-  ipfsApiUrl: 'http://localhost:5001',
-}
-const plebbit = Plebbit(options) // should be independent instance, not singleton
-plebbit.setIpfsGatewayUrl('http://localhost:8080') // should be able to change options after instanciation
-
-const postCid = 'QmbWqxBEKC3P8tqsKc98xmWNzrzDtRLMiMPL8wBuTGsMnR'
-const post = await plebbit.getPost(postCid)
-```
-
-### Subplebbit API:
-
-- update() // publish new posts or update subplebbit details
-- start() // start listening for new posts on the pubsub and publish them every 5 minutes
-- stop()
-
-### Subplebbit events:
-
-- 'post'
-
-### Subplebbit Usage:
-
-```javascript
-const {Subplebbit} = require('@plebbit/plebbit-js')
-const options = {
-  ipfsGatewayUrl: 'https://cloudflare-ipfs/ipfs/',
-  ipfsApiUrl: 'http://localhost:5001',
-  subplebbitIpnsName: 'Qmb...'
-}
-const subplebbit = Subplebbit(options) // should be independent instance, not singleton
-subplebbit.update({
-  title: 'Memes',
-  description: 'Post your memes here.',
-  pubsubTopic: 'Qmb...'
-})
-subplebbit.on('post', (post) => console.log(post))
-subplebbit.start()
-```
 ### Message signature types:
 
 - 'plebbit1':
@@ -182,4 +125,422 @@ Challenge {
   type: 'captcha1', // will be dozens of challenge types, like holding a certain amount of a token
   challenge: buffer // data required to complete the challenge, could be html, png, etc.
 }
+```
+
+# API
+
+- [Plebbit API](#plebbit-api)
+  - [`Plebbit(options)`](#plebbitoptions)
+    - [Parameters](#parameters)
+      - [object](#options)
+    - [Returns](#returns)
+    - [Example](#example)
+  - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
+    - [Parameters](#parameters)
+      - string
+    - [Returns](#returns)
+    - [Example](#example)
+  - [`plebbit.getSubplebbit(subplebbitIpnsName)`](#plebbitgetsubplebbitsubplebbitipnsname)
+    - [Parameters](#parameters)
+      - string
+    - [Returns](#returns)
+    - [Example](#example)
+  - [`plebbit.publishComment(comment)`](#plebbitpublishcommentcomment)
+    - [Parameters](#parameters)
+      - [object](#comment)
+    - [Returns](#returns)
+    - [Example](#example)
+  - [`plebbit.publishVote(vote)`](#plebbitpublishvotevote)
+    - [Parameters](#parameters)
+      - [object](#vote)
+    - [Returns](#returns)
+    - [Example](#example)
+- [Subplebbit API](#subplebbit-api)
+  - [`Subplebbit(options)`](#subplebbitoptions)
+    - [Parameters](#parameters)
+      - [object](#options)
+    - [Returns](#returns)
+    - [Example](#example)
+  - [`subplebbit.update(subplebbit)`](#subplebbitupdatesubplebbit)
+    - [Parameters](#parameters)
+      - [object](#subplebbit)
+    - [Returns](#returns)
+    - [Example](#example)
+  - [`subplebbit.start()`](#subplebbitstart)
+    - [Example](#example)
+  - [`subplebbit.stop()`](#subplebbitstop)
+- [Subplebbit Events](#subplebbit-events)
+  - [`post`](#post)
+    - [Emits](#emits)
+    - [Example](#example)
+
+## Plebbit API
+The plebbit API for reading and writing to and from subplebbits.
+
+### `Plebbit(options)`
+
+> Create a plebbit instance.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| options | object | Options for the plebbit instance |
+
+##### Options
+
+An object which may have the following keys:
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs/ipfs/'` | URL of an IPFS gateway |
+| ipfsApiUrl | `string` | `'http://localhost:8080'` | URL of an IPFS API |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Plebbit` | A plebbit instance |
+
+#### Example
+
+```js
+const Plebbit = require('@plebbit/plebbit-js')
+const options = {
+  ipfsGatewayUrl: 'https://cloudflare-ipfs/ipfs/',
+  ipfsApiUrl: 'http://localhost:5001',
+}
+const plebbit = Plebbit(options) // should be independent instance, not singleton
+plebbit.setIpfsGatewayUrl('http://localhost:8080') // should be able to change options after instanciation
+```
+
+### `plebbit.getComment(commentCid)`
+
+> Get a plebbit comment by its IPFS CID. Posts are also comments.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| commentCid | string | the IPFS CID of the comment |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<GetCommentResponse>` | A object with comment data |
+
+Object is of the form:
+
+```js
+{
+  author: Author,
+  timestamp: number,
+  signature: Signature,
+  postCid: string,
+  getPost: function, // if comment is a post, it gets itself
+  parentCommentCid: string || null, // post don't have parent cids
+  subplebbitIpnsName: string,
+  getSubplebbit: function,
+  title: string || null, // comments don't have titles
+  content: string,
+  previousCommentCid: string,
+  getPreviousComment: function,
+  commentIpnsName: string,
+  getCommentIpns: function
+}
+```
+
+#### Example
+
+```js
+const commentCid = 'QmbWqx...'
+const comment = await plebbit.getComment(commentCid)
+console.log('comment:', comment)
+if (comment.parentCommentCid) { // comment with no parent cid is a post
+  comment.getPost(post => console.log('post:', post))
+}
+comment.getCommentIpns().then(commentIpns => console.log('commentIpns:', commentIpns))
+comment.getSubplebbit().then(subplebbit => console.log('subplebbit:', subplebbit))
+comment.getPreviousComment().then(previousComment => console.log('previousComment:', previousPost))
+/*
+Prints:
+{ ...TODO }
+*/
+```
+
+### `plebbit.getSubplebbit(subplebbitIpnsName)`
+
+> Get a subplebbit comment by its IPNS name.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| subplebbitIpnsName | string | the IPNS name of the subplebbit |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<GetSubplebbitResponse>` | A object with subplebbit data |
+
+Object is of the form:
+
+```js
+{
+  subplebbitIpnsName: string,
+  title: string,
+  description: string,
+  moderatorsIpnsNames: string[],
+  latestPostCid: string,
+  preloadedPosts: Post[],
+  pubsubTopic: string
+}
+```
+
+#### Example
+
+```js
+const subplebbitIpnsName = 'QmbWqx...'
+const subplebbit = await plebbit.getSubplebbit(subplebbitIpnsName)
+console.log(subplebbit)
+
+let currentPostCid = subplebbit.latestPostCid
+const scrollAllSubplebbitPosts = async () => {
+  while (currentPostCid) {
+    const post = await plebbit.getComment(currentPostCid)
+    console.log(post)
+    currentPostCid = post.previousPostCid
+  }
+  console.log('there are no more posts')
+}
+scrollAllSubplebbitPosts()
+/*
+Prints:
+{ ...TODO }
+*/
+```
+
+### `plebbit.publishComment(comment)`
+
+> Publish a comment on a subplebbit. Posts are also comments.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| comment | Comment | the comment to publish |
+
+##### Comment
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| subplebbitIpnsName | `string` | IPNS name of the subplebbit |
+| postCid | `string | null` | The post CID, null if comment is a post |
+| parentCommentCid | `string | null` | The parent comment CID, null if comment is a post, same as postCid if comment is top level |
+| content | `string` | Content of the comment |
+| timestamp | `number | null` | Time of publishing in ms, `Date.now()` if null |
+| author | `Author` | Author of the comment |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<PublishCommentResponse>` | TODO |
+
+Object is of the form:
+
+```js
+{ // ...TODO }
+```
+
+#### Example
+
+```js
+// TODO
+```
+
+### `plebbit.publishVote(vote)`
+
+> Publish a vote on a comment or post.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| vote | Vote | the vote to publish |
+
+##### Vote
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| subplebbitIpnsName | `string` | IPNS name of the subplebbit |
+| commentCid | `string` | The comment or post to vote on |
+| timestamp | `number | null` | Time of publishing in ms, `Date.now()` if null |
+| author | `Author` | Author of the comment, will be needed for voting with NFTs or tokens |
+| vote | `1 | 0 | -1` | 0 is for resetting a vote |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<PublishVoteResponse>` | TODO |
+
+Object is of the form:
+
+```js
+{ // ...TODO }
+```
+
+#### Example
+
+```js
+// TODO
+```
+
+## Subplebbit API
+The subplebbit API for creating, updating and running subplebbits.
+
+### `Subplebbit(options)`
+
+> Create a subplebbit instance.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| options | object | Options for the subplebbit instance |
+
+##### Options
+
+An object which may have the following keys:
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| subplebbitIpnsName | `string` | `undefined` | IPNS name of the subplebbit |
+| ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs/ipfs/'` | URL of an IPFS gateway |
+| ipfsApiUrl | `string` | `'http://localhost:8080'` | URL of an IPFS API |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Subplebbit` | A subplebbit instance |
+
+#### Example
+
+```js
+const {Subplebbit} = require('@plebbit/plebbit-js')
+const options = {
+  ipfsGatewayUrl: 'https://cloudflare-ipfs/ipfs/',
+  ipfsApiUrl: 'http://localhost:5001',
+  subplebbitIpnsName: 'Qmb...'
+}
+const subplebbit = Subplebbit(options) // should be independent instance, not singleton
+subplebbit.update({
+  title: 'Memes',
+  description: 'Post your memes here.',
+  pubsubTopic: 'Qmb...'
+})
+subplebbit.on('post', (post) => console.log(post))
+subplebbit.start()
+```
+
+### `subplebbit.update(subplebbit)`
+
+> Update the content of a subplebbit.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| subplebbit | Subplebbit | the content of the subplebbit |
+
+##### Subplebbit
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| title | `string` | title of the subplebbit |
+| description | `string` | description of the subplebbit |
+| moderatorsIpnsNames | `string[]` | IPNS names of the moderators |
+| latestPostCid | `string` | the most recent post in the linked list of posts |
+| preloadedPosts | `Post[]` | preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include some preloaded comments for each post as well and vote counts |
+| pubsubTopic | `string` | the string to publish to in the pubsub, a public key of the subplebbit owner's choice |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<SubplebbitUpdateResponse>` | TODO |
+
+Object is of the form:
+
+```js
+{ // ...TODO }
+```
+
+#### Example
+
+```js
+// TODO
+```
+
+### `subplebbit.start()`
+
+> Start listening for new posts on the pubsub, and publishing them every 5 minutes.
+
+#### Example
+
+```js
+const options = {
+  ipfsGatewayUrl: 'https://cloudflare-ipfs/ipfs/',
+  ipfsApiUrl: 'http://localhost:5001',
+  subplebbitIpnsName: 'Qmb...'
+}
+const subplebbit = Subplebbit(options)
+subplebbit.on('post', (post) => console.log(post))
+subplebbit.start()
+```
+
+### `subplebbit.stop()`
+
+> Stop listening for new posts on the pubsub, and stop publishing them every 5 minutes.
+
+## Subplebbit Events
+The subplebbit events.
+
+### `post`
+
+> A new post is published.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `Post` | The published post |
+
+Object is of the form:
+
+```js
+{ // ...TODO }
+```
+
+#### Example
+
+```js
+const options = {
+  ipfsGatewayUrl: 'https://cloudflare-ipfs/ipfs/',
+  ipfsApiUrl: 'http://localhost:5001',
+  subplebbitIpnsName: 'Qmb...'
+}
+const subplebbit = Subplebbit(options)
+subplebbit.on('post', (post) => console.log(post))
+subplebbit.start()
 ```
