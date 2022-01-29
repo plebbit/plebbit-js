@@ -24,7 +24,7 @@ describe("Test Plebbit", async () => {
             "commentsIpnsName": "k51qzi5uqu5dk7p7vykf6e0chdc288nmn0vzpzlyg98xazghvlqixquml80iof",
             "nestedCommentHelper": null
         });
-        const loadedPost = await plebbit.getPost(postCid);
+        const loadedPost = await plebbit.getPostOrComment(postCid);
         assert.equal(JSON.stringify(loadedPost), JSON.stringify(expectedPost), "Failed to load test post correctly");
     });
 
@@ -55,7 +55,7 @@ describe("Test Plebbit", async () => {
             "previousCommentCid": null,
             "commentsIpnsName": "k51qzi5uqu5dk7p7vykf6e0chdc288nmn0vzpzlyg98xazghvlqixquml80iof"
         });
-        const loadedComment = await plebbit.getComment(commentCid);
+        const loadedComment = await plebbit.getPostOrComment(commentCid);
         assert.equal(JSON.stringify(loadedComment), JSON.stringify(expectedComment), "Failed to load test comment");
     });
 });

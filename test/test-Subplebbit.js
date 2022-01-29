@@ -14,7 +14,7 @@ const mockPosts = [];
 async function generateMockPost() {
     const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${Date.now()}`);
     return new Post({
-        "author": {"displayName": `Mock Author - ${Date.now()}`, "ipnsId": mockAuthorIpns["id"]},
+        "author": {"displayName": `Mock Author - ${Date.now()}`, "ipnsKeyId": mockAuthorIpns["id"]},
         "title": `Mock Post - ${Date.now()}`, "content": `Mock content - ${Date.now()}`, "timestamp": Date.now(),
     }, plebbit, subplebbit);
 }
@@ -36,9 +36,12 @@ describe("Test Subplebbit", async () => {
     it("Can publish new posts", async function () {
         return new Promise(async (resolve, reject) => {
             const mockPost = await generateMockPost();
-            subplebbit.once('post', (post) => {
+            subplebbit.once('post', async (post) => {
                 assert.equal(post.title, mockPost.title, "Failed to publish correct post");
-                assert.equal(post.cid, subplebbit.latestPostCid, "Failed to update subplebbit latestPostCid");
+                assert.equal(post.postCid, subplebbit.latestPostCid, "Failed to update subplebbit latestPostCid");
+                const loadedPost = await plebbit.getPostOrComment(post.postCid);
+                assert.equal(JSON.stringify(loadedPost), JSON.stringify(post), "Downloaded post is missing info");
+
                 mockPosts.push(post);
                 resolve();
             });
@@ -51,7 +54,7 @@ describe("Test Subplebbit", async () => {
         return new Promise(async (resolve, reject) => {
             const secondMockPost = await generateMockPost();
             subplebbit.once("post", (post) => {
-                assert.equal(JSON.stringify(post.previousPostCid), JSON.stringify(mockPosts[0].cid), "Failed to set previousPostCid");
+                assert.equal(JSON.stringify(post.previousPostCid), JSON.stringify(mockPosts[0].postCid), "Failed to set previousPostCid");
                 mockPosts.push(post);
                 resolve();
             });
@@ -59,9 +62,4 @@ describe("Test Subplebbit", async () => {
         });
     });
 
-    it("Downloaded post is same as written post", async function (){
-       const actualPost = mockPosts[1];
-       const loadedPost = await plebbit.getPostOrComment(actualPost.cid);
-       assert.equal(JSON.stringify(actualPost), JSON.stringify(loadedPost), "Downloaded post is missing info");
-    });
 });
