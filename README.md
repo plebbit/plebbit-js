@@ -22,15 +22,16 @@ Publication: {
 }
 Comment (IPFS file): {
   ...Publication,
-  parentCommentCid: string,
+  subplebbitIpnsName: string, // required to prevent malicious subplebbits republishing as original and helps faster loading subplebbit info for comment direct linking
+  postCid: string, // helps faster loading post info for comment direct linking
+  parentCommentCid: string, // same as postCid for top level comments
   content: string,
   previousCommentCid: string, // each post is a linked list
   commentIpnsName: string // each post/comment needs its own IPNS record (CommentIpns) for its mutable data like edits, vote counts, comments
 }
 Post (IPFS file): {
   ...Comment,
-  parentCommentCid: null, // post is same as comment but has no parent and some extra fields
-  subplebbitIpnsName: string, // required to prevent malicious subplebbits republishing as original
+  parentCommentCid: null, // post is same as comment but has no parent and some extra fields,
   title: string
 }
 Vote {
