@@ -20,27 +20,25 @@ Publication: {
   timestamp: number,
   signature: Signature // sign immutable fields like author, title, content, timestamp to prevent tampering
 }
-Post (IPFS file): {
-  ...Publication,
-  subplebbitIpnsName: string, // required to prevent malicious subplebbits republishing as original
-  title: string,
-  content: string,
-  previousPostCid: string, // each post is a linked list
-  postOrCommentIpnsName: string // each post/comment needs its own IPNS record for its mutable data like edits, vote counts, comments
-}
 Comment (IPFS file): {
   ...Publication,
-  parentPostOrCommentCid: string, // comment is same as a post but has a parent and no title
+  parentCommentCid: string,
   content: string,
   previousCommentCid: string, // each post is a linked list
-  postOrCommentIpnsName: string // each post/comment needs its own IPNS record for its mutable data like edits, vote counts, comments
+  commentIpnsName: string // each post/comment needs its own IPNS record (CommentIpns) for its mutable data like edits, vote counts, comments
+}
+Post (IPFS file): {
+  ...Comment,
+  parentCommentCid: null, // post is same as comment but has no parent and some extra fields
+  subplebbitIpnsName: string, // required to prevent malicious subplebbits republishing as original
+  title: string,
 }
 Vote {
   ...Publication,
   postOrCommentCid: string,
   vote: 1 | -1 | 0 // 0 is needed to cancel a vote
 }
-PostOrCommentIpns (IPNS record): {
+CommentIpns (IPNS record): {
   latestCommentCid: string, // the most recent comment in the linked list of posts
   preloadedComments: Comment[], // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include preloaded nested comments and vote counts
   upvoteCount: number,
