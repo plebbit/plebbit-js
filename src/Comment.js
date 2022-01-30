@@ -57,7 +57,7 @@ class Comment {
             "postCid": this.postCid?.toString(),
             "commentCid": this.commentCid?.toString(),
             "subplebbitIpnsKeyId": this.subplebbitIpnsKeyId || this.subplebbit?.ipnsKeyId,
-            "parentCommentCid": this.parentCommentCid,
+            "parentCommentCid": this.parentCommentCid?.toString(),
         };
     }
 
