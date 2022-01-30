@@ -106,7 +106,7 @@ class Subplebbit extends EventEmitter {
             const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]))
             const postOrComment = msgParsed["title"] ? new Post(msgParsed, this.plebbit, this) : new Comment(msgParsed, this.plebbit, this);
 
-            postOrComment.setCommentIpnsKey(await this.plebbit.ipfsClient.key.gen(sha256(JSON.stringify(msgParsed))));
+            postOrComment.setCommentIpnsKey(await this.plebbit.ipfsClient.key.gen(sha256(JSON.stringify(postOrComment)).slice(0,20)));
 
             if (postOrComment.getType() === "post") {
                 postOrComment.setPreviousCommentCid(this.latestPostCid);
