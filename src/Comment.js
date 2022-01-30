@@ -36,7 +36,7 @@ class Comment {
         this.content = props["content"];
         this.previousCommentCid = props["previousCommentCid"];
 
-        this.parentPost = this.parentComment = null;
+        this.parent = null;
 
         this.commentIpnsKeyId = props["commentIpnsKeyId"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.commentIpnsKeyName = props["commentIpnsKeyName"];
@@ -57,7 +57,7 @@ class Comment {
             "postCid": this.postCid?.toString(),
             "commentCid": this.commentCid?.toString(),
             "subplebbitIpnsKeyId": this.subplebbitIpnsKeyId || this.subplebbit?.ipnsKeyId,
-            "parentCommentCid": this.parentCommentCid || this.parentComment?.commentCid,
+            "parentCommentCid": this.parentCommentCid,
         };
     }
 
@@ -79,20 +79,15 @@ class Comment {
         this.commentCid = newCommentCid;
     }
 
-    isComment() {
-        return !this.isPost();
+    setPreviousCommentCid(newPreviousCommentCid) {
+        this.previousCommentCid = newPreviousCommentCid;
     }
 
-    isPost() {
-        return this.hasOwnProperty("title");
-    }
-
-    isParentPost() {
-        return this.isComment() && !this.parentCommentCid;
-    }
-
-    isParentComment() {
-        return this.isComment() && this.parentCommentCid;
+    getType() {
+        if (this.hasOwnProperty("title"))
+            return "post";
+        else
+            return "comment";
     }
 
     async publish() {
@@ -106,20 +101,11 @@ class Comment {
 
     }
 
-    async fetchParentPost() {
+    async fetchParent() {
         return new Promise(async (resolve, reject) => {
-            this.plebbit.getPostOrComment(this.postCid).then(res => {
-                this.parentPost = res;
-                resolve(this.parentPost);
-            }).catch(reject);
-        });
-    }
-
-    async fetchParentComment() {
-        return new Promise(async (resolve, reject) => {
-            this.plebbit.getPostOrComment(this.parentCommentCid).then(res => {
-                this.parentComment = res;
-                resolve(this.parentComment);
+            this.plebbit.getPostOrComment(this.parentCommentCid || this.postCid).then(res => {
+                this.parent = res;
+                resolve(this.parent);
             }).catch(reject);
         });
     }
