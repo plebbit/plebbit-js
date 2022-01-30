@@ -108,15 +108,16 @@ class Subplebbit extends EventEmitter {
 
             postOrComment.setCommentIpnsKey(await this.plebbit.ipfsClient.key.gen(sha256(JSON.stringify(postOrComment)).slice(0,20)));
 
-            if (postOrComment.getType() === "post") {
+            if (postOrComment.getType() === "post")
                 postOrComment.setPreviousCommentCid(this.latestPostCid);
-                await postOrComment.updateCommentIpns(new CommentIPNS({}));
-            } else {
+             else {
                 // Comment
                 const parent = await postOrComment.fetchParent();
                 const parentIpns = await parent.fetchCommentIpns();
                 postOrComment.setPreviousCommentCid(parentIpns.latestCommentCid);
             }
+            await postOrComment.updateCommentIpns(new CommentIPNS({}));
+
 
             this.plebbit.ipfsClient.add(JSON.stringify(postOrComment)).then(async file => {
                 if (postOrComment.getType() === "post") {
