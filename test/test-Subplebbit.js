@@ -50,11 +50,11 @@ describe("Test Subplebbit", async () => {
         });
     });
 
-    it("Sets previousPostCid correctly", async function () {
+    it("Sets previousCommentCid correctly", async function () {
         return new Promise(async (resolve, reject) => {
             const secondMockPost = await generateMockPost();
             subplebbit.once("post", (post) => {
-                assert.equal(JSON.stringify(post.previousPostCid), JSON.stringify(mockPosts[0].postCid), "Failed to set previousPostCid");
+                assert.equal(JSON.stringify(post.previousCommentCid), JSON.stringify(mockPosts[0].postCid), "Failed to set previousPostCid");
                 mockPosts.push(post);
                 resolve();
             });
