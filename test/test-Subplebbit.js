@@ -33,6 +33,27 @@ describe("Test Subplebbit", async () => {
         assert.equal(JSON.stringify(loadedSubplebbit), JSON.stringify(subplebbit), "Failed to publish new subplebbit");
     });
 
+    it("Can publish new posts (with captcha)", async function () {
+        return new Promise(async (resolve, reject) => {
+           subplebbit.setProvideCaptchaCallback((challengeWithPost) => {
+               // Return question, type
+               return ["1+1=?", "math-cli"];
+           });
+           subplebbit.setValidateCaptchaAnswerCallback((challengeWithPost) => {
+               const answerIsCorrect = challengeWithPost["challenge"].answer === "2";
+               const reason = answerIsCorrect ? "": "Result of math expression is incorrect";
+               return [answerIsCorrect, reason]
+           });
+            const mockPost = await generateMockPost();
+            await subplebbit.startPublishing();
+            mockPost.publish(null, (challenge) => {
+                // Solve captcha here
+                return "2";
+            }).then(resolve).catch(reject);
+
+        });
+    });
+
     it("Can publish new posts", async function () {
         return new Promise(async (resolve, reject) => {
             const mockPost = await generateMockPost();
