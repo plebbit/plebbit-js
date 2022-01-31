@@ -2,6 +2,10 @@ import Author from "./Author.js";
 import assert from "assert";
 import {loadIpnsAsJson} from "./Util.js";
 import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string'
+import {v4 as uuidv4} from 'uuid';
+import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
+import {Challenge, challengeStages} from "./Challenge.js";
+
 
 class CommentIPNS {
     constructor(props) {
@@ -42,7 +46,7 @@ class Comment {
         this.commentIpnsKeyName = props["commentIpnsKeyName"];
         this.commentIpns = props["commentIPns"];
         this.plebbit = plebbit;
-
+        this.challenge = null;
     }
 
     toJSON() {
@@ -90,14 +94,60 @@ class Comment {
             return "comment";
     }
 
-    async publish() {
-        // TODO check whether post has been added before
-        // Generate new ipns key
-        // Use that key to generate post IPNS
-        // update post IPNS
-        // Publish final Post result over pubsub to be processed by subplebbit owner node
-        const postEncoded = uint8ArrayFromString(JSON.stringify(this));
-        await this.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, postEncoded);
+
+    async publish(userOptions, solveChallengeCallback) {
+        return new Promise(async (resolve, reject) => {
+
+            const options = {"acceptedChallengeTypes": ["image"], ...userOptions};
+            if (!this.challenge || this.challenge?.answerIsVerified)
+                this.challenge = new Challenge({
+                    "requestId": uuidv4(),
+                    "acceptedChallengeTypes": options["acceptedChallengeTypes"],
+                    "stage": challengeStages["CHALLENGEREQUEST"]
+                });
+            // TODO check whether post has been added before
+            const challengeRequest = {
+                "msg": this.toJSON(),
+                "challenge": this.challenge
+            };
+
+            const handleCaptchaVerification = async (pubsubMsg) => {
+                const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
+                msgParsed["challenge"] = this.challenge = new Challenge(msgParsed["challenge"]);
+                if (this.challenge.stage === challengeStages.CHALLENGEVERIFICATION) {
+                    await this.plebbit.ipfsClient.pubsub.unsubscribe(this.challenge.requestId);
+                    await this.plebbit.ipfsClient.pubsub.unsubscribe(this.challenge.answerId);
+                    if (!this.challenge.answerIsVerified) {
+                        console.error(`Failed to solve captcha, reason is: ${this.challenge.failedVerificationReason}`);
+                        this.challenge = null;
+                        reject(msgParsed);
+                    } else
+                        resolve(msgParsed);
+                }
+            };
+
+            const processChallenge = async (pubsubMsg) => {
+                const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
+                // Subplebbit owner node will either answer with CHALLENGE OR CHALLENGE VERIFICATION
+                this.challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
+                if (this.challenge.stage === challengeStages.CHALLENGE) {
+                    // Process CHALLENGE and reply with ChallengeAnswer
+                    const challengeAnswer = solveChallengeCallback(this.challenge);
+                    this.challenge.setAnswer(challengeAnswer);
+                    this.challenge.setStage(challengeStages.CHALLENGEANSWER);
+                    this.challenge.setAnswerId(uuidv4());
+                    msgParsed["challenge"] = this.challenge;
+                    await this.plebbit.ipfsClient.pubsub.subscribe(this.challenge.answerId, handleCaptchaVerification);
+                    await this.plebbit.ipfsClient.pubsub.publish(this.challenge.requestId, uint8ArrayFromString(JSON.stringify(msgParsed)));
+                }
+            };
+
+            await this.plebbit.ipfsClient.pubsub.subscribe(this.challenge.requestId, processChallenge);
+            const postEncoded = uint8ArrayFromString(JSON.stringify(challengeRequest));
+
+            await this.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, postEncoded);
+        });
+
 
     }
 
