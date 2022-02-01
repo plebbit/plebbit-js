@@ -44,7 +44,7 @@ class Comment {
 
         this.commentIpnsKeyId = props["commentIpnsKeyId"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.commentIpnsKeyName = props["commentIpnsKeyName"];
-        this.commentIpns = props["commentIPns"];
+        this.commentIpns = props["commentIpns"];
         this.plebbit = plebbit;
         this.challenge = null;
     }
