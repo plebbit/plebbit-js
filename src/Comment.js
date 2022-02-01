@@ -1,10 +1,7 @@
 import Author from "./Author.js";
 import assert from "assert";
 import {loadIpnsAsJson} from "./Util.js";
-import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string'
-import {v4 as uuidv4} from 'uuid';
-import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
-import {Challenge, challengeStages} from "./Challenge.js";
+import Publication from "./Publication.js";
 
 
 class CommentIPNS {
@@ -23,15 +20,15 @@ class CommentIPNS {
     }
 }
 
-class Comment {
+class Comment extends Publication {
     constructor(props, plebbit, subplebbit) {
         // Publication
+        super(plebbit, subplebbit);
         this.author = new Author(props["author"]);
         this.timestamp = props["timestamp"];
         this.signature = props["signature"];
 
         this.subplebbitIpnsKeyId = props["subplebbitIpnsKeyId"] || subplebbit?.ipnsKeyId;
-        this.subplebbit = subplebbit;
 
 
         this.postCid = props["postCid"];
@@ -45,8 +42,6 @@ class Comment {
         this.commentIpnsKeyId = props["commentIpnsKeyId"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.commentIpnsKeyName = props["commentIpnsKeyName"];
         this.commentIpns = props["commentIpns"];
-        this.plebbit = plebbit;
-        this.challenge = null;
     }
 
     toJSON() {
@@ -65,10 +60,6 @@ class Comment {
         };
     }
 
-    setSubplebbit(newSubplebbit) {
-        this.subplebbit = newSubplebbit;
-    }
-
     setCommentIpnsKey(ipnsKey) {
         // Contains name and id
         this.commentIpnsKeyId = ipnsKey["id"];
@@ -85,74 +76,6 @@ class Comment {
 
     setPreviousCommentCid(newPreviousCommentCid) {
         this.previousCommentCid = newPreviousCommentCid;
-    }
-
-    getType() {
-        if (this.hasOwnProperty("title"))
-            return "post";
-        else
-            return "comment";
-    }
-
-
-    async publish(userOptions, solveChallengeCallback) {
-        return new Promise(async (resolve, reject) => {
-
-            const options = {"acceptedChallengeTypes": [], ...userOptions};
-            if (!this.challenge || this.challenge?.answerIsVerified)
-                this.challenge = new Challenge({
-                    "requestId": uuidv4(),
-                    "acceptedChallengeTypes": options["acceptedChallengeTypes"],
-                    "stage": challengeStages["CHALLENGEREQUEST"]
-                });
-            // TODO check whether post has been added before
-            const challengeRequest = {
-                "msg": this.toJSON(),
-                "challenge": this.challenge
-            };
-
-            const handleCaptchaVerification = async (pubsubMsg) => {
-                const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
-                // Subplebbit owner node will either answer with CHALLENGE OR CHALLENGE VERIFICATION
-                this.challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
-                if (this.challenge.stage === challengeStages.CHALLENGEVERIFICATION) {
-                    await this.plebbit.ipfsClient.pubsub.unsubscribe(this.challenge.requestId, processChallenge);
-                    await this.plebbit.ipfsClient.pubsub.unsubscribe(this.challenge.answerId, handleCaptchaVerification);
-                    if (!this.challenge.answerIsVerified) {
-                        console.error(`Failed to solve captcha, reason is: ${this.challenge.answerVerificationReason}`);
-                        this.challenge = null;
-                        reject(msgParsed);
-                    } else
-                        resolve(msgParsed);
-                }
-            };
-
-            const processChallenge = async (pubsubMsg) => {
-                const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
-                // Subplebbit owner node will either answer with CHALLENGE OR CHALLENGE VERIFICATION
-                this.challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
-                if (this.challenge.stage === challengeStages.CHALLENGE) {
-                    // Process CHALLENGE and reply with ChallengeAnswer
-                    const challengeAnswer = solveChallengeCallback(this.challenge);
-                    this.challenge.setAnswer(challengeAnswer);
-                    this.challenge.setStage(challengeStages.CHALLENGEANSWER);
-                    this.challenge.setAnswerId(uuidv4());
-                    msgParsed["challenge"] = this.challenge;
-                    await this.plebbit.ipfsClient.pubsub.subscribe(this.challenge.answerId, handleCaptchaVerification);
-                    await this.plebbit.ipfsClient.pubsub.publish(this.challenge.requestId, uint8ArrayFromString(JSON.stringify(msgParsed)));
-                }
-                else if (this.challenge.stage === challengeStages.CHALLENGEVERIFICATION)
-                    // If we reach this block that means the subplebbit owner has chosen to skip captcha by returning null on provideCaptchaCallback
-                    handleCaptchaVerification(pubsubMsg).then(resolve).catch(reject);
-            };
-
-            await this.plebbit.ipfsClient.pubsub.subscribe(this.challenge.requestId, processChallenge);
-            const postEncoded = uint8ArrayFromString(JSON.stringify(challengeRequest));
-
-            await this.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, postEncoded);
-        });
-
-
     }
 
     async fetchParent() {
@@ -175,7 +98,7 @@ class Comment {
     }
 
     async updateCommentIpns(newCommentIpns) {
-        assert(this.commentIpnsKeyName && this.commentIpnsKeyId, "You need to have post ipns");
+        assert(this.commentIpnsKeyName && this.commentIpnsKeyId, "You need to have commentIpns");
         this.commentIpns = newCommentIpns;
         return new Promise(async (resolve, reject) => {
             this.plebbit.ipfsClient.add(JSON.stringify(this.commentIpns)).then(file => {
