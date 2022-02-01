@@ -113,10 +113,11 @@ class Comment {
 
             const handleCaptchaVerification = async (pubsubMsg) => {
                 const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
-                msgParsed["challenge"] = this.challenge = new Challenge(msgParsed["challenge"]);
+                // Subplebbit owner node will either answer with CHALLENGE OR CHALLENGE VERIFICATION
+                this.challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
                 if (this.challenge.stage === challengeStages.CHALLENGEVERIFICATION) {
-                    await this.plebbit.ipfsClient.pubsub.unsubscribe(this.challenge.requestId);
-                    await this.plebbit.ipfsClient.pubsub.unsubscribe(this.challenge.answerId);
+                    await this.plebbit.ipfsClient.pubsub.unsubscribe(this.challenge.requestId, processChallenge);
+                    await this.plebbit.ipfsClient.pubsub.unsubscribe(this.challenge.answerId, handleCaptchaVerification);
                     if (!this.challenge.answerIsVerified) {
                         console.error(`Failed to solve captcha, reason is: ${this.challenge.answerVerificationReason}`);
                         this.challenge = null;
@@ -140,6 +141,9 @@ class Comment {
                     await this.plebbit.ipfsClient.pubsub.subscribe(this.challenge.answerId, handleCaptchaVerification);
                     await this.plebbit.ipfsClient.pubsub.publish(this.challenge.requestId, uint8ArrayFromString(JSON.stringify(msgParsed)));
                 }
+                else if (this.challenge.stage === challengeStages.CHALLENGEVERIFICATION)
+                    // If we reach this block that means the subplebbit owner has chosen to skip captcha by returning null on provideCaptchaCallback
+                    handleCaptchaVerification(pubsubMsg).then(resolve).catch(reject);
             };
 
             await this.plebbit.ipfsClient.pubsub.subscribe(this.challenge.requestId, processChallenge);

@@ -143,6 +143,11 @@ class Subplebbit extends EventEmitter {
         }
     }
 
+    async #publishPostAfterPassingChallenge(msgParsed) {
+        delete this.ongoingChallenges[msgParsed["challenge"].requestId];
+        await this.#publishPubsubMsg({"data": uint8ArrayFromString(JSON.stringify(msgParsed["msg"]))});
+    }
+
     async #processCaptchaPubsub(pubsubMsg) {
 
         const validateCaptchaAnswer = async (pubsubMsg) => {
@@ -156,11 +161,11 @@ class Subplebbit extends EventEmitter {
                 msgParsed["challenge"] = challenge;
                 this.ongoingChallenges[challenge.requestId] = challenge;
                 if (challengeAnswerIsVerified) {
-                    delete this.ongoingChallenges[challenge.requestId];
-                    await this.plebbit.ipfsClient.pubsub.unsubscribe(challenge.requestId); // This line might cause problems cause we're within the subscription method
-                    await this.#publishPubsubMsg({"data": uint8ArrayFromString(JSON.stringify(msgParsed["msg"]))});
+                    await this.#publishPostAfterPassingChallenge(msgParsed);
+                    await this.plebbit.ipfsClient.pubsub.unsubscribe(msgParsed["challenge"].requestId, validateCaptchaAnswer);
                 }
-                await this.plebbit.ipfsClient.pubsub.publish(challenge.answerId, uint8ArrayFromString(JSON.stringify(msgParsed)));
+                if (challenge.answerId)
+                    await this.plebbit.ipfsClient.pubsub.publish(challenge.answerId, uint8ArrayFromString(JSON.stringify(msgParsed)));
 
             }
         }
@@ -168,14 +173,25 @@ class Subplebbit extends EventEmitter {
         const challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
 
         if (challenge.stage === challengeStages.CHALLENGEREQUEST) {
-            const [providedChallenge, challengeType] = this.provideCaptchaCallback(msgParsed);
+            const [providedChallenge, challengeType, reasonForSkippingCaptcha] = this.provideCaptchaCallback(msgParsed);
             challenge.setChallenge(providedChallenge);
             challenge.setType(challengeType);
-            challenge.setStage(challengeStages.CHALLENGE);
+            challenge.setStage(challengeStages.CHALLENGE); // If provided challenge is null then we skip challenge stages to verification
+            if (!providedChallenge) {
+                // Subplebbit owner has chosen to skip challenging this user or post
+                challenge.setStage(challengeStages.CHALLENGEVERIFICATION);
+                challenge.setAnswerIsVerified(true);
+                challenge.setAnswerVerificationReason(reasonForSkippingCaptcha);
+            }
             this.ongoingChallenges[challenge.requestId] = challenge;
             msgParsed["challenge"] = challenge;
+            if (challenge.stage === challengeStages.CHALLENGE)
+                await this.plebbit.ipfsClient.pubsub.subscribe(challenge.requestId, validateCaptchaAnswer);
+            else if (challenge.stage === challengeStages.CHALLENGEVERIFICATION) {
+                await this.#publishPostAfterPassingChallenge(msgParsed);
+            }
             await this.plebbit.ipfsClient.pubsub.publish(challenge.requestId, uint8ArrayFromString(JSON.stringify(msgParsed)));
-            await this.plebbit.ipfsClient.pubsub.subscribe(challenge.requestId, validateCaptchaAnswer);
+
         }
     }
 
