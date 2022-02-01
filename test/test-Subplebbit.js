@@ -33,17 +33,37 @@ describe("Test Subplebbit", async () => {
         assert.equal(JSON.stringify(loadedSubplebbit), JSON.stringify(subplebbit), "Failed to publish new subplebbit");
     });
 
+    it("Subplebbit owner can choose to bypass captcha under certain conditions", async () => {
+        return new Promise(async (resolve, reject) => {
+            subplebbit.setProvideCaptchaCallback((challengeWithPost) => {
+                // Return question, type
+                // Expected return is:
+                // captcha, captcha type, reason for skipping captcha (if it's skipped by nullifying captcha)
+                if (challengeWithPost.msg.timestamp > 1643740217602)
+                    // if we return null we are skipping captcha for this particular post/comment
+                    return [null, null, "Captcha was skipped because timestamp exceeded 1643740217602"];
+                else
+                    return ["1+1=?", "math-cli"];
+            });
+            const mockPost = await generateMockPost();
+            await subplebbit.startPublishing();
+
+            mockPost.publish(null, null).then(resolve).catch(reject);
+        });
+
+    });
+
     it("Can publish new posts (with captcha)", async function () {
         return new Promise(async (resolve, reject) => {
-           subplebbit.setProvideCaptchaCallback((challengeWithPost) => {
-               // Return question, type
-               return ["1+1=?", "math-cli"];
-           });
-           subplebbit.setValidateCaptchaAnswerCallback((challengeWithPost) => {
-               const answerIsCorrect = challengeWithPost["challenge"].answer === "2";
-               const reason = answerIsCorrect ? "Result of math express is correct": "Result of math expression is incorrect";
-               return [answerIsCorrect, reason]
-           });
+            subplebbit.setProvideCaptchaCallback((challengeWithPost) => {
+                // Return question, type
+                return ["1+1=?", "math-cli"];
+            });
+            subplebbit.setValidateCaptchaAnswerCallback((challengeWithPost) => {
+                const answerIsCorrect = challengeWithPost["challenge"].answer === "2";
+                const reason = answerIsCorrect ? "Result of math express is correct" : "Result of math expression is incorrect";
+                return [answerIsCorrect, reason]
+            });
             const mockPost = await generateMockPost();
             await subplebbit.startPublishing();
             mockPost.publish(null, (challenge) => {
