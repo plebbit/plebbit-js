@@ -7,15 +7,15 @@ const challengeStages = Object.freeze({
 
 class Challenge {
     constructor(props) {
-        this.stage = props["stage"]; // will be dozens of challenge types, like holding a certain amount of a token
+        this.stage = props["stage"]; // Current challenge stage. Will be one of challengeStages declared above
         this.challenge = props["challenge"]; // data required to complete the challenge, could be html, png, etc.
         this.requestId = props["requestId"];
         this.answerId = props["answerId"];
         this.answer = props["answer"];
         this.answerIsVerified = props["answerIsVerified"];
-        this.failedVerificationReason = props["failedVerificationReason"];
+        this.answerVerificationReason = props["answerVerificationReason"];
         this.acceptedChallengeTypes = props["acceptedChallengeTypes"];
-        this.type = props["type"];
+        this.type = props["type"]; // will be dozens of challenge types, like holding a certain amount of a token
     }
 
     setStage(newStage) {
@@ -38,8 +38,8 @@ class Challenge {
         this.answerIsVerified = newChallengeAnswerIsVerified;
     }
 
-    setFailedVerificationReason(newFailedVerificationReason) {
-        this.failedVerificationReason = newFailedVerificationReason;
+    setAnswerVerificationReason(newFailedVerificationReason) {
+        this.answerVerificationReason = newFailedVerificationReason;
     }
 
     setType(newType){

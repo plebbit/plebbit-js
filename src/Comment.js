@@ -118,7 +118,7 @@ class Comment {
                     await this.plebbit.ipfsClient.pubsub.unsubscribe(this.challenge.requestId);
                     await this.plebbit.ipfsClient.pubsub.unsubscribe(this.challenge.answerId);
                     if (!this.challenge.answerIsVerified) {
-                        console.error(`Failed to solve captcha, reason is: ${this.challenge.failedVerificationReason}`);
+                        console.error(`Failed to solve captcha, reason is: ${this.challenge.answerVerificationReason}`);
                         this.challenge = null;
                         reject(msgParsed);
                     } else

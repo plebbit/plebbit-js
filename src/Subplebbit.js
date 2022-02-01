@@ -149,10 +149,10 @@ class Subplebbit extends EventEmitter {
             const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
             const challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
             if (challenge.stage === challengeStages.CHALLENGEANSWER) {
-                const [challengeAnswerIsVerified, failedVerificationReason] = this.validateCaptchaAnswerCallback(msgParsed);
+                const [challengeAnswerIsVerified, answerVerificationReason] = this.validateCaptchaAnswerCallback(msgParsed);
                 challenge.setStage(challengeStages.CHALLENGEVERIFICATION);
                 challenge.setAnswerIsVerified(challengeAnswerIsVerified);
-                challenge.setFailedVerificationReason(failedVerificationReason);
+                challenge.setAnswerVerificationReason(answerVerificationReason);
                 msgParsed["challenge"] = challenge;
                 this.ongoingChallenges[challenge.requestId] = challenge;
                 if (challengeAnswerIsVerified) {

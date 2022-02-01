@@ -41,7 +41,7 @@ describe("Test Subplebbit", async () => {
            });
            subplebbit.setValidateCaptchaAnswerCallback((challengeWithPost) => {
                const answerIsCorrect = challengeWithPost["challenge"].answer === "2";
-               const reason = answerIsCorrect ? "": "Result of math expression is incorrect";
+               const reason = answerIsCorrect ? "Result of math express is correct": "Result of math expression is incorrect";
                return [answerIsCorrect, reason]
            });
             const mockPost = await generateMockPost();
