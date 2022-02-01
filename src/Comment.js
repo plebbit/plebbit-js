@@ -98,7 +98,7 @@ class Comment {
     async publish(userOptions, solveChallengeCallback) {
         return new Promise(async (resolve, reject) => {
 
-            const options = {"acceptedChallengeTypes": ["image"], ...userOptions};
+            const options = {"acceptedChallengeTypes": [], ...userOptions};
             if (!this.challenge || this.challenge?.answerIsVerified)
                 this.challenge = new Challenge({
                     "requestId": uuidv4(),
