@@ -7,6 +7,8 @@ import {sha256} from "js-sha256";
 import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string'
 
 import {Challenge, challengeStages} from "./Challenge.js";
+import Vote from "./Vote.js";
+import assert from "assert";
 
 class Subplebbit extends EventEmitter {
     constructor(props, plebbit, provideCaptchaCallback, validateCaptchaAnswerCallback) {
@@ -117,30 +119,52 @@ class Subplebbit extends EventEmitter {
         const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
 
         //TODO check if post or comment has been posted before
-        const postOrComment = msgParsed["title"] ? new Post(msgParsed, this.plebbit, this) : new Comment(msgParsed, this.plebbit, this);
+        const postOrCommentOrVote = msgParsed.title ? new Post(msgParsed, this.plebbit, this) :
+            msgParsed.vote ? new Vote(msgParsed, this.plebbit, this)
+                : new Comment(msgParsed, this.plebbit, this);
 
-        postOrComment.setCommentIpnsKey(await this.plebbit.ipfsClient.key.gen(sha256(JSON.stringify(postOrComment)).slice(0, 20)));
 
-        if (postOrComment.getType() === "post")
-            postOrComment.setPreviousCommentCid(this.latestPostCid);
-        else {
+        if (postOrCommentOrVote instanceof Comment) // Only Post and Comment
+            postOrCommentOrVote.setCommentIpnsKey(await this.plebbit.ipfsClient.key.gen(sha256(JSON.stringify(postOrCommentOrVote)).slice(0, 20)));
+
+        if (postOrCommentOrVote.getType() === "post") {
+            postOrCommentOrVote.setPreviousCommentCid(this.latestPostCid);
+            await postOrCommentOrVote.updateCommentIpns(new CommentIPNS({}));
+        } else if (postOrCommentOrVote.getType() === "comment") {
             // Comment
-            const parent = await postOrComment.fetchParent();
+            const parent = await postOrCommentOrVote.fetchParent();
             const parentIpns = await parent.fetchCommentIpns();
-            postOrComment.setPreviousCommentCid(parentIpns.latestCommentCid);
+            postOrCommentOrVote.setPreviousCommentCid(parentIpns.latestCommentCid);
+            await postOrCommentOrVote.updateCommentIpns(new CommentIPNS({}));
+
         }
-        await postOrComment.updateCommentIpns(new CommentIPNS({}));
 
+        if (postOrCommentOrVote.getType() === "vote") {
+            // TODO handle vote === 0, which cancels previous votes
+            const voteComment = await this.plebbit.getPostOrComment(postOrCommentOrVote.commentCid);
+            const commentIpns = await voteComment.fetchCommentIpns();
+            const newUpvoteCount = postOrCommentOrVote.vote === 1 ? commentIpns.upvoteCount + 1 : commentIpns.upvoteCount;
+            const newDownvoteCount = postOrCommentOrVote.vote === -1 ? commentIpns.downvoteCount + 1 : commentIpns.downvoteCount;
 
-        const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrComment));
-        if (postOrComment.getType() === "post") {
-            postOrComment.setPostCid(file["cid"]);
-            await this.#updateSubplebbitPosts(postOrComment);
+            await voteComment.updateCommentIpns(new CommentIPNS({
+                ...commentIpns.toJSON(),
+                "upvoteCount": newUpvoteCount,
+                "downvoteCount": newDownvoteCount
+            }));
         } else {
-            // Comment
-            postOrComment.setCommentCid(file["cid"]);
-            await this.#updatePostComments(postOrComment);
+            // Comment and Post need to add file to ipfs
+            const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote));
+            if (postOrCommentOrVote.getType() === "post") {
+                postOrCommentOrVote.setPostCid(file["cid"]);
+                await this.#updateSubplebbitPosts(postOrCommentOrVote);
+            } else {
+                // Comment
+                postOrCommentOrVote.setCommentCid(file["cid"]);
+                await this.#updatePostComments(postOrCommentOrVote);
+            }
         }
+
+
     }
 
     async #publishPostAfterPassingChallenge(msgParsed) {
@@ -197,12 +221,9 @@ class Subplebbit extends EventEmitter {
 
 
     async startPublishing() {
+        assert(this.provideCaptchaCallback, "You need to set provideCaptchaCallback. If you don't need captcha, you can return null");
         const processPubsub = async (pubsubMsg) => {
-            const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
-            if (!this.provideCaptchaCallback && !this.validateCaptchaAnswerCallback)
-                await this.#publishPubsubMsg(msgParsed); // If no captcha is specified then publish post/comment immediately
-            else if (msgParsed["challenge"])
-                await this.#processCaptchaPubsub(pubsubMsg);
+            await this.#processCaptchaPubsub(pubsubMsg);
         }
 
         await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, processPubsub);
