@@ -36,4 +36,18 @@ describe("Test Vote", async () => {
         });
 
     });
+
+    it("Can downvote a post", async () => {
+        return new Promise(async (resolve ,reject) => {
+            await post.fetchCommentIpns();
+            const originalDownvote = post.commentIpns.downvoteCount;
+            const vote = await generateMockVote(post, -1);
+            vote.publish().then(async (challengeWithVote) => {
+                await post.fetchCommentIpns();
+                assert.equal(post.commentIpns.downvoteCount, originalDownvote + 1);
+                resolve();
+            }).catch(reject);
+        });
+
+    })
 });
