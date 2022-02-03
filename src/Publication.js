@@ -75,9 +75,9 @@ class Publication {
             };
 
             await this.plebbit.ipfsClient.pubsub.subscribe(this.challenge.requestId, processChallenge);
-            const postEncoded = uint8ArrayFromString(JSON.stringify(challengeRequest));
+            const publicationEncoded = uint8ArrayFromString(JSON.stringify(challengeRequest));
 
-            await this.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, postEncoded);
+            await this.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, publicationEncoded);
         });
 
 
