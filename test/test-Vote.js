@@ -6,7 +6,7 @@ import assert from 'assert';
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 
 const post = await plebbit.getPostOrComment("QmVxihaABYMBFkWGTpbK6hxekPXh9J7WmRQhq3vSZRix7q");
-
+const comment = await plebbit.getPostOrComment("QmWrZd71VcJSmbjZQtmTHzf75kbQ33jxeFMzRLWZC6Feug");
 const generateMockVote = async (parentPostOrComment, vote) => {
     const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${Date.now()}`);
 
@@ -49,5 +49,37 @@ describe("Test Vote", async () => {
             }).catch(reject);
         });
 
-    })
+    });
+
+    it("Can upvote a comment", async () => {
+        return new Promise(async (resolve ,reject) => {
+            await comment.fetchCommentIpns();
+            const originalUpvote = comment.commentIpns.upvoteCount;
+            const vote = await generateMockVote(comment, 1);
+            vote.subplebbit.setProvideCaptchaCallback((challengeWithMsg) => {
+                return [null, null, "Captcha is skipped for all"];
+            });
+            await vote.subplebbit.startPublishing();
+            vote.publish().then(async (challengeWithVote) => {
+                await comment.fetchCommentIpns();
+                assert.equal(comment.commentIpns.upvoteCount, originalUpvote + 1);
+                resolve();
+            }).catch(reject);
+        });
+
+    });
+
+    it("Can downvote a comment", async () => {
+        return new Promise(async (resolve ,reject) => {
+            await comment.fetchCommentIpns();
+            const originalDownvote = comment.commentIpns.downvoteCount;
+            const vote = await generateMockVote(comment, -1);
+            vote.publish().then(async (challengeWithVote) => {
+                await comment.fetchCommentIpns();
+                assert.equal(comment.commentIpns.downvoteCount, originalDownvote + 1);
+                resolve();
+            }).catch(reject);
+        });
+
+    });
 });
