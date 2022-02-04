@@ -123,9 +123,17 @@ class Subplebbit extends EventEmitter {
             msgParsed.vote ? new Vote(msgParsed, this.plebbit, this)
                 : new Comment(msgParsed, this.plebbit, this);
 
+        const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote));
+
+        const ipnsKeys = (await this.plebbit.ipfsClient.key.list()).map(key => key["name"]);
+
+        if (ipnsKeys.includes(ipnsKeyName)) {
+            const msg = `Failed to insert ${postOrCommentOrVote.getType()} due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`;
+            throw new Error(msg);
+        }
 
         if (postOrCommentOrVote instanceof Comment) // Only Post and Comment
-            postOrCommentOrVote.setCommentIpnsKey(await this.plebbit.ipfsClient.key.gen(sha256(JSON.stringify(postOrCommentOrVote)).slice(0, 20)));
+            postOrCommentOrVote.setCommentIpnsKey(await this.plebbit.ipfsClient.key.gen(ipnsKeyName));
 
         if (postOrCommentOrVote.getType() === "post") {
             postOrCommentOrVote.setPreviousCommentCid(this.latestPostCid);
