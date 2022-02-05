@@ -1,4 +1,4 @@
-`plebbit-js` will be an NPM module to wrap around the IPFS APIs used by Plebbit. It will be used in all clients: CLI, Electron (Desktop GUI) and Web.
+`plebbit-js` will be an NPM module to wrap around the IPFS APIs used by Plebbit. It will be used in all clients: CLI, Electron (Desktop GUI) and Web. Telegram group for this repo https://t.me/plebbitjs
 
 ### Glossary:
 
