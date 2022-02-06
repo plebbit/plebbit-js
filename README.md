@@ -182,7 +182,6 @@ const options = {
   ipfsApiUrl: 'http://localhost:5001',
 }
 const plebbit = Plebbit(options) // should be independent instance, not singleton
-plebbit.setIpfsGatewayUrl('http://localhost:8080') // should be able to change options after instanciation
 ```
 
 ### `plebbit.getComment(commentCid)`
