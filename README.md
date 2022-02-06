@@ -1,3 +1,5 @@
+*Telegram group for this repo https://t.me/plebbitjs*
+
 `plebbit-js` will be an NPM module to wrap around the IPFS APIs used by Plebbit. It will be used in all clients: CLI, Electron (Desktop GUI) and Web.
 
 ### Glossary:
@@ -180,7 +182,6 @@ const options = {
   ipfsApiUrl: 'http://localhost:5001',
 }
 const plebbit = Plebbit(options) // should be independent instance, not singleton
-plebbit.setIpfsGatewayUrl('http://localhost:8080') // should be able to change options after instanciation
 ```
 
 ### `plebbit.getComment(commentCid)`
