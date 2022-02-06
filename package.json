@@ -4,7 +4,7 @@
   "description": "plebbit.js will be an NPM module to wrap around the IPFS APIs used by Plebbit. It will be used in all clients: CLI, Electron (Desktop GUI) and Web.",
   "main": "src/Plebbit.js",
   "scripts": {
-    "test": "mocha --timeout 5000"
+    "test": "mocha --timeout 0"
   },
   "repository": {
     "type": "git",
@@ -20,8 +20,8 @@
   },
   "homepage": "https://github.com/plebbit/plebbit-js#readme",
   "dependencies": {
-    "ipfs-core": "^0.13.0",
-    "ipfs-http-client": "^55.0.0",
+    "ipfs-core": "^0.14.0",
+    "ipfs-http-client": "^56.0.0",
     "it-all": "^1.0.6",
     "it-last": "^1.0.6",
     "js-sha256": "^0.9.0",
@@ -30,7 +30,7 @@
     "uuid": "^8.3.2"
   },
   "devDependencies": {
-    "mocha": "^9.1.4"
+    "mocha": "^9.2.0"
   },
   "type": "module"
 }
