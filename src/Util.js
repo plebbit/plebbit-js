@@ -25,3 +25,16 @@ export async function loadIpnsAsJson(ipns, ipfsClient) {
     });
 }
 
+export async function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function unsubscribeAllPubsubTopics(plebbit) {
+    let subscribedTopics = await plebbit.ipfsClient.pubsub.ls();
+    for (const topic of subscribedTopics){
+        await plebbit.ipfsClient.pubsub.unsubscribe(topic);
+        await sleep(1000);
+    }
+}
+
+
