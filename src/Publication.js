@@ -2,6 +2,7 @@ import {Challenge, challengeStages} from "./Challenge.js";
 import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string'
 import {v4 as uuidv4} from 'uuid';
 import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
+import assert from "assert";
 
 class Publication {
 
@@ -24,7 +25,7 @@ class Publication {
             return "comment";
     }
 
-    async publish(userOptions, solveChallengeCallback) {
+    async #publish(userOptions, solveChallengeCallback) {
         return new Promise(async (resolve, reject) => {
 
             const options = {"acceptedChallengeTypes": [], ...userOptions};
@@ -78,6 +79,23 @@ class Publication {
         });
 
 
+    }
+
+    async publish(userOptions, solveChallengeCallback) {
+        return new Promise(async (resolve, reject) => {
+            this.#publish(userOptions, solveChallengeCallback).then(resolve).catch(reject).finally(async () => {
+                // Unsubscribe all events
+                try {
+                    if (this.challenge?.requestId)
+                        await this.plebbit.ipfsClient.pubsub.unsubscribe(this.challenge.requestId);
+                    if (this.challenge?.answerId)
+                        await this.plebbit.ipfsClient.pubsub.unsubscribe(this.challenge.answerId);
+                } catch {}
+                const topics = await this.plebbit.ipfsClient.pubsub.ls();
+                assert(!topics.includes(this.challenge.requestId), "Failed to unsubscribe from challenge request ID event");
+                assert(!topics.includes(this.challenge.answerId), "Failed to unsubscribe from challenge answer ID event");
+            })
+        });
     }
 
 }
