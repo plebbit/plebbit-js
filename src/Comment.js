@@ -46,18 +46,25 @@ class Comment extends Publication {
 
     toJSON() {
         return {
-            "author": this.author,
-            "content": this.content,
-            "timestamp": this.timestamp,
-            "signature": this.signature,
+            ...this.toJSONSkeleton(),
             "previousCommentCid": this.previousCommentCid?.toString(),
             "commentIpnsKeyId": this.commentIpnsKeyId,
             "commentIpnsKeyName": this.commentIpnsKeyName,
             "postCid": this.postCid?.toString(),
             "commentCid": this.commentCid?.toString(),
+        }
+    };
+
+
+    toJSONSkeleton() {
+        return {
+            "author": this.author,
+            "content": this.content,
+            "timestamp": this.timestamp,
+            "signature": this.signature,
             "subplebbitIpnsKeyId": this.subplebbitIpnsKeyId || this.subplebbit?.ipnsKeyId,
-            "parentCommentCid": this.parentCommentCid?.toString(),
-        };
+            "parentCommentCid": this.parentCommentCid?.toString()
+        }
     }
 
     setCommentIpnsKey(ipnsKey) {

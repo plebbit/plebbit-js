@@ -123,7 +123,7 @@ class Subplebbit extends EventEmitter {
             msgParsed.vote ? new Vote(msgParsed, this.plebbit, this)
                 : new Comment(msgParsed, this.plebbit, this);
 
-        const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote));
+        const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote instanceof Comment ? postOrCommentOrVote.toJSONSkeleton() : postOrCommentOrVote));
 
         const ipnsKeys = (await this.plebbit.ipfsClient.key.list()).map(key => key["name"]);
 
