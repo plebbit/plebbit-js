@@ -2,6 +2,7 @@ import Plebbit from "../src/Plebbit.js";
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
 import Comment from "../src/Comment.js";
 import assert from 'assert';
+import {unsubscribeAllPubsubTopics} from "../src/Util.js";
 
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 
@@ -21,6 +22,7 @@ async function generateMockComment(parentPostOrComment) {
 }
 
 describe("Test Post and Comment", async function () {
+    before(() => unsubscribeAllPubsubTopics(plebbit));
 
     it("Can publish new comment under post", async function () {
         return new Promise(async (resolve, reject) => {
@@ -40,6 +42,7 @@ describe("Test Post and Comment", async function () {
                 mockComments.push(comment);
                 resolve();
             });
+            mockComment.subplebbit.setProvideCaptchaCallback((challengeWithMsg) => [null, null, ""]);
             await mockComment.subplebbit.startPublishing();
             await mockComment.publish();
 
@@ -47,7 +50,7 @@ describe("Test Post and Comment", async function () {
 
 
     });
-    it("Can publish new comments under comments", async () => {
+    it("Can publish new comments under comment", async () => {
         return new Promise(async (resolve, reject) => {
             const mockComment = await generateMockComment(mockComments[0]);
             mockComment.subplebbit.once("comment", async (comment) => {
@@ -61,6 +64,7 @@ describe("Test Post and Comment", async function () {
                 mockComments.push(comment);
                 resolve();
             });
+            mockComment.subplebbit.setProvideCaptchaCallback((challengeWithMsg) => [null, null, ""]);
             await mockComment.subplebbit.startPublishing();
             await mockComment.publish();
         });
