@@ -3,6 +3,7 @@ import assert from 'assert';
 import Subplebbit from "../src/Subplebbit.js";
 import Plebbit from "../src/Plebbit.js";
 import Post from "../src/Post.js";
+import {unsubscribeAllPubsubTopics} from "../src/Util.js";
 
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 const subplebbit = new Subplebbit({
@@ -20,20 +21,21 @@ async function generateMockPost() {
 }
 
 
-describe("Test Subplebbit", async () => {
+describe("Test Subplebbit functionality", async () => {
 
-    // Destroy subplebbit once we're done with tests
-    after(async () => await subplebbit.destroy());
+    before(() => unsubscribeAllPubsubTopics(plebbit));
+    // Stop publishing once we're done with tests
+    after(async () => await subplebbit.stopPublishing());
 
 
-    it("Can publish new subplebbit to ipfs", async function () {
+    it("New subplebbits can be published", async function () {
         await subplebbit.publishAsNewSubplebbit();
         // Should have ipns key now
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.ipnsKeyId);
         assert.equal(JSON.stringify(loadedSubplebbit), JSON.stringify(subplebbit), "Failed to publish new subplebbit");
     });
 
-    it("Subplebbit owner can choose to bypass captcha under certain conditions", async () => {
+    it("Captcha can be skipped under certain conditions", async () => {
         return new Promise(async (resolve, reject) => {
             subplebbit.setProvideCaptchaCallback((challengeWithPost) => {
                 // Return question, type
@@ -53,7 +55,7 @@ describe("Test Subplebbit", async () => {
 
     });
 
-    it("Can publish new posts (with captcha)", async function () {
+    it("Post is published when captcha is answered correctly", async function () {
         return new Promise(async (resolve, reject) => {
             subplebbit.setProvideCaptchaCallback((challengeWithPost) => {
                 // Return question, type
@@ -74,7 +76,7 @@ describe("Test Subplebbit", async () => {
         });
     });
 
-    it("Can publish new posts", async function () {
+    it("Throws an error when publishing a duplicate post", async function () {
         return new Promise(async (resolve, reject) => {
             const mockPost = await generateMockPost();
             subplebbit.once('post', async (post) => {
