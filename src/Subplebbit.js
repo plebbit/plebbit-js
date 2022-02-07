@@ -224,11 +224,9 @@ class Subplebbit extends EventEmitter {
 
     async startPublishing() {
         assert(this.provideCaptchaCallback, "You need to set provideCaptchaCallback. If you don't need captcha, you can return null");
-        const processPubsub = async (pubsubMsg) => {
-            await this.#processCaptchaPubsub(pubsubMsg);
-        }
-
-        await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, processPubsub);
+        const subscribedTopics = (await this.plebbit.ipfsClient.pubsub.ls());
+        if (!subscribedTopics.includes(this.pubsubTopic))
+            await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, this.#processCaptchaPubsub.bind(this));
     }
 
     async stopPublishing() {
