@@ -57,8 +57,8 @@ class Publication {
             const processChallenge = async (pubsubMsg) => {
                 const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
                 // Subplebbit owner node will either answer with CHALLENGE OR CHALLENGE VERIFICATION
-                this.challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
-                if (this.challenge.stage === challengeStages.CHALLENGE) {
+                if (msgParsed.challenge.stage === challengeStages.CHALLENGE) {
+                    this.challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
                     // Process CHALLENGE and reply with ChallengeAnswer
                     const challengeAnswer = solveChallengeCallback(this.challenge);
                     this.challenge.setAnswer(challengeAnswer);
@@ -67,9 +67,11 @@ class Publication {
                     msgParsed["challenge"] = this.challenge;
                     await this.plebbit.ipfsClient.pubsub.subscribe(this.challenge.answerId, handleCaptchaVerification);
                     await this.plebbit.ipfsClient.pubsub.publish(this.challenge.requestId, uint8ArrayFromString(JSON.stringify(msgParsed)));
-                } else if (this.challenge.stage === challengeStages.CHALLENGEVERIFICATION)
+                } else if (msgParsed.challenge.stage === challengeStages.CHALLENGEVERIFICATION) {
                     // If we reach this block that means the subplebbit owner has chosen to skip captcha by returning null on provideCaptchaCallback
+                    this.challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
                     handleCaptchaVerification(pubsubMsg).then(resolve).catch(reject);
+                }
             };
 
             await this.plebbit.ipfsClient.pubsub.subscribe(this.challenge.requestId, processChallenge);
