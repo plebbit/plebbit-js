@@ -69,7 +69,7 @@ describe("Test Subplebbit functionality", async () => {
             subplebbit.setValidateCaptchaAnswerCallback((challengeWithPost) => {
                 const answerIsCorrect = challengeWithPost["challenge"].answer === "2";
                 const reason = answerIsCorrect ? "Result of math express is correct" : "Result of math expression is incorrect";
-                return [answerIsCorrect, reason]
+                return [answerIsCorrect, reason];
             });
             const mockPost = await generateMockPost();
             await subplebbit.startPublishing();
@@ -129,30 +129,11 @@ describe("Test Subplebbit functionality", async () => {
 
     it("Throws an error when publishing a duplicate post", async function () {
         return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost();
-            subplebbit.once('post', async (post) => {
-                assert.equal(post.title, mockPost.title, "Failed to publish correct post");
-                assert.equal(post.postCid, subplebbit.latestPostCid, "Failed to update subplebbit latestPostCid");
-                const loadedPost = await plebbit.getPostOrComment(post.postCid);
-                assert.equal(JSON.stringify(loadedPost), JSON.stringify(post), "Downloaded post is missing info");
+            const post = mockPosts[0];
+            subplebbit.setProvideCaptchaCallback(() => [null, null, null]);
 
-                mockPosts.push(post);
-                resolve();
-            });
             await subplebbit.startPublishing();
-            await mockPost.publish();
-        });
-    });
-
-    it("Sets previousCommentCid correctly", async function () {
-        return new Promise(async (resolve, reject) => {
-            const secondMockPost = await generateMockPost();
-            subplebbit.once("post", (post) => {
-                assert.equal(JSON.stringify(post.previousCommentCid), JSON.stringify(mockPosts[0].postCid), "Failed to set previousPostCid");
-                mockPosts.push(post);
-                resolve();
-            });
-            await secondMockPost.publish();
+            post.publish(null, null).then(reject).catch(resolve);
         });
     });
 
