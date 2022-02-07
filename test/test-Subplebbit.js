@@ -50,7 +50,12 @@ describe("Test Subplebbit functionality", async () => {
             const mockPost = await generateMockPost();
             await subplebbit.startPublishing();
 
-            mockPost.publish(null, null).then(resolve).catch(reject);
+            mockPost.publish(null, null).then(async (challengeWithPost) => {
+                const loadedPost = await plebbit.getPostOrComment(challengeWithPost.msg.postCid);
+                assert.equal(JSON.stringify(challengeWithPost.msg), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
+                mockPosts.push(loadedPost);
+                resolve();
+            }).catch(reject);
         });
 
     });
@@ -71,8 +76,54 @@ describe("Test Subplebbit functionality", async () => {
             mockPost.publish(null, (challenge) => {
                 // Solve captcha here
                 return "2";
-            }).then(resolve).catch(reject);
+            }).then(async (challengeWithPost) => {
+                const loadedPost = await plebbit.getPostOrComment(challengeWithPost.msg.postCid);
+                assert.equal(JSON.stringify(challengeWithPost.msg), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
+                resolve();
+            }).catch(reject);
 
+        });
+    });
+
+    it("Throws an error when user fails to solve captcha", async function () {
+        return new Promise(async (resolve, reject) => {
+            const mockPost = await generateMockPost();
+            await subplebbit.startPublishing();
+            mockPost.publish(null, (challenge) => {
+                // Give wrong answer intentionally
+                return "3";
+            }).then(reject).catch(resolve); // Resolve when an error is thrown, and reject when no error is thrown
+        });
+
+    });
+
+
+    it("Subplebbit emits an event everytime a post is posted", async function () {
+        return new Promise(async (resolve, reject) => {
+            const mockPost = await generateMockPost();
+            subplebbit.once('post', async (post) => {
+                assert.equal(post.title, mockPost.title, "Failed to publish correct post");
+                assert.equal(post.postCid, subplebbit.latestPostCid, "Failed to update subplebbit latestPostCid");
+                const loadedPost = await plebbit.getPostOrComment(post.postCid);
+                assert.equal(JSON.stringify(loadedPost), JSON.stringify(post), "Downloaded post is missing info");
+                mockPosts.push(loadedPost);
+                resolve();
+            });
+            await subplebbit.setProvideCaptchaCallback(() => [null, null, null]);
+            await subplebbit.startPublishing();
+            await mockPost.publish(null, null);
+        });
+    });
+
+    it("Links current post to past posts correctly", async function () {
+        return new Promise(async (resolve, reject) => {
+            const secondMockPost = await generateMockPost();
+            await subplebbit.startPublishing();
+            secondMockPost.publish(null, null).then((challengeWithMsg) => {
+                assert.equal(challengeWithMsg.msg.previousCommentCid.toString(), mockPosts[1].postCid.toString(), "Failed to set previousPostCid");
+                mockPosts.push(challengeWithMsg.msg);
+                resolve();
+            }).catch(reject);
         });
     });
 
