@@ -129,7 +129,7 @@ class Subplebbit extends EventEmitter {
 
         if (ipnsKeys.includes(ipnsKeyName)) {
             const msg = `Failed to insert ${postOrCommentOrVote.getType()} due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`;
-            throw new Error(msg);
+            return {"error": msg};
         }
 
         if (postOrCommentOrVote instanceof Comment) // Only Post and Comment
