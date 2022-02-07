@@ -48,7 +48,7 @@ class Subplebbit extends EventEmitter {
         this.validateCaptchaAnswerCallback = newCallback;
     }
 
-    publishAsNewSubplebbit() {
+    async publishAsNewSubplebbit() {
         // TODO Add a check for key existence
         return new Promise((resolve, reject) => {
             this.plebbit.ipfsClient.key.gen(this.title).then(ipnsKey => {
