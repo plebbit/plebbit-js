@@ -144,7 +144,6 @@ class Subplebbit extends EventEmitter {
             const parentIpns = await parent.fetchCommentIpns();
             postOrCommentOrVote.setPreviousCommentCid(parentIpns.latestCommentCid);
             await postOrCommentOrVote.updateCommentIpns(new CommentIPNS({}));
-
         }
 
         if (postOrCommentOrVote.getType() === "vote") {
@@ -171,13 +170,12 @@ class Subplebbit extends EventEmitter {
                 await this.#updatePostComments(postOrCommentOrVote);
             }
         }
-
-
+        return postOrCommentOrVote;
     }
 
     async #publishPostAfterPassingChallenge(msgParsed) {
         delete this.ongoingChallenges[msgParsed["challenge"].requestId];
-        await this.#publishPubsubMsg({"data": uint8ArrayFromString(JSON.stringify(msgParsed["msg"]))});
+        return await this.#publishPubsubMsg({"data": uint8ArrayFromString(JSON.stringify(msgParsed["msg"]))});
     }
 
     async #processCaptchaPubsub(pubsubMsg) {
@@ -192,10 +190,8 @@ class Subplebbit extends EventEmitter {
                 challenge.setAnswerVerificationReason(answerVerificationReason);
                 msgParsed["challenge"] = challenge;
                 this.ongoingChallenges[challenge.requestId] = challenge;
-                if (challengeAnswerIsVerified) {
-                    await this.#publishPostAfterPassingChallenge(msgParsed);
-                    await this.plebbit.ipfsClient.pubsub.unsubscribe(msgParsed["challenge"].requestId, validateCaptchaAnswer);
-                }
+                if (challengeAnswerIsVerified)
+                    msgParsed["msg"] = await this.#publishPostAfterPassingChallenge(msgParsed);
                 if (challenge.answerId)
                     await this.plebbit.ipfsClient.pubsub.publish(challenge.answerId, uint8ArrayFromString(JSON.stringify(msgParsed)));
 
@@ -217,14 +213,12 @@ class Subplebbit extends EventEmitter {
             }
             this.ongoingChallenges[challenge.requestId] = challenge;
             msgParsed["challenge"] = challenge;
+            if (challenge.stage === challengeStages.CHALLENGEVERIFICATION)
+                msgParsed["msg"] = await this.#publishPostAfterPassingChallenge(msgParsed);
             if (challenge.stage === challengeStages.CHALLENGE)
                 await this.plebbit.ipfsClient.pubsub.subscribe(challenge.requestId, validateCaptchaAnswer);
-            else if (challenge.stage === challengeStages.CHALLENGEVERIFICATION) {
-                await this.#publishPostAfterPassingChallenge(msgParsed);
-            }
-            await this.plebbit.ipfsClient.pubsub.publish(challenge.requestId, uint8ArrayFromString(JSON.stringify(msgParsed)));
-
         }
+        await this.plebbit.ipfsClient.pubsub.publish(challenge.requestId, uint8ArrayFromString(JSON.stringify(msgParsed)));
     }
 
 
