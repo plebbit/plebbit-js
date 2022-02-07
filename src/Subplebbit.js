@@ -86,14 +86,6 @@ class Subplebbit extends EventEmitter {
         });
     }
 
-    async destroy() {
-        // For development purposes ONLY
-        // Call this only if you know what you're doing
-        // rm ipns and ipfs
-        const ipfsPath = (await last(this.plebbit.ipfsClient.name.resolve(this.ipnsKeyId)));
-        await this.plebbit.ipfsClient.pin.rm(ipfsPath);
-        await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
-    }
 
     async #updateSubplebbitPosts(post) {
         const newSubplebbitOptions = {
@@ -232,6 +224,16 @@ class Subplebbit extends EventEmitter {
     async stopPublishing() {
         await this.plebbit.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
         this.removeAllListeners();
+    }
+
+    async destroy() {
+        // For development purposes ONLY
+        // Call this only if you know what you're doing
+        // rm ipns and ipfs
+        await this.stopPublishing();
+        const ipfsPath = (await last(this.plebbit.ipfsClient.name.resolve(this.ipnsKeyId)));
+        await this.plebbit.ipfsClient.pin.rm(ipfsPath);
+        await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
     }
 
 }
