@@ -2,6 +2,7 @@ import Plebbit from "../src/Plebbit.js";
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
 import Vote from "../src/Vote.js";
 import assert from 'assert';
+import {unsubscribeAllPubsubTopics} from "../src/Util.js";
 
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 
@@ -18,8 +19,10 @@ const generateMockVote = async (parentPostOrComment, vote) => {
 };
 
 describe("Test Vote", async () => {
+    before(() => unsubscribeAllPubsubTopics(plebbit));
+
     it("Can upvote a post", async () => {
-        return new Promise(async (resolve ,reject) => {
+        return new Promise(async (resolve, reject) => {
             await post.fetchCommentIpns();
 
             const originalUpvote = post.commentIpns.upvoteCount;
@@ -38,7 +41,7 @@ describe("Test Vote", async () => {
     });
 
     it("Can downvote a post", async () => {
-        return new Promise(async (resolve ,reject) => {
+        return new Promise(async (resolve, reject) => {
             await post.fetchCommentIpns();
             const originalDownvote = post.commentIpns.downvoteCount;
             const vote = await generateMockVote(post, -1);
@@ -52,7 +55,7 @@ describe("Test Vote", async () => {
     });
 
     it("Can upvote a comment", async () => {
-        return new Promise(async (resolve ,reject) => {
+        return new Promise(async (resolve, reject) => {
             await comment.fetchCommentIpns();
             const originalUpvote = comment.commentIpns.upvoteCount;
             const vote = await generateMockVote(comment, 1);
@@ -70,7 +73,7 @@ describe("Test Vote", async () => {
     });
 
     it("Can downvote a comment", async () => {
-        return new Promise(async (resolve ,reject) => {
+        return new Promise(async (resolve, reject) => {
             await comment.fetchCommentIpns();
             const originalDownvote = comment.commentIpns.downvoteCount;
             const vote = await generateMockVote(comment, -1);
