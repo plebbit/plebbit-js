@@ -89,21 +89,4 @@ describe("Test Plebbit", async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitIpns);
         assert.equal(JSON.stringify(expectedSubplebbit), JSON.stringify(loadedSubplebbit), "Failed to load test subplebbit");
     });
-
-    it("getComment is working as intended", async () => {
-        const commentCid = "QmTnWVEFkUY5tgscJSZDoWpF24LXM72dP7h1ebrVjotx5G";
-        const expectedComment = new Comment({
-            "parentPostOrCommentCid": "QmUD5rTHdxrekZkb2A462njzupXJnhj9E3RfxWc34GwJ1h",
-            "author": {
-                "displayName": "Test User - Rinse",
-                "ipnsName": "k51qzi5uqu5dleldjynnnta3hogryf3xozu7ywmqiphofua8azy8g0k18t4olx"
-            },
-            "timestamp": 1642681571,
-            "content": "Test comment content",
-            "previousCommentCid": null,
-            "commentsIpnsName": "k51qzi5uqu5dk7p7vykf6e0chdc288nmn0vzpzlyg98xazghvlqixquml80iof"
-        });
-        const loadedComment = await plebbit.getPostOrComment(commentCid);
-        assert.equal(JSON.stringify(loadedComment), JSON.stringify(expectedComment), "Failed to load test comment");
-    });
 });
