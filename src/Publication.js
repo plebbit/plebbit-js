@@ -47,7 +47,6 @@ class Publication {
                 if (msgParsed.challenge.stage === challengeStages.CHALLENGEVERIFICATION) {
                     this.challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
                     if (!this.challenge.answerIsVerified || msgParsed.msg.error) {
-                        console.error(`Failed to solve captcha, reason is: ${this.challenge.answerVerificationReason || msgParsed.msg.error}`);
                         reject(msgParsed);
                     } else
                         resolve(msgParsed);
