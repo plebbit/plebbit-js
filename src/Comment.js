@@ -118,5 +118,5 @@ class Comment extends Publication {
     }
 }
 
-export {CommentIPNS};
+export {Comment, CommentIPNS};
 export default Comment;
