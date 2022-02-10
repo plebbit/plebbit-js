@@ -18,7 +18,7 @@ const generateMockVote = async (parentPostOrComment, vote) => {
 };
 
 describe("Test Vote", async () => {
-    before(() => unsubscribeAllPubsubTopics(plebbit.ipfsClient));
+    before(async () => await unsubscribeAllPubsubTopics(plebbit.ipfsClient));
 
     it("Can upvote a post", async () => {
         return new Promise(async (resolve, reject) => {

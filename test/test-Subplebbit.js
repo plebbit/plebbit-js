@@ -1,6 +1,6 @@
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
 import assert from 'assert';
-import {Subplebbit, Plebbit, Post} from "../src/index.js"
+import {Plebbit, Post, Subplebbit} from "../src/index.js"
 import {unsubscribeAllPubsubTopics} from "../src/Util.js";
 
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
@@ -21,7 +21,7 @@ async function generateMockPost() {
 
 describe("Test Subplebbit functionality", async () => {
 
-    before(() => unsubscribeAllPubsubTopics(plebbit.ipfsClient));
+    before(async () => await unsubscribeAllPubsubTopics(plebbit.ipfsClient));
     // Stop publishing once we're done with tests
     after(async () => await subplebbit.stopPublishing());
 

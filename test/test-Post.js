@@ -21,7 +21,7 @@ async function generateMockComment(parentPostOrComment) {
 }
 
 describe("Test Post and Comment", async function () {
-    before(() => unsubscribeAllPubsubTopics(plebbit.ipfsClient));
+    before(async () => await unsubscribeAllPubsubTopics(plebbit.ipfsClient));
 
     it("Can publish new comment under post", async function () {
         return new Promise(async (resolve, reject) => {
