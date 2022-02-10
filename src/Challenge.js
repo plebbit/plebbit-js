@@ -46,5 +46,5 @@ class Challenge {
         this.type = newType;
     }
 }
-
+export default Challenge;
 export {challengeStages, Challenge};
