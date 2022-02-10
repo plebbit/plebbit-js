@@ -1,6 +1,5 @@
-import Plebbit from "../src/Plebbit.js";
+import {Plebbit, Comment} from "../src/index.js"
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
-import Comment from "../src/Comment.js";
 import assert from 'assert';
 import {unsubscribeAllPubsubTopics} from "../src/Util.js";
 

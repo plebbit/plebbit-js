@@ -1,8 +1,4 @@
-import Plebbit from "../src/Plebbit.js";
-import Post from "../src/Post.js";
-import Author from "../src/Author.js";
-import Comment from "../src/Comment.js";
-import Subplebbit from "../src/Subplebbit.js";
+import {Plebbit, Comment, Post, Subplebbit} from "../src/index.js";
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
 import assert from 'assert';
 

@@ -1,8 +1,6 @@
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
 import assert from 'assert';
-import Subplebbit from "../src/Subplebbit.js";
-import Plebbit from "../src/Plebbit.js";
-import Post from "../src/Post.js";
+import {Subplebbit, Plebbit, Post} from "../src/index.js"
 import {unsubscribeAllPubsubTopics} from "../src/Util.js";
 
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});

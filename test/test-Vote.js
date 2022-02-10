@@ -1,6 +1,5 @@
-import Plebbit from "../src/Plebbit.js";
+import {Plebbit, Vote} from "../src/index.js";
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
-import Vote from "../src/Vote.js";
 import assert from 'assert';
 import {unsubscribeAllPubsubTopics} from "../src/Util.js";
 
