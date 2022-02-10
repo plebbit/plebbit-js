@@ -2,8 +2,8 @@ import Author from "./Author.js";
 import Publication from "./Publication.js";
 
 class Vote extends Publication {
-    constructor(props, plebbit, subplebbit) {
-        super(plebbit, subplebbit);
+    constructor(props, subplebbit) {
+        super(subplebbit);
         // Publication
         this.author = new Author(props["author"]);
         this.timestamp = props["timestamp"];

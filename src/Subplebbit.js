@@ -9,15 +9,17 @@ import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string'
 import {Challenge, challengeStages} from "./Challenge.js";
 import Vote from "./Vote.js";
 import assert from "assert";
+import PlebbitCore from "./PlebbitCore.js";
+import Plebbit from "./Plebbit.js";
 
-class Subplebbit extends EventEmitter {
-    constructor(props, plebbit, provideCaptchaCallback, validateCaptchaAnswerCallback) {
-        super();
+class Subplebbit extends PlebbitCore {
+    constructor(props, ipfsClient=null, provideCaptchaCallback, validateCaptchaAnswerCallback) {
+        super(props, ipfsClient);
         this.#initSubplebbit(props);
-        this.plebbit = plebbit;
         this.ongoingChallenges = {}; // Map challenge ID to actual challenge
         this.provideCaptchaCallback = provideCaptchaCallback;
         this.validateCaptchaAnswerCallback = validateCaptchaAnswerCallback;
+        this.event = new EventEmitter();
     }
 
     #initSubplebbit(newProps) {
@@ -29,15 +31,12 @@ class Subplebbit extends EventEmitter {
         this.latestPostCid = mergedProps["latestPostCid"];
         this.preloadedPosts = mergedProps["preloadedPosts"] || [];
         this.setIpnsKey(mergedProps["ipnsKeyId"], mergedProps["ipnsKeyName"]);
+        this.plebbit = new Plebbit(newProps, this.ipfsClient);
     }
 
     setIpnsKey(newIpnsKeyId, newIpnsKeyName) {
         this.pubsubTopic = this.ipnsKeyId = newIpnsKeyId;
         this.ipnsKeyName = newIpnsKeyName;
-    }
-
-    setPlebbit(newPlebbit) {
-        this.plebbit = newPlebbit;
     }
 
     setProvideCaptchaCallback(newCallback) {
@@ -51,7 +50,7 @@ class Subplebbit extends EventEmitter {
     async publishAsNewSubplebbit() {
         // TODO Add a check for key existence
         return new Promise((resolve, reject) => {
-            this.plebbit.ipfsClient.key.gen(this.title).then(ipnsKey => {
+            this.ipfsClient.key.gen(this.title).then(ipnsKey => {
                 // TODO add to db
                 this.update({"ipnsKeyId": ipnsKey["id"], "ipnsKeyName": ipnsKey["name"]}).then(resolve).catch(reject)
             }).catch(reject);
@@ -77,8 +76,8 @@ class Subplebbit extends EventEmitter {
         this.#initSubplebbit(newSubplebbitOptions);
         const subplebbitWithNewContent = JSON.stringify(this);
         return new Promise((resolve, reject) => {
-            this.plebbit.ipfsClient.add(subplebbitWithNewContent).then(file => {
-                this.plebbit.ipfsClient.name.publish(file["cid"], {
+            this.ipfsClient.add(subplebbitWithNewContent).then(file => {
+                this.ipfsClient.name.publish(file["cid"], {
                     "lifetime": "5h", // TODO decide on optimal time later
                     "key": this.ipnsKeyName
                 }).then(resolve).catch(reject);
@@ -93,7 +92,7 @@ class Subplebbit extends EventEmitter {
             "latestPostCid": post.postCid
         }
         await this.update(newSubplebbitOptions);
-        this.emit("post", post);
+        this.event.emit("post", post);
     }
 
     async #updatePostComments(comment) {
@@ -104,20 +103,20 @@ class Subplebbit extends EventEmitter {
             "preloadedComments": [comment, ...(comment.parent.commentIpns.preloadedComments)],
         });
         await comment.parent.updateCommentIpns(newCommentIpns)
-        this.emit("comment", comment);
+        this.event.emit("comment", comment);
     }
 
     async #publishPubsubMsg(pubsubMsg) {
         const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
 
         //TODO check if post or comment has been posted before
-        const postOrCommentOrVote = msgParsed.title ? new Post(msgParsed, this.plebbit, this) :
-            msgParsed.vote ? new Vote(msgParsed, this.plebbit, this)
-                : new Comment(msgParsed, this.plebbit, this);
+        const postOrCommentOrVote = msgParsed.title ? new Post(msgParsed, this) :
+            msgParsed.vote ? new Vote(msgParsed, this)
+                : new Comment(msgParsed, this);
 
         const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote instanceof Comment ? postOrCommentOrVote.toJSONSkeleton() : postOrCommentOrVote));
 
-        const ipnsKeys = (await this.plebbit.ipfsClient.key.list()).map(key => key["name"]);
+        const ipnsKeys = (await this.ipfsClient.key.list()).map(key => key["name"]);
 
         if (ipnsKeys.includes(ipnsKeyName)) {
             const msg = `Failed to insert ${postOrCommentOrVote.getType()} due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`;
@@ -125,7 +124,7 @@ class Subplebbit extends EventEmitter {
         }
 
         if (postOrCommentOrVote instanceof Comment) // Only Post and Comment
-            postOrCommentOrVote.setCommentIpnsKey(await this.plebbit.ipfsClient.key.gen(ipnsKeyName));
+            postOrCommentOrVote.setCommentIpnsKey(await this.ipfsClient.key.gen(ipnsKeyName));
 
         if (postOrCommentOrVote.getType() === "post") {
             postOrCommentOrVote.setPreviousCommentCid(this.latestPostCid);
@@ -152,7 +151,7 @@ class Subplebbit extends EventEmitter {
             }));
         } else {
             // Comment and Post need to add file to ipfs
-            const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote));
+            const file = await this.ipfsClient.add(JSON.stringify(postOrCommentOrVote));
             if (postOrCommentOrVote.getType() === "post") {
                 postOrCommentOrVote.setPostCid(file["cid"]);
                 await this.#updateSubplebbitPosts(postOrCommentOrVote);
@@ -185,7 +184,7 @@ class Subplebbit extends EventEmitter {
                 if (challengeAnswerIsVerified)
                     msgParsed["msg"] = await this.#publishPostAfterPassingChallenge(msgParsed);
                 if (challenge.answerId)
-                    await this.plebbit.ipfsClient.pubsub.publish(challenge.answerId, uint8ArrayFromString(JSON.stringify(msgParsed)));
+                    await this.ipfsClient.pubsub.publish(challenge.answerId, uint8ArrayFromString(JSON.stringify(msgParsed)));
 
             }
         }
@@ -208,22 +207,22 @@ class Subplebbit extends EventEmitter {
             if (challenge.stage === challengeStages.CHALLENGEVERIFICATION)
                 msgParsed["msg"] = await this.#publishPostAfterPassingChallenge(msgParsed);
             if (challenge.stage === challengeStages.CHALLENGE)
-                await this.plebbit.ipfsClient.pubsub.subscribe(challenge.requestId, validateCaptchaAnswer);
+                await this.ipfsClient.pubsub.subscribe(challenge.requestId, validateCaptchaAnswer);
         }
-        await this.plebbit.ipfsClient.pubsub.publish(challenge.requestId, uint8ArrayFromString(JSON.stringify(msgParsed)));
+        await this.ipfsClient.pubsub.publish(challenge.requestId, uint8ArrayFromString(JSON.stringify(msgParsed)));
     }
 
 
     async startPublishing() {
         assert(this.provideCaptchaCallback, "You need to set provideCaptchaCallback. If you don't need captcha, you can return null");
-        const subscribedTopics = (await this.plebbit.ipfsClient.pubsub.ls());
+        const subscribedTopics = (await this.ipfsClient.pubsub.ls());
         if (!subscribedTopics.includes(this.pubsubTopic))
-            await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, this.#processCaptchaPubsub.bind(this));
+            await this.ipfsClient.pubsub.subscribe(this.pubsubTopic, this.#processCaptchaPubsub.bind(this));
     }
 
     async stopPublishing() {
-        await this.plebbit.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
-        this.removeAllListeners();
+        await this.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
+        this.event.removeAllListeners();
     }
 
     async destroy() {
@@ -231,9 +230,9 @@ class Subplebbit extends EventEmitter {
         // Call this only if you know what you're doing
         // rm ipns and ipfs
         await this.stopPublishing();
-        const ipfsPath = (await last(this.plebbit.ipfsClient.name.resolve(this.ipnsKeyId)));
-        await this.plebbit.ipfsClient.pin.rm(ipfsPath);
-        await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
+        const ipfsPath = (await last(this.ipfsClient.name.resolve(this.ipnsKeyId)));
+        await this.ipfsClient.pin.rm(ipfsPath);
+        await this.ipfsClient.key.rm(this.ipnsKeyName);
     }
 
 }

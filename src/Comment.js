@@ -21,9 +21,9 @@ class CommentIPNS {
 }
 
 class Comment extends Publication {
-    constructor(props, plebbit, subplebbit) {
+    constructor(props, subplebbit) {
         // Publication
-        super(plebbit, subplebbit);
+        super(subplebbit);
         this.author = new Author(props["author"]);
         this.timestamp = props["timestamp"];
         this.signature = props["signature"];
@@ -87,7 +87,7 @@ class Comment extends Publication {
 
     async fetchParent() {
         return new Promise(async (resolve, reject) => {
-            this.plebbit.getPostOrComment(this.parentCommentCid || this.postCid).then(res => {
+            this.subplebbit.plebbit.getPostOrComment(this.parentCommentCid || this.postCid).then(res => {
                 this.parent = res;
                 resolve(this.parent);
             }).catch(reject);
@@ -96,7 +96,7 @@ class Comment extends Publication {
 
     async fetchCommentIpns() {
         return new Promise(async (resolve, reject) => {
-            loadIpnsAsJson(this.commentIpnsKeyId, this.plebbit.ipfsClient).then(res => {
+            loadIpnsAsJson(this.commentIpnsKeyId, this.subplebbit.ipfsClient).then(res => {
                     this.commentIpns = new CommentIPNS(res);
                     resolve(this.commentIpns);
                 }
@@ -108,8 +108,8 @@ class Comment extends Publication {
         assert(this.commentIpnsKeyName && this.commentIpnsKeyId, "You need to have commentIpns");
         this.commentIpns = newCommentIpns;
         return new Promise(async (resolve, reject) => {
-            this.plebbit.ipfsClient.add(JSON.stringify(this.commentIpns)).then(file => {
-                this.plebbit.ipfsClient.name.publish(file["cid"], {
+            this.subplebbit.ipfsClient.add(JSON.stringify(this.commentIpns)).then(file => {
+                this.subplebbit.ipfsClient.name.publish(file["cid"], {
                     "lifetime": "5h",
                     "key": this.commentIpnsKeyName
                 }).then(resolve).catch(reject);

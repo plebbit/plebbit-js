@@ -2,8 +2,8 @@ import Comment from "./Comment.js";
 
 class Post extends Comment {
 
-    constructor(props, plebbit, subplebbit) {
-        super(props, plebbit, subplebbit);
+    constructor(props, subplebbit) {
+        super(props, subplebbit);
         this.parentCommentCid = null;
         this.title = props["title"];
     }
