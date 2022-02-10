@@ -1,8 +1,8 @@
 {
-  "name": "plebbit.js",
-  "version": "0.0.1",
+  "name": "@plebbit/plebbit-js",
+  "version": "0.0.3",
   "description": "plebbit.js will be an NPM module to wrap around the IPFS APIs used by Plebbit. It will be used in all clients: CLI, Electron (Desktop GUI) and Web.",
-  "main": "src/Plebbit.js",
+  "main": "./src/index.js",
   "scripts": {
     "test": "mocha --timeout 0"
   },
