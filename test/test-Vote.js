@@ -14,11 +14,11 @@ const generateMockVote = async (parentPostOrComment, vote) => {
         "author": {"displayName": `Mock Author - ${Date.now()}`, "ipnsKeyId": mockAuthorIpns["id"]},
         "timestamp": Date.now(), "commentCid": parentPostOrComment.commentCid || parentPostOrComment.postCid,
         "vote": vote,
-    }, plebbit, parentPostOrComment.subplebbit);
+    }, parentPostOrComment.subplebbit);
 };
 
 describe("Test Vote", async () => {
-    before(() => unsubscribeAllPubsubTopics(plebbit));
+    before(() => unsubscribeAllPubsubTopics(plebbit.ipfsClient));
 
     it("Can upvote a post", async () => {
         return new Promise(async (resolve, reject) => {

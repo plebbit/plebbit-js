@@ -17,16 +17,16 @@ async function generateMockComment(parentPostOrComment) {
         "postCid": parentPostOrComment.postCid,
         ...(parentPostOrComment.getType() === "comment" && {"parentCommentCid": parentPostOrComment.commentCid})
 
-    }, plebbit, parentPostOrComment.subplebbit);
+    }, parentPostOrComment.subplebbit);
 }
 
 describe("Test Post and Comment", async function () {
-    before(() => unsubscribeAllPubsubTopics(plebbit));
+    before(() => unsubscribeAllPubsubTopics(plebbit.ipfsClient));
 
     it("Can publish new comment under post", async function () {
         return new Promise(async (resolve, reject) => {
             const mockComment = await generateMockComment(post);
-            mockComment.subplebbit.once("comment", async (comment) => {
+            mockComment.subplebbit.event.once("comment", async (comment) => {
                 const loadedComment = await plebbit.getPostOrComment(comment.commentCid);
                 assert.equal(JSON.stringify(loadedComment), JSON.stringify(comment));
 
@@ -52,7 +52,7 @@ describe("Test Post and Comment", async function () {
     it("Can publish new comments under comment", async () => {
         return new Promise(async (resolve, reject) => {
             const mockComment = await generateMockComment(mockComments[0]);
-            mockComment.subplebbit.once("comment", async (comment) => {
+            mockComment.subplebbit.event.once("comment", async (comment) => {
                 await comment.fetchParent();
                 assert.equal(comment.parent.commentCid, mockComments[0].commentCid.toString());
                 assert.equal(comment.parentCommentCid, mockComments[0].commentCid.toString());

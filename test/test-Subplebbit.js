@@ -6,7 +6,7 @@ import {unsubscribeAllPubsubTopics} from "../src/Util.js";
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 const subplebbit = new Subplebbit({
     "title": `Test subplebbit - ${Date.now()}`
-}, plebbit);
+}, plebbit.ipfsClient);
 
 const mockPosts = [];
 
@@ -15,13 +15,13 @@ async function generateMockPost() {
     return new Post({
         "author": {"displayName": `Mock Author - ${Date.now()}`, "ipnsKeyId": mockAuthorIpns["id"]},
         "title": `Mock Post - ${Date.now()}`, "content": `Mock content - ${Date.now()}`, "timestamp": Date.now(),
-    }, plebbit, subplebbit);
+    }, subplebbit);
 }
 
 
 describe("Test Subplebbit functionality", async () => {
 
-    before(() => unsubscribeAllPubsubTopics(plebbit));
+    before(() => unsubscribeAllPubsubTopics(plebbit.ipfsClient));
     // Stop publishing once we're done with tests
     after(async () => await subplebbit.stopPublishing());
 
@@ -99,7 +99,7 @@ describe("Test Subplebbit functionality", async () => {
     it("Subplebbit emits an event everytime a post is posted", async function () {
         return new Promise(async (resolve, reject) => {
             const mockPost = await generateMockPost();
-            subplebbit.once('post', async (post) => {
+            subplebbit.event.once('post', async (post) => {
                 assert.equal(post.title, mockPost.title, "Failed to publish correct post");
                 assert.equal(post.postCid, subplebbit.latestPostCid, "Failed to update subplebbit latestPostCid");
                 const loadedPost = await plebbit.getPostOrComment(post.postCid);
