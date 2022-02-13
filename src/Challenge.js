@@ -45,6 +45,20 @@ class Challenge {
     setType(newType){
         this.type = newType;
     }
+
+    toJSONForDb(){
+        return {
+            "stage": this.stage,
+            "challenge": this.challenge,
+            "requestId": this.requestId,
+            "answerId": this.answerId,
+            "answer": this.answer,
+            "answerIsVerified": this.answerIsVerified,
+            "answerVerificationReason": this.answerVerificationReason,
+            "acceptedChallengeTypes": JSON.stringify(this.acceptedChallengeTypes),
+            "type": this.type
+        };
+    }
 }
 export default Challenge;
 export {challengeStages, Challenge};

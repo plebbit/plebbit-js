@@ -3,7 +3,7 @@ import Publication from "./Publication.js";
 
 class Vote extends Publication {
     constructor(props, subplebbit) {
-        super(subplebbit);
+        super(props, subplebbit);
         // Publication
         this.author = new Author(props["author"]);
         this.timestamp = props["timestamp"];
@@ -21,6 +21,15 @@ class Vote extends Publication {
             "commentCid": this.commentCid,
             "vote": this.vote
         }
+    }
+
+    toJSONForDb(){
+        const json = this.toJSON();
+        delete json["author"];
+        delete json["challenge"];
+        json["authorIpnsName"] = this.author.ipnsName;
+        json["challengeRequestId"] = this.challenge?.requestId;
+        return json;
     }
 }
 

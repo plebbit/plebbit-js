@@ -19,9 +19,9 @@ class Plebbit extends PlebbitCore {
     async getPostOrComment(cid) {
         return new Promise(async (resolve, reject) => {
             loadIpfsFileAsJson(cid, this.ipfsClient).then(async jsonFile => {
-                const subplebbit = await this.getSubplebbit(jsonFile["subplebbitIpnsKeyId"]);
+                const subplebbit = await this.getSubplebbit(jsonFile["subplebbitIpnsName"]);
                 if (jsonFile["title"])
-                    resolve(new Post({...jsonFile, "postCid": cid}, subplebbit));
+                    resolve(new Post({...jsonFile, "postCid": cid, "commentCid": cid}, subplebbit));
                 else
                     resolve(new Comment({...jsonFile, "commentCid": cid}, subplebbit));
             }).catch(reject);

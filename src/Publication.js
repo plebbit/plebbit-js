@@ -6,9 +6,9 @@ import assert from "assert";
 
 class Publication {
 
-    constructor(subplebbit) {
+    constructor(props,subplebbit) {
         this.subplebbit = subplebbit;
-        this.challenge = null;
+        this.challenge = props["challenge"];
     }
 
     setSubplebbit(newSubplebbit) {
@@ -22,6 +22,10 @@ class Publication {
             return "vote";
         else
             return "comment";
+    }
+
+    toJSON() {
+        return {"subplebbitIpnsName": this.subplebbit.ipnsName, "challenge": this.challenge};
     }
 
     async #publish(userOptions, solveChallengeCallback) {
@@ -90,7 +94,8 @@ class Publication {
                         await this.subplebbit.ipfsClient.pubsub.unsubscribe(this.challenge.requestId);
                     if (this.challenge?.answerId)
                         await this.subplebbit.ipfsClient.pubsub.unsubscribe(this.challenge.answerId);
-                } catch {}
+                } catch {
+                }
                 const topics = await this.subplebbit.ipfsClient.pubsub.ls();
                 assert(!topics.includes(this.challenge.requestId), "Failed to unsubscribe from challenge request ID event");
                 assert(!topics.includes(this.challenge.answerId), "Failed to unsubscribe from challenge answer ID event");

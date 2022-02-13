@@ -23,14 +23,10 @@ class CommentIPNS {
 class Comment extends Publication {
     constructor(props, subplebbit) {
         // Publication
-        super(subplebbit);
+        super(props, subplebbit);
         this.author = new Author(props["author"]);
         this.timestamp = props["timestamp"];
         this.signature = props["signature"];
-
-        this.subplebbitIpnsKeyId = props["subplebbitIpnsKeyId"] || subplebbit?.ipnsKeyId;
-
-
         this.postCid = props["postCid"];
         this.commentCid = props["commentCid"];
         this.parentCommentCid = props["parentCommentCid"];
@@ -58,13 +54,25 @@ class Comment extends Publication {
 
     toJSONSkeleton() {
         return {
+            ...(super.toJSON()),
             "author": this.author,
             "content": this.content,
             "timestamp": this.timestamp,
             "signature": this.signature,
-            "subplebbitIpnsKeyId": this.subplebbitIpnsKeyId || this.subplebbit?.ipnsKeyId,
             "parentCommentCid": this.parentCommentCid?.toString()
         }
+    }
+
+    toJSONForDb() {
+        const json = this.toJSON();
+        delete json.author;
+        delete json.commentIpnsKeyId;
+        delete json.commentIpnsKeyName;
+        delete json.challenge;
+        json["authorIpnsName"] = this.author.ipnsName;
+        json["commentIpnsName"] = this.commentIpnsKeyId;
+        json["challengeRequestId"] = this.challenge?.requestId;
+        return json;
     }
 
     setCommentIpnsKey(ipnsKey) {
