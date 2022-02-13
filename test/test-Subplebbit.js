@@ -3,18 +3,29 @@ import assert from 'assert';
 import {Plebbit, Post, Subplebbit} from "../src/index.js"
 import {unsubscribeAllPubsubTopics} from "../src/Util.js";
 
+const startTestTime = Date.now();
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 const subplebbit = new Subplebbit({
-    "title": `Test subplebbit - ${Date.now()}`
+    "title": `Test subplebbit - ${startTestTime}`,
+    "database": {
+        client: 'better-sqlite3', // or 'better-sqlite3'
+        connection: {
+            filename: `.databases/test-Subplebbit-${startTestTime}.sqlite`
+        },
+        useNullAsDefault: true
+    }
 }, plebbit.ipfsClient);
 
 const mockPosts = [];
 
 async function generateMockPost() {
-    const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${Date.now()}`);
+    const postStartTestTime = Date.now();
+    const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${postStartTestTime}`);
     return new Post({
-        "author": {"displayName": `Mock Author - ${Date.now()}`, "ipnsKeyId": mockAuthorIpns["id"]},
-        "title": `Mock Post - ${Date.now()}`, "content": `Mock content - ${Date.now()}`, "timestamp": Date.now(),
+        "author": {"displayName": `Mock Author - ${postStartTestTime}`, "ipnsName": mockAuthorIpns["id"]},
+        "title": `Mock Post - ${postStartTestTime}`,
+        "content": `Mock content - ${postStartTestTime}`,
+        "timestamp": postStartTestTime,
     }, subplebbit);
 }
 
@@ -29,7 +40,7 @@ describe("Test Subplebbit functionality", async () => {
     it("New subplebbits can be published", async function () {
         await subplebbit.publishAsNewSubplebbit();
         // Should have ipns key now
-        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.ipnsKeyId);
+        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.ipnsName);
         assert.equal(JSON.stringify(loadedSubplebbit), JSON.stringify(subplebbit), "Failed to publish new subplebbit");
     });
 
