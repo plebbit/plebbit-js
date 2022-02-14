@@ -39,6 +39,18 @@ class Subplebbit extends PlebbitCore {
     }
 
     async #initDb() {
+        const ipfsKeys = (await this.ipfsClient.key.list()).map(key => key["id"]);
+        const ranByOwner = ipfsKeys.includes(this.ipnsName);
+        // Default settings for subplebbit owner node
+        if (ranByOwner && !this._dbConfig)
+            this._dbConfig = {
+                client: 'better-sqlite3', // or 'better-sqlite3'
+                connection: {
+                    filename: `.databases/${this.title}.sqlite`
+                },
+                useNullAsDefault: true
+            }
+
         if (!this._dbConfig)
             return;
         this._dbHandler = new DbHandler(knex(this._dbConfig));
@@ -58,7 +70,7 @@ class Subplebbit extends PlebbitCore {
         this.validateCaptchaAnswerCallback = newCallback;
     }
 
-    setDbConfig(dbConfig){
+    setDbConfig(dbConfig) {
         this._dbConfig = dbConfig;
     }
 
