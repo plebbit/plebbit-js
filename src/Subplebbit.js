@@ -138,8 +138,8 @@ class Subplebbit extends PlebbitCore {
         const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
 
         //TODO check if post or comment has been posted before
-        const postOrCommentOrVote = msgParsed.title ? new Post(msgParsed, this) :
-            msgParsed.vote ? new Vote(msgParsed, this)
+        const postOrCommentOrVote = msgParsed.hasOwnProperty("title") ? new Post(msgParsed, this) :
+            msgParsed.hasOwnProperty("vote") ? new Vote(msgParsed, this)
                 : new Comment(msgParsed, this);
 
         const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote instanceof Comment ? postOrCommentOrVote.toJSONSkeleton() : postOrCommentOrVote));
