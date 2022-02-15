@@ -5,14 +5,14 @@ import {unsubscribeAllPubsubTopics} from "../src/Util.js";
 
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 
-const post = await plebbit.getPostOrComment("QmVxihaABYMBFkWGTpbK6hxekPXh9J7WmRQhq3vSZRix7q");
-const comment = await plebbit.getPostOrComment("QmWrZd71VcJSmbjZQtmTHzf75kbQ33jxeFMzRLWZC6Feug");
+const post = await plebbit.getPostOrComment("QmeqbvRcRv7L5jvb9hLmD3LGcnjuLAcpLbngsiZRrisT3L");
+const comment = await plebbit.getPostOrComment("QmX3tgDHFYEaYZnEb6P2Qci9E6GfDWGTBhDAmZ1qLdxUCk");
 const generateMockVote = async (parentPostOrComment, vote) => {
-    const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${Date.now()}`);
-
+    const voteTime = Date.now();
+    const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${voteTime}`);
     return new Vote({
-        "author": {"displayName": `Mock Author - ${Date.now()}`, "ipnsKeyId": mockAuthorIpns["id"]},
-        "timestamp": Date.now(), "commentCid": parentPostOrComment.commentCid || parentPostOrComment.postCid,
+        "author": {"displayName": `Mock Author - ${voteTime}`, "ipnsName": mockAuthorIpns["id"]},
+        "timestamp": voteTime, "commentCid": parentPostOrComment.commentCid || parentPostOrComment.postCid,
         "vote": vote,
     }, parentPostOrComment.subplebbit);
 };
