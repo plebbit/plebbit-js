@@ -150,7 +150,6 @@ class Subplebbit extends PlebbitCore {
             const msg = `Failed to insert ${postOrCommentOrVote.getType()} due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`;
             return {"error": msg};
         }
-        // TODO check if vote's author has voted before
         if (postOrCommentOrVote instanceof Comment) // Only Post and Comment
             postOrCommentOrVote.setCommentIpnsKey(await this.ipfsClient.key.gen(ipnsKeyName));
 
@@ -166,11 +165,33 @@ class Subplebbit extends PlebbitCore {
         }
 
         if (postOrCommentOrVote.getType() === "vote") {
-            // TODO handle vote === 0, which cancels previous votes
+            const lastVote = await this._dbHandler.getLastVoteOfAuthor(postOrCommentOrVote.commentCid, postOrCommentOrVote.author.ipnsName);
             const voteComment = await this.plebbit.getPostOrComment(postOrCommentOrVote.commentCid);
             const commentIpns = await voteComment.fetchCommentIpns();
-            const newUpvoteCount = postOrCommentOrVote.vote === 1 ? commentIpns.upvoteCount + 1 : commentIpns.upvoteCount;
-            const newDownvoteCount = postOrCommentOrVote.vote === -1 ? commentIpns.downvoteCount + 1 : commentIpns.downvoteCount;
+            let newUpvoteCount = -1, newDownvoteCount = -1;
+            if (lastVote) {
+                // User has voted before and is trying to change his vote
+
+                if (postOrCommentOrVote.vote === 0) {
+                    newUpvoteCount = commentIpns.upvoteCount + (lastVote.vote === 1 ? -1 : 0);
+                    newDownvoteCount = commentIpns.downvoteCount + (lastVote.vote === -1 ? -1 : 0);
+                } else {
+                    if (lastVote.vote === 1 && postOrCommentOrVote.vote === -1) {
+                        newUpvoteCount = commentIpns.upvoteCount - 1;
+                        newDownvoteCount = commentIpns.downvoteCount + 1;
+                    }
+                    else if (lastVote.vote === -1 && postOrCommentOrVote.vote === 1) {
+                        newUpvoteCount = commentIpns.upvoteCount + 1;
+                        newDownvoteCount = commentIpns.downvoteCount - 1;
+                    } else
+                        return {"error": "User duplicated his vote"};
+                }
+            } else {
+                // New vote
+                newUpvoteCount = postOrCommentOrVote.vote === 1 ? commentIpns.upvoteCount + 1 : commentIpns.upvoteCount;
+                newDownvoteCount = postOrCommentOrVote.vote === -1 ? commentIpns.downvoteCount + 1 : commentIpns.downvoteCount;
+            }
+            assert(newDownvoteCount >= 0 && newDownvoteCount >= 0, "New upvote and downvote need to be proper numbers");
 
             await voteComment.updateCommentIpns(new CommentIPNS({
                 ...commentIpns.toJSON(),

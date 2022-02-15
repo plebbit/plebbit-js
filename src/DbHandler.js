@@ -131,6 +131,18 @@ class DbHandler {
             });
         });
     }
+
+    async getLastVoteOfAuthor(commentCid, authorIpnsName) {
+        return new Promise(async (resolve, reject) => {
+            this.knex(TABLES.votes).where({
+                "commentCid": commentCid,
+                "authorIpnsName": authorIpnsName
+            }).first().then(resolve).catch(err => {
+                console.error(err);
+                reject(err);
+            })
+        });
+    }
 }
 
 export default DbHandler;
