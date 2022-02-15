@@ -15,6 +15,7 @@ class Vote extends Publication {
 
     toJSON() {
         return {
+            ...(super.toJSON()),
             "author": this.author,
             "timestamp": this.timestamp,
             "signature": this.signature,
@@ -28,7 +29,7 @@ class Vote extends Publication {
         delete json["author"];
         delete json["challenge"];
         json["authorIpnsName"] = this.author.ipnsName;
-        json["challengeRequestId"] = this.challenge?.requestId;
+        json["challengeRequestId"] = this.challenge.requestId;
         return json;
     }
 }
