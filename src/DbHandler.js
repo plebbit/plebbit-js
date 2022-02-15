@@ -37,10 +37,12 @@ class DbHandler {
         await this.knex.schema.createTable(TABLES.votes, (table) => {
             table.text("commentCid").notNullable().references("commentCid").inTable(TABLES.comments);
             table.text("authorIpnsName").notNullable().references("ipnsName").inTable(TABLES.authors);
+            table.uuid("challengeRequestId").notNullable().references("requestId").inTable(TABLES.challenges);
 
             table.timestamp("timestamp").notNullable();
+            table.text("subplebbitIpnsName").notNullable();
+            table.enum("vote", [-1, 0, 1]).notNullable();
             table.text("signature").nullable(); // Will likely revise later
-            table.enum("vote", ["-1", "0", "1"]);
 
             table.primary(["commentCid", "authorIpnsName"]); // An author can't have multiple votes on a comment
         });
