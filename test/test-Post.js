@@ -5,15 +5,16 @@ import {unsubscribeAllPubsubTopics} from "../src/Util.js";
 
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 
-const post = await plebbit.getPostOrComment("QmaUA9jUp3CH96usYNwYXe58HnaxjeAHKKhthk55XNTU2d");
+const post = await plebbit.getPostOrComment("QmUk7G5As3PaTpT9mmL2P58N9EtUL9SKbK8jdccn5hEG6e");
 
 const mockComments = [];
 
 async function generateMockComment(parentPostOrComment) {
-    const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${Date.now()}`);
+    const commentTime = Date.now();
+    const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${commentTime}`);
     return new Comment({
-        "author": {"displayName": `Mock Author - ${Date.now()}`, "ipnsKeyId": mockAuthorIpns["id"]},
-        "content": `Mock comment - ${Date.now()}`, "timestamp": Date.now(),
+        "author": {"displayName": `Mock Author - ${commentTime}`, "ipnsName": mockAuthorIpns["id"]},
+        "content": `Mock comment - ${commentTime}`, "timestamp": commentTime,
         "postCid": parentPostOrComment.postCid,
         ...(parentPostOrComment.getType() === "comment" && {"parentCommentCid": parentPostOrComment.commentCid})
 
