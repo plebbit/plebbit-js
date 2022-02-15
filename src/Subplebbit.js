@@ -177,7 +177,7 @@ class Subplebbit extends PlebbitCore {
                 "upvoteCount": newUpvoteCount,
                 "downvoteCount": newDownvoteCount
             }));
-            await this._dbHandler.insertVote(postOrCommentOrVote);
+            await this._dbHandler.upsertVote(postOrCommentOrVote);
         } else {
             // Comment and Post need to add file to ipfs
             const file = await this.ipfsClient.add(JSON.stringify(postOrCommentOrVote));

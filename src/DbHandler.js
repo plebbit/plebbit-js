@@ -98,11 +98,11 @@ class DbHandler {
         });
     }
 
-    async insertVote(vote) {
+    async upsertVote(vote) {
         return new Promise(async (resolve, reject) => {
             await this.#addAuthorToDbIfNeeded(vote.author);
             const dbObject = vote.toJSONForDb();
-            this.knex(TABLES.votes).insert(vote.toJSONForDb()).then(() => resolve(dbObject)).catch(err => {
+            this.knex(TABLES.votes).insert(vote.toJSONForDb()).onConflict(['commentCid', "authorIpnsName"]).merge().then(() => resolve(dbObject)).catch(err => {
                 console.error(err);
                 reject(err);
             });
