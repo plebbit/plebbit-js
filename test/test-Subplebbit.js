@@ -6,15 +6,7 @@ import {unsubscribeAllPubsubTopics} from "../src/Util.js";
 const startTestTime = Date.now();
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 const subplebbit = new Subplebbit({
-    "title": `Test subplebbit - ${startTestTime}`,
-    "database": {
-        client: 'better-sqlite3', // or 'better-sqlite3'
-        connection: {
-            filename: `.databases/test-Subplebbit-${startTestTime}.sqlite`
-        },
-        useNullAsDefault: true
-    }
-}, plebbit.ipfsClient);
+    "title": `Test subplebbit - ${startTestTime}`}, plebbit.ipfsClient);
 
 const mockPosts = [];
 
