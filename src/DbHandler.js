@@ -86,24 +86,50 @@ class DbHandler {
     }
 
     async #addAuthorToDbIfNeeded(author) {
-        const authorFromDb = await this.knex(TABLES.authors).where({"ipnsName": author.ipnsName}).first();
-        if (!authorFromDb) // Author is new. Add to database
-            await this.knex(TABLES.authors).insert(author.toJSON())
+        return new Promise(async (resolve, reject) => {
+            const authorFromDb = await this.knex(TABLES.authors).where({"ipnsName": author.ipnsName}).first();
+            if (!authorFromDb) // Author is new. Add to database
+                this.knex(TABLES.authors).insert(author.toJSON()).then(() => resolve(author.toJSON())).catch(err => {
+                    console.error(err);
+                    reject(err);
+                });
+            else
+                resolve(authorFromDb);
+        });
     }
 
     async insertVote(vote) {
-        await this.#addAuthorToDbIfNeeded(vote.author);
-        this.knex(TABLES.votes).insert(vote.toJSONForDb()).then(console.log).catch(console.error);
+        return new Promise(async (resolve, reject) => {
+            await this.#addAuthorToDbIfNeeded(vote.author);
+            const dbObject = vote.toJSONForDb();
+            this.knex(TABLES.votes).insert(vote.toJSONForDb()).then(() => resolve(dbObject)).catch(err => {
+                console.error(err);
+                reject(err);
+            });
+        });
     }
 
 
     async insertComment(postOrComment) {
-        await this.#addAuthorToDbIfNeeded(postOrComment.author);
-        this.knex(TABLES.comments).insert(postOrComment.toJSONForDb()).then(console.log).catch(console.error);
+        return new Promise(async (resolve, reject) => {
+            await this.#addAuthorToDbIfNeeded(postOrComment.author);
+            const dbObject = postOrComment.toJSONForDb();
+            this.knex(TABLES.comments).insert(dbObject).then(() => resolve(dbObject)).catch(err => {
+                console.error(err);
+                reject(err);
+            });
+
+        });
     }
 
     async upsertChallenge(challenge) {
-        this.knex(TABLES.challenges).insert(challenge.toJSONForDb()).onConflict('requestId').merge().then(console.log).catch(console.error);
+        return new Promise(async (resolve, reject) => {
+            const dbObject = challenge.toJSONForDb();
+            this.knex(TABLES.challenges).insert(challenge.toJSONForDb()).onConflict('requestId').merge().then(() => resolve(dbObject)).catch(err => {
+                console.error(err);
+                reject(err);
+            });
+        });
     }
 }
 
