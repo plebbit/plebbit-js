@@ -35,7 +35,7 @@ Post (IPFS file) {
   ...Comment,
   parentCommentCid: null, // post is same as comment but has no parent and some extra fields,
   title: string,
-  thumbnailUrl: string // some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
+  thumbnailUrl: string // fetched by subplebbit owner, not author, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
 }
 Vote {
   ...Publication,
