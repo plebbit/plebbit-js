@@ -62,7 +62,7 @@ Subplebbit (IPNS record): {
   moderatorsIpnsNames: string[],
   latestPostCid: string, // the most recent post in the linked list of posts
   preloadedPosts: SortedPosts[], // preloaded content (sorted by 'best') greatly improves loading speed, it saves scrolling the entire linked list, should include some preloaded comments for each post as well and vote counts
-  pubsubTopic: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
+  pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   sortedPostsCids: [key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid // e.g. subplebbit.sortedPostsCids['new'] = sortedPostCid
 }
 SortedPosts (IPFS file) ( {
@@ -264,13 +264,13 @@ Object is of the form:
 
 ```js
 {
-  subplebbitIpnsName: string,
   title: string,
   description: string,
   moderatorsIpnsNames: string[],
   latestPostCid: string,
-  preloadedPosts: Post[],
-  pubsubTopic: string
+  preloadedPosts: SortedPosts[],
+  pubsubTopic: string,
+  sortedPostsCids: [key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid
 }
 ```
 
