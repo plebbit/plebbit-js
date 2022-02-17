@@ -34,7 +34,8 @@ Comment (IPFS file) {
 Post (IPFS file) {
   ...Comment,
   parentCommentCid: null, // post is same as comment but has no parent and some extra fields,
-  title: string
+  title: string,
+  thumbnailUrl: string // some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
 }
 Vote {
   ...Publication,
@@ -218,6 +219,7 @@ Object is of the form:
   subplebbitIpnsName: string,
   getSubplebbit: function,
   title: string || null, // comments don't have titles
+  thumbnailUrl: string || null // comments don't have thumbnail urls
   content: string,
   previousCommentCid: string,
   getPreviousComment: function,
@@ -264,6 +266,7 @@ Object is of the form:
 
 ```js
 {
+  subplebbitIpnsName: string,
   title: string,
   description: string,
   moderatorsIpnsNames: string[],
