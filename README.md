@@ -17,12 +17,12 @@ Note: IPFS files are immutable, fetched by their CID, which is a hash of their c
 ### Schema:
 
 ```
-Publication: {
+Publication {
   author: Author,
   timestamp: number,
   signature: Signature // sign immutable fields like author, title, content, timestamp to prevent tampering
 }
-Comment (IPFS file): {
+Comment (IPFS file) {
   ...Publication,
   subplebbitIpnsKeyId: string, // required to prevent malicious subplebbits republishing as original and helps faster loading subplebbit info for comment direct linking
   postCid: string, // helps faster loading post info for comment direct linking
@@ -31,7 +31,7 @@ Comment (IPFS file): {
   previousCommentCid: string, // each post is a linked list
   commentIpnsKeyId: string // each post/comment needs its own IPNS record (CommentIpns) for its mutable data like edits, vote counts, comments
 }
-Post (IPFS file): {
+Post (IPFS file) {
   ...Comment,
   parentCommentCid: null, // post is same as comment but has no parent and some extra fields,
   title: string
@@ -41,7 +41,7 @@ Vote {
   commentCid: string,
   vote: 1 | -1 | 0 // 0 is needed to cancel a vote
 }
-CommentIpns (IPNS record): {
+CommentIpns (IPNS record) {
   latestCommentCid: string, // the most recent comment in the linked list of posts
   preloadedComments: Comment[], // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include preloaded nested comments and vote counts
   upvoteCount: number,
@@ -56,7 +56,7 @@ Signature {
   publicKey: buffer, // include public key (marshalled, like IPNS does it) because the IPNS name is just a hash of it
   type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
 }
-Subplebbit (IPNS record): {
+Subplebbit (IPNS record) {
   title: string,
   description: string,
   moderatorsIpnsNames: string[],
@@ -65,7 +65,7 @@ Subplebbit (IPNS record): {
   pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   sortedPostsCids: [key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid // e.g. subplebbit.sortedPostsCids['new'] = sortedPostCid
 }
-SortedPosts (IPFS file) ( {
+SortedPosts (IPFS file) {
   nextSortedPostsCid: string, // get page 2 sorted by 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall'
   posts: Post[]
 }
