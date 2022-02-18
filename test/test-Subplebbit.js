@@ -2,11 +2,15 @@ import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
 import assert from 'assert';
 import {Plebbit, Post, Subplebbit} from "../src/index.js"
 import {unsubscribeAllPubsubTopics} from "../src/Util.js";
+import * as fs from 'fs/promises';
+import readline from "readline";
+import {challengeTypes} from "../src/Challenge.js";
 
 const startTestTime = Date.now();
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 const subplebbit = new Subplebbit({
-    "title": `Test subplebbit - ${startTestTime}`}, plebbit.ipfsClient);
+    "title": `Test subplebbit - ${startTestTime}`
+}, plebbit.ipfsClient);
 
 const mockPosts = [];
 
@@ -36,6 +40,49 @@ describe("Test Subplebbit functionality", async () => {
         assert.equal(JSON.stringify(loadedSubplebbit), JSON.stringify(subplebbit), "Failed to publish new subplebbit");
     });
 
+    it("Can post after solving image captcha", async function () {
+        return new Promise(async (resolve, reject) => {
+            const mockPost = await generateMockPost();
+            await subplebbit.startPublishing();
+            const solveCaptchaCallback = async (challenge) => {
+                return new Promise(async (resolve) => {
+                    // Solve captcha here
+                    const path = `.captcha/${challenge.requestId}.png`;
+                    await fs.writeFile(path, Buffer.from(challenge.challenge));
+                    const rl = readline.createInterface({
+                        input: process.stdin,
+                        output: process.stdout
+                    });
+
+                    // Retrieve answer from user in cli
+                    rl.question(`Please provide your answer for captcha under path ${path}\n`, answer => {
+                        rl.close();
+                        resolve(answer);
+                    });
+                })
+            };
+            mockPost.publish(null, solveCaptchaCallback).then(async (challengeWithPost) => {
+                const loadedPost = await plebbit.getPostOrComment(challengeWithPost.msg.postCid);
+                assert.equal(JSON.stringify(challengeWithPost.msg), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
+                mockPosts.push(loadedPost);
+                resolve();
+            }).catch(reject);
+        });
+
+    });
+
+    it("Throws an error if unable to solve image captcha", async function () {
+        return new Promise(async (resolve, reject) => {
+            const mockPost = await generateMockPost();
+            await subplebbit.startPublishing();
+            const solveCaptchaCallback = async (challenge) => {
+                return new Promise(async (resolve) => resolve("12345"));
+            };
+            mockPost.publish(null, solveCaptchaCallback).then(reject).catch(resolve);
+        });
+
+    });
+
     it("Captcha can be skipped under certain conditions", async () => {
         return new Promise(async (resolve, reject) => {
             subplebbit.setProvideCaptchaCallback((challengeWithPost) => {
@@ -46,7 +93,7 @@ describe("Test Subplebbit functionality", async () => {
                     // if we return null we are skipping captcha for this particular post/comment
                     return [null, null, "Captcha was skipped because timestamp exceeded 1643740217602"];
                 else
-                    return ["1+1=?", "math-cli"];
+                    return ["1+1=?", challengeTypes.mathcli];
             });
             const mockPost = await generateMockPost();
             await subplebbit.startPublishing();
@@ -61,11 +108,11 @@ describe("Test Subplebbit functionality", async () => {
 
     });
 
-    it("Post is published when captcha is answered correctly", async function () {
+    it("Post is published when mathcli captcha is answered correctly", async function () {
         return new Promise(async (resolve, reject) => {
             subplebbit.setProvideCaptchaCallback((challengeWithPost) => {
                 // Return question, type
-                return ["1+1=?", "math-cli"];
+                return ["1+1=?", challengeTypes.mathcli];
             });
             subplebbit.setValidateCaptchaAnswerCallback((challengeWithPost) => {
                 const answerIsCorrect = challengeWithPost["challenge"].answer === "2";
@@ -86,7 +133,7 @@ describe("Test Subplebbit functionality", async () => {
         });
     });
 
-    it("Throws an error when user fails to solve captcha", async function () {
+    it("Throws an error when user fails to solve mathcli captcha", async function () {
         return new Promise(async (resolve, reject) => {
             const mockPost = await generateMockPost();
             await subplebbit.startPublishing();
@@ -118,10 +165,11 @@ describe("Test Subplebbit functionality", async () => {
 
     it("Links current post to past posts correctly", async function () {
         return new Promise(async (resolve, reject) => {
+            const lastPost = mockPosts[mockPosts.length - 1];
             const secondMockPost = await generateMockPost();
             await subplebbit.startPublishing();
             secondMockPost.publish(null, null).then((challengeWithMsg) => {
-                assert.equal(challengeWithMsg.msg.previousCommentCid.toString(), mockPosts[1].postCid.toString(), "Failed to set previousPostCid");
+                assert.equal(challengeWithMsg.msg.previousCommentCid.toString(), lastPost.postCid.toString(), "Failed to set previousPostCid");
                 mockPosts.push(challengeWithMsg.msg);
                 resolve();
             }).catch(reject);
