@@ -17,12 +17,12 @@ Note: IPFS files are immutable, fetched by their CID, which is a hash of their c
 ### Schema:
 
 ```
-Publication: {
+Publication {
   author: Author,
   timestamp: number,
   signature: Signature // sign immutable fields like author, title, content, timestamp to prevent tampering
 }
-Comment (IPFS file): {
+Comment (IPFS file) {
   ...Publication,
   subplebbitIpnsKeyId: string, // required to prevent malicious subplebbits republishing as original and helps faster loading subplebbit info for comment direct linking
   postCid: string, // helps faster loading post info for comment direct linking
@@ -31,17 +31,18 @@ Comment (IPFS file): {
   previousCommentCid: string, // each post is a linked list
   commentIpnsKeyId: string // each post/comment needs its own IPNS record (CommentIpns) for its mutable data like edits, vote counts, comments
 }
-Post (IPFS file): {
+Post (IPFS file) {
   ...Comment,
   parentCommentCid: null, // post is same as comment but has no parent and some extra fields,
-  title: string
+  title: string,
+  thumbnailUrl: string // fetched by subplebbit owner, not author, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
 }
 Vote {
   ...Publication,
   commentCid: string,
   vote: 1 | -1 | 0 // 0 is needed to cancel a vote
 }
-CommentIpns (IPNS record): {
+CommentIpns (IPNS record) {
   latestCommentCid: string, // the most recent comment in the linked list of posts
   preloadedComments: Comment[], // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include preloaded nested comments and vote counts
   upvoteCount: number,
@@ -56,13 +57,18 @@ Signature {
   publicKey: buffer, // include public key (marshalled, like IPNS does it) because the IPNS name is just a hash of it
   type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
 }
-Subplebbit (IPNS record): {
+Subplebbit (IPNS record) {
   title: string,
   description: string,
   moderatorsIpnsNames: string[],
   latestPostCid: string, // the most recent post in the linked list of posts
-  preloadedPosts: Post[], // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include some preloaded comments for each post as well and vote counts
-  pubsubTopic: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
+  preloadedPosts: SortedPosts[], // preloaded content (sorted by 'best') greatly improves loading speed, it saves scrolling the entire linked list, should include some preloaded comments for each post as well and vote counts
+  pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
+  sortedPostsCids: [key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid // e.g. subplebbit.sortedPostsCids['new'] = sortedPostCid
+}
+SortedPosts (IPFS file) {
+  nextSortedPostsCid: string, // get page 2 sorted by 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall'
+  posts: Post[]
 }
 ```
 
@@ -213,6 +219,7 @@ Object is of the form:
   subplebbitIpnsName: string,
   getSubplebbit: function,
   title: string || null, // comments don't have titles
+  thumbnailUrl: string || null // comments don't have thumbnail urls
   content: string,
   previousCommentCid: string,
   getPreviousComment: function,
@@ -264,8 +271,9 @@ Object is of the form:
   description: string,
   moderatorsIpnsNames: string[],
   latestPostCid: string,
-  preloadedPosts: Post[],
-  pubsubTopic: string
+  preloadedPosts: SortedPosts[],
+  pubsubTopic: string,
+  sortedPostsCids: [key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid
 }
 ```
 
