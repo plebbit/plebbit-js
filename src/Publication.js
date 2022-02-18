@@ -62,7 +62,8 @@ class Publication {
                 if (msgParsed.challenge.stage === challengeStages.CHALLENGE) {
                     this.challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
                     // Process CHALLENGE and reply with ChallengeAnswer
-                    const challengeAnswer = solveChallengeCallback(this.challenge);
+                    assert(solveChallengeCallback, "User has not provided a callback for solving challenge");
+                    const challengeAnswer = await solveChallengeCallback(this.challenge);
                     this.challenge.setAnswer(challengeAnswer);
                     this.challenge.setStage(challengeStages.CHALLENGEANSWER);
                     this.challenge.setAnswerId(uuidv4());

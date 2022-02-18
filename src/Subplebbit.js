@@ -6,7 +6,7 @@ import EventEmitter from "events";
 import {sha256} from "js-sha256";
 import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string'
 
-import {Challenge, challengeStages} from "./Challenge.js";
+import {Challenge, challengeStages, challengeTypes} from "./Challenge.js";
 import Vote from "./Vote.js";
 import assert from "assert";
 import PlebbitCore from "./PlebbitCore.js";
@@ -14,14 +14,16 @@ import Plebbit from "./Plebbit.js";
 
 import knex from 'knex';
 import DbHandler from "./DbHandler.js";
+import {createCaptcha} from "captcha-canvas/js-script/extra.js";
+
 
 class Subplebbit extends PlebbitCore {
-    constructor(props, ipfsClient = null, provideCaptchaCallback, validateCaptchaAnswerCallback) {
+    constructor(props, ipfsClient = null) {
         super(props, ipfsClient);
         this.#initSubplebbit(props);
-        this.ongoingChallenges = {}; // Map challenge ID to actual challenge
-        this.provideCaptchaCallback = provideCaptchaCallback;
-        this.validateCaptchaAnswerCallback = validateCaptchaAnswerCallback;
+        this.challengeToSolution = {}; // Map challenge ID to its solution
+        this.provideCaptchaCallback = null;
+        this.validateCaptchaAnswerCallback = null;
         this.event = new EventEmitter();
     }
 
@@ -179,8 +181,7 @@ class Subplebbit extends PlebbitCore {
                     if (lastVote.vote === 1 && postOrCommentOrVote.vote === -1) {
                         newUpvoteCount = commentIpns.upvoteCount - 1;
                         newDownvoteCount = commentIpns.downvoteCount + 1;
-                    }
-                    else if (lastVote.vote === -1 && postOrCommentOrVote.vote === 1) {
+                    } else if (lastVote.vote === -1 && postOrCommentOrVote.vote === 1) {
                         newUpvoteCount = commentIpns.upvoteCount + 1;
                         newDownvoteCount = commentIpns.downvoteCount - 1;
                     } else
@@ -217,7 +218,7 @@ class Subplebbit extends PlebbitCore {
     }
 
     async #publishPostAfterPassingChallenge(msgParsed) {
-        delete this.ongoingChallenges[msgParsed["challenge"].requestId];
+        delete this.challengeToSolution[msgParsed["challenge"].requestId];
         return await this.#publishPubsubMsg({"data": uint8ArrayFromString(JSON.stringify(msgParsed["msg"]))});
     }
 
@@ -227,14 +228,13 @@ class Subplebbit extends PlebbitCore {
             const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
             const challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
             if (challenge.stage === challengeStages.CHALLENGEANSWER) {
-                const [challengeAnswerIsVerified, answerVerificationReason] = this.validateCaptchaAnswerCallback(msgParsed);
+                const [challengeAnswerIsVerified, answerVerificationReason] = await this.validateCaptchaAnswerCallback(msgParsed);
                 challenge.setStage(challengeStages.CHALLENGEVERIFICATION);
                 challenge.setAnswerIsVerified(challengeAnswerIsVerified);
                 challenge.setAnswerVerificationReason(answerVerificationReason);
                 await this._dbHandler.upsertChallenge(challenge);
 
                 msgParsed["challenge"] = challenge;
-                this.ongoingChallenges[challenge.requestId] = challenge;
                 if (challengeAnswerIsVerified)
                     msgParsed["msg"] = await this.#publishPostAfterPassingChallenge(msgParsed);
                 if (challenge.answerId)
@@ -246,7 +246,7 @@ class Subplebbit extends PlebbitCore {
         const challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
 
         if (challenge.stage === challengeStages.CHALLENGEREQUEST) {
-            const [providedChallenge, challengeType, reasonForSkippingCaptcha] = this.provideCaptchaCallback(msgParsed);
+            const [providedChallenge, challengeType, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(msgParsed);
             challenge.setChallenge(providedChallenge);
             challenge.setType(challengeType);
             challenge.setStage(challengeStages.CHALLENGE); // If provided challenge is null then we skip challenge stages to verification
@@ -256,7 +256,6 @@ class Subplebbit extends PlebbitCore {
                 challenge.setAnswerIsVerified(true);
                 challenge.setAnswerVerificationReason(reasonForSkippingCaptcha);
             }
-            this.ongoingChallenges[challenge.requestId] = challenge;
             msgParsed["challenge"] = challenge;
             await this._dbHandler.upsertChallenge(challenge);
             if (challenge.stage === challengeStages.CHALLENGEVERIFICATION)
@@ -267,11 +266,36 @@ class Subplebbit extends PlebbitCore {
         await this.ipfsClient.pubsub.publish(challenge.requestId, uint8ArrayFromString(JSON.stringify(msgParsed)));
     }
 
+    async #defaultProvideCaptcha(challengeWithMsg) {
+
+        // Return question, type
+        // Expected return is:
+        // captcha, captcha type, reason for skipping captcha (if it's skipped by nullifying captcha)
+        return new Promise(async (resolve, reject) => {
+            const {image, text} = createCaptcha(300, 100);
+            this.challengeToSolution[challengeWithMsg.challenge.requestId] = text;
+            image.then(imageBuffer => resolve([imageBuffer, challengeTypes.image, null])).catch(reject);
+        });
+
+    }
+
+    async #defaultValidateCaptcha(challengeWithMsg) {
+        return new Promise(async (resolve, reject) => {
+            const actualSolution = this.challengeToSolution[challengeWithMsg.challenge.requestId];
+            const answerIsCorrect = challengeWithMsg.challenge.answer === actualSolution;
+            const reason = answerIsCorrect ? "User solved captcha correctly" : "User solved captcha incorrectly";
+            resolve([answerIsCorrect, reason]);
+        });
+    }
+
 
     async startPublishing() {
         if (!this._dbHandler)
             await this.#initDb();
-        assert(this.provideCaptchaCallback, "You need to set provideCaptchaCallback. If you don't need captcha, you can return null");
+        if (!this.provideCaptchaCallback) {
+            this.provideCaptchaCallback = this.#defaultProvideCaptcha;
+            this.validateCaptchaAnswerCallback = this.#defaultValidateCaptcha;
+        }
         assert(this._dbHandler, "A connection to a database is needed for the hosting a subplebbit");
         const subscribedTopics = (await this.ipfsClient.pubsub.ls());
         if (!subscribedTopics.includes(this.pubsubTopic))
