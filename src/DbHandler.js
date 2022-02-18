@@ -1,4 +1,4 @@
-import {challengeStages} from "./Challenge.js";
+import {challengeStages, challengeTypes} from "./Challenge.js";
 
 const TABLES = Object.freeze({
     comments: "comments",
@@ -62,7 +62,7 @@ class DbHandler {
 
             table.enum("stage", Object.values(challengeStages)).notNullable();
             table.text("challenge").nullable();
-            table.text("type").nullable(); // Challenge type
+            table.enum("type", Object.values(challengeTypes)).nullable(); // Challenge type
 
             table.text("answer").nullable();
             table.boolean("answerIsVerified").nullable();

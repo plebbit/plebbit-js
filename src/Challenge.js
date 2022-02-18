@@ -1,9 +1,11 @@
-const challengeStages = Object.freeze({
+export const challengeStages = Object.freeze({
     CHALLENGEREQUEST: "CHALLENGEREQUEST",
     CHALLENGE: "CHALLENGE",
     CHALLENGEANSWER: "CHALLENGEANSWER",
     CHALLENGEVERIFICATION: "CHALLENGEVERIFICATION"
 });
+
+export const challengeTypes = Object.freeze({"image": "image", "mathcli": "mathcli"});
 
 class Challenge {
     constructor(props) {
@@ -61,4 +63,4 @@ class Challenge {
     }
 }
 export default Challenge;
-export {challengeStages, Challenge};
+export {Challenge};
