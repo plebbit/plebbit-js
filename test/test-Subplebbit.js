@@ -4,7 +4,7 @@ import {Plebbit, Post, Subplebbit} from "../src/index.js"
 import {unsubscribeAllPubsubTopics} from "../src/Util.js";
 import * as fs from 'fs/promises';
 import readline from "readline";
-import {challengeTypes} from "../src/Challenge.js";
+import {CHALLENGE_TYPES} from "../src/Challenge.js";
 
 const startTestTime = Date.now();
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
@@ -93,7 +93,7 @@ describe("Test Subplebbit functionality", async () => {
                     // if we return null we are skipping captcha for this particular post/comment
                     return [null, null, "Captcha was skipped because timestamp exceeded 1643740217602"];
                 else
-                    return ["1+1=?", challengeTypes.mathcli];
+                    return ["1+1=?", CHALLENGE_TYPES.MATHCLI];
             });
             const mockPost = await generateMockPost();
             await subplebbit.startPublishing();
@@ -112,7 +112,7 @@ describe("Test Subplebbit functionality", async () => {
         return new Promise(async (resolve, reject) => {
             subplebbit.setProvideCaptchaCallback((challengeWithPost) => {
                 // Return question, type
-                return ["1+1=?", challengeTypes.mathcli];
+                return ["1+1=?", CHALLENGE_TYPES.MATHCLI];
             });
             subplebbit.setValidateCaptchaAnswerCallback((challengeWithPost) => {
                 const answerIsCorrect = challengeWithPost["challenge"].answer === "2";

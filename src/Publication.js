@@ -1,4 +1,4 @@
-import {Challenge, challengeStages} from "./Challenge.js";
+import {Challenge, CHALLENGE_STAGES} from "./Challenge.js";
 import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string'
 import {v4 as uuidv4} from 'uuid';
 import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
@@ -36,7 +36,7 @@ class Publication {
                 this.challenge = new Challenge({
                     "requestId": uuidv4(),
                     "acceptedChallengeTypes": options["acceptedChallengeTypes"],
-                    "stage": challengeStages["CHALLENGEREQUEST"]
+                    "stage": CHALLENGE_STAGES["CHALLENGEREQUEST"]
                 });
             // TODO check whether post has been added before
             const challengeRequest = {
@@ -47,7 +47,7 @@ class Publication {
             const handleCaptchaVerification = async (pubsubMsg) => {
                 const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
                 // Subplebbit owner node will either answer with CHALLENGE OR CHALLENGE VERIFICATION
-                if (msgParsed.challenge.stage === challengeStages.CHALLENGEVERIFICATION) {
+                if (msgParsed.challenge.stage === CHALLENGE_STAGES.CHALLENGEVERIFICATION) {
                     this.challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
                     if (!this.challenge.answerIsVerified || msgParsed.msg.error) {
                         reject(msgParsed);
@@ -59,18 +59,18 @@ class Publication {
             const processChallenge = async (pubsubMsg) => {
                 const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
                 // Subplebbit owner node will either answer with CHALLENGE OR CHALLENGE VERIFICATION
-                if (msgParsed.challenge.stage === challengeStages.CHALLENGE) {
+                if (msgParsed.challenge.stage === CHALLENGE_STAGES.CHALLENGE) {
                     this.challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
                     // Process CHALLENGE and reply with ChallengeAnswer
                     assert(solveChallengeCallback, "User has not provided a callback for solving challenge");
                     const challengeAnswer = await solveChallengeCallback(this.challenge);
                     this.challenge.setAnswer(challengeAnswer);
-                    this.challenge.setStage(challengeStages.CHALLENGEANSWER);
+                    this.challenge.setStage(CHALLENGE_STAGES.CHALLENGEANSWER);
                     this.challenge.setAnswerId(uuidv4());
                     msgParsed["challenge"] = this.challenge;
                     await this.subplebbit.ipfsClient.pubsub.subscribe(this.challenge.answerId, handleCaptchaVerification);
                     await this.subplebbit.ipfsClient.pubsub.publish(this.challenge.requestId, uint8ArrayFromString(JSON.stringify(msgParsed)));
-                } else if (msgParsed.challenge.stage === challengeStages.CHALLENGEVERIFICATION) {
+                } else if (msgParsed.challenge.stage === CHALLENGE_STAGES.CHALLENGEVERIFICATION) {
                     // If we reach this block that means the subplebbit owner has chosen to skip captcha by returning null on provideCaptchaCallback
                     this.challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
                     handleCaptchaVerification(pubsubMsg).then(resolve).catch(reject);

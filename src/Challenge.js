@@ -1,11 +1,11 @@
-export const challengeStages = Object.freeze({
+export const CHALLENGE_STAGES = Object.freeze({
     CHALLENGEREQUEST: "CHALLENGEREQUEST",
     CHALLENGE: "CHALLENGE",
     CHALLENGEANSWER: "CHALLENGEANSWER",
     CHALLENGEVERIFICATION: "CHALLENGEVERIFICATION"
 });
 
-export const challengeTypes = Object.freeze({"image": "image", "mathcli": "mathcli"});
+export const CHALLENGE_TYPES = Object.freeze({IMAGE: "image", MATHCLI: "mathcli"});
 
 class Challenge {
     constructor(props) {
@@ -44,11 +44,11 @@ class Challenge {
         this.answerVerificationReason = newFailedVerificationReason;
     }
 
-    setType(newType){
+    setType(newType) {
         this.type = newType;
     }
 
-    toJSONForDb(){
+    toJSONForDb() {
         return {
             "stage": this.stage,
             "challenge": this.challenge,
@@ -62,5 +62,6 @@ class Challenge {
         };
     }
 }
+
 export default Challenge;
 export {Challenge};

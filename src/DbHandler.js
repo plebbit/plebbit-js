@@ -1,10 +1,11 @@
-import {challengeStages, challengeTypes} from "./Challenge.js";
+import {CHALLENGE_STAGES, CHALLENGE_TYPES} from "./Challenge.js";
+import {chunks} from "./Util.js";
 
 const TABLES = Object.freeze({
-    comments: "comments",
-    votes: "votes",
-    authors: "authors",
-    challenges: "challenges"
+    COMMENTS: "comments",
+    VOTES: "votes",
+    AUTHORS: "authors",
+    CHALLENGES: "challenges"
 });
 
 
@@ -14,13 +15,13 @@ class DbHandler {
     }
 
     async #createCommentsTable() {
-        await this.knex.schema.createTable(TABLES.comments, (table) => {
+        await this.knex.schema.createTable(TABLES.COMMENTS, (table) => {
             table.text("commentCid").notNullable().primary().unique();
-            table.text("authorIpnsName").notNullable().references("ipnsName").inTable(TABLES.authors);
-            table.text("parentCommentCid").nullable().references("commentCid").inTable(TABLES.comments);
-            table.text("postCid").notNullable().references("commentCid").inTable(TABLES.comments);
-            table.text("previousCommentCid").nullable().references("commentCid").inTable(TABLES.comments);
-            table.uuid("challengeRequestId").notNullable().references("requestId").inTable(TABLES.challenges);
+            table.text("authorIpnsName").notNullable().references("ipnsName").inTable(TABLES.AUTHORS);
+            table.text("parentCommentCid").nullable().references("commentCid").inTable(TABLES.COMMENTS);
+            table.text("postCid").notNullable().references("commentCid").inTable(TABLES.COMMENTS);
+            table.text("previousCommentCid").nullable().references("commentCid").inTable(TABLES.COMMENTS);
+            table.uuid("challengeRequestId").notNullable().references("requestId").inTable(TABLES.CHALLENGES);
 
             table.text("subplebbitIpnsName").notNullable();
             table.text("content").notNullable();
@@ -34,10 +35,10 @@ class DbHandler {
 
 
     async #createVotesTable() {
-        await this.knex.schema.createTable(TABLES.votes, (table) => {
-            table.text("commentCid").notNullable().references("commentCid").inTable(TABLES.comments);
-            table.text("authorIpnsName").notNullable().references("ipnsName").inTable(TABLES.authors);
-            table.uuid("challengeRequestId").notNullable().references("requestId").inTable(TABLES.challenges);
+        await this.knex.schema.createTable(TABLES.VOTES, (table) => {
+            table.text("commentCid").notNullable().references("commentCid").inTable(TABLES.COMMENTS);
+            table.text("authorIpnsName").notNullable().references("ipnsName").inTable(TABLES.AUTHORS);
+            table.uuid("challengeRequestId").notNullable().references("requestId").inTable(TABLES.CHALLENGES);
 
             table.timestamp("timestamp").notNullable();
             table.text("subplebbitIpnsName").notNullable();
@@ -49,7 +50,7 @@ class DbHandler {
     }
 
     async #createAuthorsTable() {
-        await this.knex.schema.createTable(TABLES.authors, (table) => {
+        await this.knex.schema.createTable(TABLES.AUTHORS, (table) => {
             table.text("ipnsName").notNullable().primary().unique();
             table.text("displayName").notNullable();
         });
@@ -57,12 +58,12 @@ class DbHandler {
     }
 
     async #createChallengesTable() {
-        await this.knex.schema.createTable(TABLES.challenges, (table) => {
+        await this.knex.schema.createTable(TABLES.CHALLENGES, (table) => {
             table.uuid("requestId").notNullable().primary().unique();
 
-            table.enum("stage", Object.values(challengeStages)).notNullable();
+            table.enum("stage", Object.values(CHALLENGE_STAGES)).notNullable();
             table.text("challenge").nullable();
-            table.enum("type", Object.values(challengeTypes)).nullable(); // Challenge type
+            table.enum("type", Object.values(CHALLENGE_TYPES)).nullable(); // Challenge type
 
             table.text("answer").nullable();
             table.boolean("answerIsVerified").nullable();
@@ -87,9 +88,9 @@ class DbHandler {
 
     async #addAuthorToDbIfNeeded(author) {
         return new Promise(async (resolve, reject) => {
-            const authorFromDb = await this.knex(TABLES.authors).where({"ipnsName": author.ipnsName}).first();
+            const authorFromDb = await this.knex(TABLES.AUTHORS).where({"ipnsName": author.ipnsName}).first();
             if (!authorFromDb) // Author is new. Add to database
-                this.knex(TABLES.authors).insert(author.toJSON()).then(() => resolve(author.toJSON())).catch(err => {
+                this.knex(TABLES.AUTHORS).insert(author.toJSON()).then(() => resolve(author.toJSON())).catch(err => {
                     console.error(err);
                     reject(err);
                 });
@@ -102,7 +103,7 @@ class DbHandler {
         return new Promise(async (resolve, reject) => {
             await this.#addAuthorToDbIfNeeded(vote.author);
             const dbObject = vote.toJSONForDb();
-            this.knex(TABLES.votes).insert(vote.toJSONForDb()).onConflict(['commentCid', "authorIpnsName"]).merge().then(() => resolve(dbObject)).catch(err => {
+            this.knex(TABLES.VOTES).insert(vote.toJSONForDb()).onConflict(['commentCid', "authorIpnsName"]).merge().then(() => resolve(dbObject)).catch(err => {
                 console.error(err);
                 reject(err);
             });
@@ -114,7 +115,7 @@ class DbHandler {
         return new Promise(async (resolve, reject) => {
             await this.#addAuthorToDbIfNeeded(postOrComment.author);
             const dbObject = postOrComment.toJSONForDb();
-            this.knex(TABLES.comments).insert(dbObject).then(() => resolve(dbObject)).catch(err => {
+            this.knex(TABLES.COMMENTS).insert(dbObject).then(() => resolve(dbObject)).catch(err => {
                 console.error(err);
                 reject(err);
             });
@@ -125,7 +126,7 @@ class DbHandler {
     async upsertChallenge(challenge) {
         return new Promise(async (resolve, reject) => {
             const dbObject = challenge.toJSONForDb();
-            this.knex(TABLES.challenges).insert(challenge.toJSONForDb()).onConflict('requestId').merge().then(() => resolve(dbObject)).catch(err => {
+            this.knex(TABLES.CHALLENGES).insert(challenge.toJSONForDb()).onConflict('requestId').merge().then(() => resolve(dbObject)).catch(err => {
                 console.error(err);
                 reject(err);
             });
@@ -134,7 +135,7 @@ class DbHandler {
 
     async getLastVoteOfAuthor(commentCid, authorIpnsName) {
         return new Promise(async (resolve, reject) => {
-            this.knex(TABLES.votes).where({
+            this.knex(TABLES.VOTES).where({
                 "commentCid": commentCid,
                 "authorIpnsName": authorIpnsName
             }).first().then(resolve).catch(err => {

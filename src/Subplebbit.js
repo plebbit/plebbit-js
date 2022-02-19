@@ -6,7 +6,7 @@ import EventEmitter from "events";
 import {sha256} from "js-sha256";
 import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string'
 
-import {Challenge, challengeStages, challengeTypes} from "./Challenge.js";
+import {Challenge, CHALLENGE_STAGES, CHALLENGE_TYPES} from "./Challenge.js";
 import Vote from "./Vote.js";
 import assert from "assert";
 import PlebbitCore from "./PlebbitCore.js";
@@ -227,9 +227,9 @@ class Subplebbit extends PlebbitCore {
         const validateCaptchaAnswer = async (pubsubMsg) => {
             const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
             const challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
-            if (challenge.stage === challengeStages.CHALLENGEANSWER) {
+            if (challenge.stage === CHALLENGE_STAGES.CHALLENGEANSWER) {
                 const [challengeAnswerIsVerified, answerVerificationReason] = await this.validateCaptchaAnswerCallback(msgParsed);
-                challenge.setStage(challengeStages.CHALLENGEVERIFICATION);
+                challenge.setStage(CHALLENGE_STAGES.CHALLENGEVERIFICATION);
                 challenge.setAnswerIsVerified(challengeAnswerIsVerified);
                 challenge.setAnswerVerificationReason(answerVerificationReason);
                 await this._dbHandler.upsertChallenge(challenge);
@@ -245,22 +245,22 @@ class Subplebbit extends PlebbitCore {
         const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
         const challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
 
-        if (challenge.stage === challengeStages.CHALLENGEREQUEST) {
+        if (challenge.stage === CHALLENGE_STAGES.CHALLENGEREQUEST) {
             const [providedChallenge, challengeType, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(msgParsed);
             challenge.setChallenge(providedChallenge);
             challenge.setType(challengeType);
-            challenge.setStage(challengeStages.CHALLENGE); // If provided challenge is null then we skip challenge stages to verification
+            challenge.setStage(CHALLENGE_STAGES.CHALLENGE); // If provided challenge is null then we skip challenge stages to verification
             if (!providedChallenge) {
                 // Subplebbit owner has chosen to skip challenging this user or post
-                challenge.setStage(challengeStages.CHALLENGEVERIFICATION);
+                challenge.setStage(CHALLENGE_STAGES.CHALLENGEVERIFICATION);
                 challenge.setAnswerIsVerified(true);
                 challenge.setAnswerVerificationReason(reasonForSkippingCaptcha);
             }
             msgParsed["challenge"] = challenge;
             await this._dbHandler.upsertChallenge(challenge);
-            if (challenge.stage === challengeStages.CHALLENGEVERIFICATION)
+            if (challenge.stage === CHALLENGE_STAGES.CHALLENGEVERIFICATION)
                 msgParsed["msg"] = await this.#publishPostAfterPassingChallenge(msgParsed);
-            if (challenge.stage === challengeStages.CHALLENGE)
+            if (challenge.stage === CHALLENGE_STAGES.CHALLENGE)
                 await this.ipfsClient.pubsub.subscribe(challenge.requestId, validateCaptchaAnswer);
         }
         await this.ipfsClient.pubsub.publish(challenge.requestId, uint8ArrayFromString(JSON.stringify(msgParsed)));
@@ -274,7 +274,7 @@ class Subplebbit extends PlebbitCore {
         return new Promise(async (resolve, reject) => {
             const {image, text} = createCaptcha(300, 100);
             this.challengeToSolution[challengeWithMsg.challenge.requestId] = text;
-            image.then(imageBuffer => resolve([imageBuffer, challengeTypes.image, null])).catch(reject);
+            image.then(imageBuffer => resolve([imageBuffer, CHALLENGE_TYPES.image, null])).catch(reject);
         });
 
     }
