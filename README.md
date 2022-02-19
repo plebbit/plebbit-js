@@ -130,7 +130,7 @@ ChallengeVerificationMessage (sent by subplebbit owner) {
   reason: string // reason for failed verification, for example post content is too long. could also be used for successful verification that bypass the challenge, for example because an author has good history
 }
 Challenge {
-  type: 'captcha1', // will be dozens of challenge types, like holding a certain amount of a token
+  type: 'image' | 'text' | 'audio' | 'video' | 'html', // tells the client how to display the challenge, start with implementing image and text only first
   challenge: buffer // data required to complete the challenge, could be html, png, etc.
 }
 ```
