@@ -62,13 +62,13 @@ Subplebbit (IPNS record) {
   title: string,
   description: string,
   moderatorsIpnsNames: string[],
+  pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   latestPostCid: string, // the most recent post in the linked list of posts
   posts: SortedComments[], // preloaded page 1 (sorted by 'best'), greatly improves loading speed, should include some preloaded child comments for each post as well and vote counts
-  pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
-  sortedPostsCids: [key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid // e.g. subplebbit.sortedPostsCids['new'] = sortedPostCid
+  sortedPostsCids: [key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid // e.g. {best: 'Qm...', new: 'Qm...', etc.}
 }
 SortedComments (IPFS file) {
-  nextSortedCommentsCid: string, // get next page sorted by 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall'
+  nextSortedCommentsCid: string, // get next page (sorted by the same algo)
   comments: Comment[]
 }
 ```
