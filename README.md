@@ -44,11 +44,10 @@ Vote {
 }
 CommentIpns (IPNS record) {
   latestCommentCid: string, // the most recent comment in the linked list of posts
-  preloadedComments: Comment[], // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include preloaded nested comments and vote counts
   upvoteCount: number,
   downvoteCount: number,
-  comments: SortedComments, 
-  sortedCommentsCids: [key: 'best' | 'new' | 'top'| 'old' ]: SortedCommentsCid // only provide for `Posts` who have 100+ comments
+  comments: SortedComments, // preload page 1 sorted by 'best'
+  sortedCommentsCids: [key: 'best' | 'new' | 'top'| 'old' ]: SortedCommentsCid // only provide sorting for comments that are 'posts' and have 100+ child comments
 }
 Author {
   displayName: string,
