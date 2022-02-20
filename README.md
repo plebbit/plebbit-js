@@ -46,7 +46,9 @@ CommentIpns (IPNS record) {
   latestCommentCid: string, // the most recent comment in the linked list of posts
   preloadedComments: Comment[], // preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include preloaded nested comments and vote counts
   upvoteCount: number,
-  downvoteCount: number
+  downvoteCount: number,
+  comments: SortedComments, 
+  sortedCommentsCids: [key: 'best' | 'new' | 'top'| 'old' ]: SortedCommentsCid // only provide for `Posts` who have 100+ comments
 }
 Author {
   displayName: string,
@@ -62,13 +64,13 @@ Subplebbit (IPNS record) {
   description: string,
   moderatorsIpnsNames: string[],
   latestPostCid: string, // the most recent post in the linked list of posts
-  preloadedPosts: SortedPosts[], // preloaded content (sorted by 'best') greatly improves loading speed, it saves scrolling the entire linked list, should include some preloaded comments for each post as well and vote counts
+  posts: SortedComments[], // preloaded page 1 (sorted by 'best'), greatly improves loading speed, should include some preloaded child comments for each post as well and vote counts
   pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   sortedPostsCids: [key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid // e.g. subplebbit.sortedPostsCids['new'] = sortedPostCid
 }
-SortedPosts (IPFS file) {
-  nextSortedPostsCid: string, // get page 2 sorted by 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall'
-  posts: Post[]
+SortedComments (IPFS file) {
+  nextSortedCommentsCid: string, // get next page sorted by 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall'
+  comments: Comment[]
 }
 ```
 
