@@ -138,23 +138,52 @@ Challenge {
 # API
 
 - [Plebbit API](#plebbit-api)
-  - [`Plebbit(options)`](#plebbitoptions)
+  - [`Plebbit(plebbitOptions)`](#plebbitplebbitoptions)
   - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
   - [`plebbit.getSubplebbit(subplebbitIpnsName)`](#plebbitgetsubplebbitsubplebbitipnsname)
-  - [`plebbit.publishComment(comment)`](#plebbitpublishcommentcomment)
-  - [`plebbit.publishVote(vote)`](#plebbitpublishvotevote)
+  - [`plebbit.createComment(commentOptions)`](#plebbitpublishcommentcommentoptions)
+  - [`plebbit.createCommentEdit(commentEditOptions)`](#plebbitcreatecommenteditcommenteditoptions)
+  - [`plebbit.createVote(voteOptions)`](#plebbitpublishvotevoteoptions)
 - [Subplebbit API](#subplebbit-api)
-  - [`Subplebbit(options)`](#subplebbitoptions)
-  - [`subplebbit.update(subplebbit)`](#subplebbitupdatesubplebbit)
+  - [`Subplebbit(subplebbitOptions)`](#subplebbitsubplebbitoptions)
+  - [`subplebbit.update(subplebbitUpdateOptions)`](#subplebbitupdatesubplebbitupdateoptions)
   - [`subplebbit.start()`](#subplebbitstart)
   - [`subplebbit.stop()`](#subplebbitstop)
+  - `subplebbit.subplebbitIpnsName`
+  - `subplebbit.title`
+  - `subplebbit.description`
+  - `subplebbit.moderatorsIpnsNames`
+  - `subplebbit.preloadedPosts`
+  - `subplebbit.latestPostCid`
+  - `subplebbit.pubsubTopic`
+  - `subplebbit.sortedPostsCids`
 - [Subplebbit Events](#subplebbit-events)
-  - [`post`](#post)
+  - [`update`](#update)
+  - [`challengerequest`](#challengerequest)
+  - [`challengeanswer`](#challengeanswer)
+- [Comment API](#comment-api)
+  - [`comment.publish()`](#commentpublish)
+  - [`comment.publishChallengeAnswer()`](#commentpublishchallengeanswerchallengeanswer)
+  - [`comment.getCommentIpns()`](#commentgetcommentipns)
+  - `comment.author`
+  - `comment.timestamp`
+  - `comment.signature`
+  - `comment.postCid`
+  - `comment.parentCommentCid`
+  - `comment.subplebbitIpnsName`
+  - `comment.title`
+  - `comment.content`
+  - `comment.previousCommentCid`
+  - `comment.commentIpnsName`
+- [Comment Events](#subplebbit-events)
+  - [`update`](#update)
+  - [`challenge`](#challenge)
+  - [`challengeverification`](#challengeverification)
 
 ## Plebbit API
 The plebbit API for reading and writing to and from subplebbits.
 
-### `Plebbit(options)`
+### `Plebbit(plebbitOptions)`
 
 > Create a plebbit instance.
 
@@ -162,9 +191,9 @@ The plebbit API for reading and writing to and from subplebbits.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| options | object | Options for the plebbit instance |
+| plebbitOptions | `PlebbitOptions` | Options for the plebbit instance |
 
-##### Options
+##### PlebbitOptions
 
 An object which may have the following keys:
 
@@ -177,7 +206,7 @@ An object which may have the following keys:
 
 | Type | Description |
 | -------- | -------- |
-| `Plebbit` | A plebbit instance |
+| `Plebbit` | A `Plebbit` instance |
 
 #### Example
 
@@ -204,29 +233,7 @@ const plebbit = Plebbit(options) // should be independent instance, not singleto
 
 | Type | Description |
 | -------- | -------- |
-| `Promise<GetCommentResponse>` | A object with comment data |
-
-Object is of the form:
-
-```js
-{
-  author: Author,
-  timestamp: number,
-  signature: Signature,
-  postCid: string,
-  getPost: function, // if comment is a post, it gets itself
-  parentCommentCid: string || null, // post don't have parent cids
-  subplebbitIpnsName: string,
-  getSubplebbit: function,
-  title: string || null, // comments don't have titles
-  thumbnailUrl: string || null // comments don't have thumbnail urls
-  content: string,
-  previousCommentCid: string,
-  getPreviousComment: function,
-  commentIpnsName: string,
-  getCommentIpns: function
-}
-```
+| `Promise<Comment>` | A `Comment` instance |
 
 #### Example
 
@@ -235,11 +242,11 @@ const commentCid = 'QmbWqx...'
 const comment = await plebbit.getComment(commentCid)
 console.log('comment:', comment)
 if (comment.parentCommentCid) { // comment with no parent cid is a post
-  comment.getPost(post => console.log('post:', post))
+  plebbit.getComment(comment.parentCommentCid).then(parentPost => console.log('parent post:', parentPost))
 }
 comment.getCommentIpns().then(commentIpns => console.log('commentIpns:', commentIpns))
-comment.getSubplebbit().then(subplebbit => console.log('subplebbit:', subplebbit))
-comment.getPreviousComment().then(previousComment => console.log('previousComment:', previousPost))
+plebbit.getSubplebbit(comment.subplebbitIpnsName).then(subplebbit => console.log('subplebbit:', subplebbit))
+plebbit.getComment(comment.previousCommentCid).then(previousComment => console.log('previous comment:', previousComment))
 /*
 Prints:
 { ...TODO }
@@ -254,28 +261,13 @@ Prints:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| subplebbitIpnsName | `string` | the IPNS name of the subplebbit |
+| subplebbitIpnsName | `string` | The IPNS name of the subplebbit |
 
 #### Returns
 
 | Type | Description |
 | -------- | -------- |
-| `Promise<GetSubplebbitResponse>` | A object with subplebbit data |
-
-Object is of the form:
-
-```js
-{
-  subplebbitIpnsName: string,
-  title: string,
-  description: string,
-  moderatorsIpnsNames: string[],
-  latestPostCid: string,
-  preloadedPosts: SortedPosts[],
-  pubsubTopic: string,
-  sortedPostsCids: [key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid
-}
-```
+| `Promise<Subplebbit>` | A `Subplebbit` instance |
 
 #### Example
 
@@ -300,17 +292,17 @@ Prints:
 */
 ```
 
-### `plebbit.publishComment(comment)`
+### `plebbit.createComment(commentOptions)`
 
-> Publish a comment on a subplebbit. Posts are also comments.
+> Create a `Comment` instance. Posts are also comments.
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| comment | `Comment` | the comment to publish |
+| commentOptions | `CommentOptions` | The comment to create |
 
-##### Comment
+##### CommentOptions
 
 An object which may have the following keys:
 
@@ -327,31 +319,68 @@ An object which may have the following keys:
 
 | Type | Description |
 | -------- | -------- |
-| `Promise<PublishCommentResponse>` | The publish comment response |
-
-Object is of the form:
-
-```js
-{ // ...TODO }
-```
+| `Comment` | A `Comment` instance |
 
 #### Example
 
 ```js
-// TODO
+const comment = plebbit.createComment(commentOptions)
+comment.on('challenge', async (challenge) => {
+  const challengeAnswer = await askUserForChallengeAnswer(challenge)
+  comment.publishChallengeAnswer(challengeAnswer)
+})
+comment.publish()
 ```
 
-### `plebbit.publishVote(vote)`
+### `plebbit.createCommentEdit(commentEditOptions)`
 
-> Publish a vote on a comment or post.
+> Create a `Comment` instance. Posts are also comments.
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| vote | `Vote` | the vote to publish |
+| commentEditOptions | `CommentEditOptions` | The comment edit to create |
 
-##### Vote
+##### CommentEditOptions
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| subplebbitIpnsName | `string` | IPNS name of the subplebbit |
+| commentCid | The comment CID to be edited |
+| content | `string` | Edited content of the comment |
+| timestamp | `number` or `null` | Time of edit in ms, `Date.now()` if null |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Comment` | A `Comment` instance |
+
+#### Example
+
+```js
+const commentEdit = plebbit.createCommentEdit(commentEditOptions)
+commentEdit.on('challenge', async (challenge) => {
+  const challengeAnswer = await askUserForChallengeAnswer(challenge)
+  commentEdit.publishChallengeAnswer(challengeAnswer)
+})
+commentEdit.publish()
+```
+
+### `plebbit.createVote(voteOptions)`
+
+> Create a `Vote` instance. `Vote` inherits from `Publication`, like `Comment`, so has the same API.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| voteOptions | `VoteOptions` | The vote to create |
+
+##### VoteOptions
 
 An object which may have the following keys:
 
@@ -367,24 +396,23 @@ An object which may have the following keys:
 
 | Type | Description |
 | -------- | -------- |
-| `Promise<PublishVoteResponse>` | The publish vote response |
-
-Object is of the form:
-
-```js
-{ // ...TODO }
-```
+| `Vote` | A `Vote` instance |
 
 #### Example
 
 ```js
-// TODO
+const vote = plebbit.createVote(voteOptions)
+vote.on('challenge', async (challenge) => {
+  const challengeAnswer = await askUserForChallengeAnswer(challenge)
+  comment.publishChallengeAnswer(challengeAnswer)
+})
+vote.publish()
 ```
 
 ## Subplebbit API
 The subplebbit API for creating, updating and running subplebbits.
 
-### `Subplebbit(options)`
+### `Subplebbit(subplebbitOptions)`
 
 > Create a subplebbit instance.
 
@@ -392,9 +420,9 @@ The subplebbit API for creating, updating and running subplebbits.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| options | `object` | Options for the subplebbit instance |
+| subplebbitOptions | `SubplebbitOptions` | Options for the `Subplebbit` instance |
 
-##### Options
+##### SubplebbitOptions
 
 An object which may have the following keys:
 
@@ -408,7 +436,7 @@ An object which may have the following keys:
 
 | Type | Description |
 | -------- | -------- |
-| `Subplebbit` | A subplebbit instance |
+| `Subplebbit` | A `Subplebbit` instance |
 
 #### Example
 
@@ -429,7 +457,7 @@ subplebbit.on('post', (post) => console.log(post))
 subplebbit.start()
 ```
 
-### `subplebbit.update(subplebbit)`
+### `subplebbit.update(subplebbitUpdateOptions)`
 
 > Update the content of a subplebbit.
 
@@ -437,9 +465,9 @@ subplebbit.start()
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| subplebbit | `Subplebbit` | the content of the subplebbit |
+| subplebbit | `SubplebbitUpdateOptions` | The content of the subplebbit |
 
-##### Subplebbit
+##### SubplebbitUpdateOptions
 
 An object which may have the following keys:
 
@@ -483,7 +511,7 @@ const options = {
   subplebbitIpnsName: 'Qmb...'
 }
 const subplebbit = Subplebbit(options)
-subplebbit.on('post', (post) => console.log(post))
+subplebbit.on('update', (updatedSubplebbitInstance) => console.log(updatedSubplebbitInstance))
 subplebbit.start()
 ```
 
@@ -494,21 +522,15 @@ subplebbit.start()
 ## Subplebbit Events
 The subplebbit events.
 
-### `post`
+### `update`
 
-> A new post is published.
+> The subplebbit's IPNS record has been updated, which means new posts may have been published.
 
 #### Emits
 
 | Type | Description |
 | -------- | -------- |
-| `Post` | The published post |
-
-Object is of the form:
-
-```js
-{ // ...TODO }
-```
+| `Subplebbit` | The updated `Subplebbit` instance (the instance emits itself) |
 
 #### Example
 
@@ -519,6 +541,196 @@ const options = {
   subplebbitIpnsName: 'Qmb...'
 }
 const subplebbit = Subplebbit(options)
-subplebbit.on('post', (post) => console.log(post))
+subplebbit.on('update', (subplebbitObject) => console.log(subplebbitObject))
 subplebbit.start()
+```
+
+### `challengerequest`
+
+> When the user publishes a comment, he makes a `'challengerequest'` to the pubsub, the subplebbit owner will send back a `challenge`, eg. a captcha that the user must complete.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `ChallengeRequest` | The comment of the user and the challenge request |
+
+Object is of the form:
+
+```js
+{ // ...TODO }
+```
+
+#### Example
+
+```js
+{ // ...TODO }
+```
+
+### `challengeanswer`
+
+> After receiving a `Challenge`, the user owner will send back a `challengeanswer`.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `ChallengeAnswer` | The challenge answer |
+
+Object is of the form:
+
+```js
+{ // ...TODO }
+```
+
+#### Example
+
+```js
+{ // ...TODO }
+```
+
+## Comment API
+The comment API for publishing a comment, awaiting. `Comment`, `Vote` and `CommentEdit` inherit `Publication` and all have a similar API.
+
+### `comment.publish()`
+
+> Publish the comment to the pubsub. You must then wait for the `'challenge'` event and answer with a `ChallengeAnswer`.
+
+#### Example
+
+```js
+const comment = plebbit.createComment(commentObject)
+comment.on('challenge', async (challenge) => {
+  const challengeAnswer = await askUserForChallengeAnswer(challenge)
+  comment.publishChallengeAnswer(challengeAnswer)
+})
+comment.publish()
+```
+
+### `comment.publishChallengeAnswer(challengeAnswer)`
+
+> Update the content of a subplebbit.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| challengeAnswer | `string` | The challenge answer |
+
+#### Example
+
+```js
+const comment = plebbit.createComment(commentObject)
+comment.on('challenge', async (challenge) => {
+  const challengeAnswer = await askUserForChallengeAnswer(challenge)
+  comment.publishChallengeAnswer(challengeAnswer)
+})
+comment.publish()
+```
+
+### `comment.getCommentIpns()`
+
+> Get the `CommentIpns`, ie. the mutable parts of the comments like vote counts, replies, edits, etc.
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<CommentIpns>` | The comment's `CommentIpns` |
+
+Object is of the form:
+
+```js
+{ // ...TODO }
+```
+
+#### Example
+
+```js
+const comment = plebbit.getComment(commentCid)
+const commentIpns = comment.getCommentIpns()
+console.log(commentIpns)
+```
+
+## Comment Events
+The comment events.
+
+### `update`
+
+> The comment's `CommentIpns`'s record has been updated, which means vote counts and replies may have changed.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `CommentIpns` | The updated `CommentIpns` |
+
+Object is of the form:
+
+```js
+{ // ...TODO }
+```
+
+#### Example
+
+```js
+const comment = await plebbit.getComment(commentCid)
+comment.on('update', (commentIpns) => {
+  console.log(commentIpns)
+})
+```
+
+### `challenge`
+
+> After publishing a comment, the subplebbit owner will send back a `challenge`, eg. a captcha that the user must complete.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `Challenge` | The challenge the user must complete |
+
+Object is of the form:
+
+```js
+{ // ...TODO }
+```
+
+#### Example
+
+```js
+const comment = plebbit.createComment(commentObject)
+comment.on('challenge', async (challenge) => {
+  const challengeAnswer = await askUserForChallengeAnswer(challenge)
+  comment.publishChallengeAnswer(challengeAnswer)
+})
+comment.publish()
+```
+
+### `challengeverification`
+
+> After publishing a challenge answer, the subplebbit owner will send back a `challengeverification` to let the network know if the challenge was completed successfully.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `ChallengeVerification` | The challenge verification result |
+
+Object is of the form:
+
+```js
+{ // ...TODO }
+```
+
+#### Example
+
+```js
+const comment = plebbit.createComment(commentObject)
+comment.on('challenge', async (challenge) => {
+  const challengeAnswer = await askUserForChallengeAnswer(challenge)
+  comment.publishChallengeAnswer(challengeAnswer)
+})
+comment.on('challengeverification', (challengeVerification) => console.log(challengeVerification))
+comment.publish()
 ```
