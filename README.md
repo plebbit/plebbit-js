@@ -47,7 +47,7 @@ CommentIpns (IPNS record) {
   upvoteCount: number,
   downvoteCount: number,
   sortedComments: {best: SortedComments}, // only preload page 1 sorted by 'best', might preload more later
-  sortedCommentsCids: {[key: 'best' | 'new' | 'top'| 'old' ]: SortedCommentsCid} // only provide sorting for comments that are 'posts' and have 100+ child comments
+  sortedCommentsCids: {[key: 'best' | 'new' | 'top'| 'old' ]: SortedCommentsCid} // only provide sorting for posts (not comments) that have 100+ child comments
 }
 Author {
   displayName: string,
