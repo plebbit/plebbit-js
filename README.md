@@ -65,7 +65,12 @@ Subplebbit (IPNS record) {
   pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   latestPostCid: string, // the most recent post in the linked list of posts
   sortedPosts: {best: SortedComments[]}, // only preload page 1 sorted by 'best', might preload more later, should include some child comments and vote counts for each post
-  sortedPostsCids: {[key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid} // e.g. {best: 'Qm...', new: 'Qm...', etc.}
+  sortedPostsCids: {[key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid}, // e.g. {best: 'Qm...', new: 'Qm...', etc.}
+  challengeTypes: ChallengeType[] // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
+}
+ChallengeType {
+  type: 'image' | 'text' | 'video' | 'audio' | 'html',
+  ...other properties for more complex types later, e.g. an array of whitelisted addresses, a token address, etc,
 }
 SortedComments (IPFS file) {
   nextSortedCommentsCid: string, // get next page (sorted by the same algo)
@@ -158,6 +163,7 @@ Challenge {
   - `subplebbit.latestPostCid`
   - `subplebbit.pubsubTopic`
   - `subplebbit.sortedPostsCids`
+  - `subplebbit.challengeTypes`
 - [Subplebbit Events](#subplebbit-events)
   - [`update`](#update)
   - [`challengerequest`](#challengerequest)
@@ -480,6 +486,7 @@ An object which may have the following keys:
 | latestPostCid | `string` | the most recent post in the linked list of posts |
 | preloadedPosts | `Post[]` | preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include some preloaded comments for each post as well and vote counts |
 | pubsubTopic | `string` | the string to publish to in the pubsub, a public key of the subplebbit owner's choice |
+| challengeTypes | `ChallengeType[]` | the challenge types provided by the subplebbit owner |
 
 #### Returns
 
