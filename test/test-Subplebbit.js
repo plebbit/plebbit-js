@@ -1,10 +1,11 @@
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
 import assert from 'assert';
 import {Plebbit, Post, Subplebbit} from "../src/index.js"
-import {unsubscribeAllPubsubTopics} from "../src/Util.js";
+import {loadIpfsFileAsJson, unsubscribeAllPubsubTopics} from "../src/Util.js";
 import * as fs from 'fs/promises';
 import readline from "readline";
 import {CHALLENGE_TYPES} from "../src/Challenge.js";
+import {SORTED_POSTS_PAGE_SIZE, SORTED_POSTS_TYPES, SortedPosts} from "../src/Subplebbit.js";
 
 const startTestTime = Date.now();
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
@@ -40,34 +41,22 @@ describe("Test Subplebbit functionality", async () => {
         assert.equal(JSON.stringify(loadedSubplebbit), JSON.stringify(subplebbit), "Failed to publish new subplebbit");
     });
 
-    it("Can post after solving image captcha", async function () {
-        return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost();
-            await subplebbit.startPublishing();
-            const solveCaptchaCallback = async (challenge) => {
-                return new Promise(async (resolve) => {
-                    // Solve captcha here
-                    const path = `.captcha/${challenge.requestId}.png`;
-                    await fs.writeFile(path, Buffer.from(challenge.challenge));
-                    const rl = readline.createInterface({
-                        input: process.stdin,
-                        output: process.stdout
-                    });
+    const numOfPosts = SORTED_POSTS_PAGE_SIZE + 2;
+    it(`Sorting ${numOfPosts} posts by new generates a two pages ordered by posts' timestamp`, async function(){
+        await subplebbit.setProvideCaptchaCallback(() => [null, null, null]);
+        await subplebbit.startPublishing();
+        const actualPosts = new Array(numOfPosts);
+        for (let i = actualPosts.length - 1; i >= 0; i--)
+            actualPosts[i] = await generateMockPost();
 
-                    // Retrieve answer from user in cli
-                    rl.question(`Please provide your answer for captcha under path ${path}\n`, answer => {
-                        rl.close();
-                        resolve(answer);
-                    });
-                })
-            };
-            mockPost.publish(null, solveCaptchaCallback).then(async (challengeWithPost) => {
-                const loadedPost = await plebbit.getPostOrComment(challengeWithPost.msg.postCid);
-                assert.equal(JSON.stringify(challengeWithPost.msg), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
-                mockPosts.push(loadedPost);
-                resolve();
-            }).catch(reject);
-        });
+        await Promise.all(actualPosts.map(async post => post.publish()));
+        const sortedPostsFirstPage = subplebbit.sortedPostsCids[SORTED_POSTS_TYPES.NEW];
+        assert(sortedPostsFirstPage.nextSortedPostsCid, "There should be two pages");
+        const sortedPostsSecondPage = new SortedPosts(await loadIpfsFileAsJson(sortedPostsFirstPage.nextSortedPostsCid, plebbit.ipfsClient));
+
+        const combinedPosts = sortedPostsFirstPage.posts.concat(sortedPostsSecondPage.posts);
+
+        assert.equal(JSON.stringify(actualPosts), JSON.stringify(combinedPosts), "Posts have not been loaded in correct order");
 
     });
 
