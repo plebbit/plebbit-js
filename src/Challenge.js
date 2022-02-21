@@ -10,14 +10,14 @@ export const CHALLENGE_TYPES = Object.freeze({IMAGE: "image", MATHCLI: "mathcli"
 class Challenge {
     constructor(props) {
         this.stage = props["stage"]; // Current challenge stage. Will be one of challengeStages declared above
-        this.challenge = props["challenge"]; // data required to complete the challenge, could be html, png, etc.
+        this.challenge = props["challenge"] || null; // data required to complete the challenge, could be html, png, etc.
         this.requestId = props["requestId"];
-        this.answerId = props["answerId"];
-        this.answer = props["answer"];
-        this.answerIsVerified = props["answerIsVerified"];
-        this.answerVerificationReason = props["answerVerificationReason"];
-        this.acceptedChallengeTypes = props["acceptedChallengeTypes"];
-        this.type = props["type"]; // will be dozens of challenge types, like holding a certain amount of a token
+        this.answerId = props["answerId"] || null;
+        this.answer = props["answer"] || null;
+        this.answerIsVerified = Boolean(props["answerIsVerified"]);
+        this.answerVerificationReason = props["answerVerificationReason"] || null;
+        this.acceptedChallengeTypes = (typeof props["acceptedChallengeTypes"] === 'string' || props["acceptedChallengeTypes"] instanceof String) ? JSON.parse(props["acceptedChallengeTypes"]) : props["acceptedChallengeTypes"];
+        this.type = props["type"] || null; // will be dozens of challenge types, like holding a certain amount of a token
     }
 
     setStage(newStage) {

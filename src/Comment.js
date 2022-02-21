@@ -24,20 +24,26 @@ class Comment extends Publication {
     constructor(props, subplebbit) {
         // Publication
         super(props, subplebbit);
+        this.parent = null;
+        this._initProps(props);
+    }
+
+    _initProps(props){
+        super._initProps(props);
         this.author = new Author(props["author"]);
-        this.timestamp = props["timestamp"];
-        this.signature = props["signature"];
+        this.timestamp = props["timestamp"] || Date.now();
+        this.signature = props["signature"] || null;
         this.postCid = props["postCid"];
         this.commentCid = props["commentCid"];
-        this.parentCommentCid = props["parentCommentCid"];
+        this.parentCommentCid = props["parentCommentCid"] || null;
         this.content = props["content"];
-        this.previousCommentCid = props["previousCommentCid"];
 
-        this.parent = null;
 
-        this.commentIpnsKeyId = props["commentIpnsKeyId"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
+        this.commentIpnsName = props["commentIpnsName"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.commentIpnsKeyName = props["commentIpnsKeyName"];
         this.commentIpns = props["commentIpns"];
+        this.setPreviousCommentCid(props["previousCommentCid"]);
+
     }
 
     toJSON() {
@@ -90,7 +96,7 @@ class Comment extends Publication {
     }
 
     setPreviousCommentCid(newPreviousCommentCid) {
-        this.previousCommentCid = newPreviousCommentCid;
+        this.previousCommentCid = newPreviousCommentCid || null;
     }
 
     async fetchParent() {
