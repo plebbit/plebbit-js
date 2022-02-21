@@ -66,7 +66,20 @@ Subplebbit (IPNS record) {
   latestPostCid: string, // the most recent post in the linked list of posts
   sortedPosts: {best: SortedComments[]}, // only preload page 1 sorted by 'best', might preload more later, should include some child comments and vote counts for each post
   sortedPostsCids: {[key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid}, // e.g. {best: 'Qm...', new: 'Qm...', etc.}
-  challengeTypes: ChallengeType[] // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
+  challengeTypes: ChallengeType[], // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
+  metrics: SubplebbitMetrics
+}
+SubplebbitMetrics {
+  hourActiveUserCount: number,
+  dayActiveUserCount: number,
+  weekActiveUserCount: number,
+  monthActiveUserCount: number,
+  yearActiveUserCount: number,
+  hourPostCount: number,
+  dayPostCount: number,
+  weekPostCount: number,
+  monthPostCount: number,
+  yearPostCount: number
 }
 ChallengeType {
   type: 'image' | 'text' | 'video' | 'audio' | 'html',
@@ -165,6 +178,7 @@ Challenge {
   - `subplebbit.pubsubTopic`
   - `subplebbit.sortedPostsCids`
   - `subplebbit.challengeTypes`
+  - `subplebbit.metrics`
 - [Subplebbit Events](#subplebbit-events)
   - [`update`](#update)
   - [`challengerequest`](#challengerequest)
@@ -485,9 +499,10 @@ An object which may have the following keys:
 | description | `string` | description of the subplebbit |
 | moderatorsIpnsNames | `string[]` | IPNS names of the moderators |
 | latestPostCid | `string` | the most recent post in the linked list of posts |
-| sortedPosts | `{best: SortedPosts}` | only preload page 1 sorted by 'best', might preload more later, should include some child comments and vote counts for each post |
+| sortedPosts | `{best: SortedComments}` | only preload page 1 sorted by 'best', might preload more later, should include some child comments and vote counts for each post |
 | pubsubTopic | `string` | the string to publish to in the pubsub, a public key of the subplebbit owner's choice |
 | challengeTypes | `ChallengeType[]` | the challenge types provided by the subplebbit owner |
+| metrics | `SubplebbitMetrics` | the self reported metrics of the subplebbit |
 
 #### Returns
 
