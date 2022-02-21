@@ -37,4 +37,10 @@ export async function unsubscribeAllPubsubTopics(ipfsClient) {
     }
 }
 
+export function chunks(arr, len) {
+    let chunks = [], i = 0;
+    while (i < arr.length)
+        chunks.push(arr.slice(i, i += len));
+    return chunks;
+}
 

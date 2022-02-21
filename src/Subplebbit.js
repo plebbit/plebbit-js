@@ -16,6 +16,26 @@ import knex from 'knex';
 import DbHandler from "./DbHandler.js";
 import {createCaptcha} from "captcha-canvas/js-script/extra.js";
 
+export const SORTED_POSTS_TYPES = Object.freeze({
+    BEST: "best", NEW: "new", TOP_HOUR: "topHour",
+    TOP_DAY: "topDay", TOP_WEEK: "topWeek", TOP_MONTH: "topMonth", TOP_YEAR: "topYear", TOP_ALL: "topAll"
+});
+
+export const SORTED_POSTS_PAGE_SIZE = 2;
+
+export class SortedPosts {
+    constructor(props) {
+        this.nextSortedPostsCid = props["nextSortedPostsCid"];
+        this.posts = (props["posts"] || []).map(postProps => postProps instanceof (Comment) ? postProps : new Post(postProps));
+        this.type = props["type"];
+        this.pageCid = props["pageCid"];
+    }
+
+    setPageCid(newPageCid) {
+        this.pageCid = newPageCid;
+    }
+}
+
 
 class Subplebbit extends PlebbitCore {
     constructor(props, ipfsClient = null) {
@@ -36,6 +56,7 @@ class Subplebbit extends PlebbitCore {
         this.latestPostCid = mergedProps["latestPostCid"];
         this._dbConfig = mergedProps["database"];
         this.preloadedPosts = mergedProps["preloadedPosts"] || [];
+        this.sortedPostsCids = mergedProps["sortedPostsCids"] || {};
         this.setIpnsKey(mergedProps["ipnsName"], mergedProps["ipnsKeyName"]);
         this.plebbit = new Plebbit(newProps, this.ipfsClient);
     }
@@ -136,6 +157,30 @@ class Subplebbit extends PlebbitCore {
         this.event.emit("comment", comment);
     }
 
+    async #calcSortedNewPosts() {
+        return new Promise(async (resolve, reject) => {
+            const postsPages = await this._dbHandler.queryPostsSortedByTimestamp(SORTED_POSTS_PAGE_SIZE);
+            const sortedPosts = new Array(postsPages.len);
+            for (let i = postsPages.length - 1; i >= 0; i--) {
+                const sortedPostsPage = new SortedPosts({
+                    "type": SORTED_POSTS_TYPES.NEW, "posts": postsPages[i],
+                    "nextSortedPostsCid": sortedPosts[i + 1]?.pageCid
+                });
+                const cid = (await this.ipfsClient.add(JSON.stringify(sortedPostsPage))).path;
+                sortedPostsPage.setPageCid(cid);
+                sortedPosts[i] = sortedPostsPage;
+            }
+
+
+            resolve(sortedPosts[0]);
+        });
+    }
+
+
+    async #recalculateSortedPosts() {
+        this.sortedPostsCids[SORTED_POSTS_TYPES.NEW] = await this.#calcSortedNewPosts();
+    }
+
     async #publishPubsubMsg(pubsubMsg) {
         const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
 
@@ -214,6 +259,7 @@ class Subplebbit extends PlebbitCore {
             }
             await this._dbHandler.insertComment(postOrCommentOrVote);
         }
+        await this.#recalculateSortedPosts();
         return postOrCommentOrVote;
     }
 

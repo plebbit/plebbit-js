@@ -1,7 +1,9 @@
-import {CHALLENGE_STAGES, CHALLENGE_TYPES} from "./Challenge.js";
+import {Challenge, CHALLENGE_STAGES, CHALLENGE_TYPES} from "./Challenge.js";
 import {chunks} from "./Util.js";
+import Post from "./Post.js";
+import Author from "./Author.js";
 
-const TABLES = Object.freeze({
+export const TABLES = Object.freeze({
     COMMENTS: "comments",
     VOTES: "votes",
     AUTHORS: "authors",
@@ -139,6 +141,28 @@ class DbHandler {
                 "commentCid": commentCid,
                 "authorIpnsName": authorIpnsName
             }).first().then(resolve).catch(err => {
+                console.error(err);
+                reject(err);
+            })
+        });
+    }
+
+    async queryPostsSortedByTimestamp(limit) {
+        return new Promise(async (resolve, reject) => {
+            this.knex(TABLES.COMMENTS).whereNotNull("title").orderBy("timestamp", "desc")
+                .then(async res => {
+                    const authors = (await this.knex(TABLES.AUTHORS).whereIn("ipnsName", res.map(post => post.authorIpnsName))).map(authorProps => new Author(authorProps));
+                    const challenges = (await this.knex(TABLES.CHALLENGES).whereIn("requestId", res.map(post => post.challengeRequestId))).map(challengeProps => new Challenge(challengeProps));
+                    const posts = res.map(postProps =>
+                        new Post({
+                            ...postProps,
+                            "author": authors.filter(author => author.ipnsName === postProps.authorIpnsName)[0],
+                            "challenge": challenges.filter(challenge => challenge.requestId === postProps.challengeRequestId)[0]
+                        })
+                    );
+
+                    resolve(chunks(posts, limit));
+                }).catch(err => {
                 console.error(err);
                 reject(err);
             })
