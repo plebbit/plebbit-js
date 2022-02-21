@@ -204,12 +204,12 @@ class Subplebbit extends PlebbitCore {
             // Comment and Post need to add file to ipfs
             const file = await this.ipfsClient.add(JSON.stringify(postOrCommentOrVote));
             if (postOrCommentOrVote.getType() === "post") {
-                postOrCommentOrVote.setPostCid(file["cid"]);
-                postOrCommentOrVote.setCommentCid(file["cid"]);
+                postOrCommentOrVote.setPostCid(file.path);
+                postOrCommentOrVote.setCommentCid(file.path);
                 await this.#updateSubplebbitPosts(postOrCommentOrVote);
             } else {
                 // Comment
-                postOrCommentOrVote.setCommentCid(file["cid"]);
+                postOrCommentOrVote.setCommentCid(file.path);
                 await this.#updatePostComments(postOrCommentOrVote);
             }
             await this._dbHandler.insertComment(postOrCommentOrVote);

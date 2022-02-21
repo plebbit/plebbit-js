@@ -50,10 +50,9 @@ class Comment extends Publication {
         return {
             ...this.toJSONSkeleton(),
             "previousCommentCid": this.previousCommentCid?.toString(),
-            "commentIpnsKeyId": this.commentIpnsKeyId,
-            "commentIpnsKeyName": this.commentIpnsKeyName,
-            "postCid": this.postCid?.toString(),
-            "commentCid": this.commentCid?.toString(),
+            "commentIpnsName": this.commentIpnsName,
+            "postCid": this.postCid,
+            "commentCid": this.commentCid,
         }
     };
 
@@ -65,25 +64,22 @@ class Comment extends Publication {
             "content": this.content,
             "timestamp": this.timestamp,
             "signature": this.signature,
-            "parentCommentCid": this.parentCommentCid?.toString()
+            "parentCommentCid": this.parentCommentCid
         }
     }
 
     toJSONForDb() {
         const json = this.toJSON();
         delete json.author;
-        delete json.commentIpnsKeyId;
-        delete json.commentIpnsKeyName;
         delete json.challenge;
         json["authorIpnsName"] = this.author.ipnsName;
-        json["commentIpnsName"] = this.commentIpnsKeyId;
         json["challengeRequestId"] = this.challenge?.requestId;
         return json;
     }
 
     setCommentIpnsKey(ipnsKey) {
         // Contains name and id
-        this.commentIpnsKeyId = ipnsKey["id"];
+        this.commentIpnsName = ipnsKey["id"];
         this.commentIpnsKeyName = ipnsKey["name"];
     }
 
@@ -110,7 +106,7 @@ class Comment extends Publication {
 
     async fetchCommentIpns() {
         return new Promise(async (resolve, reject) => {
-            loadIpnsAsJson(this.commentIpnsKeyId, this.subplebbit.ipfsClient).then(res => {
+            loadIpnsAsJson(this.commentIpnsName, this.subplebbit.ipfsClient).then(res => {
                     this.commentIpns = new CommentIPNS(res);
                     resolve(this.commentIpns);
                 }
@@ -119,7 +115,7 @@ class Comment extends Publication {
     }
 
     async updateCommentIpns(newCommentIpns) {
-        assert(this.commentIpnsKeyName && this.commentIpnsKeyId, "You need to have commentIpns");
+        assert(this.commentIpnsKeyName && this.commentIpnsName, "You need to have commentIpns");
         this.commentIpns = newCommentIpns;
         return new Promise(async (resolve, reject) => {
             this.subplebbit.ipfsClient.add(JSON.stringify(this.commentIpns)).then(file => {
