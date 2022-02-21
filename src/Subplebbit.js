@@ -339,6 +339,7 @@ class Subplebbit extends PlebbitCore {
         if (!this._dbHandler)
             await this.#initDb();
         if (!this.provideCaptchaCallback) {
+            console.log(`Subplebbit-startPublishing`, "Subplebbit owner has not provided any captcha. Will go with default image captcha");
             this.provideCaptchaCallback = this.#defaultProvideCaptcha;
             this.validateCaptchaAnswerCallback = this.#defaultValidateCaptcha;
         }
