@@ -155,6 +155,7 @@ Challenge {
   - [`subplebbit.update(subplebbitUpdateOptions)`](#subplebbitupdatesubplebbitupdateoptions)
   - [`subplebbit.start()`](#subplebbitstart)
   - [`subplebbit.stop()`](#subplebbitstop)
+  - `subplebbit.getSortedPosts(sortedPostsCid)`
   - `subplebbit.subplebbitIpnsName`
   - `subplebbit.title`
   - `subplebbit.description`
@@ -484,7 +485,7 @@ An object which may have the following keys:
 | description | `string` | description of the subplebbit |
 | moderatorsIpnsNames | `string[]` | IPNS names of the moderators |
 | latestPostCid | `string` | the most recent post in the linked list of posts |
-| preloadedPosts | `Post[]` | preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include some preloaded comments for each post as well and vote counts |
+| sortedPosts | `{best: SortedPosts}` | only preload page 1 sorted by 'best', might preload more later, should include some child comments and vote counts for each post |
 | pubsubTopic | `string` | the string to publish to in the pubsub, a public key of the subplebbit owner's choice |
 | challengeTypes | `ChallengeType[]` | the challenge types provided by the subplebbit owner |
 
