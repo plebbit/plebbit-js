@@ -160,7 +160,7 @@ Challenge {
   - [`Plebbit(plebbitOptions)`](#plebbitplebbitoptions)
   - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
   - [`plebbit.getSubplebbit(subplebbitIpnsName)`](#plebbitgetsubplebbitsubplebbitipnsname)
-  - [`plebbit.createComment(commentOptions)`](#plebbitpublishcommentcommentoptions)
+  - [`plebbit.createComment(commentOptions)`](#plebbitcreatecommentcommentoptions)
   - [`plebbit.createCommentEdit(commentEditOptions)`](#plebbitcreatecommenteditcommenteditoptions)
   - [`plebbit.createVote(voteOptions)`](#plebbitpublishvotevoteoptions)
 - [Subplebbit API](#subplebbit-api)
