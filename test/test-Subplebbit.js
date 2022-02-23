@@ -89,7 +89,8 @@ describe("Test Subplebbit functionality", async () => {
 
             mockPost.publish(null, null).then(async (challengeWithPost) => {
                 const loadedPost = await plebbit.getPostOrComment(challengeWithPost.msg.postCid);
-                assert.equal(JSON.stringify(challengeWithPost.msg), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
+                const actualPost = new Post(challengeWithPost.msg);
+                assert.equal(JSON.stringify(actualPost), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
                 mockPosts.push(loadedPost);
                 resolve();
             }).catch(reject);
@@ -115,7 +116,8 @@ describe("Test Subplebbit functionality", async () => {
                 return "2";
             }).then(async (challengeWithPost) => {
                 const loadedPost = await plebbit.getPostOrComment(challengeWithPost.msg.postCid);
-                assert.equal(JSON.stringify(challengeWithPost.msg), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
+                const actualPost = new Post(challengeWithPost.msg, subplebbit);
+                assert.equal(JSON.stringify(actualPost), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
                 resolve();
             }).catch(reject);
 
@@ -167,7 +169,7 @@ describe("Test Subplebbit functionality", async () => {
 
     it("Throws an error when publishing a duplicate post", async function () {
         return new Promise(async (resolve, reject) => {
-            const post = mockPosts[0];
+            const post = new Post(mockPosts[0].toJSONSkeleton(), subplebbit);
             subplebbit.setProvideCaptchaCallback(() => [null, null, null]);
 
             await subplebbit.startPublishing();
