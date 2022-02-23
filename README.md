@@ -58,6 +58,10 @@ Signature {
   publicKey: buffer, // include public key (marshalled, like IPNS does it) because the IPNS name is just a hash of it
   type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
 }
+Signer {
+  privateKey: string | buffer | undefined, // to sign with metamask, no need for private key
+  type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
+}
 Subplebbit (IPNS record) {
   title: string,
   description: string,
@@ -65,7 +69,25 @@ Subplebbit (IPNS record) {
   pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   latestPostCid: string, // the most recent post in the linked list of posts
   sortedPosts: {best: SortedComments[]}, // only preload page 1 sorted by 'best', might preload more later, should include some child comments and vote counts for each post
-  sortedPostsCids: {[key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid} // e.g. {best: 'Qm...', new: 'Qm...', etc.}
+  sortedPostsCids: {[key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid}, // e.g. {best: 'Qm...', new: 'Qm...', etc.}
+  challengeTypes: ChallengeType[], // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
+  metrics: SubplebbitMetrics
+}
+SubplebbitMetrics {
+  hourActiveUserCount: number,
+  dayActiveUserCount: number,
+  weekActiveUserCount: number,
+  monthActiveUserCount: number,
+  yearActiveUserCount: number,
+  hourPostCount: number,
+  dayPostCount: number,
+  weekPostCount: number,
+  monthPostCount: number,
+  yearPostCount: number
+}
+ChallengeType {
+  type: 'image' | 'text' | 'video' | 'audio' | 'html',
+  ...other properties for more complex types later, e.g. an array of whitelisted addresses, a token address, etc,
 }
 SortedComments (IPFS file) {
   nextSortedCommentsCid: string, // get next page (sorted by the same algo)
@@ -142,7 +164,7 @@ Challenge {
   - [`Plebbit(plebbitOptions)`](#plebbitplebbitoptions)
   - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
   - [`plebbit.getSubplebbit(subplebbitIpnsName)`](#plebbitgetsubplebbitsubplebbitipnsname)
-  - [`plebbit.createComment(commentOptions)`](#plebbitpublishcommentcommentoptions)
+  - [`plebbit.createComment(commentOptions)`](#plebbitcreatecommentcommentoptions)
   - [`plebbit.createCommentEdit(commentEditOptions)`](#plebbitcreatecommenteditcommenteditoptions)
   - [`plebbit.createVote(voteOptions)`](#plebbitpublishvotevoteoptions)
 - [Subplebbit API](#subplebbit-api)
@@ -150,6 +172,7 @@ Challenge {
   - [`subplebbit.update(subplebbitUpdateOptions)`](#subplebbitupdatesubplebbitupdateoptions)
   - [`subplebbit.start()`](#subplebbitstart)
   - [`subplebbit.stop()`](#subplebbitstop)
+  - `subplebbit.getSortedPosts(sortedPostsCid)`
   - `subplebbit.subplebbitIpnsName`
   - `subplebbit.title`
   - `subplebbit.description`
@@ -158,6 +181,8 @@ Challenge {
   - `subplebbit.latestPostCid`
   - `subplebbit.pubsubTopic`
   - `subplebbit.sortedPostsCids`
+  - `subplebbit.challengeTypes`
+  - `subplebbit.metrics`
 - [Subplebbit Events](#subplebbit-events)
   - [`update`](#update)
   - [`challengerequest`](#challengerequest)
@@ -315,6 +340,7 @@ An object which may have the following keys:
 | content | `string` | Content of the comment |
 | timestamp | `number` or `null` | Time of publishing in ms, `Date.now()` if null |
 | author | `Author` | Author of the comment |
+| signer | `Signer` | Signer of the comment |
 
 #### Returns
 
@@ -353,6 +379,7 @@ An object which may have the following keys:
 | commentCid | The comment CID to be edited |
 | content | `string` | Edited content of the comment |
 | timestamp | `number` or `null` | Time of edit in ms, `Date.now()` if null |
+| signer | `Signer` | Signer of the comment |
 
 #### Returns
 
@@ -392,6 +419,7 @@ An object which may have the following keys:
 | timestamp | `number` or `null` | Time of publishing in ms, `Date.now()` if null |
 | author | `Author` | Author of the comment, will be needed for voting with NFTs or tokens |
 | vote | `1` or `0` or `-1` | 0 is for resetting a vote |
+| signer | `Signer` | Signer of the vote |
 
 #### Returns
 
@@ -478,8 +506,10 @@ An object which may have the following keys:
 | description | `string` | description of the subplebbit |
 | moderatorsIpnsNames | `string[]` | IPNS names of the moderators |
 | latestPostCid | `string` | the most recent post in the linked list of posts |
-| preloadedPosts | `Post[]` | preloaded content greatly improves loading speed, it saves scrolling the entire linked list, should include some preloaded comments for each post as well and vote counts |
+| sortedPosts | `{best: SortedComments}` | only preload page 1 sorted by 'best', might preload more later, should include some child comments and vote counts for each post |
 | pubsubTopic | `string` | the string to publish to in the pubsub, a public key of the subplebbit owner's choice |
+| challengeTypes | `ChallengeType[]` | the challenge types provided by the subplebbit owner |
+| metrics | `SubplebbitMetrics` | the self reported metrics of the subplebbit |
 
 #### Returns
 
