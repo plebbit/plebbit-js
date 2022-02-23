@@ -58,6 +58,10 @@ Signature {
   publicKey: buffer, // include public key (marshalled, like IPNS does it) because the IPNS name is just a hash of it
   type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
 }
+Signer {
+  privateKey: string | buffer | undefined, // to sign with metamask, no need for private key
+  type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
+}
 Subplebbit (IPNS record) {
   title: string,
   description: string,
@@ -336,6 +340,7 @@ An object which may have the following keys:
 | content | `string` | Content of the comment |
 | timestamp | `number` or `null` | Time of publishing in ms, `Date.now()` if null |
 | author | `Author` | Author of the comment |
+| signer | `Signer` | Signer of the comment |
 
 #### Returns
 
@@ -374,6 +379,7 @@ An object which may have the following keys:
 | commentCid | The comment CID to be edited |
 | content | `string` | Edited content of the comment |
 | timestamp | `number` or `null` | Time of edit in ms, `Date.now()` if null |
+| signer | `Signer` | Signer of the comment |
 
 #### Returns
 
@@ -413,6 +419,7 @@ An object which may have the following keys:
 | timestamp | `number` or `null` | Time of publishing in ms, `Date.now()` if null |
 | author | `Author` | Author of the comment, will be needed for voting with NFTs or tokens |
 | vote | `1` or `0` or `-1` | 0 is for resetting a vote |
+| signer | `Signer` | Signer of the vote |
 
 #### Returns
 
