@@ -272,7 +272,7 @@ class Subplebbit extends PlebbitCore {
 
         const validateCaptchaAnswer = async (pubsubMsg) => {
             const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
-            const challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
+            const challenge = msgParsed.challenge = msgParsed.msg.challenge = new Challenge(msgParsed["challenge"]);
             if (challenge.stage === CHALLENGE_STAGES.CHALLENGEANSWER) {
                 const [challengeAnswerIsVerified, answerVerificationReason] = await this.validateCaptchaAnswerCallback(msgParsed);
                 challenge.setStage(CHALLENGE_STAGES.CHALLENGEVERIFICATION);
@@ -280,7 +280,7 @@ class Subplebbit extends PlebbitCore {
                 challenge.setAnswerVerificationReason(answerVerificationReason);
                 await this._dbHandler.upsertChallenge(challenge);
 
-                msgParsed["challenge"] = challenge;
+                msgParsed.challenge = msgParsed.msg.challenge = challenge;
                 if (challengeAnswerIsVerified)
                     msgParsed["msg"] = await this.#publishPostAfterPassingChallenge(msgParsed);
                 if (challenge.answerId)
@@ -289,7 +289,7 @@ class Subplebbit extends PlebbitCore {
             }
         }
         const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
-        const challenge = msgParsed["challenge"] = new Challenge(msgParsed["challenge"]);
+        const challenge = msgParsed.challenge = msgParsed.msg.challenge = new Challenge(msgParsed["challenge"]);
 
         if (challenge.stage === CHALLENGE_STAGES.CHALLENGEREQUEST) {
             const [providedChallenge, challengeType, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(msgParsed);
@@ -302,7 +302,7 @@ class Subplebbit extends PlebbitCore {
                 challenge.setAnswerIsVerified(true);
                 challenge.setAnswerVerificationReason(reasonForSkippingCaptcha);
             }
-            msgParsed["challenge"] = challenge;
+            msgParsed.challenge = msgParsed.msg.challenge = challenge;
             await this._dbHandler.upsertChallenge(challenge);
             if (challenge.stage === CHALLENGE_STAGES.CHALLENGEVERIFICATION)
                 msgParsed["msg"] = await this.#publishPostAfterPassingChallenge(msgParsed);
