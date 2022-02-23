@@ -46,8 +46,8 @@ CommentIpns (IPNS record) {
   latestCommentCid: string, // the most recent comment in the linked list of posts
   upvoteCount: number,
   downvoteCount: number,
-  sortedComments: {best: SortedComments}, // only preload page 1 sorted by 'best', might preload more later
-  sortedCommentsCids: {[key: 'best' | 'new' | 'top'| 'old' ]: SortedCommentsCid} // only provide sorting for posts (not comments) that have 100+ child comments
+  sortedComments: {hot: SortedComments}, // only preload page 1 sorted by 'hot', might preload more later
+  sortedCommentsCids: {[key: 'hot' | 'new' | 'top'| 'old' ]: SortedCommentsCid} // only provide sorting for posts (not comments) that have 100+ child comments
 }
 Author {
   displayName: string,
@@ -68,8 +68,8 @@ Subplebbit (IPNS record) {
   moderatorsIpnsNames: string[],
   pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   latestPostCid: string, // the most recent post in the linked list of posts
-  sortedPosts: {best: SortedComments[]}, // only preload page 1 sorted by 'best', might preload more later, should include some child comments and vote counts for each post
-  sortedPostsCids: {[key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid}, // e.g. {best: 'Qm...', new: 'Qm...', etc.}
+  sortedPosts: {hot: SortedComments[]}, // only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post
+  sortedPostsCids: {[key: 'hot' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid}, // e.g. {hot: 'Qm...', new: 'Qm...', etc.}
   challengeTypes: ChallengeType[], // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
   metrics: SubplebbitMetrics
 }
@@ -506,7 +506,7 @@ An object which may have the following keys:
 | description | `string` | description of the subplebbit |
 | moderatorsIpnsNames | `string[]` | IPNS names of the moderators |
 | latestPostCid | `string` | the most recent post in the linked list of posts |
-| sortedPosts | `{best: SortedComments}` | only preload page 1 sorted by 'best', might preload more later, should include some child comments and vote counts for each post |
+| sortedPosts | `{hot: SortedComments}` | only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post |
 | pubsubTopic | `string` | the string to publish to in the pubsub, a public key of the subplebbit owner's choice |
 | challengeTypes | `ChallengeType[]` | the challenge types provided by the subplebbit owner |
 | metrics | `SubplebbitMetrics` | the self reported metrics of the subplebbit |
