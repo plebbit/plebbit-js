@@ -93,8 +93,9 @@ class Subplebbit extends PlebbitCore {
         this.validateCaptchaAnswerCallback = newCallback;
     }
 
-    setDbConfig(dbConfig) {
+    async setDbConfig(dbConfig) {
         this._dbConfig = dbConfig;
+        await this.#initDb();
     }
 
     async publishAsNewSubplebbit() {
