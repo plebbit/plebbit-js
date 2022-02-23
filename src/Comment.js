@@ -49,7 +49,7 @@ class Comment extends Publication {
     toJSON() {
         return {
             ...this.toJSONSkeleton(),
-            "previousCommentCid": this.previousCommentCid?.toString(),
+            "previousCommentCid": this.previousCommentCid,
             "commentIpnsName": this.commentIpnsName,
             "postCid": this.postCid,
             "commentCid": this.commentCid,

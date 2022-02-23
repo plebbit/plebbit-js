@@ -118,7 +118,7 @@ class Subplebbit extends PlebbitCore {
     toJSON() {
         return {
             "title": this.title, "description": this.description,
-            "moderatorsIpnsNames": this.moderatorsIpnsNames, "latestPostCid": this.latestPostCid?.toString(),
+            "moderatorsIpnsNames": this.moderatorsIpnsNames, "latestPostCid": this.latestPostCid,
             "preloadedPosts": this.preloadedPosts, "pubsubTopic": this.pubsubTopic, "ipnsName": this.ipnsName
         };
     }
