@@ -8,12 +8,11 @@ class Post extends Comment {
         this.title = props["title"];
     }
 
-
-    toJSON() {
+    toJSONSkeleton() {
         return {
-            ...super.toJSON(),
+            ...(super.toJSONSkeleton()),
             "title": this.title
-        };
+        }
     }
 }
 

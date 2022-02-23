@@ -30,7 +30,11 @@ class Publication {
     }
 
     toJSON() {
-        return {"subplebbitIpnsName": this.subplebbitIpnsName, "challenge": this.challenge};
+        return {...(this.toJSONSkeleton()), "challenge": this.challenge};
+    }
+
+    toJSONSkeleton(){
+        return {"subplebbitIpnsName": this.subplebbitIpnsName};
     }
 
     async #publish(userOptions, solveChallengeCallback) {

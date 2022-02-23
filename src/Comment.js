@@ -59,7 +59,7 @@ class Comment extends Publication {
 
     toJSONSkeleton() {
         return {
-            ...(super.toJSON()),
+            ...(super.toJSONSkeleton()),
             "author": this.author,
             "content": this.content,
             "timestamp": this.timestamp,
