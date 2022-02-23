@@ -24,12 +24,12 @@ Publication {
 }
 Comment (IPFS file) {
   ...Publication,
-  subplebbitIpnsKeyId: string, // required to prevent malicious subplebbits republishing as original and helps faster loading subplebbit info for comment direct linking
+  subplebbitIpnsName: string, // required to prevent malicious subplebbits republishing as original and helps faster loading subplebbit info for comment direct linking
   postCid: string, // helps faster loading post info for comment direct linking
   parentCommentCid: string, // same as postCid for top level comments
   content: string,
   previousCommentCid: string, // each post is a linked list
-  commentIpnsKeyId: string // each post/comment needs its own IPNS record (CommentIpns) for its mutable data like edits, vote counts, comments
+  commentIpnsName: string // each post/comment needs its own IPNS record (CommentIpns) for its mutable data like edits, vote counts, comments
 }
 Post (IPFS file) {
   ...Comment,
@@ -51,7 +51,7 @@ CommentIpns (IPNS record) {
 }
 Author {
   displayName: string,
-  ipnsKeyId: string
+  ipnsName: string
 }
 Signature {
   signature: string, // data in base64
