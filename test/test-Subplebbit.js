@@ -82,7 +82,7 @@ describe("Test Subplebbit functionality", async () => {
                     // if we return null we are skipping captcha for this particular post/comment
                     return [null, null, "Captcha was skipped because timestamp exceeded 1643740217602"];
                 else
-                    return ["1+1=?", CHALLENGE_TYPES.MATHCLI];
+                    return ["1+1=?", CHALLENGE_TYPES.TEXT];
             });
             const mockPost = await generateMockPost();
             await subplebbit.startPublishing();
@@ -101,7 +101,7 @@ describe("Test Subplebbit functionality", async () => {
         return new Promise(async (resolve, reject) => {
             subplebbit.setProvideCaptchaCallback((challengeWithPost) => {
                 // Return question, type
-                return ["1+1=?", CHALLENGE_TYPES.MATHCLI];
+                return ["1+1=?", CHALLENGE_TYPES.TEXT];
             });
             subplebbit.setValidateCaptchaAnswerCallback((challengeWithPost) => {
                 const answerIsCorrect = challengeWithPost["challenge"].answer === "2";

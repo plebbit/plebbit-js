@@ -5,7 +5,7 @@ export const CHALLENGE_STAGES = Object.freeze({
     CHALLENGEVERIFICATION: "CHALLENGEVERIFICATION"
 });
 
-export const CHALLENGE_TYPES = Object.freeze({IMAGE: "image", MATHCLI: "mathcli"});
+export const CHALLENGE_TYPES = Object.freeze({IMAGE: "image", TEXT: "text"});
 
 class Challenge {
     constructor(props) {
