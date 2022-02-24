@@ -24,12 +24,12 @@ Publication {
 }
 Comment (IPFS file) {
   ...Publication,
-  subplebbitIpnsKeyId: string, // required to prevent malicious subplebbits republishing as original and helps faster loading subplebbit info for comment direct linking
+  subplebbitIpnsName: string, // required to prevent malicious subplebbits republishing as original and helps faster loading subplebbit info for comment direct linking
   postCid: string, // helps faster loading post info for comment direct linking
   parentCommentCid: string, // same as postCid for top level comments
   content: string,
   previousCommentCid: string, // each post is a linked list
-  commentIpnsKeyId: string // each post/comment needs its own IPNS record (CommentIpns) for its mutable data like edits, vote counts, comments
+  commentIpnsName: string // each post/comment needs its own IPNS record (CommentIpns) for its mutable data like edits, vote counts, comments
 }
 Post (IPFS file) {
   ...Comment,
@@ -46,12 +46,12 @@ CommentIpns (IPNS record) {
   latestCommentCid: string, // the most recent comment in the linked list of posts
   upvoteCount: number,
   downvoteCount: number,
-  sortedComments: {best: SortedComments}, // only preload page 1 sorted by 'best', might preload more later
-  sortedCommentsCids: {[key: 'best' | 'new' | 'top'| 'old' ]: SortedCommentsCid} // only provide sorting for posts (not comments) that have 100+ child comments
+  sortedComments: {hot: SortedComments}, // only preload page 1 sorted by 'hot', might preload more later
+  sortedCommentsCids: {[key: 'hot' | 'new' | 'top'| 'old' ]: SortedCommentsCid} // only provide sorting for posts (not comments) that have 100+ child comments
 }
 Author {
   displayName: string,
-  ipnsKeyId: string
+  ipnsName: string
 }
 Signature {
   signature: string, // data in base64
@@ -68,8 +68,8 @@ Subplebbit (IPNS record) {
   moderatorsIpnsNames: string[],
   pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   latestPostCid: string, // the most recent post in the linked list of posts
-  sortedPosts: {best: SortedComments[]}, // only preload page 1 sorted by 'best', might preload more later, should include some child comments and vote counts for each post
-  sortedPostsCids: {[key: 'best' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid}, // e.g. {best: 'Qm...', new: 'Qm...', etc.}
+  sortedPosts: {hot: SortedComments[]}, // only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post
+  sortedPostsCids: {[key: 'hot' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid}, // e.g. {hot: 'Qm...', new: 'Qm...', etc.}
   challengeTypes: ChallengeType[], // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
   metrics: SubplebbitMetrics
 }
@@ -139,12 +139,12 @@ ChallengeRequestMessage (sent by post author) {
 }
 ChallengeMessage (sent by subplebbit owner) {
   challengeRequestId: string,
-  challenge: Challenge
+  challenge: Challenge[] // a challenge can have more than 1 challenge
 }
 ChallengeAnswerMessage (sent by post author) {
   challengeRequestId: string,
   challengeAnswerId: string, // random string choosen by sender
-  challengeAnswer: string // for example 2+2=4
+  challengeAnswer: string[] // for example ['2+2=4', '1+7=8']
 }
 ChallengeVerificationMessage (sent by subplebbit owner) {
   challengeRequestId: string, // include in verification in case a peer is missing it
@@ -506,7 +506,7 @@ An object which may have the following keys:
 | description | `string` | description of the subplebbit |
 | moderatorsIpnsNames | `string[]` | IPNS names of the moderators |
 | latestPostCid | `string` | the most recent post in the linked list of posts |
-| sortedPosts | `{best: SortedComments}` | only preload page 1 sorted by 'best', might preload more later, should include some child comments and vote counts for each post |
+| sortedPosts | `{hot: SortedComments}` | only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post |
 | pubsubTopic | `string` | the string to publish to in the pubsub, a public key of the subplebbit owner's choice |
 | challengeTypes | `ChallengeType[]` | the challenge types provided by the subplebbit owner |
 | metrics | `SubplebbitMetrics` | the self reported metrics of the subplebbit |
