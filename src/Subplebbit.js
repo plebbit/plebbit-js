@@ -13,7 +13,7 @@ import Plebbit from "./Plebbit.js";
 import knex from 'knex';
 import DbHandler from "./DbHandler.js";
 import {createCaptcha} from "captcha-canvas/js-script/extra.js";
-import {SortHandler} from "./SortHandler.js";
+import {SORTED_COMMENTS_TYPES, SortHandler} from "./SortHandler.js";
 import Vote from "./Vote.js";
 import Post from "./Post.js";
 
@@ -124,6 +124,7 @@ class Subplebbit extends PlebbitCore {
 
     async #updateSubplebbitPosts(post) {
         [this.sortedPosts, this.sortedPostsCids] = await this.sortHandler.calculateSortedPosts();
+        this.sortedPosts = {[SORTED_COMMENTS_TYPES.NEW] : this.sortedPosts[SORTED_COMMENTS_TYPES.NEW]};
         const newSubplebbitOptions = {
             "preloadedPosts": [post, ...this.preloadedPosts],
             "latestPostCid": post.postCid,

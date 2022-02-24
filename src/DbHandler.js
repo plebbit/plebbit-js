@@ -181,6 +181,14 @@ class DbHandler {
             this.knex(TABLES.COMMENTS).whereNotNull("title").then(this.#createPostsFromRows.bind(this)).then(resolve).catch(reject);
         });
     }
+
+    async queryPostsBetweenTimestampRange(timestamp1, timestamp2){
+        return new Promise(async (resolve ,reject) => {
+            if (timestamp1 === Number.NEGATIVE_INFINITY)
+                timestamp1 = 0;
+            this.knex(TABLES.COMMENTS).whereNotNull("title").whereBetween("timestamp", [timestamp1, timestamp2]).then((res) => resolve(this.#createPostsFromRows.bind(this)(res))).catch(reject);
+        });
+    }
 }
 
 export default DbHandler;

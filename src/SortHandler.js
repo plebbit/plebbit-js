@@ -2,6 +2,23 @@ import Post from "./Post.js";
 import Comment from "./Comment.js";
 import {chunks, round} from "./Util.js";
 
+const SORTED_COMMENTS_TIMEFRAMES = Object.freeze({
+    HOUR: "HOUR",
+    DAY: "DAY",
+    WEEK: "WEEK",
+    month: "MONTH",
+    year: "YEAR",
+    all: "ALL"
+});
+
+const SORTED_COMMENTS_TIMEFRAMES_MILLISECONDS = Object.freeze({
+    "HOUR": 1000 * 60 * 60,
+    "DAY": 1000 * 60 * 60 * 24,
+    "WEEK": 1000 * 60 * 60 * 24 * 7,
+    "MONTH": 1000 * 60 * 60 * 24 * 7 * 30,
+    "YEAR": 1000 * 60 * 60 * 24 * 7 * 30 * 365,
+    "ALL": Infinity
+})
 export const SORTED_COMMENTS_TYPES = Object.freeze({
     HOT: "hot",
     NEW: "new",
@@ -15,7 +32,8 @@ export const SORTED_COMMENTS_TYPES = Object.freeze({
     CONTROVERSIAL_DAY: "controversialDay",
     CONTROVERSIAL_WEEK: "controversialWeek",
     CONTROVERSIAL_MONTH: "controversialMonth",
-    CONTROVERSIAL_YEAR: "controversialYear"
+    CONTROVERSIAL_YEAR: "controversialYear",
+    CONTROVERSIAL_ALL: "controversialAll"
 });
 
 export const SORTED_POSTS_PAGE_SIZE = 2;
@@ -36,6 +54,8 @@ export class SortedComments {
 export class SortHandler {
     constructor(subplebbit) {
         this.subplebbit = subplebbit;
+        this.sortedPosts = {};
+        this.sortedPostsCids = {};
     }
 
     async #chunksToSortedComments(chunks, type) {
@@ -61,8 +81,9 @@ export class SortHandler {
         return new Promise(async (resolve, reject) => {
             const postsPages = chunks(await this.subplebbit.dbHandler.queryPostsSortedByTimestamp(SORTED_POSTS_PAGE_SIZE), limit);
             const sortedPosts = await this.#chunksToSortedComments(postsPages, SORTED_COMMENTS_TYPES.NEW);
-
-            resolve([sortedPosts[0], sortedPosts[0].pageCid]);
+            this.sortedPosts[SORTED_COMMENTS_TYPES.NEW] = sortedPosts[0];
+            this.sortedPostsCids[SORTED_COMMENTS_TYPES.NEW] = sortedPosts[0].pageCid;
+            resolve(sortedPosts);
         });
     }
 
@@ -94,21 +115,60 @@ export class SortHandler {
 
             const postsChunks = chunks(postsSorted, limit);
             const sortedComments = await this.#chunksToSortedComments(postsChunks, SORTED_COMMENTS_TYPES.HOT);
+            this.sortedPosts[SORTED_COMMENTS_TYPES.HOT] = sortedComments[0];
+            this.sortedPostsCids[SORTED_COMMENTS_TYPES.HOT] = sortedComments[0].pageCid;
 
-            resolve([sortedComments[0], sortedComments[0]?.pageCid]);
+            resolve(sortedComments);
         });
     }
 
+    async #sortPostsByTop(timeframe, limit = SORTED_POSTS_PAGE_SIZE) {
+        return new Promise(async (resolve, reject) => {
+            // Timeframe is "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL"
+
+            const posts = await this.subplebbit.dbHandler.queryPostsBetweenTimestampRange(Date.now() - SORTED_COMMENTS_TIMEFRAMES_MILLISECONDS[timeframe], Date.now());
+            const scores = await Promise.all(posts.map(async post => {
+                const commentIpns = await post.fetchCommentIpns();
+                const [upvote, downvote] = [commentIpns.upvoteCount, commentIpns.downvoteCount];
+                return upvote - downvote;
+            }));
+            const sortedPosts = posts.sort((postA, postB) => {
+                const [iA, iB] = [posts.indexOf(postA), posts.indexOf(postB)];
+                return scores[iA] > scores[iB];
+            });
+            const postsChunks = chunks(sortedPosts, limit);
+            const typePropertyName = SORTED_COMMENTS_TYPES[`TOP_${timeframe}`];
+            const sortedComments = await this.#chunksToSortedComments(postsChunks, typePropertyName);
+            this.sortedPosts[typePropertyName] = sortedComments[0];
+            this.sortedPostsCids[typePropertyName] = sortedComments[0]?.pageCid;
+
+            resolve(sortedComments);
+        });
+
+
+    }
+
+    async #sortPostsByControversial(timeframe, limit = SORTED_POSTS_PAGE_SIZE) {
+
+    }
+
     async calculateSortedPosts() {
-        return new Promise(async (resolve ,reject) => {
-            const [sortedPostsHot, sortedPostsHotCid] = await this.#sortPostsByHot();
-            const [sortedPostsNew, sortedPostsNewCid] = await this.#sortPostsByNew();
-            const sortedPosts = {[SORTED_COMMENTS_TYPES.HOT]: sortedPostsHot};
-            const sortedPostsCids = {
-                [SORTED_COMMENTS_TYPES.HOT]: sortedPostsHotCid,
-                [SORTED_COMMENTS_TYPES.NEW]: sortedPostsNewCid
-            };
-            resolve([sortedPosts, sortedPostsCids]);
+        return new Promise(async (resolve, reject) => {
+            const sortPromises = [this.#sortPostsByHot.bind(this)(), this.#sortPostsByNew.bind(this)()];
+            for (const type of ["TOP", "CONTROVERSIAL"])
+                for (const timeframe of Object.values(SORTED_COMMENTS_TIMEFRAMES)) {
+                    if (type === "TOP")
+                        sortPromises.push(this.#sortPostsByTop.bind(this)(timeframe));
+                    else if (type === "CONTROVERSIAL")
+                        sortPromises.push(this.#sortPostsByControversial.bind(this)(timeframe));
+                }
+
+            Promise.all(sortPromises).then(() => resolve([this.sortedPosts, this.sortedPostsCids])).catch((err) => {
+                console.error(err);
+                reject(err);
+            });
+
+
         });
 
     }
