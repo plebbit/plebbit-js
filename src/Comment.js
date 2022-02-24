@@ -28,7 +28,7 @@ class Comment extends Publication {
         this._initProps(props);
     }
 
-    _initProps(props){
+    _initProps(props) {
         super._initProps(props);
         this.author = new Author(props["author"]);
         this.timestamp = props["timestamp"] || Date.now();
@@ -106,11 +106,16 @@ class Comment extends Publication {
 
     async fetchCommentIpns() {
         return new Promise(async (resolve, reject) => {
-            loadIpnsAsJson(this.commentIpnsName, this.subplebbit.ipfsClient).then(res => {
-                    this.commentIpns = new CommentIPNS(res);
-                    resolve(this.commentIpns);
-                }
-            ).catch(reject)
+            // Cache is kept for 5 minutes
+            if (this.commentIpns && (Date.now() - this.commentIpnsTimestamp) < (1000 * 60 * 5))
+                resolve(this.commentIpns);
+            else
+                loadIpnsAsJson(this.commentIpnsName, this.subplebbit.ipfsClient).then(res => {
+                        this.commentIpns = new CommentIPNS(res);
+                        this.commentIpnsTimestamp = Date.now();
+                        resolve(this.commentIpns);
+                    }
+                ).catch(reject)
         });
     }
 
