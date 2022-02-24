@@ -5,7 +5,7 @@ import {loadIpfsFileAsJson, unsubscribeAllPubsubTopics} from "../src/Util.js";
 import * as fs from 'fs/promises';
 import readline from "readline";
 import {CHALLENGE_TYPES} from "../src/Challenge.js";
-import {SORTED_POSTS_PAGE_SIZE, SORTED_POSTS_TYPES, SortedPosts} from "../src/Subplebbit.js";
+import {SORTED_COMMENTS_TYPES, SORTED_POSTS_PAGE_SIZE, SortedComments} from "../src/SortHandler.js";
 
 const startTestTime = Date.now();
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
@@ -42,7 +42,7 @@ describe("Test Subplebbit functionality", async () => {
     });
 
     const numOfPosts = SORTED_POSTS_PAGE_SIZE + 2;
-    it(`Sorting ${numOfPosts} posts by new generates a two pages ordered by posts' timestamp`, async function(){
+    it(`Sorting ${numOfPosts} posts by new generates a two pages ordered by posts' timestamp`, async function () {
         await subplebbit.setProvideCaptchaCallback(() => [null, null, null]);
         await subplebbit.startPublishing();
         const actualPosts = new Array(numOfPosts);
@@ -50,11 +50,11 @@ describe("Test Subplebbit functionality", async () => {
             actualPosts[i] = await generateMockPost();
 
         await Promise.all(actualPosts.map(async post => post.publish()));
-        const sortedPostsFirstPage = subplebbit.sortedPostsCids[SORTED_POSTS_TYPES.NEW];
-        assert(sortedPostsFirstPage.nextSortedPostsCid, "There should be two pages");
-        const sortedPostsSecondPage = new SortedPosts(await loadIpfsFileAsJson(sortedPostsFirstPage.nextSortedPostsCid, plebbit.ipfsClient));
+        const sortedPostsFirstPage = new SortedComments(await loadIpfsFileAsJson(subplebbit.sortedPostsCids[SORTED_COMMENTS_TYPES.NEW], plebbit.ipfsClient));
+        assert(sortedPostsFirstPage.nextSortedCommentsCid, "There should be two pages");
+        const sortedPostsSecondPage = new SortedComments(await loadIpfsFileAsJson(sortedPostsFirstPage.nextSortedCommentsCid, plebbit.ipfsClient));
 
-        const combinedPosts = sortedPostsFirstPage.posts.concat(sortedPostsSecondPage.posts);
+        const combinedPosts = sortedPostsFirstPage.comments.concat(sortedPostsSecondPage.comments);
 
         assert.equal(JSON.stringify(actualPosts), JSON.stringify(combinedPosts), "Posts have not been loaded in correct order");
 
