@@ -12,8 +12,9 @@ export const TABLES = Object.freeze({
 
 
 class DbHandler {
-    constructor(knex) {
+    constructor(knex, subplebbit) {
         this.knex = knex;
+        this.subplebbit = subplebbit;
     }
 
     async #createCommentsTable() {
@@ -147,25 +148,37 @@ class DbHandler {
         });
     }
 
+    async #createPostsFromRows(postsRows) {
+        return new Promise(async (resolve, reject) => {
+            const authors = (await this.knex(TABLES.AUTHORS).whereIn("ipnsName", postsRows.map(post => post.authorIpnsName))).map(authorProps => new Author(authorProps));
+            const challenges = (await this.knex(TABLES.CHALLENGES).whereIn("requestId", postsRows.map(post => post.challengeRequestId))).map(challengeProps => new Challenge(challengeProps));
+            const posts = postsRows.map(postProps =>
+                new Post({
+                    ...postProps,
+                    "author": authors.filter(author => author.ipnsName === postProps.authorIpnsName)[0],
+                    "challenge": challenges.filter(challenge => challenge.requestId === postProps.challengeRequestId)[0]
+                }, this.subplebbit)
+            )
+            resolve(posts);
+        });
+
+    }
+
     async queryPostsSortedByTimestamp(limit) {
         return new Promise(async (resolve, reject) => {
             this.knex(TABLES.COMMENTS).whereNotNull("title").orderBy("timestamp", "desc")
                 .then(async res => {
-                    const authors = (await this.knex(TABLES.AUTHORS).whereIn("ipnsName", res.map(post => post.authorIpnsName))).map(authorProps => new Author(authorProps));
-                    const challenges = (await this.knex(TABLES.CHALLENGES).whereIn("requestId", res.map(post => post.challengeRequestId))).map(challengeProps => new Challenge(challengeProps));
-                    const posts = res.map(postProps =>
-                        new Post({
-                            ...postProps,
-                            "author": authors.filter(author => author.ipnsName === postProps.authorIpnsName)[0],
-                            "challenge": challenges.filter(challenge => challenge.requestId === postProps.challengeRequestId)[0]
-                        })
-                    );
-
-                    resolve(chunks(posts, limit));
+                    resolve(await this.#createPostsFromRows.bind(this)(res));
                 }).catch(err => {
                 console.error(err);
                 reject(err);
             })
+        });
+    }
+
+    queryAllPosts() {
+        return new Promise(async (resolve, reject) => {
+            this.knex(TABLES.COMMENTS).whereNotNull("title").then(this.#createPostsFromRows.bind(this)).then(resolve).catch(reject);
         });
     }
 }

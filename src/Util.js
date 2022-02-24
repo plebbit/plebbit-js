@@ -44,3 +44,9 @@ export function chunks(arr, len) {
     return chunks;
 }
 
+export function round(number, decimalPlaces){
+    const factorOfTen = Math.pow(10, decimalPlaces);
+    return Math.round(number * factorOfTen) / factorOfTen;
+}
+
+

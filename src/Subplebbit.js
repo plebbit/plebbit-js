@@ -59,7 +59,7 @@ class Subplebbit extends PlebbitCore {
 
         if (!this._dbConfig)
             return;
-        this.dbHandler = new DbHandler(knex(this._dbConfig));
+        this.dbHandler = new DbHandler(knex(this._dbConfig), this);
         await this.dbHandler.createTablesIfNeeded();
     }
 
