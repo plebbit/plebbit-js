@@ -3,8 +3,19 @@ import Comment from "./Comment.js";
 import {chunks, round} from "./Util.js";
 
 export const SORTED_COMMENTS_TYPES = Object.freeze({
-    HOT: "hot", NEW: "new", TOP_HOUR: "topHour",
-    TOP_DAY: "topDay", TOP_WEEK: "topWeek", TOP_MONTH: "topMonth", TOP_YEAR: "topYear", TOP_ALL: "topAll",
+    HOT: "hot",
+    NEW: "new",
+    TOP_HOUR: "topHour",
+    TOP_DAY: "topDay",
+    TOP_WEEK: "topWeek",
+    TOP_MONTH: "topMonth",
+    TOP_YEAR: "topYear",
+    TOP_ALL: "topAll",
+    CONTROVERSIAL_HOUR: "controversialHour",
+    CONTROVERSIAL_DAY: "controversialDay",
+    CONTROVERSIAL_WEEK: "controversialWeek",
+    CONTROVERSIAL_MONTH: "controversialMonth",
+    CONTROVERSIAL_YEAR: "controversialYear"
 });
 
 export const SORTED_POSTS_PAGE_SIZE = 2;
