@@ -1,4 +1,3 @@
-import Post from "./Post.js";
 import Comment, {CommentIPNS} from "./Comment.js";
 import last from "it-last";
 import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
@@ -7,7 +6,6 @@ import {sha256} from "js-sha256";
 import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string'
 
 import {Challenge, CHALLENGE_STAGES, CHALLENGE_TYPES} from "./Challenge.js";
-import Vote from "./Vote.js";
 import assert from "assert";
 import PlebbitCore from "./PlebbitCore.js";
 import Plebbit from "./Plebbit.js";
@@ -15,26 +13,9 @@ import Plebbit from "./Plebbit.js";
 import knex from 'knex';
 import DbHandler from "./DbHandler.js";
 import {createCaptcha} from "captcha-canvas/js-script/extra.js";
-
-export const SORTED_POSTS_TYPES = Object.freeze({
-    BEST: "best", NEW: "new", TOP_HOUR: "topHour",
-    TOP_DAY: "topDay", TOP_WEEK: "topWeek", TOP_MONTH: "topMonth", TOP_YEAR: "topYear", TOP_ALL: "topAll"
-});
-
-export const SORTED_POSTS_PAGE_SIZE = 2;
-
-export class SortedPosts {
-    constructor(props) {
-        this.nextSortedPostsCid = props["nextSortedPostsCid"];
-        this.posts = (props["posts"] || []).map(postProps => postProps instanceof (Comment) ? postProps : new Post(postProps));
-        this.type = props["type"];
-        this.pageCid = props["pageCid"];
-    }
-
-    setPageCid(newPageCid) {
-        this.pageCid = newPageCid;
-    }
-}
+import {SortHandler} from "./SortHandler.js";
+import Vote from "./Vote.js";
+import Post from "./Post.js";
 
 
 class Subplebbit extends PlebbitCore {
@@ -56,9 +37,11 @@ class Subplebbit extends PlebbitCore {
         this.latestPostCid = mergedProps["latestPostCid"];
         this._dbConfig = mergedProps["database"];
         this.preloadedPosts = mergedProps["preloadedPosts"] || [];
+        this.sortedPosts = mergedProps["sortedPosts"] || {};
         this.sortedPostsCids = mergedProps["sortedPostsCids"] || {};
         this.setIpnsKey(mergedProps["ipnsName"], mergedProps["ipnsKeyName"]);
         this.plebbit = new Plebbit(newProps, this.ipfsClient);
+        this.sortHandler = new SortHandler(this);
     }
 
     async #initDb() {
@@ -76,8 +59,8 @@ class Subplebbit extends PlebbitCore {
 
         if (!this._dbConfig)
             return;
-        this._dbHandler = new DbHandler(knex(this._dbConfig));
-        await this._dbHandler.createTablesIfNeeded();
+        this.dbHandler = new DbHandler(knex(this._dbConfig));
+        await this.dbHandler.createTablesIfNeeded();
     }
 
     setIpnsKey(newIpnsName, newIpnsKeyName) {
@@ -120,7 +103,8 @@ class Subplebbit extends PlebbitCore {
         return {
             "title": this.title, "description": this.description,
             "moderatorsIpnsNames": this.moderatorsIpnsNames, "latestPostCid": this.latestPostCid,
-            "preloadedPosts": this.preloadedPosts, "pubsubTopic": this.pubsubTopic, "ipnsName": this.ipnsName
+            "preloadedPosts": this.preloadedPosts, "pubsubTopic": this.pubsubTopic, "ipnsName": this.ipnsName,
+            "sortedPosts": this.sortedPosts, "sortedPostsCids": this.sortedPostsCids
         };
     }
 
@@ -139,9 +123,12 @@ class Subplebbit extends PlebbitCore {
 
 
     async #updateSubplebbitPosts(post) {
+        [this.sortedPosts, this.sortedPostsCids] = await this.sortHandler.calculateSortedPosts();
         const newSubplebbitOptions = {
             "preloadedPosts": [post, ...this.preloadedPosts],
-            "latestPostCid": post.postCid
+            "latestPostCid": post.postCid,
+            "sortedPosts": this.sortedPosts,
+            "sortedPostsCid": this.sortedPostsCids
         }
         await this.update(newSubplebbitOptions);
         this.event.emit("post", post);
@@ -156,30 +143,6 @@ class Subplebbit extends PlebbitCore {
         });
         await comment.parent.updateCommentIpns(newCommentIpns)
         this.event.emit("comment", comment);
-    }
-
-    async #calcSortedNewPosts() {
-        return new Promise(async (resolve, reject) => {
-            const postsPages = await this._dbHandler.queryPostsSortedByTimestamp(SORTED_POSTS_PAGE_SIZE);
-            const sortedPosts = new Array(postsPages.len);
-            for (let i = postsPages.length - 1; i >= 0; i--) {
-                const sortedPostsPage = new SortedPosts({
-                    "type": SORTED_POSTS_TYPES.NEW, "posts": postsPages[i],
-                    "nextSortedPostsCid": sortedPosts[i + 1]?.pageCid
-                });
-                const cid = (await this.ipfsClient.add(JSON.stringify(sortedPostsPage))).path;
-                sortedPostsPage.setPageCid(cid);
-                sortedPosts[i] = sortedPostsPage;
-            }
-
-
-            resolve(sortedPosts[0]);
-        });
-    }
-
-
-    async #recalculateSortedPosts() {
-        this.sortedPostsCids[SORTED_POSTS_TYPES.NEW] = await this.#calcSortedNewPosts();
     }
 
     async #publishPubsubMsg(pubsubMsg) {
@@ -213,7 +176,7 @@ class Subplebbit extends PlebbitCore {
         }
 
         if (postOrCommentOrVote.getType() === "vote") {
-            const lastVote = await this._dbHandler.getLastVoteOfAuthor(postOrCommentOrVote.commentCid, postOrCommentOrVote.author.ipnsName);
+            const lastVote = await this.dbHandler.getLastVoteOfAuthor(postOrCommentOrVote.commentCid, postOrCommentOrVote.author.ipnsName);
             const voteComment = await this.plebbit.getPostOrComment(postOrCommentOrVote.commentCid);
             const commentIpns = await voteComment.fetchCommentIpns();
             let newUpvoteCount = -1, newDownvoteCount = -1;
@@ -245,22 +208,22 @@ class Subplebbit extends PlebbitCore {
                 "upvoteCount": newUpvoteCount,
                 "downvoteCount": newDownvoteCount
             }));
-            await this._dbHandler.upsertVote(postOrCommentOrVote);
+            await this.dbHandler.upsertVote(postOrCommentOrVote);
         } else {
             // Comment and Post need to add file to ipfs
             const file = await this.ipfsClient.add(JSON.stringify(postOrCommentOrVote));
             if (postOrCommentOrVote.getType() === "post") {
                 postOrCommentOrVote.setPostCid(file.path);
                 postOrCommentOrVote.setCommentCid(file.path);
+                await this.dbHandler.insertComment(postOrCommentOrVote);
                 await this.#updateSubplebbitPosts(postOrCommentOrVote);
             } else {
                 // Comment
                 postOrCommentOrVote.setCommentCid(file.path);
+                await this.dbHandler.insertComment(postOrCommentOrVote);
                 await this.#updatePostComments(postOrCommentOrVote);
             }
-            await this._dbHandler.insertComment(postOrCommentOrVote);
         }
-        await this.#recalculateSortedPosts();
         return postOrCommentOrVote;
     }
 
@@ -279,7 +242,7 @@ class Subplebbit extends PlebbitCore {
                 challenge.setStage(CHALLENGE_STAGES.CHALLENGEVERIFICATION);
                 challenge.setAnswerIsVerified(challengeAnswerIsVerified);
                 challenge.setAnswerVerificationReason(answerVerificationReason);
-                await this._dbHandler.upsertChallenge(challenge);
+                await this.dbHandler.upsertChallenge(challenge);
 
                 msgParsed.challenge = msgParsed.msg.challenge = challenge;
                 if (challengeAnswerIsVerified)
@@ -304,7 +267,7 @@ class Subplebbit extends PlebbitCore {
                 challenge.setAnswerVerificationReason(reasonForSkippingCaptcha);
             }
             msgParsed.challenge = msgParsed.msg.challenge = challenge;
-            await this._dbHandler.upsertChallenge(challenge);
+            await this.dbHandler.upsertChallenge(challenge);
             if (challenge.stage === CHALLENGE_STAGES.CHALLENGEVERIFICATION)
                 msgParsed["msg"] = await this.#publishPostAfterPassingChallenge(msgParsed);
             if (challenge.stage === CHALLENGE_STAGES.CHALLENGE)
@@ -337,14 +300,14 @@ class Subplebbit extends PlebbitCore {
 
 
     async startPublishing() {
-        if (!this._dbHandler)
+        if (!this.dbHandler)
             await this.#initDb();
         if (!this.provideCaptchaCallback) {
             console.log(`Subplebbit-startPublishing`, "Subplebbit owner has not provided any captcha. Will go with default image captcha");
             this.provideCaptchaCallback = this.#defaultProvideCaptcha;
             this.validateCaptchaAnswerCallback = this.#defaultValidateCaptcha;
         }
-        assert(this._dbHandler, "A connection to a database is needed for the hosting a subplebbit");
+        assert(this.dbHandler, "A connection to a database is needed for the hosting a subplebbit");
         const subscribedTopics = (await this.ipfsClient.pubsub.ls());
         if (!subscribedTopics.includes(this.pubsubTopic))
             await this.ipfsClient.pubsub.subscribe(this.pubsubTopic, this.#processCaptchaPubsub.bind(this));
