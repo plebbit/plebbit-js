@@ -139,12 +139,12 @@ ChallengeRequestMessage (sent by post author) {
 }
 ChallengeMessage (sent by subplebbit owner) {
   challengeRequestId: string,
-  challenge: Challenge
+  challenge: Challenge[] // a challenge can have more than 1 challenge
 }
 ChallengeAnswerMessage (sent by post author) {
   challengeRequestId: string,
   challengeAnswerId: string, // random string choosen by sender
-  challengeAnswer: string // for example 2+2=4
+  challengeAnswer: string[] // for example ['2+2=4', '1+7=8']
 }
 ChallengeVerificationMessage (sent by subplebbit owner) {
   challengeRequestId: string, // include in verification in case a peer is missing it
