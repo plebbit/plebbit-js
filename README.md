@@ -25,7 +25,7 @@ Publication {
 Comment (IPFS file) {
   ...Publication,
   subplebbitIpnsName: string, // required to prevent malicious subplebbits republishing as original and helps faster loading subplebbit info for comment direct linking
-  postCid: string, // helps faster loading post info for comment direct linking
+  postCid: string, // helps faster loading post info for comment direct linking, should be added by the subplebbit owner, not author
   parentCommentCid: string, // same as postCid for top level comments
   content: string,
   previousCommentCid: string, // each post is a linked list
@@ -335,7 +335,6 @@ An object which may have the following keys:
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | subplebbitIpnsName | `string` | IPNS name of the subplebbit |
-| postCid | `string` or `null` | The post CID, null if comment is a post |
 | parentCommentCid | `string` or `null` | The parent comment CID, null if comment is a post, same as postCid if comment is top level |
 | content | `string` | Content of the comment |
 | timestamp | `number` or `null` | Time of publishing in ms, `Date.now()` if null |
