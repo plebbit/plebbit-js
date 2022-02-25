@@ -1,5 +1,4 @@
 import {Challenge, CHALLENGE_STAGES, CHALLENGE_TYPES} from "./Challenge.js";
-import {chunks} from "./Util.js";
 import Post from "./Post.js";
 import Author from "./Author.js";
 
@@ -182,11 +181,14 @@ class DbHandler {
         });
     }
 
-    async queryPostsBetweenTimestampRange(timestamp1, timestamp2){
-        return new Promise(async (resolve ,reject) => {
+    async queryPostsBetweenTimestampRange(timestamp1, timestamp2) {
+        return new Promise(async (resolve, reject) => {
             if (timestamp1 === Number.NEGATIVE_INFINITY)
                 timestamp1 = 0;
-            this.knex(TABLES.COMMENTS).whereNotNull("title").whereBetween("timestamp", [timestamp1, timestamp2]).then((res) => resolve(this.#createPostsFromRows.bind(this)(res))).catch(reject);
+            this.knex(TABLES.COMMENTS).whereNotNull("title").whereBetween("timestamp", [timestamp1, timestamp2]).then((res) => resolve(this.#createPostsFromRows.bind(this)(res))).catch(err => {
+                console.error(err);
+                reject(err);
+            });
         });
     }
 }

@@ -110,7 +110,7 @@ export class SortHandler {
             const scores = await Promise.all(posts.map(async post => await this.#hotScore(post)));
             const postsSorted = posts.sort((postA, postB) => {
                 const [iA, iB] = [posts.indexOf(postA), posts.indexOf(postB)];
-                return scores[iA] - scores[iB];
+                return scores[iA] > scores[iB];
             });
 
             const postsChunks = chunks(postsSorted, limit);
@@ -148,7 +148,39 @@ export class SortHandler {
 
     }
 
+    async #controversialScore(post) {
+        return new Promise(async (resolve, reject) => {
+            post.fetchCommentIpns().then(commentIpns => {
+                const [upvote, downvote] = [commentIpns.upvoteCount, commentIpns.downvoteCount];
+                if (downvote <= 0 || upvote <= 0)
+                    resolve(0);
+                const magnitude = upvote + downvote;
+                const balance = upvote > downvote ? (parseFloat(downvote) / upvote) : (parseFloat(upvote) / downvote);
+                const score = Math.pow(magnitude, balance);
+                resolve(score);
+            }).catch(err => {
+                console.error(err);
+                reject(err)
+            });
+        });
+    }
+
     async #sortPostsByControversial(timeframe, limit = SORTED_POSTS_PAGE_SIZE) {
+        return new Promise(async (resolve, reject) => {
+            const posts = await this.subplebbit.dbHandler.queryPostsBetweenTimestampRange(Date.now() - SORTED_COMMENTS_TIMEFRAMES_MILLISECONDS[timeframe], Date.now());
+            const scores = await Promise.all(posts.map(async post => await this.#controversialScore.bind(this)(post)));
+            const sortedPosts = posts.sort((postA, postB) => {
+                const [iA, iB] = [posts.indexOf(postA), posts.indexOf(postB)];
+                return scores[iA] > scores[iB];
+            });
+            const postsChunks = chunks(sortedPosts, limit);
+            const typePropertyName = SORTED_COMMENTS_TYPES[`CONTROVERSIAL_${timeframe}`];
+            const sortedComments = await this.#chunksToSortedComments(postsChunks, typePropertyName);
+            this.sortedPosts[typePropertyName] = sortedComments[0];
+            this.sortedPostsCids[typePropertyName] = sortedComments[0].pageCid;
+
+            resolve(sortedComments);
+        });
 
     }
 
