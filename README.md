@@ -166,7 +166,7 @@ Challenge {
   - [`plebbit.getSubplebbit(subplebbitIpnsName)`](#plebbitgetsubplebbitsubplebbitipnsname)
   - [`plebbit.createComment(commentOptions)`](#plebbitcreatecommentcommentoptions)
   - [`plebbit.createCommentEdit(commentEditOptions)`](#plebbitcreatecommenteditcommenteditoptions)
-  - [`plebbit.createVote(voteOptions)`](#plebbitpublishvotevoteoptions)
+  - [`plebbit.createVote(voteOptions)`](#plebbitcreatevotevoteoptions)
 - [Subplebbit API](#subplebbit-api)
   - [`Subplebbit(subplebbitOptions)`](#subplebbitsubplebbitoptions)
   - [`subplebbit.update(subplebbitUpdateOptions)`](#subplebbitupdatesubplebbitupdateoptions)
@@ -227,6 +227,7 @@ An object which may have the following keys:
 | ---- | ---- | ------- | ----------- |
 | ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs/ipfs/'` | URL of an IPFS gateway |
 | ipfsApiUrl | `string` | `'http://localhost:8080'` | URL of an IPFS API |
+| database | `string` or `KnexConfig` | `undefined` | File path to create/resume the SQLite database or [KnexConfig](https://www.npmjs.com/package/knex) |
 
 #### Returns
 
@@ -459,6 +460,7 @@ An object which may have the following keys:
 | subplebbitIpnsName | `string` | `undefined` | IPNS name of the subplebbit |
 | ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs/ipfs/'` | URL of an IPFS gateway |
 | ipfsApiUrl | `string` | `'http://localhost:8080'` | URL of an IPFS API |
+| database | `string` or `KnexConfig` | `undefined` | File path to create/resume the SQLite database or [KnexConfig](https://www.npmjs.com/package/knex) |
 
 #### Returns
 
