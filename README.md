@@ -177,7 +177,7 @@ Challenge {
   - `subplebbit.title`
   - `subplebbit.description`
   - `subplebbit.moderatorsIpnsNames`
-  - `subplebbit.preloadedPosts`
+  - `subplebbit.sortedPosts`
   - `subplebbit.latestPostCid`
   - `subplebbit.pubsubTopic`
   - `subplebbit.sortedPostsCids`
