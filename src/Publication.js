@@ -58,11 +58,12 @@ class Publication {
                 // Subplebbit owner node will either answer with CHALLENGE OR CHALLENGE VERIFICATION
                 if (msgParsed.challenge.stage === CHALLENGE_STAGES.CHALLENGEVERIFICATION) {
                     this.challenge = msgParsed.challenge = msgParsed.msg.challenge = new Challenge(msgParsed.challenge);
-                    this._initProps(msgParsed.msg);
                     if (!this.challenge.answerIsVerified || msgParsed.msg.error) {
                         reject(msgParsed);
-                    } else
+                    } else {
+                        this._initProps(msgParsed.msg);
                         resolve(msgParsed);
+                    }
                 }
             };
 
