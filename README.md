@@ -17,6 +17,7 @@ Note: IPFS files are immutable, fetched by their CID, which is a hash of their c
 ### Schema:
 
 ```
+Address: string // A plebbit author or subplebbit "address" can be a crypto domain like memes.eth, an IPNS name, an ethereum address, etc
 Publication {
   author: Author,
   timestamp: number,
@@ -24,7 +25,7 @@ Publication {
 }
 Comment (IPFS file) {
   ...Publication,
-  subplebbitIpnsName: string, // required to prevent malicious subplebbits republishing as original and helps faster loading subplebbit info for comment direct linking
+  subplebbitAddress: string, // required to prevent malicious subplebbits republishing as original and helps faster loading subplebbit info for comment direct linking
   postCid: string, // helps faster loading post info for comment direct linking, should be added by the subplebbit owner, not author
   parentCommentCid: string, // same as postCid for top level comments
   content: string,
@@ -51,7 +52,7 @@ CommentIpns (IPNS record) {
 }
 Author {
   displayName: string,
-  ipnsName: string
+  address: string
 }
 Signature {
   signature: string, // data in base64
@@ -65,7 +66,7 @@ Signer {
 Subplebbit (IPNS record) {
   title: string,
   description: string,
-  moderatorsIpnsNames: string[],
+  moderatorsAddresses: string[],
   pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   latestPostCid: string, // the most recent post in the linked list of posts
   sortedPosts: {hot: SortedComments[]}, // only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post
@@ -107,7 +108,7 @@ const PeerId = require('peer-id')
 const encryptedPemPassword = ''
 const rsaInstance = await libp2pCrypto.keys.import(privateKeyPemString, encryptedPemPassword)
 
-const messageToSign = cborg.encode({subplebbitIpnsName, author, title, content, timestamp}) // use cborg to stringify deterministically instead of JSON.stringify
+const messageToSign = cborg.encode({subplebbitAddress, author, title, content, timestamp}) // use cborg to stringify deterministically instead of JSON.stringify
 const rsaInstanceSignature = await rsaInstance.sign(messageToSign)
 
 // can also be done in node (but not browser compatible)
@@ -120,7 +121,7 @@ signature.publicKey = libp2pCrypto.keys.marshalPublicKey(rsaInstance.public, 'RS
 
 // to verify a signed post
 const post = {/* ...some post */}
-const postToVerify = cborg.encode({subplebbitIpnsName: post.subplebbitIpnsName, author: post.author, title: post.title, content: post.content, timestamp: post.timestamp})
+const postToVerify = cborg.encode({subplebbitAddress: post.subplebbitAddress, author: post.author, title: post.title, content: post.content, timestamp: post.timestamp})
 const rsaPublicKeyInstance = (await PeerId.createFromPubKey(post.signature.publicKey)).pubKey
 const signatureIsValid = await rsaPublicKeyInstance.verify(postToVerify, post.signature.signature)
 ```
@@ -163,7 +164,7 @@ Challenge {
 - [Plebbit API](#plebbit-api)
   - [`Plebbit(plebbitOptions)`](#plebbitplebbitoptions)
   - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
-  - [`plebbit.getSubplebbit(subplebbitIpnsName)`](#plebbitgetsubplebbitsubplebbitipnsname)
+  - [`plebbit.getSubplebbit(subplebbitAddress)`](#plebbitgetsubplebbitsubplebbitaddress)
   - [`plebbit.createComment(commentOptions)`](#plebbitcreatecommentcommentoptions)
   - [`plebbit.createCommentEdit(commentEditOptions)`](#plebbitcreatecommenteditcommenteditoptions)
   - [`plebbit.createVote(voteOptions)`](#plebbitcreatevotevoteoptions)
@@ -173,10 +174,10 @@ Challenge {
   - [`subplebbit.start()`](#subplebbitstart)
   - [`subplebbit.stop()`](#subplebbitstop)
   - `subplebbit.getSortedPosts(sortedPostsCid)`
-  - `subplebbit.subplebbitIpnsName`
+  - `subplebbit.address`
   - `subplebbit.title`
   - `subplebbit.description`
-  - `subplebbit.moderatorsIpnsNames`
+  - `subplebbit.moderatorsAddresses`
   - `subplebbit.sortedPosts`
   - `subplebbit.latestPostCid`
   - `subplebbit.pubsubTopic`
@@ -196,7 +197,7 @@ Challenge {
   - `comment.signature`
   - `comment.postCid`
   - `comment.parentCommentCid`
-  - `comment.subplebbitIpnsName`
+  - `comment.subplebbitAddress`
   - `comment.title`
   - `comment.content`
   - `comment.previousCommentCid`
@@ -272,7 +273,7 @@ if (comment.parentCommentCid) { // comment with no parent cid is a post
   plebbit.getComment(comment.parentCommentCid).then(parentPost => console.log('parent post:', parentPost))
 }
 comment.getCommentIpns().then(commentIpns => console.log('commentIpns:', commentIpns))
-plebbit.getSubplebbit(comment.subplebbitIpnsName).then(subplebbit => console.log('subplebbit:', subplebbit))
+plebbit.getSubplebbit(comment.subplebbitAddress).then(subplebbit => console.log('subplebbit:', subplebbit))
 plebbit.getComment(comment.previousCommentCid).then(previousComment => console.log('previous comment:', previousComment))
 /*
 Prints:
@@ -280,7 +281,7 @@ Prints:
 */
 ```
 
-### `plebbit.getSubplebbit(subplebbitIpnsName)`
+### `plebbit.getSubplebbit(subplebbitAddress)`
 
 > Get a subplebbit comment by its IPNS name.
 
@@ -288,7 +289,7 @@ Prints:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| subplebbitIpnsName | `string` | The IPNS name of the subplebbit |
+| subplebbitAddress | `string` | The IPNS name of the subplebbit |
 
 #### Returns
 
@@ -299,8 +300,8 @@ Prints:
 #### Example
 
 ```js
-const subplebbitIpnsName = 'QmbWqx...'
-const subplebbit = await plebbit.getSubplebbit(subplebbitIpnsName)
+const subplebbitAddress = 'QmbWqx...'
+const subplebbit = await plebbit.getSubplebbit(subplebbitAddress)
 console.log(subplebbit)
 
 let currentPostCid = subplebbit.latestPostCid
@@ -335,7 +336,7 @@ An object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| subplebbitIpnsName | `string` | IPNS name of the subplebbit |
+| subplebbitAddress | `string` | IPNS name of the subplebbit |
 | parentCommentCid | `string` or `null` | The parent comment CID, null if comment is a post, same as postCid if comment is top level |
 | content | `string` | Content of the comment |
 | timestamp | `number` or `null` | Time of publishing in ms, `Date.now()` if null |
@@ -375,7 +376,7 @@ An object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| subplebbitIpnsName | `string` | IPNS name of the subplebbit |
+| subplebbitAddress | `string` | IPNS name of the subplebbit |
 | commentCid | The comment CID to be edited |
 | content | `string` | Edited content of the comment |
 | timestamp | `number` or `null` | Time of edit in ms, `Date.now()` if null |
@@ -414,7 +415,7 @@ An object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| subplebbitIpnsName | `string` | IPNS name of the subplebbit |
+| subplebbitAddress | `string` | IPNS name of the subplebbit |
 | commentCid | `string` | The comment or post to vote on |
 | timestamp | `number` or `null` | Time of publishing in ms, `Date.now()` if null |
 | author | `Author` | Author of the comment, will be needed for voting with NFTs or tokens |
@@ -457,7 +458,7 @@ An object which may have the following keys:
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| subplebbitIpnsName | `string` | `undefined` | IPNS name of the subplebbit |
+| subplebbitAddress | `string` | `undefined` | IPNS name of the subplebbit |
 | ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs/ipfs/'` | URL of an IPFS gateway |
 | ipfsApiUrl | `string` | `'http://localhost:8080'` | URL of an IPFS API |
 | database | `string` or `KnexConfig` | `undefined` | File path to create/resume the SQLite database or [KnexConfig](https://www.npmjs.com/package/knex) |
@@ -475,7 +476,7 @@ const {Subplebbit} = require('@plebbit/plebbit-js')
 const options = {
   ipfsGatewayUrl: 'https://cloudflare-ipfs/ipfs/',
   ipfsApiUrl: 'http://localhost:5001',
-  subplebbitIpnsName: 'Qmb...'
+  subplebbitAddress: 'Qmb...'
 }
 const subplebbit = Subplebbit(options) // should be independent instance, not singleton
 subplebbit.update({
@@ -505,7 +506,7 @@ An object which may have the following keys:
 | ---- | ---- | ----------- |
 | title | `string` | title of the subplebbit |
 | description | `string` | description of the subplebbit |
-| moderatorsIpnsNames | `string[]` | IPNS names of the moderators |
+| moderatorsAddresses | `string[]` | IPNS names of the moderators |
 | latestPostCid | `string` | the most recent post in the linked list of posts |
 | sortedPosts | `{hot: SortedComments}` | only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post |
 | pubsubTopic | `string` | the string to publish to in the pubsub, a public key of the subplebbit owner's choice |
@@ -540,7 +541,7 @@ Object is of the form:
 const options = {
   ipfsGatewayUrl: 'https://cloudflare-ipfs/ipfs/',
   ipfsApiUrl: 'http://localhost:5001',
-  subplebbitIpnsName: 'Qmb...'
+  subplebbitAddress: 'Qmb...'
 }
 const subplebbit = Subplebbit(options)
 subplebbit.on('update', (updatedSubplebbitInstance) => console.log(updatedSubplebbitInstance))
@@ -570,7 +571,7 @@ The subplebbit events.
 const options = {
   ipfsGatewayUrl: 'https://cloudflare-ipfs/ipfs/',
   ipfsApiUrl: 'http://localhost:5001',
-  subplebbitIpnsName: 'Qmb...'
+  subplebbitAddress: 'Qmb...'
 }
 const subplebbit = Subplebbit(options)
 subplebbit.on('update', (subplebbitObject) => console.log(subplebbitObject))
