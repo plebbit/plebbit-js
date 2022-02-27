@@ -37,7 +37,7 @@ describe("Test Subplebbit functionality", async () => {
     it("New subplebbits can be published", async function () {
         await subplebbit.publishAsNewSubplebbit();
         // Should have ipns key now
-        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.ipnsName);
+        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.subplebbitAddress);
         assert.equal(JSON.stringify(loadedSubplebbit), JSON.stringify(subplebbit), "Failed to publish new subplebbit");
     });
 
