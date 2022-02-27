@@ -46,7 +46,7 @@ class Subplebbit extends PlebbitCore {
 
     async #initDb() {
         const ipfsKeys = (await this.ipfsClient.key.list()).map(key => key["id"]);
-        const ranByOwner = ipfsKeys.includes(this.ipnsName);
+        const ranByOwner = ipfsKeys.includes(this.subplebbitAddress);
         // Default settings for subplebbit owner node
         if (ranByOwner && !this._dbConfig)
             this._dbConfig = {
@@ -86,7 +86,7 @@ class Subplebbit extends PlebbitCore {
         return new Promise((resolve, reject) => {
             this.ipfsClient.key.gen(this.title).then(ipnsKey => {
                 // TODO add to db
-                this.update({"ipnsName": ipnsKey["id"], "ipnsKeyName": ipnsKey["name"]}).then(resolve).catch(reject)
+                this.update({"subplebbitAddress": ipnsKey["id"], "ipnsKeyName": ipnsKey["name"]}).then(resolve).catch(reject)
             }).catch(reject);
         });
     }
