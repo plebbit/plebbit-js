@@ -25,7 +25,7 @@ class DbHandler {
             table.text("previousCommentCid").nullable().references("commentCid").inTable(TABLES.COMMENTS);
             table.uuid("challengeRequestId").notNullable().references("requestId").inTable(TABLES.CHALLENGES);
 
-            table.text("subplebbitIpnsName").notNullable();
+            table.text("subplebbitAddress").notNullable();
             table.text("content").notNullable();
             table.timestamp("timestamp").notNullable();
             table.text("signature").nullable(); // Will likely revise later
@@ -43,7 +43,7 @@ class DbHandler {
             table.uuid("challengeRequestId").notNullable().references("requestId").inTable(TABLES.CHALLENGES);
 
             table.timestamp("timestamp").notNullable();
-            table.text("subplebbitIpnsName").notNullable();
+            table.text("subplebbitAddress").notNullable();
             table.enum("vote", [-1, 0, 1]).notNullable();
             table.text("signature").nullable(); // Will likely revise later
 

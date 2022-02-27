@@ -13,7 +13,7 @@ class Publication {
 
     _initProps(props) {
         this.challenge = props["challenge"];
-        this.subplebbitIpnsName = props["subplebbitIpnsName"] || this.subplebbit.ipnsName;
+        this.subplebbitAddress = props["subplebbitAddress"] || this.subplebbit.subplebbitAddress;
     }
 
     setSubplebbit(newSubplebbit) {
@@ -34,7 +34,7 @@ class Publication {
     }
 
     toJSONSkeleton(){
-        return {"subplebbitIpnsName": this.subplebbitIpnsName};
+        return {"subplebbitAddress": this.subplebbitAddress};
     }
 
     async #publish(userOptions, solveChallengeCallback) {

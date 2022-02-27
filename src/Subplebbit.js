@@ -39,7 +39,7 @@ class Subplebbit extends PlebbitCore {
         this.preloadedPosts = mergedProps["preloadedPosts"] || [];
         this.sortedPosts = mergedProps["sortedPosts"] || {};
         this.sortedPostsCids = mergedProps["sortedPostsCids"] || {};
-        this.setIpnsKey(mergedProps["ipnsName"], mergedProps["ipnsKeyName"]);
+        this.setIpnsKey(mergedProps["subplebbitAddress"], mergedProps["ipnsKeyName"]);
         this.plebbit = new Plebbit(newProps, this.ipfsClient);
         this.sortHandler = new SortHandler(this);
     }
@@ -64,7 +64,7 @@ class Subplebbit extends PlebbitCore {
     }
 
     setIpnsKey(newIpnsName, newIpnsKeyName) {
-        this.pubsubTopic = this.ipnsName = newIpnsName;
+        this.pubsubTopic = this.subplebbitAddress = newIpnsName;
         this.ipnsKeyName = newIpnsKeyName;
     }
 
@@ -103,7 +103,7 @@ class Subplebbit extends PlebbitCore {
         return {
             "title": this.title, "description": this.description,
             "moderatorsIpnsNames": this.moderatorsIpnsNames, "latestPostCid": this.latestPostCid,
-            "preloadedPosts": this.preloadedPosts, "pubsubTopic": this.pubsubTopic, "ipnsName": this.ipnsName,
+            "preloadedPosts": this.preloadedPosts, "pubsubTopic": this.pubsubTopic, "subplebbitAddress": this.subplebbitAddress,
             "sortedPosts": this.sortedPosts, "sortedPostsCids": this.sortedPostsCids
         };
     }
@@ -324,7 +324,7 @@ class Subplebbit extends PlebbitCore {
         // Call this only if you know what you're doing
         // rm ipns and ipfs
         await this.stopPublishing();
-        const ipfsPath = (await last(this.ipfsClient.name.resolve(this.ipnsName)));
+        const ipfsPath = (await last(this.ipfsClient.name.resolve(this.subplebbitAddress)));
         await this.ipfsClient.pin.rm(ipfsPath);
         await this.ipfsClient.key.rm(this.ipnsKeyName);
     }
