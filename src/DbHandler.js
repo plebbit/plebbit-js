@@ -1,6 +1,7 @@
 import {Challenge, CHALLENGE_STAGES, CHALLENGE_TYPES} from "./Challenge.js";
 import Post from "./Post.js";
 import Author from "./Author.js";
+import Comment from "./Comment.js";
 
 export const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -147,17 +148,21 @@ class DbHandler {
         });
     }
 
-    async #createPostsFromRows(postsRows) {
+    async #createCommentsFromRows(commentsRows) {
         return new Promise(async (resolve, reject) => {
-            const authors = (await this.knex(TABLES.AUTHORS).whereIn("ipnsName", postsRows.map(post => post.authorIpnsName))).map(authorProps => new Author(authorProps));
-            const challenges = (await this.knex(TABLES.CHALLENGES).whereIn("requestId", postsRows.map(post => post.challengeRequestId))).map(challengeProps => new Challenge(challengeProps));
-            const posts = postsRows.map(postProps =>
-                new Post({
+            const authors = (await this.knex(TABLES.AUTHORS).whereIn("ipnsName", commentsRows.map(post => post.authorIpnsName))).map(authorProps => new Author(authorProps));
+            const challenges = (await this.knex(TABLES.CHALLENGES).whereIn("requestId", commentsRows.map(post => post.challengeRequestId))).map(challengeProps => new Challenge(challengeProps));
+            const posts = commentsRows.map(postProps => {
+                const props = {
                     ...postProps,
                     "author": authors.filter(author => author.ipnsName === postProps.authorIpnsName)[0],
                     "challenge": challenges.filter(challenge => challenge.requestId === postProps.challengeRequestId)[0]
-                }, this.subplebbit)
-            )
+                };
+                if (props["title"])
+                    return new Post(props, this.subplebbit);
+                else
+                    return new Comment(props, this.subplebbit);
+            });
             resolve(posts);
         });
 
@@ -167,7 +172,7 @@ class DbHandler {
         return new Promise(async (resolve, reject) => {
             this.knex(TABLES.COMMENTS).whereNotNull("title").orderBy("timestamp", "desc")
                 .then(async res => {
-                    resolve(await this.#createPostsFromRows.bind(this)(res));
+                    resolve(await this.#createCommentsFromRows.bind(this)(res));
                 }).catch(err => {
                 console.error(err);
                 reject(err);
@@ -177,7 +182,7 @@ class DbHandler {
 
     queryAllPosts() {
         return new Promise(async (resolve, reject) => {
-            this.knex(TABLES.COMMENTS).whereNotNull("title").then(this.#createPostsFromRows.bind(this)).then(resolve).catch(reject);
+            this.knex(TABLES.COMMENTS).whereNotNull("title").then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(reject);
         });
     }
 
@@ -185,7 +190,7 @@ class DbHandler {
         return new Promise(async (resolve, reject) => {
             if (timestamp1 === Number.NEGATIVE_INFINITY)
                 timestamp1 = 0;
-            this.knex(TABLES.COMMENTS).whereNotNull("title").whereBetween("timestamp", [timestamp1, timestamp2]).then((res) => resolve(this.#createPostsFromRows.bind(this)(res))).catch(err => {
+            this.knex(TABLES.COMMENTS).whereNotNull("title").whereBetween("timestamp", [timestamp1, timestamp2]).then((res) => resolve(this.#createCommentsFromRows.bind(this)(res))).catch(err => {
                 console.error(err);
                 reject(err);
             });
