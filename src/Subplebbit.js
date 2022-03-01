@@ -124,7 +124,7 @@ class Subplebbit extends PlebbitCore {
 
     async #updateSubplebbitPosts(post) {
         [this.sortedPosts, this.sortedPostsCids] = await this.sortHandler.calculateSortedPosts();
-        this.sortedPosts = {[SORTED_COMMENTS_TYPES.NEW] : this.sortedPosts[SORTED_COMMENTS_TYPES.NEW]};
+        this.sortedPosts = {[SORTED_COMMENTS_TYPES.HOT]: this.sortedPosts[SORTED_COMMENTS_TYPES.HOT]};
         const newSubplebbitOptions = {
             "preloadedPosts": [post, ...this.preloadedPosts],
             "latestPostCid": post.postCid,
