@@ -226,7 +226,7 @@ An object which may have the following keys:
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs/ipfs/'` | URL of an IPFS gateway |
+| ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs.com'` | URL of an IPFS gateway |
 | ipfsApiUrl | `string` | `'http://localhost:8080'` | URL of an IPFS API |
 | database | `string` or `KnexConfig` | `undefined` | File path to create/resume the SQLite database or [KnexConfig](https://www.npmjs.com/package/knex) |
 
@@ -241,7 +241,7 @@ An object which may have the following keys:
 ```js
 const Plebbit = require('@plebbit/plebbit-js')
 const options = {
-  ipfsGatewayUrl: 'https://cloudflare-ipfs/ipfs/',
+  ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
   ipfsApiUrl: 'http://localhost:5001',
 }
 const plebbit = Plebbit(options) // should be independent instance, not singleton
@@ -459,7 +459,7 @@ An object which may have the following keys:
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | subplebbitAddress | `string` | `undefined` | IPNS name of the subplebbit |
-| ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs/ipfs/'` | URL of an IPFS gateway |
+| ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs.com'` | URL of an IPFS gateway |
 | ipfsApiUrl | `string` | `'http://localhost:8080'` | URL of an IPFS API |
 | database | `string` or `KnexConfig` | `undefined` | File path to create/resume the SQLite database or [KnexConfig](https://www.npmjs.com/package/knex) |
 
@@ -474,7 +474,7 @@ An object which may have the following keys:
 ```js
 const {Subplebbit} = require('@plebbit/plebbit-js')
 const options = {
-  ipfsGatewayUrl: 'https://cloudflare-ipfs/ipfs/',
+  ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
   ipfsApiUrl: 'http://localhost:5001',
   subplebbitAddress: 'Qmb...'
 }
@@ -539,7 +539,7 @@ Object is of the form:
 
 ```js
 const options = {
-  ipfsGatewayUrl: 'https://cloudflare-ipfs/ipfs/',
+  ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
   ipfsApiUrl: 'http://localhost:5001',
   subplebbitAddress: 'Qmb...'
 }
@@ -569,7 +569,7 @@ The subplebbit events.
 
 ```js
 const options = {
-  ipfsGatewayUrl: 'https://cloudflare-ipfs/ipfs/',
+  ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
   ipfsApiUrl: 'http://localhost:5001',
   subplebbitAddress: 'Qmb...'
 }
