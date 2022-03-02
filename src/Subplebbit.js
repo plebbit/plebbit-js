@@ -86,7 +86,10 @@ class Subplebbit extends PlebbitCore {
         return new Promise((resolve, reject) => {
             this.ipfsClient.key.gen(this.title).then(ipnsKey => {
                 // TODO add to db
-                this.update({"subplebbitAddress": ipnsKey["id"], "ipnsKeyName": ipnsKey["name"]}).then(resolve).catch(reject)
+                this.update({
+                    "subplebbitAddress": ipnsKey["id"],
+                    "ipnsKeyName": ipnsKey["name"]
+                }).then(resolve).catch(reject)
             }).catch(reject);
         });
     }
@@ -101,10 +104,15 @@ class Subplebbit extends PlebbitCore {
 
     toJSON() {
         return {
-            "title": this.title, "description": this.description,
-            "moderatorsIpnsNames": this.moderatorsIpnsNames, "latestPostCid": this.latestPostCid,
-            "preloadedPosts": this.preloadedPosts, "pubsubTopic": this.pubsubTopic, "subplebbitAddress": this.subplebbitAddress,
-            "sortedPosts": this.sortedPosts, "sortedPostsCids": this.sortedPostsCids
+            "title": this.title,
+            "description": this.description,
+            "moderatorsIpnsNames": this.moderatorsIpnsNames,
+            "latestPostCid": this.latestPostCid,
+            "preloadedPosts": this.preloadedPosts,
+            "pubsubTopic": this.pubsubTopic,
+            "subplebbitAddress": this.subplebbitAddress,
+            "sortedPosts": this.sortedPosts,
+            "sortedPostsCids": this.sortedPostsCids
         };
     }
 
@@ -121,15 +129,20 @@ class Subplebbit extends PlebbitCore {
         });
     }
 
-
-    async #updateSubplebbitPosts(post) {
+    async #getSortedPostsObject() {
         [this.sortedPosts, this.sortedPostsCids] = await this.sortHandler.calculateSortedPosts();
         this.sortedPosts = {[SORTED_COMMENTS_TYPES.HOT]: this.sortedPosts[SORTED_COMMENTS_TYPES.HOT]};
+        return {
+            "sortedPosts": this.sortedPosts,
+            "sortedPostsCids": this.sortedPostsCids
+        };
+    }
+
+    async #updateSubplebbitPosts(post) {
         const newSubplebbitOptions = {
+            ...(await this.#getSortedPostsObject()),
             "preloadedPosts": [post, ...this.preloadedPosts],
             "latestPostCid": post.postCid,
-            "sortedPosts": this.sortedPosts,
-            "sortedPostsCid": this.sortedPostsCids
         }
         await this.update(newSubplebbitOptions);
         this.event.emit("post", post);
