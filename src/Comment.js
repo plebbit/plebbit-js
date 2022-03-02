@@ -10,12 +10,18 @@ class CommentIPNS {
         this.preloadedComments = props["preloadedComments"] || [];
         this.upvoteCount = props["upvoteCount"] || 0;
         this.downvoteCount = props["downvoteCount"] || 0;
+        this.sortedComments = props["sortedComments"] || {};
+        this.sortedCommentsCids = props["sortedCommentsCids"] || {};
     }
 
     toJSON() {
         return {
-            "latestCommentCid": this.latestCommentCid?.toString(), "preloadedComments": this.preloadedComments,
-            "upvoteCount": this.upvoteCount, "downvoteCount": this.downvoteCount
+            "latestCommentCid": this.latestCommentCid,
+            "preloadedComments": this.preloadedComments,
+            "upvoteCount": this.upvoteCount,
+            "downvoteCount": this.downvoteCount,
+            "sortedComments": this.sortedComments,
+            "sortedCommentsCids": this.sortedCommentsCids
         };
     }
 }
@@ -37,13 +43,10 @@ class Comment extends Publication {
         this.commentCid = props["commentCid"];
         this.parentCommentCid = props["parentCommentCid"] || null;
         this.content = props["content"];
-
-
         this.commentIpnsName = props["commentIpnsName"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.commentIpnsKeyName = props["commentIpnsKeyName"];
         this.commentIpns = props["commentIpns"];
         this.setPreviousCommentCid(props["previousCommentCid"]);
-
     }
 
     toJSON() {
@@ -53,6 +56,7 @@ class Comment extends Publication {
             "commentIpnsName": this.commentIpnsName,
             "postCid": this.postCid,
             "commentCid": this.commentCid,
+            "commentIpnsKeyName": this.commentIpnsKeyName
         }
     };
 

@@ -1,5 +1,3 @@
-import Post from "./Post.js";
-import Comment from "./Comment.js";
 import {chunks, round} from "./Util.js";
 
 
@@ -34,7 +32,7 @@ export const SORTED_POSTS_PAGE_SIZE = 2;
 export class SortedComments {
     constructor(props, subplebbit) {
         this.nextSortedCommentsCid = props["nextSortedCommentsCid"];
-        this.comments = (props["comments"] || []).map(prop => prop.hasOwnProperty("title") ? new Post(prop, subplebbit) : new Comment(prop, subplebbit));
+        this.comments = props["comments"] || [];
         this.type = props["type"];
         this.pageCid = props["pageCid"];
     }
@@ -170,7 +168,6 @@ export class SortHandler {
             const posts = await this.subplebbit.dbHandler.queryPostsSortedByTimestamp(limit);
             this.#sortComments(posts, SORTED_COMMENTS_TYPES.NEW, limit).then(resolve).catch(reject);
         });
-
     }
 
     async calculateSortedPosts() {
@@ -195,6 +192,23 @@ export class SortHandler {
 
 
         });
+    }
 
+    async calculateSortedComments(commentCid) {
+        return new Promise(async (resolve, reject) => {
+            const sortPromises = [SORTED_COMMENTS_TYPES.HOT, SORTED_COMMENTS_TYPES.NEW, SORTED_COMMENTS_TYPES.TOP_ALL, SORTED_COMMENTS_TYPES.CONTROVERSIAL_ALL].map(async type => {
+                const comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(commentCid);
+                return this.#sortComments(comments, type);
+            });
+
+            Promise.all(sortPromises).then((sortedComments) => {
+                const res1 = Object.fromEntries(sortedComments.map(sortedComment => [sortedComment?.type, sortedComment]));
+                const res2 = Object.fromEntries(sortedComments.map(sortedComment => [sortedComment?.type, sortedComment?.pageCid]));
+                resolve([res1, res2]);
+            }).catch(err => {
+                console.error(err);
+                reject(err);
+            });
+        });
     }
 }

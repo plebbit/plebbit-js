@@ -137,11 +137,15 @@ class Subplebbit extends PlebbitCore {
 
     async #updatePostComments(comment) {
         // TODO Check if comment is already added
-        const newCommentIpns = new CommentIPNS({
+        const [sortedComments, sortedCommentsCids] = await this.sortHandler.calculateSortedComments(comment.postCid);
+
+        const newCommentIpns = {
             ...(comment.parent.commentIpns.toJSON()),
+            "sortedComments": {[SORTED_COMMENTS_TYPES.HOT]: sortedComments[SORTED_COMMENTS_TYPES.HOT]},
+            "sortedCommentsCids": sortedCommentsCids,
             "latestCommentCid": comment.commentCid,
             "preloadedComments": [comment, ...(comment.parent.commentIpns.preloadedComments)],
-        });
+        };
         await comment.parent.updateCommentIpns(newCommentIpns)
         this.event.emit("comment", comment);
     }
@@ -203,13 +207,22 @@ class Subplebbit extends PlebbitCore {
                 newDownvoteCount = postOrCommentOrVote.vote === -1 ? commentIpns.downvoteCount + 1 : commentIpns.downvoteCount;
             }
             assert(newDownvoteCount >= 0 && newDownvoteCount >= 0, "New upvote and downvote need to be proper numbers");
-
-            await voteComment.updateCommentIpns(new CommentIPNS({
-                ...commentIpns.toJSON(),
-                "upvoteCount": newUpvoteCount,
-                "downvoteCount": newDownvoteCount
-            }));
             await this.dbHandler.upsertVote(postOrCommentOrVote);
+
+            if (voteComment.getType() === "post")
+                await this.update(await this.#getSortedPostsObject());
+            else if (voteComment.getType() === "comment") {
+                const [sortedComments, sortedCommentsCids] = await this.sortHandler.calculateSortedComments(voteComment.commentCid);
+                await voteComment.updateCommentIpns(new CommentIPNS({
+                    ...commentIpns.toJSON(),
+                    "sortedComments": {[SORTED_COMMENTS_TYPES.HOT]: sortedComments[SORTED_COMMENTS_TYPES.HOT]},
+                    "sortedCommentsCids": sortedCommentsCids,
+                    "upvoteCount": newUpvoteCount,
+                    "downvoteCount": newDownvoteCount
+                }));
+
+            }
+
         } else {
             // Comment and Post need to add file to ipfs
             const file = await this.ipfsClient.add(JSON.stringify(postOrCommentOrVote));

@@ -31,6 +31,7 @@ class DbHandler {
             table.timestamp("timestamp").notNullable();
             table.text("signature").nullable(); // Will likely revise later
             table.text("commentIpnsName").notNullable().unique();
+            table.text("commentIpnsKeyName").notNullable().unique();
             table.text("title").nullable();
         });
 
@@ -194,6 +195,12 @@ class DbHandler {
                 console.error(err);
                 reject(err);
             });
+        });
+    }
+
+    async queryCommentsUnderComment(parentCommentCid) {
+        return new Promise(async (resolve, reject) => {
+            this.knex(TABLES.COMMENTS).where({"parentCommentCid": parentCommentCid}).orderBy("timestamp", "desc").then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(reject);
         });
     }
 }
