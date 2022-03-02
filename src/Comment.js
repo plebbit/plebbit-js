@@ -108,10 +108,10 @@ class Comment extends Publication {
         });
     }
 
-    async fetchCommentIpns() {
+    async fetchCommentIpns(ttl = 1000 * 60 * 5) {
         return new Promise(async (resolve, reject) => {
             // Cache is kept for 5 minutes
-            if (this.commentIpns && (Date.now() - this.commentIpnsTimestamp) < (1000 * 60 * 5))
+            if (this.commentIpns && (Date.now() - this.commentIpnsTimestamp) < ttl)
                 resolve(this.commentIpns);
             else
                 loadIpnsAsJson(this.commentIpnsName, this.subplebbit.ipfsClient).then(res => {
