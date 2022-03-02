@@ -33,9 +33,8 @@ describe("Test Post and Comment", async function () {
 
                 await comment.fetchParent();
                 await comment.parent.fetchCommentIpns();
-                assert.equal(comment.parent.commentIpns.latestCommentCid, comment.commentCid.toString());
-                assert.equal(comment.parent.commentIpns.preloadedComments[0].commentCid, comment.commentCid.toString());
-                //
+                assert.equal(comment.parent.commentIpns.latestCommentCid, comment.commentCid);
+                assert.equal(comment.parent.commentIpns.preloadedComments[0].commentCid, comment.commentCid);
                 const loadedParentPost = await plebbit.getPostOrComment(comment.postCid);
                 await loadedParentPost.fetchCommentIpns();
                 assert.equal(loadedParentPost.commentIpns.latestCommentCid, comment.commentCid.toString(), "Failed to include latest comment in Post");
@@ -81,8 +80,8 @@ describe("Test Post and Comment", async function () {
                 assert.equal(comment.parentCommentCid, mockComments[0].commentCid.toString());
 
                 await comment.parent.fetchCommentIpns();
-                assert.equal(comment.parent.commentIpns.latestCommentCid, comment.commentCid.toString());
-                assert.equal(comment.parent.commentIpns.preloadedComments[0].commentCid, comment.commentCid.toString());
+                assert.equal(comment.parent.commentIpns.latestCommentCid, comment.commentCid);
+                assert.equal(comment.parent.commentIpns.preloadedComments[0].commentCid, comment.commentCid);
                 mockComments.push(comment);
                 resolve();
             });
@@ -91,5 +90,4 @@ describe("Test Post and Comment", async function () {
             await mockComment.publish();
         });
     });
-
 });
