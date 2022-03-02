@@ -1,11 +1,12 @@
 import {Plebbit, Comment} from "../src/index.js"
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
 import assert from 'assert';
-import {unsubscribeAllPubsubTopics} from "../src/Util.js";
+import {loadIpfsFileAsJson, unsubscribeAllPubsubTopics} from "../src/Util.js";
+import {SORTED_COMMENTS_TYPES, SortedComments} from "../src/SortHandler.js";
 
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 
-const post = await plebbit.getPostOrComment("QmUk7G5As3PaTpT9mmL2P58N9EtUL9SKbK8jdccn5hEG6e");
+const post = await plebbit.getPostOrComment("QmVU4noB6SjfdcgvcR6xkMEQE5hahCRvbf7GKdyBKNKq5J");
 
 const mockComments = [];
 
@@ -16,8 +17,7 @@ async function generateMockComment(parentPostOrComment) {
         "author": {"displayName": `Mock Author - ${commentTime}`, "ipnsName": mockAuthorIpns["id"]},
         "content": `Mock comment - ${commentTime}`, "timestamp": commentTime,
         "postCid": parentPostOrComment.postCid,
-        ...(parentPostOrComment.getType() === "comment" && {"parentCommentCid": parentPostOrComment.commentCid})
-
+        "parentCommentCid": parentPostOrComment.commentCid
     }, parentPostOrComment.subplebbit);
 }
 
@@ -50,6 +50,28 @@ describe("Test Post and Comment", async function () {
 
 
     });
+
+    it(`New comments under a post are sorted by their timestamps`, async () => {
+
+        const actualComments = [];
+        for (let i = 0; i < 4; i++)
+            actualComments.push(await generateMockComment(post));
+        await Promise.all(actualComments.map(async post => post.publish()));
+        mockComments.push(actualComments[0]);
+        const commentIpns = await post.fetchCommentIpns();
+        let sortedCommentsPage = new SortedComments(await loadIpfsFileAsJson(commentIpns.sortedCommentsCids[SORTED_COMMENTS_TYPES.NEW], plebbit.ipfsClient));
+        let sortedComments = sortedCommentsPage.comments;
+        while (sortedCommentsPage.nextSortedCommentsCid) {
+            sortedCommentsPage = new SortedComments(await loadIpfsFileAsJson(sortedCommentsPage.nextSortedCommentsCid, plebbit.ipfsClient));
+            sortedComments = sortedComments.concat(sortedCommentsPage.comments);
+        }
+        for (let i = 0; i < sortedComments.length - 1; i++)
+            if (sortedComments[i].timestamp < sortedComments[i + 1].timestamp)
+                assert.fail("New Comments under a post are not sorted according to their timestamp");
+
+    });
+
+
     it("Can publish new comments under comment", async () => {
         return new Promise(async (resolve, reject) => {
             const mockComment = await generateMockComment(mockComments[0]);
