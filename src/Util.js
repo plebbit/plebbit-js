@@ -2,6 +2,14 @@ import {concat as uint8ArrayConcat} from 'uint8arrays/concat';
 import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
 import all from 'it-all';
 import last from "it-last";
+export const TIMEFRAMES_TO_SECONDS = Object.freeze({
+    "HOUR": 60 * 60,
+    "DAY": 60 * 60 * 24,
+    "WEEK": 60 * 60 * 24 * 7,
+    "MONTH": 60 * 60 * 24 * 7 * 30,
+    "YEAR": 60 * 60 * 24 * 7 * 30 * 365,
+    "ALL": Infinity
+});
 
 export async function loadIpfsFileAsJson(cid, ipfsClient) {
     return new Promise((resolve, reject) => {
