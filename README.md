@@ -339,6 +339,7 @@ An object which may have the following keys:
 | subplebbitAddress | `string` | IPNS name of the subplebbit |
 | parentCommentCid | `string` or `null` | The parent comment CID, null if comment is a post, same as postCid if comment is top level |
 | content | `string` | Content of the comment |
+| title | `string` or `undefined` | If comment is a post, it needs a title |
 | timestamp | `number` or `null` | Time of publishing in seconds, `Math.round(Date.now() / 1000)` if null |
 | author | `Author` | Author of the comment |
 | signer | `Signer` | Signer of the comment |
