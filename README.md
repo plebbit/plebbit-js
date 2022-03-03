@@ -165,9 +165,9 @@ Challenge {
   - [`Plebbit(plebbitOptions)`](#plebbitplebbitoptions)
   - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
   - [`plebbit.getSubplebbit(subplebbitAddress)`](#plebbitgetsubplebbitsubplebbitaddress)
-  - [`plebbit.createComment(commentOptions)`](#plebbitcreatecommentcommentoptions)
-  - [`plebbit.createCommentEdit(commentEditOptions)`](#plebbitcreatecommenteditcommenteditoptions)
-  - [`plebbit.createVote(voteOptions)`](#plebbitcreatevotevoteoptions)
+  - [`plebbit.createComment(commentOptions)`](#plebbitcreatecommentcreatecommentoptions)
+  - [`plebbit.createCommentEdit(commentEditOptions)`](#plebbitcreatecommentcreateeditcommenteditoptions)
+  - [`plebbit.createVote(voteOptions)`](#plebbitcreatevotecreatevoteoptions)
 - [Subplebbit API](#subplebbit-api)
   - [`Subplebbit(subplebbitOptions)`](#subplebbitsubplebbitoptions)
   - [`subplebbit.update(subplebbitUpdateOptions)`](#subplebbitupdatesubplebbitupdateoptions)
@@ -320,7 +320,7 @@ Prints:
 */
 ```
 
-### `plebbit.createComment(commentOptions)`
+### `plebbit.createComment(createCommentOptions)`
 
 > Create a `Comment` instance. Posts are also comments.
 
@@ -328,9 +328,9 @@ Prints:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| commentOptions | `CommentOptions` | The comment to create |
+| createCommentOptions | `CreateCommentOptions` | The comment to create |
 
-##### CommentOptions
+##### CreateCommentOptions
 
 An object which may have the following keys:
 
@@ -353,7 +353,7 @@ An object which may have the following keys:
 #### Example
 
 ```js
-const comment = plebbit.createComment(commentOptions)
+const comment = plebbit.createComment(createCommentOptions)
 comment.on('challenge', async (challenge) => {
   const challengeAnswer = await askUserForChallengeAnswer(challenge)
   comment.publishChallengeAnswer(challengeAnswer)
@@ -361,7 +361,7 @@ comment.on('challenge', async (challenge) => {
 comment.publish()
 ```
 
-### `plebbit.createCommentEdit(commentEditOptions)`
+### `plebbit.createCommentEdit(createCommentEditOptions)`
 
 > Create a `Comment` instance. Posts are also comments.
 
@@ -369,9 +369,9 @@ comment.publish()
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| commentEditOptions | `CommentEditOptions` | The comment edit to create |
+| createCommentEditOptions | `CreateCommentEditOptions` | The comment edit to create |
 
-##### CommentEditOptions
+##### CreateCommentEditOptions
 
 An object which may have the following keys:
 
@@ -392,7 +392,7 @@ An object which may have the following keys:
 #### Example
 
 ```js
-const commentEdit = plebbit.createCommentEdit(commentEditOptions)
+const commentEdit = plebbit.createCommentEdit(createCommentEditOptions)
 commentEdit.on('challenge', async (challenge) => {
   const challengeAnswer = await askUserForChallengeAnswer(challenge)
   commentEdit.publishChallengeAnswer(challengeAnswer)
@@ -400,7 +400,7 @@ commentEdit.on('challenge', async (challenge) => {
 commentEdit.publish()
 ```
 
-### `plebbit.createVote(voteOptions)`
+### `plebbit.createVote(createVoteOptions)`
 
 > Create a `Vote` instance. `Vote` inherits from `Publication`, like `Comment`, so has the same API.
 
@@ -408,9 +408,9 @@ commentEdit.publish()
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| voteOptions | `VoteOptions` | The vote to create |
+| createVoteOptions | `CreateVoteOptions` | The vote to create |
 
-##### VoteOptions
+##### CreateVoteOptions
 
 An object which may have the following keys:
 
@@ -432,7 +432,7 @@ An object which may have the following keys:
 #### Example
 
 ```js
-const vote = plebbit.createVote(voteOptions)
+const vote = plebbit.createVote(createVoteOptions)
 vote.on('challenge', async (challenge) => {
   const challengeAnswer = await askUserForChallengeAnswer(challenge)
   comment.publishChallengeAnswer(challengeAnswer)
