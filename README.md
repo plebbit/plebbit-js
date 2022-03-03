@@ -20,7 +20,7 @@ Note: IPFS files are immutable, fetched by their CID, which is a hash of their c
 Address: string // A plebbit author or subplebbit "address" can be a crypto domain like memes.eth, an IPNS name, an ethereum address, etc
 Publication {
   author: Author,
-  timestamp: number,
+  timestamp: number, // number in seconds
   signature: Signature // sign immutable fields like author, title, content, timestamp to prevent tampering
 }
 Comment (IPFS file) {
@@ -339,7 +339,7 @@ An object which may have the following keys:
 | subplebbitAddress | `string` | IPNS name of the subplebbit |
 | parentCommentCid | `string` or `null` | The parent comment CID, null if comment is a post, same as postCid if comment is top level |
 | content | `string` | Content of the comment |
-| timestamp | `number` or `null` | Time of publishing in ms, `Date.now()` if null |
+| timestamp | `number` or `null` | Time of publishing in seconds, `Math.round(Date.now() / 1000)` if null |
 | author | `Author` | Author of the comment |
 | signer | `Signer` | Signer of the comment |
 
