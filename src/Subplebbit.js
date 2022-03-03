@@ -194,7 +194,7 @@ class Subplebbit extends PlebbitCore {
         }
 
         if (postOrCommentOrVote.getType() === "vote") {
-            const lastVote = await this.dbHandler.getLastVoteOfAuthor(postOrCommentOrVote.commentCid, postOrCommentOrVote.author.ipnsName);
+            const lastVote = await this.dbHandler.getLastVoteOfAuthor(postOrCommentOrVote.commentCid, postOrCommentOrVote.author.address);
             const voteComment = await this.plebbit.getPostOrComment(postOrCommentOrVote.commentCid);
             const commentIpns = await voteComment.fetchCommentIpns();
             let newUpvoteCount = -1, newDownvoteCount = -1;

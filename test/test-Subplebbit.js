@@ -19,7 +19,7 @@ async function generateMockPost() {
     const postStartTestTime = Date.now();
     const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${postStartTestTime}`);
     return new Post({
-        "author": {"displayName": `Mock Author - ${postStartTestTime}`, "ipnsName": mockAuthorIpns["id"]},
+        "author": {"displayName": `Mock Author - ${postStartTestTime}`, "address": mockAuthorIpns["id"]},
         "title": `Mock Post - ${postStartTestTime}`,
         "content": `Mock content - ${postStartTestTime}`,
     }, subplebbit);

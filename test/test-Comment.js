@@ -14,7 +14,7 @@ async function generateMockComment(parentPostOrComment) {
     const commentTime = Date.now();
     const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${commentTime}`);
     return new Comment({
-        "author": {"displayName": `Mock Author - ${commentTime}`, "ipnsName": mockAuthorIpns["id"]},
+        "author": {"displayName": `Mock Author - ${commentTime}`, "address": mockAuthorIpns["id"]},
         "content": `Mock comment - ${commentTime}`,
         "postCid": parentPostOrComment.postCid,
         "parentCommentCid": parentPostOrComment.commentCid

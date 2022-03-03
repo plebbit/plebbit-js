@@ -76,7 +76,7 @@ class Comment extends Publication {
         const json = this.toJSON();
         delete json.author;
         delete json.challenge;
-        json["authorIpnsName"] = this.author.ipnsName;
+        json["authorAddress"] = this.author.address;
         json["challengeRequestId"] = this.challenge?.requestId;
         return json;
     }

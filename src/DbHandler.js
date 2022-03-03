@@ -20,7 +20,7 @@ class DbHandler {
     async #createCommentsTable() {
         await this.knex.schema.createTable(TABLES.COMMENTS, (table) => {
             table.text("commentCid").notNullable().primary().unique();
-            table.text("authorIpnsName").notNullable().references("ipnsName").inTable(TABLES.AUTHORS);
+            table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
             table.text("parentCommentCid").nullable().references("commentCid").inTable(TABLES.COMMENTS);
             table.text("postCid").notNullable().references("commentCid").inTable(TABLES.COMMENTS);
             table.text("previousCommentCid").nullable().references("commentCid").inTable(TABLES.COMMENTS);
@@ -41,7 +41,7 @@ class DbHandler {
     async #createVotesTable() {
         await this.knex.schema.createTable(TABLES.VOTES, (table) => {
             table.text("commentCid").notNullable().references("commentCid").inTable(TABLES.COMMENTS);
-            table.text("authorIpnsName").notNullable().references("ipnsName").inTable(TABLES.AUTHORS);
+            table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
             table.uuid("challengeRequestId").notNullable().references("requestId").inTable(TABLES.CHALLENGES);
 
             table.timestamp("timestamp").notNullable();
@@ -49,13 +49,13 @@ class DbHandler {
             table.enum("vote", [-1, 0, 1]).notNullable();
             table.text("signature").nullable(); // Will likely revise later
 
-            table.primary(["commentCid", "authorIpnsName"]); // An author can't have multiple votes on a comment
+            table.primary(["commentCid", "authorAddress"]); // An author can't have multiple votes on a comment
         });
     }
 
     async #createAuthorsTable() {
         await this.knex.schema.createTable(TABLES.AUTHORS, (table) => {
-            table.text("ipnsName").notNullable().primary().unique();
+            table.text("address").notNullable().primary().unique();
             table.text("displayName").notNullable();
         });
 
@@ -92,7 +92,7 @@ class DbHandler {
 
     async #addAuthorToDbIfNeeded(author) {
         return new Promise(async (resolve, reject) => {
-            const authorFromDb = await this.knex(TABLES.AUTHORS).where({"ipnsName": author.ipnsName}).first();
+            const authorFromDb = await this.knex(TABLES.AUTHORS).where({"address": author.address}).first();
             if (!authorFromDb) // Author is new. Add to database
                 this.knex(TABLES.AUTHORS).insert(author.toJSON()).then(() => resolve(author.toJSON())).catch(err => {
                     console.error(err);
@@ -107,7 +107,7 @@ class DbHandler {
         return new Promise(async (resolve, reject) => {
             await this.#addAuthorToDbIfNeeded(vote.author);
             const dbObject = vote.toJSONForDb();
-            this.knex(TABLES.VOTES).insert(vote.toJSONForDb()).onConflict(['commentCid', "authorIpnsName"]).merge().then(() => resolve(dbObject)).catch(err => {
+            this.knex(TABLES.VOTES).insert(vote.toJSONForDb()).onConflict(['commentCid', "authorAddress"]).merge().then(() => resolve(dbObject)).catch(err => {
                 console.error(err);
                 reject(err);
             });
@@ -137,11 +137,11 @@ class DbHandler {
         });
     }
 
-    async getLastVoteOfAuthor(commentCid, authorIpnsName) {
+    async getLastVoteOfAuthor(commentCid, authorAddress) {
         return new Promise(async (resolve, reject) => {
             this.knex(TABLES.VOTES).where({
                 "commentCid": commentCid,
-                "authorIpnsName": authorIpnsName
+                "authorAddress": authorAddress
             }).first().then(resolve).catch(err => {
                 console.error(err);
                 reject(err);
@@ -151,12 +151,12 @@ class DbHandler {
 
     async #createCommentsFromRows(commentsRows) {
         return new Promise(async (resolve, reject) => {
-            const authors = (await this.knex(TABLES.AUTHORS).whereIn("ipnsName", commentsRows.map(post => post.authorIpnsName))).map(authorProps => new Author(authorProps));
+            const authors = (await this.knex(TABLES.AUTHORS).whereIn("address", commentsRows.map(post => post.authorAddress))).map(authorProps => new Author(authorProps));
             const challenges = (await this.knex(TABLES.CHALLENGES).whereIn("requestId", commentsRows.map(post => post.challengeRequestId))).map(challengeProps => new Challenge(challengeProps));
             const posts = commentsRows.map(postProps => {
                 const props = {
                     ...postProps,
-                    "author": authors.filter(author => author.ipnsName === postProps.authorIpnsName)[0],
+                    "author": authors.filter(author => author.address === postProps.authorAddress)[0],
                     "challenge": challenges.filter(challenge => challenge.requestId === postProps.challengeRequestId)[0]
                 };
                 if (props["title"])
@@ -191,7 +191,7 @@ class DbHandler {
         return new Promise(async (resolve, reject) => {
             if (timestamp1 === Number.NEGATIVE_INFINITY)
                 timestamp1 = 0;
-            this.knex(TABLES.COMMENTS).whereNotNull("title").whereBetween("timestamp", [timestamp1, timestamp2]).then((res) => resolve(this.#createCommentsFromRows.bind(this)(res))).catch(err => {
+            this.knex(TABLES.COMMENTS).whereNotNull("title").whereBetween("timestamp", [timestamp1, timestamp2]).then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(err => {
                 console.error(err);
                 reject(err);
             });
