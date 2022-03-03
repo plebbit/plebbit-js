@@ -42,6 +42,7 @@ class Subplebbit extends PlebbitCore {
         this.setIpnsKey(mergedProps["subplebbitAddress"], mergedProps["ipnsKeyName"]);
         this.plebbit = new Plebbit(newProps, this.ipfsClient);
         this.sortHandler = new SortHandler(this);
+        this.challengeTypes = mergedProps["challengeTypes"] || null;
     }
 
     async #initDb() {
@@ -112,7 +113,8 @@ class Subplebbit extends PlebbitCore {
             "pubsubTopic": this.pubsubTopic,
             "subplebbitAddress": this.subplebbitAddress,
             "sortedPosts": this.sortedPosts,
-            "sortedPostsCids": this.sortedPostsCids
+            "sortedPostsCids": this.sortedPostsCids,
+            "challengeTypes": this.challengeTypes
         };
     }
 
