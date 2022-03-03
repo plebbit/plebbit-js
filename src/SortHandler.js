@@ -31,7 +31,7 @@ export const SORTED_POSTS_PAGE_SIZE = 2;
 
 export class SortedComments {
     constructor(props, subplebbit) {
-        this.nextSortedCommentsCid = props["nextSortedCommentsCid"];
+        this.nextSortedCommentsCid = props["nextSortedCommentsCid"] || null;
         this.comments = props["comments"] || [];
         this.type = props["type"];
         this.pageCid = props["pageCid"];
@@ -49,6 +49,8 @@ export class SortHandler {
 
     async #chunksToSortedComments(chunks, sortType) {
         return new Promise(async (resolve, reject) => {
+            if (chunks.length === 0)
+                resolve([new SortedComments({"type": sortType})]);
             const sortedPosts = new Array(chunks.length);
             for (let i = chunks.length - 1; i >= 0; i--) {
                 const sortedPostsPage = new SortedComments({
@@ -132,6 +134,8 @@ export class SortHandler {
             }
             const commentsChunks = chunks(commentsSorted, limit);
             const sortedComments = await this.#chunksToSortedComments(commentsChunks, sortType);
+            if (sortedComments.length === 0 && commentsSorted.length > 0)
+                throw `There are ${commentsSorted.length} comments yet sortedComments has no comments`;
             resolve(sortedComments[0]);
 
         });
@@ -183,7 +187,7 @@ export class SortHandler {
 
             Promise.all(sortPromises).then((sortedComments) => {
                 const sortedPosts = Object.fromEntries(sortedComments.map(sortedPost => [sortedPost.type, sortedPost]));
-                const sortedPostsCids = Object.fromEntries(sortedComments.map(sortedPost => [sortedPost.type, sortedPost.pageCid]));
+                const sortedPostsCids = Object.fromEntries(sortedComments.map(sortedPost => [sortedPost.type, sortedPost?.pageCid]));
                 resolve([sortedPosts, sortedPostsCids]);
             }).catch((err) => {
                 console.error(err);
@@ -202,8 +206,8 @@ export class SortHandler {
             });
 
             Promise.all(sortPromises).then((sortedComments) => {
-                const res1 = Object.fromEntries(sortedComments.map(sortedComment => [sortedComment?.type, sortedComment]));
-                const res2 = Object.fromEntries(sortedComments.map(sortedComment => [sortedComment?.type, sortedComment?.pageCid]));
+                const res1 = Object.fromEntries(sortedComments.map(sortedComment => [sortedComment.type, sortedComment]));
+                const res2 = Object.fromEntries(sortedComments.map(sortedComment => [sortedComment.type, sortedComment?.pageCid]));
                 resolve([res1, res2]);
             }).catch(err => {
                 console.error(err);
