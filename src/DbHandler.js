@@ -2,6 +2,7 @@ import {Challenge, CHALLENGE_STAGES, CHALLENGE_TYPES} from "./Challenge.js";
 import Post from "./Post.js";
 import Author from "./Author.js";
 import Comment from "./Comment.js";
+import {TIMEFRAMES_TO_SECONDS} from "./Util.js";
 
 export const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -201,6 +202,48 @@ class DbHandler {
     async queryCommentsUnderComment(parentCommentCid) {
         return new Promise(async (resolve, reject) => {
             this.knex(TABLES.COMMENTS).where({"parentCommentCid": parentCommentCid}).orderBy("timestamp", "desc").then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(reject);
+        });
+    }
+
+    async #querySubplebbitActiveUserCount(subplebbitAddress, timeframe) {
+        return new Promise(async (resolve, reject) => {
+            let from = (Date.now() / 1000) - TIMEFRAMES_TO_SECONDS[timeframe];
+            if (from === Number.NEGATIVE_INFINITY)
+                from = 0;
+            const to = (Date.now() / 1000);
+            const commentsAuthors = await this.knex(TABLES.COMMENTS).distinct("authorAddress").whereBetween("timestamp", [from, to]);
+            const voteAuthors = await this.knex(TABLES.VOTES).distinct("authorAddress").whereBetween("timestamp", [from, to]);
+            let activeUserAccounts = [...commentsAuthors, ...voteAuthors].map(author => author.authorAddress);
+            activeUserAccounts = [...new Set(activeUserAccounts)];
+            resolve(activeUserAccounts.length);
+        });
+    }
+
+
+    async #querySubplebbitPostCount(subplebbitAddress, timeframe) {
+        return new Promise(async (resolve, reject) => {
+            let from = (Date.now() / 1000) - TIMEFRAMES_TO_SECONDS[timeframe];
+            if (from === Number.NEGATIVE_INFINITY)
+                from = 0;
+            const to = (Date.now() / 1000);
+            this.knex(TABLES.COMMENTS).count("commentCid").whereBetween("timestamp", [from, to]).then(postCount => resolve(postCount["0"]["count(`commentCid`)"])).catch(reject);
+        })
+    }
+
+    async querySubplebbitMetrics(subplebbitAddress) {
+        return new Promise(async (resolve, reject) => {
+            const metrics = {};
+            for (const metricType of ["ActiveUserCount", "PostCount"])
+                for (const timeframe of Object.keys(TIMEFRAMES_TO_SECONDS)) {
+                    const propertyName = `${timeframe.toLowerCase()}${metricType}`;
+                    if (metricType === "ActiveUserCount")
+                        metrics[[propertyName]] = await this.#querySubplebbitActiveUserCount(subplebbitAddress, timeframe);
+                    else if (metricType === "PostCount")
+                        metrics[[propertyName]] = await this.#querySubplebbitPostCount(subplebbitAddress, timeframe);
+                }
+            resolve(metrics);
+
+
         });
     }
 }

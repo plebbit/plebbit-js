@@ -114,7 +114,8 @@ class Subplebbit extends PlebbitCore {
             "subplebbitAddress": this.subplebbitAddress,
             "sortedPosts": this.sortedPosts,
             "sortedPostsCids": this.sortedPostsCids,
-            "challengeTypes": this.challengeTypes
+            "challengeTypes": this.challengeTypes,
+            "metrics": this.metrics
         };
     }
 
@@ -145,6 +146,7 @@ class Subplebbit extends PlebbitCore {
             ...(await this.#getSortedPostsObject()),
             "preloadedPosts": [post, ...this.preloadedPosts],
             "latestPostCid": post.postCid,
+            "metrics": this?.dbHandler?.querySubplebbitMetrics(this.subplebbitAddress)
         }
         await this.update(newSubplebbitOptions);
         this.event.emit("post", post);
