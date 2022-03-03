@@ -20,7 +20,7 @@ Note: IPFS files are immutable, fetched by their CID, which is a hash of their c
 Address: string // A plebbit author or subplebbit "address" can be a crypto domain like memes.eth, an IPNS name, an ethereum address, etc
 Publication {
   author: Author,
-  timestamp: number,
+  timestamp: number, // number in seconds
   signature: Signature // sign immutable fields like author, title, content, timestamp to prevent tampering
 }
 Comment (IPFS file) {
@@ -70,7 +70,7 @@ Subplebbit (IPNS record) {
   pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   latestPostCid: string, // the most recent post in the linked list of posts
   sortedPosts: {hot: SortedComments[]}, // only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post
-  sortedPostsCids: {[key: 'hot' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid}, // e.g. {hot: 'Qm...', new: 'Qm...', etc.}
+  sortedPostsCids: {[key: 'hot' | 'new' | 'topHour'| 'topDay' | 'topWeek' | 'topMonth' | 'topYear' | 'topAll']: SortedPostsCid}, // e.g. {hot: 'Qm...', new: 'Qm...', etc.}
   challengeTypes: ChallengeType[], // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
   metrics: SubplebbitMetrics
 }
@@ -165,9 +165,9 @@ Challenge {
   - [`Plebbit(plebbitOptions)`](#plebbitplebbitoptions)
   - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
   - [`plebbit.getSubplebbit(subplebbitAddress)`](#plebbitgetsubplebbitsubplebbitaddress)
-  - [`plebbit.createComment(commentOptions)`](#plebbitcreatecommentcommentoptions)
-  - [`plebbit.createCommentEdit(commentEditOptions)`](#plebbitcreatecommenteditcommenteditoptions)
-  - [`plebbit.createVote(voteOptions)`](#plebbitcreatevotevoteoptions)
+  - [`plebbit.createComment(createCommentOptions)`](#plebbitcreatecommentcreatecommentoptions)
+  - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommentcreateeditcommenteditoptions)
+  - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
 - [Subplebbit API](#subplebbit-api)
   - [`Subplebbit(subplebbitOptions)`](#subplebbitsubplebbitoptions)
   - [`subplebbit.update(subplebbitUpdateOptions)`](#subplebbitupdatesubplebbitupdateoptions)
@@ -320,7 +320,7 @@ Prints:
 */
 ```
 
-### `plebbit.createComment(commentOptions)`
+### `plebbit.createComment(createCommentOptions)`
 
 > Create a `Comment` instance. Posts are also comments.
 
@@ -328,9 +328,9 @@ Prints:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| commentOptions | `CommentOptions` | The comment to create |
+| createCommentOptions | `CreateCommentOptions` | The comment to create |
 
-##### CommentOptions
+##### CreateCommentOptions
 
 An object which may have the following keys:
 
@@ -339,7 +339,8 @@ An object which may have the following keys:
 | subplebbitAddress | `string` | IPNS name of the subplebbit |
 | parentCommentCid | `string` or `null` | The parent comment CID, null if comment is a post, same as postCid if comment is top level |
 | content | `string` | Content of the comment |
-| timestamp | `number` or `null` | Time of publishing in ms, `Date.now()` if null |
+| title | `string` or `undefined` | If comment is a post, it needs a title |
+| timestamp | `number` or `null` | Time of publishing in seconds, `Math.round(Date.now() / 1000)` if null |
 | author | `Author` | Author of the comment |
 | signer | `Signer` | Signer of the comment |
 
@@ -352,7 +353,7 @@ An object which may have the following keys:
 #### Example
 
 ```js
-const comment = plebbit.createComment(commentOptions)
+const comment = plebbit.createComment(createCommentOptions)
 comment.on('challenge', async (challenge) => {
   const challengeAnswer = await askUserForChallengeAnswer(challenge)
   comment.publishChallengeAnswer(challengeAnswer)
@@ -360,7 +361,7 @@ comment.on('challenge', async (challenge) => {
 comment.publish()
 ```
 
-### `plebbit.createCommentEdit(commentEditOptions)`
+### `plebbit.createCommentEdit(createCommentEditOptions)`
 
 > Create a `Comment` instance. Posts are also comments.
 
@@ -368,9 +369,9 @@ comment.publish()
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| commentEditOptions | `CommentEditOptions` | The comment edit to create |
+| createCommentEditOptions | `CreateCommentEditOptions` | The comment edit to create |
 
-##### CommentEditOptions
+##### CreateCommentEditOptions
 
 An object which may have the following keys:
 
@@ -391,7 +392,7 @@ An object which may have the following keys:
 #### Example
 
 ```js
-const commentEdit = plebbit.createCommentEdit(commentEditOptions)
+const commentEdit = plebbit.createCommentEdit(createCommentEditOptions)
 commentEdit.on('challenge', async (challenge) => {
   const challengeAnswer = await askUserForChallengeAnswer(challenge)
   commentEdit.publishChallengeAnswer(challengeAnswer)
@@ -399,7 +400,7 @@ commentEdit.on('challenge', async (challenge) => {
 commentEdit.publish()
 ```
 
-### `plebbit.createVote(voteOptions)`
+### `plebbit.createVote(createVoteOptions)`
 
 > Create a `Vote` instance. `Vote` inherits from `Publication`, like `Comment`, so has the same API.
 
@@ -407,9 +408,9 @@ commentEdit.publish()
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| voteOptions | `VoteOptions` | The vote to create |
+| createVoteOptions | `CreateVoteOptions` | The vote to create |
 
-##### VoteOptions
+##### CreateVoteOptions
 
 An object which may have the following keys:
 
@@ -431,7 +432,7 @@ An object which may have the following keys:
 #### Example
 
 ```js
-const vote = plebbit.createVote(voteOptions)
+const vote = plebbit.createVote(createVoteOptions)
 vote.on('challenge', async (challenge) => {
   const challengeAnswer = await askUserForChallengeAnswer(challenge)
   comment.publishChallengeAnswer(challengeAnswer)
