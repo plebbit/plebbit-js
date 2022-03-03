@@ -72,7 +72,7 @@ Subplebbit (IPNS record) {
   sortedPosts: {hot: SortedComments[]}, // only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post
   sortedPostsCids: {[key: 'hot' | 'new' | 'topHour'| 'topDay' | 'topWeek' | 'topMonth' | 'topYear' | 'topAll']: SortedPostsCid}, // e.g. {hot: 'Qm...', new: 'Qm...', etc.}
   challengeTypes: ChallengeType[], // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
-  metricsCid: SubplebbitMetricsCid
+  metricsCid: subplebbitMetricsCid
 }
 SubplebbitMetrics {
   hourActiveUserCount: number,
