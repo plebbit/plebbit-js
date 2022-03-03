@@ -70,7 +70,7 @@ Subplebbit (IPNS record) {
   pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   latestPostCid: string, // the most recent post in the linked list of posts
   sortedPosts: {hot: SortedComments[]}, // only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post
-  sortedPostsCids: {[key: 'hot' | 'new' | 'tophour'| 'topday' | 'topweek' | 'topmonth' | 'topyear' | 'topall']: SortedPostsCid}, // e.g. {hot: 'Qm...', new: 'Qm...', etc.}
+  sortedPostsCids: {[key: 'hot' | 'new' | 'topHour'| 'topDay' | 'topWeek' | 'topMonth' | 'topYear' | 'topAll']: SortedPostsCid}, // e.g. {hot: 'Qm...', new: 'Qm...', etc.}
   challengeTypes: ChallengeType[], // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
   metrics: SubplebbitMetrics
 }
