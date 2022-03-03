@@ -6,7 +6,7 @@ import {SORTED_COMMENTS_TYPES, SortedComments} from "../src/SortHandler.js";
 
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 
-const post = await plebbit.getPostOrComment("QmVU4noB6SjfdcgvcR6xkMEQE5hahCRvbf7GKdyBKNKq5J");
+const post = await plebbit.getPostOrComment("QmTUUX3f4xNrdsLU3UHUs11nPbVnk5UsqoW8Kbo2Jvusjh");
 
 const mockComments = [];
 

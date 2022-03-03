@@ -108,18 +108,13 @@ class Comment extends Publication {
         });
     }
 
-    async fetchCommentIpns(ttl = 1000 * 60 * 5) {
+    async fetchCommentIpns() {
         return new Promise(async (resolve, reject) => {
-            // Cache is kept for 5 minutes
-            if (this.commentIpns && (Date.now() - this.commentIpnsTimestamp) < ttl)
-                resolve(this.commentIpns);
-            else
-                loadIpnsAsJson(this.commentIpnsName, this.subplebbit.ipfsClient).then(res => {
-                        this.commentIpns = new CommentIPNS(res);
-                        this.commentIpnsTimestamp = Date.now();
-                        resolve(this.commentIpns);
-                    }
-                ).catch(reject)
+            loadIpnsAsJson(this.commentIpnsName, this.subplebbit.ipfsClient).then(res => {
+                    this.commentIpns = new CommentIPNS(res);
+                    resolve(this.commentIpns);
+                }
+            ).catch(reject)
         });
     }
 
