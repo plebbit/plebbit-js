@@ -37,7 +37,7 @@ class Comment extends Publication {
     _initProps(props) {
         super._initProps(props);
         this.author = new Author(props["author"]);
-        this.timestamp = props["timestamp"] || Date.now();
+        this.timestamp = props["timestamp"] || (Date.now() / 1000);
         this.signature = props["signature"] || null;
         this.postCid = props["postCid"];
         this.commentCid = props["commentCid"];

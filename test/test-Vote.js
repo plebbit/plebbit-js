@@ -13,7 +13,7 @@ const generateMockVote = async (parentPostOrComment, vote) => {
     const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${voteTime}`);
     return new Vote({
         "author": {"displayName": `Mock Author - ${voteTime}`, "ipnsName": mockAuthorIpns["id"]},
-        "timestamp": voteTime, "commentCid": parentPostOrComment.commentCid || parentPostOrComment.postCid,
+        "commentCid": parentPostOrComment.commentCid || parentPostOrComment.postCid,
         "vote": vote,
     }, parentPostOrComment.subplebbit);
 };

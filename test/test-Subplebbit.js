@@ -22,7 +22,6 @@ async function generateMockPost() {
         "author": {"displayName": `Mock Author - ${postStartTestTime}`, "ipnsName": mockAuthorIpns["id"]},
         "title": `Mock Post - ${postStartTestTime}`,
         "content": `Mock content - ${postStartTestTime}`,
-        "timestamp": postStartTestTime,
     }, subplebbit);
 }
 
@@ -78,9 +77,9 @@ describe("Test Subplebbit functionality", async () => {
                 // Return question, type
                 // Expected return is:
                 // captcha, captcha type, reason for skipping captcha (if it's skipped by nullifying captcha)
-                if (challengeWithPost.msg.timestamp > 1643740217602)
+                if (challengeWithPost.msg.timestamp > 1643740217.6)
                     // if we return null we are skipping captcha for this particular post/comment
-                    return [null, null, "Captcha was skipped because timestamp exceeded 1643740217602"];
+                    return [null, null, "Captcha was skipped because timestamp exceeded 1643740217.6"];
                 else
                     return ["1+1=?", CHALLENGE_TYPES.TEXT];
             });
