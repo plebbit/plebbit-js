@@ -156,7 +156,7 @@ ChallengeVerificationMessage (sent by subplebbit owner) {
   challengeRequestId: string, // include in verification in case a peer is missing it
   challengeAnswerId: string, // include in verification in case a peer is missing it
   challengeAnswerIsVerified: bool,
-  reason: string // reason for failed verification, for example post content is too long. could also be used for successful verification that bypass the challenge, for example because an author has good history
+  reason?: string // reason for failed verification, for example post content is too long. could also be used for successful verification that bypass the challenge, for example because an author has good history
 }
 Challenge {
   type: 'image' | 'text' | 'audio' | 'video' | 'html', // tells the client how to display the challenge, start with implementing image and text only first
