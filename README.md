@@ -141,15 +141,18 @@ ChallengeRequestMessage (sent by post author) {
   publication: Publication // include the post so the nodes and subplebbit owner can blacklist it outright
 }
 ChallengeMessage (sent by subplebbit owner) {
+  ...PubsubMessage,
   challengeRequestId: string,
   challenge: Challenge[] // a challenge can have more than 1 challenge
 }
 ChallengeAnswerMessage (sent by post author) {
+  ...PubsubMessage,
   challengeRequestId: string,
   challengeAnswerId: string, // random string choosen by sender
   challengeAnswer: string[] // for example ['2+2=4', '1+7=8']
 }
 ChallengeVerificationMessage (sent by subplebbit owner) {
+  ...PubsubMessage,
   challengeRequestId: string, // include in verification in case a peer is missing it
   challengeAnswerId: string, // include in verification in case a peer is missing it
   challengeAnswerIsVerified: bool,
