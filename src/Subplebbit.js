@@ -43,6 +43,7 @@ class Subplebbit extends PlebbitCore {
         this.plebbit = new Plebbit(newProps, this.ipfsClient);
         this.sortHandler = new SortHandler(this);
         this.challengeTypes = mergedProps["challengeTypes"] || null;
+        this.metricsCid = mergedProps["metricsCid"];
     }
 
     async #initDb() {
@@ -115,7 +116,7 @@ class Subplebbit extends PlebbitCore {
             "sortedPosts": this.sortedPosts,
             "sortedPostsCids": this.sortedPostsCids,
             "challengeTypes": this.challengeTypes,
-            "metrics": this.metrics
+            "metricsCid": this.metricsCid
         };
     }
 
@@ -141,12 +142,19 @@ class Subplebbit extends PlebbitCore {
         };
     }
 
+    async #updateMetricsCid() {
+        const metrics = await this?.dbHandler?.querySubplebbitMetrics();
+        if (metrics)
+            this.metricsCid = (await this.ipfsClient.add(JSON.stringify(metrics))).path;
+    }
+
     async #updateSubplebbitPosts(post) {
+        await this.#updateMetricsCid();
         const newSubplebbitOptions = {
             ...(await this.#getSortedPostsObject()),
+            "metricsCid": this.metricsCid,
             "preloadedPosts": [post, ...this.preloadedPosts],
             "latestPostCid": post.postCid,
-            "metrics": this?.dbHandler?.querySubplebbitMetrics(this.subplebbitAddress)
         }
         await this.update(newSubplebbitOptions);
         this.event.emit("post", post);

@@ -205,7 +205,7 @@ class DbHandler {
         });
     }
 
-    async #querySubplebbitActiveUserCount(subplebbitAddress, timeframe) {
+    async #querySubplebbitActiveUserCount(timeframe) {
         return new Promise(async (resolve, reject) => {
             let from = (Date.now() / 1000) - TIMEFRAMES_TO_SECONDS[timeframe];
             if (from === Number.NEGATIVE_INFINITY)
@@ -220,7 +220,7 @@ class DbHandler {
     }
 
 
-    async #querySubplebbitPostCount(subplebbitAddress, timeframe) {
+    async #querySubplebbitPostCount(timeframe) {
         return new Promise(async (resolve, reject) => {
             let from = (Date.now() / 1000) - TIMEFRAMES_TO_SECONDS[timeframe];
             if (from === Number.NEGATIVE_INFINITY)
@@ -230,20 +230,18 @@ class DbHandler {
         })
     }
 
-    async querySubplebbitMetrics(subplebbitAddress) {
+    async querySubplebbitMetrics() {
         return new Promise(async (resolve, reject) => {
             const metrics = {};
             for (const metricType of ["ActiveUserCount", "PostCount"])
                 for (const timeframe of Object.keys(TIMEFRAMES_TO_SECONDS)) {
                     const propertyName = `${timeframe.toLowerCase()}${metricType}`;
                     if (metricType === "ActiveUserCount")
-                        metrics[[propertyName]] = await this.#querySubplebbitActiveUserCount(subplebbitAddress, timeframe);
+                        metrics[[propertyName]] = await this.#querySubplebbitActiveUserCount(timeframe);
                     else if (metricType === "PostCount")
-                        metrics[[propertyName]] = await this.#querySubplebbitPostCount(subplebbitAddress, timeframe);
+                        metrics[[propertyName]] = await this.#querySubplebbitPostCount(timeframe);
                 }
             resolve(metrics);
-
-
         });
     }
 }
