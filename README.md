@@ -204,7 +204,7 @@ Challenge {
   - `comment.content`
   - `comment.previousCommentCid`
   - `comment.commentIpnsName`
-- [Comment Events](#subplebbit-events)
+- [Comment Events](#comment-events)
   - [`update`](#update)
   - [`challenge`](#challenge)
   - [`challengeverification`](#challengeverification)
@@ -589,7 +589,7 @@ subplebbit.start()
 
 | Type | Description |
 | -------- | -------- |
-| `ChallengeRequest` | The comment of the user and the challenge request |
+| `ChallengeRequestMessage` | The comment of the user and the challenge request |
 
 Object is of the form:
 
@@ -611,7 +611,7 @@ Object is of the form:
 
 | Type | Description |
 | -------- | -------- |
-| `ChallengeAnswer` | The challenge answer |
+| `ChallengeAnswerMessage` | The challenge answer |
 
 Object is of the form:
 
@@ -751,7 +751,7 @@ comment.publish()
 
 | Type | Description |
 | -------- | -------- |
-| `ChallengeVerification` | The challenge verification result |
+| `ChallengeVerificationMessage` | The challenge verification result |
 
 Object is of the form:
 
