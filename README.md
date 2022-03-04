@@ -724,7 +724,7 @@ comment.on('update', (commentIpns) => {
 
 | Type | Description |
 | -------- | -------- |
-| `Challenge` | The challenge the user must complete |
+| `ChallengeMessage` | The challenge the user must complete |
 
 Object is of the form:
 
