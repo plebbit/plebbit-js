@@ -20,12 +20,12 @@ Note: IPFS files are immutable, fetched by their CID, which is a hash of their c
 Address: string // A plebbit author or subplebbit "address" can be a crypto domain like memes.eth, an IPNS name, an ethereum address, etc
 Publication {
   author: Author,
+  subplebbitAddress: string, // all publications are directed to a subplebbit owner
   timestamp: number, // number in seconds
   signature: Signature // sign immutable fields like author, title, content, timestamp to prevent tampering
 }
 Comment (IPFS file) {
   ...Publication,
-  subplebbitAddress: string, // required to prevent malicious subplebbits republishing as original and helps faster loading subplebbit info for comment direct linking
   postCid: string, // helps faster loading post info for comment direct linking, should be added by the subplebbit owner, not author
   parentCommentCid: string, // same as postCid for top level comments
   content: string,
