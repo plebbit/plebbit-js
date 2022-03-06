@@ -205,6 +205,7 @@ Challenge {
   - `comment.subplebbitAddress`
   - `comment.title`
   - `comment.content`
+  - `comment.cid`
   - `comment.previousCommentCid`
   - `comment.commentIpnsName`
 - [Comment Events](#comment-events)
