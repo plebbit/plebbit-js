@@ -30,7 +30,7 @@ Comment (IPFS file) {
   parentCommentCid: string, // same as postCid for top level comments
   content: string,
   previousCommentCid: string, // each post is a linked list
-  commentIpnsName: string // each post/comment needs its own IPNS record (CommentIpns) for its mutable data like edits, vote counts, comments
+  ipnsName: string // each post/comment needs its own IPNS record (CommentUpdate) for its mutable data like edits, vote counts, comments
 }
 Post (IPFS file) {
   ...Comment,
@@ -43,8 +43,8 @@ Vote {
   commentCid: string,
   vote: 1 | -1 | 0 // 0 is needed to cancel a vote
 }
-CommentIpns (IPNS record) {
-  latestCommentCid: string, // the most recent comment in the linked list of posts
+CommentUpdate (IPNS record Comment.ipnsName) {
+  editedContent: string, // the author has edited the comment content
   upvoteCount: number,
   downvoteCount: number,
   sortedComments: {hot: SortedComments}, // only preload page 1 sorted by 'hot', might preload more later
@@ -196,18 +196,25 @@ Challenge {
 - [Comment API](#comment-api)
   - [`comment.publish()`](#commentpublish)
   - [`comment.publishChallengeAnswer()`](#commentpublishchallengeanswerchallengeanswer)
-  - [`comment.getCommentIpns()`](#commentgetcommentipns)
+  - `comment.update(commentUpdateOptions)`
   - `comment.author`
   - `comment.timestamp`
   - `comment.signature`
+  - `comment.previousCommentCid`
   - `comment.postCid`
   - `comment.parentCommentCid`
   - `comment.subplebbitAddress`
   - `comment.title`
   - `comment.content`
+  - `comment.link`
+  - `comment.ipnsName`
   - `comment.cid`
-  - `comment.previousCommentCid`
-  - `comment.commentIpnsName`
+  - `(only available after first update event)`
+  - `comment.editedContent`
+  - `comment.upvoteCount`
+  - `comment.downvoteCount`
+  - `comment.sortedComments`
+  - `comment.sortedCommentsCids`
 - [Comment Events](#comment-events)
   - [`update`](#update)
   - [`challenge`](#challenge)
@@ -275,10 +282,10 @@ const plebbit = Plebbit(options) // should be independent instance, not singleto
 const commentCid = 'QmbWqx...'
 const comment = await plebbit.getComment(commentCid)
 console.log('comment:', comment)
+comment.on('update', updatedComment => console.log('comment with latest data', updatedComment))
 if (comment.parentCommentCid) { // comment with no parent cid is a post
   plebbit.getComment(comment.parentCommentCid).then(parentPost => console.log('parent post:', parentPost))
 }
-comment.getCommentIpns().then(commentIpns => console.log('commentIpns:', commentIpns))
 plebbit.getSubplebbit(comment.subplebbitAddress).then(subplebbit => console.log('subplebbit:', subplebbit))
 plebbit.getComment(comment.previousCommentCid).then(previousComment => console.log('previous comment:', previousComment))
 /*
@@ -349,7 +356,7 @@ An object which may have the following keys:
 | timestamp | `number` or `null` | Time of publishing in seconds, `Math.round(Date.now() / 1000)` if null |
 | author | `Author` | Author of the comment |
 | signer | `Signer` | Signer of the comment |
-| commentIpnsName | `string` or `undefined` | Not for publishing, gives access to `Comment.on('update')` and `Comment.getCommentIpns` for a comment already fetched |
+| ipnsName | `string` or `undefined` | Not for publishing, gives access to `Comment.on('update')` for a comment already fetched |
 
 #### Returns
 
@@ -368,9 +375,9 @@ comment.on('challenge', async (challenge) => {
 comment.publish()
 
 // or if you already fetched a comment but want to get updates
-const comment = plebbit.createComment({commentIpnsName: 'Qm...'})
+const comment = plebbit.createComment({ipnsName: 'Qm...'})
 // looks for updates in the background every 5 minutes
-comment.on('update', (commentIpns) => console.log(commentIpns))
+comment.on('update', (updatedComment) => console.log(updatedComment))
 ```
 
 ### `plebbit.createCommentEdit(createCommentEditOptions)`
@@ -454,7 +461,7 @@ vote.publish()
 
 ### `plebbit.getSortedComments(sortedCommentsCid)`
 
-> Get a `SortedComments` instance from an IPFS CID, from `Subplebbit.sortedPostsCids[sortedBy]` or `CommentIpns.sortedCommentsCids[sortedBy]`.
+> Get a `SortedComments` instance from an IPFS CID, from `Subplebbit.sortedPostsCids[sortedBy]` or `Comment.sortedCommentsCids[sortedBy]`.
 
 #### Parameters
 
@@ -478,17 +485,18 @@ console.log(sortedPostsByTopYear)
 
 // get sorted replies to a post or comment
 const post = await plebbit.getComment(commentCid)
-const postIpns = await post.getCommentIpns()
-let replies
-if (postIpns.sortedCommentsCids?.new) {
-  // sorted replies are not always available, for example if the post only has a few replies
-  replies = await plebbit.getSortedComments(postIpns.sortedCommentsCids.new)
-}
-else {
-  // the hot algorithm is always preloaded by default and can be used as fallback
-  replies = postIpns.sortedComments.hot
-}
-console.log(replies)
+post.on('update', async updatedPost => {
+  let replies
+  if (updatedPost.sortedCommentsCids?.new) {
+    // sorted replies are not always available, for example if the post only has a few replies
+    replies = await plebbit.getSortedComments(updatedPost.sortedCommentsCids.new)
+  }
+  else {
+    // the hot algorithm is always preloaded by default and can be used as fallback
+    replies = updatedPost.sortedComments.hot
+  }
+  console.log(replies)
+})
 ```
 
 ## Subplebbit API
@@ -510,7 +518,7 @@ An object which may have the following keys:
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| subplebbitAddress | `string` | `undefined` | IPNS name of the subplebbit |
+| address | `string` | `undefined` | IPNS name of the subplebbit |
 | ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs.com'` | URL of an IPFS gateway |
 | ipfsApiUrl | `string` | `'http://localhost:8080'` | URL of an IPFS API |
 | database | `string` or `KnexConfig` | `undefined` | File path to create/resume the SQLite database or [KnexConfig](https://www.npmjs.com/package/knex) |
@@ -528,7 +536,7 @@ const {Subplebbit} = require('@plebbit/plebbit-js')
 const options = {
   ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
   ipfsApiUrl: 'http://localhost:5001',
-  subplebbitAddress: 'Qmb...'
+  address: 'Qmb...'
 }
 const subplebbit = Subplebbit(options) // should be independent instance, not singleton
 subplebbit.update({
@@ -593,7 +601,7 @@ Object is of the form:
 const options = {
   ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
   ipfsApiUrl: 'http://localhost:5001',
-  subplebbitAddress: 'Qmb...'
+  address: 'Qmb...'
 }
 const subplebbit = Subplebbit(options)
 subplebbit.on('update', (updatedSubplebbitInstance) => console.log(updatedSubplebbitInstance))
@@ -623,7 +631,7 @@ The subplebbit events.
 const options = {
   ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
   ipfsApiUrl: 'http://localhost:5001',
-  subplebbitAddress: 'Qmb...'
+  address: 'Qmb...'
 }
 const subplebbit = Subplebbit(options)
 subplebbit.on('update', (subplebbitObject) => console.log(subplebbitObject))
@@ -713,42 +721,18 @@ comment.on('challenge', async (challenge) => {
 comment.publish()
 ```
 
-### `comment.getCommentIpns()`
-
-> Get the `CommentIpns`, ie. the mutable parts of the comments like vote counts, replies, edits, etc.
-
-#### Returns
-
-| Type | Description |
-| -------- | -------- |
-| `Promise<CommentIpns>` | The comment's `CommentIpns` |
-
-Object is of the form:
-
-```js
-{ // ...TODO }
-```
-
-#### Example
-
-```js
-const comment = plebbit.getComment(commentCid)
-const commentIpns = comment.getCommentIpns()
-console.log(commentIpns)
-```
-
 ## Comment Events
 The comment events.
 
 ### `update`
 
-> The comment's `CommentIpns`'s record has been updated, which means vote counts and replies may have changed. Once a `Comment` is created, start looking for updates right away in the background, and try again every 5 minutes. If the previous `CommentIpns` is the same, do not emit `update`.
+> The comment's `Comment.ipnsName`'s record has been updated, which means vote counts and replies may have changed. Once a `Comment` is created, start looking for updates right away in the background, and try again every 5 minutes. If the previous `CommentUpdate` is the same, do not emit `update`.
 
 #### Emits
 
 | Type | Description |
 | -------- | -------- |
-| `CommentIpns` | The updated `CommentIpns` |
+| `Comment` | The updated `Comment`, i.e. itself, `this` |
 
 Object is of the form:
 
@@ -760,8 +744,8 @@ Object is of the form:
 
 ```js
 const comment = await plebbit.getComment(commentCid)
-comment.on('update', (commentIpns) => {
-  console.log(commentIpns)
+comment.on('update', (updatedComment) => {
+  console.log(updatedComment)
 })
 ```
 
