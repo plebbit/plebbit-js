@@ -261,7 +261,7 @@ const plebbit = Plebbit(options) // should be independent instance, not singleto
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| commentCid | `string` | the IPFS CID of the comment |
+| commentCid | `string` | The IPFS CID of the comment |
 
 #### Returns
 
@@ -454,7 +454,7 @@ vote.publish()
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| sortedCommentsCid | `string` | the IPFS CID of the sorted comments |
+| sortedCommentsCid | `string` | The IPFS CID of the sorted comments |
 
 #### Returns
 
@@ -550,14 +550,14 @@ An object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| title | `string` | title of the subplebbit |
-| description | `string` | description of the subplebbit |
+| title | `string` | Title of the subplebbit |
+| description | `string` | Description of the subplebbit |
 | moderatorsAddresses | `string[]` | IPNS names of the moderators |
-| latestPostCid | `string` | the most recent post in the linked list of posts |
-| sortedPosts | `{hot: SortedComments}` | only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post |
-| pubsubTopic | `string` | the string to publish to in the pubsub, a public key of the subplebbit owner's choice |
-| challengeTypes | `ChallengeType[]` | the challenge types provided by the subplebbit owner |
-| metrics | `SubplebbitMetrics` | the self reported metrics of the subplebbit |
+| latestPostCid | `string` | The most recent post in the linked list of posts |
+| sortedPosts | `{hot: SortedComments}` | Only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post |
+| pubsubTopic | `string` | The string to publish to in the pubsub, a public key of the subplebbit owner's choice |
+| challengeTypes | `ChallengeType[]` | The challenge types provided by the subplebbit owner |
+| metrics | `SubplebbitMetrics` | The self reported metrics of the subplebbit |
 
 #### Returns
 
