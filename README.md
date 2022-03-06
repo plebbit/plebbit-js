@@ -171,14 +171,14 @@ Challenge {
   - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
   - [`plebbit.getSubplebbit(subplebbitAddress)`](#plebbitgetsubplebbitsubplebbitaddress)
   - [`plebbit.createComment(createCommentOptions)`](#plebbitcreatecommentcreatecommentoptions)
-  - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommentcreateeditcommenteditoptions)
+  - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
   - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
+  - [`plebbit.getSortedComments(sortedCommentsCid)`](#plebbitgetsortedcommentssortedcommentscid)
 - [Subplebbit API](#subplebbit-api)
   - [`Subplebbit(subplebbitOptions)`](#subplebbitsubplebbitoptions)
   - [`subplebbit.update(subplebbitUpdateOptions)`](#subplebbitupdatesubplebbitupdateoptions)
   - [`subplebbit.start()`](#subplebbitstart)
   - [`subplebbit.stop()`](#subplebbitstop)
-  - `subplebbit.getSortedPosts(sortedPostsCid)`
   - `subplebbit.address`
   - `subplebbit.title`
   - `subplebbit.description`
@@ -444,6 +444,45 @@ vote.on('challenge', async (challenge) => {
   comment.publishChallengeAnswer(challengeAnswer)
 })
 vote.publish()
+```
+
+### `plebbit.getSortedComments(sortedCommentsCid)`
+
+> Get a `SortedComments` instance from an IPFS CID, from `Subplebbit.sortedPostsCids[sortedBy]` or `CommentIpns.sortedCommentsCids[sortedBy]`.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| sortedCommentsCid | `string` | the IPFS CID of the sorted comments |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<SortedComments>` | A `SortedComments` instance |
+
+#### Example
+
+```js
+// get sorted posts in a subplebbit
+const subplebbit = await plebbit.getSubplebbit(subplebbitAddress)
+const sortedPostsByTopYear = await plebbit.getSortedComments(subplebbit.sortedPostsCids.topYear)
+console.log(sortedPostsByTopYear)
+
+// get sorted replies to a post or comment
+const post = await plebbit.getComment(commentCid)
+const postIpns = await post.getCommentIpns()
+let replies
+if (postIpns.sortedCommentsCids?.new) {
+  // sorted replies are not always available, for example if the post only has a few replies
+  replies = await plebbit.getSortedComments(postIpns.sortedCommentsCids.new)
+}
+else {
+  // the hot algorithm is always preloaded by default and can be used as fallback
+  replies = postIpns.sortedComments.hot
+}
+console.log(replies)
 ```
 
 ## Subplebbit API
