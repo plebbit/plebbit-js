@@ -3,24 +3,13 @@ import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
 import assert from 'assert';
 import {loadIpfsFileAsJson, unsubscribeAllPubsubTopics} from "../src/Util.js";
 import {SORTED_COMMENTS_TYPES, SortedComments} from "../src/SortHandler.js";
+import {generateMockComment} from "./MockUtil.js";
 
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 
-const post = await plebbit.getPostOrComment("QmTUUX3f4xNrdsLU3UHUs11nPbVnk5UsqoW8Kbo2Jvusjh");
+const post = await plebbit.getPostOrComment("QmXXBgVyn3dAWzno3vfudSosF9ev7K9mEyu5wLXqT6v4mC");
 
 const mockComments = [];
-
-async function generateMockComment(parentPostOrComment) {
-    const commentTime = Date.now();
-    const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${commentTime}`);
-    return new Comment({
-        "author": {"displayName": `Mock Author - ${commentTime}`, "address": mockAuthorIpns["id"]},
-        "content": `Mock comment - ${commentTime}`,
-        "postCid": parentPostOrComment.postCid,
-        "parentCommentCid": parentPostOrComment.commentCid
-    }, parentPostOrComment.subplebbit);
-}
-
 describe("Test Post and Comment", async function () {
     before(async () => await unsubscribeAllPubsubTopics(plebbit.ipfsClient));
 

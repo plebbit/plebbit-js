@@ -2,21 +2,14 @@ import {Plebbit, Vote} from "../src/index.js";
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
 import assert from 'assert';
 import {unsubscribeAllPubsubTopics} from "../src/Util.js";
+import {generateMockVote} from "./MockUtil.js";
 
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 
 const post = await plebbit.getPostOrComment("QmeqbvRcRv7L5jvb9hLmD3LGcnjuLAcpLbngsiZRrisT3L");
 const comment = await plebbit.getPostOrComment("QmX3tgDHFYEaYZnEb6P2Qci9E6GfDWGTBhDAmZ1qLdxUCk");
 const previousVotes = [];
-const generateMockVote = async (parentPostOrComment, vote) => {
-    const voteTime = Date.now();
-    const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${voteTime}`);
-    return new Vote({
-        "author": {"displayName": `Mock Author - ${voteTime}`, "address": mockAuthorIpns["id"]},
-        "commentCid": parentPostOrComment.commentCid || parentPostOrComment.postCid,
-        "vote": vote,
-    }, parentPostOrComment.subplebbit);
-};
+
 
 describe("Test Vote", async () => {
     before(async () => await unsubscribeAllPubsubTopics(plebbit.ipfsClient));

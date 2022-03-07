@@ -6,26 +6,15 @@ import * as fs from 'fs/promises';
 import readline from "readline";
 import {CHALLENGE_TYPES} from "../src/Challenge.js";
 import {SORTED_COMMENTS_TYPES, SORTED_POSTS_PAGE_SIZE, SortedComments} from "../src/SortHandler.js";
+import {generateMockPost} from "./MockUtil.js";
 
-const startTestTime = Date.now();
+const startTestTime = Date.now() / 1000;
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 const subplebbit = new Subplebbit({
     "title": `Test subplebbit - ${startTestTime}`
 }, plebbit.ipfsClient);
 
 const mockPosts = [];
-
-async function generateMockPost() {
-    const postStartTestTime = Date.now();
-    const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${postStartTestTime}`);
-    return new Post({
-        "author": {"displayName": `Mock Author - ${postStartTestTime}`, "address": mockAuthorIpns["id"]},
-        "title": `Mock Post - ${postStartTestTime}`,
-        "content": `Mock content - ${postStartTestTime}`,
-    }, subplebbit);
-}
-
-
 describe("Test Subplebbit functionality", async () => {
 
     before(async () => await unsubscribeAllPubsubTopics(plebbit.ipfsClient));
@@ -97,43 +86,7 @@ describe("Test Subplebbit functionality", async () => {
 
     });
 
-    it("Post is published when mathcli captcha is answered correctly", async function () {
-        return new Promise(async (resolve, reject) => {
-            subplebbit.setProvideCaptchaCallback((challengeWithPost) => {
-                // Return question, type
-                return ["1+1=?", CHALLENGE_TYPES.TEXT];
-            });
-            subplebbit.setValidateCaptchaAnswerCallback((challengeWithPost) => {
-                const answerIsCorrect = challengeWithPost["challenge"].answer === "2";
-                const reason = answerIsCorrect ? "Result of math express is correct" : "Result of math expression is incorrect";
-                return [answerIsCorrect, reason];
-            });
-            const mockPost = await generateMockPost();
-            await subplebbit.startPublishing();
-            mockPost.publish(null, (challenge) => {
-                // Solve captcha here
-                return "2";
-            }).then(async (challengeWithPost) => {
-                const loadedPost = await plebbit.getPostOrComment(challengeWithPost.msg.postCid);
-                const actualPost = new Post(challengeWithPost.msg, subplebbit);
-                assert.equal(JSON.stringify(actualPost), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
-                resolve();
-            }).catch(reject);
 
-        });
-    });
-
-    it("Throws an error when user fails to solve mathcli captcha", async function () {
-        return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost();
-            await subplebbit.startPublishing();
-            mockPost.publish(null, (challenge) => {
-                // Give wrong answer intentionally
-                return "3";
-            }).then(reject).catch(resolve); // Resolve when an error is thrown, and reject when no error is thrown
-        });
-
-    });
 
 
     it("Subplebbit emits an event everytime a post is posted", async function () {
