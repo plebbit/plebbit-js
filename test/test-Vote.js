@@ -43,7 +43,7 @@ describe("Test Vote", async () => {
 
     it("Throws an error when vote is duplicated", async () => {
         return new Promise(async (resolve, reject) => {
-            const vote = new Vote({...previousVotes[0].toJSON(), "timestamp": Date.now()}, previousVotes[0].subplebbit);
+            const vote = new Vote({...previousVotes[0].toJSON(), "timestamp": Date.now() / 1000}, previousVotes[0].subplebbit);
             vote.publish().then(reject).catch(resolve);
         });
 
@@ -58,7 +58,7 @@ describe("Test Vote", async () => {
             const vote = new Vote({
                 ...previousVotes[0].toJSON(),
                 "vote": -1,
-                "timestamp": Date.now()
+                "timestamp": Date.now() / 1000
             }, previousVotes[0].subplebbit);
             vote.publish().then(async (challengeWithVote) => {
                 await post.fetchCommentIpns();
@@ -78,7 +78,7 @@ describe("Test Vote", async () => {
             const vote = new Vote({
                 ...previousVotes[0].toJSON(),
                 "vote": 0,
-                "timestamp": Date.now()
+                "timestamp": Date.now() / 1000
             }, previousVotes[0].subplebbit);
             vote.publish().then(async (challengeWithVote) => {
                 await post.fetchCommentIpns();
@@ -113,7 +113,7 @@ describe("Test Vote", async () => {
             const vote = new Vote({
                 ...previousVotes[1].toJSON(),
                 "vote": 1,
-                "timestamp": Date.now()
+                "timestamp": Date.now() / 1000
             }, previousVotes[1].subplebbit);
             vote.publish().then(async (challengeWithVote) => {
                 await post.fetchCommentIpns();
@@ -133,7 +133,7 @@ describe("Test Vote", async () => {
             const vote = new Vote({
                 ...previousVotes[1].toJSON(),
                 "vote": 0,
-                "timestamp": Date.now()
+                "timestamp": Date.now() / 1000
             }, previousVotes[1].subplebbit);
             vote.publish().then(async (challengeWithVote) => {
                 await post.fetchCommentIpns();
