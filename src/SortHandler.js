@@ -167,12 +167,9 @@ export class SortHandler {
     async calculateSortedPosts() {
         return new Promise(async (resolve, reject) => {
             const sortPromises = [this.#sortPostsByHot.bind(this)(), this.#sortPostsByNew.bind(this)()];
-            for (const type of ["TOP", "CONTROVERSIAL"])
                 for (const timeframe of Object.keys(TIMEFRAMES_TO_SECONDS)) {
-                    if (type === "TOP")
-                        sortPromises.push(this.#sortPostsByTop.bind(this)(timeframe));
-                    else if (type === "CONTROVERSIAL")
-                        sortPromises.push(this.#sortPostsByControversial.bind(this)(timeframe));
+                    sortPromises.push(this.#sortPostsByTop.bind(this)(timeframe));
+                    sortPromises.push(this.#sortPostsByControversial.bind(this)(timeframe));
                 }
 
             Promise.all(sortPromises).then((sortedComments) => {
