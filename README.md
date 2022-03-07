@@ -210,6 +210,7 @@ Challenge {
   - `comment.content`
   - `comment.link`
   - `comment.ipnsName`
+  - `(only available after challengeverification event)`
   - `comment.cid`
   - `(only available after first update event)`
   - `comment.editedContent`
