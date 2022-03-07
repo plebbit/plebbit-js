@@ -156,6 +156,7 @@ ChallengeVerificationMessage (sent by subplebbit owner) {
   challengeRequestId: string, // include in verification in case a peer is missing it
   challengeAnswerId: string, // include in verification in case a peer is missing it
   challengeAnswerIsVerified: bool,
+  challengeErrors?: (string|undefined)[], // tell the user which challenge failed and why
   reason?: string, // reason for failed verification, for example post content is too long. could also be used for successful verification that bypass the challenge, for example because an author has good history
   publication?: Publication // include feedback about the publication if needed, for example for a Comment include Publication.cid so the author can resolve his own published comment immediately
 }
