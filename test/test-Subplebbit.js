@@ -4,7 +4,6 @@ import {Plebbit, Post, Subplebbit} from "../src/index.js"
 import {loadIpfsFileAsJson, unsubscribeAllPubsubTopics} from "../src/Util.js";
 import * as fs from 'fs/promises';
 import readline from "readline";
-import {CHALLENGE_TYPES} from "../src/Challenge.js";
 import {SORTED_COMMENTS_TYPES, SORTED_POSTS_PAGE_SIZE, SortedComments} from "../src/SortHandler.js";
 import {generateMockPost} from "./MockUtil.js";
 
@@ -31,11 +30,11 @@ describe("Test Subplebbit functionality", async () => {
 
     const numOfPosts = SORTED_POSTS_PAGE_SIZE + 2;
     it(`Sorting ${numOfPosts} posts by new generates a two pages ordered by posts' timestamp`, async function () {
-        await subplebbit.setProvideCaptchaCallback(() => [null, null, null]);
+        await subplebbit.setProvideCaptchaCallback(() => [null, "No need for captcha"]);
         await subplebbit.startPublishing();
         const actualPosts = new Array(numOfPosts);
         for (let i = actualPosts.length - 1; i >= 0; i--)
-            actualPosts[i] = await generateMockPost();
+            actualPosts[i] = await generateMockPost(subplebbit);
 
         await Promise.all(actualPosts.map(async post => post.publish()));
         const sortedPostsFirstPage = new SortedComments(await loadIpfsFileAsJson(subplebbit.sortedPostsCids[SORTED_COMMENTS_TYPES.NEW], plebbit.ipfsClient));
@@ -91,7 +90,7 @@ describe("Test Subplebbit functionality", async () => {
 
     it("Subplebbit emits an event everytime a post is posted", async function () {
         return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost();
+            const mockPost = await generateMockPost(subplebbit);
             subplebbit.event.once('post', async (post) => {
                 assert.equal(post.title, mockPost.title, "Failed to publish correct post");
                 assert.equal(post.postCid, subplebbit.latestPostCid, "Failed to update subplebbit latestPostCid");
@@ -109,11 +108,11 @@ describe("Test Subplebbit functionality", async () => {
     it("Links current post to past posts correctly", async function () {
         return new Promise(async (resolve, reject) => {
             const lastPost = mockPosts[mockPosts.length - 1];
-            const secondMockPost = await generateMockPost();
+            const secondMockPost = await generateMockPost(subplebbit);
             await subplebbit.startPublishing();
-            secondMockPost.publish(null, null).then((challengeWithMsg) => {
-                assert.equal(challengeWithMsg.msg.previousCommentCid.toString(), lastPost.postCid.toString(), "Failed to set previousPostCid");
-                mockPosts.push(challengeWithMsg.msg);
+            secondMockPost.publish(null, null).then((challengeVerificationMessage) => {
+                assert.equal(challengeVerificationMessage.publication.previousCommentCid, lastPost.postCid, "Failed to set previousPostCid");
+                mockPosts.push(challengeVerificationMessage.publication);
                 resolve();
             }).catch(reject);
         });
@@ -122,7 +121,7 @@ describe("Test Subplebbit functionality", async () => {
     it("Throws an error when publishing a duplicate post", async function () {
         return new Promise(async (resolve, reject) => {
             const post = new Post(mockPosts[0].toJSONSkeleton(), subplebbit);
-            subplebbit.setProvideCaptchaCallback(() => [null, null, null]);
+            subplebbit.setProvideCaptchaCallback(() => [null, null]);
 
             await subplebbit.startPublishing();
             post.publish(null, null).then(reject).catch(resolve);
