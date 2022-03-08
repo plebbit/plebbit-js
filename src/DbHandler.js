@@ -1,4 +1,4 @@
-import {Challenge, CHALLENGE_STAGES, CHALLENGE_TYPES} from "./Challenge.js";
+import {PUBSUB_MESSAGE_TYPES} from "./Challenge.js";
 import Post from "./Post.js";
 import Author from "./Author.js";
 import Comment from "./Comment.js";
@@ -25,7 +25,7 @@ class DbHandler {
             table.text("parentCommentCid").nullable().references("commentCid").inTable(TABLES.COMMENTS);
             table.text("postCid").notNullable().references("commentCid").inTable(TABLES.COMMENTS);
             table.text("previousCommentCid").nullable().references("commentCid").inTable(TABLES.COMMENTS);
-            table.uuid("challengeRequestId").notNullable().references("requestId").inTable(TABLES.CHALLENGES);
+            table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
 
             table.text("subplebbitAddress").notNullable();
             table.text("content").notNullable();
@@ -43,7 +43,7 @@ class DbHandler {
         await this.knex.schema.createTable(TABLES.VOTES, (table) => {
             table.text("commentCid").notNullable().references("commentCid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
-            table.uuid("challengeRequestId").notNullable().references("requestId").inTable(TABLES.CHALLENGES);
+            table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
 
             table.timestamp("timestamp").notNullable();
             table.text("subplebbitAddress").notNullable();
@@ -64,18 +64,15 @@ class DbHandler {
 
     async #createChallengesTable() {
         await this.knex.schema.createTable(TABLES.CHALLENGES, (table) => {
-            table.uuid("requestId").notNullable().primary().unique();
-
-            table.enum("stage", Object.values(CHALLENGE_STAGES)).notNullable();
-            table.text("challenge").nullable();
-            table.enum("type", Object.values(CHALLENGE_TYPES)).nullable(); // Challenge type
-
-            table.text("answer").nullable();
-            table.boolean("answerIsVerified").nullable();
-            table.text("answerVerificationReason").nullable();
-            table.uuid("answerId").nullable().unique();
-            table.json("acceptedChallengeTypes").nullable();
-            // TODO store the IP of challenge initiator
+            table.uuid("challengeRequestId").notNullable().primary().unique();
+            table.enum("type", Object.values(PUBSUB_MESSAGE_TYPES)).notNullable();
+            table.json("acceptedChallengeTypes").nullable().defaultTo(null);
+            table.json("challenges").nullable();
+            table.uuid("challengeAnswerId").nullable();
+            table.json("challengeAnswers").nullable();
+            table.boolean("challengePassed").nullable();
+            table.json("challengeErrors").nullable();
+            table.text("reason").nullable();
         });
     }
 
@@ -104,11 +101,11 @@ class DbHandler {
         });
     }
 
-    async upsertVote(vote) {
+    async upsertVote(vote, challengeRequestId) {
         return new Promise(async (resolve, reject) => {
             await this.#addAuthorToDbIfNeeded(vote.author);
-            const dbObject = vote.toJSONForDb();
-            this.knex(TABLES.VOTES).insert(vote.toJSONForDb()).onConflict(['commentCid', "authorAddress"]).merge().then(() => resolve(dbObject)).catch(err => {
+            const dbObject = vote.toJSONForDb(challengeRequestId);
+            this.knex(TABLES.VOTES).insert(dbObject).onConflict(['commentCid', "authorAddress"]).merge().then(() => resolve(dbObject)).catch(err => {
                 console.error(err);
                 reject(err);
             });
@@ -116,10 +113,10 @@ class DbHandler {
     }
 
 
-    async insertComment(postOrComment) {
+    async insertComment(postOrComment, challengeRequestId) {
         return new Promise(async (resolve, reject) => {
             await this.#addAuthorToDbIfNeeded(postOrComment.author);
-            const dbObject = postOrComment.toJSONForDb();
+            const dbObject = postOrComment.toJSONForDb(challengeRequestId);
             this.knex(TABLES.COMMENTS).insert(dbObject).then(() => resolve(dbObject)).catch(err => {
                 console.error(err);
                 reject(err);
@@ -130,8 +127,9 @@ class DbHandler {
 
     async upsertChallenge(challenge) {
         return new Promise(async (resolve, reject) => {
-            const dbObject = challenge.toJSONForDb();
-            this.knex(TABLES.CHALLENGES).insert(challenge.toJSONForDb()).onConflict('requestId').merge().then(() => resolve(dbObject)).catch(err => {
+            const existingChallenge = await this.knex(TABLES.CHALLENGES).where({"challengeRequestId": challenge.challengeRequestId}).first();
+            const dbObject = {...existingChallenge, ...challenge.toJSONForDb()};
+            this.knex(TABLES.CHALLENGES).insert(dbObject).onConflict('challengeRequestId').merge().then(() => resolve(dbObject)).catch(err => {
                 console.error(err);
                 reject(err);
             });
@@ -153,12 +151,10 @@ class DbHandler {
     async #createCommentsFromRows(commentsRows) {
         return new Promise(async (resolve, reject) => {
             const authors = (await this.knex(TABLES.AUTHORS).whereIn("address", commentsRows.map(post => post.authorAddress))).map(authorProps => new Author(authorProps));
-            const challenges = (await this.knex(TABLES.CHALLENGES).whereIn("requestId", commentsRows.map(post => post.challengeRequestId))).map(challengeProps => new Challenge(challengeProps));
             const posts = commentsRows.map(postProps => {
                 const props = {
                     ...postProps,
                     "author": authors.filter(author => author.address === postProps.authorAddress)[0],
-                    "challenge": challenges.filter(challenge => challenge.requestId === postProps.challengeRequestId)[0]
                 };
                 if (props["title"])
                     return new Post(props, this.subplebbit);
@@ -243,6 +239,15 @@ class DbHandler {
                 }
             resolve(metrics);
         });
+    }
+
+    async queryPublicationWithChallengeRequestId(challengeRequestId) {
+        return new Promise(async (resolve, reject) => {
+            for (const table of [TABLES.COMMENTS, TABLES.VOTES])
+                this.knex(table).where({"challengeRequestId": challengeRequestId}).first().then(resolve);
+            reject(`No publication (comment or vote) has challengeRequestId=${challengeRequestId}`);
+        });
+
     }
 }
 

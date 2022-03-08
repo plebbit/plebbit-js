@@ -72,12 +72,11 @@ class Comment extends Publication {
         }
     }
 
-    toJSONForDb() {
+    toJSONForDb(challengeRequestId) {
         const json = this.toJSON();
         delete json.author;
-        delete json.challenge;
         json["authorAddress"] = this.author.address;
-        json["challengeRequestId"] = this.challenge?.requestId;
+        json["challengeRequestId"] = challengeRequestId;
         return json;
     }
 

@@ -1,4 +1,6 @@
-export const CHALLENGE_STAGES = Object.freeze({
+import {parseJsonIfString} from "./Util.js";
+
+export const PUBSUB_MESSAGE_TYPES = Object.freeze({
     CHALLENGEREQUEST: "CHALLENGEREQUEST",
     CHALLENGE: "CHALLENGE",
     CHALLENGEANSWER: "CHALLENGEANSWER",
@@ -13,61 +15,75 @@ export const CHALLENGE_TYPES = Object.freeze({
     HTML: "html"
 });
 
-class Challenge {
+export class Challenge {
     constructor(props) {
-        this.stage = props["stage"]; // Current challenge stage. Will be one of challengeStages declared above
-        this.challenge = props["challenge"] || null; // data required to complete the challenge, could be html, png, etc.
-        this.requestId = props["requestId"];
-        this.answerId = props["answerId"] || null;
-        this.answer = props["answer"] || null;
-        this.answerIsVerified = Boolean(props["answerIsVerified"]);
-        this.answerVerificationReason = props["answerVerificationReason"] || null;
-        this.acceptedChallengeTypes = (typeof props["acceptedChallengeTypes"] === 'string' || props["acceptedChallengeTypes"] instanceof String) ? JSON.parse(props["acceptedChallengeTypes"]) : props["acceptedChallengeTypes"];
+        this.challenge = props["challenge"];
         this.type = props["type"] || null; // will be dozens of challenge types, like holding a certain amount of a token
-    }
-
-    setStage(newStage) {
-        this.stage = newStage;
-    }
-
-    setChallenge(newChallenge) {
-        this.challenge = newChallenge;
-    }
-
-    setAnswer(newChallengeAnswer) {
-        this.answer = newChallengeAnswer;
-    }
-
-    setAnswerId(newChallengeAnswerId) {
-        this.answerId = newChallengeAnswerId;
-    }
-
-    setAnswerIsVerified(newChallengeAnswerIsVerified) {
-        this.answerIsVerified = newChallengeAnswerIsVerified;
-    }
-
-    setAnswerVerificationReason(newFailedVerificationReason) {
-        this.answerVerificationReason = newFailedVerificationReason;
-    }
-
-    setType(newType) {
-        this.type = newType;
-    }
-
-    toJSONForDb() {
-        return {
-            "stage": this.stage,
-            "challenge": this.challenge,
-            "requestId": this.requestId,
-            "answerId": this.answerId,
-            "answer": this.answer,
-            "answerIsVerified": this.answerIsVerified,
-            "answerVerificationReason": this.answerVerificationReason,
-            "acceptedChallengeTypes": JSON.stringify(this.acceptedChallengeTypes),
-            "type": this.type
-        };
     }
 }
 
-export default Challenge;
-export {Challenge};
+class ChallengeBase {
+    toJSONForDb() {
+        const obj = JSON.parse(JSON.stringify(this));
+        delete obj.publication;
+        return obj;
+    }
+}
+
+export class ChallengeRequestMessage extends ChallengeBase {
+    constructor(props) {
+        super();
+        this.type = PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST // One of CHALLENGE_STAGES
+        this.challengeRequestId = props["challengeRequestId"];
+        this.acceptedChallengeTypes = parseJsonIfString(props["acceptedChallengeTypes"]) || null;
+        this.publication = props["publication"];
+    }
+
+    toJSONForDb() {
+        return {...super.toJSONForDb(), "acceptedChallengeTypes": JSON.stringify(this.acceptedChallengeTypes)};
+    }
+}
+
+export class ChallengeMessage extends ChallengeBase {
+    constructor(props) {
+        super();
+        this.type = PUBSUB_MESSAGE_TYPES.CHALLENGE;
+        this.challengeRequestId = props["challengeRequestId"];
+        this.challenges = parseJsonIfString(props["challenges"]);
+    }
+
+    toJSONForDb() {
+        return {...super.toJSONForDb(), "challenges": JSON.stringify(this.challenges)};
+    }
+}
+
+export class ChallengeAnswerMessage extends ChallengeBase {
+    constructor(props) {
+        super();
+        this.type = PUBSUB_MESSAGE_TYPES.CHALLENGEANSWER;
+        this.challengeRequestId = props["challengeRequestId"];
+        this.challengeAnswerId = props["challengeAnswerId"];
+        this.challengeAnswers = parseJsonIfString(props["challengeAnswers"]);
+    }
+
+    toJSONForDb() {
+        return {...super.toJSONForDb(), "challengeAnswers": JSON.stringify(this.challengeAnswers)};
+    }
+}
+
+export class ChallengeVerificationMessage extends ChallengeBase {
+    constructor(props) {
+        super();
+        this.type = PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION;
+        this.challengeRequestId = props["challengeRequestId"];
+        this.challengeAnswerId = props["challengeAnswerId"];
+        this.challengePassed = props["challengePassed"];
+        this.challengeErrors = parseJsonIfString(props["challengeErrors"]);
+        this.reason = props["reason"] || null;
+        this.publication = props["publication"] || null;
+    }
+
+    toJSONForDb() {
+        return {...super.toJSONForDb(), "challengeErrors": JSON.stringify(this.challengeErrors)};
+    }
+}

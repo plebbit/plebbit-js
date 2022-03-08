@@ -5,7 +5,13 @@ import EventEmitter from "events";
 import {sha256} from "js-sha256";
 import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string'
 
-import {Challenge, CHALLENGE_STAGES, CHALLENGE_TYPES} from "./Challenge.js";
+import {
+    CHALLENGE_TYPES, ChallengeAnswerMessage,
+    ChallengeMessage,
+    ChallengeRequestMessage,
+    ChallengeVerificationMessage,
+    PUBSUB_MESSAGE_TYPES
+} from "./Challenge.js";
 import assert from "assert";
 import PlebbitCore from "./PlebbitCore.js";
 import Plebbit from "./Plebbit.js";
@@ -175,22 +181,18 @@ class Subplebbit extends PlebbitCore {
         this.event.emit("comment", comment);
     }
 
-    async #publishPubsubMsg(pubsubMsg) {
-        const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
-
-        //TODO check if post or comment has been posted before
-        const postOrCommentOrVote = msgParsed.hasOwnProperty("title") ? new Post(msgParsed, this) :
-            msgParsed.hasOwnProperty("vote") ? new Vote(msgParsed, this)
-                : new Comment(msgParsed, this);
+    async #publishPubsubMsg(publication, challengeRequestId) {
+        const postOrCommentOrVote = publication.hasOwnProperty("title") ? new Post(publication, this) :
+            publication.hasOwnProperty("vote") ? new Vote(publication, this)
+                : new Comment(publication, this);
 
         const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote instanceof Comment ? postOrCommentOrVote.toJSONSkeleton() : postOrCommentOrVote));
 
         const ipnsKeys = (await this.ipfsClient.key.list()).map(key => key["name"]);
 
-        if (ipnsKeys.includes(ipnsKeyName)) {
-            const msg = `Failed to insert ${postOrCommentOrVote.getType()} due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`;
-            return {"error": msg};
-        }
+        if (ipnsKeys.includes(ipnsKeyName))
+            return {"reason": `Failed to insert ${postOrCommentOrVote.getType()} due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`};
+
         if (postOrCommentOrVote instanceof Comment) // Only Post and Comment
             postOrCommentOrVote.setCommentIpnsKey(await this.ipfsClient.key.gen(ipnsKeyName));
 
@@ -224,7 +226,7 @@ class Subplebbit extends PlebbitCore {
                         newUpvoteCount = commentIpns.upvoteCount + 1;
                         newDownvoteCount = commentIpns.downvoteCount - 1;
                     } else
-                        return {"error": "User duplicated his vote"};
+                        return {"reason": "User duplicated his vote"};
                 }
             } else {
                 // New vote
@@ -232,7 +234,7 @@ class Subplebbit extends PlebbitCore {
                 newDownvoteCount = postOrCommentOrVote.vote === -1 ? commentIpns.downvoteCount + 1 : commentIpns.downvoteCount;
             }
             assert(newDownvoteCount >= 0 && newDownvoteCount >= 0, "New upvote and downvote need to be proper numbers");
-            await this.dbHandler.upsertVote(postOrCommentOrVote);
+            await this.dbHandler.upsertVote(postOrCommentOrVote, challengeRequestId);
 
             if (voteComment.getType() === "post")
                 await this.update(await this.#getSortedPostsObject());
@@ -254,65 +256,89 @@ class Subplebbit extends PlebbitCore {
             if (postOrCommentOrVote.getType() === "post") {
                 postOrCommentOrVote.setPostCid(file.path);
                 postOrCommentOrVote.setCommentCid(file.path);
-                await this.dbHandler.insertComment(postOrCommentOrVote);
+                await this.dbHandler.insertComment(postOrCommentOrVote, challengeRequestId);
                 await this.#updateSubplebbitPosts(postOrCommentOrVote);
             } else {
                 // Comment
                 postOrCommentOrVote.setCommentCid(file.path);
-                await this.dbHandler.insertComment(postOrCommentOrVote);
+                await this.dbHandler.insertComment(postOrCommentOrVote, challengeRequestId);
                 await this.#updatePostComments(postOrCommentOrVote);
             }
         }
-        return postOrCommentOrVote;
+        return {"publication": postOrCommentOrVote};
     }
 
     async #publishPostAfterPassingChallenge(msgParsed) {
-        delete this.challengeToSolution[msgParsed["challenge"].requestId];
-        return await this.#publishPubsubMsg({"data": uint8ArrayFromString(JSON.stringify(msgParsed["msg"]))});
+        delete this.challengeToSolution[msgParsed.challengeRequestId];
+        return await this.#publishPubsubMsg(msgParsed.publication, msgParsed.challengeRequestId);
     }
 
     async #processCaptchaPubsub(pubsubMsg) {
 
         const validateCaptchaAnswer = async (pubsubMsg) => {
             const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
-            const challenge = msgParsed.challenge = msgParsed.msg.challenge = new Challenge(msgParsed["challenge"]);
-            if (challenge.stage === CHALLENGE_STAGES.CHALLENGEANSWER) {
-                const [challengeAnswerIsVerified, answerVerificationReason] = await this.validateCaptchaAnswerCallback(msgParsed);
-                challenge.setStage(CHALLENGE_STAGES.CHALLENGEVERIFICATION);
-                challenge.setAnswerIsVerified(challengeAnswerIsVerified);
-                challenge.setAnswerVerificationReason(answerVerificationReason);
-                await this.dbHandler.upsertChallenge(challenge);
+            if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEANSWER) {
 
-                msgParsed.challenge = msgParsed.msg.challenge = challenge;
-                if (challengeAnswerIsVerified)
-                    msgParsed["msg"] = await this.#publishPostAfterPassingChallenge(msgParsed);
-                if (challenge.answerId)
-                    await this.ipfsClient.pubsub.publish(challenge.answerId, uint8ArrayFromString(JSON.stringify(msgParsed)));
+                const [challengePassed, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
+                if (challengePassed) {
+                    await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed)); //TODO implement later
 
+                    const publishedPublication = await this.#publishPostAfterPassingChallenge({"publication": await this.dbHandler.queryPublicationWithChallengeRequestId(msgParsed.challengeRequestId), ...msgParsed}); // could contain "publication" or "reason"
+
+                    const challengeVerification = new ChallengeVerificationMessage({
+                        "challengeRequestId": msgParsed.challengeRequestId,
+                        "challengeAnswerId": msgParsed.challengeAnswerId,
+                        "challengePassed": challengePassed,
+                        "challengeErrors": challengeErrors,
+                        ...publishedPublication
+                    });
+
+                    await this.dbHandler.upsertChallenge(challengeVerification);
+                    await this.ipfsClient.pubsub.publish(challengeVerification.challengeAnswerId, uint8ArrayFromString(JSON.stringify(challengeVerification)));
+                } else {
+                    const challengeVerification = new ChallengeVerificationMessage({
+                        "challengeRequestId": msgParsed.challengeRequestId,
+                        "challengeAnswerId": msgParsed.challengeAnswerId,
+                        "challengePassed": challengePassed,
+                        "challengeErrors": challengeErrors,
+                    });
+                    await this.dbHandler.upsertChallenge(challengeVerification); //TODO implement later
+
+                    await this.ipfsClient.pubsub.publish(challengeVerification.challengeAnswerId, uint8ArrayFromString(JSON.stringify(challengeVerification)));
+                }
             }
         }
         const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
-        const challenge = msgParsed.challenge = msgParsed.msg.challenge = new Challenge(msgParsed["challenge"]);
 
-        if (challenge.stage === CHALLENGE_STAGES.CHALLENGEREQUEST) {
-            const [providedChallenge, challengeType, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(msgParsed);
-            challenge.setChallenge(providedChallenge);
-            challenge.setType(challengeType);
-            challenge.setStage(CHALLENGE_STAGES.CHALLENGE); // If provided challenge is null then we skip challenge stages to verification
-            if (!providedChallenge) {
+        if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST) {
+            const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(msgParsed);
+            if (!providedChallenges) {
                 // Subplebbit owner has chosen to skip challenging this user or post
-                challenge.setStage(CHALLENGE_STAGES.CHALLENGEVERIFICATION);
-                challenge.setAnswerIsVerified(true);
-                challenge.setAnswerVerificationReason(reasonForSkippingCaptcha);
+                await this.dbHandler.upsertChallenge(new ChallengeRequestMessage(msgParsed)); //TODO implement later
+
+                const publishedPublication = await this.#publishPostAfterPassingChallenge({"publication": msgParsed.publication, ...msgParsed}); // could contain "publication" or "reason"
+                const challengeVerification = new ChallengeVerificationMessage({
+                    "reason": reasonForSkippingCaptcha,
+                    "challengePassed": Boolean(publishedPublication.publication), // If no publication, this will be false
+                    "challengeAnswerId": msgParsed.challengeAnswerId,
+                    "challengeErrors": null,
+                    "challengeRequestId": msgParsed.challengeRequestId,
+                    ...publishedPublication
+                });
+                await this.dbHandler.upsertChallenge(challengeVerification); //TODO implement later
+                await this.ipfsClient.pubsub.publish(challengeVerification.challengeRequestId, uint8ArrayFromString(JSON.stringify(challengeVerification)));
+
+            } else {
+                const challengeMessage = new ChallengeMessage({
+                    "challengeRequestId": msgParsed.challengeRequestId,
+                    "challenges": providedChallenges
+                });
+                await this.dbHandler.upsertChallenge(challengeMessage); //TODO implement later
+
+                await this.ipfsClient.pubsub.publish(challengeMessage.challengeRequestId, uint8ArrayFromString(JSON.stringify(challengeMessage)));
+                await this.ipfsClient.pubsub.subscribe(challengeMessage.challengeRequestId, validateCaptchaAnswer);
             }
-            msgParsed.challenge = msgParsed.msg.challenge = challenge;
-            await this.dbHandler.upsertChallenge(challenge);
-            if (challenge.stage === CHALLENGE_STAGES.CHALLENGEVERIFICATION)
-                msgParsed["msg"] = await this.#publishPostAfterPassingChallenge(msgParsed);
-            if (challenge.stage === CHALLENGE_STAGES.CHALLENGE)
-                await this.ipfsClient.pubsub.subscribe(challenge.requestId, validateCaptchaAnswer);
         }
-        await this.ipfsClient.pubsub.publish(challenge.requestId, uint8ArrayFromString(JSON.stringify(msgParsed)));
     }
 
     async #defaultProvideCaptcha(challengeWithMsg) {
