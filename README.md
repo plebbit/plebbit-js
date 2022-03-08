@@ -20,17 +20,17 @@ Note: IPFS files are immutable, fetched by their CID, which is a hash of their c
 Address: string // A plebbit author or subplebbit "address" can be a crypto domain like memes.eth, an IPNS name, an ethereum address, etc
 Publication {
   author: Author,
+  subplebbitAddress: string, // all publications are directed to a subplebbit owner
   timestamp: number, // number in seconds
   signature: Signature // sign immutable fields like author, title, content, timestamp to prevent tampering
 }
 Comment (IPFS file) {
   ...Publication,
-  subplebbitAddress: string, // required to prevent malicious subplebbits republishing as original and helps faster loading subplebbit info for comment direct linking
   postCid: string, // helps faster loading post info for comment direct linking, should be added by the subplebbit owner, not author
   parentCommentCid: string, // same as postCid for top level comments
   content: string,
   previousCommentCid: string, // each post is a linked list
-  commentIpnsName: string // each post/comment needs its own IPNS record (CommentIpns) for its mutable data like edits, vote counts, comments
+  ipnsName: string // each post/comment needs its own IPNS record (CommentUpdate) for its mutable data like edits, vote counts, comments
 }
 Post (IPFS file) {
   ...Comment,
@@ -43,8 +43,8 @@ Vote {
   commentCid: string,
   vote: 1 | -1 | 0 // 0 is needed to cancel a vote
 }
-CommentIpns (IPNS record) {
-  latestCommentCid: string, // the most recent comment in the linked list of posts
+CommentUpdate (IPNS record Comment.ipnsName) {
+  editedContent: string, // the author has edited the comment content
   upvoteCount: number,
   downvoteCount: number,
   sortedComments: {hot: SortedComments}, // only preload page 1 sorted by 'hot', might preload more later
@@ -155,8 +155,10 @@ ChallengeVerificationMessage (sent by subplebbit owner) {
   ...PubsubMessage,
   challengeRequestId: string, // include in verification in case a peer is missing it
   challengeAnswerId: string, // include in verification in case a peer is missing it
-  challengeAnswerIsVerified: bool,
-  reason?: string // reason for failed verification, for example post content is too long. could also be used for successful verification that bypass the challenge, for example because an author has good history
+  challengePassed: bool, // true if the challenge verification is successful
+  challengeErrors?: (string|undefined)[], // tell the user which challenge failed and why
+  reason?: string, // reason for failed verification, for example post content is too long. could also be used for successful verification that bypass the challenge, for example because an author has good history
+  publication?: Publication // include feedback about the publication if needed, for example for a Comment include Publication.cid so the author can resolve his own published comment immediately
 }
 Challenge {
   type: 'image' | 'text' | 'audio' | 'video' | 'html', // tells the client how to display the challenge, start with implementing image and text only first
@@ -171,14 +173,14 @@ Challenge {
   - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
   - [`plebbit.getSubplebbit(subplebbitAddress)`](#plebbitgetsubplebbitsubplebbitaddress)
   - [`plebbit.createComment(createCommentOptions)`](#plebbitcreatecommentcreatecommentoptions)
-  - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommentcreateeditcommenteditoptions)
+  - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
   - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
+  - [`plebbit.getSortedComments(sortedCommentsCid)`](#plebbitgetsortedcommentssortedcommentscid)
 - [Subplebbit API](#subplebbit-api)
   - [`Subplebbit(subplebbitOptions)`](#subplebbitsubplebbitoptions)
   - [`subplebbit.update(subplebbitUpdateOptions)`](#subplebbitupdatesubplebbitupdateoptions)
   - [`subplebbit.start()`](#subplebbitstart)
   - [`subplebbit.stop()`](#subplebbitstop)
-  - `subplebbit.getSortedPosts(sortedPostsCid)`
   - `subplebbit.address`
   - `subplebbit.title`
   - `subplebbit.description`
@@ -196,17 +198,26 @@ Challenge {
 - [Comment API](#comment-api)
   - [`comment.publish()`](#commentpublish)
   - [`comment.publishChallengeAnswer()`](#commentpublishchallengeanswerchallengeanswer)
-  - [`comment.getCommentIpns()`](#commentgetcommentipns)
+  - `comment.update(commentUpdateOptions)`
   - `comment.author`
   - `comment.timestamp`
   - `comment.signature`
+  - `comment.previousCommentCid`
   - `comment.postCid`
   - `comment.parentCommentCid`
   - `comment.subplebbitAddress`
   - `comment.title`
   - `comment.content`
-  - `comment.previousCommentCid`
-  - `comment.commentIpnsName`
+  - `comment.link`
+  - `comment.ipnsName`
+  - `(only available after challengeverification event)`
+  - `comment.cid`
+  - `(only available after first update event)`
+  - `comment.editedContent`
+  - `comment.upvoteCount`
+  - `comment.downvoteCount`
+  - `comment.sortedComments`
+  - `comment.sortedCommentsCids`
 - [Comment Events](#comment-events)
   - [`update`](#update)
   - [`challenge`](#challenge)
@@ -260,7 +271,7 @@ const plebbit = Plebbit(options) // should be independent instance, not singleto
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| commentCid | `string` | the IPFS CID of the comment |
+| commentCid | `string` | The IPFS CID of the comment |
 
 #### Returns
 
@@ -274,10 +285,10 @@ const plebbit = Plebbit(options) // should be independent instance, not singleto
 const commentCid = 'QmbWqx...'
 const comment = await plebbit.getComment(commentCid)
 console.log('comment:', comment)
+comment.on('update', updatedComment => console.log('comment with latest data', updatedComment))
 if (comment.parentCommentCid) { // comment with no parent cid is a post
   plebbit.getComment(comment.parentCommentCid).then(parentPost => console.log('parent post:', parentPost))
 }
-comment.getCommentIpns().then(commentIpns => console.log('commentIpns:', commentIpns))
 plebbit.getSubplebbit(comment.subplebbitAddress).then(subplebbit => console.log('subplebbit:', subplebbit))
 plebbit.getComment(comment.previousCommentCid).then(previousComment => console.log('previous comment:', previousComment))
 /*
@@ -343,11 +354,12 @@ An object which may have the following keys:
 | ---- | ---- | ----------- |
 | subplebbitAddress | `string` | IPNS name of the subplebbit |
 | parentCommentCid | `string` or `null` | The parent comment CID, null if comment is a post, same as postCid if comment is top level |
-| content | `string` | Content of the comment |
+| content | `string` or `undefined` | Content of the comment, link posts have no content |
 | title | `string` or `undefined` | If comment is a post, it needs a title |
 | timestamp | `number` or `null` | Time of publishing in seconds, `Math.round(Date.now() / 1000)` if null |
 | author | `Author` | Author of the comment |
 | signer | `Signer` | Signer of the comment |
+| ipnsName | `string` or `undefined` | Not for publishing, gives access to `Comment.on('update')` for a comment already fetched |
 
 #### Returns
 
@@ -364,6 +376,11 @@ comment.on('challenge', async (challenge) => {
   comment.publishChallengeAnswer(challengeAnswer)
 })
 comment.publish()
+
+// or if you already fetched a comment but want to get updates
+const comment = plebbit.createComment({ipnsName: 'Qm...'})
+// looks for updates in the background every 5 minutes
+comment.on('update', (updatedComment) => console.log(updatedComment))
 ```
 
 ### `plebbit.createCommentEdit(createCommentEditOptions)`
@@ -445,6 +462,46 @@ vote.on('challenge', async (challenge) => {
 vote.publish()
 ```
 
+### `plebbit.getSortedComments(sortedCommentsCid)`
+
+> Get a `SortedComments` instance from an IPFS CID, from `Subplebbit.sortedPostsCids[sortedBy]` or `Comment.sortedCommentsCids[sortedBy]`.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| sortedCommentsCid | `string` | The IPFS CID of the sorted comments |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<SortedComments>` | A `SortedComments` instance |
+
+#### Example
+
+```js
+// get sorted posts in a subplebbit
+const subplebbit = await plebbit.getSubplebbit(subplebbitAddress)
+const sortedPostsByTopYear = await plebbit.getSortedComments(subplebbit.sortedPostsCids.topYear)
+console.log(sortedPostsByTopYear)
+
+// get sorted replies to a post or comment
+const post = await plebbit.getComment(commentCid)
+post.on('update', async updatedPost => {
+  let replies
+  if (updatedPost.sortedCommentsCids?.new) {
+    // sorted replies are not always available, for example if the post only has a few replies
+    replies = await plebbit.getSortedComments(updatedPost.sortedCommentsCids.new)
+  }
+  else {
+    // the hot algorithm is always preloaded by default and can be used as fallback
+    replies = updatedPost.sortedComments.hot
+  }
+  console.log(replies)
+})
+```
+
 ## Subplebbit API
 The subplebbit API for creating, updating and running subplebbits.
 
@@ -464,7 +521,7 @@ An object which may have the following keys:
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| subplebbitAddress | `string` | `undefined` | IPNS name of the subplebbit |
+| address | `string` | `undefined` | IPNS name of the subplebbit |
 | ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs.com'` | URL of an IPFS gateway |
 | ipfsApiUrl | `string` | `'http://localhost:8080'` | URL of an IPFS API |
 | database | `string` or `KnexConfig` | `undefined` | File path to create/resume the SQLite database or [KnexConfig](https://www.npmjs.com/package/knex) |
@@ -482,7 +539,7 @@ const {Subplebbit} = require('@plebbit/plebbit-js')
 const options = {
   ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
   ipfsApiUrl: 'http://localhost:5001',
-  subplebbitAddress: 'Qmb...'
+  address: 'Qmb...'
 }
 const subplebbit = Subplebbit(options) // should be independent instance, not singleton
 subplebbit.update({
@@ -510,14 +567,14 @@ An object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| title | `string` | title of the subplebbit |
-| description | `string` | description of the subplebbit |
+| title | `string` | Title of the subplebbit |
+| description | `string` | Description of the subplebbit |
 | moderatorsAddresses | `string[]` | IPNS names of the moderators |
-| latestPostCid | `string` | the most recent post in the linked list of posts |
-| sortedPosts | `{hot: SortedComments}` | only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post |
-| pubsubTopic | `string` | the string to publish to in the pubsub, a public key of the subplebbit owner's choice |
-| challengeTypes | `ChallengeType[]` | the challenge types provided by the subplebbit owner |
-| metrics | `SubplebbitMetrics` | the self reported metrics of the subplebbit |
+| latestPostCid | `string` | The most recent post in the linked list of posts |
+| sortedPosts | `{hot: SortedComments}` | Only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post |
+| pubsubTopic | `string` | The string to publish to in the pubsub, a public key of the subplebbit owner's choice |
+| challengeTypes | `ChallengeType[]` | The challenge types provided by the subplebbit owner |
+| metrics | `SubplebbitMetrics` | The self reported metrics of the subplebbit |
 
 #### Returns
 
@@ -547,7 +604,7 @@ Object is of the form:
 const options = {
   ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
   ipfsApiUrl: 'http://localhost:5001',
-  subplebbitAddress: 'Qmb...'
+  address: 'Qmb...'
 }
 const subplebbit = Subplebbit(options)
 subplebbit.on('update', (updatedSubplebbitInstance) => console.log(updatedSubplebbitInstance))
@@ -577,7 +634,7 @@ The subplebbit events.
 const options = {
   ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
   ipfsApiUrl: 'http://localhost:5001',
-  subplebbitAddress: 'Qmb...'
+  address: 'Qmb...'
 }
 const subplebbit = Subplebbit(options)
 subplebbit.on('update', (subplebbitObject) => console.log(subplebbitObject))
@@ -667,42 +724,18 @@ comment.on('challenge', async (challenge) => {
 comment.publish()
 ```
 
-### `comment.getCommentIpns()`
-
-> Get the `CommentIpns`, ie. the mutable parts of the comments like vote counts, replies, edits, etc.
-
-#### Returns
-
-| Type | Description |
-| -------- | -------- |
-| `Promise<CommentIpns>` | The comment's `CommentIpns` |
-
-Object is of the form:
-
-```js
-{ // ...TODO }
-```
-
-#### Example
-
-```js
-const comment = plebbit.getComment(commentCid)
-const commentIpns = comment.getCommentIpns()
-console.log(commentIpns)
-```
-
 ## Comment Events
 The comment events.
 
 ### `update`
 
-> The comment's `CommentIpns`'s record has been updated, which means vote counts and replies may have changed.
+> The comment's `Comment.ipnsName`'s record has been updated, which means vote counts and replies may have changed. Once a `Comment` is created, start looking for updates right away in the background, and try again every 5 minutes. If the previous `CommentUpdate` is the same, do not emit `update`.
 
 #### Emits
 
 | Type | Description |
 | -------- | -------- |
-| `CommentIpns` | The updated `CommentIpns` |
+| `Comment` | The updated `Comment`, i.e. itself, `this` |
 
 Object is of the form:
 
@@ -714,8 +747,8 @@ Object is of the form:
 
 ```js
 const comment = await plebbit.getComment(commentCid)
-comment.on('update', (commentIpns) => {
-  console.log(commentIpns)
+comment.on('update', (updatedComment) => {
+  console.log(updatedComment)
 })
 ```
 
