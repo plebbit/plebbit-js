@@ -44,7 +44,7 @@ export class SortHandler {
             const sortedPosts = new Array(chunks.length);
             for (let i = chunks.length - 1; i >= 0; i--) {
                 const sortedPostsPage = new SortedComments({
-                    "type": sortType, "comments": chunks[i],
+                    "type": sortType, "comments": chunks[i].map(comment => comment.toJSON()),
                     "nextSortedCommentsCid": sortedPosts[i + 1]?.pageCid || null,
                     "pageCid": null
                 }, this.subplebbit);
