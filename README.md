@@ -47,8 +47,8 @@ CommentUpdate (IPNS record Comment.ipnsName) {
   editedContent: string, // the author has edited the comment content
   upvoteCount: number,
   downvoteCount: number,
-  sortedComments: {hot: SortedComments}, // only preload page 1 sorted by 'hot', might preload more later
-  sortedCommentsCids: {[key: 'hot' | 'new' | 'top'| 'old' ]: SortedCommentsCid} // only provide sorting for posts (not comments) that have 100+ child comments
+  sortedReplies: {hot: SortedComments}, // only preload page 1 sorted by 'hot', might preload more later
+  sortedRepliesCids: {[key: 'hot' | 'new' | 'top'| 'old' ]: sortedRepliesCid} // only provide sorting for posts (not comments) that have 100+ child comments
 }
 Author {
   displayName: string,
@@ -216,8 +216,8 @@ Challenge {
   - `comment.editedContent`
   - `comment.upvoteCount`
   - `comment.downvoteCount`
-  - `comment.sortedComments`
-  - `comment.sortedCommentsCids`
+  - `comment.sortedReplies`
+  - `comment.sortedRepliesCids`
 - [Comment Events](#comment-events)
   - [`update`](#update)
   - [`challenge`](#challenge)
@@ -490,13 +490,13 @@ console.log(sortedPostsByTopYear)
 const post = await plebbit.getComment(commentCid)
 post.on('update', async updatedPost => {
   let replies
-  if (updatedPost.sortedCommentsCids?.new) {
+  if (updatedPost.sortedRepliesCids?.new) {
     // sorted replies are not always available, for example if the post only has a few replies
-    replies = await plebbit.getSortedComments(updatedPost.sortedCommentsCids.new)
+    replies = await plebbit.getSortedComments(updatedPost.sortedRepliesCids.new)
   }
   else {
     // the hot algorithm is always preloaded by default and can be used as fallback
-    replies = updatedPost.sortedComments.hot
+    replies = updatedPost.sortedReplies.hot
   }
   console.log(replies)
 })
