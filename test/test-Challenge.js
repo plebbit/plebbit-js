@@ -1,12 +1,12 @@
 import {unsubscribeAllPubsubTopics} from "../src/Util.js";
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
-import Plebbit, {Post, Subplebbit} from "../src/index.js";
-import {CHALLENGE_TYPES} from "../src/ChallengeState.js";
+import {Plebbit} from "../src/index.js";
 import assert from "assert";
 import {generateMockPost} from "./MockUtil.js";
+import {Challenge, CHALLENGE_TYPES} from "../src/Challenge.js";
 
-const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
-const subplebbit = await plebbit.getSubplebbit("k2k4r8lv3ohaweyc5hwa3q4jnnu92d1uglb3a4c0ut6b92esjyjc7n5s");
+const plebbit = await Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
+const subplebbit = await plebbit.createSubplebbit({"subplebbitAddress": "k2k4r8mk7p2dremofe77j8myyvqjip1ndwzghkkunm4igkl6b3viunyr"}, plebbit.ipfsClient);
 
 
 describe("Test Challenge functionality", async () => {

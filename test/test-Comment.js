@@ -5,7 +5,7 @@ import {loadIpfsFileAsJson, unsubscribeAllPubsubTopics} from "../src/Util.js";
 import {SORTED_COMMENTS_TYPES, SortedComments} from "../src/SortHandler.js";
 import {generateMockComment} from "./MockUtil.js";
 
-const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
+const plebbit = await Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 
 const post = await plebbit.getPostOrComment("QmXXBgVyn3dAWzno3vfudSosF9ev7K9mEyu5wLXqT6v4mC");
 
