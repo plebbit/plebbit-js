@@ -6,7 +6,8 @@ import {sha256} from "js-sha256";
 import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string'
 
 import {
-    CHALLENGE_TYPES, ChallengeAnswerMessage,
+    CHALLENGE_TYPES,
+    ChallengeAnswerMessage,
     ChallengeMessage,
     ChallengeRequestMessage,
     ChallengeVerificationMessage,
@@ -14,17 +15,16 @@ import {
 } from "./Challenge.js";
 import assert from "assert";
 import PlebbitCore from "./PlebbitCore.js";
-import Plebbit from "./Plebbit.js";
-
 import knex from 'knex';
 import DbHandler from "./DbHandler.js";
 import {createCaptcha} from "captcha-canvas/js-script/extra.js";
 import {SORTED_COMMENTS_TYPES, SortHandler} from "./SortHandler.js";
 import Vote from "./Vote.js";
 import Post from "./Post.js";
+import {Plebbit} from "./index.js";
 
 
-class Subplebbit extends PlebbitCore {
+export class Subplebbit extends PlebbitCore {
     constructor(props, ipfsClient = null) {
         super(props, ipfsClient);
         this.#initSubplebbit(props);
@@ -46,7 +46,7 @@ class Subplebbit extends PlebbitCore {
         this.sortedPosts = mergedProps["sortedPosts"] || {};
         this.sortedPostsCids = mergedProps["sortedPostsCids"] || {};
         this.setIpnsKey(mergedProps["subplebbitAddress"], mergedProps["ipnsKeyName"]);
-        this.plebbit = new Plebbit(newProps, this.ipfsClient);
+        this.plebbit = Plebbit(newProps, this.ipfsClient);
         this.sortHandler = new SortHandler(this);
         this.challengeTypes = mergedProps["challengeTypes"] || null;
         this.metricsCid = mergedProps["metricsCid"];
@@ -89,19 +89,6 @@ class Subplebbit extends PlebbitCore {
         await this.#initDb();
     }
 
-    async publishAsNewSubplebbit() {
-        // TODO Add a check for key existence
-        return new Promise((resolve, reject) => {
-            this.ipfsClient.key.gen(this.title).then(ipnsKey => {
-                // TODO add to db
-                this.update({
-                    "subplebbitAddress": ipnsKey["id"],
-                    "ipnsKeyName": ipnsKey["name"]
-                }).then(resolve).catch(reject)
-            }).catch(reject);
-        });
-    }
-
     #toJSONInternal() {
         return {
             ...this.toJSON(),
@@ -129,14 +116,26 @@ class Subplebbit extends PlebbitCore {
     async update(newSubplebbitOptions) {
         this.#initSubplebbit(newSubplebbitOptions);
         const subplebbitWithNewContent = JSON.stringify(this);
-        return new Promise((resolve, reject) => {
-            this.ipfsClient.add(subplebbitWithNewContent).then(file => {
-                this.ipfsClient.name.publish(file["cid"], {
-                    "lifetime": "5h", // TODO decide on optimal time later
-                    "key": this.ipnsKeyName
-                }).then(resolve).catch(reject);
-            }).catch(reject);
-        });
+        return new Promise(async (resolve, reject) => {
+                if (!this.subplebbitAddress) { // TODO require signer
+                    this.ipfsClient.key.gen(this.title).then(ipnsKey => {
+                        this.update({
+                            "subplebbitAddress": ipnsKey["id"],
+                            "ipnsKeyName": ipnsKey["name"]
+                        }).then(resolve).catch(reject);
+                    }).catch(reject);
+                } else {
+                    this.ipfsClient.add(subplebbitWithNewContent).then(file => {
+                        this.ipfsClient.name.publish(file["cid"], {
+                            "lifetime": "5h", // TODO decide on optimal time later
+                            "key": this.ipnsKeyName
+                        }).then(resolve).catch(reject);
+                    }).catch(reject);
+
+                }
+
+            }
+        );
     }
 
     async #getSortedPostsObject() {
@@ -394,5 +393,3 @@ class Subplebbit extends PlebbitCore {
     }
 
 }
-
-export default Subplebbit;

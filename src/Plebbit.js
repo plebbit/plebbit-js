@@ -1,17 +1,18 @@
 import Comment from "./Comment.js";
 import Post from "./Post.js";
-import Subplebbit from "./Subplebbit.js";
+import {Subplebbit} from "./Subplebbit.js";
 import {loadIpfsFileAsJson, loadIpnsAsJson} from "./Util.js";
 import PlebbitCore from "./PlebbitCore.js";
+import {create as createIpfsClient} from "ipfs-http-client";
 
-class Plebbit extends PlebbitCore {
+export class Plebbit extends PlebbitCore {
 
-    async getSubplebbit(subplebbitAddress) {
+    async getSubplebbit(subplebbitAddress, subplebbitProps = {}) {
         if (!subplebbitAddress.includes("/ipns/"))
             subplebbitAddress = `/ipns/${subplebbitAddress}`;
         return new Promise(async (resolve, reject) => {
             loadIpnsAsJson(subplebbitAddress, this.ipfsClient)
-                .then(jsonFile => resolve(new Subplebbit(jsonFile, this.ipfsClient, null, null)))
+                .then(jsonFile => resolve(new Subplebbit({...jsonFile, ...subplebbitProps}, this.ipfsClient)))
                 .catch(reject);
         });
     }
@@ -27,6 +28,19 @@ class Plebbit extends PlebbitCore {
             }).catch(reject);
         });
     }
-}
 
-export default Plebbit;
+    async createSubplebbit(subplebbitOptions, ipfsClient = null) {
+        ipfsClient = ipfsClient || createIpfsClient(options["ipfsApiUrl"]) || this.ipfsClient;
+
+        if (subplebbitOptions["subplebbitAddress"]) {
+            // Subplebbit already exists, just load it
+            const localIpnsKeys = await ipfsClient.key.list();
+            const ipnsKeyName = localIpnsKeys.filter(key => key["id"] === subplebbitOptions["subplebbitAddress"])[0]?.name;
+            return this.getSubplebbit(subplebbitOptions["subplebbitAddress"], {
+                ...subplebbitOptions,
+                "ipnsKeyName": ipnsKeyName
+            });
+        } else
+            return new Subplebbit(subplebbitOptions, ipfsClient);
+    }
+}
