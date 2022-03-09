@@ -18,24 +18,20 @@ describe("Test Challenge functionality", async () => {
 
     it("Captcha can be skipped under certain conditions", async () => {
         return new Promise(async (resolve, reject) => {
-            subplebbit.setProvideCaptchaCallback((challengeWithPost) => {
-                // Return question, type
+            subplebbit.setProvideCaptchaCallback((challengeRequestMessage) => {
                 // Expected return is:
-                // captcha, captcha type, reason for skipping captcha (if it's skipped by nullifying captcha)
-                if (challengeWithPost.msg.timestamp > 1643740217.6)
+                // Challenge[], reason for skipping captcha (if it's skipped by nullifying Challenge[])
+                if (challengeRequestMessage.publication.timestamp > 1643740217.6)
                     // if we return null we are skipping captcha for this particular post/comment
-                    return [null, null, "Captcha was skipped because timestamp exceeded 1643740217.6"];
+                    return [null, "Captcha was skipped because timestamp exceeded 1643740217.6"];
                 else
-                    return ["1+1=?", CHALLENGE_TYPES.TEXT];
+                    return [[new Challenge({"challenge": "1+1=?", "type": CHALLENGE_TYPES.TEXT})], null];
             });
             const mockPost = await generateMockPost(subplebbit);
-            await subplebbit.startPublishing();
 
-            mockPost.publish(null, null).then(async (challengeWithPost) => {
-                const loadedPost = await plebbit.getPostOrComment(challengeWithPost.msg.postCid);
-                const actualPost = new Post(challengeWithPost.msg);
-                assert.equal(JSON.stringify(actualPost), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
-                mockPosts.push(loadedPost);
+            mockPost.publish(null, null).then(async (challengeVerificationMessage) => {
+                const loadedPost = await plebbit.getPostOrComment(challengeVerificationMessage.publication.commentCid);
+                assert.equal(JSON.stringify(challengeVerificationMessage.publication), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
                 resolve();
             }).catch(reject);
         });
@@ -44,24 +40,21 @@ describe("Test Challenge functionality", async () => {
 
     it("Post is published when mathcli captcha is answered correctly", async function () {
         return new Promise(async (resolve, reject) => {
-            subplebbit.setProvideCaptchaCallback((challengeWithPost) => {
-                // Return question, type
-                return ["1+1=?", CHALLENGE_TYPES.TEXT];
+            subplebbit.setProvideCaptchaCallback((ChallengeRequestMessage) => {
+                return [[new Challenge({"challenge": "1+1=?", "type": CHALLENGE_TYPES.TEXT})], null];
             });
-            subplebbit.setValidateCaptchaAnswerCallback((challengeWithPost) => {
-                const answerIsCorrect = challengeWithPost["challenge"].answer === "2";
-                const reason = answerIsCorrect ? "Result of math express is correct" : "Result of math expression is incorrect";
-                return [answerIsCorrect, reason];
+            subplebbit.setValidateCaptchaAnswerCallback((ChallengeAnswerMessage) => {
+                const challengePassed = ChallengeAnswerMessage.challengeAnswers[0] === "2";
+                const challengeErrors = challengePassed ? null : ["Result of math expression is incorrect"];
+                return [challengePassed, challengeErrors];
             });
-            const mockPost = await generateMockPost();
-            await subplebbit.startPublishing();
-            mockPost.publish(null, (challenge) => {
+            const mockPost = await generateMockPost(subplebbit);
+            mockPost.publish(null, (challengeMessage) => {
                 // Solve captcha here
-                return "2";
-            }).then(async (challengeWithPost) => {
-                const loadedPost = await plebbit.getPostOrComment(challengeWithPost.msg.postCid);
-                const actualPost = new Post(challengeWithPost.msg, subplebbit);
-                assert.equal(JSON.stringify(actualPost), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
+                return ["2"];
+            }).then(async (challengeVerificationMessage) => {
+                const loadedPost = await plebbit.getPostOrComment(challengeVerificationMessage.publication.postCid);
+                assert.equal(JSON.stringify(challengeVerificationMessage.publication), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
                 resolve();
             }).catch(reject);
 
@@ -70,9 +63,9 @@ describe("Test Challenge functionality", async () => {
 
     it("Throws an error when user fails to solve mathcli captcha", async function () {
         return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost();
+            const mockPost = await generateMockPost(subplebbit);
             await subplebbit.startPublishing();
-            mockPost.publish(null, (challenge) => {
+            mockPost.publish(null, (challengeVerificationMessage) => {
                 // Give wrong answer intentionally
                 return "3";
             }).then(reject).catch(resolve); // Resolve when an error is thrown, and reject when no error is thrown
