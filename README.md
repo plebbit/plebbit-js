@@ -182,6 +182,7 @@ Challenge {
   - [`subplebbit.start()`](#subplebbitstart)
   - [`subplebbit.stop()`](#subplebbitstop)
   - `subplebbit.address`
+  - `subplebbit.signer`
   - `subplebbit.title`
   - `subplebbit.description`
   - `subplebbit.moderatorsAddresses`
@@ -524,7 +525,8 @@ An object which may have the following keys:
 | address | `string` | `undefined` | IPNS name of the subplebbit |
 | ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs.com'` | URL of an IPFS gateway |
 | ipfsApiUrl | `string` | `'http://localhost:8080'` | URL of an IPFS API |
-| database | `string` or `KnexConfig` | `undefined` | File path to create/resume the SQLite database or [KnexConfig](https://www.npmjs.com/package/knex) |
+| signer | `Signer` | `undefined` | (Subplebbit owners only) A `Signer` object which contains the private key of the subplebbit |
+| database | `string` or `KnexConfig` | `undefined` | (Subplebbit owners only) File path to create/resume the SQLite database or [KnexConfig](https://www.npmjs.com/package/knex) |
 
 #### Returns
 
@@ -553,7 +555,7 @@ subplebbit.start()
 
 ### `subplebbit.update(subplebbitUpdateOptions)`
 
-> Update the content of a subplebbit.
+> Update the content of a subplebbit. Only usable if subplebbit.signer exists.
 
 #### Parameters
 
@@ -596,7 +598,7 @@ Object is of the form:
 
 ### `subplebbit.start()`
 
-> Start listening for new posts on the pubsub, and publishing them every 5 minutes.
+> Start listening for new posts on the pubsub, and publishing them every 5 minutes. Only usable if subplebbit.signer exists.
 
 #### Example
 
