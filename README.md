@@ -173,11 +173,11 @@ Challenge {
   - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
   - [`plebbit.getSubplebbit(subplebbitAddress)`](#plebbitgetsubplebbitsubplebbitaddress)
   - [`plebbit.createComment(createCommentOptions)`](#plebbitcreatecommentcreatecommentoptions)
-  - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
+  - [`plebbit.createSubplebbit(createSubplebbitOptions)`](#plebbitcreatesubplebbitcreatesubplebbitoptions)
   - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
+  - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
   - [`plebbit.getSortedComments(sortedCommentsCid)`](#plebbitgetsortedcommentssortedcommentscid)
 - [Subplebbit API](#subplebbit-api)
-  - [`Subplebbit(subplebbitOptions)`](#subplebbitsubplebbitoptions)
   - [`subplebbit.update(subplebbitUpdateOptions)`](#subplebbitupdatesubplebbitupdateoptions)
   - [`subplebbit.start()`](#subplebbitstart)
   - [`subplebbit.stop()`](#subplebbitstop)
@@ -199,7 +199,6 @@ Challenge {
 - [Comment API](#comment-api)
   - [`comment.publish()`](#commentpublish)
   - [`comment.publishChallengeAnswers()`](#commentpublishchallengeanswerschallengeanswers)
-  - `comment.update(commentUpdateOptions)`
   - `comment.author`
   - `comment.timestamp`
   - `comment.signature`
@@ -385,43 +384,53 @@ const comment = plebbit.createComment({ipnsName: 'Qm...'})
 comment.on('update', (updatedComment) => console.log(updatedComment))
 ```
 
-### `plebbit.createCommentEdit(createCommentEditOptions)`
+### `plebbit.createSubplebbit(createSubplebbitOptions)`
 
-> Create a `Comment` instance. Posts/Replies are also comments.
+> Create a subplebbit instance. Should automatically update itself on update events if `CreateSubplebbitOptions.address` exists. If `CreateSubplebbitOptions.signer` exists, can call `Subplebbit.update(subplebbitUpdateOptions)` to update the subplebbit as the owner.
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| createCommentEditOptions | `CreateCommentEditOptions` | The comment edit to create |
+| createSubplebbitOptions | `CreateSubplebbitOptions` | Options for the `Subplebbit` instance |
 
-##### CreateCommentEditOptions
+##### CreateSubplebbitOptions
 
 An object which may have the following keys:
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| subplebbitAddress | `string` | IPNS name of the subplebbit |
-| commentCid | The comment CID to be edited |
-| content | `string` | Edited content of the comment |
-| timestamp | `number` or `null` | Time of edit in ms, `Date.now()` if null |
-| signer | `Signer` | Signer of the comment |
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| address | `string` | `undefined` | IPNS name of the subplebbit |
+| signer | `Signer` | `undefined` | (Subplebbit owners only) A `Signer` object which contains the private key of the subplebbit |
+| database | `string` or `KnexConfig` | `undefined` | (Subplebbit owners only) File path to create/resume the SQLite database or [KnexConfig](https://www.npmjs.com/package/knex) |
 
 #### Returns
 
 | Type | Description |
 | -------- | -------- |
-| `Comment` | A `Comment` instance |
+| `Subplebbit` | A `Subplebbit` instance |
 
 #### Example
 
 ```js
-const commentEdit = plebbit.createCommentEdit(createCommentEditOptions)
-commentEdit.on('challenge', async (challengeMessage) => {
-  const challengeAnswers = await askUserForChallengeAnswer(challengeMessage.challenges)
-  commentEdit.publishChallengeAnswers(challengeAnswers)
+const Plebbit = require('@plebbit/plebbit-js')
+const plebbitOptions = {
+  ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
+  ipfsApiUrl: 'http://localhost:5001',
+}
+const plebbit = Plebbit(plebbitOptions)
+const subplebbitOptions = {
+  address: 'Qmb...',
+  signer: {privateKey: 'qwer...'}
+}
+const subplebbit = plebbit.createSubplebbit(subplebbitOptions)
+subplebbit.update({
+  title: 'Memes',
+  description: 'Post your memes here.',
+  pubsubTopic: 'Qmb...'
 })
-commentEdit.publish()
+subplebbit.on('update', (updatedSubplebbit) => console.log(updatedSubplebbit))
+subplebbit.start()
 ```
 
 ### `plebbit.createVote(createVoteOptions)`
@@ -462,6 +471,45 @@ vote.on('challenge', async (challengeMessage) => {
   comment.publishChallengeAnswers(challengeAnswers)
 })
 vote.publish()
+```
+
+### `plebbit.createCommentEdit(createCommentEditOptions)`
+
+> Create a `Comment` instance. Posts/Replies are also comments.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| createCommentEditOptions | `CreateCommentEditOptions` | The comment edit to create |
+
+##### CreateCommentEditOptions
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| subplebbitAddress | `string` | IPNS name of the subplebbit |
+| commentCid | The comment CID to be edited |
+| content | `string` | Edited content of the comment |
+| timestamp | `number` or `null` | Time of edit in ms, `Date.now()` if null |
+| signer | `Signer` | Signer of the comment |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Comment` | A `Comment` instance |
+
+#### Example
+
+```js
+const commentEdit = plebbit.createCommentEdit(createCommentEditOptions)
+commentEdit.on('challenge', async (challengeMessage) => {
+  const challengeAnswers = await askUserForChallengeAnswer(challengeMessage.challenges)
+  commentEdit.publishChallengeAnswers(challengeAnswers)
+})
+commentEdit.publish()
 ```
 
 ### `plebbit.getSortedComments(sortedCommentsCid)`
@@ -505,58 +553,11 @@ post.on('update', async updatedPost => {
 ```
 
 ## Subplebbit API
-The subplebbit API for creating, updating and running subplebbits.
-
-### `Subplebbit(subplebbitOptions)`
-
-> Create a subplebbit instance. Should automatically update itself on update events if `SubplebbitOptions.address` exists.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| subplebbitOptions | `SubplebbitOptions` | Options for the `Subplebbit` instance |
-
-##### SubplebbitOptions
-
-An object which may have the following keys:
-
-| Name | Type | Default | Description |
-| ---- | ---- | ------- | ----------- |
-| address | `string` | `undefined` | IPNS name of the subplebbit |
-| ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs.com'` | URL of an IPFS gateway |
-| ipfsApiUrl | `string` | `'http://localhost:8080'` | URL of an IPFS API |
-| signer | `Signer` | `undefined` | (Subplebbit owners only) A `Signer` object which contains the private key of the subplebbit |
-| database | `string` or `KnexConfig` | `undefined` | (Subplebbit owners only) File path to create/resume the SQLite database or [KnexConfig](https://www.npmjs.com/package/knex) |
-
-#### Returns
-
-| Type | Description |
-| -------- | -------- |
-| `Subplebbit` | A `Subplebbit` instance |
-
-#### Example
-
-```js
-const {Subplebbit} = require('@plebbit/plebbit-js')
-const options = {
-  ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
-  ipfsApiUrl: 'http://localhost:5001',
-  address: 'Qmb...'
-}
-const subplebbit = Subplebbit(options) // should be independent instance, not singleton
-subplebbit.update({
-  title: 'Memes',
-  description: 'Post your memes here.',
-  pubsubTopic: 'Qmb...'
-})
-subplebbit.on('post', (post) => console.log(post))
-subplebbit.start()
-```
+The subplebbit API for getting subplebbit updates or creating, updating, running a subplebbit as an owner.
 
 ### `subplebbit.update(subplebbitUpdateOptions)`
 
-> Update the content of a subplebbit. Only usable if subplebbit.signer exists.
+> Update the content of a subplebbit. Only usable if `Subplebbit.signer` exists.
 
 #### Parameters
 
@@ -605,11 +606,9 @@ Object is of the form:
 
 ```js
 const options = {
-  ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
-  ipfsApiUrl: 'http://localhost:5001',
   address: 'Qmb...'
 }
-const subplebbit = Subplebbit(options)
+const subplebbit = plebbit.createSubplebbit(options)
 subplebbit.on('update', (updatedSubplebbitInstance) => console.log(updatedSubplebbitInstance))
 subplebbit.start()
 ```
@@ -635,12 +634,10 @@ The subplebbit events.
 
 ```js
 const options = {
-  ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
-  ipfsApiUrl: 'http://localhost:5001',
   address: 'Qmb...'
 }
-const subplebbit = Subplebbit(options)
-subplebbit.on('update', (subplebbitObject) => console.log(subplebbitObject))
+const subplebbit = plebbit.createSubplebbit(options)
+subplebbit.on('update', (updatedSubplebbit) => console.log(updatedSubplebbit))
 subplebbit.start()
 ```
 
