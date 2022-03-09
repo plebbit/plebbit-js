@@ -94,7 +94,7 @@ ChallengeType {
 }
 SortedComments (IPFS file) {
   nextSortedCommentsCid: string, // get next page (sorted by the same algo)
-  comments: Comment[]
+  comments: Comment[] // not `Comment` instances, just comment data objects
 }
 ```
 
@@ -464,7 +464,7 @@ vote.publish()
 
 ### `plebbit.getSortedComments(sortedCommentsCid)`
 
-> Get a `SortedComments` instance from an IPFS CID, from `Subplebbit.sortedPostsCids[sortedBy]` or `Comment.sortedCommentsCids[sortedBy]`.
+> Get a `SortedComments` instance from an IPFS CID, from `Subplebbit.sortedPostsCids[sortedBy]` or `Comment.sortedCommentsCids[sortedBy]`. Comments are not `Comment` instances, just comment data objects.
 
 #### Parameters
 
