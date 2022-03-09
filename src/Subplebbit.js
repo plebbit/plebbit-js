@@ -28,7 +28,8 @@ export class Subplebbit extends PlebbitCore {
     constructor(props, ipfsClient = null) {
         super(props, ipfsClient);
         this.#initSubplebbit(props);
-        this.challengeToSolution = {}; // Map challenge ID to its solution
+        this._challengeToSolution = {}; // Map challenge ID to its solution
+        this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
         this.provideCaptchaCallback = null;
         this.validateCaptchaAnswerCallback = null;
         this.event = new EventEmitter();
@@ -268,7 +269,7 @@ export class Subplebbit extends PlebbitCore {
     }
 
     async #publishPostAfterPassingChallenge(msgParsed) {
-        delete this.challengeToSolution[msgParsed.challengeRequestId];
+        delete this._challengeToSolution[msgParsed.challengeRequestId];
         return await this.#publishPubsubMsg(msgParsed.publication, msgParsed.challengeRequestId);
     }
 
@@ -280,9 +281,9 @@ export class Subplebbit extends PlebbitCore {
 
                 const [challengePassed, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
                 if (challengePassed) {
-                    await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed)); //TODO implement later
-
-                    const publishedPublication = await this.#publishPostAfterPassingChallenge({"publication": await this.dbHandler.queryPublicationWithChallengeRequestId(msgParsed.challengeRequestId), ...msgParsed}); // could contain "publication" or "reason"
+                    await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed));
+                    const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
+                    const publishedPublication = await this.#publishPostAfterPassingChallenge({"publication": storedPublication, ...msgParsed}); // could contain "publication" or "reason"
 
                     const challengeVerification = new ChallengeVerificationMessage({
                         "challengeRequestId": msgParsed.challengeRequestId,
@@ -305,17 +306,18 @@ export class Subplebbit extends PlebbitCore {
 
                     await this.ipfsClient.pubsub.publish(challengeVerification.challengeAnswerId, uint8ArrayFromString(JSON.stringify(challengeVerification)));
                 }
+                delete this._challengeToPublication[msgParsed.challengeRequestId];
             }
         }
         const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
 
         if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST) {
             const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(msgParsed);
+            this._challengeToPublication[msgParsed.challengeRequestId] = msgParsed.publication;
             if (!providedChallenges) {
                 // Subplebbit owner has chosen to skip challenging this user or post
                 await this.dbHandler.upsertChallenge(new ChallengeRequestMessage(msgParsed)); //TODO implement later
-
-                const publishedPublication = await this.#publishPostAfterPassingChallenge({"publication": msgParsed.publication, ...msgParsed}); // could contain "publication" or "reason"
+                const publishedPublication = await this.#publishPostAfterPassingChallenge(msgParsed);
                 const challengeVerification = new ChallengeVerificationMessage({
                     "reason": reasonForSkippingCaptcha,
                     "challengePassed": Boolean(publishedPublication.publication), // If no publication, this will be false
@@ -347,7 +349,7 @@ export class Subplebbit extends PlebbitCore {
         // captcha, captcha type, reason for skipping captcha (if it's skipped by nullifying captcha)
         return new Promise(async (resolve, reject) => {
             const {image, text} = createCaptcha(300, 100);
-            this.challengeToSolution[challengeWithMsg.challenge.requestId] = text;
+            this._challengeToSolution[challengeWithMsg.challenge.requestId] = text;
             image.then(imageBuffer => resolve([imageBuffer, CHALLENGE_TYPES.image, null])).catch(reject);
         });
 
@@ -355,7 +357,7 @@ export class Subplebbit extends PlebbitCore {
 
     async #defaultValidateCaptcha(challengeWithMsg) {
         return new Promise(async (resolve, reject) => {
-            const actualSolution = this.challengeToSolution[challengeWithMsg.challenge.requestId];
+            const actualSolution = this._challengeToSolution[challengeWithMsg.challenge.requestId];
             const answerIsCorrect = challengeWithMsg.challenge.answer === actualSolution;
             const reason = answerIsCorrect ? "User solved captcha correctly" : "User solved captcha incorrectly";
             resolve([answerIsCorrect, reason]);
