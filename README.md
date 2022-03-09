@@ -198,7 +198,7 @@ Challenge {
   - [`challengeanswer`](#challengeanswer)
 - [Comment API](#comment-api)
   - [`comment.publish()`](#commentpublish)
-  - [`comment.publishChallengeAnswer()`](#commentpublishchallengeanswerchallengeanswer)
+  - [`comment.publishChallengeAnswers()`](#commentpublishchallengeanswerschallengeanswers)
   - `comment.update(commentUpdateOptions)`
   - `comment.author`
   - `comment.timestamp`
@@ -312,7 +312,7 @@ Prints:
 
 | Type | Description |
 | -------- | -------- |
-| `Promise<Subplebbit>` | A `Subplebbit` instance |
+| `Promise<Subplebbit>` | A `Subplebbit` instance. Should automatically update itself on update events. |
 
 #### Example
 
@@ -339,7 +339,7 @@ Prints:
 
 ### `plebbit.createComment(createCommentOptions)`
 
-> Create a `Comment` instance. Posts are also comments.
+> Create a `Comment` instance. Posts/Replies are also comments. Should automatically update itself on update events if `CreateCommentOptions.cid` or `CreateCommentOptions.ipnsName` exists.
 
 #### Parameters
 
@@ -360,7 +360,8 @@ An object which may have the following keys:
 | timestamp | `number` or `null` | Time of publishing in seconds, `Math.round(Date.now() / 1000)` if null |
 | author | `Author` | Author of the comment |
 | signer | `Signer` | Signer of the comment |
-| ipnsName | `string` or `undefined` | Not for publishing, gives access to `Comment.on('update')` for a comment already fetched |
+| cid | `string` or `undefined` | (Not for publishing) Gives access to `Comment.on('update')` for a comment already fetched |
+| ipnsName | `string` or `undefined` | (Not for publishing) Gives access to `Comment.on('update')` for a comment already fetched |
 
 #### Returns
 
@@ -372,9 +373,9 @@ An object which may have the following keys:
 
 ```js
 const comment = plebbit.createComment(createCommentOptions)
-comment.on('challenge', async (challenge) => {
-  const challengeAnswer = await askUserForChallengeAnswer(challenge)
-  comment.publishChallengeAnswer(challengeAnswer)
+comment.on('challenge', async (challengeMessage) => {
+  const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
+  comment.publishChallengeAnswers(challengeAnswers)
 })
 comment.publish()
 
@@ -386,7 +387,7 @@ comment.on('update', (updatedComment) => console.log(updatedComment))
 
 ### `plebbit.createCommentEdit(createCommentEditOptions)`
 
-> Create a `Comment` instance. Posts are also comments.
+> Create a `Comment` instance. Posts/Replies are also comments.
 
 #### Parameters
 
@@ -416,9 +417,9 @@ An object which may have the following keys:
 
 ```js
 const commentEdit = plebbit.createCommentEdit(createCommentEditOptions)
-commentEdit.on('challenge', async (challenge) => {
-  const challengeAnswer = await askUserForChallengeAnswer(challenge)
-  commentEdit.publishChallengeAnswer(challengeAnswer)
+commentEdit.on('challenge', async (challengeMessage) => {
+  const challengeAnswers = await askUserForChallengeAnswer(challengeMessage.challenges)
+  commentEdit.publishChallengeAnswers(challengeAnswers)
 })
 commentEdit.publish()
 ```
@@ -456,9 +457,9 @@ An object which may have the following keys:
 
 ```js
 const vote = plebbit.createVote(createVoteOptions)
-vote.on('challenge', async (challenge) => {
-  const challengeAnswer = await askUserForChallengeAnswer(challenge)
-  comment.publishChallengeAnswer(challengeAnswer)
+vote.on('challenge', async (challengeMessage) => {
+  const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
+  comment.publishChallengeAnswers(challengeAnswers)
 })
 vote.publish()
 ```
@@ -508,7 +509,7 @@ The subplebbit API for creating, updating and running subplebbits.
 
 ### `Subplebbit(subplebbitOptions)`
 
-> Create a subplebbit instance.
+> Create a subplebbit instance. Should automatically update itself on update events if `SubplebbitOptions.address` exists.
 
 #### Parameters
 
@@ -628,7 +629,7 @@ The subplebbit events.
 
 | Type | Description |
 | -------- | -------- |
-| `Subplebbit` | The updated `Subplebbit` instance (the instance emits itself) |
+| `Subplebbit` | The updated `Subplebbit` instance (the instance emits itself), i.e. `this` |
 
 #### Example
 
@@ -688,7 +689,7 @@ Object is of the form:
 ```
 
 ## Comment API
-The comment API for publishing a comment, awaiting. `Comment`, `Vote` and `CommentEdit` inherit `Publication` and all have a similar API.
+The comment API for publishing a comment or getting comment updates. `Comment`, `Vote` and `CommentEdit` inherit `Publication` class and all have a similar API. A `Comment` should automatically update itself on update events if `Comment.cid` or `Comment.ipnsName` exists.
 
 ### `comment.publish()`
 
@@ -698,30 +699,30 @@ The comment API for publishing a comment, awaiting. `Comment`, `Vote` and `Comme
 
 ```js
 const comment = plebbit.createComment(commentObject)
-comment.on('challenge', async (challenge) => {
-  const challengeAnswer = await askUserForChallengeAnswer(challenge)
-  comment.publishChallengeAnswer(challengeAnswer)
+comment.on('challenge', async (challengeMessage) => {
+  const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
+  comment.publishChallengeAnswers(challengeAnswers)
 })
 comment.publish()
 ```
 
-### `comment.publishChallengeAnswer(challengeAnswer)`
+### `comment.publishChallengeAnswers(challengeAnswers)`
 
-> Update the content of a subplebbit.
+> Publish your answers to the challenges e.g. the captcha answers.
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| challengeAnswer | `string` | The challenge answer |
+| challengeAnswers | `string[]` | The challenge answers |
 
 #### Example
 
 ```js
 const comment = plebbit.createComment(commentObject)
-comment.on('challenge', async (challenge) => {
-  const challengeAnswer = await askUserForChallengeAnswer(challenge)
-  comment.publishChallengeAnswer(challengeAnswer)
+comment.on('challenge', async (challengeMessage) => {
+  const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
+  comment.publishChallengeAnswers(challengeAnswers)
 })
 comment.publish()
 ```
@@ -774,9 +775,9 @@ Object is of the form:
 
 ```js
 const comment = plebbit.createComment(commentObject)
-comment.on('challenge', async (challenge) => {
-  const challengeAnswer = await askUserForChallengeAnswer(challenge)
-  comment.publishChallengeAnswer(challengeAnswer)
+comment.on('challenge', async (challengeMessage) => {
+  const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
+  comment.publishChallengeAnswers(challengeAnswers)
 })
 comment.publish()
 ```
@@ -801,10 +802,10 @@ Object is of the form:
 
 ```js
 const comment = plebbit.createComment(commentObject)
-comment.on('challenge', async (challenge) => {
-  const challengeAnswer = await askUserForChallengeAnswer(challenge)
-  comment.publishChallengeAnswer(challengeAnswer)
+comment.on('challenge', async (challengeMessage) => {
+  const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
+  comment.publishChallengeAnswers(challengeAnswers)
 })
-comment.on('challengeverification', (challengeVerification) => console.log(challengeVerification))
+comment.on('challengeverification', (challengeVerification) => console.log('published post cid is', challengeVerification?.publication?.cid))
 comment.publish()
 ```
