@@ -244,7 +244,7 @@ An object which may have the following keys:
 | ---- | ---- | ------- | ----------- |
 | ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs.com'` | URL of an IPFS gateway |
 | ipfsApiUrl | `string` | `'http://localhost:8080'` | URL of an IPFS API |
-| database | `string` or `KnexConfig` | `undefined` | File path to create/resume the SQLite database or [KnexConfig](https://www.npmjs.com/package/knex) |
+| dataPath | `string` | `undefined` | (Node only) Folder path to create/resume the user and subplebbit databases |
 
 #### Returns
 
@@ -259,6 +259,7 @@ const Plebbit = require('@plebbit/plebbit-js')
 const options = {
   ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
   ipfsApiUrl: 'http://localhost:5001',
+  dataPath: __dirname
 }
 const plebbit = Plebbit(options) // should be independent instance, not singleton
 ```
@@ -402,7 +403,7 @@ An object which may have the following keys:
 | ---- | ---- | ------- | ----------- |
 | address | `string` | `undefined` | IPNS name of the subplebbit |
 | signer | `Signer` | `undefined` | (Subplebbit owners only) A `Signer` object which contains the private key of the subplebbit |
-| database | `string` or `KnexConfig` | `undefined` | (Subplebbit owners only) File path to create/resume the SQLite database or [KnexConfig](https://www.npmjs.com/package/knex) |
+| database | `KnexConfig` or `undefined` | `undefined` | (Subplebbit owners only) Optional [KnexConfig](https://www.npmjs.com/package/knex), defaults to SQLite database at `plebbit.dataPath/subplebbitAddress` |
 
 #### Returns
 
@@ -417,6 +418,7 @@ const Plebbit = require('@plebbit/plebbit-js')
 const plebbitOptions = {
   ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
   ipfsApiUrl: 'http://localhost:5001',
+  dataPath: __dirname
 }
 const plebbit = Plebbit(plebbitOptions)
 const subplebbitOptions = {
