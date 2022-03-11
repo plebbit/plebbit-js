@@ -1,6 +1,6 @@
 import Author from "./Author.js";
 import assert from "assert";
-import {loadIpnsAsJson} from "./Util.js";
+import {loadIpnsAsJson, timestamp} from "./Util.js";
 import Publication from "./Publication.js";
 
 
@@ -37,7 +37,7 @@ class Comment extends Publication {
     _initProps(props) {
         super._initProps(props);
         this.author = new Author(props["author"]);
-        this.timestamp = props["timestamp"] || (Date.now() / 1000);
+        this.timestamp = props["timestamp"] || timestamp();
         this.signature = props["signature"] || null;
         this.postCid = props["postCid"];
         this.commentCid = props["commentCid"];

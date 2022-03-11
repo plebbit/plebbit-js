@@ -167,7 +167,6 @@ export class Subplebbit extends PlebbitCore {
     }
 
     async #updatePostComments(comment) {
-        // TODO Check if comment is already added
         const [sortedComments, sortedCommentsCids] = await this.sortHandler.calculateSortedComments(comment.postCid);
 
         const newCommentIpns = {

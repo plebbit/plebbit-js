@@ -1,7 +1,7 @@
 import {Plebbit, Vote} from "../src/index.js";
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
 import assert from 'assert';
-import {unsubscribeAllPubsubTopics} from "../src/Util.js";
+import {timestamp, unsubscribeAllPubsubTopics} from "../src/Util.js";
 import {generateMockVote} from "./MockUtil.js";
 
 const plebbit = new Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
@@ -36,7 +36,7 @@ describe("Test Vote", async () => {
 
     it("Throws an error when vote is duplicated", async () => {
         return new Promise(async (resolve, reject) => {
-            const vote = new Vote({...previousVotes[0].toJSON(), "timestamp": Date.now() / 1000}, previousVotes[0].subplebbit);
+            const vote = new Vote({...previousVotes[0].toJSON(), "timestamp": timestamp()}, previousVotes[0].subplebbit);
             vote.publish().then(reject).catch(resolve);
         });
 
@@ -51,7 +51,7 @@ describe("Test Vote", async () => {
             const vote = new Vote({
                 ...previousVotes[0].toJSON(),
                 "vote": -1,
-                "timestamp": Date.now() / 1000
+                "timestamp": timestamp()
             }, previousVotes[0].subplebbit);
             vote.publish().then(async (challengeWithVote) => {
                 await post.fetchCommentIpns();
@@ -71,7 +71,7 @@ describe("Test Vote", async () => {
             const vote = new Vote({
                 ...previousVotes[0].toJSON(),
                 "vote": 0,
-                "timestamp": Date.now() / 1000
+                "timestamp": timestamp()
             }, previousVotes[0].subplebbit);
             vote.publish().then(async (challengeWithVote) => {
                 await post.fetchCommentIpns();
@@ -106,7 +106,7 @@ describe("Test Vote", async () => {
             const vote = new Vote({
                 ...previousVotes[1].toJSON(),
                 "vote": 1,
-                "timestamp": Date.now() / 1000
+                "timestamp": timestamp()
             }, previousVotes[1].subplebbit);
             vote.publish().then(async (challengeWithVote) => {
                 await post.fetchCommentIpns();
@@ -126,7 +126,7 @@ describe("Test Vote", async () => {
             const vote = new Vote({
                 ...previousVotes[1].toJSON(),
                 "vote": 0,
-                "timestamp": Date.now() / 1000
+                "timestamp": timestamp()
             }, previousVotes[1].subplebbit);
             vote.publish().then(async (challengeWithVote) => {
                 await post.fetchCommentIpns();

@@ -1,4 +1,4 @@
-import {chunks, round, TIMEFRAMES_TO_SECONDS} from "./Util.js";
+import {chunks, round, TIMEFRAMES_TO_SECONDS, timestamp} from "./Util.js";
 
 export const SORTED_COMMENTS_TYPES = Object.freeze({
     HOT: "hot",
@@ -142,7 +142,7 @@ export class SortHandler {
         return new Promise(async (resolve, reject) => {
             // Timeframe is "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL"
             const sortType = SORTED_COMMENTS_TYPES[`TOP_${timeframe}`];
-            const posts = await this.subplebbit.dbHandler.queryPostsBetweenTimestampRange((Date.now() / 1000) - TIMEFRAMES_TO_SECONDS[timeframe], (Date.now() / 1000));
+            const posts = await this.subplebbit.dbHandler.queryPostsBetweenTimestampRange(timestamp() - TIMEFRAMES_TO_SECONDS[timeframe], timestamp());
             this.#sortComments(posts, sortType, limit).then(resolve).catch(reject);
         });
     }
@@ -151,7 +151,7 @@ export class SortHandler {
     async #sortPostsByControversial(timeframe, limit = SORTED_POSTS_PAGE_SIZE) {
         return new Promise(async (resolve, reject) => {
             const sortType = SORTED_COMMENTS_TYPES[`CONTROVERSIAL_${timeframe}`];
-            const posts = await this.subplebbit.dbHandler.queryPostsBetweenTimestampRange((Date.now() / 1000) - TIMEFRAMES_TO_SECONDS[timeframe], Date.now() / 1000);
+            const posts = await this.subplebbit.dbHandler.queryPostsBetweenTimestampRange(timestamp() - TIMEFRAMES_TO_SECONDS[timeframe], timestamp());
             this.#sortComments(posts, sortType, limit).then(resolve).catch(reject);
         });
 

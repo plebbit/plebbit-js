@@ -61,4 +61,8 @@ export function parseJsonIfString(x) {
     return (x instanceof String || typeof x === "string") ? JSON.parse(x) : x;
 }
 
+export function timestamp(){
+    return Math.round(Date.now() / 1000);
+}
+
 

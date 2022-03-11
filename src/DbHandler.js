@@ -2,7 +2,7 @@ import {PUBSUB_MESSAGE_TYPES} from "./Challenge.js";
 import Post from "./Post.js";
 import Author from "./Author.js";
 import Comment from "./Comment.js";
-import {TIMEFRAMES_TO_SECONDS} from "./Util.js";
+import {TIMEFRAMES_TO_SECONDS, timestamp} from "./Util.js";
 
 export const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -203,10 +203,10 @@ class DbHandler {
 
     async #querySubplebbitActiveUserCount(timeframe) {
         return new Promise(async (resolve, reject) => {
-            let from = (Date.now() / 1000) - TIMEFRAMES_TO_SECONDS[timeframe];
+            let from = timestamp() - TIMEFRAMES_TO_SECONDS[timeframe];
             if (from === Number.NEGATIVE_INFINITY)
                 from = 0;
-            const to = (Date.now() / 1000);
+            const to = timestamp();
             const commentsAuthors = await this.knex(TABLES.COMMENTS).distinct("authorAddress").whereBetween("timestamp", [from, to]);
             const voteAuthors = await this.knex(TABLES.VOTES).distinct("authorAddress").whereBetween("timestamp", [from, to]);
             let activeUserAccounts = [...commentsAuthors, ...voteAuthors].map(author => author.authorAddress);
@@ -218,10 +218,10 @@ class DbHandler {
 
     async #querySubplebbitPostCount(timeframe) {
         return new Promise(async (resolve, reject) => {
-            let from = (Date.now() / 1000) - TIMEFRAMES_TO_SECONDS[timeframe];
+            let from = timestamp() - TIMEFRAMES_TO_SECONDS[timeframe];
             if (from === Number.NEGATIVE_INFINITY)
                 from = 0;
-            const to = (Date.now() / 1000);
+            const to = timestamp();
             this.knex(TABLES.COMMENTS).count("commentCid").whereBetween("timestamp", [from, to]).then(postCount => resolve(postCount["0"]["count(`commentCid`)"])).catch(reject);
         })
     }
