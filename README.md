@@ -96,6 +96,39 @@ SortedComments (IPFS file) {
   nextSortedCommentsCid: string, // get next page (sorted by the same algo)
   comments: Comment[] // not `Comment` instances, just comment data objects
 }
+PlebbitDefaults { // fetched once when app first load
+  // list of multisubs included in the app by default, we will have multisubName 'all' and 'crypto' to start
+  // the default subplebbits are stored in a Multisub, but anyone can also make their own Multisub and share them
+  // access any Multisub on plebbit.eth/m/MultisubAddress, you can also subscribe to an entire Multisub
+  multisubAddresses: {[key: multisubName]: MultisubAddress}
+
+  // the default subplebbits to show in plebbit.eth/p/all
+  multisubAddresses.all: MultisubSubplebbit
+
+  // the subplebbits to show in plebbit.eth/p/crypto
+  // p/crypto is a special default multisub that will be bundled with the app
+  // crypto projects can request to be listed there
+  multisubAddresses.all: MultisubSubplebbit
+
+  // there will also be a special Multisub with multisubName 'search' which will contain a list of thousands of semi-curated
+  // subplebbits the user can use to 'search' for in the client. The search will only look at title, description and tags set
+  // by the Multisub owner, it will not fetch individual subplebbits
+  multisubAddresses.search: MultisubSubplebbit
+}
+Multisub (IPNS record) {
+  title?: string,
+  description?: string,
+  subplebbits: MultisubSubplebbit[]
+}
+MultisubSubplebbit { // this metadata is set by the owner of the Multisub, not the owner of the subplebbit
+  address: Address,
+  title?: string,
+  description?: string, 
+  tags?: string[],
+  languages?: string[], // client can detect language and hide/show subplebbit based on it
+  locations?: string[], // client can detect location and hide/show subplebbit based on it
+  safeForWork?: boolean // client can detect user's SFW setting and hide/show subplebbit based on it
+}
 ```
 
 ### Message signature types:
