@@ -197,6 +197,8 @@ Challenge {
   - [`plebbit.createSubplebbit(createSubplebbitOptions)`](#plebbitcreatesubplebbitcreatesubplebbitoptions)
   - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
   - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
+  - `plebbit.getDefaults()`
+  - `plebbit.getMultisub(multisubAddress)`
   - [`plebbit.getSortedComments(sortedCommentsCid)`](#plebbitgetsortedcommentssortedcommentscid)
 - [Subplebbit API](#subplebbit-api)
   - [`subplebbit.update(subplebbitUpdateOptions)`](#subplebbitupdatesubplebbitupdateoptions)
