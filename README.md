@@ -17,7 +17,7 @@ Note: IPFS files are immutable, fetched by their CID, which is a hash of their c
 ### Schema:
 
 ```
-Address: string // A plebbit author or subplebbit "address" can be a crypto domain like memes.eth, an IPNS name, an ethereum address, etc
+Address: string // A plebbit author, subplebbit or multisub "address" can be a crypto domain like memes.eth, an IPNS name, an ethereum address, etc
 Publication {
   author: Author,
   subplebbitAddress: string, // all publications are directed to a subplebbit owner
@@ -95,6 +95,27 @@ ChallengeType {
 SortedComments (IPFS file) {
   nextSortedCommentsCid: string, // get next page (sorted by the same algo)
   comments: Comment[] // not `Comment` instances, just comment data objects
+}
+Multisub (IPNS record) {
+  title?: string,
+  description?: string,
+  subplebbits: MultisubSubplebbit[]
+}
+MultisubSubplebbit { // this metadata is set by the owner of the Multisub, not the owner of the subplebbit
+  address: Address,
+  title?: string,
+  description?: string, 
+  tags?: string[],
+  languages?: string[], // client can detect language and hide/show subplebbit based on it
+  locations?: string[], // client can detect location and hide/show subplebbit based on it
+  safeForWork?: boolean // client can detect user's SFW setting and hide/show subplebbit based on it
+}
+PlebbitDefaults { // fetched once when app first load, a dictionary of default settings
+  multisubAddresses: {[key: multisubName]: Address}
+  // plebbit has 3 default multisubs
+  multisubAddresses.all: Address // the default subplebbits to show at url plebbit.eth/p/all
+  multisubAddresses.crypto: Address // the subplebbits to show at url plebbit.eth/p/crypto
+  multisubAddresses.search: Address // list of thousands of semi-curated subplebbits to "search" for in the client (only search the Multisub metadata, don't load each subplebbit)
 }
 ```
 
@@ -176,6 +197,8 @@ Challenge {
   - [`plebbit.createSubplebbit(createSubplebbitOptions)`](#plebbitcreatesubplebbitcreatesubplebbitoptions)
   - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
   - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
+  - `plebbit.getDefaults()`
+  - `plebbit.getMultisub(multisubAddress)`
   - (TODO: find way to validate comment.subplebbitAddress with plebbit.getSortedComments())
   - [`plebbit.getSortedComments(sortedCommentsCid)`](#plebbitgetsortedcommentssortedcommentscid)
 - [Subplebbit API](#subplebbit-api)
