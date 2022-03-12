@@ -199,6 +199,7 @@ Challenge {
   - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
   - `plebbit.getDefaults()`
   - `plebbit.getMultisub(multisubAddress)`
+  - (TODO: find way to validate comment.subplebbitAddress with plebbit.getSortedComments())
   - [`plebbit.getSortedComments(sortedCommentsCid)`](#plebbitgetsortedcommentssortedcommentscid)
 - [Subplebbit API](#subplebbit-api)
   - [`subplebbit.update(subplebbitUpdateOptions)`](#subplebbitupdatesubplebbitupdateoptions)
