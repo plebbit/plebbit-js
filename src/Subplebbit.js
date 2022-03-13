@@ -20,7 +20,8 @@ import {createCaptcha} from "captcha-canvas/js-script/extra.js";
 import {SORTED_COMMENTS_TYPES, SortHandler} from "./SortHandler.js";
 import Vote from "./Vote.js";
 import Post from "./Post.js";
-import {Plebbit} from "./index.js";
+import * as path from "path";
+import * as fs from "fs";
 
 
 export class Subplebbit {
@@ -52,7 +53,7 @@ export class Subplebbit {
     }
 
     async #initDb() {
-        const ipfsKeys = (await this.ipfsClient.key.list()).map(key => key["id"]);
+        const ipfsKeys = (await this.plebbit.ipfsClient.key.list()).map(key => key["id"]);
         const ranByOwner = ipfsKeys.includes(this.subplebbitAddress);
         // Default settings for subplebbit owner node
         if (ranByOwner && !this._dbConfig)
@@ -117,15 +118,15 @@ export class Subplebbit {
         const subplebbitWithNewContent = JSON.stringify(this);
         return new Promise(async (resolve, reject) => {
                 if (!this.subplebbitAddress) { // TODO require signer
-                    this.ipfsClient.key.gen(this.title).then(ipnsKey => {
+                    this.plebbit.ipfsClient.key.gen(this.title).then(ipnsKey => {
                         this.update({
                             "subplebbitAddress": ipnsKey["id"],
                             "ipnsKeyName": ipnsKey["name"]
                         }).then(resolve).catch(reject);
                     }).catch(reject);
                 } else {
-                    this.ipfsClient.add(subplebbitWithNewContent).then(file => {
-                        this.ipfsClient.name.publish(file["cid"], {
+                    this.plebbit.ipfsClient.add(subplebbitWithNewContent).then(file => {
+                        this.plebbit.ipfsClient.name.publish(file["cid"], {
                             "lifetime": "5h", // TODO decide on optimal time later
                             "key": this.ipnsKeyName
                         }).then(resolve).catch(reject);
