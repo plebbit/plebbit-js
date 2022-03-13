@@ -17,6 +17,7 @@ class Publication {
 
     setSubplebbit(newSubplebbit) {
         this.subplebbit = newSubplebbit;
+        this.subplebbitAddress = this.subplebbit.subplebbitAddress;
     }
 
     getType() {
