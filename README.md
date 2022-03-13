@@ -17,7 +17,7 @@ Note: IPFS files are immutable, fetched by their CID, which is a hash of their c
 ### Schema:
 
 ```
-Address: string // A plebbit author or subplebbit "address" can be a crypto domain like memes.eth, an IPNS name, an ethereum address, etc
+Address: string // A plebbit author, subplebbit or multisub "address" can be a crypto domain like memes.eth, an IPNS name, an ethereum address, etc
 Publication {
   author: Author,
   subplebbitAddress: string, // all publications are directed to a subplebbit owner
@@ -95,6 +95,27 @@ ChallengeType {
 SortedComments (IPFS file) {
   nextSortedCommentsCid: string, // get next page (sorted by the same algo)
   comments: Comment[] // not `Comment` instances, just comment data objects
+}
+Multisub (IPNS record) {
+  title?: string,
+  description?: string,
+  subplebbits: MultisubSubplebbit[]
+}
+MultisubSubplebbit { // this metadata is set by the owner of the Multisub, not the owner of the subplebbit
+  address: Address,
+  title?: string,
+  description?: string, 
+  tags?: string[],
+  languages?: string[], // client can detect language and hide/show subplebbit based on it
+  locations?: string[], // client can detect location and hide/show subplebbit based on it
+  safeForWork?: boolean // client can detect user's SFW setting and hide/show subplebbit based on it
+}
+PlebbitDefaults { // fetched once when app first load, a dictionary of default settings
+  multisubAddresses: {[key: multisubName]: Address}
+  // plebbit has 3 default multisubs
+  multisubAddresses.all: Address // the default subplebbits to show at url plebbit.eth/p/all
+  multisubAddresses.crypto: Address // the subplebbits to show at url plebbit.eth/p/crypto
+  multisubAddresses.search: Address // list of thousands of semi-curated subplebbits to "search" for in the client (only search the Multisub metadata, don't load each subplebbit)
 }
 ```
 
@@ -176,12 +197,13 @@ Challenge {
   - [`plebbit.createSubplebbit(createSubplebbitOptions)`](#plebbitcreatesubplebbitcreatesubplebbitoptions)
   - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
   - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
-  - (TODO: find way to validate comment.subplebbitAddress with plebbit.getSortedComments())
-  - [`plebbit.getSortedComments(sortedCommentsCid)`](#plebbitgetsortedcommentssortedcommentscid)
+  - `plebbit.getDefaults()`
+  - `plebbit.getMultisub(multisubAddress)`
 - [Subplebbit API](#subplebbit-api)
   - [`subplebbit.update(subplebbitUpdateOptions)`](#subplebbitupdatesubplebbitupdateoptions)
   - [`subplebbit.start()`](#subplebbitstart)
   - [`subplebbit.stop()`](#subplebbitstop)
+  - [`subplebbit.getSortedPosts(sortedPostsCid)`](#subplebbitgetsortedpostssortedpostscid)
   - `subplebbit.address`
   - `subplebbit.signer`
   - `subplebbit.title`
@@ -200,6 +222,7 @@ Challenge {
 - [Comment API](#comment-api)
   - [`comment.publish()`](#commentpublish)
   - [`comment.publishChallengeAnswers()`](#commentpublishchallengeanswerschallengeanswers)
+  - `comment.getSortedReplies(sortedRepliesCid)`
   - `comment.author`
   - `comment.timestamp`
   - `comment.signature`
@@ -515,46 +538,6 @@ commentEdit.on('challenge', async (challengeMessage) => {
 commentEdit.publish()
 ```
 
-### `plebbit.getSortedComments(sortedCommentsCid)`
-
-> Get a `SortedComments` instance from an IPFS CID, from `Subplebbit.sortedPostsCids[sortedBy]` or `Comment.sortedCommentsCids[sortedBy]`. Comments are not `Comment` instances, just comment data objects.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| sortedCommentsCid | `string` | The IPFS CID of the sorted comments |
-
-#### Returns
-
-| Type | Description |
-| -------- | -------- |
-| `Promise<SortedComments>` | A `SortedComments` instance |
-
-#### Example
-
-```js
-// get sorted posts in a subplebbit
-const subplebbit = await plebbit.getSubplebbit(subplebbitAddress)
-const sortedPostsByTopYear = await plebbit.getSortedComments(subplebbit.sortedPostsCids.topYear)
-console.log(sortedPostsByTopYear)
-
-// get sorted replies to a post or comment
-const post = await plebbit.getComment(commentCid)
-post.on('update', async updatedPost => {
-  let replies
-  if (updatedPost.sortedRepliesCids?.new) {
-    // sorted replies are not always available, for example if the post only has a few replies
-    replies = await plebbit.getSortedComments(updatedPost.sortedRepliesCids.new)
-  }
-  else {
-    // the hot algorithm is always preloaded by default and can be used as fallback
-    replies = updatedPost.sortedReplies.hot
-  }
-  console.log(replies)
-})
-```
-
 ## Subplebbit API
 The subplebbit API for getting subplebbit updates or creating, updating, running a subplebbit as an owner.
 
@@ -619,6 +602,46 @@ subplebbit.start()
 ### `subplebbit.stop()`
 
 > Stop listening for new posts on the pubsub, and stop publishing them every 5 minutes.
+
+### `subplebbit.getSortedPosts(sortedPostsCid)`
+
+> Get a `SortedComments` instance using an IPFS CID from `Subplebbit.sortedPostsCids[sortedBy]`. Comments are not `Comment` instances, just comment data objects. Posts and replies are also "comments".
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| sortedPostsCid | `string` | The IPFS CID of the sorted comments |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<SortedComments>` | A `SortedComments` instance |
+
+#### Example
+
+```js
+// get sorted posts in a subplebbit
+const subplebbit = await plebbit.getSubplebbit(subplebbitAddress)
+const sortedPostsByTopYear = await subplebbit.getSortedPosts(subplebbit.sortedPostsCids.topYear)
+console.log(sortedPostsByTopYear)
+
+// get sorted replies to a post or comment
+const post = await plebbit.getComment(commentCid)
+post.on('update', async updatedPost => {
+  let replies
+  if (updatedPost.sortedRepliesCids?.new) {
+    // sorted replies are not always available, for example if the post only has a few replies
+    replies = await comment.getSortedReplies(updatedPost.sortedRepliesCids.new)
+  }
+  else {
+    // the hot algorithm is always preloaded by default and can be used as fallback
+    replies = updatedPost.sortedReplies.hot
+  }
+  console.log(replies)
+})
+```
 
 ## Subplebbit Events
 The subplebbit events.
