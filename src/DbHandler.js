@@ -28,7 +28,7 @@ class DbHandler {
             table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
 
             table.text("subplebbitAddress").notNullable();
-            table.text("content").notNullable();
+            table.text("content").nullable();
             table.timestamp("timestamp").notNullable();
             table.text("signature").nullable(); // Will likely revise later
             table.text("commentIpnsName").notNullable().unique();
