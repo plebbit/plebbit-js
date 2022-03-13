@@ -56,14 +56,16 @@ export class Subplebbit {
         const ipfsKeys = (await this.plebbit.ipfsClient.key.list()).map(key => key["id"]);
         const ranByOwner = ipfsKeys.includes(this.subplebbitAddress);
         // Default settings for subplebbit owner node
-        if (ranByOwner && !this._dbConfig)
+        if (ranByOwner && !this._dbConfig) {
+            fs.mkdirSync(this.plebbit.dataPath, {"recursive": true});
             this._dbConfig = {
                 client: 'better-sqlite3', // or 'better-sqlite3'
                 connection: {
-                    filename: `.databases/${this.title}.sqlite`
+                    filename: path.join(this.plebbit.dataPath, this.subplebbitAddress)
                 },
                 useNullAsDefault: true
             }
+        }
 
         if (!this._dbConfig)
             return;
