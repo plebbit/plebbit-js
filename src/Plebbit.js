@@ -4,8 +4,14 @@ import {Subplebbit} from "./Subplebbit.js";
 import {loadIpfsFileAsJson, loadIpnsAsJson} from "./Util.js";
 import PlebbitCore from "./PlebbitCore.js";
 import {create as createIpfsClient} from "ipfs-http-client";
+import * as path from "path";
 
 export class Plebbit extends PlebbitCore {
+    constructor(options, ipfsClient = null) {
+        super(options, ipfsClient);
+        this.dataPath = options["dataPath"] || path.join(process.cwd(), ".plebbit");
+    }
+
 
     async getSubplebbit(subplebbitAddress, subplebbitProps = {}) {
         if (!subplebbitAddress.includes("/ipns/"))
