@@ -35,18 +35,25 @@ export class Plebbit extends PlebbitCore {
         });
     }
 
-    async createSubplebbit(subplebbitOptions, ipfsClient = null) {
-        ipfsClient = ipfsClient || createIpfsClient(options["ipfsApiUrl"]) || this.ipfsClient;
+    async createComment(createCommentOptions) {
+        const commentSubplebbit = await this.getSubplebbit(createCommentOptions.subplebbitAddress);
+        if (createCommentOptions.title)
+            // Post
+            return new Post(createCommentOptions, commentSubplebbit);
+        else
+            return new Comment(createCommentOptions, commentSubplebbit);
+    }
 
-        if (subplebbitOptions["subplebbitAddress"]) {
+    async createSubplebbit(createSubplebbitOptions) {
+        if (createSubplebbitOptions["subplebbitAddress"]) {
             // Subplebbit already exists, just load it
-            const localIpnsKeys = await ipfsClient.key.list();
-            const ipnsKeyName = localIpnsKeys.filter(key => key["id"] === subplebbitOptions["subplebbitAddress"])[0]?.name;
-            return this.getSubplebbit(subplebbitOptions["subplebbitAddress"], {
-                ...subplebbitOptions,
+            const localIpnsKeys = await this.ipfsClient.key.list();
+            const ipnsKeyName = localIpnsKeys.filter(key => key["id"] === createSubplebbitOptions["subplebbitAddress"])[0]?.name;
+            return this.getSubplebbit(createSubplebbitOptions["subplebbitAddress"], {
+                ...createSubplebbitOptions,
                 "ipnsKeyName": ipnsKeyName
             });
         } else
-            return new Subplebbit(subplebbitOptions, this);
+            return new Subplebbit(createSubplebbitOptions, this);
     }
 }

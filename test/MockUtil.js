@@ -1,24 +1,24 @@
-import {Comment, Post, Vote} from "../src/index.js";
-
 export async function generateMockComment(parentPostOrComment, subplebbit) {
     const commentTime = Date.now() / 1000;
     const mockAuthorIpns = await subplebbit.plebbit.ipfsClient.key.gen(`Mock User - ${commentTime}`);
-    return new Comment({
+    return subplebbit.plebbit.createComment({
         "author": {"displayName": `Mock Author - ${commentTime}`, "address": mockAuthorIpns["id"]},
         "content": `Mock comment - ${commentTime}`,
         "postCid": parentPostOrComment.postCid,
-        "parentCommentCid": parentPostOrComment.commentCid
-    }, parentPostOrComment.subplebbit);
+        "parentCommentCid": parentPostOrComment.commentCid,
+        "subplebbitAddress": subplebbit.subplebbitAddress
+    });
 }
 
 export async function generateMockPost(subplebbit) {
     const postStartTestTime = Date.now() / 1000;
     const mockAuthorIpns = await subplebbit.plebbit.ipfsClient.key.gen(`Mock User - ${postStartTestTime}`);
-    return new Post({
+    return subplebbit.plebbit.createComment({
         "author": {"displayName": `Mock Author - ${postStartTestTime}`, "address": mockAuthorIpns["id"]},
         "title": `Mock Post - ${postStartTestTime}`,
         "content": `Mock content - ${postStartTestTime}`,
-    }, subplebbit);
+        "subplebbitAddress": subplebbit.subplebbitAddress
+    });
 }
 
 export async function generateMockVote(parentPostOrComment, vote, subplebbit) {

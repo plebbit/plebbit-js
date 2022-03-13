@@ -1,7 +1,7 @@
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
 import assert from 'assert';
 import {Plebbit, Post} from "../src/index.js"
-import {loadIpfsFileAsJson, unsubscribeAllPubsubTopics} from "../src/Util.js";
+import {loadIpfsFileAsJson, sleep, unsubscribeAllPubsubTopics} from "../src/Util.js";
 import * as fs from 'fs/promises';
 import readline from "readline";
 import {SORTED_COMMENTS_TYPES, SORTED_POSTS_PAGE_SIZE, SortedComments} from "../src/SortHandler.js";
@@ -9,7 +9,7 @@ import {generateMockPost} from "./MockUtil.js";
 
 const startTestTime = Date.now() / 1000;
 const plebbit = await Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
-const subplebbit = await plebbit.createSubplebbit({}, plebbit.ipfsClient);
+const subplebbit = await plebbit.createSubplebbit({});
 
 const mockPosts = [];
 describe("Test Subplebbit functionality", async () => {
