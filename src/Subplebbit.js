@@ -14,7 +14,6 @@ import {
     PUBSUB_MESSAGE_TYPES
 } from "./Challenge.js";
 import assert from "assert";
-import PlebbitCore from "./PlebbitCore.js";
 import knex from 'knex';
 import DbHandler from "./DbHandler.js";
 import {createCaptcha} from "captcha-canvas/js-script/extra.js";
@@ -24,9 +23,9 @@ import Post from "./Post.js";
 import {Plebbit} from "./index.js";
 
 
-export class Subplebbit extends PlebbitCore {
-    constructor(props, ipfsClient = null) {
-        super(props, ipfsClient);
+export class Subplebbit {
+    constructor(props, plebbit) {
+        this.plebbit = plebbit;
         this.#initSubplebbit(props);
         this._challengeToSolution = {}; // Map challenge ID to its solution
         this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
@@ -47,7 +46,6 @@ export class Subplebbit extends PlebbitCore {
         this.sortedPosts = mergedProps["sortedPosts"] || {};
         this.sortedPostsCids = mergedProps["sortedPostsCids"] || {};
         this.setIpnsKey(mergedProps["subplebbitAddress"], mergedProps["ipnsKeyName"]);
-        this.plebbit = Plebbit(newProps, this.ipfsClient);
         this.sortHandler = new SortHandler(this);
         this.challengeTypes = mergedProps["challengeTypes"] || null;
         this.metricsCid = mergedProps["metricsCid"];
@@ -151,7 +149,7 @@ export class Subplebbit extends PlebbitCore {
     async #updateMetricsCid() {
         const metrics = await this?.dbHandler?.querySubplebbitMetrics();
         if (metrics)
-            this.metricsCid = (await this.ipfsClient.add(JSON.stringify(metrics))).path;
+            this.metricsCid = (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path;
     }
 
     async #updateSubplebbitPosts(post) {
@@ -187,13 +185,13 @@ export class Subplebbit extends PlebbitCore {
 
         const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote instanceof Comment ? postOrCommentOrVote.toJSONSkeleton() : postOrCommentOrVote));
 
-        const ipnsKeys = (await this.ipfsClient.key.list()).map(key => key["name"]);
+        const ipnsKeys = (await this.plebbit.ipfsClient.key.list()).map(key => key["name"]);
 
         if (ipnsKeys.includes(ipnsKeyName))
             return {"reason": `Failed to insert ${postOrCommentOrVote.getType()} due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`};
 
         if (postOrCommentOrVote instanceof Comment) // Only Post and Comment
-            postOrCommentOrVote.setCommentIpnsKey(await this.ipfsClient.key.gen(ipnsKeyName));
+            postOrCommentOrVote.setCommentIpnsKey(await this.plebbit.ipfsClient.key.gen(ipnsKeyName));
 
         if (postOrCommentOrVote.getType() === "post") {
             postOrCommentOrVote.setPreviousCommentCid(this.latestPostCid);
@@ -251,7 +249,7 @@ export class Subplebbit extends PlebbitCore {
 
         } else {
             // Comment and Post need to add file to ipfs
-            const file = await this.ipfsClient.add(JSON.stringify(postOrCommentOrVote));
+            const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote));
             if (postOrCommentOrVote.getType() === "post") {
                 postOrCommentOrVote.setPostCid(file.path);
                 postOrCommentOrVote.setCommentCid(file.path);
@@ -293,7 +291,7 @@ export class Subplebbit extends PlebbitCore {
                     });
 
                     await this.dbHandler.upsertChallenge(challengeVerification);
-                    await this.ipfsClient.pubsub.publish(challengeVerification.challengeAnswerId, uint8ArrayFromString(JSON.stringify(challengeVerification)));
+                    await this.plebbit.ipfsClient.pubsub.publish(challengeVerification.challengeAnswerId, uint8ArrayFromString(JSON.stringify(challengeVerification)));
                 } else {
                     const challengeVerification = new ChallengeVerificationMessage({
                         "challengeRequestId": msgParsed.challengeRequestId,
@@ -303,7 +301,7 @@ export class Subplebbit extends PlebbitCore {
                     });
                     await this.dbHandler.upsertChallenge(challengeVerification); //TODO implement later
 
-                    await this.ipfsClient.pubsub.publish(challengeVerification.challengeAnswerId, uint8ArrayFromString(JSON.stringify(challengeVerification)));
+                    await this.plebbit.ipfsClient.pubsub.publish(challengeVerification.challengeAnswerId, uint8ArrayFromString(JSON.stringify(challengeVerification)));
                 }
                 delete this._challengeToPublication[msgParsed.challengeRequestId];
             }
@@ -326,7 +324,7 @@ export class Subplebbit extends PlebbitCore {
                     ...publishedPublication
                 });
                 await this.dbHandler.upsertChallenge(challengeVerification); //TODO implement later
-                await this.ipfsClient.pubsub.publish(challengeVerification.challengeRequestId, uint8ArrayFromString(JSON.stringify(challengeVerification)));
+                await this.plebbit.ipfsClient.pubsub.publish(challengeVerification.challengeRequestId, uint8ArrayFromString(JSON.stringify(challengeVerification)));
 
             } else {
                 const challengeMessage = new ChallengeMessage({
@@ -335,8 +333,8 @@ export class Subplebbit extends PlebbitCore {
                 });
                 await this.dbHandler.upsertChallenge(challengeMessage); //TODO implement later
 
-                await this.ipfsClient.pubsub.publish(challengeMessage.challengeRequestId, uint8ArrayFromString(JSON.stringify(challengeMessage)));
-                await this.ipfsClient.pubsub.subscribe(challengeMessage.challengeRequestId, validateCaptchaAnswer);
+                await this.plebbit.ipfsClient.pubsub.publish(challengeMessage.challengeRequestId, uint8ArrayFromString(JSON.stringify(challengeMessage)));
+                await this.plebbit.ipfsClient.pubsub.subscribe(challengeMessage.challengeRequestId, validateCaptchaAnswer);
             }
         }
     }
@@ -373,13 +371,13 @@ export class Subplebbit extends PlebbitCore {
             this.validateCaptchaAnswerCallback = this.#defaultValidateCaptcha;
         }
         assert(this.dbHandler, "A connection to a database is needed for the hosting a subplebbit");
-        const subscribedTopics = (await this.ipfsClient.pubsub.ls());
+        const subscribedTopics = (await this.plebbit.ipfsClient.pubsub.ls());
         if (!subscribedTopics.includes(this.pubsubTopic))
-            await this.ipfsClient.pubsub.subscribe(this.pubsubTopic, this.#processCaptchaPubsub.bind(this));
+            await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, this.#processCaptchaPubsub.bind(this));
     }
 
     async stopPublishing() {
-        await this.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
+        await this.plebbit.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
         this.event.removeAllListeners();
     }
 
@@ -388,9 +386,9 @@ export class Subplebbit extends PlebbitCore {
         // Call this only if you know what you're doing
         // rm ipns and ipfs
         await this.stopPublishing();
-        const ipfsPath = (await last(this.ipfsClient.name.resolve(this.subplebbitAddress)));
-        await this.ipfsClient.pin.rm(ipfsPath);
-        await this.ipfsClient.key.rm(this.ipnsKeyName);
+        const ipfsPath = (await last(this.plebbit.ipfsClient.name.resolve(this.subplebbitAddress)));
+        await this.plebbit.ipfsClient.pin.rm(ipfsPath);
+        await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
     }
 
 }

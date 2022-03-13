@@ -48,7 +48,7 @@ export class SortHandler {
                     "nextSortedCommentsCid": sortedPosts[i + 1]?.pageCid || null,
                     "pageCid": null
                 }, this.subplebbit);
-                const cid = (await this.subplebbit.ipfsClient.add(JSON.stringify(sortedPostsPage))).path;
+                const cid = (await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(sortedPostsPage))).path;
                 sortedPostsPage.setPageCid(cid);
                 sortedPosts[i] = sortedPostsPage;
             }
@@ -167,10 +167,10 @@ export class SortHandler {
     async calculateSortedPosts() {
         return new Promise(async (resolve, reject) => {
             const sortPromises = [this.#sortPostsByHot.bind(this)(), this.#sortPostsByNew.bind(this)()];
-                for (const timeframe of Object.keys(TIMEFRAMES_TO_SECONDS)) {
-                    sortPromises.push(this.#sortPostsByTop.bind(this)(timeframe));
-                    sortPromises.push(this.#sortPostsByControversial.bind(this)(timeframe));
-                }
+            for (const timeframe of Object.keys(TIMEFRAMES_TO_SECONDS)) {
+                sortPromises.push(this.#sortPostsByTop.bind(this)(timeframe));
+                sortPromises.push(this.#sortPostsByControversial.bind(this)(timeframe));
+            }
 
             Promise.all(sortPromises).then((sortedComments) => {
                 const sortedPosts = Object.fromEntries(sortedComments.map(sortedPost => [sortedPost.type, sortedPost]));

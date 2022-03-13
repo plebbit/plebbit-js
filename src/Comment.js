@@ -109,7 +109,7 @@ class Comment extends Publication {
 
     async fetchCommentIpns() {
         return new Promise(async (resolve, reject) => {
-            loadIpnsAsJson(this.commentIpnsName, this.subplebbit.ipfsClient).then(res => {
+            loadIpnsAsJson(this.commentIpnsName, this.subplebbit.plebbit.ipfsClient).then(res => {
                     this.commentIpns = new CommentIPNS(res);
                     resolve(this.commentIpns);
                 }
@@ -121,8 +121,8 @@ class Comment extends Publication {
         assert(this.commentIpnsKeyName && this.commentIpnsName, "You need to have commentIpns");
         this.commentIpns = newCommentIpns;
         return new Promise(async (resolve, reject) => {
-            this.subplebbit.ipfsClient.add(JSON.stringify(this.commentIpns)).then(file => {
-                this.subplebbit.ipfsClient.name.publish(file["cid"], {
+            this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.commentIpns)).then(file => {
+                this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
                     "lifetime": "5h",
                     "key": this.commentIpnsKeyName
                 }).then(resolve).catch(reject);

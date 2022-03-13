@@ -70,14 +70,14 @@ class Publication {
                         "challengeRequestId": msgParsed.challengeRequestId, "challengeAnswerId": uuidv4(),
                         "challengeAnswers": answers
                     });
-                    await this.subplebbit.ipfsClient.pubsub.subscribe(challengeAnswer.challengeAnswerId, handleCaptchaVerification);
-                    await this.subplebbit.ipfsClient.pubsub.publish(challengeAnswer.challengeRequestId, uint8ArrayFromString(JSON.stringify(challengeAnswer)));
+                    await this.subplebbit.plebbit.ipfsClient.pubsub.subscribe(challengeAnswer.challengeAnswerId, handleCaptchaVerification);
+                    await this.subplebbit.plebbit.ipfsClient.pubsub.publish(challengeAnswer.challengeRequestId, uint8ArrayFromString(JSON.stringify(challengeAnswer)));
                 } else if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION)
                     // If we reach this block that means the subplebbit owner has chosen to skip captcha by returning null on provideCaptchaCallback
                     handleCaptchaVerification(pubsubMsg).then(resolve).catch(reject);
             };
-            await this.subplebbit.ipfsClient.pubsub.subscribe(challengeRequest.challengeRequestId, processChallenge);
-            await this.subplebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeRequest)));
+            await this.subplebbit.plebbit.ipfsClient.pubsub.subscribe(challengeRequest.challengeRequestId, processChallenge);
+            await this.subplebbit.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeRequest)));
         });
 
 
@@ -88,9 +88,9 @@ class Publication {
             this.#publish(userOptions, solveChallengeCallback).then(async (challengeVerificationMessage) => {
                 // Unsubscribe all events
                 try {
-                    await this.subplebbit.ipfsClient.pubsub.unsubscribe(challengeVerificationMessage.challengeRequestId);
-                    await this.subplebbit.ipfsClient.pubsub.unsubscribe(challengeVerificationMessage.challengeAnswerId);
-                    const topics = await this.subplebbit.ipfsClient.pubsub.ls();
+                    await this.subplebbit.plebbit.ipfsClient.pubsub.unsubscribe(challengeVerificationMessage.challengeRequestId);
+                    await this.subplebbit.plebbit.ipfsClient.pubsub.unsubscribe(challengeVerificationMessage.challengeAnswerId);
+                    const topics = await this.subplebbit.plebbit.ipfsClient.pubsub.ls();
                     assert(!topics.includes(challengeVerificationMessage.challengeRequestId), "Failed to unsubscribe from challenge request ID event");
                     assert(!topics.includes(challengeVerificationMessage.challengeAnswerId), "Failed to unsubscribe from challenge answer ID event");
                     resolve(challengeVerificationMessage);

@@ -12,7 +12,7 @@ export class Plebbit extends PlebbitCore {
             subplebbitAddress = `/ipns/${subplebbitAddress}`;
         return new Promise(async (resolve, reject) => {
             loadIpnsAsJson(subplebbitAddress, this.ipfsClient)
-                .then(jsonFile => resolve(new Subplebbit({...jsonFile, ...subplebbitProps}, this.ipfsClient)))
+                .then(jsonFile => resolve(new Subplebbit({...jsonFile, ...subplebbitProps}, this)))
                 .catch(reject);
         });
     }
@@ -41,6 +41,6 @@ export class Plebbit extends PlebbitCore {
                 "ipnsKeyName": ipnsKeyName
             });
         } else
-            return new Subplebbit(subplebbitOptions, ipfsClient);
+            return new Subplebbit(subplebbitOptions, this);
     }
 }
