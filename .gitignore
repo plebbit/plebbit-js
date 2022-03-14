@@ -103,7 +103,7 @@ dist
 # TernJS port file
 .tern-port
 
-# Subplebbit SQLite database directory
-.databases/
+# Plebbit data directory
+.plebbit/
 # Test captchas directory
 .captcha/
