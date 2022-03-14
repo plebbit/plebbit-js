@@ -142,7 +142,7 @@ class DbHandler {
             this.knex(TABLES.VOTES).where({
                 "commentCid": commentCid,
                 "authorAddress": authorAddress
-            }).first().then(resolve).catch(err => {
+            }).first().then(async (res) => resolve((await this.#createVotesFromRows.bind(this)(res))[0])).catch(err => {
                 console.error(err);
                 reject(err);
             })
@@ -165,6 +165,26 @@ class DbHandler {
             resolve(posts);
         });
 
+    }
+
+    async #createVotesFromRows(voteRows) {
+        return new Promise(async (resolve, reject) => {
+            if (!voteRows)
+                resolve([undefined]);
+            else {
+                if (!Array.isArray(voteRows))
+                    voteRows = [voteRows];
+                const authors = (await this.knex(TABLES.AUTHORS).whereIn("address", voteRows.map(vote => vote.authorAddress))).map(authorProps => new Author(authorProps));
+                const votes = voteRows.map(voteProps => {
+                    const props = {
+                        ...voteProps,
+                        "author": authors.filter(author => author.address === voteProps.authorAddress)[0],
+                    };
+                    return new Vote(props, this.subplebbit);
+                });
+                resolve(votes);
+            }
+        });
     }
 
     async queryPostsSortedByTimestamp(limit) {
