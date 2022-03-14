@@ -1,12 +1,13 @@
 import Author from "./Author.js";
 import Publication from "./Publication.js";
+import {timestamp} from "./Util.js";
 
 class Vote extends Publication {
     constructor(props, subplebbit) {
         super(props, subplebbit);
         // Publication
         this.author = new Author(props["author"]);
-        this.timestamp = props["timestamp"];
+        this.timestamp = props["timestamp"] || timestamp();
         this.signature = props["signature"];
 
         this.commentCid = props["commentCid"];
