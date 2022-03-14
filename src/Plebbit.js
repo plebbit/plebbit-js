@@ -2,13 +2,15 @@ import Comment from "./Comment.js";
 import Post from "./Post.js";
 import {Subplebbit} from "./Subplebbit.js";
 import {loadIpfsFileAsJson, loadIpnsAsJson} from "./Util.js";
-import PlebbitCore from "./PlebbitCore.js";
-import {create as createIpfsClient} from "ipfs-http-client";
 import * as path from "path";
+import Vote from "./Vote.js";
+import {create as createIpfsClient} from "ipfs-http-client";
 
-export class Plebbit extends PlebbitCore {
-    constructor(options, ipfsClient = null) {
-        super(options, ipfsClient);
+export class Plebbit {
+    constructor(options) {
+        this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
+        this.ipfsApiUrl = options["ipfsApiUrl"];
+        this.ipfsClient = createIpfsClient(this.ipfsApiUrl);
         this.dataPath = options["dataPath"] || path.join(process.cwd(), ".plebbit");
     }
 
