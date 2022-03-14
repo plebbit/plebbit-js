@@ -31,8 +31,10 @@ describe("Test Subplebbit functionality", async () => {
         await subplebbit.setProvideCaptchaCallback(() => [null, "No need for captcha"]);
         await subplebbit.startPublishing();
         const actualPosts = new Array(numOfPosts);
-        for (let i = actualPosts.length - 1; i >= 0; i--)
+        for (let i = actualPosts.length - 1; i >= 0; i--) {
             actualPosts[i] = await generateMockPost(subplebbit);
+            await sleep(1000);
+        }
 
         await Promise.all(actualPosts.map(async post => post.publish()));
         const sortedPostsFirstPage = new SortedComments(await loadIpfsFileAsJson(subplebbit.sortedPostsCids[SORTED_COMMENTS_TYPES.NEW], plebbit.ipfsClient));
