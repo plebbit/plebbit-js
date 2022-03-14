@@ -18,8 +18,6 @@ import knex from 'knex';
 import DbHandler from "./DbHandler.js";
 import {createCaptcha} from "captcha-canvas/js-script/extra.js";
 import {SORTED_COMMENTS_TYPES, SortHandler} from "./SortHandler.js";
-import Vote from "./Vote.js";
-import Post from "./Post.js";
 import * as path from "path";
 import * as fs from "fs";
 

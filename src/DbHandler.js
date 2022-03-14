@@ -3,6 +3,7 @@ import Post from "./Post.js";
 import Author from "./Author.js";
 import Comment from "./Comment.js";
 import {TIMEFRAMES_TO_SECONDS, timestamp} from "./Util.js";
+import Vote from "./Vote.js";
 
 export const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -47,7 +48,7 @@ class DbHandler {
 
             table.timestamp("timestamp").notNullable();
             table.text("subplebbitAddress").notNullable();
-            table.enum("vote", [-1, 0, 1]).notNullable();
+            table.enum("vote", ["-1", "0", "1"]).notNullable();
             table.text("signature").nullable(); // Will likely revise later
 
             table.primary(["commentCid", "authorAddress"]); // An author can't have multiple votes on a comment
