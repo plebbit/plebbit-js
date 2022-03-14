@@ -4,8 +4,8 @@ import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
 import EventEmitter from "events";
 import {sha256} from "js-sha256";
 import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string'
-
 import {
+    Challenge,
     CHALLENGE_TYPES,
     ChallengeAnswerMessage,
     ChallengeMessage,
@@ -342,23 +342,26 @@ export class Subplebbit {
         }
     }
 
-    async #defaultProvideCaptcha(challengeWithMsg) {
+    async #defaultProvideCaptcha(challengeRequestMessage) {
 
         // Return question, type
         // Expected return is:
         // captcha, captcha type, reason for skipping captcha (if it's skipped by nullifying captcha)
         return new Promise(async (resolve, reject) => {
             const {image, text} = createCaptcha(300, 100);
-            this._challengeToSolution[challengeWithMsg.challenge.requestId] = text;
-            image.then(imageBuffer => resolve([imageBuffer, CHALLENGE_TYPES.image, null])).catch(reject);
+            this._challengeToSolution[challengeRequestMessage.challengeRequestId] = text;
+            image.then(imageBuffer => resolve([[new Challenge({
+                "challenge": imageBuffer,
+                "type": CHALLENGE_TYPES.image
+            })], null])).catch(reject);
         });
 
     }
 
-    async #defaultValidateCaptcha(challengeWithMsg) {
+    async #defaultValidateCaptcha(challengeAnswerMessage) {
         return new Promise(async (resolve, reject) => {
-            const actualSolution = this._challengeToSolution[challengeWithMsg.challenge.requestId];
-            const answerIsCorrect = challengeWithMsg.challenge.answer === actualSolution;
+            const actualSolution = this._challengeToSolution[challengeAnswerMessage.challengeRequestId];
+            const answerIsCorrect = challengeAnswerMessage.challengeAnswers === actualSolution;
             const reason = answerIsCorrect ? "User solved captcha correctly" : "User solved captcha incorrectly";
             resolve([answerIsCorrect, reason]);
         });
