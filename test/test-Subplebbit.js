@@ -120,7 +120,7 @@ describe("Test Subplebbit functionality", async () => {
 
     it("Throws an error when publishing a duplicate post", async function () {
         return new Promise(async (resolve, reject) => {
-            const post = new Post(mockPosts[0].toJSONSkeleton(), subplebbit);
+            const post = await plebbit.createComment(mockPosts[0].toJSONSkeleton());
             subplebbit.setProvideCaptchaCallback(() => [null, null]);
 
             await subplebbit.startPublishing();
