@@ -191,18 +191,20 @@ Challenge {
 
 - [Plebbit API](#plebbit-api)
   - [`Plebbit(plebbitOptions)`](#plebbitplebbitoptions)
-  - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
-  - [`plebbit.getSubplebbit(subplebbitAddress)`](#plebbitgetsubplebbitsubplebbitaddress)
-  - [`plebbit.createComment(createCommentOptions)`](#plebbitcreatecommentcreatecommentoptions)
-  - [`plebbit.createSubplebbit(createSubplebbitOptions)`](#plebbitcreatesubplebbitcreatesubplebbitoptions)
-  - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
-  - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
-  - `plebbit.getDefaults()`
   - `plebbit.getMultisub(multisubAddress)`
+  - [`plebbit.getSubplebbit(subplebbitAddress)`](#plebbitgetsubplebbitsubplebbitaddress)
+  - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
+  - `plebbit.createMultisub(createMultisubOptions)`
+  - [`plebbit.createSubplebbit(createSubplebbitOptions)`](#plebbitcreatesubplebbitcreatesubplebbitoptions)
+  - [`plebbit.createComment(createCommentOptions)`](#plebbitcreatecommentcreatecommentoptions)
+  - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
+  - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
+  - `plebbit.getDefaults()`
 - [Subplebbit API](#subplebbit-api)
-  - [`subplebbit.update(subplebbitUpdateOptions)`](#subplebbitupdatesubplebbitupdateoptions)
+  - [`subplebbit.edit(subplebbitEditOptions)`](#subplebbiteditsubplebbiteditoptions)
   - [`subplebbit.start()`](#subplebbitstart)
   - [`subplebbit.stop()`](#subplebbitstop)
+  - [`subplebbit.update()`](#subplebbitupdate)
   - [`subplebbit.getSortedPosts(sortedPostsCid)`](#subplebbitgetsortedpostssortedpostscid)
   - `subplebbit.address`
   - `subplebbit.signer`
@@ -222,7 +224,9 @@ Challenge {
 - [Comment API](#comment-api)
   - [`comment.publish()`](#commentpublish)
   - [`comment.publishChallengeAnswers()`](#commentpublishchallengeanswerschallengeanswers)
-  - `comment.getSortedReplies(sortedRepliesCid)`
+  - [`comment.update()`](#commentupdate)
+  - [`comment.stop()`](#commentstop)
+  - [`comment.getSortedReplies(sortedRepliesCid)`](#commentgetsortedrepliessortedrepliescid)
   - `comment.author`
   - `comment.timestamp`
   - `comment.signature`
@@ -268,7 +272,7 @@ An object which may have the following keys:
 | ---- | ---- | ------- | ----------- |
 | ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs.com'` | URL of an IPFS gateway |
 | ipfsApiUrl | `string` | `'http://localhost:8080'` | URL of an IPFS API |
-| dataPath | `string` | `undefined` | (Node only) Folder path to create/resume the user and subplebbit databases |
+| dataPath | `string` | .plebbit folder in the current working directory | (Node only) Folder path to create/resume the user and subplebbit databases |
 
 #### Returns
 
@@ -286,6 +290,45 @@ const options = {
   dataPath: __dirname
 }
 const plebbit = Plebbit(options) // should be independent instance, not singleton
+```
+
+### `plebbit.getSubplebbit(subplebbitAddress)`
+
+> Get a subplebbit comment by its IPNS name.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| subplebbitAddress | `string` | The IPNS name of the subplebbit |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<Subplebbit>` | A `Subplebbit` instance. |
+
+#### Example
+
+```js
+const subplebbitAddress = 'QmbWqx...'
+const subplebbit = await plebbit.getSubplebbit(subplebbitAddress)
+console.log(subplebbit)
+
+let currentPostCid = subplebbit.latestPostCid
+const scrollAllSubplebbitPosts = async () => {
+  while (currentPostCid) {
+    const post = await plebbit.getComment(currentPostCid)
+    console.log(post)
+    currentPostCid = post.previousPostCid
+  }
+  console.log('there are no more posts')
+}
+scrollAllSubplebbitPosts()
+/*
+Prints:
+{ ...TODO }
+*/
 ```
 
 ### `plebbit.getComment(commentCid)`
@@ -322,48 +365,61 @@ Prints:
 */
 ```
 
-### `plebbit.getSubplebbit(subplebbitAddress)`
+### `plebbit.createSubplebbit(createSubplebbitOptions)`
 
-> Get a subplebbit comment by its IPNS name.
+> Create a subplebbit instance. Should update itself on update events after `Subplebbit.update()` is called if `CreateSubplebbitOptions.address` exists. If `CreateSubplebbitOptions.signer` exists, can call `Subplebbit.edit(subplebbitEditOptions)` to edit the subplebbit as the owner, and `Subplebbit.start()` to listen for new posts on the pubsub and publish updates as the owner.
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| subplebbitAddress | `string` | The IPNS name of the subplebbit |
+| createSubplebbitOptions | `CreateSubplebbitOptions` | Options for the `Subplebbit` instance |
+
+##### CreateSubplebbitOptions
+
+An object which may have the following keys:
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| address | `string` | `undefined` | IPNS name of the subplebbit |
+| signer | `Signer` | `undefined` | (Subplebbit owners only) A `Signer` object which contains the private key of the subplebbit |
+| database | `KnexConfig` or `undefined` | `undefined` | (Subplebbit owners only) Optional [KnexConfig](https://www.npmjs.com/package/knex), defaults to SQLite database at `plebbit.dataPath/subplebbitAddress` |
 
 #### Returns
 
 | Type | Description |
 | -------- | -------- |
-| `Promise<Subplebbit>` | A `Subplebbit` instance. Should automatically update itself on update events. |
+| `Subplebbit` | A `Subplebbit` instance |
 
 #### Example
 
 ```js
-const subplebbitAddress = 'QmbWqx...'
-const subplebbit = await plebbit.getSubplebbit(subplebbitAddress)
-console.log(subplebbit)
-
-let currentPostCid = subplebbit.latestPostCid
-const scrollAllSubplebbitPosts = async () => {
-  while (currentPostCid) {
-    const post = await plebbit.getComment(currentPostCid)
-    console.log(post)
-    currentPostCid = post.previousPostCid
-  }
-  console.log('there are no more posts')
+const Plebbit = require('@plebbit/plebbit-js')
+const plebbitOptions = {
+  ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
+  ipfsApiUrl: 'http://localhost:5001',
+  dataPath: __dirname
 }
-scrollAllSubplebbitPosts()
-/*
-Prints:
-{ ...TODO }
-*/
+const plebbit = Plebbit(plebbitOptions)
+const subplebbitOptions = {
+  address: 'Qmb...',
+  signer: {privateKey: 'qwer...'}
+}
+// create a subplebbit instance
+const subplebbit = plebbit.createSubplebbit(subplebbitOptions)
+// edit the subplebbit info in the database
+subplebbit.edit({
+  title: 'Memes',
+  description: 'Post your memes here.',
+  pubsubTopic: 'Qmb...'
+})
+// start publishing updates every 5 minutes
+subplebbit.start()
 ```
 
 ### `plebbit.createComment(createCommentOptions)`
 
-> Create a `Comment` instance. Posts/Replies are also comments. Should automatically update itself on update events if `CreateCommentOptions.cid` or `CreateCommentOptions.ipnsName` exists.
+> Create a `Comment` instance. Posts/Replies are also comments. Should update itself on update events after `Comment.update()` is called if `CreateCommentOptions.cid` or `CreateCommentOptions.ipnsName` exists.
 
 #### Parameters
 
@@ -407,56 +463,46 @@ comment.publish()
 const comment = plebbit.createComment({ipnsName: 'Qm...'})
 // looks for updates in the background every 5 minutes
 comment.on('update', (updatedComment) => console.log(updatedComment))
+comment.update()
 ```
 
-### `plebbit.createSubplebbit(createSubplebbitOptions)`
+### `plebbit.createCommentEdit(createCommentEditOptions)`
 
-> Create a subplebbit instance. Should automatically update itself on update events if `CreateSubplebbitOptions.address` exists. If `CreateSubplebbitOptions.signer` exists, can call `Subplebbit.update(subplebbitUpdateOptions)` to update the subplebbit as the owner.
+> Create a `Comment` instance. Posts/Replies are also comments.
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| createSubplebbitOptions | `CreateSubplebbitOptions` | Options for the `Subplebbit` instance |
+| createCommentEditOptions | `CreateCommentEditOptions` | The comment edit to create |
 
-##### CreateSubplebbitOptions
+##### CreateCommentEditOptions
 
 An object which may have the following keys:
 
-| Name | Type | Default | Description |
-| ---- | ---- | ------- | ----------- |
-| address | `string` | `undefined` | IPNS name of the subplebbit |
-| signer | `Signer` | `undefined` | (Subplebbit owners only) A `Signer` object which contains the private key of the subplebbit |
-| database | `KnexConfig` or `undefined` | `undefined` | (Subplebbit owners only) Optional [KnexConfig](https://www.npmjs.com/package/knex), defaults to SQLite database at `plebbit.dataPath/subplebbitAddress` |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| subplebbitAddress | `string` | IPNS name of the subplebbit |
+| commentCid | The comment CID to be edited |
+| content | `string` | Edited content of the comment |
+| timestamp | `number` or `null` | Time of edit in ms, `Date.now()` if null |
+| signer | `Signer` | Signer of the comment |
 
 #### Returns
 
 | Type | Description |
 | -------- | -------- |
-| `Subplebbit` | A `Subplebbit` instance |
+| `Comment` | A `Comment` instance |
 
 #### Example
 
 ```js
-const Plebbit = require('@plebbit/plebbit-js')
-const plebbitOptions = {
-  ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
-  ipfsApiUrl: 'http://localhost:5001',
-  dataPath: __dirname
-}
-const plebbit = Plebbit(plebbitOptions)
-const subplebbitOptions = {
-  address: 'Qmb...',
-  signer: {privateKey: 'qwer...'}
-}
-const subplebbit = plebbit.createSubplebbit(subplebbitOptions)
-subplebbit.update({
-  title: 'Memes',
-  description: 'Post your memes here.',
-  pubsubTopic: 'Qmb...'
+const commentEdit = plebbit.createCommentEdit(createCommentEditOptions)
+commentEdit.on('challenge', async (challengeMessage) => {
+  const challengeAnswers = await askUserForChallengeAnswer(challengeMessage.challenges)
+  commentEdit.publishChallengeAnswers(challengeAnswers)
 })
-subplebbit.on('update', (updatedSubplebbit) => console.log(updatedSubplebbit))
-subplebbit.start()
+commentEdit.publish()
 ```
 
 ### `plebbit.createVote(createVoteOptions)`
@@ -499,59 +545,20 @@ vote.on('challenge', async (challengeMessage) => {
 vote.publish()
 ```
 
-### `plebbit.createCommentEdit(createCommentEditOptions)`
-
-> Create a `Comment` instance. Posts/Replies are also comments.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| createCommentEditOptions | `CreateCommentEditOptions` | The comment edit to create |
-
-##### CreateCommentEditOptions
-
-An object which may have the following keys:
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| subplebbitAddress | `string` | IPNS name of the subplebbit |
-| commentCid | The comment CID to be edited |
-| content | `string` | Edited content of the comment |
-| timestamp | `number` or `null` | Time of edit in ms, `Date.now()` if null |
-| signer | `Signer` | Signer of the comment |
-
-#### Returns
-
-| Type | Description |
-| -------- | -------- |
-| `Comment` | A `Comment` instance |
-
-#### Example
-
-```js
-const commentEdit = plebbit.createCommentEdit(createCommentEditOptions)
-commentEdit.on('challenge', async (challengeMessage) => {
-  const challengeAnswers = await askUserForChallengeAnswer(challengeMessage.challenges)
-  commentEdit.publishChallengeAnswers(challengeAnswers)
-})
-commentEdit.publish()
-```
-
 ## Subplebbit API
-The subplebbit API for getting subplebbit updates or creating, updating, running a subplebbit as an owner.
+The subplebbit API for getting subplebbit updates, or creating, editing, running a subplebbit as an owner.
 
-### `subplebbit.update(subplebbitUpdateOptions)`
+### `subplebbit.edit(subplebbitEditOptions)`
 
-> Update the content of a subplebbit. Only usable if `Subplebbit.signer` exists.
+> Edit the content/information of a subplebbit in your local database. Only usable if `Subplebbit.signer` exists (ie. you are the subplebbit owner).
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| subplebbit | `SubplebbitUpdateOptions` | The content of the subplebbit |
+| subplebbit | `SubplebbitEditOptions` | The content/information of the subplebbit |
 
-##### SubplebbitUpdateOptions
+##### SubplebbitEditOptions
 
 An object which may have the following keys:
 
@@ -570,7 +577,7 @@ An object which may have the following keys:
 
 | Type | Description |
 | -------- | -------- |
-| `Promise<SubplebbitUpdateResponse>` | The update subplebbit response |
+| `Promise<SubplebbitEditResponse>` | The Knex response from the database |
 
 Object is of the form:
 
@@ -592,20 +599,46 @@ Object is of the form:
 
 ```js
 const options = {
-  address: 'Qmb...'
+  title: 'Your subplebbit title'
 }
 const subplebbit = plebbit.createSubplebbit(options)
-subplebbit.on('update', (updatedSubplebbitInstance) => console.log(updatedSubplebbitInstance))
+// edit the subplebbit info in the database
+subplebbit.edit({
+  title: 'Memes',
+  description: 'Post your memes here.',
+  pubsubTopic: 'Qmb...'
+})
+// start publishing updates/new posts
 subplebbit.start()
 ```
 
 ### `subplebbit.stop()`
 
-> Stop listening for new posts on the pubsub, and stop publishing them every 5 minutes.
+> Stop polling the network for new subplebbit updates started by subplebbit.update(). Also stop listening for new posts on the pubsub started by subplebbit.start(), and stop publishing them every 5 minutes.
+
+### `subplebbit.update()`
+
+> Start polling the network for new posts published in the subplebbit, update itself and emit the 'update' event. Only usable if subplebbit.address exists.
+
+#### Example
+
+```js
+const options = {
+  address: 'Qmb...'
+}
+const subplebbit = plebbit.createSubplebbit(options)
+subplebbit.on('update', (updatedSubplebbitInstance) => {
+  console.log(updatedSubplebbitInstance)
+
+  // if you want to stop polling for new updates after only the first one
+  subplebbit.stop()
+})
+subplebbit.update()
+```
 
 ### `subplebbit.getSortedPosts(sortedPostsCid)`
 
-> Get a `SortedComments` instance using an IPFS CID from `Subplebbit.sortedPostsCids[sortedBy]`. Comments are not `Comment` instances, just comment data objects. Posts and replies are also "comments".
+> Get a `SortedComments` instance using an IPFS CID from `Subplebbit.sortedPostsCids[sortType]`. Comments are not `Comment` instances, just comment data objects. Posts and replies are also "comments".
 
 #### Parameters
 
@@ -632,11 +665,12 @@ const post = await plebbit.getComment(commentCid)
 post.on('update', async updatedPost => {
   let replies
   if (updatedPost.sortedRepliesCids?.new) {
+    // try to get sorted replies by sort type 'new'
     // sorted replies are not always available, for example if the post only has a few replies
-    replies = await comment.getSortedReplies(updatedPost.sortedRepliesCids.new)
+    replies = await post.getSortedReplies(updatedPost.sortedRepliesCids.new)
   }
   else {
-    // the hot algorithm is always preloaded by default and can be used as fallback
+    // the 'hot' sort type is always preloaded by default and can be used as fallback
     replies = updatedPost.sortedReplies.hot
   }
   console.log(replies)
@@ -664,7 +698,10 @@ const options = {
 }
 const subplebbit = plebbit.createSubplebbit(options)
 subplebbit.on('update', (updatedSubplebbit) => console.log(updatedSubplebbit))
-subplebbit.start()
+subplebbit.update()
+
+// stop updating in 10 minutes
+setTimeout(() => subplebbit.stop(), 60000)
 ```
 
 ### `challengerequest`
@@ -712,7 +749,7 @@ Object is of the form:
 ```
 
 ## Comment API
-The comment API for publishing a comment or getting comment updates. `Comment`, `Vote` and `CommentEdit` inherit `Publication` class and all have a similar API. A `Comment` should automatically update itself on update events if `Comment.cid` or `Comment.ipnsName` exists.
+The comment API for publishing a comment as an author, or getting comment updates. `Comment`, `Vote` and `CommentEdit` inherit `Publication` class and all have a similar API. A `Comment` updates itselfs on update events after `Comment.update()` is called if `Comment.cid` or `Comment.ipnsName` exists.
 
 ### `comment.publish()`
 
@@ -750,12 +787,78 @@ comment.on('challenge', async (challengeMessage) => {
 comment.publish()
 ```
 
+### `comment.update()`
+
+> Start polling the network for comment updates (replies, upvotes, edits, etc), update itself and emit the update event. Only usable if comment.cid or comment.ipnsName exists.
+
+#### Example
+
+```js
+const commentCid = 'Qmb...'
+const comment = await plebbit.getComment(commentCid)
+comment.on('update', (updatedCommentInstance) => {
+  console.log(updatedCommentInstance)
+
+  // if you want to stop polling for new updates after only the first one
+  comment.stop()
+})
+comment.update()
+
+// if you already fetched the comment and only want the updates
+const commentDataFetchedEarlier = {content, author, cid, ipnsName, etc...}
+const comment = plebbit.createComment(commentDataFetchedEarlier)
+comment.on('update', () => {
+  console.log('the comment instance updated itself:', comment)
+})
+comment.update()
+```
+
+### `comment.stop()`
+
+> Stop polling the network for new comment updates started by comment.update().
+
+### `comment.getSortedReplies(sortedRepliesCid)`
+
+> Get a `SortedComments` instance using an IPFS CID from `Comment.sortedRepliesCids[sortType]`. Comments are not `Comment` instances, just comment data objects. Replies are also "comments".
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| sortedRepliesCid | `string` | The IPFS CID of the sorted comments |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<SortedComments>` | A `SortedComments` instance |
+
+#### Example
+
+```js
+// get sorted replies to a post or comment
+const comment = await plebbit.getComment(commentCid)
+comment.on('update', async updatedComment => {
+  let replies
+  if (updatedComment.sortedRepliesCids?.new) {
+    // try to get sorted replies by sort type 'new'
+    // sorted replies are not always available, for example if the comment only has a few replies
+    replies = await comment.getSortedReplies(updatedComment.sortedRepliesCids.new)
+  }
+  else {
+    // the 'hot' sort type is always preloaded by default and can be used as fallback
+    replies = updatedComment.sortedReplies.hot
+  }
+  console.log(replies)
+})
+```
+
 ## Comment Events
 The comment events.
 
 ### `update`
 
-> The comment's `Comment.ipnsName`'s record has been updated, which means vote counts and replies may have changed. Once a `Comment` is created, start looking for updates right away in the background, and try again every 5 minutes. If the previous `CommentUpdate` is the same, do not emit `update`.
+> The comment's `Comment.ipnsName`'s record has been updated, which means vote counts and replies may have changed. To start polling the network for updates, call `Comment.update()`. If the previous `CommentUpdate` is the same, do not emit `update`.
 
 #### Emits
 
@@ -776,6 +879,10 @@ const comment = await plebbit.getComment(commentCid)
 comment.on('update', (updatedComment) => {
   console.log(updatedComment)
 })
+comment.update()
+
+// stop looking for updates after 10 minutes
+setTimeout(() => comment.stop(), 60000)
 ```
 
 ### `challenge`
