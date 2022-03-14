@@ -1,4 +1,4 @@
-import {Plebbit, Comment} from "../src/index.js"
+import {Plebbit} from "../src/index.js"
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
 import assert from 'assert';
 import {loadIpfsFileAsJson, sleep, unsubscribeAllPubsubTopics} from "../src/Util.js";
@@ -7,36 +7,37 @@ import {generateMockComment} from "./MockUtil.js";
 
 const plebbit = await Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 
-const post = await plebbit.getPostOrComment("QmXXBgVyn3dAWzno3vfudSosF9ev7K9mEyu5wLXqT6v4mC");
+const post = await plebbit.getPostOrComment("QmSeDvgKzg556Qyv4xueUaDkkjMB69jLwxsUQAuUzR6fqT");
 
 const mockComments = [];
 describe("Test Post and Comment", async function () {
     before(async () => await unsubscribeAllPubsubTopics(plebbit.ipfsClient));
+    before(async () => {
+        post.subplebbit.setProvideCaptchaCallback((challengeWithMsg) => [null, null]);
+        await post.subplebbit.startPublishing();
+    });
+    after(async () => await post.subplebbit.stopPublishing());
+    after(async () => await unsubscribeAllPubsubTopics(plebbit.ipfsClient));
+
 
     it("Can publish new comment under post", async function () {
         return new Promise(async (resolve, reject) => {
-            const mockComment = await generateMockComment(post);
-            mockComment.subplebbit.event.once("comment", async (comment) => {
-                const loadedComment = await plebbit.getPostOrComment(comment.commentCid);
-                assert.equal(JSON.stringify(loadedComment), JSON.stringify(comment));
+            const mockComment = await generateMockComment(post, post.subplebbit);
+            mockComment.publish().then(async (challengeVerificationMessage) => {
+                const loadedComment = await plebbit.getPostOrComment(mockComment.commentCid);
+                assert.equal(JSON.stringify(loadedComment), JSON.stringify(mockComment));
 
-                await comment.fetchParent();
-                await comment.parent.fetchCommentIpns();
-                assert.equal(comment.parent.commentIpns.latestCommentCid, comment.commentCid);
-                assert.equal(comment.parent.commentIpns.preloadedComments[0].commentCid, comment.commentCid);
-                const loadedParentPost = await plebbit.getPostOrComment(comment.postCid);
+                await mockComment.fetchParent();
+                await mockComment.parent.fetchCommentIpns();
+                assert.equal(mockComment.parent.commentIpns.latestCommentCid, mockComment.commentCid);
+                assert.equal(mockComment.parent.commentIpns.preloadedComments[0].commentCid, mockComment.commentCid);
+                const loadedParentPost = await plebbit.getPostOrComment(mockComment.postCid);
                 await loadedParentPost.fetchCommentIpns();
-                assert.equal(loadedParentPost.commentIpns.latestCommentCid, comment.commentCid.toString(), "Failed to include latest comment in Post");
-                mockComments.push(comment);
+                assert.equal(loadedParentPost.commentIpns.latestCommentCid, mockComment.commentCid, "Failed to include latest comment in Post");
+                mockComments.push(mockComment);
                 resolve();
-            });
-            mockComment.subplebbit.setProvideCaptchaCallback((challengeWithMsg) => [null, null, ""]);
-            await mockComment.subplebbit.startPublishing();
-            await mockComment.publish();
-
+            }).catch(reject);
         });
-
-
     });
 
     it(`New comments under a post are sorted by their timestamps`, async () => {
@@ -64,21 +65,18 @@ describe("Test Post and Comment", async function () {
 
     it("Can publish new comments under comment", async () => {
         return new Promise(async (resolve, reject) => {
-            const mockComment = await generateMockComment(mockComments[0]);
-            mockComment.subplebbit.event.once("comment", async (comment) => {
-                await comment.fetchParent();
-                assert.equal(comment.parent.commentCid, mockComments[0].commentCid.toString());
-                assert.equal(comment.parentCommentCid, mockComments[0].commentCid.toString());
+            const mockComment = await generateMockComment(mockComments[0], mockComments[0].subplebbit);
+            mockComment.publish().then(async challengeVerificationMessage => {
+                await mockComment.fetchParent();
+                assert.equal(mockComment.parent.commentCid, mockComments[0].commentCid);
+                assert.equal(mockComment.parentCommentCid, mockComments[0].commentCid);
 
-                await comment.parent.fetchCommentIpns();
-                assert.equal(comment.parent.commentIpns.latestCommentCid, comment.commentCid);
-                assert.equal(comment.parent.commentIpns.preloadedComments[0].commentCid, comment.commentCid);
-                mockComments.push(comment);
+                await mockComment.parent.fetchCommentIpns();
+                assert.equal(mockComment.parent.commentIpns.latestCommentCid, mockComment.commentCid);
+                assert.equal(mockComment.parent.commentIpns.preloadedComments[0].commentCid, mockComment.commentCid);
+                mockComments.push(mockComment);
                 resolve();
-            });
-            mockComment.subplebbit.setProvideCaptchaCallback((challengeWithMsg) => [null, null, ""]);
-            await mockComment.subplebbit.startPublishing();
-            await mockComment.publish();
+            }).catch(reject);
         });
     });
 });
