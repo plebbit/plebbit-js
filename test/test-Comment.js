@@ -1,7 +1,7 @@
 import {Plebbit, Comment} from "../src/index.js"
 import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
 import assert from 'assert';
-import {loadIpfsFileAsJson, unsubscribeAllPubsubTopics} from "../src/Util.js";
+import {loadIpfsFileAsJson, sleep, unsubscribeAllPubsubTopics} from "../src/Util.js";
 import {SORTED_COMMENTS_TYPES, SortedComments} from "../src/SortHandler.js";
 import {generateMockComment} from "./MockUtil.js";
 
@@ -42,8 +42,10 @@ describe("Test Post and Comment", async function () {
     it(`New comments under a post are sorted by their timestamps`, async () => {
 
         const actualComments = [];
-        for (let i = 0; i < 4; i++)
-            actualComments.push(await generateMockComment(post));
+        for (let i = 0; i < 4; i++) {
+            actualComments.push(await generateMockComment(post, post.subplebbit));
+            await sleep(1000);
+        }
         await Promise.all(actualComments.map(async post => post.publish()));
         mockComments.push(actualComments[0]);
         const commentIpns = await post.fetchCommentIpns();
