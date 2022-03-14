@@ -268,7 +268,7 @@ An object which may have the following keys:
 | ---- | ---- | ------- | ----------- |
 | ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs.com'` | URL of an IPFS gateway |
 | ipfsApiUrl | `string` | `'http://localhost:8080'` | URL of an IPFS API |
-| dataPath | `string` | `undefined` | (Node only) Folder path to create/resume the user and subplebbit databases |
+| dataPath | `string` | .plebbit folder in the current working directory | (Node only) Folder path to create/resume the user and subplebbit databases |
 
 #### Returns
 
