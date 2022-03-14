@@ -58,4 +58,9 @@ export class Plebbit {
         } else
             return new Subplebbit(createSubplebbitOptions, this);
     }
+
+    async createVote(createVoteOptions) {
+        const subplebbit = await this.getSubplebbit(createVoteOptions.subplebbitAddress);
+        return new Vote(createVoteOptions, subplebbit);
+    }
 }

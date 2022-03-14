@@ -24,9 +24,11 @@ export async function generateMockPost(subplebbit) {
 export async function generateMockVote(parentPostOrComment, vote, subplebbit) {
     const voteTime = Date.now() / 1000;
     const mockAuthorIpns = await subplebbit.plebbit.ipfsClient.key.gen(`Mock User - ${voteTime}`);
-    return new Vote({
+    return subplebbit.plebbit.createVote({
         "author": {"displayName": `Mock Author - ${voteTime}`, "address": mockAuthorIpns["id"]},
         "commentCid": parentPostOrComment.commentCid || parentPostOrComment.postCid,
         "vote": vote,
-    }, parentPostOrComment.subplebbit);
+        "subplebbitAddress": subplebbit.subplebbitAddress
+
+    });
 }

@@ -182,9 +182,7 @@ export class Subplebbit {
     }
 
     async #publishPubsubMsg(publication, challengeRequestId) {
-        const postOrCommentOrVote = publication.hasOwnProperty("title") ? new Post(publication, this) :
-            publication.hasOwnProperty("vote") ? new Vote(publication, this)
-                : new Comment(publication, this);
+        const postOrCommentOrVote = publication.hasOwnProperty("vote") ? await this.plebbit.createVote(publication) : await this.plebbit.createComment(publication);
 
         const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote instanceof Comment ? postOrCommentOrVote.toJSONSkeleton() : postOrCommentOrVote));
 
