@@ -232,9 +232,15 @@ export class Subplebbit {
             assert(newDownvoteCount >= 0 && newDownvoteCount >= 0, "New upvote and downvote need to be proper numbers");
             await this.dbHandler.upsertVote(postOrCommentOrVote, challengeRequestId);
 
-            if (voteComment.getType() === "post")
+            if (voteComment.getType() === "post") {
                 await this.update(await this.#getSortedPostsObject());
-            else if (voteComment.getType() === "comment") {
+                await voteComment.updateCommentIpns(new CommentIPNS({
+                    ...commentIpns.toJSON(),
+                    "upvoteCount": newUpvoteCount,
+                    "downvoteCount": newDownvoteCount
+                }));
+
+            } else if (voteComment.getType() === "comment") {
                 const [sortedComments, sortedCommentsCids] = await this.sortHandler.calculateSortedComments(voteComment.commentCid);
                 await voteComment.updateCommentIpns(new CommentIPNS({
                     ...commentIpns.toJSON(),
