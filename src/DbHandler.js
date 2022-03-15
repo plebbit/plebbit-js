@@ -48,7 +48,7 @@ class DbHandler {
 
             table.timestamp("timestamp").notNullable();
             table.text("subplebbitAddress").notNullable();
-            table.enum("vote", ["-1", "0", "1"]).notNullable();
+            table.integer("vote").checkBetween([-1, 1]).notNullable();
             table.text("signature").nullable(); // Will likely revise later
 
             table.primary(["commentCid", "authorAddress"]); // An author can't have multiple votes on a comment

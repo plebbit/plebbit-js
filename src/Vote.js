@@ -11,7 +11,7 @@ class Vote extends Publication {
         this.signature = props["signature"];
 
         this.commentCid = props["commentCid"];
-        this.vote = JSON.parse(props["vote"]); // Either 1, 0, -1 (upvote, cancel vote, downvote)
+        this.vote = props["vote"]; // Either 1, 0, -1 (upvote, cancel vote, downvote)
     }
 
     toJSON() {
@@ -30,7 +30,6 @@ class Vote extends Publication {
         delete json["author"];
         json["authorAddress"] = this.author.address;
         json["challengeRequestId"] = challengeRequestId;
-        json["vote"] = String(json["vote"]);
         return json;
     }
 }
