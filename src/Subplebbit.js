@@ -179,95 +179,111 @@ export class Subplebbit {
         this.event.emit("comment", comment);
     }
 
-    async #publishPubsubMsg(publication, challengeRequestId) {
-        const postOrCommentOrVote = publication.hasOwnProperty("vote") ? await this.plebbit.createVote(publication) : await this.plebbit.createComment(publication);
-
-        const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote instanceof Comment ? postOrCommentOrVote.toJSONSkeleton() : postOrCommentOrVote));
-
-        const ipnsKeys = (await this.plebbit.ipfsClient.key.list()).map(key => key["name"]);
-
-        if (ipnsKeys.includes(ipnsKeyName))
-            return {"reason": `Failed to insert ${postOrCommentOrVote.getType()} due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`};
-
-        if (postOrCommentOrVote instanceof Comment) // Only Post and Comment
-            postOrCommentOrVote.setCommentIpnsKey(await this.plebbit.ipfsClient.key.gen(ipnsKeyName));
-
-        if (postOrCommentOrVote.getType() === "post") {
-            postOrCommentOrVote.setPreviousCommentCid(this.latestPostCid);
-            await postOrCommentOrVote.updateCommentIpns(new CommentIPNS({}));
-        } else if (postOrCommentOrVote.getType() === "comment") {
-            // Comment
-            const parent = await postOrCommentOrVote.fetchParent();
-            const parentIpns = await parent.fetchCommentIpns();
-            postOrCommentOrVote.setPreviousCommentCid(parentIpns.latestCommentCid);
-            await postOrCommentOrVote.updateCommentIpns(new CommentIPNS({}));
-        }
-
-        if (postOrCommentOrVote.getType() === "vote") {
-            const lastVote = await this.dbHandler.getLastVoteOfAuthor(postOrCommentOrVote.commentCid, postOrCommentOrVote.author.address);
-            const voteComment = await this.plebbit.getPostOrComment(postOrCommentOrVote.commentCid);
+    async #publishVote(newVote, challengeRequestId) {
+        return new Promise(async (resolve, reject) => {
+            const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address);
+            const voteComment = await this.plebbit.getPostOrComment(newVote.commentCid);
             const commentIpns = await voteComment.fetchCommentIpns();
+
             let newUpvoteCount = -1, newDownvoteCount = -1;
             if (lastVote) {
                 // User has voted before and is trying to change his vote
 
-                if (postOrCommentOrVote.vote === 0) {
+                if (newVote.vote === lastVote.vote) {
+                    resolve({"reason": "User duplicated his vote"});
+                    return null;
+                } else if (newVote.vote === 0) {
                     newUpvoteCount = commentIpns.upvoteCount + (lastVote.vote === 1 ? -1 : 0);
                     newDownvoteCount = commentIpns.downvoteCount + (lastVote.vote === -1 ? -1 : 0);
                 } else {
-                    if (lastVote.vote === 1 && postOrCommentOrVote.vote === -1) {
+                    if (lastVote.vote === 1 && newVote.vote === -1) {
                         newUpvoteCount = commentIpns.upvoteCount - 1;
                         newDownvoteCount = commentIpns.downvoteCount + 1;
-                    } else if (lastVote.vote === -1 && postOrCommentOrVote.vote === 1) {
+                    } else if (lastVote.vote === -1 && newVote.vote === 1) {
                         newUpvoteCount = commentIpns.upvoteCount + 1;
                         newDownvoteCount = commentIpns.downvoteCount - 1;
-                    } else
-                        return {"reason": "User duplicated his vote"};
+                    }
                 }
             } else {
                 // New vote
-                newUpvoteCount = postOrCommentOrVote.vote === 1 ? commentIpns.upvoteCount + 1 : commentIpns.upvoteCount;
-                newDownvoteCount = postOrCommentOrVote.vote === -1 ? commentIpns.downvoteCount + 1 : commentIpns.downvoteCount;
+                newUpvoteCount = newVote.vote === 1 ? commentIpns.upvoteCount + 1 : commentIpns.upvoteCount;
+                newDownvoteCount = newVote.vote === -1 ? commentIpns.downvoteCount + 1 : commentIpns.downvoteCount;
             }
             assert(newDownvoteCount >= 0 && newDownvoteCount >= 0, "New upvote and downvote need to be proper numbers");
-            await this.dbHandler.upsertVote(postOrCommentOrVote, challengeRequestId);
+            await this.dbHandler.upsertVote(newVote, challengeRequestId);
 
             if (voteComment.getType() === "post") {
-                await this.update(await this.#getSortedPostsObject());
-                await voteComment.updateCommentIpns(new CommentIPNS({
+                Promise.all([this.update(await this.#getSortedPostsObject()), voteComment.updateCommentIpns(new CommentIPNS({
                     ...commentIpns.toJSON(),
                     "upvoteCount": newUpvoteCount,
                     "downvoteCount": newDownvoteCount
-                }));
+                }))]).then(() => resolve({"publication": newVote})).catch(reject);
 
             } else if (voteComment.getType() === "comment") {
                 const [sortedComments, sortedCommentsCids] = await this.sortHandler.calculateSortedComments(voteComment.commentCid);
-                await voteComment.updateCommentIpns(new CommentIPNS({
+                voteComment.updateCommentIpns(new CommentIPNS({
                     ...commentIpns.toJSON(),
                     "sortedComments": {[SORTED_COMMENTS_TYPES.HOT]: sortedComments[SORTED_COMMENTS_TYPES.HOT]},
                     "sortedCommentsCids": sortedCommentsCids,
                     "upvoteCount": newUpvoteCount,
                     "downvoteCount": newDownvoteCount
-                }));
+                })).then(() => resolve({"publication": newVote})).catch(reject);
+            }
+        });
+    }
+
+    async #publishPubsubMsg(publication, challengeRequestId) {
+        return new Promise(async (resolve, reject) => {
+            const postOrCommentOrVote = publication.hasOwnProperty("vote") ? await this.plebbit.createVote(publication) : await this.plebbit.createComment(publication);
+
+            if (postOrCommentOrVote.getType() === "vote")
+                this.#publishVote(postOrCommentOrVote, challengeRequestId).then(resolve).catch(reject);
+            else if (postOrCommentOrVote instanceof Comment) {
+                // Comment and Post need to add file to ipfs
+                const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote.toJSONSkeleton()));
+
+                const ipnsKeys = (await this.plebbit.ipfsClient.key.list()).map(key => key["name"]);
+
+                if (ipnsKeys.includes(ipnsKeyName))
+                    resolve({"reason": `Failed to insert ${postOrCommentOrVote.getType()} due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`});
+                else {
+                    postOrCommentOrVote.setCommentIpnsKey(await this.plebbit.ipfsClient.key.gen(ipnsKeyName));
+                    if (postOrCommentOrVote.getType() === "post") {
+                        postOrCommentOrVote.setPreviousCommentCid(this.latestPostCid);
+                        const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote));
+                        postOrCommentOrVote.setPostCid(file.path);
+                        postOrCommentOrVote.setCommentCid(file.path);
+                        postOrCommentOrVote.updateCommentIpns(new CommentIPNS({"upvoteCount": 1})).catch(reject);
+                        await this.dbHandler.insertComment(postOrCommentOrVote, challengeRequestId);
+                        const defaultVote = await this.plebbit.createVote({
+                            ...postOrCommentOrVote.toJSON(),
+                            "vote": 1
+                        });
+                        await this.dbHandler.upsertVote(defaultVote, challengeRequestId);
+                        await this.#updateSubplebbitPosts(postOrCommentOrVote);
+                        resolve({"publication": postOrCommentOrVote});
+                    } else {
+                        // Comment
+                        const parent = await postOrCommentOrVote.fetchParent();
+                        const parentIpns = await parent.fetchCommentIpns();
+                        postOrCommentOrVote.setPreviousCommentCid(parentIpns.latestCommentCid);
+                        const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote));
+                        postOrCommentOrVote.setCommentCid(file.path);
+                        await this.dbHandler.insertComment(postOrCommentOrVote, challengeRequestId);
+                        postOrCommentOrVote.updateCommentIpns(new CommentIPNS({"upvoteCount": 1})).catch(reject);
+                        const defaultVote = await this.plebbit.createVote({
+                            ...postOrCommentOrVote.toJSON(),
+                            "vote": 1
+                        });
+                        await this.dbHandler.upsertVote(defaultVote, challengeRequestId);
+                        await this.#updatePostComments(postOrCommentOrVote);
+                        resolve({"publication": postOrCommentOrVote});
+
+                    }
+                }
 
             }
-
-        } else {
-            // Comment and Post need to add file to ipfs
-            const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote));
-            if (postOrCommentOrVote.getType() === "post") {
-                postOrCommentOrVote.setPostCid(file.path);
-                postOrCommentOrVote.setCommentCid(file.path);
-                await this.dbHandler.insertComment(postOrCommentOrVote, challengeRequestId);
-                await this.#updateSubplebbitPosts(postOrCommentOrVote);
-            } else {
-                // Comment
-                postOrCommentOrVote.setCommentCid(file.path);
-                await this.dbHandler.insertComment(postOrCommentOrVote, challengeRequestId);
-                await this.#updatePostComments(postOrCommentOrVote);
-            }
-        }
-        return {"publication": postOrCommentOrVote};
+        });
     }
 
     async #publishPostAfterPassingChallenge(msgParsed) {
