@@ -72,15 +72,6 @@ export class SortHandler {
         });
 
     }
-
-    async #topScore(comment) {
-        return new Promise(async (resolve, reject) => {
-            this.subplebbit.dbHandler.queryVotesOfComment(comment.commentCid).then(([upvote, downvote]) => {
-                resolve(upvote - downvote);
-            }).catch(reject);
-        });
-    }
-
     async #controversialScore(comment) {
         return new Promise(async (resolve, reject) => {
             this.subplebbit.dbHandler.queryVotesOfComment(comment.commentCid).then(([upvote, downvote]) => {
@@ -93,23 +84,21 @@ export class SortHandler {
             }).catch(reject);
         });
     }
-
     async #score(comment, sortType) {
         if (sortType.includes("hot"))
             return this.#hotScore(comment);
-        else if (sortType.includes("top"))
-            return this.#topScore(comment);
         else if (sortType.includes("controversial"))
             return this.#controversialScore(comment);
     }
-
-
     // Resolves to sortedComments
     async #sortComments(comments, sortType, limit = SORTED_POSTS_PAGE_SIZE) {
         return new Promise(async (resolve, reject) => {
             let commentsSorted;
-            // No need to sort new comments since they are already sorted by DB
-            if (sortType === SORTED_COMMENTS_TYPES.NEW)
+            const typesAlreadySorted = [SORTED_COMMENTS_TYPES.NEW, SORTED_COMMENTS_TYPES.TOP_ALL,
+                SORTED_COMMENTS_TYPES.TOP_YEAR, SORTED_COMMENTS_TYPES.TOP_MONTH,
+                SORTED_COMMENTS_TYPES.TOP_WEEK, SORTED_COMMENTS_TYPES.TOP_DAY, SORTED_COMMENTS_TYPES.TOP_HOUR]
+            // No need to sort these comments since they are already sorted by DB
+            if (typesAlreadySorted.includes(sortType))
                 commentsSorted = comments;
             else {
                 const scores = await Promise.all(comments.map(async comment => await this.#score(comment, sortType)));
@@ -139,7 +128,7 @@ export class SortHandler {
         return new Promise(async (resolve, reject) => {
             // Timeframe is "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL"
             const sortType = SORTED_COMMENTS_TYPES[`TOP_${timeframe}`];
-            const posts = await this.subplebbit.dbHandler.queryPostsBetweenTimestampRange(timestamp() - TIMEFRAMES_TO_SECONDS[timeframe], timestamp());
+            const posts = await this.subplebbit.dbHandler.queryTopPostsBetweenTimestampRange(timestamp() - TIMEFRAMES_TO_SECONDS[timeframe], timestamp());
             this.#sortComments(posts, sortType, limit).then(resolve).catch(reject);
         });
     }
