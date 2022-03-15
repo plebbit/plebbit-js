@@ -5,7 +5,7 @@ import Comment from "./Comment.js";
 import {TIMEFRAMES_TO_SECONDS, timestamp} from "./Util.js";
 import Vote from "./Vote.js";
 
-export const TABLES = Object.freeze({
+const TABLES = Object.freeze({
     COMMENTS: "comments",
     VOTES: "votes",
     AUTHORS: "authors",
