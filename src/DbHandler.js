@@ -268,7 +268,15 @@ class DbHandler {
                 this.knex(table).where({"challengeRequestId": challengeRequestId}).first().then(resolve);
             reject(`No publication (comment or vote) has challengeRequestId=${challengeRequestId}`);
         });
+    }
 
+    async queryVotesOfComment(commentCid) {
+        return new Promise(async (resolve, reject) => {
+            Promise.all([1, -1].map(voteValue => this.knex(TABLES.VOTES).where({
+                "commentCid": commentCid,
+                "vote": voteValue
+            }).count("vote"))).then(res => resolve(res.map(countObj => countObj[0]["count(`vote`)"]))).catch(reject);
+        });
     }
 }
 

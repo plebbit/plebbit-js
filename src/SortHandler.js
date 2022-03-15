@@ -61,9 +61,8 @@ export class SortHandler {
 
     async #hotScore(comment) {
         return new Promise(async (resolve, reject) => {
-            comment.fetchCommentIpns().then(commentIpns => {
-                const [ups, downs] = [commentIpns.upvoteCount, commentIpns.downvoteCount];
-                const score = ups - downs;
+            this.subplebbit.dbHandler.queryVotesOfComment(comment.commentCid).then(([upvote, downvote]) => {
+                const score = upvote - downvote;
                 const order = Math.log10(Math.max(score, 1));
                 const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
                 const seconds = comment.timestamp - 1134028003;
@@ -76,8 +75,7 @@ export class SortHandler {
 
     async #topScore(comment) {
         return new Promise(async (resolve, reject) => {
-            comment.fetchCommentIpns().then(commentIpns => {
-                const [upvote, downvote] = [commentIpns.upvoteCount, commentIpns.downvoteCount];
+            this.subplebbit.dbHandler.queryVotesOfComment(comment.commentCid).then(([upvote, downvote]) => {
                 resolve(upvote - downvote);
             }).catch(reject);
         });
@@ -85,8 +83,7 @@ export class SortHandler {
 
     async #controversialScore(comment) {
         return new Promise(async (resolve, reject) => {
-            comment.fetchCommentIpns().then(commentIpns => {
-                const [upvote, downvote] = [commentIpns.upvoteCount, commentIpns.downvoteCount];
+            this.subplebbit.dbHandler.queryVotesOfComment(comment.commentCid).then(([upvote, downvote]) => {
                 if (downvote <= 0 || upvote <= 0)
                     resolve(0);
                 const magnitude = upvote + downvote;
