@@ -93,7 +93,7 @@ ChallengeType {
   ...other properties for more complex types later, e.g. an array of whitelisted addresses, a token address, etc,
 }
 SortedComments (IPFS file) {
-  nextSortedCommentsCid: string, // get next page (sorted by the same algo)
+  nextSortedCommentsCid: string | null, // get next page (sorted by the same algo), if null it is the last page
   comments: Comment[] // not `Comment` instances, just comment data objects
 }
 Multisub (IPNS record) {
