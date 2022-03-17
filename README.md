@@ -44,9 +44,10 @@ Vote {
   vote: 1 | -1 | 0 // 0 is needed to cancel a vote
 }
 CommentUpdate (IPNS record Comment.ipnsName) {
-  editedContent: string, // the author has edited the comment content
+  editedContent?: string, // the author has edited the comment content
   upvoteCount: number,
   downvoteCount: number,
+  replyCount: number, // display the count on frontend without having to load all comments
   sortedReplies: {hot: SortedComments}, // only preload page 1 sorted by 'hot', might preload more later
   sortedRepliesCids: {[key: 'hot' | 'new' | 'top'| 'old' ]: sortedRepliesCid} // only provide sorting for posts (not comments) that have 100+ child comments
 }
