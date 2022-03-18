@@ -1,4 +1,4 @@
-import Comment, {CommentIPNS} from "./Comment.js";
+import Comment, {CommentEdit} from "./Comment.js";
 import last from "it-last";
 import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
 import EventEmitter from "events";
@@ -20,6 +20,8 @@ import {createCaptcha} from "captcha-canvas/js-script/extra.js";
 import {SORTED_COMMENTS_TYPES, SortHandler} from "./SortHandler.js";
 import * as path from "path";
 import * as fs from "fs";
+
+// import {Signer} from "./Signer.js";
 
 
 export class Subplebbit {

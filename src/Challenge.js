@@ -18,7 +18,7 @@ export const CHALLENGE_TYPES = Object.freeze({
 export class Challenge {
     constructor(props) {
         this.challenge = props["challenge"];
-        this.type = props["type"] || null; // will be dozens of challenge types, like holding a certain amount of a token
+        this.type = props["type"]; // will be dozens of challenge types, like holding a certain amount of a token
     }
 }
 
@@ -35,7 +35,7 @@ export class ChallengeRequestMessage extends ChallengeBase {
         super();
         this.type = PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST // One of CHALLENGE_STAGES
         this.challengeRequestId = props["challengeRequestId"];
-        this.acceptedChallengeTypes = parseJsonIfString(props["acceptedChallengeTypes"]) || null;
+        this.acceptedChallengeTypes = parseJsonIfString(props["acceptedChallengeTypes"]);
         this.publication = props["publication"];
     }
 
@@ -79,8 +79,8 @@ export class ChallengeVerificationMessage extends ChallengeBase {
         this.challengeAnswerId = props["challengeAnswerId"];
         this.challengePassed = props["challengePassed"];
         this.challengeErrors = parseJsonIfString(props["challengeErrors"]);
-        this.reason = props["reason"] || null;
-        this.publication = props["publication"] || null;
+        this.reason = props["reason"];
+        this.publication = props["publication"];
     }
 
     toJSONForDb() {

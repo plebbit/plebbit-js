@@ -21,8 +21,8 @@ export const SORTED_POSTS_PAGE_SIZE = 2;
 
 export class SortedComments {
     constructor(props) {
-        this.nextSortedCommentsCid = props["nextSortedCommentsCid"] || null;
-        this.comments = props["comments"] || [];
+        this.nextSortedCommentsCid = props["nextSortedCommentsCid"];
+        this.comments = props["comments"];
         this.type = props["type"];
         this.pageCid = props["pageCid"];
     }
@@ -45,8 +45,8 @@ export class SortHandler {
             for (let i = chunks.length - 1; i >= 0; i--) {
                 const sortedPostsPage = new SortedComments({
                     "type": sortType, "comments": chunks[i].map(comment => comment.toJSON()),
-                    "nextSortedCommentsCid": sortedPosts[i + 1]?.pageCid || null,
-                    "pageCid": null
+                    "nextSortedCommentsCid": sortedPosts[i + 1]?.pageCid,
+                    "pageCid": undefined
                 }, this.subplebbit);
                 const cid = (await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(sortedPostsPage))).path;
                 sortedPostsPage.setPageCid(cid);

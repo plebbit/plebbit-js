@@ -30,18 +30,17 @@ class Comment extends Publication {
     constructor(props, subplebbit) {
         // Publication
         super(props, subplebbit);
-        this.parent = null;
-        this._initProps(props);
+        this.parent = undefined;
     }
 
     _initProps(props) {
         super._initProps(props);
         this.author = new Author(props["author"]);
         this.timestamp = props["timestamp"] || timestamp();
-        this.signature = props["signature"] || null;
+        this.signature = props["signature"];
         this.postCid = props["postCid"];
         this.commentCid = props["commentCid"];
-        this.parentCommentCid = props["parentCommentCid"] || null;
+        this.parentCommentCid = props["parentCommentCid"];
         this.content = props["content"];
         this.commentIpnsName = props["commentIpnsName"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.commentIpnsKeyName = props["commentIpnsKeyName"];
@@ -95,7 +94,7 @@ class Comment extends Publication {
     }
 
     setPreviousCommentCid(newPreviousCommentCid) {
-        this.previousCommentCid = newPreviousCommentCid || null;
+        this.previousCommentCid = newPreviousCommentCid;
     }
 
     async fetchParent() {

@@ -4,7 +4,7 @@ class Post extends Comment {
 
     _initProps(props) {
         super._initProps(props);
-        this.parentCommentCid = null;
+        this.parentCommentCid = undefined;
         this.title = props["title"];
     }
 
