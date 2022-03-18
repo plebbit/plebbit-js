@@ -61,8 +61,22 @@ export function parseJsonIfString(x) {
     return (x instanceof String || typeof x === "string") ? JSON.parse(x) : x;
 }
 
-export function timestamp(){
+export function timestamp() {
     return Math.round(Date.now() / 1000);
+}
+
+export function replaceXWithY(obj, x, y) {
+    // x is a JS object
+    const newObj = {};
+    Object.entries(obj).forEach(([key, value]) => {
+        if (obj[key] === x)
+            newObj[key] = y;
+        else if (typeof value === "object" && value !== null)
+            newObj[key] = replaceXWithY(value, x, y);
+        else
+            newObj[key] = value;
+    });
+    return newObj;
 }
 
 

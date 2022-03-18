@@ -2,7 +2,7 @@ import {PUBSUB_MESSAGE_TYPES} from "./Challenge.js";
 import Post from "./Post.js";
 import Author from "./Author.js";
 import Comment from "./Comment.js";
-import {TIMEFRAMES_TO_SECONDS, timestamp} from "./Util.js";
+import {replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp} from "./Util.js";
 import Vote from "./Vote.js";
 
 const TABLES = Object.freeze({
@@ -158,6 +158,7 @@ class DbHandler {
 
     async #createCommentsFromRows(commentsRows) {
         return new Promise(async (resolve, reject) => {
+            commentsRows = commentsRows.map(props => replaceXWithY(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
             const authors = (await this.knex(TABLES.AUTHORS).whereIn("address", commentsRows.map(post => post.authorAddress))).map(authorProps => new Author(authorProps));
             const posts = commentsRows.map(postProps => {
                 const props = {
@@ -181,6 +182,8 @@ class DbHandler {
             else {
                 if (!Array.isArray(voteRows))
                     voteRows = [voteRows];
+                voteRows = voteRows.map(props => replaceXWithY(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
+
                 const authors = (await this.knex(TABLES.AUTHORS).whereIn("address", voteRows.map(vote => vote.authorAddress))).map(authorProps => new Author(authorProps));
                 const votes = voteRows.map(voteProps => {
                     const props = {
@@ -194,7 +197,7 @@ class DbHandler {
         });
     }
 
-    async queryPostsSortedByTimestamp(limit) {
+    async queryPostsSortedByTimestamp() {
         return new Promise(async (resolve, reject) => {
             this.knex(TABLES.COMMENTS).whereNotNull("title").orderBy("timestamp", "desc")
                 .then(async res => {
@@ -236,7 +239,6 @@ class DbHandler {
                 console.error(err);
                 reject(err);
             })
-            // this.knex(TABLES.VOTES).select().whereNotNull("title").whereBetween("timestamp", [timestamp1, timestamp2])
         })
     }
 
@@ -252,6 +254,7 @@ class DbHandler {
             if (from === Number.NEGATIVE_INFINITY)
                 from = 0;
             const to = timestamp();
+            // TODO this could be done in a single query
             const commentsAuthors = await this.knex(TABLES.COMMENTS).distinct("authorAddress").whereBetween("timestamp", [from, to]);
             const voteAuthors = await this.knex(TABLES.VOTES).distinct("authorAddress").whereBetween("timestamp", [from, to]);
             let activeUserAccounts = [...commentsAuthors, ...voteAuthors].map(author => author.authorAddress);
