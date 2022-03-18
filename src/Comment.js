@@ -42,7 +42,7 @@ class Comment extends Publication {
         this.commentCid = props["commentCid"];
         this.parentCommentCid = props["parentCommentCid"];
         this.content = props["content"];
-        this.commentIpnsName = props["commentIpnsName"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
+        this.ipnsName = props["ipnsName"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.commentIpnsKeyName = props["commentIpnsKeyName"];
         this.commentIpns = props["commentIpns"];
         this.setPreviousCommentCid(props["previousCommentCid"]);
@@ -52,7 +52,7 @@ class Comment extends Publication {
         return {
             ...this.toJSONSkeleton(),
             "previousCommentCid": this.previousCommentCid,
-            "commentIpnsName": this.commentIpnsName,
+            "ipnsName": this.ipnsName,
             "postCid": this.postCid,
             "commentCid": this.commentCid,
             "commentIpnsKeyName": this.commentIpnsKeyName
@@ -81,7 +81,7 @@ class Comment extends Publication {
 
     setCommentIpnsKey(ipnsKey) {
         // Contains name and id
-        this.commentIpnsName = ipnsKey["id"];
+        this.ipnsName = ipnsKey["id"];
         this.commentIpnsKeyName = ipnsKey["name"];
     }
 
