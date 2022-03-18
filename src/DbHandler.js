@@ -32,9 +32,16 @@ class DbHandler {
             table.text("content").nullable();
             table.timestamp("timestamp").notNullable();
             table.text("signature").nullable(); // Will likely revise later
-            table.text("commentIpnsName").notNullable().unique();
+            table.text("ipnsName").notNullable().unique();
             table.text("commentIpnsKeyName").notNullable().unique();
             table.text("title").nullable();
+            // CommentUpdate props
+            table.text("editedContent").nullable();
+            table.integer("upvoteCount").notNullable();
+            table.integer("downvoteCount").notNullable();
+            table.integer("replyCount").notNullable();
+            table.json("sortedReplies").nullable();
+            table.json("sortedRepliesCids").nullable();
         });
 
     }
