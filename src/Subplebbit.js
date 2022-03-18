@@ -114,24 +114,23 @@ export class Subplebbit {
         };
     }
 
-    async update(newSubplebbitOptions) {
+    async edit(newSubplebbitOptions) {
         this.#initSubplebbit(newSubplebbitOptions);
-        const subplebbitWithNewContent = JSON.stringify(this);
         return new Promise(async (resolve, reject) => {
-                if (!this.subplebbitAddress) { // TODO require signer
-                    this.plebbit.ipfsClient.key.gen(this.title).then(ipnsKey => {
-                        this.update({
-                            "subplebbitAddress": ipnsKey["id"],
-                            "ipnsKeyName": ipnsKey["name"]
-                        }).then(resolve).catch(reject);
-                    }).catch(reject);
-                } else {
-                    this.plebbit.ipfsClient.add(subplebbitWithNewContent).then(file => {
-                        this.plebbit.ipfsClient.name.publish(file["cid"], {
-                            "lifetime": "5h", // TODO decide on optimal time later
-                            "key": this.ipnsKeyName
-                        }).then(resolve).catch(reject);
-                    }).catch(reject);
+            if (!this.subplebbitAddress) { // TODO require signer
+                this.plebbit.ipfsClient.key.gen(this.title).then(ipnsKey => {
+                    this.edit({
+                        "subplebbitAddress": ipnsKey["id"],
+                        "ipnsKeyName": ipnsKey["name"]
+                    }).then(resolve).catch(reject);
+                }).catch(reject);
+            } else {
+                this.plebbit.ipfsClient.add(JSON.stringify(this)).then(file => {
+                    this.plebbit.ipfsClient.name.publish(file["cid"], {
+                        "lifetime": "5h", // TODO decide on optimal time later
+                        "key": this.ipnsKeyName
+                    }).then(resolve).catch(reject);
+                }).catch(reject);
 
                 }
 
@@ -161,21 +160,20 @@ export class Subplebbit {
             "metricsCid": this.metricsCid,
             "latestPostCid": post.postCid,
         }
-        await this.update(newSubplebbitOptions);
+        await this.edit(newSubplebbitOptions);
         this.event.emit("post", post);
     }
 
     async #updatePostComments(comment) {
-        const [sortedComments, sortedCommentsCids] = await this.sortHandler.calculateSortedComments(comment.postCid);
-
-        const newCommentIpns = {
-            ...(comment.parent.commentIpns.toJSON()),
-            "sortedComments": {[SORTED_COMMENTS_TYPES.HOT]: sortedComments[SORTED_COMMENTS_TYPES.HOT]},
-            "sortedCommentsCids": sortedCommentsCids,
-            "latestCommentCid": comment.commentCid,
-            "preloadedComments": [comment, ...(comment.parent.commentIpns.preloadedComments)],
+        const [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedReplies(comment.postCid);
+        const replyCount = (await this.dbHandler.queryCommentsUnderComment(comment.postCid)).length;
+        const commentUpdate = {
+            ...(comment.parent.toJSONCommentUpdate()),
+            "sortedReplies": {[SORTED_COMMENTS_TYPES.HOT]: sortedReplies[SORTED_COMMENTS_TYPES.HOT]},
+            "sortedRepliesCids": sortedRepliesCids,
+            "replyCount": replyCount
         };
-        await comment.parent.updateCommentIpns(newCommentIpns)
+        await comment.parent.edit(commentUpdate);
         this.event.emit("comment", comment);
     }
 
