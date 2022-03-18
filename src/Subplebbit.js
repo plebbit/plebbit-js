@@ -338,7 +338,7 @@ export class Subplebbit {
                     "reason": reasonForSkippingCaptcha,
                     "challengePassed": Boolean(publishedPublication.publication), // If no publication, this will be false
                     "challengeAnswerId": msgParsed.challengeAnswerId,
-                    "challengeErrors": null,
+                    "challengeErrors": undefined,
                     "challengeRequestId": msgParsed.challengeRequestId,
                     ...publishedPublication
                 });
@@ -369,7 +369,7 @@ export class Subplebbit {
             image.then(imageBuffer => resolve([[new Challenge({
                 "challenge": imageBuffer,
                 "type": CHALLENGE_TYPES.image
-            })], null])).catch(reject);
+            })], undefined])).catch(reject);
         });
 
     }
