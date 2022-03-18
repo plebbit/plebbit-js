@@ -40,7 +40,7 @@ export class Subplebbit {
         const mergedProps = {...oldProps, ...newProps};
         this.title = mergedProps["title"];
         this.description = mergedProps["description"];
-        this.moderatorsIpnsNames = mergedProps["moderatorsIpnsNames"];
+        this.moderatorsAddresses = mergedProps["moderatorsAddresses"];
         this.latestPostCid = mergedProps["latestPostCid"];
         this._dbConfig = mergedProps["database"];
         this.preloadedPosts = mergedProps["preloadedPosts"] || [];
@@ -104,7 +104,7 @@ export class Subplebbit {
         return {
             "title": this.title,
             "description": this.description,
-            "moderatorsIpnsNames": this.moderatorsIpnsNames,
+            "moderatorsAddresses": this.moderatorsAddresses,
             "latestPostCid": this.latestPostCid,
             "preloadedPosts": this.preloadedPosts,
             "pubsubTopic": this.pubsubTopic,
