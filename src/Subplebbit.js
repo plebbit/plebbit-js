@@ -30,8 +30,8 @@ export class Subplebbit {
         this.#initSubplebbit(props);
         this._challengeToSolution = {}; // Map challenge ID to its solution
         this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
-        this.provideCaptchaCallback = null;
-        this.validateCaptchaAnswerCallback = null;
+        this.provideCaptchaCallback = undefined;
+        this.validateCaptchaAnswerCallback = undefined;
         this.event = new EventEmitter();
     }
 
@@ -43,13 +43,12 @@ export class Subplebbit {
         this.moderatorsAddresses = mergedProps["moderatorsAddresses"];
         this.latestPostCid = mergedProps["latestPostCid"];
         this._dbConfig = mergedProps["database"];
-        this.preloadedPosts = mergedProps["preloadedPosts"] || [];
-        this.sortedPosts = mergedProps["sortedPosts"] || {};
-        this.sortedPostsCids = mergedProps["sortedPostsCids"] || {};
+        this.sortedPosts = mergedProps["sortedPosts"];
+        this.sortedPostsCids = mergedProps["sortedPostsCids"];
         this.setIpnsKey(mergedProps["subplebbitAddress"], mergedProps["ipnsKeyName"]);
         this.pubsubTopic = mergedProps["pubsubTopic"] || this.subplebbitAddress;
         this.sortHandler = new SortHandler(this);
-        this.challengeTypes = mergedProps["challengeTypes"] || null;
+        this.challengeTypes = mergedProps["challengeTypes"];
         this.metricsCid = mergedProps["metricsCid"];
     }
 
@@ -106,7 +105,6 @@ export class Subplebbit {
             "description": this.description,
             "moderatorsAddresses": this.moderatorsAddresses,
             "latestPostCid": this.latestPostCid,
-            "preloadedPosts": this.preloadedPosts,
             "pubsubTopic": this.pubsubTopic,
             "subplebbitAddress": this.subplebbitAddress,
             "sortedPosts": this.sortedPosts,
@@ -161,7 +159,6 @@ export class Subplebbit {
         const newSubplebbitOptions = {
             ...(await this.#getSortedPostsObject()),
             "metricsCid": this.metricsCid,
-            "preloadedPosts": [post, ...this.preloadedPosts],
             "latestPostCid": post.postCid,
         }
         await this.update(newSubplebbitOptions);
