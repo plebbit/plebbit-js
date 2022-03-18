@@ -209,23 +209,23 @@ export class Subplebbit {
             }
             assert(newDownvoteCount >= 0 && newDownvoteCount >= 0, "New upvote and downvote need to be proper numbers");
             await this.dbHandler.upsertVote(newVote, challengeRequestId);
-
+            await voteComment.update();
             if (voteComment.getType() === "post") {
-                Promise.all([this.update(await this.#getSortedPostsObject()), voteComment.updateCommentIpns(new CommentIPNS({
-                    ...commentIpns.toJSON(),
+                Promise.all([this.edit(await this.#getSortedPostsObject()), voteComment.edit({
+                    ...voteComment.toJSONCommentUpdate(),
                     "upvoteCount": newUpvoteCount,
                     "downvoteCount": newDownvoteCount
-                }))]).then(() => resolve({"publication": newVote})).catch(reject);
+                })]).then(() => resolve({"publication": newVote})).catch(reject);
 
             } else if (voteComment.getType() === "comment") {
-                const [sortedComments, sortedCommentsCids] = await this.sortHandler.calculateSortedComments(voteComment.commentCid);
-                voteComment.updateCommentIpns(new CommentIPNS({
-                    ...commentIpns.toJSON(),
-                    "sortedComments": {[SORTED_COMMENTS_TYPES.HOT]: sortedComments[SORTED_COMMENTS_TYPES.HOT]},
-                    "sortedCommentsCids": sortedCommentsCids,
+                const [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedReplies(voteComment.commentCid);
+                voteComment.edit({
+                    ...voteComment.toJSONCommentUpdate(),
+                    "sortedReplies": {[SORTED_COMMENTS_TYPES.HOT]: sortedReplies[SORTED_COMMENTS_TYPES.HOT]},
+                    "sortedRepliesCids": sortedRepliesCids,
                     "upvoteCount": newUpvoteCount,
                     "downvoteCount": newDownvoteCount
-                })).then(() => resolve({"publication": newVote})).catch(reject);
+                }).then(() => resolve({"publication": newVote})).catch(reject);
             }
         });
     }
