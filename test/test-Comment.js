@@ -1,5 +1,5 @@
 import {Plebbit} from "../src/index.js"
-import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
+import {IPFS_API_URL, IPFS_GATEWAY_URL, TEST_COMMENT_POST_CID} from "../secrets.js";
 import assert from 'assert';
 import {loadIpfsFileAsJson, sleep, unsubscribeAllPubsubTopics} from "../src/Util.js";
 import {SORTED_COMMENTS_TYPES, SortedComments} from "../src/SortHandler.js";
@@ -7,7 +7,7 @@ import {generateMockComment} from "./MockUtil.js";
 
 const plebbit = await Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
 
-const post = await plebbit.getPostOrComment("QmSeDvgKzg556Qyv4xueUaDkkjMB69jLwxsUQAuUzR6fqT");
+const post = await plebbit.getPostOrComment(TEST_COMMENT_POST_CID);
 
 const mockComments = [];
 describe("Test Post and Comment", async function () {
