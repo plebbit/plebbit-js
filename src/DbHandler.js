@@ -270,7 +270,7 @@ class DbHandler {
             if (from === Number.NEGATIVE_INFINITY)
                 from = 0;
             const to = timestamp();
-            this.knex(TABLES.COMMENTS).count("commentCid").whereBetween("timestamp", [from, to]).then(postCount => resolve(postCount["0"]["count(`commentCid`)"])).catch(reject);
+            this.knex(TABLES.COMMENTS).count("commentCid").whereBetween("timestamp", [from, to]).whereNotNull("title").then(postCount => resolve(postCount["0"]["count(`commentCid`)"])).catch(reject);
         })
     }
 
