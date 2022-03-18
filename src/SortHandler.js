@@ -171,7 +171,7 @@ export class SortHandler {
         });
     }
 
-    async calculateSortedComments(commentCid) {
+    async calculateSortedReplies(commentCid) {
         return new Promise(async (resolve, reject) => {
             const sortPromises = [SORTED_COMMENTS_TYPES.HOT, SORTED_COMMENTS_TYPES.NEW, SORTED_COMMENTS_TYPES.TOP_ALL, SORTED_COMMENTS_TYPES.CONTROVERSIAL_ALL].map(async type => {
                 const comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(commentCid);

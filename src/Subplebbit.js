@@ -232,11 +232,27 @@ export class Subplebbit {
 
     async #publishPubsubMsg(publication, challengeRequestId) {
         return new Promise(async (resolve, reject) => {
-            const postOrCommentOrVote = publication.hasOwnProperty("vote") ? await this.plebbit.createVote(publication) : await this.plebbit.createComment(publication);
+            const postOrCommentOrVote = publication.hasOwnProperty("vote") ? await this.plebbit.createVote(publication) :
+                publication.hasOwnProperty("editedContent") ? await this.plebbit.createCommentEdit(publication) : await this.plebbit.createComment(publication);
 
             if (postOrCommentOrVote.getType() === "vote")
                 this.#publishVote(postOrCommentOrVote, challengeRequestId).then(resolve).catch(reject);
-            else if (postOrCommentOrVote instanceof Comment) {
+            else if (postOrCommentOrVote instanceof CommentEdit) {
+                // TODO assert CommentEdit signer is same as original comment
+                const commentToBeEdited = await this.dbHandler.queryComment(postOrCommentOrVote.commentCid);
+                if (!commentToBeEdited)
+                    resolve({"reason": `commentCid (${postOrCommentOrVote.commentCid}) does not exist`});
+                else if (commentToBeEdited.content === postOrCommentOrVote.content)
+                    resolve({"reason": "Edited content is identical to original content"});
+                else {
+                    await commentToBeEdited.update();
+                    const updatedComment = await commentToBeEdited.edit({
+                        ...commentToBeEdited.toJSONCommentUpdate(),
+                        "editedContent": commentToBeEdited.content
+                    });
+                    resolve(updatedComment);
+                }
+            } else if (postOrCommentOrVote instanceof Comment) {
                 // Comment and Post need to add file to ipfs
                 const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote.toJSONSkeleton()));
 
@@ -251,7 +267,7 @@ export class Subplebbit {
                         const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote));
                         postOrCommentOrVote.setPostCid(file.path);
                         postOrCommentOrVote.setCommentCid(file.path);
-                        postOrCommentOrVote.updateCommentIpns(new CommentIPNS({"upvoteCount": 1})).catch(reject);
+                        postOrCommentOrVote.edit({"upvoteCount": 1, "downvoteCount": 0, "replyCount": 0}).catch(reject);
                         await this.dbHandler.insertComment(postOrCommentOrVote, challengeRequestId);
                         const defaultVote = await this.plebbit.createVote({
                             ...postOrCommentOrVote.toJSON(),
@@ -262,13 +278,12 @@ export class Subplebbit {
                         resolve({"publication": postOrCommentOrVote});
                     } else {
                         // Comment
-                        const parent = await postOrCommentOrVote.fetchParent();
-                        const parentIpns = await parent.fetchCommentIpns();
-                        postOrCommentOrVote.setPreviousCommentCid(parentIpns.latestCommentCid);
+                        const commentsUnderParent = await this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCommentCid);
+                        postOrCommentOrVote.setPreviousCommentCid(commentsUnderParent[0]);
                         const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote));
                         postOrCommentOrVote.setCommentCid(file.path);
                         await this.dbHandler.insertComment(postOrCommentOrVote, challengeRequestId);
-                        postOrCommentOrVote.updateCommentIpns(new CommentIPNS({"upvoteCount": 1})).catch(reject);
+                        postOrCommentOrVote.edit({"upvoteCount": 1, "downvoteCount": 0, "replyCount": 0}).catch(reject);
                         const defaultVote = await this.plebbit.createVote({
                             ...postOrCommentOrVote.toJSON(),
                             "vote": 1

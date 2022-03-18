@@ -1,4 +1,4 @@
-import Comment from "./Comment.js";
+import Comment, {CommentEdit} from "./Comment.js";
 import Post from "./Post.js";
 import {Subplebbit} from "./Subplebbit.js";
 import {loadIpfsFileAsJson, loadIpnsAsJson} from "./Util.js";
@@ -62,5 +62,10 @@ export class Plebbit {
     async createVote(createVoteOptions) {
         const subplebbit = await this.getSubplebbit(createVoteOptions.subplebbitAddress);
         return new Vote(createVoteOptions, subplebbit);
+    }
+
+    async createCommentEdit(createCommentEditOptions) {
+        const commentSubplebbit = await this.getSubplebbit(createCommentEditOptions.subplebbitAddress);
+        return new CommentEdit({...createCommentEditOptions}, commentSubplebbit);
     }
 }

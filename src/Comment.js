@@ -131,5 +131,13 @@ class Comment extends Publication {
     }
 }
 
-export {Comment, CommentIPNS};
+class CommentEdit extends Comment {
+
+    _initProps(props) {
+        super._initProps(props);
+        this.editedContent = props["content"];
+    }
+}
+
+export {Comment, CommentEdit};
 export default Comment;

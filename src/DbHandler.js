@@ -305,6 +305,14 @@ class DbHandler {
             }).count("vote"))).then(res => resolve(res.map(countObj => countObj[0]["count(`vote`)"]))).catch(reject);
         });
     }
+
+    async queryComment(commentCid) {
+        return new Promise(async (resolve, reject) => {
+            this.knex(TABLES.COMMENTS).where({"commentCid": commentCid}).first().then(async res => {
+                resolve(await this.#createCommentsFromRows.bind(this)(res));
+            }).catch(reject);
+        });
+    }
 }
 
 export default DbHandler;
