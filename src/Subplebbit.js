@@ -47,6 +47,7 @@ export class Subplebbit {
         this.sortedPosts = mergedProps["sortedPosts"] || {};
         this.sortedPostsCids = mergedProps["sortedPostsCids"] || {};
         this.setIpnsKey(mergedProps["subplebbitAddress"], mergedProps["ipnsKeyName"]);
+        this.pubsubTopic = mergedProps["pubsubTopic"] || this.subplebbitAddress;
         this.sortHandler = new SortHandler(this);
         this.challengeTypes = mergedProps["challengeTypes"] || null;
         this.metricsCid = mergedProps["metricsCid"];
@@ -74,7 +75,7 @@ export class Subplebbit {
     }
 
     setIpnsKey(newIpnsName, newIpnsKeyName) {
-        this.pubsubTopic = this.subplebbitAddress = newIpnsName;
+        this.subplebbitAddress = newIpnsName;
         this.ipnsKeyName = newIpnsKeyName;
     }
 
