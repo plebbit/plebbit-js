@@ -20,7 +20,7 @@ describe("Test Subplebbit functionality", async () => {
 
 
     it("New subplebbits can be published", async function () {
-        await subplebbit.update({"title": `Test subplebbit - ${startTestTime}`});
+        await subplebbit.edit({"title": `Test subplebbit - ${startTestTime}`});
         // Should have ipns key now
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.subplebbitAddress);
         assert.equal(JSON.stringify(loadedSubplebbit), JSON.stringify(subplebbit), "Failed to publish new subplebbit");
@@ -95,6 +95,7 @@ describe("Test Subplebbit functionality", async () => {
                 assert.equal(post.title, mockPost.title, "Failed to publish correct post");
                 assert.equal(post.postCid, subplebbit.latestPostCid, "Failed to update subplebbit latestPostCid");
                 const loadedPost = await plebbit.getPostOrComment(post.postCid);
+                await loadedPost.update();
                 assert.equal(JSON.stringify(loadedPost), JSON.stringify(post), "Downloaded post is missing info");
                 mockPosts.push(loadedPost);
                 resolve();
