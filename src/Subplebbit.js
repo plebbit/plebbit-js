@@ -181,7 +181,7 @@ export class Subplebbit {
         return new Promise(async (resolve, reject) => {
             const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address);
             const voteComment = await this.plebbit.getPostOrComment(newVote.commentCid);
-            const commentIpns = await voteComment.fetchCommentIpns();
+            const [upvotes, downvotes] = await this.dbHandler.queryVotesOfComment(newVote.commentCid);
 
             let newUpvoteCount = -1, newDownvoteCount = -1;
             if (lastVote) {
@@ -189,23 +189,23 @@ export class Subplebbit {
 
                 if (newVote.vote === lastVote.vote) {
                     resolve({"reason": "User duplicated his vote"});
-                    return null;
+                    return;
                 } else if (newVote.vote === 0) {
-                    newUpvoteCount = commentIpns.upvoteCount + (lastVote.vote === 1 ? -1 : 0);
-                    newDownvoteCount = commentIpns.downvoteCount + (lastVote.vote === -1 ? -1 : 0);
+                    newUpvoteCount = upvotes + (lastVote.vote === 1 ? -1 : 0);
+                    newDownvoteCount = downvotes + (lastVote.vote === -1 ? -1 : 0);
                 } else {
                     if (lastVote.vote === 1 && newVote.vote === -1) {
-                        newUpvoteCount = commentIpns.upvoteCount - 1;
-                        newDownvoteCount = commentIpns.downvoteCount + 1;
+                        newUpvoteCount = upvotes - 1;
+                        newDownvoteCount = downvotes + 1;
                     } else if (lastVote.vote === -1 && newVote.vote === 1) {
-                        newUpvoteCount = commentIpns.upvoteCount + 1;
-                        newDownvoteCount = commentIpns.downvoteCount - 1;
+                        newUpvoteCount = upvotes + 1;
+                        newDownvoteCount = downvotes - 1;
                     }
                 }
             } else {
                 // New vote
-                newUpvoteCount = newVote.vote === 1 ? commentIpns.upvoteCount + 1 : commentIpns.upvoteCount;
-                newDownvoteCount = newVote.vote === -1 ? commentIpns.downvoteCount + 1 : commentIpns.downvoteCount;
+                newUpvoteCount = newVote.vote === 1 ? upvotes + 1 : upvotes;
+                newDownvoteCount = newVote.vote === -1 ? downvotes + 1 : downvotes;
             }
             assert(newDownvoteCount >= 0 && newDownvoteCount >= 0, "New upvote and downvote need to be proper numbers");
             await this.dbHandler.upsertVote(newVote, challengeRequestId);
