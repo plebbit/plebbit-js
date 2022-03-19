@@ -47,8 +47,7 @@ CommentUpdate (IPNS record Comment.ipnsName) {
   editedContent: string, // the author has edited the comment content
   upvoteCount: number,
   downvoteCount: number,
-  sortedReplies: {hot: SortedComments}, // only preload page 1 sorted by 'hot', might preload more later
-  sortedRepliesCids: {[key: 'hot' | 'new' | 'top'| 'old' ]: sortedRepliesCid} // only provide sorting for posts (not comments) that have 100+ child comments
+  replies: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
 }
 Author {
   displayName: string,
@@ -69,11 +68,20 @@ Subplebbit (IPNS record) {
   moderatorsAddresses: string[],
   pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   latestPostCid: string, // the most recent post in the linked list of posts
-  sortedPosts: {hot: SortedComments[]}, // only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post
-  sortedPostsCids: {[key: 'hot' | 'new' | 'topHour'| 'topDay' | 'topWeek' | 'topMonth' | 'topYear' | 'topAll']: SortedPostsCid}, // e.g. {hot: 'Qm...', new: 'Qm...', etc.}
+  posts: Pages // only preload page 1 sorted by 'hot', might preload more later, comments should include Comment + CommentUpdate data
   challengeTypes: ChallengeType[], // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
   metricsCid: subplebbitMetricsCid
 }
+Pages {
+  pages: {[key: PostsSortType | RepliesSortType]: Page} // e.g. subplebbit.posts.pages.hot.comments[0].cid = 'Qm...'
+  pageCids: {[key: PostsSortType | RepliesSortType]: pageCid} // e.g. subplebbit.posts.pageCids.topAll = 'Qm...'
+}
+Page (IPFS file) {
+  nextCid: string, // get next page (sorted by the same sort type)
+  comments: Comment[] // Comments should include Comment + CommentUpdate data
+}
+PostsSortType: 'hot' | 'new' | 'topHour' | 'topDay' | 'topWeek' | 'topMonth' | 'topYear' | 'topAll' | 'controversialHour' | 'controversialDay' | 'controversialWeek' | 'controversialMonth' | 'controversialYear' | 'controversialAll'
+RepliesSortType: 'topAll' | 'new' | 'old' | 'controversialAll'
 SubplebbitMetrics {
   hourActiveUserCount: number,
   dayActiveUserCount: number,
@@ -91,10 +99,6 @@ SubplebbitMetrics {
 ChallengeType {
   type: 'image' | 'text' | 'video' | 'audio' | 'html',
   ...other properties for more complex types later, e.g. an array of whitelisted addresses, a token address, etc,
-}
-SortedComments (IPFS file) {
-  nextSortedCommentsCid: string, // get next page (sorted by the same algo)
-  comments: Comment[] // not `Comment` instances, just comment data objects
 }
 Multisub (IPNS record) {
   title?: string,
@@ -205,16 +209,14 @@ Challenge {
   - [`subplebbit.start()`](#subplebbitstart)
   - [`subplebbit.stop()`](#subplebbitstop)
   - [`subplebbit.update()`](#subplebbitupdate)
-  - [`subplebbit.getSortedPosts(sortedPostsCid)`](#subplebbitgetsortedpostssortedpostscid)
   - `subplebbit.address`
   - `subplebbit.signer`
   - `subplebbit.title`
   - `subplebbit.description`
   - `subplebbit.moderatorsAddresses`
-  - `subplebbit.sortedPosts`
+  - `subplebbit.posts`
   - `subplebbit.latestPostCid`
   - `subplebbit.pubsubTopic`
-  - `subplebbit.sortedPostsCids`
   - `subplebbit.challengeTypes`
   - `subplebbit.metrics`
 - [Subplebbit Events](#subplebbit-events)
@@ -226,7 +228,6 @@ Challenge {
   - [`comment.publishChallengeAnswers()`](#commentpublishchallengeanswerschallengeanswers)
   - [`comment.update()`](#commentupdate)
   - [`comment.stop()`](#commentstop)
-  - [`comment.getSortedReplies(sortedRepliesCid)`](#commentgetsortedrepliessortedrepliescid)
   - `comment.author`
   - `comment.timestamp`
   - `comment.signature`
@@ -244,12 +245,15 @@ Challenge {
   - `comment.editedContent`
   - `comment.upvoteCount`
   - `comment.downvoteCount`
-  - `comment.sortedReplies`
-  - `comment.sortedRepliesCids`
+  - `comment.replies`
 - [Comment Events](#comment-events)
   - [`update`](#update)
   - [`challenge`](#challenge)
   - [`challengeverification`](#challengeverification)
+- [Pages API](#pages-api)
+  - [`pages.getPage(pageCid)`](#pagesgetpagepagecid)
+  - `pages.pages`
+  - `pages.pageCids`
 
 ## Plebbit API
 The plebbit API for reading and writing to and from subplebbits.
@@ -568,7 +572,7 @@ An object which may have the following keys:
 | description | `string` | Description of the subplebbit |
 | moderatorsAddresses | `string[]` | IPNS names of the moderators |
 | latestPostCid | `string` | The most recent post in the linked list of posts |
-| sortedPosts | `{hot: SortedComments}` | Only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post |
+| posts | `Pages` | Only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post |
 | pubsubTopic | `string` | The string to publish to in the pubsub, a public key of the subplebbit owner's choice |
 | challengeTypes | `ChallengeType[]` | The challenge types provided by the subplebbit owner |
 | metrics | `SubplebbitMetrics` | The self reported metrics of the subplebbit |
@@ -634,47 +638,6 @@ subplebbit.on('update', (updatedSubplebbitInstance) => {
   subplebbit.stop()
 })
 subplebbit.update()
-```
-
-### `subplebbit.getSortedPosts(sortedPostsCid)`
-
-> Get a `SortedComments` instance using an IPFS CID from `Subplebbit.sortedPostsCids[sortType]`. Comments are not `Comment` instances, just comment data objects. Posts and replies are also "comments".
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| sortedPostsCid | `string` | The IPFS CID of the sorted comments |
-
-#### Returns
-
-| Type | Description |
-| -------- | -------- |
-| `Promise<SortedComments>` | A `SortedComments` instance |
-
-#### Example
-
-```js
-// get sorted posts in a subplebbit
-const subplebbit = await plebbit.getSubplebbit(subplebbitAddress)
-const sortedPostsByTopYear = await subplebbit.getSortedPosts(subplebbit.sortedPostsCids.topYear)
-console.log(sortedPostsByTopYear)
-
-// get sorted replies to a post or comment
-const post = await plebbit.getComment(commentCid)
-post.on('update', async updatedPost => {
-  let replies
-  if (updatedPost.sortedRepliesCids?.new) {
-    // try to get sorted replies by sort type 'new'
-    // sorted replies are not always available, for example if the post only has a few replies
-    replies = await post.getSortedReplies(updatedPost.sortedRepliesCids.new)
-  }
-  else {
-    // the 'hot' sort type is always preloaded by default and can be used as fallback
-    replies = updatedPost.sortedReplies.hot
-  }
-  console.log(replies)
-})
 ```
 
 ## Subplebbit Events
@@ -817,42 +780,6 @@ comment.update()
 
 > Stop polling the network for new comment updates started by comment.update().
 
-### `comment.getSortedReplies(sortedRepliesCid)`
-
-> Get a `SortedComments` instance using an IPFS CID from `Comment.sortedRepliesCids[sortType]`. Comments are not `Comment` instances, just comment data objects. Replies are also "comments".
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| sortedRepliesCid | `string` | The IPFS CID of the sorted comments |
-
-#### Returns
-
-| Type | Description |
-| -------- | -------- |
-| `Promise<SortedComments>` | A `SortedComments` instance |
-
-#### Example
-
-```js
-// get sorted replies to a post or comment
-const comment = await plebbit.getComment(commentCid)
-comment.on('update', async updatedComment => {
-  let replies
-  if (updatedComment.sortedRepliesCids?.new) {
-    // try to get sorted replies by sort type 'new'
-    // sorted replies are not always available, for example if the comment only has a few replies
-    replies = await comment.getSortedReplies(updatedComment.sortedRepliesCids.new)
-  }
-  else {
-    // the 'hot' sort type is always preloaded by default and can be used as fallback
-    replies = updatedComment.sortedReplies.hot
-  }
-  console.log(replies)
-})
-```
-
 ## Comment Events
 The comment events.
 
@@ -938,4 +865,51 @@ comment.on('challenge', async (challengeMessage) => {
 })
 comment.on('challengeverification', (challengeVerification) => console.log('published post cid is', challengeVerification?.publication?.cid))
 comment.publish()
+```
+
+## Pages API
+The pages API for scrolling pages of a subplebbit or replies to a post/comment. `Subplebbit.posts` and `Comment.replies` are `Pages` instances. `Subplebbit.posts.pages.hot` is a `Page` instance.
+
+### `pages.getPage(pageCid)`
+
+> Get a `Page` instance using an IPFS CID from `Pages.pageCids[sortType]`, e.g. `Subplebbit.posts.pageCids.hot` or `Comment.replies.pageCids.topAll`.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| pageCid | `string` | The IPFS CID of the page |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<Page>` | A `Page` instance |
+
+#### Example
+
+```js
+// get sorted posts in a subplebbit
+const subplebbit = await plebbit.getSubplebbit(subplebbitAddress)
+const pageSortedByTopYear = await subplebbit.posts.getPage(subplebbit.posts.pageCids.topYear)
+const postsSortedByTopYear = pageSortedByTopYear.comments
+console.log(postsSortedByTopYear)
+
+// get sorted replies to a post or comment
+const post = await plebbit.getComment(commentCid)
+post.on('update', async updatedPost => {
+  let replies
+  // try to get sorted replies by sort type 'new'
+  // sorted replies pages are not always available, for example if the post only has a few replies
+  if (updatedPost.replies?.pageCids?.new) {
+    const repliesPageSortedByNew = await updatedPost.replies.getPage(updatedPost.replies.pageCids.new)
+    replies = repliesPageSortedByNew.comments
+  }
+  else {
+    // the 'topAll' sort type is always preloaded by default on replies and can be used as fallback
+    // on subplebbits.posts only 'hot' is preloaded by default
+    replies = updatedPost.replies.pages.topAll.comments
+  }
+  console.log(replies)
+})
 ```
