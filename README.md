@@ -16,102 +16,101 @@ Note: IPFS files are immutable, fetched by their CID, which is a hash of their c
 
 ### Schema:
 
-```
+```js
 Address: string // A plebbit author, subplebbit or multisub "address" can be a crypto domain like memes.eth, an IPNS name, an ethereum address, etc
 Publication {
-  author: Author,
-  subplebbitAddress: string, // all publications are directed to a subplebbit owner
-  timestamp: number, // number in seconds
+  author: Author
+  subplebbitAddress: string // all publications are directed to a subplebbit owner
+  timestamp: number // number in seconds
   signature: Signature // sign immutable fields like author, title, content, timestamp to prevent tampering
 }
-Comment (IPFS file) {
-  ...Publication,
-  postCid: string, // helps faster loading post info for comment direct linking, should be added by the subplebbit owner, not author
-  parentCid: string, // same as postCid for top level comments
-  content: string,
-  previousCid: string, // each post is a linked list
+Comment extends Publication /* (IPFS file) */ {
+  postCid?: string // helps faster loading post info for reply direct linking, should be added by the subplebbit owner not author
+  parentCid?: string // same as postCid for top level comments
+  content: string
+  previousCid: string // each post is a linked list
   ipnsName: string // each post/comment needs its own IPNS record (CommentUpdate) for its mutable data like edits, vote counts, comments
 }
-Post (IPFS file) {
-  ...Comment,
-  parentCid: null, // post is same as comment but has no parent and some extra fields,
-  title: string,
+Post extends Comment /* (IPFS file) */ {
+  postCid: undefined // post is same as comment but has no parent and some extra fields
+  parentCid: undefined // post is same as comment but has no parent and some extra fields
+  title: string
+  link: string
   thumbnailUrl: string // fetched by subplebbit owner, not author, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
 }
-Vote {
-  ...Publication,
-  commentCid: string,
+Vote extends Publication {
+  commentCid: string
   vote: 1 | -1 | 0 // 0 is needed to cancel a vote
 }
-CommentUpdate (IPNS record Comment.ipnsName) {
-  editedContent: string, // the author has edited the comment content
-  upvoteCount: number,
-  downvoteCount: number,
+CommentUpdate /* (IPNS record Comment.ipnsName) */ {
+  editedContent: string // the author has edited the comment content
+  upvoteCount: number
+  downvoteCount: number
   replies: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
 }
 Author {
-  displayName: string,
+  displayName: string
   address: string
 }
 Signature {
-  signature: string, // data in base64
-  publicKey: buffer, // include public key (marshalled, like IPNS does it) because the IPNS name is just a hash of it
+  signature: string // data in base64
+  publicKey: buffer // include public key (marshalled, like IPNS does it) because the IPNS name is just a hash of it
   type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
 }
 Signer {
-  privateKey: string | buffer | undefined, // to sign with metamask, no need for private key
+  privateKey?: string | buffer // to sign with metamask, no need for private key
   type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
 }
-Subplebbit (IPNS record) {
-  title: string,
-  description: string,
-  moderatorsAddresses: string[],
-  pubsubTopic: string, // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
-  latestPostCid: string, // the most recent post in the linked list of posts
+Subplebbit /* (IPNS record Subplebbit.address) */ {
+  title: string
+  description: string
+  moderatorsAddresses: string[]
+  pubsubTopic: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
+  latestPostCid: string // the most recent post in the linked list of posts
   posts: Pages // only preload page 1 sorted by 'hot', might preload more later, comments should include Comment + CommentUpdate data
-  challengeTypes: ChallengeType[], // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
+  challengeTypes: ChallengeType[] // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
   metricsCid: subplebbitMetricsCid
 }
 Pages {
   pages: {[key: PostsSortType | RepliesSortType]: Page} // e.g. subplebbit.posts.pages.hot.comments[0].cid = 'Qm...'
   pageCids: {[key: PostsSortType | RepliesSortType]: pageCid} // e.g. subplebbit.posts.pageCids.topAll = 'Qm...'
 }
-Page (IPFS file) {
-  nextCid: string, // get next page (sorted by the same sort type)
+Page /* (IPFS file) */ {
+  nextCid: string // get next page (sorted by the same sort type)
   comments: Comment[] // Comments should include Comment + CommentUpdate data
 }
 PostsSortType: 'hot' | 'new' | 'topHour' | 'topDay' | 'topWeek' | 'topMonth' | 'topYear' | 'topAll' | 'controversialHour' | 'controversialDay' | 'controversialWeek' | 'controversialMonth' | 'controversialYear' | 'controversialAll'
 RepliesSortType: 'topAll' | 'new' | 'old' | 'controversialAll'
 SubplebbitMetrics {
-  hourActiveUserCount: number,
-  dayActiveUserCount: number,
-  weekActiveUserCount: number,
-  monthActiveUserCount: number,
-  yearActiveUserCount: number,
-  allActiveUserCount: number,
-  hourPostCount: number,
-  dayPostCount: number,
-  weekPostCount: number,
-  monthPostCount: number,
-  yearPostCount: number,
+  hourActiveUserCount: number
+  dayActiveUserCount: number
+  weekActiveUserCount: number
+  monthActiveUserCount: number
+  yearActiveUserCount: number
+  allActiveUserCount: number
+  hourPostCount: number
+  dayPostCount: number
+  weekPostCount: number
+  monthPostCount: number
+  yearPostCount: number
   allPostCount: number
 }
 ChallengeType {
-  type: 'image' | 'text' | 'video' | 'audio' | 'html',
-  ...other properties for more complex types later, e.g. an array of whitelisted addresses, a token address, etc,
+  type: 'image' | 'text' | 'video' | 'audio' | 'html'
+  //...other properties for more complex types later, e.g. an array of whitelisted addresses, a token address, etc,
 }
-Multisub (IPNS record) {
-  title?: string,
-  description?: string,
+Multisub /* (IPNS record Multisub.address) */ {
+  title?: string
+  description?: string
   subplebbits: MultisubSubplebbit[]
 }
 MultisubSubplebbit { // this metadata is set by the owner of the Multisub, not the owner of the subplebbit
-  address: Address,
-  title?: string,
-  description?: string, 
-  tags?: string[],
-  languages?: string[], // client can detect language and hide/show subplebbit based on it
-  locations?: string[], // client can detect location and hide/show subplebbit based on it
+  address: Address
+  title?: string
+  description?: string 
+  tags?: string[]
+  languages?: string[] // client can detect language and hide/show subplebbit based on it
+  locations?: string[] // client can detect location and hide/show subplebbit based on it
   safeForWork?: boolean // client can detect user's SFW setting and hide/show subplebbit based on it
 }
 PlebbitDefaults { // fetched once when app first load, a dictionary of default settings
@@ -155,38 +154,34 @@ const signatureIsValid = await rsaPublicKeyInstance.verify(postToVerify, post.si
 
 ### Pubsub message types
 
-```
+```js
 PubsubMessage: {
   type: 'CHALLENGEREQUEST' | 'CHALLENGE' | 'CHALLENGEANSWER' | 'CHALLENGEVERIFICATION'
 }
-ChallengeRequestMessage (sent by post author) {
-  ...PubsubMessage,
-  challengeRequestId: string, // random string choosen by sender
-  acceptedChallengeTypes: string[], // list of challenge types the client can do, for example cli clients or old clients won't do all types
-  publication: Publication // include the post so the nodes and subplebbit owner can blacklist it outright
+ChallengeRequestMessage extends PubsubMessage /* (sent by post author) */ {
+  challengeRequestId: string // random string choosen by sender
+  acceptedChallengeTypes: string[] // list of challenge types the client can do, for example cli clients or old clients won't do all types
+  publication: Publication // include the publication so the sub owner can publish it right away
 }
-ChallengeMessage (sent by subplebbit owner) {
-  ...PubsubMessage,
-  challengeRequestId: string,
+ChallengeMessage extends PubsubMessage /* (sent by subplebbit owner) */ {
+  challengeRequestId: string
   challenges: Challenge[] // a challenge can have more than 1 challenge
 }
-ChallengeAnswerMessage (sent by post author) {
-  ...PubsubMessage,
-  challengeRequestId: string,
-  challengeAnswerId: string, // random string choosen by sender
+ChallengeAnswerMessage extends PubsubMessage /* (sent by post author) */ {
+  challengeRequestId: string
+  challengeAnswerId: string // random string choosen by sender
   challengeAnswers: string[] // for example ['2+2=4', '1+7=8']
 }
-ChallengeVerificationMessage (sent by subplebbit owner) {
-  ...PubsubMessage,
-  challengeRequestId: string, // include in verification in case a peer is missing it
-  challengeAnswerId: string, // include in verification in case a peer is missing it
-  challengePassed: bool, // true if the challenge verification is successful
-  challengeErrors?: (string|undefined)[], // tell the user which challenge failed and why
-  reason?: string, // reason for failed verification, for example post content is too long. could also be used for successful verification that bypass the challenge, for example because an author has good history
+ChallengeVerificationMessage extends PubsubMessage /* (sent by subplebbit owner) */ {
+  challengeRequestId: string // include in verification in case a peer is missing it
+  challengeAnswerId: string // include in verification in case a peer is missing it
+  challengePassed: bool // true if the challenge verification is successful
+  challengeErrors?: (string|undefined)[] // tell the user which challenge failed and why
+  reason?: string // reason for failed verification, for example post content is too long. could also be used for successful verification that bypass the challenge, for example because an author has good history
   publication?: Publication // include feedback about the publication if needed, for example for a Comment include Publication.cid so the author can resolve his own published comment immediately
 }
 Challenge {
-  type: 'image' | 'text' | 'audio' | 'video' | 'html', // tells the client how to display the challenge, start with implementing image and text only first
+  type: 'image' | 'text' | 'audio' | 'video' | 'html' // tells the client how to display the challenge, start with implementing image and text only first
   challenge: buffer // data required to complete the challenge, could be html, png, etc.
 }
 ```
@@ -438,10 +433,11 @@ An object which may have the following keys:
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | subplebbitAddress | `string` | IPNS name of the subplebbit |
-| parentCid | `string` or `null` | The parent comment CID, null if comment is a post, same as postCid if comment is top level |
+| parentCid | `string` or `undefined` | The parent comment CID, undefined if comment is a post, same as postCid if comment is top level |
 | content | `string` or `undefined` | Content of the comment, link posts have no content |
 | title | `string` or `undefined` | If comment is a post, it needs a title |
-| timestamp | `number` or `null` | Time of publishing in seconds, `Math.round(Date.now() / 1000)` if null |
+| link | `string` or `undefined` | If comment is a post, it might be a link post |
+| timestamp | `number` or `undefined` | Time of publishing in seconds, `Math.round(Date.now() / 1000)` if undefined |
 | author | `Author` | Author of the comment |
 | signer | `Signer` | Signer of the comment |
 | cid | `string` or `undefined` | (Not for publishing) Gives access to `Comment.on('update')` for a comment already fetched |
@@ -489,7 +485,7 @@ An object which may have the following keys:
 | subplebbitAddress | `string` | IPNS name of the subplebbit |
 | commentCid | The comment CID to be edited |
 | editedContent | `string` | Edited content of the comment |
-| timestamp | `number` or `null` | Time of edit in ms, `Date.now()` if null |
+| timestamp | `number` or `undefined` | Time of edit in ms, `Date.now()` if undefined |
 | signer | `Signer` | Signer of the comment |
 
 #### Returns
@@ -527,7 +523,7 @@ An object which may have the following keys:
 | ---- | ---- | ----------- |
 | subplebbitAddress | `string` | IPNS name of the subplebbit |
 | commentCid | `string` | The comment or post to vote on |
-| timestamp | `number` or `null` | Time of publishing in ms, `Date.now()` if null |
+| timestamp | `number` or `undefined` | Time of publishing in ms, `Date.now()` if undefined |
 | author | `Author` | Author of the comment, will be needed for voting with NFTs or tokens |
 | vote | `1` or `0` or `-1` | 0 is for resetting a vote |
 | signer | `Signer` | Signer of the vote |
