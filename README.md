@@ -27,14 +27,14 @@ Publication {
 Comment (IPFS file) {
   ...Publication,
   postCid: string, // helps faster loading post info for comment direct linking, should be added by the subplebbit owner, not author
-  parentCommentCid: string, // same as postCid for top level comments
+  parentCid: string, // same as postCid for top level comments
   content: string,
-  previousCommentCid: string, // each post is a linked list
+  previousCid: string, // each post is a linked list
   ipnsName: string // each post/comment needs its own IPNS record (CommentUpdate) for its mutable data like edits, vote counts, comments
 }
 Post (IPFS file) {
   ...Comment,
-  parentCommentCid: null, // post is same as comment but has no parent and some extra fields,
+  parentCid: null, // post is same as comment but has no parent and some extra fields,
   title: string,
   thumbnailUrl: string // fetched by subplebbit owner, not author, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
 }
@@ -231,9 +231,9 @@ Challenge {
   - `comment.author`
   - `comment.timestamp`
   - `comment.signature`
-  - `comment.previousCommentCid`
+  - `comment.previousCid`
   - `comment.postCid`
-  - `comment.parentCommentCid`
+  - `comment.parentCid`
   - `comment.subplebbitAddress`
   - `comment.title`
   - `comment.content`
@@ -324,7 +324,7 @@ const scrollAllSubplebbitPosts = async () => {
   while (currentPostCid) {
     const post = await plebbit.getComment(currentPostCid)
     console.log(post)
-    currentPostCid = post.previousPostCid
+    currentPostCid = post.previousCid
   }
   console.log('there are no more posts')
 }
@@ -358,11 +358,11 @@ const commentCid = 'QmbWqx...'
 const comment = await plebbit.getComment(commentCid)
 console.log('comment:', comment)
 comment.on('update', updatedComment => console.log('comment with latest data', updatedComment))
-if (comment.parentCommentCid) { // comment with no parent cid is a post
-  plebbit.getComment(comment.parentCommentCid).then(parentPost => console.log('parent post:', parentPost))
+if (comment.parentCid) { // comment with no parent cid is a post
+  plebbit.getComment(comment.parentCid).then(parentPost => console.log('parent post:', parentPost))
 }
 plebbit.getSubplebbit(comment.subplebbitAddress).then(subplebbit => console.log('subplebbit:', subplebbit))
-plebbit.getComment(comment.previousCommentCid).then(previousComment => console.log('previous comment:', previousComment))
+plebbit.getComment(comment.previousCid).then(previousComment => console.log('previous comment:', previousComment))
 /*
 Prints:
 { ...TODO }
@@ -438,7 +438,7 @@ An object which may have the following keys:
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | subplebbitAddress | `string` | IPNS name of the subplebbit |
-| parentCommentCid | `string` or `null` | The parent comment CID, null if comment is a post, same as postCid if comment is top level |
+| parentCid | `string` or `null` | The parent comment CID, null if comment is a post, same as postCid if comment is top level |
 | content | `string` or `undefined` | Content of the comment, link posts have no content |
 | title | `string` or `undefined` | If comment is a post, it needs a title |
 | timestamp | `number` or `null` | Time of publishing in seconds, `Math.round(Date.now() / 1000)` if null |
