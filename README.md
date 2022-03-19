@@ -488,7 +488,7 @@ An object which may have the following keys:
 | ---- | ---- | ----------- |
 | subplebbitAddress | `string` | IPNS name of the subplebbit |
 | commentCid | The comment CID to be edited |
-| content | `string` | Edited content of the comment |
+| editedContent | `string` | Edited content of the comment |
 | timestamp | `number` or `null` | Time of edit in ms, `Date.now()` if null |
 | signer | `Signer` | Signer of the comment |
 
