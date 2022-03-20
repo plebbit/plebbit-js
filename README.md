@@ -83,14 +83,46 @@ Signer {
   type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
 }
 Subplebbit /* (IPNS record Subplebbit.address) */ {
-  title?: string
-  description?: string
   moderatorsAddresses?: string[]
   pubsubTopic?: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   latestPostCid: string // the most recent post in the linked list of posts
   posts: Pages // only preload page 1 sorted by 'hot', might preload more later, comments should include Comment + CommentUpdate data
   challengeTypes?: ChallengeType[] // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
   metricsCid?: subplebbitMetricsCid
+  createdAt: number
+  updatedAt: number
+  features?: SubplebbitFeatures
+  appearance?: SubplebbitAppearance
+  flairs?: Flair[] // list of flairs authors and mods can choose from
+}
+SubplebbitAppearance {
+  title?: string
+  description?: string
+  primaryColor?: string
+  secondaryColor?: string
+  avatarUrl?: string
+  bannerUrl?: string
+  backgroundUrl?: string
+  language?: string
+}
+SubplebbitFeatures {
+  videos?: boolean
+  videoGifs?: boolean
+  images?: boolean
+  polls?: boolean
+  crossposts?: boolean
+  upvotes?: boolean
+  downvotes?: boolean
+  authors?: boolean // no others at all, like 4chan
+  anonymousAuthors?: string // authors are given anonymous ids inside threads, like 4chan
+  nestedReplies?: boolean // no nested replies, like old school forums and 4chan
+  safeForWork?: boolean
+  authorCanAssignFlair?: boolean // authors can choose their own flairs (otherwise only mods can)
+  authorMustAssignFlair?: boolean // force authors to choose a flair before posting
+}
+Flair {
+  color: string
+  flair: string
 }
 Pages {
   pages: {[key: PostsSortType | RepliesSortType]: Page} // e.g. subplebbit.posts.pages.hot.comments[0].cid = 'Qm...'
