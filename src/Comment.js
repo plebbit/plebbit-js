@@ -135,7 +135,7 @@ class CommentEdit extends Comment {
 
     _initProps(props) {
         super._initProps(props);
-        this.editedContent = props["content"];
+        this.editedContent = props["editedContent"];
     }
 }
 
