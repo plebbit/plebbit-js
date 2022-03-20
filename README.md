@@ -29,6 +29,7 @@ Comment extends Publication /* (IPFS file) */ {
   parentCid?: string // same as postCid for top level comments
   content: string
   previousCid: string // each post is a linked list
+  depth: number // 0 = post, 1 = top level reply, 2+ = nested reply
   ipnsName: string // each post/comment needs its own IPNS record (CommentUpdate) for its mutable data like edits, vote counts, comments
 }
 Post extends Comment /* (IPFS file) */ {
@@ -47,13 +48,13 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   upvoteCount: number
   downvoteCount: number
   replies: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
+  flairs: string[] // arbitrary strings added by the author or mods to describe the comment or author
 }
 Author {
   address: string
   displayName: string
   wallets: {[ticker: string]: Wallet}
-  avatarNft: Nft
-  flairs: string[] // arbitrary strings added by the author or mod to describe the author
+  avatar: Nft
 }
 Wallet {
   address: string
