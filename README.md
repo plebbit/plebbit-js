@@ -46,7 +46,8 @@ Vote extends Publication {
   vote: 1 | -1 | 0 // 0 is needed to cancel a vote
 }
 CommentUpdate /* (IPNS record Comment.ipnsName) */ {
-  content: string // the author has edited the comment content
+  content?: string // the author has edited the comment content
+  signature?: Signature // signature of the edited content by the author
   editTimestamp?: number // the time of the last content edit
   upvoteCount: number
   downvoteCount: number
