@@ -49,8 +49,21 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   replies: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
 }
 Author {
-  displayName: string
   address: string
+  displayName: string
+  wallets: {[ticker: string]: Wallet}
+  avatarNft: Nft
+  flairs: string[] // arbitrary strings added by the author or mod to describe the author
+}
+Wallet {
+  address: string
+  // ...will add more stuff later, like signer or send/sign or balance
+}
+Nft {
+  ticker: string // ticker of the chain, like ETH, AVAX, SOL, etc
+  address: string // address of the NFT contract
+  index: number // index of the specific NFT used
+  signature: Signature // proof that author.address owns the nft
 }
 Signature {
   signature: string // data in base64
