@@ -29,14 +29,17 @@ Comment extends Publication /* (IPFS file) */ {
   parentCid?: string // same as postCid for top level comments
   content: string
   previousCid: string // each post is a linked list
+  depth: number // 0 = post, 1 = top level reply, 2+ = nested reply
   ipnsName: string // each post/comment needs its own IPNS record (CommentUpdate) for its mutable data like edits, vote counts, comments
+  spoiler?: boolean
+  flair?: string // arbitrary string added by the author or mods to describe the author or comment
 }
 Post extends Comment /* (IPFS file) */ {
-  postCid: undefined // post is same as comment but has no parent and some extra fields
-  parentCid: undefined // post is same as comment but has no parent and some extra fields
+  postCid?: undefined // post is same as comment but has no parent and some extra fields
+  parentCid?: undefined // post is same as comment but has no parent and some extra fields
   title: string
-  link: string
-  thumbnailUrl: string // fetched by subplebbit owner, not author, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
+  link?: string
+  thumbnailUrl?: string // fetched by subplebbit owner, not author, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
 }
 Vote extends Publication {
   commentCid: string
@@ -47,13 +50,16 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   upvoteCount: number
   downvoteCount: number
   replies: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
+  flair?: string // arbitrary strings added by the author or mods to describe the author or comment
+  spoiler?: boolean
+  pinned?: boolean
+  locked?: boolean
 }
 Author {
   address: string
-  displayName: string
-  wallets: {[ticker: string]: Wallet}
-  avatarNft: Nft
-  flairs: string[] // arbitrary strings added by the author or mod to describe the author
+  displayName?: string
+  wallets?: {[ticker: string]: Wallet}
+  avatar?: Nft
 }
 Wallet {
   address: string
@@ -75,14 +81,14 @@ Signer {
   type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
 }
 Subplebbit /* (IPNS record Subplebbit.address) */ {
-  title: string
-  description: string
-  moderatorsAddresses: string[]
-  pubsubTopic: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
+  title?: string
+  description?: string
+  moderatorsAddresses?: string[]
+  pubsubTopic?: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   latestPostCid: string // the most recent post in the linked list of posts
   posts: Pages // only preload page 1 sorted by 'hot', might preload more later, comments should include Comment + CommentUpdate data
-  challengeTypes: ChallengeType[] // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
-  metricsCid: subplebbitMetricsCid
+  challengeTypes?: ChallengeType[] // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
+  metricsCid?: subplebbitMetricsCid
 }
 Pages {
   pages: {[key: PostsSortType | RepliesSortType]: Page} // e.g. subplebbit.posts.pages.hot.comments[0].cid = 'Qm...'
@@ -122,10 +128,10 @@ MultisubSubplebbit { // this metadata is set by the owner of the Multisub, not t
   address: Address
   title?: string
   description?: string 
-  tags?: string[]
   languages?: string[] // client can detect language and hide/show subplebbit based on it
   locations?: string[] // client can detect location and hide/show subplebbit based on it
-  safeForWork?: boolean // client can detect user's SFW setting and hide/show subplebbit based on it
+  features?: string[] // client can detect user's SFW setting and hide/show subplebbit based on it
+  tags?: string[] // arbitrary keywords used for search
 }
 PlebbitDefaults { // fetched once when app first load, a dictionary of default settings
   multisubAddresses: {[key: multisubName]: Address}
