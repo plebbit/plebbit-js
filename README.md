@@ -31,6 +31,8 @@ Comment extends Publication /* (IPFS file) */ {
   previousCid: string // each post is a linked list
   depth: number // 0 = post, 1 = top level reply, 2+ = nested reply
   ipnsName: string // each post/comment needs its own IPNS record (CommentUpdate) for its mutable data like edits, vote counts, comments
+  spoiler: boolean
+  flairs: string[] // arbitrary strings added by the author or mods to describe the author or comment
 }
 Post extends Comment /* (IPFS file) */ {
   postCid: undefined // post is same as comment but has no parent and some extra fields
@@ -48,7 +50,10 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   upvoteCount: number
   downvoteCount: number
   replies: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
-  flairs: string[] // arbitrary strings added by the author or mods to describe the comment or author
+  flairs: string[] // arbitrary strings added by the author or mods to describe the author or comment
+  spoiler: boolean
+  pinned: boolean
+  locked: boolean
 }
 Author {
   address: string
