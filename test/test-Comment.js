@@ -42,6 +42,22 @@ describe("Test Post and Comment", async function () {
         });
     });
 
+    it("Can edit a comment", async function () {
+        return new Promise(async (resolve, reject) => {
+            const editedText = "edit test";
+            const commentEdit = await plebbit.createCommentEdit({
+                ...mockComments[0].toJSON(),
+                "editedContent": editedText
+            });
+            commentEdit.publish(null, null).then(async challengeVerificationMessage => {
+                const loadedPost = await plebbit.getPostOrComment(challengeVerificationMessage.publication.commentCid);
+                await loadedPost.update();
+                assert.equal(loadedPost.editedContent, editedText, "Comment has not been edited");
+                resolve();
+            }).catch(reject);
+        });
+    });
+
     it(`New comments under a post are sorted by their timestamps`, async () => {
 
         const actualComments = [];
