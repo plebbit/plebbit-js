@@ -86,7 +86,7 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
 }
 Pages {
   pages: {[key: PostsSortType | RepliesSortType]: Page} // e.g. subplebbit.posts.pages.hot.comments[0].cid = 'Qm...'
-  pageCids: {[key: PostsSortType | RepliesSortType]: pageCid} // e.g. subplebbit.posts.pageCids.topAll = 'Qm...'
+  pageCids: {[key: PostsSortType | RepliesSortType | ModSortType]: pageCid} // e.g. subplebbit.posts.pageCids.topAll = 'Qm...'
 }
 Page /* (IPFS file) */ {
   nextCid: string // get next page (sorted by the same sort type)
@@ -94,6 +94,7 @@ Page /* (IPFS file) */ {
 }
 PostsSortType: 'hot' | 'new' | 'topHour' | 'topDay' | 'topWeek' | 'topMonth' | 'topYear' | 'topAll' | 'controversialHour' | 'controversialDay' | 'controversialWeek' | 'controversialMonth' | 'controversialYear' | 'controversialAll'
 RepliesSortType: 'topAll' | 'new' | 'old' | 'controversialAll'
+ModSortType: 'reports' | 'spam' | 'modqueue' | 'unmoderated' | 'edited'
 SubplebbitMetrics {
   hourActiveUserCount: number
   dayActiveUserCount: number
