@@ -46,7 +46,8 @@ Vote extends Publication {
   vote: 1 | -1 | 0 // 0 is needed to cancel a vote
 }
 CommentUpdate /* (IPNS record Comment.ipnsName) */ {
-  editedContent: string // the author has edited the comment content
+  content: string // the author has edited the comment content
+  editTimestamp?: number // the time of the last content edit
   upvoteCount: number
   downvoteCount: number
   replies: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
@@ -257,7 +258,8 @@ Challenge {
   - `(only available after challengeverification event)`
   - `comment.cid`
   - `(only available after first update event)`
-  - `comment.editedContent`
+  - `comment.editTimestamp`
+  - `comment.original`
   - `comment.upvoteCount`
   - `comment.downvoteCount`
   - `comment.replies`
@@ -503,10 +505,10 @@ An object which may have the following keys:
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | subplebbitAddress | `string` | IPNS name of the subplebbit |
-| commentCid | The comment CID to be edited |
-| editedContent | `string` | Edited content of the comment |
-| timestamp | `number` or `undefined` | Time of edit in ms, `Date.now()` if undefined |
-| signer | `Signer` | Signer of the comment |
+| cid | The comment CID to be edited |
+| content | `string` | Edited content of the comment |
+| editTimestamp | `number` or `undefined` | Time of edit in ms, `Date.now()` if undefined |
+| signer | `Signer` | Signer of the edit |
 
 #### Returns
 
