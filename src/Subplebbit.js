@@ -416,6 +416,8 @@ export class Subplebbit {
     async stopPublishing() {
         await this.plebbit.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
         this.event.removeAllListeners();
+        this.dbHandler.knex.destroy();
+        this.dbHandler = undefined;
     }
 
     async destroy() {
