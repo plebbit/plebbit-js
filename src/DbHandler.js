@@ -35,6 +35,7 @@ class DbHandler {
             table.text("ipnsName").notNullable().unique();
             table.text("commentIpnsKeyName").notNullable().unique();
             table.text("title").nullable();
+            table.integer("depth").notNullable();
             // CommentUpdate props
             table.text("editedContent").nullable();
         });

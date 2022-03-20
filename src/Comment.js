@@ -22,6 +22,7 @@ class Comment extends Publication {
         this.content = props["content"];
         this.ipnsName = props["ipnsName"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.commentIpnsKeyName = props["commentIpnsKeyName"];
+        this.depth = props["depth"];
         this.setPreviousCommentCid(props["previousCommentCid"]);
         // CommentUpdate props
         this._initCommentUpdate(props);
@@ -50,6 +51,7 @@ class Comment extends Publication {
             "previousCommentCid": this.previousCommentCid,
             "ipnsName": this.ipnsName,
             "postCid": this.postCid,
+            "depth": this.depth
         };
     }
 
@@ -102,6 +104,10 @@ class Comment extends Publication {
 
     setPreviousCommentCid(newPreviousCommentCid) {
         this.previousCommentCid = newPreviousCommentCid;
+    }
+
+    setDepth(newDepth) {
+        this.depth = newDepth;
     }
 
     async fetchParent() {
