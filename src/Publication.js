@@ -84,6 +84,7 @@ class Publication {
 
     }
 
+    // TODO rewrite this
     async publish(userOptions, solveChallengeCallback) {
         return new Promise(async (resolve, reject) => {
             this.#publish(userOptions, solveChallengeCallback).then(async (challengeVerificationMessage) => {

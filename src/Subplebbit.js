@@ -117,20 +117,20 @@ export class Subplebbit {
     async edit(newSubplebbitOptions) {
         this.#initSubplebbit(newSubplebbitOptions);
         return new Promise(async (resolve, reject) => {
-            if (!this.subplebbitAddress) { // TODO require signer
-                this.plebbit.ipfsClient.key.gen(this.title).then(ipnsKey => {
-                    this.edit({
-                        "subplebbitAddress": ipnsKey["id"],
-                        "ipnsKeyName": ipnsKey["name"]
-                    }).then(resolve).catch(reject);
-                }).catch(reject);
-            } else {
-                this.plebbit.ipfsClient.add(JSON.stringify(this)).then(file => {
-                    this.plebbit.ipfsClient.name.publish(file["cid"], {
-                        "lifetime": "5h", // TODO decide on optimal time later
-                        "key": this.ipnsKeyName
-                    }).then(resolve).catch(reject);
-                }).catch(reject);
+                if (!this.subplebbitAddress) { // TODO require signer
+                    this.plebbit.ipfsClient.key.gen(this.title).then(ipnsKey => {
+                        this.edit({
+                            "subplebbitAddress": ipnsKey["id"],
+                            "ipnsKeyName": ipnsKey["name"]
+                        }).then(resolve).catch(reject);
+                    }).catch(reject);
+                } else {
+                    this.plebbit.ipfsClient.add(JSON.stringify(this)).then(file => {
+                        this.plebbit.ipfsClient.name.publish(file["cid"], {
+                            "lifetime": "5h", // TODO decide on optimal time later
+                            "key": this.ipnsKeyName
+                        }).then(resolve).catch(reject);
+                    }).catch(reject);
 
                 }
 
@@ -164,16 +164,18 @@ export class Subplebbit {
         this.event.emit("post", post);
     }
 
-    async #updatePostComments(comment) {
-        const [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedReplies(comment.postCid);
-        const replyCount = (await this.dbHandler.queryCommentsUnderComment(comment.postCid)).length;
-        const commentUpdate = {
-            ...(comment.parent.toJSONCommentUpdate()),
+    async #updateParentOfComment(comment) {
+        const [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedReplies(comment.parentCommentCid);
+        const replyCount = (await this.dbHandler.queryCommentsUnderComment(comment.parentCommentCid)).length;
+        const commentParent = await this.dbHandler.queryComment(comment.parentCommentCid);
+        await commentParent.update();
+        const commentParentUpdate = {
+            ...(commentParent.toJSONCommentUpdate()),
             "sortedReplies": {[SORTED_COMMENTS_TYPES.HOT]: sortedReplies[SORTED_COMMENTS_TYPES.HOT]},
             "sortedRepliesCids": sortedRepliesCids,
             "replyCount": replyCount
         };
-        await comment.parent.edit(commentUpdate);
+        await commentParent.edit(commentParentUpdate);
         this.event.emit("comment", comment);
     }
 
@@ -246,11 +248,12 @@ export class Subplebbit {
                     resolve({"reason": "Edited content is identical to original content"});
                 else {
                     await commentToBeEdited.update();
-                    const updatedComment = await commentToBeEdited.edit({
+                    await commentToBeEdited.edit({
                         ...commentToBeEdited.toJSONCommentUpdate(),
-                        "editedContent": commentToBeEdited.content
+                        "editedContent": postOrCommentOrVote.editedContent
                     });
-                    resolve(updatedComment);
+                    // TODO update DB here
+                    resolve({"publication": commentToBeEdited});
                 }
             } else if (postOrCommentOrVote instanceof Comment) {
                 // Comment and Post need to add file to ipfs
@@ -264,7 +267,7 @@ export class Subplebbit {
                     postOrCommentOrVote.setCommentIpnsKey(await this.plebbit.ipfsClient.key.gen(ipnsKeyName));
                     if (postOrCommentOrVote.getType() === "post") {
                         postOrCommentOrVote.setPreviousCommentCid(this.latestPostCid);
-                        const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote));
+                        const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
                         postOrCommentOrVote.setPostCid(file.path);
                         postOrCommentOrVote.setCommentCid(file.path);
                         postOrCommentOrVote.edit({"upvoteCount": 1, "downvoteCount": 0, "replyCount": 0}).catch(reject);
@@ -279,17 +282,17 @@ export class Subplebbit {
                     } else {
                         // Comment
                         const commentsUnderParent = await this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCommentCid);
-                        postOrCommentOrVote.setPreviousCommentCid(commentsUnderParent[0]);
-                        const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote));
+                        postOrCommentOrVote.setPreviousCommentCid(commentsUnderParent[0]?.commentCid);
+                        const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
                         postOrCommentOrVote.setCommentCid(file.path);
+                        await postOrCommentOrVote.edit({"upvoteCount": 1, "downvoteCount": 0, "replyCount": 0});
                         await this.dbHandler.insertComment(postOrCommentOrVote, challengeRequestId);
-                        postOrCommentOrVote.edit({"upvoteCount": 1, "downvoteCount": 0, "replyCount": 0}).catch(reject);
                         const defaultVote = await this.plebbit.createVote({
                             ...postOrCommentOrVote.toJSON(),
                             "vote": 1
                         });
                         await this.dbHandler.upsertVote(defaultVote, challengeRequestId);
-                        await this.#updatePostComments(postOrCommentOrVote);
+                        await this.#updateParentOfComment(postOrCommentOrVote);
                         resolve({"publication": postOrCommentOrVote});
 
                     }

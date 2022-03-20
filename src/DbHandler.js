@@ -37,11 +37,6 @@ class DbHandler {
             table.text("title").nullable();
             // CommentUpdate props
             table.text("editedContent").nullable();
-            table.integer("upvoteCount").notNullable();
-            table.integer("downvoteCount").notNullable();
-            table.integer("replyCount").notNullable();
-            table.json("sortedReplies").nullable();
-            table.json("sortedRepliesCids").nullable();
         });
 
     }
@@ -156,21 +151,43 @@ class DbHandler {
         });
     }
 
+    #baseCommentQuery() {
+        const upvoteQuery = this.knex(TABLES.VOTES).count(`${TABLES.VOTES}.vote`).where({
+            [`${TABLES.COMMENTS}.commentCid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`),
+            [`${TABLES.VOTES}.vote`]: 1
+        }).as("upvoteCount");
+        const downvoteQuery = this.knex(TABLES.VOTES).count(`${TABLES.VOTES}.vote`).where({
+            [`${TABLES.COMMENTS}.commentCid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`),
+            [`${TABLES.VOTES}.vote`]: -1
+        }).as("downvoteCount");
+        const replyCountQuery = this.knex.from(`${TABLES.COMMENTS} AS comments2`).count("").where({"comments2.parentCommentCid": this.knex.raw(`${TABLES.COMMENTS}.commentCid`)}).as("replyCount");
+
+        return this.knex(TABLES.COMMENTS).select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery);
+
+    }
+
     async #createCommentsFromRows(commentsRows) {
         return new Promise(async (resolve, reject) => {
-            commentsRows = commentsRows.map(props => replaceXWithY(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
-            const authors = (await this.knex(TABLES.AUTHORS).whereIn("address", commentsRows.map(post => post.authorAddress))).map(authorProps => new Author(authorProps));
-            const posts = commentsRows.map(postProps => {
-                const props = {
-                    ...postProps,
-                    "author": authors.filter(author => author.address === postProps.authorAddress)[0],
-                };
-                if (props["title"])
-                    return new Post(props, this.subplebbit);
-                else
-                    return new Comment(props, this.subplebbit);
-            });
-            resolve(posts);
+            if (!commentsRows)
+                resolve([undefined]);
+            else {
+                if (!Array.isArray(commentsRows))
+                    commentsRows = [commentsRows];
+                commentsRows = commentsRows.map(props => replaceXWithY(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
+                const authors = (await this.knex(TABLES.AUTHORS).whereIn("address", commentsRows.map(post => post.authorAddress))).map(authorProps => new Author(authorProps));
+                const posts = commentsRows.map(postProps => {
+                    const props = {
+                        ...postProps,
+                        "author": authors.filter(author => author.address === postProps.authorAddress)[0],
+                    };
+                    if (props["title"])
+                        return new Post(props, this.subplebbit);
+                    else
+                        return new Comment(props, this.subplebbit);
+                });
+                resolve(posts);
+            }
+
         });
 
     }
@@ -199,7 +216,7 @@ class DbHandler {
 
     async queryPostsSortedByTimestamp() {
         return new Promise(async (resolve, reject) => {
-            this.knex(TABLES.COMMENTS).whereNotNull("title").orderBy("timestamp", "desc")
+            this.#baseCommentQuery().whereNotNull("title").orderBy("timestamp", "desc")
                 .then(async res => {
                     resolve(await this.#createCommentsFromRows.bind(this)(res));
                 }).catch(err => {
@@ -211,7 +228,7 @@ class DbHandler {
 
     queryAllPosts() {
         return new Promise(async (resolve, reject) => {
-            this.knex(TABLES.COMMENTS).whereNotNull("title").then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(reject);
+            this.#baseCommentQuery().whereNotNull("title").then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(reject);
         });
     }
 
@@ -219,7 +236,7 @@ class DbHandler {
         return new Promise(async (resolve, reject) => {
             if (timestamp1 === Number.NEGATIVE_INFINITY)
                 timestamp1 = 0;
-            this.knex(TABLES.COMMENTS).whereNotNull("title").whereBetween("timestamp", [timestamp1, timestamp2]).then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(err => {
+            this.#baseCommentQuery().whereNotNull("title").whereBetween("timestamp", [timestamp1, timestamp2]).then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(err => {
                 console.error(err);
                 reject(err);
             });
@@ -230,6 +247,7 @@ class DbHandler {
         return new Promise(async (resolve, reject) => {
             if (timestamp1 === Number.NEGATIVE_INFINITY)
                 timestamp1 = 0;
+            // TODO use base comment query here
             this.knex(TABLES.VOTES).select(`${TABLES.COMMENTS}.*`).sum(`${TABLES.VOTES}.vote AS topScore`)
                 .join(TABLES.COMMENTS, `${TABLES.COMMENTS}.commentCid`, "=", `${TABLES.VOTES}.commentCid`)
                 .groupBy(`${TABLES.VOTES}.commentCid`)
@@ -244,7 +262,7 @@ class DbHandler {
 
     async queryCommentsUnderComment(parentCommentCid) {
         return new Promise(async (resolve, reject) => {
-            this.knex(TABLES.COMMENTS).where({"parentCommentCid": parentCommentCid}).orderBy("timestamp", "desc").then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(reject);
+            this.#baseCommentQuery().where({"parentCommentCid": parentCommentCid}).orderBy("timestamp", "desc").then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(reject);
         });
     }
 
@@ -289,14 +307,6 @@ class DbHandler {
         });
     }
 
-    async queryPublicationWithChallengeRequestId(challengeRequestId) {
-        return new Promise(async (resolve, reject) => {
-            for (const table of [TABLES.COMMENTS, TABLES.VOTES])
-                this.knex(table).where({"challengeRequestId": challengeRequestId}).first().then(resolve);
-            reject(`No publication (comment or vote) has challengeRequestId=${challengeRequestId}`);
-        });
-    }
-
     async queryVotesOfComment(commentCid) {
         return new Promise(async (resolve, reject) => {
             Promise.all([1, -1].map(voteValue => this.knex(TABLES.VOTES).where({
@@ -308,8 +318,8 @@ class DbHandler {
 
     async queryComment(commentCid) {
         return new Promise(async (resolve, reject) => {
-            this.knex(TABLES.COMMENTS).where({"commentCid": commentCid}).first().then(async res => {
-                resolve(await this.#createCommentsFromRows.bind(this)(res));
+            this.#baseCommentQuery().where({"commentCid": commentCid}).first().then(async res => {
+                resolve((await this.#createCommentsFromRows.bind(this)(res))[0]);
             }).catch(reject);
         });
     }

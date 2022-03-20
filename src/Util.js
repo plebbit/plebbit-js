@@ -66,7 +66,7 @@ export function timestamp() {
 }
 
 export function replaceXWithY(obj, x, y) {
-    // x is a JS object
+    // obj is a JS object
     const newObj = {};
     Object.entries(obj).forEach(([key, value]) => {
         if (obj[key] === x)

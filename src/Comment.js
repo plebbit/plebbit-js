@@ -38,15 +38,20 @@ class Comment extends Publication {
 
     toJSON() {
         return {
+            ...this.toJSONIpfs(),
+            ...this.toJSONCommentUpdate(),
+            "commentCid": this.commentCid
+        };
+    };
+
+    toJSONIpfs() {
+        return {
             ...this.toJSONSkeleton(),
             "previousCommentCid": this.previousCommentCid,
             "ipnsName": this.ipnsName,
             "postCid": this.postCid,
-            "commentCid": this.commentCid,
-            "commentIpnsKeyName": this.commentIpnsKeyName,
-            ...this.toJSONCommentUpdate()
-        }
-    };
+        };
+    }
 
 
     toJSONSkeleton() {
@@ -62,9 +67,11 @@ class Comment extends Publication {
 
     toJSONForDb(challengeRequestId) {
         const json = this.toJSON();
-        delete json.author;
+        [...Object.keys(this.toJSONCommentUpdate()), "author"].forEach(key => delete json[key]);
         json["authorAddress"] = this.author.address;
         json["challengeRequestId"] = challengeRequestId;
+        json["commentIpnsKeyName"] = this.commentIpnsKeyName;
+        json["editedContent"] = this.editedContent;
         return json;
     }
 
