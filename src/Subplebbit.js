@@ -242,7 +242,7 @@ export class Subplebbit {
                 const commentToBeEdited = await this.dbHandler.queryComment(postOrCommentOrVote.commentCid);
                 if (!commentToBeEdited)
                     resolve({"reason": `commentCid (${postOrCommentOrVote.commentCid}) does not exist`});
-                else if (commentToBeEdited.content === postOrCommentOrVote.content)
+                else if (commentToBeEdited.content === postOrCommentOrVote.editedContent)
                     resolve({"reason": "Edited content is identical to original content"});
                 else {
                     await commentToBeEdited.update();
