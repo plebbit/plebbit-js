@@ -168,7 +168,7 @@ MultisubSubplebbit { // this metadata is set by the owner of the Multisub, not t
   tags?: string[] // arbitrary keywords used for search
 }
 PlebbitDefaults { // fetched once when app first load, a dictionary of default settings
-  multisubAddresses: {[key: multisubName]: Address}
+  multisubAddresses: {[multisubName: string]: Address}
   // plebbit has 3 default multisubs
   multisubAddresses.all: Address // the default subplebbits to show at url plebbit.eth/p/all
   multisubAddresses.crypto: Address // the subplebbits to show at url plebbit.eth/p/crypto
