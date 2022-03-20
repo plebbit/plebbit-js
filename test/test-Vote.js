@@ -12,21 +12,22 @@ const previousVotes = [];
 
 describe("Test Vote", async () => {
     before(async () => await unsubscribeAllPubsubTopics(plebbit.ipfsClient));
+    after(async () => await post.subplebbit.stopPublishing());
 
     it("Can upvote a comment", async () => {
         return new Promise(async (resolve, reject) => {
-            await post.fetchCommentIpns();
+            await post.update();
 
-            const originalUpvote = post.commentIpns.upvoteCount;
             post.subplebbit.setProvideCaptchaCallback((challengeRequestMessage) => {
                 return [null, "Captcha is skipped for all"];
             });
             const vote = await generateMockVote(post, 1, post.subplebbit);
+            const originalUpvote = post.upvoteCount;
 
             await post.subplebbit.startPublishing();
             vote.publish().then(async (challengeVerificationMessage) => {
-                await post.fetchCommentIpns();
-                assert.equal(post.commentIpns.upvoteCount, originalUpvote + 1);
+                await post.update();
+                assert.equal(post.upvoteCount, originalUpvote + 1);
                 previousVotes.push(vote);
                 resolve();
             }).catch(reject);
@@ -48,10 +49,10 @@ describe("Test Vote", async () => {
 
     it("Can change upvote to downvote", async () => {
         return new Promise(async (resolve, reject) => {
-            await post.fetchCommentIpns();
+            await post.update();
 
-            const originalUpvote = post.commentIpns.upvoteCount;
-            const originalDownvote = post.commentIpns.downvoteCount;
+            const originalUpvote = post.upvoteCount;
+            const originalDownvote = post.downvoteCount;
             const vote = await plebbit.createVote({
                 ...previousVotes[0].toJSON(),
                 "vote": -1,
@@ -59,9 +60,9 @@ describe("Test Vote", async () => {
                 "subplebbitAddress": previousVotes[0].subplebbitAddress
             },);
             vote.publish().then(async (challengeVerificationMessage) => {
-                await post.fetchCommentIpns();
-                assert.equal(post.commentIpns.upvoteCount, originalUpvote - 1, "Failed to update upvote count");
-                assert.equal(post.commentIpns.downvoteCount, originalDownvote + 1, "Failed to update downvote count");
+                await post.update();
+                assert.equal(post.upvoteCount, originalUpvote - 1, "Failed to update upvote count");
+                assert.equal(post.downvoteCount, originalDownvote + 1, "Failed to update downvote count");
                 resolve();
             }).catch(reject);
         });
@@ -70,9 +71,9 @@ describe("Test Vote", async () => {
 
     it("Can cancel a comment downvote", async () => {
         return new Promise(async (resolve, reject) => {
-            await post.fetchCommentIpns();
+            await post.update();
 
-            const originalDownvote = post.commentIpns.downvoteCount;
+            const originalDownvote = post.downvoteCount;
             const vote = await plebbit.createVote({
                 ...previousVotes[0].toJSON(),
                 "vote": 0,
@@ -80,8 +81,8 @@ describe("Test Vote", async () => {
                 "subplebbitAddress": previousVotes[0].subplebbitAddress
             });
             vote.publish().then(async (challengeVerificationMessage) => {
-                await post.fetchCommentIpns();
-                assert.equal(post.commentIpns.downvoteCount, originalDownvote - 1);
+                await post.update();
+                assert.equal(post.downvoteCount, originalDownvote - 1);
                 resolve();
             }).catch(reject);
         });
@@ -90,12 +91,12 @@ describe("Test Vote", async () => {
 
     it("Can downvote a comment", async () => {
         return new Promise(async (resolve, reject) => {
-            await post.fetchCommentIpns();
-            const originalDownvote = post.commentIpns.downvoteCount;
+            await post.update();
+            const originalDownvote = post.downvoteCount;
             const vote = await generateMockVote(post, -1, post.subplebbit);
             vote.publish().then(async (challengeVerificationMessage) => {
-                await post.fetchCommentIpns();
-                assert.equal(post.commentIpns.downvoteCount, originalDownvote + 1);
+                await post.update();
+                assert.equal(post.downvoteCount, originalDownvote + 1);
                 previousVotes.push(vote);
                 resolve();
             }).catch(reject);
@@ -105,10 +106,10 @@ describe("Test Vote", async () => {
 
     it("Can change downvote to upvote", async () => {
         return new Promise(async (resolve, reject) => {
-            await post.fetchCommentIpns();
+            await post.update();
 
-            const originalUpvote = post.commentIpns.upvoteCount;
-            const originalDownvote = post.commentIpns.downvoteCount;
+            const originalUpvote = post.upvoteCount;
+            const originalDownvote = post.downvoteCount;
             const vote = await plebbit.createVote({
                 ...previousVotes[1].toJSON(),
                 "vote": 1,
@@ -116,9 +117,9 @@ describe("Test Vote", async () => {
                 "subplebbitAddress": previousVotes[1].subplebbitAddress
             });
             vote.publish().then(async (challengeVerificationMessage) => {
-                await post.fetchCommentIpns();
-                assert.equal(post.commentIpns.upvoteCount, originalUpvote + 1, "Failed to update upvote count");
-                assert.equal(post.commentIpns.downvoteCount, originalDownvote - 1, "Failed to update downvote count");
+                await post.update();
+                assert.equal(post.upvoteCount, originalUpvote + 1, "Failed to update upvote count");
+                assert.equal(post.downvoteCount, originalDownvote - 1, "Failed to update downvote count");
                 resolve();
             }).catch(reject);
         });
@@ -127,9 +128,9 @@ describe("Test Vote", async () => {
 
     it("Can cancel a comment upvote", async () => {
         return new Promise(async (resolve, reject) => {
-            await post.fetchCommentIpns();
+            await post.update();
 
-            const originalUpvote = post.commentIpns.upvoteCount;
+            const originalUpvote = post.upvoteCount;
             const vote = await plebbit.createVote({
                 ...previousVotes[1].toJSON(),
                 "vote": 0,
@@ -137,8 +138,8 @@ describe("Test Vote", async () => {
                 "subplebbitAddress": previousVotes[1].subplebbitAddress
             });
             vote.publish().then(async (challengeVerificationMessage) => {
-                await post.fetchCommentIpns();
-                assert.equal(post.commentIpns.upvoteCount, originalUpvote - 1);
+                await post.update();
+                assert.equal(post.upvoteCount, originalUpvote - 1);
                 resolve();
             }).catch(reject);
         });
