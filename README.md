@@ -106,16 +106,16 @@ SubplebbitAppearance {
   language?: string
 }
 SubplebbitFeatures {
-  videos?: boolean
-  videoGifs?: boolean
-  images?: boolean
-  polls?: boolean
-  crossposts?: boolean
-  upvotes?: boolean
-  downvotes?: boolean
-  authors?: boolean // no others at all, like 4chan
+  noVideos?: boolean
+  noVideoGifs?: boolean
+  noImages?: boolean
+  noPolls?: boolean
+  noCrossposts?: boolean
+  noUpvotes?: boolean
+  noDownvotes?: boolean
+  noAuthors?: boolean // no others at all, like 4chan
   anonymousAuthors?: string // authors are given anonymous ids inside threads, like 4chan
-  nestedReplies?: boolean // no nested replies, like old school forums and 4chan
+  noNestedReplies?: boolean // no nested replies, like old school forums and 4chan
   safeForWork?: boolean
   authorCanAssignFlair?: boolean // authors can choose their own flairs (otherwise only mods can)
   authorMustAssignFlair?: boolean // force authors to choose a flair before posting
