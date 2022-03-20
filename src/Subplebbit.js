@@ -182,7 +182,7 @@ export class Subplebbit {
     async #publishVote(newVote, challengeRequestId) {
         return new Promise(async (resolve, reject) => {
             const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address);
-            const voteComment = await this.plebbit.getPostOrComment(newVote.commentCid);
+            const voteComment = await this.dbHandler.queryComment(newVote.commentCid);
             const [upvotes, downvotes] = await this.dbHandler.queryVotesOfComment(newVote.commentCid);
 
             let newUpvoteCount = -1, newDownvoteCount = -1;
