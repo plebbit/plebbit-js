@@ -32,7 +32,7 @@ Comment extends Publication /* (IPFS file) */ {
   depth: number // 0 = post, 1 = top level reply, 2+ = nested reply
   ipnsName: string // each post/comment needs its own IPNS record (CommentUpdate) for its mutable data like edits, vote counts, comments
   spoiler?: boolean
-  flair?: string // arbitrary string added by the author or mods to describe the author or comment
+  flair?: Flair // arbitrary colored string added by the author or mods to describe the author or comment
 }
 Post extends Comment /* (IPFS file) */ {
   postCid?: undefined // post is same as comment but has no parent and some extra fields
@@ -52,7 +52,7 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   upvoteCount: number
   downvoteCount: number
   replies: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
-  flair?: string // arbitrary strings added by the author or mods to describe the author or comment
+  flair?: Flair // arbitrary colored strings added by the author or mods to describe the author or comment
   spoiler?: boolean
   pinned?: boolean
   locked?: boolean
@@ -97,8 +97,9 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   updatedAt: number
   features?: SubplebbitFeatures
   appearance?: SubplebbitAppearance
+  flairs?: Flair[] // list of flairs authors and mods can choose from
 }
-SubplebbitAppearance {
+SubplebbitAppearance { // any value set by the sub owner that changes the appearance of the sub
   title?: string
   description?: string
   primaryColor?: string
@@ -107,9 +108,8 @@ SubplebbitAppearance {
   bannerUrl?: string
   backgroundUrl?: string
   language?: string
-  flairs?: Flair[] // list of flairs authors and mods can choose from
 }
-SubplebbitFeatures {
+SubplebbitFeatures { // any boolean that changes the functionality of the sub, add "no" in front if doesn't default to false
   noVideos?: boolean
   noSpoilers?: boolean // author can't comment.spoiler = true their own comments
   noVideoGifs?: boolean
