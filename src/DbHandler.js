@@ -23,7 +23,7 @@ class DbHandler {
         await this.knex.schema.createTable(TABLES.COMMENTS, (table) => {
             table.text("commentCid").notNullable().primary().unique();
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
-            table.text("parentCommentCid").nullable().references("commentCid").inTable(TABLES.COMMENTS);
+            table.text("parentCid").nullable().references("commentCid").inTable(TABLES.COMMENTS);
             table.text("postCid").notNullable().references("commentCid").inTable(TABLES.COMMENTS);
             table.text("previousCommentCid").nullable().references("commentCid").inTable(TABLES.COMMENTS);
             table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
@@ -161,7 +161,7 @@ class DbHandler {
             [`${TABLES.COMMENTS}.commentCid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`),
             [`${TABLES.VOTES}.vote`]: -1
         }).as("downvoteCount");
-        const replyCountQuery = this.knex.from(`${TABLES.COMMENTS} AS comments2`).count("").where({"comments2.parentCommentCid": this.knex.raw(`${TABLES.COMMENTS}.commentCid`)}).as("replyCount");
+        const replyCountQuery = this.knex.from(`${TABLES.COMMENTS} AS comments2`).count("").where({"comments2.parentCid": this.knex.raw(`${TABLES.COMMENTS}.commentCid`)}).as("replyCount");
 
         return this.knex(TABLES.COMMENTS).select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery);
 
@@ -261,9 +261,9 @@ class DbHandler {
         })
     }
 
-    async queryCommentsUnderComment(parentCommentCid) {
+    async queryCommentsUnderComment(parentCid) {
         return new Promise(async (resolve, reject) => {
-            this.#baseCommentQuery().where({"parentCommentCid": parentCommentCid}).orderBy("timestamp", "desc").then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(reject);
+            this.#baseCommentQuery().where({"parentCid": parentCid}).orderBy("timestamp", "desc").then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(reject);
         });
     }
 

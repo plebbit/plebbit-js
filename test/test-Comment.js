@@ -94,7 +94,7 @@ describe("Test Post and Comment", async function () {
             mockComment.publish().then(async challengeVerificationMessage => {
                 await mockComment.fetchParent();
                 assert.equal(mockComment.parent.commentCid, mockComments[0].commentCid);
-                assert.equal(mockComment.parentCommentCid, mockComments[0].commentCid);
+                assert.equal(mockComment.parentCid, mockComments[0].commentCid);
                 assert.equal(mockComment.depth, 2, "Depth of comment under a comment should be 2");
                 await mockComment.parent.update();
                 const latestCommentCid = (await loadIpfsFileAsJson(mockComment.parent.sortedRepliesCids[SORTED_COMMENTS_TYPES.NEW], plebbit.ipfsClient)).comments[0].commentCid;

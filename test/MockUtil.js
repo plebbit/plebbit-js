@@ -5,7 +5,7 @@ export async function generateMockComment(parentPostOrComment, subplebbit) {
         "author": {"displayName": `Mock Author - ${commentTime}`, "address": mockAuthorIpns["id"]},
         "content": `Mock comment - ${commentTime}`,
         "postCid": parentPostOrComment.postCid,
-        "parentCommentCid": parentPostOrComment.commentCid,
+        "parentCid": parentPostOrComment.commentCid,
         "subplebbitAddress": subplebbit.subplebbitAddress
     });
 }

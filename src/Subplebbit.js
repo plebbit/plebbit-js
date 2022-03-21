@@ -165,15 +165,13 @@ export class Subplebbit {
     }
 
     async #updateParentOfComment(comment) {
-        const [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedReplies(comment.parentCommentCid);
-        const replyCount = (await this.dbHandler.queryCommentsUnderComment(comment.parentCommentCid)).length;
-        const commentParent = await this.dbHandler.queryComment(comment.parentCommentCid);
-        await commentParent.update();
+        const [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedReplies(comment.parentCid);
+        const commentParent = await this.dbHandler.queryComment(comment.parentCid);
         const commentParentUpdate = {
             ...(commentParent.toJSONCommentUpdate()),
             "sortedReplies": {[SORTED_COMMENTS_TYPES.HOT]: sortedReplies[SORTED_COMMENTS_TYPES.HOT]},
             "sortedRepliesCids": sortedRepliesCids,
-            "replyCount": replyCount
+            "replyCount": commentParent.replyCount
         };
         await commentParent.edit(commentParentUpdate);
         this.event.emit("comment", comment);
@@ -282,9 +280,9 @@ export class Subplebbit {
                         resolve({"publication": postOrCommentOrVote});
                     } else {
                         // Comment
-                        const commentsUnderParent = await this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCommentCid);
+                        const commentsUnderParent = await this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid);
                         postOrCommentOrVote.setPreviousCommentCid(commentsUnderParent[0]?.commentCid);
-                        const depth = (await this.dbHandler.queryComment(postOrCommentOrVote.parentCommentCid)).depth + 1;
+                        const depth = (await this.dbHandler.queryComment(postOrCommentOrVote.parentCid)).depth + 1;
                         postOrCommentOrVote.setDepth(depth);
                         const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
                         postOrCommentOrVote.setCommentCid(file.path);

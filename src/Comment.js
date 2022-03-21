@@ -18,7 +18,7 @@ class Comment extends Publication {
         this.signature = props["signature"];
         this.postCid = props["postCid"];
         this.commentCid = props["commentCid"];
-        this.parentCommentCid = props["parentCommentCid"];
+        this.parentCid = props["parentCid"];
         this.content = props["content"];
         this.ipnsName = props["ipnsName"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.commentIpnsKeyName = props["commentIpnsKeyName"];
@@ -63,7 +63,7 @@ class Comment extends Publication {
             "content": this.content,
             "timestamp": this.timestamp,
             "signature": this.signature,
-            "parentCommentCid": this.parentCommentCid
+            "parentCid": this.parentCid
         }
     }
 
@@ -112,7 +112,7 @@ class Comment extends Publication {
 
     async fetchParent() {
         return new Promise(async (resolve, reject) => {
-            this.subplebbit.plebbit.getPostOrComment(this.parentCommentCid || this.postCid).then(res => {
+            this.subplebbit.plebbit.getPostOrComment(this.parentCid || this.postCid).then(res => {
                 this.parent = res;
                 resolve(this.parent);
             }).catch(reject);
