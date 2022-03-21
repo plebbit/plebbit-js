@@ -258,6 +258,7 @@ Challenge {
   - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
   - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
   - `plebbit.getDefaults()`
+  - `plebbit.createSigner()`
 - [Subplebbit API](#subplebbit-api)
   - [`subplebbit.edit(subplebbitEditOptions)`](#subplebbiteditsubplebbiteditoptions)
   - [`subplebbit.start()`](#subplebbitstart)
