@@ -56,6 +56,10 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   spoiler?: boolean
   pinned?: boolean
   locked?: boolean
+  deleted?: boolean // author deleted their comment
+  removed?: boolean // mod deleted a comment
+  reason?: string // reason the mod took a mod action
+  updatedAt: number // timestamp in seconds the IPNS record was updated
 }
 Author {
   address: string
@@ -93,7 +97,6 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   updatedAt: number
   features?: SubplebbitFeatures
   appearance?: SubplebbitAppearance
-  flairs?: Flair[] // list of flairs authors and mods can choose from
 }
 SubplebbitAppearance {
   title?: string
@@ -104,9 +107,11 @@ SubplebbitAppearance {
   bannerUrl?: string
   backgroundUrl?: string
   language?: string
+  flairs?: Flair[] // list of flairs authors and mods can choose from
 }
 SubplebbitFeatures {
   noVideos?: boolean
+  noSpoilers?: boolean // author can't comment.spoiler = true their own comments
   noVideoGifs?: boolean
   noImages?: boolean
   noPolls?: boolean
@@ -117,8 +122,8 @@ SubplebbitFeatures {
   anonymousAuthors?: string // authors are given anonymous ids inside threads, like 4chan
   noNestedReplies?: boolean // no nested replies, like old school forums and 4chan
   safeForWork?: boolean
-  authorCanAssignFlair?: boolean // authors can choose their own flairs (otherwise only mods can)
-  authorMustAssignFlair?: boolean // force authors to choose a flair before posting
+  flairs?: boolean // authors can choose their own flairs (otherwise only mods can)
+  requireFlairs?: boolean // force authors to choose a flair before posting
 }
 Flair {
   color: string
@@ -260,13 +265,15 @@ Challenge {
   - [`subplebbit.update()`](#subplebbitupdate)
   - `subplebbit.address`
   - `subplebbit.signer`
-  - `subplebbit.title`
-  - `subplebbit.description`
   - `subplebbit.moderatorsAddresses`
   - `subplebbit.posts`
   - `subplebbit.latestPostCid`
   - `subplebbit.pubsubTopic`
   - `subplebbit.challengeTypes`
+  - `subplebbit.appearance`
+  - `subplebbit.features`
+  - `subplebbit.createdAt`
+  - `subplebbit.updatedAt`
   - `subplebbit.metrics`
 - [Subplebbit Events](#subplebbit-events)
   - [`update`](#update)
@@ -287,7 +294,11 @@ Challenge {
   - `comment.title`
   - `comment.content`
   - `comment.link`
+  - `comment.thumbnailUrl`
   - `comment.ipnsName`
+  - `comment.flair`
+  - `comment.spoiler`
+  - `comment.depth`
   - `(only available after challengeverification event)`
   - `comment.cid`
   - `(only available after first update event)`
@@ -295,6 +306,12 @@ Challenge {
   - `comment.original`
   - `comment.upvoteCount`
   - `comment.downvoteCount`
+  - `comment.updatedAt`
+  - `comment.pinned`
+  - `comment.deleted`
+  - `comment.removed`
+  - `comment.locked`
+  - `comment.reason`
   - `comment.replies`
 - [Comment Events](#comment-events)
   - [`update`](#update)
