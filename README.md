@@ -46,7 +46,9 @@ Vote extends Publication {
   vote: 1 | -1 | 0 // 0 is needed to cancel a vote
 }
 CommentUpdate /* (IPNS record Comment.ipnsName) */ {
-  editedContent: string // the author has edited the comment content
+  content?: string // the author has edited the comment content
+  signature?: Signature // signature of the edited content by the author
+  editTimestamp?: number // the time of the last content edit
   upvoteCount: number
   downvoteCount: number
   replies: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
@@ -81,14 +83,46 @@ Signer {
   type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
 }
 Subplebbit /* (IPNS record Subplebbit.address) */ {
-  title?: string
-  description?: string
   moderatorsAddresses?: string[]
   pubsubTopic?: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   latestPostCid: string // the most recent post in the linked list of posts
   posts: Pages // only preload page 1 sorted by 'hot', might preload more later, comments should include Comment + CommentUpdate data
   challengeTypes?: ChallengeType[] // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
   metricsCid?: subplebbitMetricsCid
+  createdAt: number
+  updatedAt: number
+  features?: SubplebbitFeatures
+  appearance?: SubplebbitAppearance
+  flairs?: Flair[] // list of flairs authors and mods can choose from
+}
+SubplebbitAppearance {
+  title?: string
+  description?: string
+  primaryColor?: string
+  secondaryColor?: string
+  avatarUrl?: string
+  bannerUrl?: string
+  backgroundUrl?: string
+  language?: string
+}
+SubplebbitFeatures {
+  noVideos?: boolean
+  noVideoGifs?: boolean
+  noImages?: boolean
+  noPolls?: boolean
+  noCrossposts?: boolean
+  noUpvotes?: boolean
+  noDownvotes?: boolean
+  noAuthors?: boolean // no others at all, like 4chan
+  anonymousAuthors?: string // authors are given anonymous ids inside threads, like 4chan
+  noNestedReplies?: boolean // no nested replies, like old school forums and 4chan
+  safeForWork?: boolean
+  authorCanAssignFlair?: boolean // authors can choose their own flairs (otherwise only mods can)
+  authorMustAssignFlair?: boolean // force authors to choose a flair before posting
+}
+Flair {
+  color: string
+  flair: string
 }
 Pages {
   pages: {[key: PostsSortType | RepliesSortType]: Page} // e.g. subplebbit.posts.pages.hot.comments[0].cid = 'Qm...'
@@ -134,7 +168,7 @@ MultisubSubplebbit { // this metadata is set by the owner of the Multisub, not t
   tags?: string[] // arbitrary keywords used for search
 }
 PlebbitDefaults { // fetched once when app first load, a dictionary of default settings
-  multisubAddresses: {[key: multisubName]: Address}
+  multisubAddresses: {[multisubName: string]: Address}
   // plebbit has 3 default multisubs
   multisubAddresses.all: Address // the default subplebbits to show at url plebbit.eth/p/all
   multisubAddresses.crypto: Address // the subplebbits to show at url plebbit.eth/p/crypto
@@ -257,7 +291,8 @@ Challenge {
   - `(only available after challengeverification event)`
   - `comment.cid`
   - `(only available after first update event)`
-  - `comment.editedContent`
+  - `comment.editTimestamp`
+  - `comment.original`
   - `comment.upvoteCount`
   - `comment.downvoteCount`
   - `comment.replies`
@@ -503,10 +538,10 @@ An object which may have the following keys:
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | subplebbitAddress | `string` | IPNS name of the subplebbit |
-| commentCid | The comment CID to be edited |
-| editedContent | `string` | Edited content of the comment |
-| timestamp | `number` or `undefined` | Time of edit in ms, `Date.now()` if undefined |
-| signer | `Signer` | Signer of the comment |
+| cid | The comment CID to be edited |
+| content | `string` | Edited content of the comment |
+| editTimestamp | `number` or `undefined` | Time of edit in ms, `Date.now()` if undefined |
+| signer | `Signer` | Signer of the edit |
 
 #### Returns
 
