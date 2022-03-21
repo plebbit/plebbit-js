@@ -84,7 +84,7 @@ Signature {
 }
 Signer {
   privateKey?: string | buffer // to sign with metamask, no need for private key
-  type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
+  type: 'plebbit1' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm https://eips.ethereum.org/EIPS/eip-191
 }
 Subplebbit /* (IPNS record Subplebbit.address) */ {
   moderatorsAddresses?: string[]
@@ -258,7 +258,7 @@ Challenge {
   - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
   - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
   - `plebbit.getDefaults()`
-  - `plebbit.createSigner()`
+  - [`plebbit.createSigner(createSignerOptions)`](#plebbitcreatesignercreatesigneroptions)
 - [Subplebbit API](#subplebbit-api)
   - [`subplebbit.edit(subplebbitEditOptions)`](#subplebbiteditsubplebbiteditoptions)
   - [`subplebbit.start()`](#subplebbitstart)
@@ -616,6 +616,37 @@ vote.on('challenge', async (challengeMessage) => {
   comment.publishChallengeAnswers(challengeAnswers)
 })
 vote.publish()
+```
+
+### `plebbit.createSigner(createSignerOptions)`
+
+> Create a `Signer` instance to be used in `CreateCommentOptions`.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| createSignerOptions | `CreateSignerOptions` or `undefined` | The options of the signer |
+
+##### CreateSignerOptions
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| privateKey | `string` or `undefined` | If undefined, generate a random privateKey |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<Signer>` | A `Signer` instance |
+
+#### Example
+
+```js
+const newRandomSigner = await plebbit.createSigner()
+const signerFromPrivateKey = await plebbit.createSigner({privateKey: 'Qwer...'})
 ```
 
 ## Subplebbit API
