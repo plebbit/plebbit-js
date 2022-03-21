@@ -24,15 +24,15 @@ import * as fs from "fs";
 // import {Signer} from "./Signer.js";
 
 
-export class Subplebbit {
+export class Subplebbit extends EventEmitter {
     constructor(props, plebbit) {
+        super();
         this.plebbit = plebbit;
         this.#initSubplebbit(props);
         this._challengeToSolution = {}; // Map challenge ID to its solution
         this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
         this.provideCaptchaCallback = undefined;
         this.validateCaptchaAnswerCallback = undefined;
-        this.event = new EventEmitter();
     }
 
     #initSubplebbit(newProps) {
@@ -161,7 +161,7 @@ export class Subplebbit {
             "latestPostCid": post.postCid,
         }
         await this.edit(newSubplebbitOptions);
-        this.event.emit("post", post);
+        this.emit("post", post);
     }
 
     async #updateParentOfComment(comment) {
@@ -174,7 +174,7 @@ export class Subplebbit {
             "replyCount": commentParent.replyCount
         };
         await commentParent.edit(commentParentUpdate);
-        this.event.emit("comment", comment);
+        this.emit("comment", comment);
     }
 
     async #publishVote(newVote, challengeRequestId) {
@@ -419,8 +419,8 @@ export class Subplebbit {
 
     async stopPublishing() {
         await this.plebbit.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
-        this.event.removeAllListeners();
-        this.dbHandler.knex.destroy();
+        this.removeAllListeners();
+        this.dbHandler?.knex?.destroy();
         this.dbHandler = undefined;
     }
 

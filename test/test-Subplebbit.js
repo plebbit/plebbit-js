@@ -91,7 +91,7 @@ describe("Test Subplebbit functionality", async () => {
     it("Subplebbit emits an event everytime a post is posted", async function () {
         return new Promise(async (resolve, reject) => {
             const mockPost = await generateMockPost(subplebbit);
-            subplebbit.event.once('post', async (post) => {
+            subplebbit.once('post', async (post) => {
                 assert.equal(post.title, mockPost.title, "Failed to publish correct post");
                 assert.equal(post.postCid, subplebbit.latestPostCid, "Failed to update subplebbit latestPostCid");
                 const loadedPost = await plebbit.getPostOrComment(post.postCid);
