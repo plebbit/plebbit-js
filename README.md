@@ -87,6 +87,8 @@ Signer {
   type: 'plebbit1' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm https://eips.ethereum.org/EIPS/eip-191
 }
 Subplebbit /* (IPNS record Subplebbit.address) */ {
+  title?: string
+  description?: string
   moderatorsAddresses?: string[]
   pubsubTopic?: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   latestPostCid: string // the most recent post in the linked list of posts
@@ -99,9 +101,7 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   appearance?: SubplebbitAppearance
   flairs?: Flair[] // list of flairs authors and mods can choose from
 }
-SubplebbitAppearance { // any value set by the sub owner that changes the appearance of the sub
-  title?: string
-  description?: string
+SubplebbitAppearance { // values suggested by the sub owner, the client can ignore them
   primaryColor?: string
   secondaryColor?: string
   avatarUrl?: string
