@@ -244,7 +244,7 @@ export class Subplebbit extends EventEmitter {
     async #publishPubsubMsg(publication, challengeRequestId) {
         return new Promise(async (resolve, reject) => {
             const postOrCommentOrVote = publication.hasOwnProperty("vote") ? await this.plebbit.createVote(publication) :
-                publication.hasOwnProperty("editedContent") ? await this.plebbit.createCommentEdit(publication) : await this.plebbit.createComment(publication);
+                publication.editedContent ? await this.plebbit.createCommentEdit(publication) : await this.plebbit.createComment(publication);
 
             if (postOrCommentOrVote.getType() === "vote")
                 this.#publishVote(postOrCommentOrVote, challengeRequestId).then(resolve).catch(reject);
