@@ -106,11 +106,13 @@ export class SortHandler {
             if (typesAlreadySorted.includes(sortType))
                 commentsSorted = comments;
             else {
-                const scores = await Promise.all(comments.map(async comment => await this.#score(comment, sortType)));
-                commentsSorted = comments.sort((postA, postB) => {
-                    const [iA, iB] = [comments.indexOf(postA), comments.indexOf(postB)];
-                    return scores[iA] > scores[iB];
-                });
+                commentsSorted = (await Promise.all(comments.map(async comment => ({
+                    "comment": comment,
+                    "score": await this.#score(comment, sortType)
+                }))))
+                    .sort((postA, postB) => {
+                        return postB.score - postA.score;
+                    }).map(comment => comment.comment);
 
             }
             const commentsChunks = chunks(commentsSorted, limit);
