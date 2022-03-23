@@ -41,18 +41,20 @@ export class SortHandler {
         return new Promise(async (resolve, reject) => {
             if (chunks.length === 0)
                 resolve([new SortedComments({"type": sortType})]);
-            const sortedPosts = new Array(chunks.length);
-            for (let i = chunks.length - 1; i >= 0; i--) {
-                const sortedPostsPage = new SortedComments({
-                    "type": sortType, "comments": chunks[i].map(comment => comment.toJSON()),
-                    "nextSortedCommentsCid": sortedPosts[i + 1]?.pageCid,
-                    "pageCid": undefined
-                }, this.subplebbit);
-                const cid = (await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(sortedPostsPage))).path;
-                sortedPostsPage.setPageCid(cid);
-                sortedPosts[i] = sortedPostsPage;
+            else {
+                const sortedPosts = new Array(chunks.length);
+                for (let i = chunks.length - 1; i >= 0; i--) {
+                    const sortedPostsPage = new SortedComments({
+                        "type": sortType, "comments": chunks[i],
+                        "nextSortedCommentsCid": sortedPosts[i + 1]?.pageCid,
+                        "pageCid": undefined
+                    }, this.subplebbit);
+                    const cid = (await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(sortedPostsPage))).path;
+                    sortedPostsPage.setPageCid(cid);
+                    sortedPosts[i] = sortedPostsPage;
+                }
+                resolve(sortedPosts);
             }
-            resolve(sortedPosts);
         });
 
 
@@ -72,6 +74,7 @@ export class SortHandler {
         });
 
     }
+
     async #controversialScore(comment) {
         return new Promise(async (resolve, reject) => {
             this.subplebbit.dbHandler.queryVotesOfComment(comment.commentCid).then(([upvote, downvote]) => {
@@ -84,12 +87,14 @@ export class SortHandler {
             }).catch(reject);
         });
     }
+
     async #score(comment, sortType) {
         if (sortType.includes("hot"))
             return this.#hotScore(comment);
         else if (sortType.includes("controversial"))
             return this.#controversialScore(comment);
     }
+
     // Resolves to sortedComments
     async #sortComments(comments, sortType, limit = SORTED_POSTS_PAGE_SIZE) {
         return new Promise(async (resolve, reject) => {
