@@ -215,9 +215,9 @@ class DbHandler {
         });
     }
 
-    async queryPostsSortedByTimestamp() {
+    async queryCommentsSortedByTimestamp(parentCid) {
         return new Promise(async (resolve, reject) => {
-            this.#baseCommentQuery().whereNotNull("title").orderBy("timestamp", "desc")
+            this.#baseCommentQuery().where({"parentCid": parentCid}).orderBy("timestamp", "desc")
                 .then(async res => {
                     resolve(await this.#createCommentsFromRows.bind(this)(res));
                 }).catch(err => {
@@ -227,24 +227,18 @@ class DbHandler {
         });
     }
 
-    queryAllPosts() {
-        return new Promise(async (resolve, reject) => {
-            this.#baseCommentQuery().whereNotNull("title").then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(reject);
-        });
-    }
-
-    async queryPostsBetweenTimestampRange(timestamp1, timestamp2) {
+    async queryCommentsBetweenTimestampRange(parentCid, timestamp1, timestamp2) {
         return new Promise(async (resolve, reject) => {
             if (timestamp1 === Number.NEGATIVE_INFINITY)
                 timestamp1 = 0;
-            this.#baseCommentQuery().whereNotNull("title").whereBetween("timestamp", [timestamp1, timestamp2]).then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(err => {
+            this.#baseCommentQuery().where({"parentCid": parentCid}).whereBetween("timestamp", [timestamp1, timestamp2]).then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(err => {
                 console.error(err);
                 reject(err);
             });
         });
     }
 
-    async queryTopPostsBetweenTimestampRange(timestamp1, timestamp2) {
+    async queryTopCommentsBetweenTimestampRange(parentCid, timestamp1, timestamp2) {
         return new Promise(async (resolve, reject) => {
             if (timestamp1 === Number.NEGATIVE_INFINITY)
                 timestamp1 = 0;
