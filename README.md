@@ -117,7 +117,7 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   noVideoReplies?: boolean
   noSpoilerReplies?: boolean
   noImageReplies?: boolean
-  noVideoGifReplies? boolean
+  noVideoGifReplies?: boolean
   noPolls?: boolean
   noCrossposts?: boolean
   noUpvotes?: boolean
@@ -128,6 +128,10 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   safeForWork?: boolean
   flairs?: boolean // authors can choose their own flairs (otherwise only mods can)
   requireFlairs?: boolean // force authors to choose a flair before posting
+  noMarkdownImages?: boolean // don't embed images in text posts markdown
+  noMarkdownVideos?: boolean // don't embed videos in text posts markdown
+  markdownImageReplies?: boolean
+  markdownVideoReplies?: boolean
 }
 Flair {
   color: string
