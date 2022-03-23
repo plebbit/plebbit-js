@@ -242,13 +242,17 @@ class DbHandler {
         return new Promise(async (resolve, reject) => {
             if (timestamp1 === Number.NEGATIVE_INFINITY)
                 timestamp1 = 0;
-            // TODO use base comment query here
-            this.knex(TABLES.VOTES).select(`${TABLES.COMMENTS}.*`).sum(`${TABLES.VOTES}.vote AS topScore`)
-                .join(TABLES.COMMENTS, `${TABLES.COMMENTS}.commentCid`, "=", `${TABLES.VOTES}.commentCid`)
-                .groupBy(`${TABLES.VOTES}.commentCid`)
-                .orderBy("topScore", "desc").whereNotNull("title")
+            const topScoreQuery = this.knex(TABLES.VOTES).sum(`${TABLES.VOTES}.vote`).where({
+                [`${TABLES.COMMENTS}.commentCid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`)
+            }).as("topScore")
+            const query = this.#baseCommentQuery()
+                .select(topScoreQuery)
+                .groupBy(`${TABLES.COMMENTS}.commentCid`)
+                .orderBy("topScore", "desc")
                 .whereBetween(`${TABLES.COMMENTS}.timestamp`, [timestamp1, timestamp2])
-                .then(res => resolve(this.#createCommentsFromRows.bind(this)(res))).catch(err => {
+                .where({[`${TABLES.COMMENTS}.parentCid`]: parentCid});
+
+            query.then(res => resolve(this.#createCommentsFromRows.bind(this)(res))).catch(err => {
                 console.error(err);
                 reject(err);
             })
