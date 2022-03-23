@@ -141,6 +141,15 @@ export class Subplebbit extends EventEmitter {
         );
     }
 
+    async update() {
+        return new Promise(async (resolve, reject) => {
+            loadIpnsAsJson(this.subplebbitAddress, this.plebbit.ipfsClient).then(res => {
+                this.#initSubplebbit(res);
+                resolve(res);
+            }).catch(reject);
+        });
+    }
+
     async #getSortedPostsObject() {
         [this.sortedPosts, this.sortedPostsCids] = await this.sortHandler.calculateSortedPosts();
         this.sortedPosts = {[SORTED_COMMENTS_TYPES.HOT]: this.sortedPosts[SORTED_COMMENTS_TYPES.HOT]};
