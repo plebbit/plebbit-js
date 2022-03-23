@@ -110,7 +110,9 @@ export class Subplebbit extends EventEmitter {
             "sortedPosts": this.sortedPosts,
             "sortedPostsCids": this.sortedPostsCids,
             "challengeTypes": this.challengeTypes,
-            "metricsCid": this.metricsCid
+            "metricsCid": this.metricsCid,
+            "createdAt": this.createdAt,
+            "updatedAt": this.updatedAt
         };
     }
 
@@ -121,17 +123,18 @@ export class Subplebbit extends EventEmitter {
                     this.plebbit.ipfsClient.key.gen(this.title).then(ipnsKey => {
                         this.edit({
                             "subplebbitAddress": ipnsKey["id"],
-                            "ipnsKeyName": ipnsKey["name"]
+                            "ipnsKeyName": ipnsKey["name"],
+                            "createdAt": timestamp()
                         }).then(resolve).catch(reject);
                     }).catch(reject);
                 } else {
+                    this.updatedAt = timestamp();
                     this.plebbit.ipfsClient.add(JSON.stringify(this)).then(file => {
                         this.plebbit.ipfsClient.name.publish(file["cid"], {
                             "lifetime": "5h", // TODO decide on optimal time later
                             "key": this.ipnsKeyName
                         }).then(resolve).catch(reject);
                     }).catch(reject);
-
                 }
 
             }
