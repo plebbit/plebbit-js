@@ -112,8 +112,12 @@ SubplebbitAppearance { // values suggested by the sub owner, the client can igno
 SubplebbitFeatures { // any boolean that changes the functionality of the sub, add "no" in front if doesn't default to false
   noVideos?: boolean
   noSpoilers?: boolean // author can't comment.spoiler = true their own comments
-  noVideoGifs?: boolean
+  noVideoGifs?: boolean // autoplay muted looped videos
   noImages?: boolean
+  noVideoReplies?: boolean
+  noSpoilerReplies?: boolean
+  noImageReplies?: boolean
+  noVideoGifReplies? boolean
   noPolls?: boolean
   noCrossposts?: boolean
   noUpvotes?: boolean
