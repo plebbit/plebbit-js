@@ -89,15 +89,9 @@ class Publication {
         return new Promise(async (resolve, reject) => {
             this.#publish(userOptions, solveChallengeCallback).then(async (challengeVerificationMessage) => {
                 // Unsubscribe all events
-                try {
-                    await this.subplebbit.plebbit.ipfsClient.pubsub.unsubscribe(challengeVerificationMessage.challengeRequestId);
-                    await this.subplebbit.plebbit.ipfsClient.pubsub.unsubscribe(challengeVerificationMessage.challengeAnswerId);
-                    const topics = await this.subplebbit.plebbit.ipfsClient.pubsub.ls();
-                    assert(!topics.includes(challengeVerificationMessage.challengeRequestId), "Failed to unsubscribe from challenge request ID event");
-                    assert(!topics.includes(challengeVerificationMessage.challengeAnswerId), "Failed to unsubscribe from challenge answer ID event");
-                    resolve(challengeVerificationMessage);
-                } catch {
-                }
+                this.subplebbit.plebbit.ipfsClient.pubsub.unsubscribe(challengeVerificationMessage.challengeRequestId).catch(err => console.error(err));
+                this.subplebbit.plebbit.ipfsClient.pubsub.unsubscribe(challengeVerificationMessage.challengeAnswerId).catch(err => console.error(err));
+                resolve(challengeVerificationMessage);
             }).catch(reject)
         });
     }
