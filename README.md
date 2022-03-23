@@ -32,7 +32,7 @@ Comment extends Publication /* (IPFS file) */ {
   depth: number // 0 = post, 1 = top level reply, 2+ = nested reply
   ipnsName: string // each post/comment needs its own IPNS record (CommentUpdate) for its mutable data like edits, vote counts, comments
   spoiler?: boolean
-  flair?: string // arbitrary string added by the author or mods to describe the author or comment
+  flair?: Flair // arbitrary colored string added by the author or mods to describe the author or comment
 }
 Post extends Comment /* (IPFS file) */ {
   postCid?: undefined // post is same as comment but has no parent and some extra fields
@@ -52,10 +52,14 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   upvoteCount: number
   downvoteCount: number
   replies: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
-  flair?: string // arbitrary strings added by the author or mods to describe the author or comment
+  flair?: Flair // arbitrary colored strings added by the author or mods to describe the author or comment
   spoiler?: boolean
   pinned?: boolean
   locked?: boolean
+  deleted?: boolean // author deleted their comment
+  removed?: boolean // mod deleted a comment
+  reason?: string // reason the mod took a mod action
+  updatedAt: number // timestamp in seconds the IPNS record was updated
 }
 Author {
   address: string
@@ -80,9 +84,11 @@ Signature {
 }
 Signer {
   privateKey?: string | buffer // to sign with metamask, no need for private key
-  type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
+  type: 'plebbit1' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm https://eips.ethereum.org/EIPS/eip-191
 }
 Subplebbit /* (IPNS record Subplebbit.address) */ {
+  title?: string
+  description?: string
   moderatorsAddresses?: string[]
   pubsubTopic?: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   latestPostCid: string // the most recent post in the linked list of posts
@@ -95,9 +101,7 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   appearance?: SubplebbitAppearance
   flairs?: Flair[] // list of flairs authors and mods can choose from
 }
-SubplebbitAppearance {
-  title?: string
-  description?: string
+SubplebbitAppearance { // values suggested by the sub owner, the client can ignore them
   primaryColor?: string
   secondaryColor?: string
   avatarUrl?: string
@@ -105,10 +109,15 @@ SubplebbitAppearance {
   backgroundUrl?: string
   language?: string
 }
-SubplebbitFeatures {
+SubplebbitFeatures { // any boolean that changes the functionality of the sub, add "no" in front if doesn't default to false
   noVideos?: boolean
-  noVideoGifs?: boolean
+  noSpoilers?: boolean // author can't comment.spoiler = true their own comments
+  noVideoGifs?: boolean // autoplay muted looped videos
   noImages?: boolean
+  noVideoReplies?: boolean
+  noSpoilerReplies?: boolean
+  noImageReplies?: boolean
+  noVideoGifReplies?: boolean
   noPolls?: boolean
   noCrossposts?: boolean
   noUpvotes?: boolean
@@ -117,8 +126,12 @@ SubplebbitFeatures {
   anonymousAuthors?: string // authors are given anonymous ids inside threads, like 4chan
   noNestedReplies?: boolean // no nested replies, like old school forums and 4chan
   safeForWork?: boolean
-  authorCanAssignFlair?: boolean // authors can choose their own flairs (otherwise only mods can)
-  authorMustAssignFlair?: boolean // force authors to choose a flair before posting
+  flairs?: boolean // authors can choose their own flairs (otherwise only mods can)
+  requireFlairs?: boolean // force authors to choose a flair before posting
+  noMarkdownImages?: boolean // don't embed images in text posts markdown
+  noMarkdownVideos?: boolean // don't embed videos in text posts markdown
+  markdownImageReplies?: boolean
+  markdownVideoReplies?: boolean
 }
 Flair {
   color: string
@@ -253,6 +266,7 @@ Challenge {
   - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
   - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
   - `plebbit.getDefaults()`
+  - [`plebbit.createSigner(createSignerOptions)`](#plebbitcreatesignercreatesigneroptions)
 - [Subplebbit API](#subplebbit-api)
   - [`subplebbit.edit(subplebbitEditOptions)`](#subplebbiteditsubplebbiteditoptions)
   - [`subplebbit.start()`](#subplebbitstart)
@@ -260,13 +274,15 @@ Challenge {
   - [`subplebbit.update()`](#subplebbitupdate)
   - `subplebbit.address`
   - `subplebbit.signer`
-  - `subplebbit.title`
-  - `subplebbit.description`
   - `subplebbit.moderatorsAddresses`
   - `subplebbit.posts`
   - `subplebbit.latestPostCid`
   - `subplebbit.pubsubTopic`
   - `subplebbit.challengeTypes`
+  - `subplebbit.appearance`
+  - `subplebbit.features`
+  - `subplebbit.createdAt`
+  - `subplebbit.updatedAt`
   - `subplebbit.metrics`
 - [Subplebbit Events](#subplebbit-events)
   - [`update`](#update)
@@ -287,7 +303,11 @@ Challenge {
   - `comment.title`
   - `comment.content`
   - `comment.link`
+  - `comment.thumbnailUrl`
   - `comment.ipnsName`
+  - `comment.flair`
+  - `comment.spoiler`
+  - `comment.depth`
   - `(only available after challengeverification event)`
   - `comment.cid`
   - `(only available after first update event)`
@@ -295,6 +315,12 @@ Challenge {
   - `comment.original`
   - `comment.upvoteCount`
   - `comment.downvoteCount`
+  - `comment.updatedAt`
+  - `comment.pinned`
+  - `comment.deleted`
+  - `comment.removed`
+  - `comment.locked`
+  - `comment.reason`
   - `comment.replies`
 - [Comment Events](#comment-events)
   - [`update`](#update)
@@ -598,6 +624,37 @@ vote.on('challenge', async (challengeMessage) => {
   comment.publishChallengeAnswers(challengeAnswers)
 })
 vote.publish()
+```
+
+### `plebbit.createSigner(createSignerOptions)`
+
+> Create a `Signer` instance to be used in `CreateCommentOptions`.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| createSignerOptions | `CreateSignerOptions` or `undefined` | The options of the signer |
+
+##### CreateSignerOptions
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| privateKey | `string` or `undefined` | If undefined, generate a random privateKey |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<Signer>` | A `Signer` instance |
+
+#### Example
+
+```js
+const newRandomSigner = await plebbit.createSigner()
+const signerFromPrivateKey = await plebbit.createSigner({privateKey: 'Qwer...'})
 ```
 
 ## Subplebbit API
