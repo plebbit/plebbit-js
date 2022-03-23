@@ -30,7 +30,7 @@ class DbHandler {
 
             table.text("subplebbitAddress").notNullable();
             table.text("content").nullable();
-            table.timestamp("timestamp").notNullable();
+            table.timestamp("timestamp").notNullable().checkPositive();
             table.text("signature").nullable(); // Will likely revise later
             table.text("ipnsName").notNullable().unique();
             table.text("commentIpnsKeyName").notNullable().unique();
