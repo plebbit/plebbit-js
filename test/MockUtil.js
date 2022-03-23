@@ -1,3 +1,6 @@
+import {loadIpfsFileAsJson, TIMEFRAMES_TO_SECONDS, timestamp} from "../src/Util.js";
+import {SortedComments} from "../src/SortHandler.js";
+
 export async function generateMockComment(parentPostOrComment, subplebbit) {
     const commentTime = Date.now() / 1000;
     const mockAuthorIpns = await subplebbit.plebbit.ipfsClient.key.gen(`Mock User - ${commentTime}`);
@@ -19,6 +22,21 @@ export async function generateMockPost(subplebbit) {
         "content": `Mock content - ${postStartTestTime}`,
         "subplebbitAddress": subplebbit.subplebbitAddress
     });
+}
+
+export async function generateMockPostWithRandomTimestamp(subplebbit) {
+    const randomTimeframeIndex = Math.floor(Math.random() * (Object.keys(TIMEFRAMES_TO_SECONDS).length - 1));
+    const postTimestamp = timestamp() - (Math.random > 0.5 ? TIMEFRAMES_TO_SECONDS[randomTimeframeIndex] : 0);
+    const postTime = Date.now();
+    const mockAuthorIpns = await subplebbit.plebbit.ipfsClient.key.gen(`Mock User - ${postTime}`);
+    return subplebbit.plebbit.createComment({
+        "author": {"displayName": `Mock Author - ${postTime}`, "address": mockAuthorIpns["id"]},
+        "title": `Mock Post - ${postTime}`,
+        "content": `Mock content - ${postTime}`,
+        "subplebbitAddress": subplebbit.subplebbitAddress,
+        "timestamp": postTimestamp
+    });
+
 }
 
 export async function generateMockVote(parentPostOrComment, vote, subplebbit) {
