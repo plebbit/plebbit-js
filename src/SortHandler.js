@@ -124,45 +124,45 @@ export class SortHandler {
         });
     }
 
-    async #sortPostsByHot(limit = SORTED_POSTS_PAGE_SIZE) {
+    async #sortCommentsByHot(parentCid, limit = SORTED_POSTS_PAGE_SIZE) {
         return new Promise(async (resolve, reject) => {
-            const posts = await this.subplebbit.dbHandler.queryAllPosts();
-            this.#sortComments(posts, SORTED_COMMENTS_TYPES.HOT, limit).then(resolve).catch(reject);
+            const comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(parentCid);
+            this.#sortComments(comments, SORTED_COMMENTS_TYPES.HOT, limit).then(resolve).catch(reject);
         });
     }
 
-    async #sortPostsByTop(timeframe, limit = SORTED_POSTS_PAGE_SIZE) {
+    async #sortCommentsByTop(parentCid, timeframe, limit = SORTED_POSTS_PAGE_SIZE) {
         return new Promise(async (resolve, reject) => {
             // Timeframe is "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL"
             const sortType = SORTED_COMMENTS_TYPES[`TOP_${timeframe}`];
-            const posts = await this.subplebbit.dbHandler.queryTopPostsBetweenTimestampRange(timestamp() - TIMEFRAMES_TO_SECONDS[timeframe], timestamp());
-            this.#sortComments(posts, sortType, limit).then(resolve).catch(reject);
+            const comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(parentCid, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe], timestamp());
+            this.#sortComments(comments, sortType, limit).then(resolve).catch(reject);
         });
     }
 
 
-    async #sortPostsByControversial(timeframe, limit = SORTED_POSTS_PAGE_SIZE) {
+    async #sortCommentsByControversial(parentCid, timeframe, limit = SORTED_POSTS_PAGE_SIZE) {
         return new Promise(async (resolve, reject) => {
             const sortType = SORTED_COMMENTS_TYPES[`CONTROVERSIAL_${timeframe}`];
-            const posts = await this.subplebbit.dbHandler.queryPostsBetweenTimestampRange(timestamp() - TIMEFRAMES_TO_SECONDS[timeframe], timestamp());
-            this.#sortComments(posts, sortType, limit).then(resolve).catch(reject);
+            const comments = await this.subplebbit.dbHandler.queryCommentsBetweenTimestampRange(parentCid, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe], timestamp());
+            this.#sortComments(comments, sortType, limit).then(resolve).catch(reject);
         });
 
     }
 
-    async #sortPostsByNew(limit = SORTED_POSTS_PAGE_SIZE) {
+    async #sortCommentsByNew(parentCid, limit = SORTED_POSTS_PAGE_SIZE) {
         return new Promise(async (resolve, reject) => {
-            const posts = await this.subplebbit.dbHandler.queryPostsSortedByTimestamp(limit);
-            this.#sortComments(posts, SORTED_COMMENTS_TYPES.NEW, limit).then(resolve).catch(reject);
+            const comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, limit);
+            this.#sortComments(comments, SORTED_COMMENTS_TYPES.NEW, limit).then(resolve).catch(reject);
         });
     }
 
     async calculateSortedPosts() {
         return new Promise(async (resolve, reject) => {
-            const sortPromises = [this.#sortPostsByHot.bind(this)(), this.#sortPostsByNew.bind(this)()];
+            const sortPromises = [this.#sortCommentsByHot.bind(this)(null), this.#sortCommentsByNew.bind(this)(null)];
             for (const timeframe of Object.keys(TIMEFRAMES_TO_SECONDS)) {
-                sortPromises.push(this.#sortPostsByTop.bind(this)(timeframe));
-                sortPromises.push(this.#sortPostsByControversial.bind(this)(timeframe));
+                sortPromises.push(this.#sortCommentsByTop.bind(this)(null, timeframe));
+                sortPromises.push(this.#sortCommentsByControversial.bind(this)(null, timeframe));
             }
 
             Promise.all(sortPromises).then((sortedComments) => {
@@ -181,7 +181,9 @@ export class SortHandler {
     async calculateSortedReplies(commentCid) {
         return new Promise(async (resolve, reject) => {
             const sortPromises = [SORTED_COMMENTS_TYPES.HOT, SORTED_COMMENTS_TYPES.NEW, SORTED_COMMENTS_TYPES.TOP_ALL, SORTED_COMMENTS_TYPES.CONTROVERSIAL_ALL].map(async type => {
-                const comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(commentCid);
+                const comments = type === SORTED_COMMENTS_TYPES.TOP_ALL ?
+                    await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(commentCid, 0, timestamp())
+                    : await this.subplebbit.dbHandler.queryCommentsUnderComment(commentCid);
                 return this.#sortComments(comments, type);
             });
 
