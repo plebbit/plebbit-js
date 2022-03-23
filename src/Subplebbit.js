@@ -20,6 +20,9 @@ import {createCaptcha} from "captcha-canvas/js-script/extra.js";
 import {SORTED_COMMENTS_TYPES, SortHandler} from "./SortHandler.js";
 import * as path from "path";
 import * as fs from "fs";
+import {v4 as uuidv4} from 'uuid';
+import {loadIpnsAsJson, timestamp} from "./Util.js";
+
 
 // import {Signer} from "./Signer.js";
 

@@ -47,6 +47,22 @@ export async function generateMockVote(parentPostOrComment, vote, subplebbit) {
         "commentCid": parentPostOrComment.commentCid || parentPostOrComment.postCid,
         "vote": vote,
         "subplebbitAddress": subplebbit.subplebbitAddress
-
     });
+}
+
+export async function loadAllPagesThroughSortedComments(sortedCommentsCid, plebbit) {
+    if (!sortedCommentsCid)
+        return [];
+    const loadComments = async (comment) => {
+        const loadedComment = await plebbit.getPostOrComment(comment.commentCid);
+        await loadedComment.update();
+        return loadedComment;
+    }
+    let sortedCommentsPage = new SortedComments(await loadIpfsFileAsJson(sortedCommentsCid, plebbit.ipfsClient));
+    let sortedComments = await Promise.all(sortedCommentsPage.comments.map(loadComments));
+    while (sortedCommentsPage.nextSortedCommentsCid) {
+        sortedCommentsPage = new SortedComments(await loadIpfsFileAsJson(sortedCommentsPage.nextSortedCommentsCid, plebbit.ipfsClient));
+        sortedComments = sortedComments.concat(await Promise.all(sortedCommentsPage.comments.map(loadComments)));
+    }
+    return sortedComments;
 }
