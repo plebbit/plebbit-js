@@ -192,8 +192,7 @@ export class Subplebbit extends EventEmitter {
     async #publishVote(newVote, challengeRequestId) {
         return new Promise(async (resolve, reject) => {
             const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address);
-            const voteComment = await this.dbHandler.queryComment(newVote.commentCid);
-            const [upvotes, downvotes] = await this.dbHandler.queryVotesOfComment(newVote.commentCid);
+            let voteComment = await this.dbHandler.queryComment(newVote.commentCid);
 
             let newUpvoteCount = -1, newDownvoteCount = -1;
             if (lastVote) {
@@ -203,42 +202,42 @@ export class Subplebbit extends EventEmitter {
                     resolve({"reason": "User duplicated his vote"});
                     return;
                 } else if (newVote.vote === 0) {
-                    newUpvoteCount = upvotes + (lastVote.vote === 1 ? -1 : 0);
-                    newDownvoteCount = downvotes + (lastVote.vote === -1 ? -1 : 0);
+                    newUpvoteCount = voteComment.upvoteCount + (lastVote.vote === 1 ? -1 : 0);
+                    newDownvoteCount = voteComment.downvoteCount + (lastVote.vote === -1 ? -1 : 0);
                 } else {
                     if (lastVote.vote === 1 && newVote.vote === -1) {
-                        newUpvoteCount = upvotes - 1;
-                        newDownvoteCount = downvotes + 1;
+                        newUpvoteCount = voteComment.upvoteCount - 1;
+                        newDownvoteCount = voteComment.downvoteCount + 1;
                     } else if (lastVote.vote === -1 && newVote.vote === 1) {
-                        newUpvoteCount = upvotes + 1;
-                        newDownvoteCount = downvotes - 1;
+                        newUpvoteCount = voteComment.upvoteCount + 1;
+                        newDownvoteCount = voteComment.downvoteCount - 1;
                     }
                 }
             } else {
                 // New vote
-                newUpvoteCount = newVote.vote === 1 ? upvotes + 1 : upvotes;
-                newDownvoteCount = newVote.vote === -1 ? downvotes + 1 : downvotes;
+                newUpvoteCount = newVote.vote === 1 ? voteComment.upvoteCount + 1 : voteComment.upvoteCount;
+                newDownvoteCount = newVote.vote === -1 ? voteComment.downvoteCount + 1 : voteComment.downvoteCount;
             }
             assert(newDownvoteCount >= 0 && newDownvoteCount >= 0, "New upvote and downvote need to be proper numbers");
             await this.dbHandler.upsertVote(newVote, challengeRequestId);
-            await voteComment.update();
-            if (voteComment.getType() === "post") {
-                Promise.all([this.edit(await this.#getSortedPostsObject()), voteComment.edit({
-                    ...voteComment.toJSONCommentUpdate(),
-                    "upvoteCount": newUpvoteCount,
-                    "downvoteCount": newDownvoteCount
-                })]).then(() => resolve({"publication": newVote})).catch(reject);
+            voteComment = await this.dbHandler.queryComment(newVote.commentCid); // To update upvoteCount and downvoteCount
 
-            } else if (voteComment.getType() === "comment") {
-                const [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedReplies(voteComment.commentCid);
-                voteComment.edit({
-                    ...voteComment.toJSONCommentUpdate(),
-                    "sortedReplies": {[SORTED_COMMENTS_TYPES.HOT]: sortedReplies[SORTED_COMMENTS_TYPES.HOT]},
-                    "sortedRepliesCids": sortedRepliesCids,
-                    "upvoteCount": newUpvoteCount,
-                    "downvoteCount": newDownvoteCount
-                }).then(() => resolve({"publication": newVote})).catch(reject);
-            }
+            const promises = [];
+            if (voteComment.getType() === "post")
+                promises.push(this.edit(await this.#getSortedPostsObject()));
+
+            const [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedReplies(voteComment.commentCid);
+            promises.push(voteComment.edit({
+                ...voteComment.toJSONCommentUpdate(),
+                "sortedReplies": {[SORTED_COMMENTS_TYPES.HOT]: sortedReplies[SORTED_COMMENTS_TYPES.HOT]},
+                "sortedRepliesCids": sortedRepliesCids,
+                "upvoteCount": newUpvoteCount,
+                "downvoteCount": newDownvoteCount
+            }));
+
+            Promise.all(promises).then(() => resolve({"publication": newVote})).catch(reject);
+
+
         });
     }
 
