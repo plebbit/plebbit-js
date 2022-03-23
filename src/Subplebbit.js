@@ -445,4 +445,13 @@ export class Subplebbit extends EventEmitter {
         await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
     }
 
+    // For development purposes only
+    async _addPublicationToDb(publication) {
+        return new Promise(async (resolve, reject) => {
+            const randomUUID = uuidv4();
+            await this.dbHandler.upsertChallenge(new ChallengeRequestMessage({"challengeRequestId": randomUUID}));
+            this.#publishPubsubMsg(publication, randomUUID).then(resolve).catch(reject);
+        });
+    }
+
 }
