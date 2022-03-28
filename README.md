@@ -98,10 +98,10 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   createdAt: number
   updatedAt: number
   features?: SubplebbitFeatures
-  appearance?: SubplebbitAppearance
+  suggested?: SubplebbitSuggested
   flairs?: Flair[] // list of flairs authors and mods can choose from
 }
-SubplebbitAppearance { // values suggested by the sub owner, the client can ignore them
+SubplebbitSuggested { // values suggested by the sub owner, the client/user can ignore them without breaking interoperability
   primaryColor?: string
   secondaryColor?: string
   avatarUrl?: string
@@ -112,17 +112,15 @@ SubplebbitAppearance { // values suggested by the sub owner, the client can igno
 SubplebbitFeatures { // any boolean that changes the functionality of the sub, add "no" in front if doesn't default to false
   noVideos?: boolean
   noSpoilers?: boolean // author can't comment.spoiler = true their own comments
-  noVideoGifs?: boolean // autoplay muted looped videos
   noImages?: boolean
   noVideoReplies?: boolean
   noSpoilerReplies?: boolean
   noImageReplies?: boolean
-  noVideoGifReplies?: boolean
   noPolls?: boolean
   noCrossposts?: boolean
   noUpvotes?: boolean
   noDownvotes?: boolean
-  noAuthors?: boolean // no others at all, like 4chan
+  noAuthors?: boolean // no authors at all, like 4chan
   anonymousAuthors?: string // authors are given anonymous ids inside threads, like 4chan
   noNestedReplies?: boolean // no nested replies, like old school forums and 4chan
   safeForWork?: boolean
@@ -279,7 +277,7 @@ Challenge {
   - `subplebbit.latestPostCid`
   - `subplebbit.pubsubTopic`
   - `subplebbit.challengeTypes`
-  - `subplebbit.appearance`
+  - `subplebbit.suggested`
   - `subplebbit.features`
   - `subplebbit.createdAt`
   - `subplebbit.updatedAt`
