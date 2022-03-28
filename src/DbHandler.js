@@ -50,7 +50,7 @@ class DbHandler {
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
             table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
 
-            table.timestamp("timestamp").notNullable();
+            table.timestamp("timestamp").checkPositive().notNullable();
             table.text("subplebbitAddress").notNullable();
             table.integer("vote").checkBetween([-1, 1]).notNullable();
             table.text("signature").nullable(); // Will likely revise later
