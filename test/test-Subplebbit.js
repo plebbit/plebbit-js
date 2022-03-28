@@ -5,7 +5,7 @@ import {loadIpfsFileAsJson, sleep, unsubscribeAllPubsubTopics} from "../src/Util
 import * as fs from 'fs/promises';
 import readline from "readline";
 import {SORTED_COMMENTS_TYPES, SORTED_POSTS_PAGE_SIZE, SortedComments} from "../src/SortHandler.js";
-import {generateMockPost} from "./MockUtil.js";
+import {generateMockPost, loadAllPagesThroughSortedComments} from "./MockUtil.js";
 
 const startTestTime = Date.now() / 1000;
 const plebbit = await Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
@@ -28,22 +28,24 @@ describe("Test Subplebbit functionality", async () => {
 
     const numOfPosts = SORTED_POSTS_PAGE_SIZE + 2;
     it(`Sorting ${numOfPosts} posts by new generates a two pages ordered by posts' timestamp`, async function () {
-        await subplebbit.setProvideCaptchaCallback(() => [null, "No need for captcha"]);
-        await subplebbit.startPublishing();
-        const actualPosts = new Array(numOfPosts);
-        for (let i = actualPosts.length - 1; i >= 0; i--) {
-            actualPosts[i] = await generateMockPost(subplebbit);
-            await sleep(1000);
-        }
+        return new Promise(async (resolve, reject) => {
+            await subplebbit.setProvideCaptchaCallback(() => [null, "No need for captcha"]);
+            await subplebbit.startPublishing();
+            const actualPosts = new Array(numOfPosts);
+            for (let i = actualPosts.length - 1; i >= 0; i--) {
+                actualPosts[i] = await generateMockPost(subplebbit);
+                await sleep(1000);
+            }
 
-        await Promise.all(actualPosts.map(async post => post.publish()));
-        const sortedPostsFirstPage = new SortedComments(await loadIpfsFileAsJson(subplebbit.sortedPostsCids[SORTED_COMMENTS_TYPES.NEW], plebbit.ipfsClient));
-        assert(sortedPostsFirstPage.nextSortedCommentsCid, "There should be two pages");
-        const sortedPostsSecondPage = new SortedComments(await loadIpfsFileAsJson(sortedPostsFirstPage.nextSortedCommentsCid, plebbit.ipfsClient));
-
-        const combinedPosts = sortedPostsFirstPage.comments.concat(sortedPostsSecondPage.comments);
-
-        assert.equal(JSON.stringify(actualPosts), JSON.stringify(combinedPosts), "Posts have not been loaded in correct order");
+            await Promise.all(actualPosts.map(async post => post.publish()));
+            subplebbit.once("update", async (updatedSubplebbit) => {
+                await Promise.all(actualPosts.map(post => post.update()));
+                const loadedPosts = await loadAllPagesThroughSortedComments(updatedSubplebbit.sortedPostsCids[SORTED_COMMENTS_TYPES.NEW], plebbit);
+                assert.equal(JSON.stringify(actualPosts), JSON.stringify(loadedPosts), "Posts have not been loaded in correct order");
+                mockPosts.push(actualPosts[0]);
+                resolve();
+            });
+        });
 
     });
 
@@ -108,11 +110,13 @@ describe("Test Subplebbit functionality", async () => {
 
     it("Links current post to past posts correctly", async function () {
         return new Promise(async (resolve, reject) => {
-            const lastPost = mockPosts[mockPosts.length - 1];
             const secondMockPost = await generateMockPost(subplebbit);
             await subplebbit.startPublishing();
-            secondMockPost.publish(null, null).then((challengeVerificationMessage) => {
-                assert.equal(challengeVerificationMessage.publication.previousCommentCid, lastPost.postCid, "Failed to set previousPostCid");
+            await subplebbit.update();
+
+            secondMockPost.publish(null, null).then(async (challengeVerificationMessage) => {
+
+                assert.equal(challengeVerificationMessage.publication.previousCommentCid, subplebbit.latestPostCid, "Failed to set previousPostCid");
                 mockPosts.push(challengeVerificationMessage.publication);
                 resolve();
             }).catch(reject);
