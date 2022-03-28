@@ -38,6 +38,7 @@ class DbHandler {
             table.integer("depth").notNullable();
             // CommentUpdate props
             table.text("editedContent").nullable();
+            table.increments("id");
         });
 
     }
