@@ -25,7 +25,7 @@ class DbHandler {
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
             table.text("parentCid").nullable().references("commentCid").inTable(TABLES.COMMENTS);
             table.text("postCid").notNullable().references("commentCid").inTable(TABLES.COMMENTS);
-            table.text("previousCommentCid").nullable().references("commentCid").inTable(TABLES.COMMENTS);
+            table.text("previousCommentCid").nullable().unique().references("commentCid").inTable(TABLES.COMMENTS);
             table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
 
             table.text("subplebbitAddress").notNullable();
