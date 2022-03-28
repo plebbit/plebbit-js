@@ -19,6 +19,14 @@ class DbHandler {
         this.subplebbit = subplebbit;
     }
 
+    async createTransaction() {
+        return await this.knex.transaction();
+    }
+
+    #baseTransaction(trx) {
+        return trx ? trx : this.knex;
+    }
+
     async #createCommentsTable() {
         await this.knex.schema.createTable(TABLES.COMMENTS, (table) => {
             table.text("commentCid").notNullable().primary().unique();
@@ -93,11 +101,11 @@ class DbHandler {
         }
     }
 
-    async #addAuthorToDbIfNeeded(author) {
+    async #addAuthorToDbIfNeeded(author, trx = undefined) {
         return new Promise(async (resolve, reject) => {
-            const authorFromDb = await this.knex(TABLES.AUTHORS).where({"address": author.address}).first();
+            const authorFromDb = await this.#baseTransaction(trx)(TABLES.AUTHORS).where({"address": author.address}).first();
             if (!authorFromDb) // Author is new. Add to database
-                this.knex(TABLES.AUTHORS).insert(author.toJSON()).then(() => resolve(author.toJSON())).catch(err => {
+                this.#baseTransaction(trx)(TABLES.AUTHORS).insert(author.toJSON()).then(() => resolve(author.toJSON())).catch(err => {
                     console.error(err);
                     reject(err);
                 });
@@ -106,11 +114,11 @@ class DbHandler {
         });
     }
 
-    async upsertVote(vote, challengeRequestId) {
+    async upsertVote(vote, challengeRequestId, trx = undefined) {
         return new Promise(async (resolve, reject) => {
-            await this.#addAuthorToDbIfNeeded(vote.author);
+            await this.#addAuthorToDbIfNeeded(vote.author, trx);
             const dbObject = vote.toJSONForDb(challengeRequestId);
-            this.knex(TABLES.VOTES).insert(dbObject).onConflict(['commentCid', "authorAddress"]).merge().then(() => resolve(dbObject)).catch(err => {
+            this.#baseTransaction(trx)(TABLES.VOTES).insert(dbObject).onConflict(['commentCid', "authorAddress"]).merge().then(() => resolve(dbObject)).catch(err => {
                 console.error(err);
                 reject(err);
             });
@@ -118,11 +126,11 @@ class DbHandler {
     }
 
 
-    async insertComment(postOrComment, challengeRequestId) {
+    async upsertComment(postOrComment, challengeRequestId, trx = undefined) {
         return new Promise(async (resolve, reject) => {
-            await this.#addAuthorToDbIfNeeded(postOrComment.author);
+            await this.#addAuthorToDbIfNeeded(postOrComment.author, trx);
             const dbObject = postOrComment.toJSONForDb(challengeRequestId);
-            this.knex(TABLES.COMMENTS).insert(dbObject).then(() => resolve(dbObject)).catch(err => {
+            this.#baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(['commentCid']).merge().then(() => resolve(dbObject)).catch(err => {
                 console.error(err);
                 reject(err);
             });
@@ -130,45 +138,47 @@ class DbHandler {
         });
     }
 
-    async upsertChallenge(challenge) {
+    async upsertChallenge(challenge, trx = undefined) {
         return new Promise(async (resolve, reject) => {
-            const existingChallenge = await this.knex(TABLES.CHALLENGES).where({"challengeRequestId": challenge.challengeRequestId}).first();
+            const existingChallenge = await this.#baseTransaction(trx)(TABLES.CHALLENGES).where({"challengeRequestId": challenge.challengeRequestId}).first();
             const dbObject = {...existingChallenge, ...challenge.toJSONForDb()};
-            this.knex(TABLES.CHALLENGES).insert(dbObject).onConflict('challengeRequestId').merge().then(() => resolve(dbObject)).catch(err => {
+            this.#baseTransaction(trx)(TABLES.CHALLENGES).insert(dbObject).onConflict('challengeRequestId').merge().then(() => resolve(dbObject)).catch(err => {
                 console.error(err);
                 reject(err);
             });
         });
     }
 
-    async getLastVoteOfAuthor(commentCid, authorAddress) {
+    async getLastVoteOfAuthor(commentCid, authorAddress, trx = undefined) {
         return new Promise(async (resolve, reject) => {
-            this.knex(TABLES.VOTES).where({
+            this.#baseTransaction(trx)(TABLES.VOTES).where({
                 "commentCid": commentCid,
                 "authorAddress": authorAddress
-            }).first().then(async (res) => resolve((await this.#createVotesFromRows.bind(this)(res))[0])).catch(err => {
+            }).first().then(async (res) => resolve((await this.#createVotesFromRows.bind(this)(res, trx))[0])).catch(err => {
                 console.error(err);
                 reject(err);
             })
         });
     }
 
-    #baseCommentQuery() {
-        const upvoteQuery = this.knex(TABLES.VOTES).count(`${TABLES.VOTES}.vote`).where({
+    #baseCommentQuery(trx) {
+        const upvoteQuery = this.#baseTransaction(trx)(TABLES.VOTES).count(`${TABLES.VOTES}.vote`).where({
             [`${TABLES.COMMENTS}.commentCid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`),
             [`${TABLES.VOTES}.vote`]: 1
         }).as("upvoteCount");
-        const downvoteQuery = this.knex(TABLES.VOTES).count(`${TABLES.VOTES}.vote`).where({
+        const downvoteQuery = this.#baseTransaction(trx)(TABLES.VOTES).count(`${TABLES.VOTES}.vote`).where({
             [`${TABLES.COMMENTS}.commentCid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`),
             [`${TABLES.VOTES}.vote`]: -1
         }).as("downvoteCount");
-        const replyCountQuery = this.knex.from(`${TABLES.COMMENTS} AS comments2`).count("").where({"comments2.parentCid": this.knex.raw(`${TABLES.COMMENTS}.commentCid`)}).as("replyCount");
+        const replyCountQuery = this.#baseTransaction(trx).from(`${TABLES.COMMENTS} AS comments2`).count("")
+            .where({"comments2.parentCid": this.knex.raw(`${TABLES.COMMENTS}.commentCid`)})
+            .as("replyCount");
 
-        return this.knex(TABLES.COMMENTS).select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery);
-
+        return this.#baseTransaction(trx)(TABLES.COMMENTS)
+            .select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery);
     }
 
-    async #createCommentsFromRows(commentsRows) {
+    async #createCommentsFromRows(commentsRows, trx) {
         return new Promise(async (resolve, reject) => {
             if (!commentsRows)
                 resolve([undefined]);
@@ -176,7 +186,7 @@ class DbHandler {
                 if (!Array.isArray(commentsRows))
                     commentsRows = [commentsRows];
                 commentsRows = commentsRows.map(props => replaceXWithY(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
-                const authors = (await this.knex(TABLES.AUTHORS).whereIn("address", commentsRows.map(post => post.authorAddress))).map(authorProps => new Author(authorProps));
+                const authors = (await this.#baseTransaction(trx)(TABLES.AUTHORS).whereIn("address", commentsRows.map(post => post.authorAddress))).map(authorProps => new Author(authorProps));
                 const posts = commentsRows.map(postProps => {
                     const props = {
                         ...postProps,
@@ -194,7 +204,7 @@ class DbHandler {
 
     }
 
-    async #createVotesFromRows(voteRows) {
+    async #createVotesFromRows(voteRows, trx) {
         return new Promise(async (resolve, reject) => {
             if (!voteRows)
                 resolve([undefined]);
@@ -203,7 +213,7 @@ class DbHandler {
                     voteRows = [voteRows];
                 voteRows = voteRows.map(props => replaceXWithY(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
 
-                const authors = (await this.knex(TABLES.AUTHORS).whereIn("address", voteRows.map(vote => vote.authorAddress))).map(authorProps => new Author(authorProps));
+                const authors = (await this.#baseTransaction(trx)(TABLES.AUTHORS).whereIn("address", voteRows.map(vote => vote.authorAddress))).map(authorProps => new Author(authorProps));
                 const votes = voteRows.map(voteProps => {
                     const props = {
                         ...voteProps,
@@ -216,11 +226,11 @@ class DbHandler {
         });
     }
 
-    async queryCommentsSortedByTimestamp(parentCid) {
+    async queryCommentsSortedByTimestamp(parentCid, trx = undefined) {
         return new Promise(async (resolve, reject) => {
-            this.#baseCommentQuery().where({"parentCid": parentCid}).orderBy("timestamp", "desc")
+            this.#baseCommentQuery(trx).where({"parentCid": parentCid}).orderBy("timestamp", "desc")
                 .then(async res => {
-                    resolve(await this.#createCommentsFromRows.bind(this)(res));
+                    resolve(await this.#createCommentsFromRows.bind(this)(res, trx));
                 }).catch(err => {
                 console.error(err);
                 reject(err);
@@ -228,53 +238,59 @@ class DbHandler {
         });
     }
 
-    async queryCommentsBetweenTimestampRange(parentCid, timestamp1, timestamp2) {
+    async queryCommentsBetweenTimestampRange(parentCid, timestamp1, timestamp2, trx = undefined) {
         return new Promise(async (resolve, reject) => {
             if (timestamp1 === Number.NEGATIVE_INFINITY)
                 timestamp1 = 0;
-            this.#baseCommentQuery().where({"parentCid": parentCid}).whereBetween("timestamp", [timestamp1, timestamp2]).then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(err => {
+            this.#baseCommentQuery(trx).where({"parentCid": parentCid}).whereBetween("timestamp", [timestamp1, timestamp2]).then(res => this.#createCommentsFromRows.bind(this)(res, trx)).then(resolve).catch(err => {
                 console.error(err);
                 reject(err);
             });
         });
     }
 
-    async queryTopCommentsBetweenTimestampRange(parentCid, timestamp1, timestamp2) {
+    async queryTopCommentsBetweenTimestampRange(parentCid, timestamp1, timestamp2, trx = undefined) {
         return new Promise(async (resolve, reject) => {
             if (timestamp1 === Number.NEGATIVE_INFINITY)
                 timestamp1 = 0;
-            const topScoreQuery = this.knex(TABLES.VOTES).sum(`${TABLES.VOTES}.vote`).where({
+            const topScoreQuery = this.#baseTransaction(trx)(TABLES.VOTES).sum(`${TABLES.VOTES}.vote`).where({
                 [`${TABLES.COMMENTS}.commentCid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`)
             }).as("topScore")
-            const query = this.#baseCommentQuery()
+            const query = this.#baseCommentQuery(trx)
                 .select(topScoreQuery)
                 .groupBy(`${TABLES.COMMENTS}.commentCid`)
                 .orderBy("topScore", "desc")
                 .whereBetween(`${TABLES.COMMENTS}.timestamp`, [timestamp1, timestamp2])
                 .where({[`${TABLES.COMMENTS}.parentCid`]: parentCid});
 
-            query.then(res => resolve(this.#createCommentsFromRows.bind(this)(res))).catch(err => {
+            query.then(res => resolve(this.#createCommentsFromRows.bind(this)(res, trx))).catch(err => {
                 console.error(err);
                 reject(err);
             })
         })
     }
 
-    async queryCommentsUnderComment(parentCid) {
+    async queryCommentsUnderComment(parentCid, trx) {
         return new Promise(async (resolve, reject) => {
-            this.#baseCommentQuery().where({"parentCid": parentCid}).orderBy("timestamp", "desc").then(this.#createCommentsFromRows.bind(this)).then(resolve).catch(reject);
+            this.#baseCommentQuery(trx).where({"parentCid": parentCid}).orderBy("timestamp", "desc").then(res => resolve(this.#createCommentsFromRows.bind(this)(res, trx))).catch(reject);
         });
     }
 
-    async #querySubplebbitActiveUserCount(timeframe) {
+    async queryComments(trx) {
+        return new Promise(async (resolve, reject) => {
+            this.#baseCommentQuery(trx).orderBy("id", "desc").then(res => resolve(this.#createCommentsFromRows.bind(this)(res, trx))).catch(reject);
+        });
+    }
+
+    async #querySubplebbitActiveUserCount(timeframe, trx) {
         return new Promise(async (resolve, reject) => {
             let from = timestamp() - TIMEFRAMES_TO_SECONDS[timeframe];
             if (from === Number.NEGATIVE_INFINITY)
                 from = 0;
             const to = timestamp();
             // TODO this could be done in a single query
-            const commentsAuthors = await this.knex(TABLES.COMMENTS).distinct("authorAddress").whereBetween("timestamp", [from, to]);
-            const voteAuthors = await this.knex(TABLES.VOTES).distinct("authorAddress").whereBetween("timestamp", [from, to]);
+            const commentsAuthors = await this.#baseTransaction(trx)(TABLES.COMMENTS).distinct("authorAddress").whereBetween("timestamp", [from, to]);
+            const voteAuthors = await this.#baseTransaction(trx)(TABLES.VOTES).distinct("authorAddress").whereBetween("timestamp", [from, to]);
             let activeUserAccounts = [...commentsAuthors, ...voteAuthors].map(author => author.authorAddress);
             activeUserAccounts = [...new Set(activeUserAccounts)];
             resolve(activeUserAccounts.length);
@@ -282,44 +298,52 @@ class DbHandler {
     }
 
 
-    async #querySubplebbitPostCount(timeframe) {
+    async #querySubplebbitPostCount(timeframe, trx) {
         return new Promise(async (resolve, reject) => {
             let from = timestamp() - TIMEFRAMES_TO_SECONDS[timeframe];
             if (from === Number.NEGATIVE_INFINITY)
                 from = 0;
             const to = timestamp();
-            this.knex(TABLES.COMMENTS).count("commentCid").whereBetween("timestamp", [from, to]).whereNotNull("title").then(postCount => resolve(postCount["0"]["count(`commentCid`)"])).catch(reject);
+            this.#baseTransaction(trx)(TABLES.COMMENTS).count("commentCid").whereBetween("timestamp", [from, to]).whereNotNull("title").then(postCount => resolve(postCount["0"]["count(`commentCid`)"])).catch(reject);
         })
     }
 
-    async querySubplebbitMetrics() {
+    async querySubplebbitMetrics(trx) {
         return new Promise(async (resolve, reject) => {
             const metrics = {};
             for (const metricType of ["ActiveUserCount", "PostCount"])
                 for (const timeframe of Object.keys(TIMEFRAMES_TO_SECONDS)) {
                     const propertyName = `${timeframe.toLowerCase()}${metricType}`;
                     if (metricType === "ActiveUserCount")
-                        metrics[[propertyName]] = await this.#querySubplebbitActiveUserCount(timeframe);
+                        metrics[[propertyName]] = await this.#querySubplebbitActiveUserCount(timeframe, trx);
                     else if (metricType === "PostCount")
-                        metrics[[propertyName]] = await this.#querySubplebbitPostCount(timeframe);
+                        metrics[[propertyName]] = await this.#querySubplebbitPostCount(timeframe, trx);
                 }
             resolve(metrics);
         });
     }
 
-    async queryVotesOfComment(commentCid) {
+    async queryVotesOfComment(commentCid, trx) {
         return new Promise(async (resolve, reject) => {
-            Promise.all([1, -1].map(voteValue => this.knex(TABLES.VOTES).where({
+            Promise.all([1, -1].map(voteValue => this.#baseTransaction(trx)(TABLES.VOTES).where({
                 "commentCid": commentCid,
                 "vote": voteValue
             }).count("vote"))).then(res => resolve(res.map(countObj => countObj[0]["count(`vote`)"]))).catch(reject);
         });
     }
 
-    async queryComment(commentCid) {
+    async queryComment(commentCid, trx) {
         return new Promise(async (resolve, reject) => {
-            this.#baseCommentQuery().where({"commentCid": commentCid}).first().then(async res => {
-                resolve((await this.#createCommentsFromRows.bind(this)(res))[0]);
+            this.#baseCommentQuery(trx).where({"commentCid": commentCid}).first().then(async res => {
+                resolve((await this.#createCommentsFromRows.bind(this)(res, trx))[0]);
+            }).catch(reject);
+        });
+    }
+
+    async queryLatestPost(trx) {
+        return new Promise(async (resolve, reject) => {
+            this.#baseCommentQuery(trx).whereNotNull("title").orderBy("id", "desc").first().then(async res => {
+                resolve((await this.#createCommentsFromRows.bind(this)(res, trx))[0]);
             }).catch(reject);
         });
     }

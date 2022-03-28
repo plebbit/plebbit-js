@@ -29,9 +29,10 @@ export async function loadIpnsAsJson(ipns, ipfsClient) {
     return new Promise(async (resolve, reject) => {
         last(ipfsClient.name.resolve(ipns)).then(cid => {
             if (!cid)
-                throw new Error(`Ipns (${ipns}) does not point to anything`);
-            loadIpfsFileAsJson(cid, ipfsClient).then(resolve).catch(reject);
-        }).catch(reject);
+                resolve(undefined);
+            else
+                loadIpfsFileAsJson(cid, ipfsClient).then(resolve).catch(reject);
+        }).catch(err => resolve(undefined));
     });
 }
 
