@@ -462,6 +462,7 @@ An object which may have the following keys:
 | address | `string` | `undefined` | IPNS name of the subplebbit |
 | signer | `Signer` | `undefined` | (Subplebbit owners only) A `Signer` object which contains the private key of the subplebbit |
 | database | `KnexConfig` or `undefined` | `undefined` | (Subplebbit owners only) Optional [KnexConfig](https://www.npmjs.com/package/knex), defaults to SQLite database at `plebbit.dataPath/subplebbitAddress` |
+| ...subplebbit | `any` | `undefined` | `CreateSubplebbitOptions` can also initialize any property on the `Subplebbit` instance |
 
 #### Returns
 
@@ -493,6 +494,23 @@ subplebbit.edit({
 })
 // start publishing updates every 5 minutes
 subplebbit.start()
+
+// initialize any property on the Subplebbit instance
+const subplebbit = plebbit.createSubplebbit({
+  address: 'Qmb...',
+  title: 'Memes',
+  posts: {
+    pages: {
+      hot: {
+        nextCid: 'Qmb...', 
+        comments: [{content: 'My first post', ...post}]
+      }
+    },
+    pageCids: {topAll: 'Qmb...', new: 'Qmb...', ...pageCids}
+  }
+})
+console.log(subplebbit.title) // prints 'Memes'
+console.log(subplebbit.posts.pages.hot.comments[0].content) // prints 'My first post'
 ```
 
 ### `plebbit.createComment(createCommentOptions)`
@@ -518,9 +536,13 @@ An object which may have the following keys:
 | link | `string` or `undefined` | If comment is a post, it might be a link post |
 | timestamp | `number` or `undefined` | Time of publishing in seconds, `Math.round(Date.now() / 1000)` if undefined |
 | author | `Author` | Author of the comment |
+| spoiler | `boolean` or `undefined` | Hide the comment thumbnail behind spoiler warning |
+| flair | `Flair` or `undefined` | Author or mod chosen colored label for the comment |
+| author | `Author` | Author of the comment |
 | signer | `Signer` | Signer of the comment |
 | cid | `string` or `undefined` | (Not for publishing) Gives access to `Comment.on('update')` for a comment already fetched |
 | ipnsName | `string` or `undefined` | (Not for publishing) Gives access to `Comment.on('update')` for a comment already fetched |
+| ...comment | `any` | `CreateCommentOptions` can also initialize any property on the `Comment` instance |
 
 #### Returns
 
@@ -543,11 +565,32 @@ const comment = plebbit.createComment({ipnsName: 'Qm...'})
 // looks for updates in the background every 5 minutes
 comment.on('update', (updatedComment) => console.log(updatedComment))
 comment.update()
+
+// initialize any property on the Comment instance
+const comment = plebbit.createComment({
+  cid: 'Qmb...',
+  content: 'My first post',
+  locked: true,
+  upvoteCount: 100,
+  replies: {
+    pages: {
+      topAll: {
+        nextCid: 'Qmb...', 
+        comments: [{content: 'My first reply', ...reply}]
+      }
+    },
+    pageCids: {new: 'Qmb...', old: 'Qmb...', ...pageCids}
+  }
+})
+console.log(comment.content) // prints 'My first post'
+console.log(comment.locked) // prints true
+console.log(comment.upvoteCount) // prints 100
+console.log(comment.replies.pages.topAll.comments[0].content) // prints 'My first reply'
 ```
 
 ### `plebbit.createCommentEdit(createCommentEditOptions)`
 
-> Create a `Comment` instance. Posts/Replies are also comments.
+> Create an edited `Comment` instance, which can be used by authors to edit their own comments, or moderators to remove comments. A `Comment` edit must still be published and go through a challenge handshake.
 
 #### Parameters
 
@@ -562,10 +605,17 @@ An object which may have the following keys:
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | subplebbitAddress | `string` | IPNS name of the subplebbit |
-| cid | The comment CID to be edited |
-| content | `string` | Edited content of the comment |
-| editTimestamp | `number` or `undefined` | Time of edit in ms, `Date.now()` if undefined |
-| signer | `Signer` | Signer of the edit |
+| cid | `string` | The comment CID to be edited |
+| signer | `Signer` | Signer of the edit, either original author or mod |
+| content | `string` or `undefined` | (Only author) Edited content of the comment |
+| editTimestamp | `number` or `undefined` | (Only author) Time of content edit in ms, `Date.now()` if undefined |
+| deleted | `boolean` or `undefined` | (Only author) Edited deleted status of the comment |
+| flair | `Flair` or `undefined` | (Author or mod) Edited flair of the comment |
+| spoiler | `boolean` or `undefined` | (Author or mod) Edited spoiler of the comment |
+| pinned | `boolean` or `undefined` | (Only mod) Edited pinned status of the comment |
+| locked | `boolean` or `undefined` | (Only mod) Edited locked status of the comment |
+| removed | `boolean` or `undefined` | (Only mod) Edited removed status of the comment |
+| reason | `string` or `undefined` | (Only mod) Reason for mod action |
 
 #### Returns
 
@@ -674,14 +724,17 @@ An object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| title | `string` | Title of the subplebbit |
-| description | `string` | Description of the subplebbit |
-| moderatorsAddresses | `string[]` | IPNS names of the moderators |
-| latestPostCid | `string` | The most recent post in the linked list of posts |
-| posts | `Pages` | Only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post |
-| pubsubTopic | `string` | The string to publish to in the pubsub, a public key of the subplebbit owner's choice |
-| challengeTypes | `ChallengeType[]` | The challenge types provided by the subplebbit owner |
-| metrics | `SubplebbitMetrics` | The self reported metrics of the subplebbit |
+| title | `string` or `undefined` | Title of the subplebbit |
+| description | `string` or `undefined` | Description of the subplebbit |
+| moderatorsAddresses | `string[]` or `undefined` | IPNS names of the moderators |
+| latestPostCid | `string` or `undefined` | The most recent post in the linked list of posts |
+| posts | `Pages` or `undefined` | Only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post |
+| pubsubTopic | `string` or `undefined` | The string to publish to in the pubsub, a public key of the subplebbit owner's choice |
+| challengeTypes | `ChallengeType[]` or `undefined` | The challenge types provided by the subplebbit owner |
+| metrics | `SubplebbitMetrics` or `undefined` | The self reported metrics of the subplebbit |
+| features | `SubplebbitFeatures` or `undefined` | The features of the subplebbit |
+| suggested | `SubplebbitSuggested` or `undefined` | The suggested client settings for the subplebbit |
+| flairs | `Flair[]` or `undefined` | The list of flairs (colored labels for comments) authors or mods can choose from |
 
 #### Returns
 
@@ -874,7 +927,7 @@ comment.on('update', (updatedCommentInstance) => {
 comment.update()
 
 // if you already fetched the comment and only want the updates
-const commentDataFetchedEarlier = {content, author, cid, ipnsName, etc...}
+const commentDataFetchedEarlier = {content, author, cid, ipnsName, ...comment}
 const comment = plebbit.createComment(commentDataFetchedEarlier)
 comment.on('update', () => {
   console.log('the comment instance updated itself:', comment)
