@@ -36,8 +36,9 @@ Comment extends Publication /* (IPFS file) */ {
   flair?: Flair // arbitrary colored string added by the author or mods to describe the author or comment
 }
 Post extends Comment /* (IPFS file) */ {
-  postCid?: undefined // post is same as comment but has no parent and some extra fields
-  parentCid?: undefined // post is same as comment but has no parent and some extra fields
+  postCid?: undefined // a post can't know its own CID
+  parentCid?: undefined // posts have no parent
+  depth: 0 // posts have 0 depth
   title: string
   link?: string
   thumbnailUrl?: string // fetched by subplebbit owner, not author, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
