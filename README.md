@@ -66,7 +66,7 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
 Author {
   address: string
   displayName?: string
-  wallets?: {[ticker: string]: Wallet}
+  wallets?: {[chainTicker: string]: Wallet}
   avatar?: Nft
 }
 Wallet {
@@ -74,7 +74,7 @@ Wallet {
   // ...will add more stuff later, like signer or send/sign or balance
 }
 Nft {
-  ticker: string // ticker of the chain, like ETH, AVAX, SOL, etc
+  chainTicker: string // ticker of the chain, like ETH, AVAX, SOL, etc
   address: string // address of the NFT contract
   index: number // index of the specific NFT used
   signature: Signature // proof that author.address owns the nft
