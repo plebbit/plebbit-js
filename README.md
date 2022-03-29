@@ -23,6 +23,7 @@ Publication {
   subplebbitAddress: string // all publications are directed to a subplebbit owner
   timestamp: number // number in seconds
   signature: Signature // sign immutable fields like author, title, content, timestamp to prevent tampering
+  protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
 }
 Comment extends Publication /* (IPFS file) */ {
   postCid?: string // helps faster loading post info for reply direct linking, should be added by the subplebbit owner not author
@@ -60,6 +61,7 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   removed?: boolean // mod deleted a comment
   reason?: string // reason the mod took a mod action
   updatedAt: number // timestamp in seconds the IPNS record was updated
+  protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
 }
 Author {
   address: string
@@ -100,6 +102,7 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   features?: SubplebbitFeatures
   suggested?: SubplebbitSuggested
   flairs?: Flair[] // list of flairs authors and mods can choose from
+  protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
 }
 SubplebbitSuggested { // values suggested by the sub owner, the client/user can ignore them without breaking interoperability
   primaryColor?: string
@@ -222,6 +225,8 @@ const signatureIsValid = await rsaPublicKeyInstance.verify(postToVerify, post.si
 ```js
 PubsubMessage: {
   type: 'CHALLENGEREQUEST' | 'CHALLENGE' | 'CHALLENGEANSWER' | 'CHALLENGEVERIFICATION'
+  protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
+  userAgent: `/plebbit-js:${require('./package.json').version}/` // client name and version using this standard https://en.bitcoin.it/wiki/BIP_0014#Proposal
 }
 ChallengeRequestMessage extends PubsubMessage /* (sent by post author) */ {
   challengeRequestId: string // random string choosen by sender
