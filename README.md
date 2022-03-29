@@ -136,7 +136,7 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
 }
 Flair {
   text: string
-  color: string
+  color?: string
 }
 Pages {
   pages: {[key: PostsSortType | RepliesSortType]: Page} // e.g. subplebbit.posts.pages.hot.comments[0].cid = 'Qm...'
