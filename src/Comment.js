@@ -3,6 +3,7 @@ import assert from "assert";
 import {loadIpnsAsJson, parseJsonIfString, timestamp} from "./Util.js";
 import Publication from "./Publication.js";
 
+const UPDATE_INTERVAL = 60000; // One minute
 
 class Comment extends Publication {
     constructor(props, subplebbit) {
@@ -33,6 +34,7 @@ class Comment extends Publication {
         this.upvoteCount = props["upvoteCount"];
         this.downvoteCount = props["downvoteCount"];
         this.replyCount = props["replyCount"];
+        this.updatedAt = props["updatedAt"];
         this.sortedReplies = parseJsonIfString(props["sortedReplies"]);
         this.sortedRepliesCids = parseJsonIfString(props["sortedRepliesCids"]);
     }
@@ -84,7 +86,8 @@ class Comment extends Publication {
             "upvoteCount": this.upvoteCount,
             "downvoteCount": this.downvoteCount,
             "sortedReplies": this.sortedReplies,
-            "sortedRepliesCids": this.sortedRepliesCids
+            "sortedRepliesCids": this.sortedRepliesCids,
+            "updatedAt": this.updatedAt
         };
     }
 
@@ -119,21 +122,40 @@ class Comment extends Publication {
         });
     }
 
-    async update() {
+    async #updateOnce() {
         assert(this.ipnsName, "ipnsName is needed to update Comment");
         return new Promise(async (resolve, reject) => {
             loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit.ipfsClient).then(res => {
-                    this._initCommentUpdate(res);
-                    resolve(this);
+                    if (!res)
+                        reject("ipnsName is not pointing to any IPFS file");
+                    else {
+                        if (res.updatedAt !== this.updatedAt){
+                            this._initCommentUpdate(res);
+                            this.emit("update", this);
+                        }
+                        this._initCommentUpdate(res);
+
+
+                        resolve(this);
+                    }
                 }
             ).catch(reject)
         });
     }
 
+    async update(updateInterval = UPDATE_INTERVAL) {
+        this._updateInterval = setInterval(this.#updateOnce.bind(this), updateInterval);
+        return this.#updateOnce();
+    }
+
+    stop() {
+        clearInterval(this._updateInterval);
+    }
+
     async edit(commentUpdateOptions) {
         assert(this.commentIpnsKeyName, "You need to have commentUpdate");
         return new Promise(async (resolve, reject) => {
-            this._initCommentUpdate(commentUpdateOptions);
+            this._initCommentUpdate({...commentUpdateOptions, "updatedAt": timestamp()});
             this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate())).then(file => {
                 this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
                     "lifetime": "5h",

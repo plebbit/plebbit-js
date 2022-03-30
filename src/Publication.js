@@ -3,10 +3,12 @@ import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string'
 import {v4 as uuidv4} from 'uuid';
 import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
 import assert from "assert";
+import EventEmitter from "events";
 
-class Publication {
 
+class Publication extends EventEmitter {
     constructor(props, subplebbit) {
+        super();
         this.subplebbit = subplebbit;
         this._initProps(props);
     }
