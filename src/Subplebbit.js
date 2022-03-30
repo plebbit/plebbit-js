@@ -54,6 +54,9 @@ export class Subplebbit extends EventEmitter {
         this.sortHandler = new SortHandler(this);
         this.challengeTypes = mergedProps["challengeTypes"];
         this.metricsCid = mergedProps["metricsCid"];
+        this.createdAt = mergedProps["createdAt"];
+        this.updatedAt = mergedProps["updatedAt"];
+        // this.signer = mergedProps["signer"] instanceof Signer ? mergedProps["signer"] : new Signer(mergedProps["signer"]);
     }
 
     async #initDb() {
@@ -250,6 +253,7 @@ export class Subplebbit extends EventEmitter {
             trx.commit().then(() => resolve({"publication": postOrCommentOrVote})).catch(err => {
                 console.error(err);
                 trx.rollback();
+                reject(err);
             });
 
         });
@@ -400,6 +404,7 @@ export class Subplebbit extends EventEmitter {
         const subscribedTopics = (await this.plebbit.ipfsClient.pubsub.ls());
         if (!subscribedTopics.includes(this.pubsubTopic))
             await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, this.#processCaptchaPubsub.bind(this));
+        this._updateIpnsInterval = setInterval(this.#syncCommentIpns.bind(this), 60000); // one minute
     }
 
     async stopPublishing() {
