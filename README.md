@@ -290,6 +290,8 @@ Challenge {
   - `subplebbit.latestPostCid`
   - `subplebbit.pubsubTopic`
   - `subplebbit.challengeTypes`
+  - `subplebbit.rules`
+  - `subplebbit.flairs`
   - `subplebbit.suggested`
   - `subplebbit.features`
   - `subplebbit.createdAt`
