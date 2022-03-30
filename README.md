@@ -62,6 +62,7 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   removed?: boolean // mod deleted a comment
   reason?: string // reason the mod took a mod action
   updatedAt: number // timestamp in seconds the IPNS record was updated
+  author?: Author // mod can edit the flair
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
 }
 Author {
@@ -69,6 +70,7 @@ Author {
   displayName?: string
   wallets?: {[chainTicker: string]: Wallet}
   avatar?: Nft
+  flair?: Flair // not part of the signature, mod can edit it after comment is published
 }
 Wallet {
   address: string
@@ -102,7 +104,8 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   updatedAt: number
   features?: SubplebbitFeatures
   suggested?: SubplebbitSuggested
-  flairs?: Flair[] // list of flairs authors and mods can choose from
+  rules?: string[]
+  flairs: {[key: 'post' | 'author']: Flair[]} // list of post/author flairs authors and mods can choose from
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
 }
 SubplebbitSuggested { // values suggested by the sub owner, the client/user can ignore them without breaking interoperability
@@ -112,6 +115,7 @@ SubplebbitSuggested { // values suggested by the sub owner, the client/user can 
   bannerUrl?: string
   backgroundUrl?: string
   language?: string
+  // TODO: menu links, wiki pages, sidebar widgets
 }
 SubplebbitFeatures { // any boolean that changes the functionality of the sub, add "no" in front if doesn't default to false
   noVideos?: boolean
@@ -128,8 +132,10 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   anonymousAuthors?: boolean // authors are given anonymous ids inside threads, like 4chan
   noNestedReplies?: boolean // no nested replies, like old school forums and 4chan
   safeForWork?: boolean
-  flairs?: boolean // authors can choose their own flairs (otherwise only mods can)
-  requireFlairs?: boolean // force authors to choose a flair before posting
+  authorFlairs?: boolean // authors can choose their own author flairs (otherwise only mods can)
+  requireAuthorFlairs?: boolean // force authors to choose an author flair before posting
+  postFlairs?: boolean // authors can choose their own post flairs (otherwise only mods can)
+  requirePostFlairs?: boolean // force authors to choose a post flair before posting
   noMarkdownImages?: boolean // don't embed images in text posts markdown
   noMarkdownVideos?: boolean // don't embed videos in text posts markdown
   markdownImageReplies?: boolean
@@ -137,7 +143,8 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
 }
 Flair {
   text: string
-  color?: string
+  backgroundColor?: string
+  textgroundColor?: string
 }
 Pages {
   pages: {[key: PostsSortType | RepliesSortType]: Page} // e.g. subplebbit.posts.pages.hot.comments[0].cid = 'Qm...'
