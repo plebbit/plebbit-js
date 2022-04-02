@@ -1,23 +1,33 @@
 import {Plebbit} from "../src/index.js";
-import {IPFS_API_URL, IPFS_GATEWAY_URL, TEST_VOTE_POST_CID, TEST_VOTE_SUBPLEBBIT_ADDRESS} from "../secrets.js";
+import {
+    IPFS_API_1_URL,
+    IPFS_API_2_URL,
+    IPFS_GATEWAY_URL,
+    TEST_VOTE_POST_CID,
+    TEST_VOTE_SUBPLEBBIT_ADDRESS
+} from "../secrets.js";
 import assert from 'assert';
 import {timestamp, unsubscribeAllPubsubTopics} from "../src/Util.js";
 import {generateMockVote} from "./MockUtil.js";
 
-const plebbit = await Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
-const subplebbit = await plebbit.createSubplebbit({
+const serverPlebbit = await Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_1_URL});
+const clientPlebbit = await Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_2_URL});
+
+const subplebbit = await serverPlebbit.createSubplebbit({
     "subplebbitAddress":
     TEST_VOTE_SUBPLEBBIT_ADDRESS
 });
-const post = await plebbit.getPostOrComment(TEST_VOTE_POST_CID);
-await post.update();
+const post = await clientPlebbit.getPostOrComment(TEST_VOTE_POST_CID);
 const previousVotes = [];
 
 
 describe("Test Vote", async () => {
-    before(async () => await unsubscribeAllPubsubTopics(plebbit.ipfsClient));
+    before(async () => {
+        await unsubscribeAllPubsubTopics(serverPlebbit.ipfsClient);
+        await unsubscribeAllPubsubTopics(clientPlebbit.ipfsClient);
+    });
     after(async () => post.stop());
-    after(async () => await post.subplebbit.stopPublishing());
+    after(async () => await subplebbit.stopPublishing());
 
 
     it("Can upvote a comment", async () => {
@@ -39,16 +49,13 @@ describe("Test Vote", async () => {
                     resolve();
 
                 });
-            }).catch(reject);
-
-
-        });
-
+            });
+        })
     });
 
     it("Throws an error when vote is duplicated", async () => {
         return new Promise(async (resolve, reject) => {
-            const vote = await plebbit.createVote({
+            const vote = await clientPlebbit.createVote({
                 ...previousVotes[0].toJSON(),
                 "timestamp": timestamp(),
             });
@@ -62,7 +69,7 @@ describe("Test Vote", async () => {
             await post.update();
             const originalUpvote = post.upvoteCount;
             const originalDownvote = post.downvoteCount;
-            const vote = await plebbit.createVote({
+            const vote = await clientPlebbit.createVote({
                 ...previousVotes[0].toJSON(),
                 "vote": -1,
                 "timestamp": timestamp(),
@@ -84,7 +91,7 @@ describe("Test Vote", async () => {
             await post.update();
 
             const originalDownvote = post.downvoteCount;
-            const vote = await plebbit.createVote({
+            const vote = await clientPlebbit.createVote({
                 ...previousVotes[0].toJSON(),
                 "vote": 0,
                 "timestamp": timestamp(),
@@ -121,7 +128,7 @@ describe("Test Vote", async () => {
 
             const originalUpvote = post.upvoteCount;
             const originalDownvote = post.downvoteCount;
-            const vote = await plebbit.createVote({
+            const vote = await clientPlebbit.createVote({
                 ...previousVotes[1].toJSON(),
                 "vote": 1,
                 "timestamp": timestamp(),
@@ -142,7 +149,7 @@ describe("Test Vote", async () => {
             await post.update();
 
             const originalUpvote = post.upvoteCount;
-            const vote = await plebbit.createVote({
+            const vote = await clientPlebbit.createVote({
                 ...previousVotes[1].toJSON(),
                 "vote": 0,
                 "timestamp": timestamp(),

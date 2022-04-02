@@ -5,12 +5,16 @@ import {loadIpfsFileAsJson, loadIpnsAsJson} from "./Util.js";
 import * as path from "path";
 import Vote from "./Vote.js";
 import {create as createIpfsClient} from "ipfs-http-client";
+import http from "http";
 
 export class Plebbit {
     constructor(options) {
         this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
         this.ipfsApiUrl = options["ipfsApiUrl"];
-        this.ipfsClient = createIpfsClient(this.ipfsApiUrl);
+        this.ipfsClient = createIpfsClient({
+            url: this.ipfsApiUrl,
+            agent: http.Agent({keepAlive: true, maxSockets: Infinity})
+        });
         this.dataPath = options["dataPath"] || path.join(process.cwd(), ".plebbit");
     }
 
