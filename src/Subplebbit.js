@@ -147,15 +147,30 @@ export class Subplebbit extends EventEmitter {
         );
     }
 
-    async update() {
+    async #updateOnce() {
         return new Promise(async (resolve, reject) => {
             loadIpnsAsJson(this.subplebbitAddress, this.plebbit.ipfsClient).then(res => {
+                if (this.emittedAt !== res.updatedAt) {
+                    this.emittedAt = res.updatedAt;
+                    this.#initSubplebbit(res);
+                    this.emit("update", this);
+                }
                 this.#initSubplebbit(res);
                 resolve(res);
             }).catch(reject);
         });
     }
 
+    async update(updateInterval = 60000) {
+        if (this._updateInterval)
+            clearInterval(this._updateInterval);
+        this._updateInterval = setInterval(this.#updateOnce.bind(this), updateInterval); // One minute
+        return this.#updateOnce();
+    }
+
+    stop() {
+        clearInterval(this._updateInterval);
+    }
 
 
     async #updateMetricsCid(trx) {
@@ -413,15 +428,18 @@ export class Subplebbit extends EventEmitter {
         const subscribedTopics = (await this.plebbit.ipfsClient.pubsub.ls());
         if (!subscribedTopics.includes(this.pubsubTopic))
             await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, this.#processCaptchaPubsub.bind(this));
-        this._updateIpnsInterval = setInterval(this.#syncCommentIpns.bind(this), 60000); // one minute
+        if (this._syncIpnsInterval)
+            clearInterval(this._syncIpnsInterval);
+        this._syncIpnsInterval = setInterval(this.#syncIpnsWithDb.bind(this), 90000); // two minute
     }
 
     async stopPublishing() {
         await this.plebbit.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
         this.removeAllListeners();
+        this.stop();
         this.dbHandler?.knex?.destroy();
         this.dbHandler = undefined;
-        clearInterval(this._updateIpnsInterval);
+        clearInterval(this._syncIpnsInterval);
     }
 
     async destroy() {
