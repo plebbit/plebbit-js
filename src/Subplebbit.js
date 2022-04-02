@@ -21,8 +21,7 @@ import {SORTED_COMMENTS_TYPES, SortHandler} from "./SortHandler.js";
 import * as path from "path";
 import * as fs from "fs";
 import {v4 as uuidv4} from 'uuid';
-import {loadIpnsAsJson, timestamp} from "./Util.js";
-
+import {loadIpnsAsJson, shallowEqual, timestamp} from "./Util.js";
 
 // import {Signer} from "./Signer.js";
 
@@ -36,7 +35,7 @@ export class Subplebbit extends EventEmitter {
         this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
         this.provideCaptchaCallback = undefined;
         this.validateCaptchaAnswerCallback = undefined;
-        this._updateIpnsInterval = undefined;
+        this._syncIpnsInterval = undefined;
     }
 
     #initSubplebbit(newProps) {
@@ -158,28 +157,30 @@ export class Subplebbit extends EventEmitter {
     }
 
 
-    async #updateMetricsCid() {
+
+    async #updateMetricsCid(trx) {
         return new Promise(async (resolve, reject) => {
-            this.dbHandler.querySubplebbitMetrics().then(async metrics => {
+            this.dbHandler.querySubplebbitMetrics(trx).then(async metrics => {
                 this.plebbit.ipfsClient.add(JSON.stringify(metrics)).then(async metricsCid => resolve(metricsCid.path)).catch(reject)
             }).catch(reject);
         });
     }
 
-    async #updateSubplebbitIpns() {
+    async #updateSubplebbitIpns(trx) {
         return new Promise(async (resolve, reject) => {
-            Promise.all([this.#updateMetricsCid(), this.sortHandler.calculateSortedPosts(), this.dbHandler.queryLatestPost()])
+            Promise.all([this.#updateMetricsCid(trx), this.sortHandler.calculateSortedPosts(undefined, trx), this.dbHandler.queryLatestPost(trx)])
                 .then(async ([metricsCid, [sortedPosts, sortedPostsCids], latestPost]) => {
-                    sortedPosts = {[SORTED_COMMENTS_TYPES.TOP_ALL]: sortedPosts[SORTED_COMMENTS_TYPES.TOP_ALL]}; // Keep only top all
+                    if (sortedPosts)
+                        sortedPosts = {[SORTED_COMMENTS_TYPES.TOP_ALL]: sortedPosts[SORTED_COMMENTS_TYPES.TOP_ALL]}; // Keep only top all
                     const newSubplebbitOptions = {
                         "sortedPosts": sortedPosts,
                         "sortedPostsCids": sortedPostsCids,
                         "metricsCid": metricsCid,
-                        "latestPostCid": latestPost.postCid,
+                        "latestPostCid": latestPost?.postCid,
                     };
                     if (JSON.stringify(this.sortedPosts) !== JSON.stringify(sortedPosts) ||
                         JSON.stringify(this.sortedPostsCids) !== JSON.stringify(sortedPostsCids) ||
-                        this.metricsCid !== metricsCid || this.latestPostCid !== latestPost.commentCid)
+                        this.metricsCid !== metricsCid || this.latestPostCid !== newSubplebbitOptions.latestPostCid)
                         this.edit(newSubplebbitOptions).then(resolve).catch(reject);
                     else
                         resolve();
@@ -358,21 +359,23 @@ export class Subplebbit extends EventEmitter {
         });
     }
 
-    async #syncCommentIpns() {
+    async #syncIpnsWithDb() {
         return new Promise(async (resolve, reject) => {
-            const sync = async (dbComment) => {
+            const trx = await this.dbHandler.createTransaction();
+            const syncComment = async (dbComment) => {
                 return new Promise(async (syncResolve, syncReject) => {
                     loadIpnsAsJson(dbComment.ipnsName, this.plebbit.ipfsClient).then(async currentIpns => {
-                        if (!currentIpns || currentIpns.replyCount !== dbComment.replyCount
-                            || currentIpns.upvoteCount !== dbComment.upvoteCount
-                            || currentIpns.downvoteCount !== dbComment.downvoteCount
-                            || currentIpns.editedContent !== dbComment.editedContent) {
-                            let [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedPosts(dbComment);
-                            sortedReplies = {[SORTED_COMMENTS_TYPES.TOP_ALL]: sortedReplies[SORTED_COMMENTS_TYPES.TOP_ALL]};
+                        if (!shallowEqual(currentIpns, dbComment.toJSONCommentUpdate(), ["sortedReplies", "sortedRepliesCids"])) {
+                            let [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedPosts(dbComment, trx);
+                            if (sortedReplies)
+                                sortedReplies = {[SORTED_COMMENTS_TYPES.TOP_ALL]: sortedReplies[SORTED_COMMENTS_TYPES.TOP_ALL]};
+                            dbComment.setUpdatedAt(timestamp());
+                            await this.dbHandler.upsertComment(dbComment, undefined, trx);
                             dbComment.edit({
                                 ...dbComment.toJSONCommentUpdate(),
                                 "sortedReplies": sortedReplies,
-                                "sortedRepliesCids": sortedRepliesCids
+                                "sortedRepliesCids": sortedRepliesCids,
+
                             }).then(syncResolve).catch(syncReject);
                         } else
                             syncResolve();
@@ -381,12 +384,18 @@ export class Subplebbit extends EventEmitter {
                 });
             };
 
-            this.dbHandler.queryComments().then(async comments =>
-                Promise.all([...comments.map(async comment => sync(comment)), this.#updateSubplebbitIpns()]).then(() => {
-                    this.emit("update", this);
-                }).catch(reject))
-                .catch(reject);
+            const errorHandle = async (err) => {
+                await trx.rollback();
+                console.error(err);
+                reject(err);
+            }
 
+            this.dbHandler.queryComments(trx).then(async comments =>
+                Promise.all([...comments.map(async comment => syncComment(comment)), this.#updateSubplebbitIpns(trx)]).then(async () => {
+                    // this.emit("update", this);
+                    trx.commit().then(resolve).catch(errorHandle)
+                }).catch(errorHandle))
+                .catch(errorHandle);
         });
 
     }

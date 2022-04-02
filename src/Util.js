@@ -82,4 +82,26 @@ export function replaceXWithY(obj, x, y) {
     return newObj;
 }
 
+export function removeKeys(object1, keys) {
+    const newObject = {...object1};
+    keys.forEach(key => delete newObject[key]);
+    return newObject;
+}
+
+export function shallowEqual(object1, object2, excludeKeys = []) {
+    object1 = removeKeys(object1 || {}, excludeKeys);
+    object2 = removeKeys(object2 || {}, excludeKeys);
+    const keys1 = Object.keys(object1);
+    const keys2 = Object.keys(object2);
+    if (keys1.length !== keys2.length)
+        return false;
+
+    for (let key of keys1)
+        if (object1[key] !== object2[key])
+            return false;
+
+
+    return true;
+}
+
 

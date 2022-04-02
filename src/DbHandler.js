@@ -47,6 +47,7 @@ class DbHandler {
             // CommentUpdate props
             table.text("editedContent").nullable();
             table.increments("id");
+            table.timestamp("updatedAt").nullable().checkPositive();
         });
 
     }
@@ -129,6 +130,8 @@ class DbHandler {
     async upsertComment(postOrComment, challengeRequestId, trx = undefined) {
         return new Promise(async (resolve, reject) => {
             await this.#addAuthorToDbIfNeeded(postOrComment.author, trx);
+            if (!challengeRequestId)
+                challengeRequestId = (await this.#baseTransaction(trx)(TABLES.COMMENTS).where({"commentCid": postOrComment.commentCid}).first()).challengeRequestId;
             const dbObject = postOrComment.toJSONForDb(challengeRequestId);
             this.#baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(['commentCid']).merge().then(() => resolve(dbObject)).catch(err => {
                 console.error(err);
@@ -320,15 +323,6 @@ class DbHandler {
                         metrics[[propertyName]] = await this.#querySubplebbitPostCount(timeframe, trx);
                 }
             resolve(metrics);
-        });
-    }
-
-    async queryVotesOfComment(commentCid, trx) {
-        return new Promise(async (resolve, reject) => {
-            Promise.all([1, -1].map(voteValue => this.#baseTransaction(trx)(TABLES.VOTES).where({
-                "commentCid": commentCid,
-                "vote": voteValue
-            }).count("vote"))).then(res => resolve(res.map(countObj => countObj[0]["count(`vote`)"]))).catch(reject);
         });
     }
 
