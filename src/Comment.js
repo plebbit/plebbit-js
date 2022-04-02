@@ -150,6 +150,8 @@ class Comment extends Publication {
     }
 
     async update(updateInterval = UPDATE_INTERVAL) {
+        if (this._updateInterval)
+            clearInterval(this._updateInterval);
         this._updateInterval = setInterval(this.#updateOnce.bind(this), updateInterval);
         return this.#updateOnce();
     }
