@@ -132,7 +132,7 @@ class Comment extends Publication {
         return new Promise(async (resolve, reject) => {
             loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit.ipfsClient).then(res => {
                     if (!res)
-                        reject("ipnsName is not pointing to any IPFS file");
+                        resolve("ipnsName is not pointing to any IPFS file yet");
                     else {
                         if (res.updatedAt !== this.emittedAt) {
                             this.emittedAt = res.updatedAt;
