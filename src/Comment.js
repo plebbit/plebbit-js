@@ -76,6 +76,7 @@ class Comment extends Publication {
         json["challengeRequestId"] = challengeRequestId;
         json["commentIpnsKeyName"] = this.commentIpnsKeyName;
         json["editedContent"] = this.editedContent;
+        json["updatedAt"] = this.updatedAt;
         return json;
     }
 
@@ -113,6 +114,10 @@ class Comment extends Publication {
         this.depth = newDepth;
     }
 
+    setUpdatedAt(newUpdatedAt) {
+        this.updatedAt = newUpdatedAt;
+    }
+
     async fetchParent() {
         return new Promise(async (resolve, reject) => {
             this.subplebbit.plebbit.getPostOrComment(this.parentCid || this.postCid).then(res => {
@@ -129,7 +134,8 @@ class Comment extends Publication {
                     if (!res)
                         reject("ipnsName is not pointing to any IPFS file");
                     else {
-                        if (res.updatedAt !== this.updatedAt){
+                        if (res.updatedAt !== this.emittedAt) {
+                            this.emittedAt = res.updatedAt;
                             this._initCommentUpdate(res);
                             this.emit("update", this);
                         }
@@ -155,7 +161,7 @@ class Comment extends Publication {
     async edit(commentUpdateOptions) {
         assert(this.commentIpnsKeyName, "You need to have commentUpdate");
         return new Promise(async (resolve, reject) => {
-            this._initCommentUpdate({...commentUpdateOptions, "updatedAt": timestamp()});
+            this._initCommentUpdate(commentUpdateOptions);
             this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate())).then(file => {
                 this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
                     "lifetime": "5h",
