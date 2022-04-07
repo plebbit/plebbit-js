@@ -131,8 +131,12 @@ class Comment extends Publication {
     }
 
     async #updateOnce() {
-        assert(this.ipnsName, "ipnsName is needed to update Comment");
         return new Promise(async (resolve, reject) => {
+            if (!this.ipnsName) {
+                resolve(undefined);
+                debug(`Comment (${this.commentCid}) has no IPNS name`);
+                return;
+            }
             loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit.ipfsClient).then(res => {
                     if (!res) {
                         resolve("ipnsName is not pointing to any IPFS file yet");
@@ -149,7 +153,7 @@ class Comment extends Publication {
                         resolve(this);
                     }
                 }
-            ).catch(reject)
+            ).catch(err => resolve(undefined))
         });
     }
 
@@ -171,7 +175,7 @@ class Comment extends Publication {
             this._initCommentUpdate(commentUpdateOptions);
             this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate())).then(file => {
                 this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
-                    "lifetime": "5h",
+                    "lifetime": "72h",
                     "key": this.commentIpnsKeyName
                 }).then(() => {
                     debug(`Comment (${this.commentCid}) IPNS (${this.ipnsName}) has been updated`);
