@@ -1,28 +1,31 @@
-import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
+import {IPFS_CLIENT_CONFIGS} from "../secrets.js";
 import assert from 'assert';
-import {Plebbit, Post} from "../src/index.js"
-import {loadIpfsFileAsJson, sleep, unsubscribeAllPubsubTopics} from "../src/Util.js";
+import {Plebbit} from "../src/index.js"
+import {sleep, unsubscribeAllPubsubTopics, waitTillCommentsArePublished, waitTillCommentsUpdate} from "../src/Util.js";
 import * as fs from 'fs/promises';
 import readline from "readline";
 import {SORTED_COMMENTS_TYPES, SORTED_POSTS_PAGE_SIZE, SortedComments} from "../src/SortHandler.js";
 import {generateMockPost, loadAllPagesThroughSortedComments} from "./MockUtil.js";
 
 const startTestTime = Date.now() / 1000;
-const plebbit = await Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
-const subplebbit = await plebbit.createSubplebbit({});
+const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
+const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
+const subplebbit = await serverPlebbit.createSubplebbit({});
 
 const mockPosts = [];
 describe("Test Subplebbit functionality", async () => {
 
-    before(async () => await unsubscribeAllPubsubTopics(plebbit.ipfsClient));
-    // Stop publishing once we're done with tests
+    before(async () => {
+        await unsubscribeAllPubsubTopics(serverPlebbit.ipfsClient);
+        await unsubscribeAllPubsubTopics(clientPlebbit.ipfsClient);
+    });    // Stop publishing once we're done with tests
     after(async () => await subplebbit.stopPublishing());
 
 
     it("New subplebbits can be published", async function () {
         await subplebbit.edit({"title": `Test subplebbit - ${startTestTime}`});
         // Should have ipns key now
-        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.subplebbitAddress);
+        const loadedSubplebbit = await clientPlebbit.getSubplebbit(subplebbit.subplebbitAddress);
         assert.equal(JSON.stringify(loadedSubplebbit), JSON.stringify(subplebbit), "Failed to publish new subplebbit");
     });
 
@@ -33,14 +36,15 @@ describe("Test Subplebbit functionality", async () => {
             await subplebbit.startPublishing();
             const actualPosts = new Array(numOfPosts);
             for (let i = actualPosts.length - 1; i >= 0; i--) {
-                actualPosts[i] = await generateMockPost(subplebbit);
-                await sleep(1000);
+                actualPosts[i] = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
+                await sleep(1050);
             }
-
+            await subplebbit.update();
             await Promise.all(actualPosts.map(async post => post.publish()));
+            await waitTillCommentsArePublished(actualPosts);
             subplebbit.once("update", async (updatedSubplebbit) => {
-                await Promise.all(actualPosts.map(post => post.update()));
-                const loadedPosts = await loadAllPagesThroughSortedComments(updatedSubplebbit.sortedPostsCids[SORTED_COMMENTS_TYPES.NEW], plebbit);
+                await waitTillCommentsUpdate(actualPosts);
+                const loadedPosts = await loadAllPagesThroughSortedComments(updatedSubplebbit.sortedPostsCids[SORTED_COMMENTS_TYPES.NEW], clientPlebbit);
                 assert.equal(JSON.stringify(actualPosts), JSON.stringify(loadedPosts), "Posts have not been loaded in correct order");
                 mockPosts.push(actualPosts[0]);
                 resolve();
@@ -110,26 +114,37 @@ describe("Test Subplebbit functionality", async () => {
 
     it("Links current post to past posts correctly", async function () {
         return new Promise(async (resolve, reject) => {
-            const secondMockPost = await generateMockPost(subplebbit);
-            await subplebbit.startPublishing();
-            await subplebbit.update();
+            const secondMockPost = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
 
-            secondMockPost.publish(null, null).then(async (challengeVerificationMessage) => {
+            const originalLatestPostCid = subplebbit.latestPostCid;
+            await secondMockPost.publish(null);
+            secondMockPost.once("challengeverification", ([challengeVerificationMessage, newComment]) => {
+                subplebbit.once("update", updatedSubplebbit => {
+                    assert.equal(challengeVerificationMessage.publication.previousCommentCid, originalLatestPostCid, "Failed to set previousPostCid");
+                    assert.equal(challengeVerificationMessage.publication.commentCid, updatedSubplebbit.latestPostCid, "Failed to set subplebbit.latestPostCid");
+                    mockPosts.push(challengeVerificationMessage.publication);
+                    resolve();
 
-                assert.equal(challengeVerificationMessage.publication.previousCommentCid, subplebbit.latestPostCid, "Failed to set previousPostCid");
-                mockPosts.push(challengeVerificationMessage.publication);
-                resolve();
-            }).catch(reject);
+                });
+
+            });
+
+
         });
     });
 
     it("Throws an error when publishing a duplicate post", async function () {
         return new Promise(async (resolve, reject) => {
-            const post = await plebbit.createComment(mockPosts[0].toJSONSkeleton());
+            const post = await clientPlebbit.createComment(mockPosts[0].toJSONSkeleton());
             subplebbit.setProvideCaptchaCallback(() => [null, null]);
 
             await subplebbit.startPublishing();
-            post.publish(null, null).then(reject).catch(resolve);
+            await post.publish(null);
+            post.once("challengeverification", ([challengeVerificationMessage, newComment]) => {
+                assert.equal(challengeVerificationMessage.challengePassed, false, "Challenge should not succeed if post is a duplicate");
+                assert.equal(challengeVerificationMessage.reason, "Failed to insert post due to previous post having same ipns key name (duplicate?)", "There should be an error message that tells the user they posted a duplicate");
+                resolve();
+            });
         });
     });
 
