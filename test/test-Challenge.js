@@ -1,74 +1,90 @@
-import {unsubscribeAllPubsubTopics} from "../src/Util.js";
-import {IPFS_API_URL, IPFS_GATEWAY_URL} from "../secrets.js";
+import {unsubscribeAllPubsubTopics, waitTillCommentsArePublished} from "../src/Util.js";
+import {IPFS_CLIENT_CONFIGS, TEST_CHALLENGES_SUBPLEBBIT_ADDRESS} from "../secrets.js";
 import {Plebbit} from "../src/index.js";
 import assert from "assert";
 import {generateMockPost} from "./MockUtil.js";
 import {Challenge, CHALLENGE_TYPES} from "../src/Challenge.js";
 
-const plebbit = await Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_URL});
-const subplebbit = await plebbit.createSubplebbit({"subplebbitAddress": "k2k4r8mk7p2dremofe77j8myyvqjip1ndwzghkkunm4igkl6b3viunyr"}, plebbit.ipfsClient);
+const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
+const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
+
+const subplebbit = await serverPlebbit.createSubplebbit({"subplebbitAddress": TEST_CHALLENGES_SUBPLEBBIT_ADDRESS});
 
 
 describe("Test Challenge functionality", async () => {
 
-    before(async () => await unsubscribeAllPubsubTopics(plebbit.ipfsClient));
-    before(async () => await subplebbit.startPublishing());
+    before(async () => await unsubscribeAllPubsubTopics([serverPlebbit.ipfsClient, clientPlebbit.ipfsClient]));
     // Stop publishing once we're done with tests
     after(async () => await subplebbit.stopPublishing());
 
     it("Captcha can be skipped under certain conditions", async () => {
         return new Promise(async (resolve, reject) => {
+            const minimumTimestamp = 1643740217;
             subplebbit.setProvideCaptchaCallback((challengeRequestMessage) => {
                 // Expected return is:
                 // Challenge[], reason for skipping captcha (if it's skipped by nullifying Challenge[])
-                if (challengeRequestMessage.publication.timestamp > 1643740217.6)
+                if (challengeRequestMessage.publication.timestamp > minimumTimestamp)
                     // if we return null we are skipping captcha for this particular post/comment
-                    return [null, "Captcha was skipped because timestamp exceeded 1643740217.6"];
+                    return [null, `Captcha was skipped because timestamp exceeded ${minimumTimestamp}`];
                 else
                     return [[new Challenge({"challenge": "1+1=?", "type": CHALLENGE_TYPES.TEXT})], null];
             });
-            const mockPost = await generateMockPost(subplebbit);
+            await subplebbit.startPublishing();
+            const mockPostShouldSkipCaptcha = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
+            await mockPostShouldSkipCaptcha.publish(null, null);
+            await waitTillCommentsArePublished([mockPostShouldSkipCaptcha]);
+            assert.equal(Boolean(mockPostShouldSkipCaptcha.commentCid), true, `Post should be published since its timestamp (${mockPostShouldSkipCaptcha.timestamp}) exceeds minimum (${minimumTimestamp})`)
+            const mockPostShouldGetCaptcha = await clientPlebbit.createComment({
+                ...mockPostShouldSkipCaptcha.toJSON(),
+                "timestamp": minimumTimestamp - 1
+            });
+            await mockPostShouldGetCaptcha.publish();
 
-            mockPost.publish(null, null).then(async (challengeVerificationMessage) => {
-                const loadedPost = await plebbit.getPostOrComment(challengeVerificationMessage.publication.commentCid);
-                assert.equal(JSON.stringify(challengeVerificationMessage.publication), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
+            mockPostShouldGetCaptcha.once("challenge", (challengeMessage) => {
+                assert.equal(challengeMessage.challenges[0].challenge, "1+1=?", "Challenge should be 1+1=?");
                 resolve();
-            }).catch(reject);
+            });
         });
 
     });
 
     it("Post is published when mathcli captcha is answered correctly", async function () {
         return new Promise(async (resolve, reject) => {
-            subplebbit.setProvideCaptchaCallback((ChallengeRequestMessage) => {
-                return [[new Challenge({"challenge": "1+1=?", "type": CHALLENGE_TYPES.TEXT})], null];
+            subplebbit.setProvideCaptchaCallback((challengeRequestMessage) => {
+                return [[new Challenge({"challenge": "1+1=?", "type": CHALLENGE_TYPES.TEXT})], undefined];
             });
-            subplebbit.setValidateCaptchaAnswerCallback((ChallengeAnswerMessage) => {
-                const challengePassed = ChallengeAnswerMessage.challengeAnswers[0] === "2";
-                const challengeErrors = challengePassed ? null : ["Result of math expression is incorrect"];
+            subplebbit.setValidateCaptchaAnswerCallback((challengeAnswerMessage) => {
+                const challengePassed = challengeAnswerMessage.challengeAnswers[0] === "2";
+                const challengeErrors = challengePassed ? undefined : ["Result of math expression is incorrect"];
                 return [challengePassed, challengeErrors];
             });
-            const mockPost = await generateMockPost(subplebbit);
-            mockPost.publish(null, (challengeMessage) => {
-                // Solve captcha here
-                return ["2"];
-            }).then(async (challengeVerificationMessage) => {
-                const loadedPost = await plebbit.getPostOrComment(challengeVerificationMessage.publication.postCid);
-                assert.equal(JSON.stringify(challengeVerificationMessage.publication), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
+            const mockPost = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
+            mockPost.removeAllListeners();
+            await mockPost.publish();
+            mockPost.once("challenge", (challengeMessage) => {
+                mockPost.publishChallengeAnswers(["2"]);
+            });
+            mockPost.once("challengeverification", async ([challengeVerificationMessage, newComment]) => {
+                assert.equal(challengeVerificationMessage.challengePassed, true, "Post did not publish even though challenge has been answered correctly");
                 resolve();
-            }).catch(reject);
+            });
 
         });
     });
 
     it("Throws an error when user fails to solve mathcli captcha", async function () {
         return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost(subplebbit);
-            await subplebbit.startPublishing();
-            mockPost.publish(null, (challengeVerificationMessage) => {
-                // Give wrong answer intentionally
-                return "3";
-            }).then(reject).catch(resolve); // Resolve when an error is thrown, and reject when no error is thrown
+            const mockPost = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
+            mockPost.removeAllListeners();
+
+            mockPost.once("challenge", (challengeMessage) => {
+                mockPost.publishChallengeAnswers(["3"]);
+            });
+            await mockPost.publish();
+            mockPost.once("challengeverification", ([challengeVerificationMessage, newComment]) => {
+                assert.equal(challengeVerificationMessage.challengePassed, false, "Post should not be posted when challenge has been solved incorrectly");
+                resolve();
+            });
         });
 
     });
