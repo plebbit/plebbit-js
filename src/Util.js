@@ -41,7 +41,7 @@ export async function loadIpnsAsJson(ipns, ipfsClient) {
                 resolve(undefined);
             else
                 loadIpfsFileAsJson(cid, ipfsClient).then(resolve).catch(reject);
-        }).catch(err => resolve(undefined));
+        }).catch(reject);
     });
 }
 
