@@ -9,12 +9,8 @@ import http from "http";
 
 export class Plebbit {
     constructor(options) {
-        this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
-        this.ipfsApiUrl = options["ipfsApiUrl"];
-        this.ipfsClient = createIpfsClient({
-            url: this.ipfsApiUrl,
-            agent: http.Agent({keepAlive: true, maxSockets: Infinity})
-        });
+        this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
+        this.ipfsClient = createIpfsClient(this.ipfsHttpClientOptions);
         this.dataPath = options["dataPath"] || path.join(process.cwd(), ".plebbit");
     }
 
