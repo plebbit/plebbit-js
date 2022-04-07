@@ -50,11 +50,16 @@ export async function sleep(ms) {
 }
 
 export async function unsubscribeAllPubsubTopics(ipfsClient) {
-    let subscribedTopics = await ipfsClient.pubsub.ls();
-    for (const topic of subscribedTopics) {
-        await ipfsClient.pubsub.unsubscribe(topic);
-        await sleep(1000);
-    }
+    return new Promise(async (resolve, reject) => {
+        const errHandle = (err) => {
+            console.error(err);
+            reject(err);
+        };
+        ipfsClient.pubsub.ls().then(async pubsubTopics => {
+            Promise.all(pubsubTopics.map(topic => ipfsClient.pubsub.unsubscribe(topic))).then(resolve).catch(errHandle);
+        }).catch(errHandle);
+
+    });
 }
 
 export function chunks(arr, len) {
