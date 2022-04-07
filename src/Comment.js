@@ -2,8 +2,11 @@ import Author from "./Author.js";
 import assert from "assert";
 import {loadIpnsAsJson, parseJsonIfString, timestamp} from "./Util.js";
 import Publication from "./Publication.js";
+import Debug from "debug";
 
-const UPDATE_INTERVAL = 60000; // One minute
+const debug = Debug("plebbit-js:Comment");
+
+const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
 class Comment extends Publication {
     constructor(props, subplebbit) {
@@ -131,9 +134,10 @@ class Comment extends Publication {
         assert(this.ipnsName, "ipnsName is needed to update Comment");
         return new Promise(async (resolve, reject) => {
             loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit.ipfsClient).then(res => {
-                    if (!res)
+                    if (!res) {
                         resolve("ipnsName is not pointing to any IPFS file yet");
-                    else {
+                        debug(`IPNS (${this.ipnsName}) is not pointing to any file`);
+                    } else {
                         if (res.updatedAt !== this.emittedAt) {
                             this.emittedAt = res.updatedAt;
                             this._initCommentUpdate(res);
@@ -149,10 +153,11 @@ class Comment extends Publication {
         });
     }
 
-    async update(updateInterval = UPDATE_INTERVAL) {
+    update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
+        debug(`Starting to poll updates for comment (${this.commentCid}) IPNS (${this.ipnsName}) every ${updateIntervalMs} milliseconds`)
         if (this._updateInterval)
             clearInterval(this._updateInterval);
-        this._updateInterval = setInterval(this.#updateOnce.bind(this), updateInterval);
+        this._updateInterval = setInterval(this.#updateOnce.bind(this), updateIntervalMs);
         return this.#updateOnce();
     }
 
@@ -168,7 +173,10 @@ class Comment extends Publication {
                 this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
                     "lifetime": "5h",
                     "key": this.commentIpnsKeyName
-                }).then(resolve).catch(reject);
+                }).then(() => {
+                    debug(`Comment (${this.commentCid}) IPNS (${this.ipnsName}) has been updated`);
+                    resolve();
+                }).catch(reject);
             }).catch(reject);
         });
     }
