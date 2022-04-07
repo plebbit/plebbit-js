@@ -16,8 +16,7 @@ const mockPosts = [];
 describe("Test Subplebbit functionality", async () => {
 
     before(async () => {
-        await unsubscribeAllPubsubTopics(serverPlebbit.ipfsClient);
-        await unsubscribeAllPubsubTopics(clientPlebbit.ipfsClient);
+        await unsubscribeAllPubsubTopics([serverPlebbit.ipfsClient, clientPlebbit.ipfsClient]);
     });    // Stop publishing once we're done with tests
     after(async () => await subplebbit.stopPublishing());
 

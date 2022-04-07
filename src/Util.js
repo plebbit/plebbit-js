@@ -49,15 +49,23 @@ export async function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function unsubscribeAllPubsubTopics(ipfsClient) {
+export async function unsubscribeAllPubsubTopics(ipfsClients) {
     return new Promise(async (resolve, reject) => {
+        if (!Array.isArray(ipfsClients))
+            ipfsClients = [ipfsClients];
         const errHandle = (err) => {
             console.error(err);
             reject(err);
         };
-        ipfsClient.pubsub.ls().then(async pubsubTopics => {
-            Promise.all(pubsubTopics.map(topic => ipfsClient.pubsub.unsubscribe(topic))).then(resolve).catch(errHandle);
-        }).catch(errHandle);
+        const unsubscribePromises = ipfsClients.map(ipfsClient => {
+            return new Promise(async (nestedResolve, nestedReject) => {
+                ipfsClient.pubsub.ls().then(async pubsubTopics => {
+                    Promise.all(pubsubTopics.map(topic => ipfsClient.pubsub.unsubscribe(topic))).then(nestedResolve).catch(nestedResolve);
+                }).catch(nestedReject);
+
+            })
+        });
+        Promise.all(unsubscribePromises).then(resolve).catch(errHandle);
 
     });
 }
