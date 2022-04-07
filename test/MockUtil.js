@@ -73,6 +73,7 @@ export async function loadAllPagesThroughSortedComments(sortedCommentsCid, plebb
     const loadComments = async (comment) => {
         const loadedComment = await plebbit.getPostOrComment(comment.commentCid);
         await loadedComment.update();
+        await loadedComment.stop();
         return loadedComment;
     }
     let sortedCommentsPage = new SortedComments(await loadIpfsFileAsJson(sortedCommentsCid, plebbit.ipfsClient));
