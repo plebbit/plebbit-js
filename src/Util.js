@@ -2,6 +2,7 @@ import {concat as uint8ArrayConcat} from 'uint8arrays/concat';
 import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
 import all from 'it-all';
 import last from "it-last";
+import Debug from "debug";
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS = Object.freeze({
     "HOUR": 60 * 60,
@@ -12,6 +13,8 @@ export const TIMEFRAMES_TO_SECONDS = Object.freeze({
 
     "ALL": Infinity
 });
+const debug = Debug("plebbit-js:Util");
+
 
 export async function loadIpfsFileAsJson(cid, ipfsClient) {
     return new Promise((resolve, reject) => {
@@ -19,8 +22,14 @@ export async function loadIpfsFileAsJson(cid, ipfsClient) {
             .then(rawData => uint8ArrayConcat(rawData))
             .catch(reject)
             .then(data => {
-                const jsonObject = JSON.parse(uint8ArrayToString(data));
-                resolve(jsonObject);
+                if (!data) {
+                    debug(`IPFS (${cid}) loads undefined object (${data})`);
+
+                    reject(`IPFS (${cid}) loads undefined object (${data})`);
+                } else {
+                    const jsonObject = JSON.parse(uint8ArrayToString(data));
+                    resolve(jsonObject);
+                }
             }).catch(reject);
     });
 }
