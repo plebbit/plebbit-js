@@ -184,30 +184,21 @@ export class Subplebbit extends EventEmitter {
         clearInterval(this._updateInterval);
     }
 
-
-    async #updateMetricsCid(trx) {
-        return new Promise(async (resolve, reject) => {
-            this.dbHandler.querySubplebbitMetrics(trx).then(async metrics => {
-                this.plebbit.ipfsClient.add(JSON.stringify(metrics)).then(async metricsCid => resolve(metricsCid.path)).catch(reject)
-            }).catch(reject);
-        });
-    }
-
     async #updateSubplebbitIpns(trx) {
         return new Promise(async (resolve, reject) => {
-            Promise.all([this.#updateMetricsCid(trx), this.sortHandler.calculateSortedPosts(undefined, trx), this.dbHandler.queryLatestPost(trx)])
-                .then(async ([metricsCid, [sortedPosts, sortedPostsCids], latestPost]) => {
+            Promise.all([this.dbHandler.querySubplebbitMetrics(trx), this.sortHandler.calculateSortedPosts(undefined, trx), this.dbHandler.queryLatestPost(trx)])
+                .then(async ([metrics, [sortedPosts, sortedPostsCids], latestPost]) => {
                     if (sortedPosts)
                         sortedPosts = {[SORTED_COMMENTS_TYPES.TOP_ALL]: sortedPosts[SORTED_COMMENTS_TYPES.TOP_ALL]}; // Keep only top all
                     const newSubplebbitOptions = {
                         "sortedPosts": sortedPosts,
                         "sortedPostsCids": sortedPostsCids,
-                        "metricsCid": metricsCid,
+                        "metricsCid": await this.plebbit.ipfsClient.add(JSON.stringify(metrics)),
                         "latestPostCid": latestPost?.postCid,
                     };
                     if (JSON.stringify(this.sortedPosts) !== JSON.stringify(sortedPosts) ||
                         JSON.stringify(this.sortedPostsCids) !== JSON.stringify(sortedPostsCids) ||
-                        this.metricsCid !== metricsCid || this.latestPostCid !== newSubplebbitOptions.latestPostCid)
+                        this.metricsCid !== newSubplebbitOptions.metricsCid || this.latestPostCid !== newSubplebbitOptions.latestPostCid)
                         this.edit(newSubplebbitOptions).then(() => {
                             debug(`Subplebbit IPNS has been synced with DB`);
                             resolve();
@@ -466,7 +457,7 @@ export class Subplebbit extends EventEmitter {
         if (!this.dbHandler)
             await this.#initDb();
         if (!this.provideCaptchaCallback) {
-            console.log(`Subplebbit-startPublishing`, "Subplebbit owner has not provided any captcha. Will go with default image captcha");
+            debug(`Subplebbit-startPublishing`, "Subplebbit owner has not provided any captcha. Will go with default image captcha");
             this.provideCaptchaCallback = this.#defaultProvideCaptcha;
             this.validateCaptchaAnswerCallback = this.#defaultValidateCaptcha;
         }
@@ -502,8 +493,11 @@ export class Subplebbit extends EventEmitter {
     async _addPublicationToDb(publication) {
         return new Promise(async (resolve, reject) => {
             const randomUUID = uuidv4();
-            await this.dbHandler.upsertChallenge(new ChallengeRequestMessage({"challengeRequestId": randomUUID}));
-            this.#publishPostAfterPassingChallenge(publication, randomUUID).then(resolve).catch(reject);
+            const trx = await this.dbHandler.createTransaction();
+            await this.dbHandler.upsertChallenge(new ChallengeRequestMessage({"challengeRequestId": randomUUID}), trx);
+            this.#publishPostAfterPassingChallenge(publication, randomUUID, trx).then((res) => {
+                trx.commit().then(() => resolve(res)).catch(reject);
+            }).catch(reject);
         });
     }
 
