@@ -131,7 +131,9 @@ export class Subplebbit extends EventEmitter {
         this.#initSubplebbit(newSubplebbitOptions);
         return new Promise(async (resolve, reject) => {
                 if (!this.subplebbitAddress) { // TODO require signer
+                    debug(`Subplebbit does not have an address`);
                     this.plebbit.ipfsClient.key.gen(this.title).then(ipnsKey => {
+                        debug(`Generated an address for subplebbit (${ipnsKey.id})`);
                         this.edit({
                             "subplebbitAddress": ipnsKey["id"],
                             "ipnsKeyName": ipnsKey["name"],
@@ -142,9 +144,12 @@ export class Subplebbit extends EventEmitter {
                     this.updatedAt = timestamp();
                     this.plebbit.ipfsClient.add(JSON.stringify(this)).then(file => {
                         this.plebbit.ipfsClient.name.publish(file["cid"], {
-                            "lifetime": "5h", // TODO decide on optimal time later
+                            "lifetime": "72h", // TODO decide on optimal time later
                             "key": this.ipnsKeyName
-                        }).then(resolve).catch(reject);
+                        }).then(() => {
+                            debug(`Subplebbit (${this.subplebbitAddress}) has been edited and its IPNS updated`);
+                            resolve();
+                        }).catch(reject);
                     }).catch(reject);
                 }
 
@@ -158,6 +163,7 @@ export class Subplebbit extends EventEmitter {
                 if (this.emittedAt !== res.updatedAt) {
                     this.emittedAt = res.updatedAt;
                     this.#initSubplebbit(res);
+                    debug(`Subplebbit received a new update. Will emit an update event`);
                     this.emit("update", this);
                 }
                 this.#initSubplebbit(res);
@@ -166,10 +172,11 @@ export class Subplebbit extends EventEmitter {
         });
     }
 
-    async update(updateInterval = 60000) {
+    update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
+        debug(`Starting to poll updates for subplebbit (${this.subplebbitAddress}) every ${updateIntervalMs} milliseconds`);
         if (this._updateInterval)
             clearInterval(this._updateInterval);
-        this._updateInterval = setInterval(this.#updateOnce.bind(this), updateInterval); // One minute
+        this._updateInterval = setInterval(this.#updateOnce.bind(this), updateIntervalMs); // One minute
         return this.#updateOnce();
     }
 
@@ -201,9 +208,14 @@ export class Subplebbit extends EventEmitter {
                     if (JSON.stringify(this.sortedPosts) !== JSON.stringify(sortedPosts) ||
                         JSON.stringify(this.sortedPostsCids) !== JSON.stringify(sortedPostsCids) ||
                         this.metricsCid !== metricsCid || this.latestPostCid !== newSubplebbitOptions.latestPostCid)
-                        this.edit(newSubplebbitOptions).then(resolve).catch(reject);
-                    else
+                        this.edit(newSubplebbitOptions).then(() => {
+                            debug(`Subplebbit IPNS has been synced with DB`);
+                            resolve();
+                        }).catch(reject);
+                    else {
+                        debug(`No need to update subplebbit IPNS`);
                         resolve();
+                    }
                 }).catch(reject);
 
         });
@@ -403,10 +415,12 @@ export class Subplebbit extends EventEmitter {
     async #syncIpnsWithDb() {
         return new Promise(async (resolve, reject) => {
             const trx = await this.dbHandler.createTransaction();
+            debug("Starting to sync IPNS with DB");
             const syncComment = async (dbComment) => {
                 return new Promise(async (syncResolve, syncReject) => {
                     loadIpnsAsJson(dbComment.ipnsName, this.plebbit.ipfsClient).then(async currentIpns => {
                         if (!shallowEqual(currentIpns, dbComment.toJSONCommentUpdate(), ["sortedReplies", "sortedRepliesCids"])) {
+                            debug(`Comment (${dbComment.commentCid}) IPNS is outdated`);
                             let [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedPosts(dbComment, trx);
                             if (sortedReplies)
                                 sortedReplies = {[SORTED_COMMENTS_TYPES.TOP_ALL]: sortedReplies[SORTED_COMMENTS_TYPES.TOP_ALL]};
@@ -417,24 +431,30 @@ export class Subplebbit extends EventEmitter {
                                 "sortedReplies": sortedReplies,
                                 "sortedRepliesCids": sortedRepliesCids,
 
-                            }).then(syncResolve).catch(syncReject);
-                        } else
+                            }).then(() => {
+                                debug(`Comment (${dbComment.commentCid}) IPNS (${dbComment.ipnsName}) has been synced`);
+                                syncResolve();
+                            }).catch(syncReject);
+                        } else {
+                            debug(`Comment (${dbComment.commentCid}) is already synced`);
                             syncResolve();
+                        }
                     }).catch(syncReject);
 
                 });
             };
 
             const errorHandle = async (err) => {
-                await trx.rollback();
-                console.error(err);
+                await trx.rollback(err);
+                debug(`Failed to sync due to error: ${err}`);
                 reject(err);
-            }
+            };
 
             this.dbHandler.queryComments(trx).then(async comments =>
                 Promise.all([...comments.map(async comment => syncComment(comment)), this.#updateSubplebbitIpns(trx)]).then(async () => {
                     // this.emit("update", this);
-                    trx.commit().then(resolve).catch(errorHandle)
+                    debug(`Subplebbit IPNS is caught up with DB`);
+                    trx.commit().then(resolve).catch(errorHandle);
                 }).catch(errorHandle))
                 .catch(errorHandle);
         });
@@ -442,7 +462,7 @@ export class Subplebbit extends EventEmitter {
     }
 
 
-    async startPublishing() {
+    async startPublishing(syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS) {
         if (!this.dbHandler)
             await this.#initDb();
         if (!this.provideCaptchaCallback) {
@@ -456,7 +476,7 @@ export class Subplebbit extends EventEmitter {
             await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, this.#processCaptchaPubsub.bind(this));
         if (this._syncIpnsInterval)
             clearInterval(this._syncIpnsInterval);
-        this._syncIpnsInterval = setInterval(this.#syncIpnsWithDb.bind(this), 90000); // two minute
+        this._syncIpnsInterval = setInterval(this.#syncIpnsWithDb.bind(this), syncIntervalMs); // two minute
     }
 
     async stopPublishing() {
