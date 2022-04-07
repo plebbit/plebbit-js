@@ -2,8 +2,10 @@ import {ChallengeAnswerMessage, ChallengeRequestMessage, PUBSUB_MESSAGE_TYPES} f
 import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string'
 import {v4 as uuidv4} from 'uuid';
 import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
-import assert from "assert";
 import EventEmitter from "events";
+import Debug from "debug";
+
+const debug = Debug("plebbit-js:Publication");
 
 
 class Publication extends EventEmitter {
@@ -39,65 +41,53 @@ class Publication extends EventEmitter {
         return {"subplebbitAddress": this.subplebbitAddress};
     }
 
-    async #publish(userOptions, solveChallengeCallback) {
-        return new Promise(async (resolve, reject) => {
+    async #handleChallengeExchange(pubsubMsg) {
+        const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
+        if (msgParsed?.challengeRequestId !== this.challenge.challengeRequestId)
+            return; // Process only this publication's challenge
+        if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGE) {
+            debug(`Received challenges, will emit them and wait for user to solve them and call publishChallengeAnswers`);
+            this.emit("challenge", msgParsed);
+        } else if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION) {
+            if (!msgParsed.challengePassed)
+                debug(`Challenge ${msgParsed.challengeRequestId} has failed to pass`);
+            else {
+                debug(`Challenge (${msgParsed.challengeRequestId}) has passed. Will update publication props from ChallengeVerificationMessage.publication`);
+                this._initProps(msgParsed.publication);
+            }
+            this.emit("challengeverification", [msgParsed, this]);
+        }
 
+    }
+
+    async publishChallengeAnswers(challengeAnswers) {
+        const challengeAnswer = new ChallengeAnswerMessage({
+            "challengeRequestId": this.challenge.challengeRequestId,
+            "challengeAnswerId": uuidv4(),
+            "challengeAnswers": challengeAnswers
+        });
+        await this.subplebbit.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeAnswer)));
+        debug(`Responded to challenge (${challengeAnswer.challengeRequestId}) with answers`);
+    }
+
+    async publish(userOptions) {
+        return new Promise(async (resolve, reject) => {
             const options = {"acceptedChallengeTypes": [], ...userOptions};
-            const challengeRequest = new ChallengeRequestMessage({
+            this.challenge = new ChallengeRequestMessage({
                 "publication": this.toJSON(),
                 "challengeRequestId": uuidv4(),
-                "acceptedChallengeTypes": options["acceptedChallengeTypes"]
+                ...options,
             });
+            Promise.all([
+                this.subplebbit.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, uint8ArrayFromString(JSON.stringify(this.challenge))),
+                this.subplebbit.plebbit.ipfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.#handleChallengeExchange.bind(this))
+            ]).then(() => {
+                debug(`Sent a challenge request (${this.challenge.challengeRequestId})`);
+                resolve();
+            }).catch(reject);
 
-            const handleCaptchaVerification = async (pubsubMsg) => {
-                const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
-                // Subplebbit owner node will either answer with CHALLENGE OR CHALLENGE VERIFICATION
-                if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION) {
-                    if (!msgParsed.challengePassed)
-                        reject(msgParsed);
-                    else {
-                        this._initProps(msgParsed.publication);
-                        resolve(msgParsed);
-                    }
-                }
-            };
-
-            const processChallenge = async (pubsubMsg) => {
-                const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
-                // Subplebbit owner node will either answer with CHALLENGE OR CHALLENGE VERIFICATION
-                if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGE) {
-                    // Process CHALLENGE and reply with ChallengeAnswer
-                    assert(solveChallengeCallback, "User has not provided a callback for solving challenge");
-                    const answers = await solveChallengeCallback(msgParsed);
-                    const challengeAnswer = new ChallengeAnswerMessage({
-                        "challengeRequestId": msgParsed.challengeRequestId, "challengeAnswerId": uuidv4(),
-                        "challengeAnswers": answers
-                    });
-                    await this.subplebbit.plebbit.ipfsClient.pubsub.subscribe(challengeAnswer.challengeAnswerId, handleCaptchaVerification);
-                    await this.subplebbit.plebbit.ipfsClient.pubsub.publish(challengeAnswer.challengeRequestId, uint8ArrayFromString(JSON.stringify(challengeAnswer)));
-                } else if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION)
-                    // If we reach this block that means the subplebbit owner has chosen to skip captcha by returning null on provideCaptchaCallback
-                    handleCaptchaVerification(pubsubMsg).then(resolve).catch(reject);
-            };
-            await this.subplebbit.plebbit.ipfsClient.pubsub.subscribe(challengeRequest.challengeRequestId, processChallenge);
-            await this.subplebbit.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeRequest)));
-        });
-
-
-    }
-
-    // TODO rewrite this
-    async publish(userOptions, solveChallengeCallback) {
-        return new Promise(async (resolve, reject) => {
-            this.#publish(userOptions, solveChallengeCallback).then(async (challengeVerificationMessage) => {
-                // Unsubscribe all events
-                this.subplebbit.plebbit.ipfsClient.pubsub.unsubscribe(challengeVerificationMessage.challengeRequestId).catch(err => console.error(err));
-                this.subplebbit.plebbit.ipfsClient.pubsub.unsubscribe(challengeVerificationMessage.challengeAnswerId).catch(err => console.error(err));
-                resolve(challengeVerificationMessage);
-            }).catch(reject)
         });
     }
-
 }
 
 export default Publication;

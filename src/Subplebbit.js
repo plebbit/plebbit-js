@@ -22,6 +22,11 @@ import * as path from "path";
 import * as fs from "fs";
 import {v4 as uuidv4} from 'uuid';
 import {loadIpnsAsJson, shallowEqual, timestamp} from "./Util.js";
+import Debug from "debug";
+
+const debug = Debug("plebbit-js:Subplebbit");
+const DEFAULT_UPDATE_INTERVAL_MS = 60000;
+const DEFAULT_SYNC_INTERVAL_MS = 120000;
 
 // import {Signer} from "./Signer.js";
 
@@ -204,26 +209,35 @@ export class Subplebbit extends EventEmitter {
         });
     }
 
-    async #publishPubsubMsg(publication, challengeRequestId) {
+    async #publishPostAfterPassingChallenge(publication, challengeRequestId, trx) {
         return new Promise(async (resolve, reject) => {
+            delete this._challengeToSolution[challengeRequestId];
+            delete this._challengeToPublication[challengeRequestId];
+
             const postOrCommentOrVote = publication.hasOwnProperty("vote") ? await this.plebbit.createVote(publication) :
                 publication.editedContent ? await this.plebbit.createCommentEdit(publication) : await this.plebbit.createComment(publication);
-            const trx = await this.dbHandler.createTransaction();
             if (postOrCommentOrVote.getType() === "vote") {
                 const lastVote = await this.dbHandler.getLastVoteOfAuthor(postOrCommentOrVote.commentCid, postOrCommentOrVote.author.address, trx);
-                if (lastVote?.vote === postOrCommentOrVote.vote)
+                if (lastVote?.vote === postOrCommentOrVote.vote) {
+                    debug(`Author has duplicated their vote for comment ${postOrCommentOrVote.commentCid}. Returning an error`);
                     resolve({"reason": "User duplicated his vote"});
-                else
+                } else {
                     await this.dbHandler.upsertVote(postOrCommentOrVote, challengeRequestId, trx);
+                    debug(`Inserted new vote (${postOrCommentOrVote.vote}) for comment ${postOrCommentOrVote.commentCid}`);
+                }
             } else if (postOrCommentOrVote instanceof CommentEdit) {
                 // TODO assert CommentEdit signer is same as original comment
                 const commentToBeEdited = await this.dbHandler.queryComment(postOrCommentOrVote.commentCid, trx);
-                if (!commentToBeEdited)
+                if (!commentToBeEdited) {
+                    debug(`Unable to edit comment (${commentToBeEdited.commentCid}) since it's not in local DB`);
                     resolve({"reason": `commentCid (${postOrCommentOrVote.commentCid}) does not exist`});
-                else if (commentToBeEdited.content === postOrCommentOrVote.editedContent)
+                } else if (commentToBeEdited.content === postOrCommentOrVote.editedContent) {
+                    debug(`Edited content is identical to original content from comment ${postOrCommentOrVote.commentCid}`);
                     resolve({"reason": "Edited content is identical to original content"});
-                else
+                } else {
                     await this.dbHandler.upsertComment(postOrCommentOrVote, trx);
+                    debug(`Updated editedContent for comment ${postOrCommentOrVote.commentCid}`);
+                }
 
             } else if (postOrCommentOrVote instanceof Comment) {
                 // Comment and Post need to add file to ipfs
@@ -231,9 +245,11 @@ export class Subplebbit extends EventEmitter {
 
                 const ipnsKeys = (await this.plebbit.ipfsClient.key.list()).map(key => key["name"]);
 
-                if (ipnsKeys.includes(ipnsKeyName))
+                if (ipnsKeys.includes(ipnsKeyName)) {
+                    debug(`Failed to insert ${postOrCommentOrVote.getType()} due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`);
                     resolve({"reason": `Failed to insert ${postOrCommentOrVote.getType()} due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`});
-                else {
+                    return;
+                } else {
                     postOrCommentOrVote.setCommentIpnsKey(await this.plebbit.ipfsClient.key.gen(ipnsKeyName));
                     if (postOrCommentOrVote.getType() === "post") {
                         postOrCommentOrVote.setPreviousCommentCid((await this.dbHandler.queryLatestPost(trx))?.commentCid);
@@ -247,6 +263,7 @@ export class Subplebbit extends EventEmitter {
                             "vote": 1
                         });
                         await this.dbHandler.upsertVote(defaultVote, challengeRequestId, trx);
+                        debug(`New post with cid ${postOrCommentOrVote.commentCid} has been inserted into DB`);
                     } else {
                         // Comment
                         const commentsUnderParent = await this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx);
@@ -261,92 +278,101 @@ export class Subplebbit extends EventEmitter {
                             "vote": 1
                         });
                         await this.dbHandler.upsertVote(defaultVote, challengeRequestId, trx);
-
+                        debug(`New comment with cid ${postOrCommentOrVote.commentCid} has been inserted into DB`);
                     }
                 }
 
             }
-            trx.commit().then(() => resolve({"publication": postOrCommentOrVote})).catch(err => {
-                console.error(err);
-                trx.rollback();
-                reject(err);
-            });
 
+            resolve({"publication": postOrCommentOrVote});
         });
     }
 
-    async #publishPostAfterPassingChallenge(msgParsed) {
-        delete this._challengeToSolution[msgParsed.challengeRequestId];
-        return await this.#publishPubsubMsg(msgParsed.publication, msgParsed.challengeRequestId);
+    async #handleChallengeRequest(msgParsed) {
+        const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(msgParsed);
+        this._challengeToPublication[msgParsed.challengeRequestId] = msgParsed.publication;
+        debug(`Received a request to a challenge (${msgParsed.challengeRequestId})`);
+        const trx = await this.dbHandler.createTransaction();
+        if (!providedChallenges) {
+            // Subplebbit owner has chosen to skip challenging this user or post
+            debug(`Skipping challenge for ${msgParsed.challengeRequestId}, add publication to IPFS and respond with challengeVerificationMessage right away`);
+
+            await this.dbHandler.upsertChallenge(new ChallengeRequestMessage(msgParsed), trx);
+            const publishedPublication = await this.#publishPostAfterPassingChallenge(msgParsed.publication, msgParsed.challengeRequestId, trx);
+            const challengeVerification = new ChallengeVerificationMessage({
+                "reason": reasonForSkippingCaptcha,
+                "challengePassed": Boolean(publishedPublication.publication), // If no publication, this will be false
+                "challengeAnswerId": msgParsed.challengeAnswerId,
+                "challengeErrors": undefined,
+                "challengeRequestId": msgParsed.challengeRequestId,
+                ...publishedPublication
+            });
+            await this.dbHandler.upsertChallenge(challengeVerification, trx); //TODO implement later
+            await this.plebbit.ipfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)));
+        } else {
+            const challengeMessage = new ChallengeMessage({
+                "challengeRequestId": msgParsed.challengeRequestId,
+                "challenges": providedChallenges
+            });
+            await this.dbHandler.upsertChallenge(challengeMessage, trx); //TODO implement later
+
+            await this.plebbit.ipfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeMessage)));
+            debug(`Responded to challengeRequest (${challengeMessage.challengeRequestId}) with challenges`);
+        }
+
+        trx.commit().then().catch((err) => {
+            debug(`Failed to commit DB due to error = ${err}`);
+            trx.rollback();
+        });
+
+    }
+
+    async #handleChallengeAnswer(msgParsed) {
+        const [challengePassed, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
+        debug(`Received a pubsub message (${msgParsed.challengeRequestId}) with type ${msgParsed.type}`);
+        const trx = await this.dbHandler.createTransaction();
+        if (challengePassed) {
+            await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed), trx);
+            const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
+            const publishedPublication = await this.#publishPostAfterPassingChallenge(storedPublication, msgParsed.challengeRequestId, trx); // could contain "publication" or "reason"
+
+            const challengeVerification = new ChallengeVerificationMessage({
+                "challengeRequestId": msgParsed.challengeRequestId,
+                "challengeAnswerId": msgParsed.challengeAnswerId,
+                "challengePassed": challengePassed,
+                "challengeErrors": challengeErrors,
+                ...publishedPublication
+            });
+
+            await this.dbHandler.upsertChallenge(challengeVerification, trx);
+            await this.plebbit.ipfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)));
+            debug(`Challenge (${msgParsed.challengeRequestId}) has passed`);
+        } else {
+            const challengeVerification = new ChallengeVerificationMessage({
+                "challengeRequestId": msgParsed.challengeRequestId,
+                "challengeAnswerId": msgParsed.challengeAnswerId,
+                "challengePassed": challengePassed,
+                "challengeErrors": challengeErrors,
+            });
+            await this.dbHandler.upsertChallenge(challengeVerification, trx);
+
+            await this.plebbit.ipfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)));
+            debug(`Challenge (${msgParsed.challengeRequestId}) failed to pass due to error=${challengeErrors}`);
+        }
+        trx.commit().then().catch((err) => {
+            debug(`Failed to commit DB due to error = ${err}`);
+            trx.rollback();
+        });
     }
 
     async #processCaptchaPubsub(pubsubMsg) {
-
-        const validateCaptchaAnswer = async (pubsubMsg) => {
-            const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
-            if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEANSWER) {
-
-                const [challengePassed, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
-                if (challengePassed) {
-                    await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed));
-                    const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
-                    const publishedPublication = await this.#publishPostAfterPassingChallenge({"publication": storedPublication, ...msgParsed}); // could contain "publication" or "reason"
-
-                    const challengeVerification = new ChallengeVerificationMessage({
-                        "challengeRequestId": msgParsed.challengeRequestId,
-                        "challengeAnswerId": msgParsed.challengeAnswerId,
-                        "challengePassed": challengePassed,
-                        "challengeErrors": challengeErrors,
-                        ...publishedPublication
-                    });
-
-                    await this.dbHandler.upsertChallenge(challengeVerification);
-                    await this.plebbit.ipfsClient.pubsub.publish(challengeVerification.challengeAnswerId, uint8ArrayFromString(JSON.stringify(challengeVerification)));
-                } else {
-                    const challengeVerification = new ChallengeVerificationMessage({
-                        "challengeRequestId": msgParsed.challengeRequestId,
-                        "challengeAnswerId": msgParsed.challengeAnswerId,
-                        "challengePassed": challengePassed,
-                        "challengeErrors": challengeErrors,
-                    });
-                    await this.dbHandler.upsertChallenge(challengeVerification); //TODO implement later
-
-                    await this.plebbit.ipfsClient.pubsub.publish(challengeVerification.challengeAnswerId, uint8ArrayFromString(JSON.stringify(challengeVerification)));
-                }
-                delete this._challengeToPublication[msgParsed.challengeRequestId];
-            }
-        }
         const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
 
-        if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST) {
-            const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(msgParsed);
-            this._challengeToPublication[msgParsed.challengeRequestId] = msgParsed.publication;
-            if (!providedChallenges) {
-                // Subplebbit owner has chosen to skip challenging this user or post
-                await this.dbHandler.upsertChallenge(new ChallengeRequestMessage(msgParsed)); //TODO implement later
-                const publishedPublication = await this.#publishPostAfterPassingChallenge(msgParsed);
-                const challengeVerification = new ChallengeVerificationMessage({
-                    "reason": reasonForSkippingCaptcha,
-                    "challengePassed": Boolean(publishedPublication.publication), // If no publication, this will be false
-                    "challengeAnswerId": msgParsed.challengeAnswerId,
-                    "challengeErrors": undefined,
-                    "challengeRequestId": msgParsed.challengeRequestId,
-                    ...publishedPublication
-                });
-                await this.dbHandler.upsertChallenge(challengeVerification); //TODO implement later
-                await this.plebbit.ipfsClient.pubsub.publish(challengeVerification.challengeRequestId, uint8ArrayFromString(JSON.stringify(challengeVerification)));
-
-            } else {
-                const challengeMessage = new ChallengeMessage({
-                    "challengeRequestId": msgParsed.challengeRequestId,
-                    "challenges": providedChallenges
-                });
-                await this.dbHandler.upsertChallenge(challengeMessage); //TODO implement later
-
-                await this.plebbit.ipfsClient.pubsub.publish(challengeMessage.challengeRequestId, uint8ArrayFromString(JSON.stringify(challengeMessage)));
-                await this.plebbit.ipfsClient.pubsub.subscribe(challengeMessage.challengeRequestId, validateCaptchaAnswer);
-            }
-        }
+        if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST)
+            await this.#handleChallengeRequest(msgParsed);
+        else if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEANSWER && this._challengeToPublication[msgParsed.challengeRequestId])
+            // Only reply to peers who started a challenge request earlier
+            await this.#handleChallengeAnswer(msgParsed);
     }
 
     async #defaultProvideCaptcha(challengeRequestMessage) {
@@ -457,7 +483,7 @@ export class Subplebbit extends EventEmitter {
         return new Promise(async (resolve, reject) => {
             const randomUUID = uuidv4();
             await this.dbHandler.upsertChallenge(new ChallengeRequestMessage({"challengeRequestId": randomUUID}));
-            this.#publishPubsubMsg(publication, randomUUID).then(resolve).catch(reject);
+            this.#publishPostAfterPassingChallenge(publication, randomUUID).then(resolve).catch(reject);
         });
     }
 
