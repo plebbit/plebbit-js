@@ -120,4 +120,35 @@ export function shallowEqual(object1, object2, excludeKeys = []) {
     return true;
 }
 
+export async function waitTillCommentsArePublished(comments) {
+    return new Promise(async (resolve, reject) => {
+        const promises = comments.map(comment => {
+            return new Promise(async (commentResolve, commentReject) => {
+                comment.once("challengeverification", ([challengeVerificationMessage, newComment]) => {
+                    commentResolve(newComment);
+                });
+            });
+        });
+        Promise.all(promises).then(resolve).catch(reject);
+    });
+}
+
+// Takes a list of Comments, run .update on them and make sure at least one update has been polled
+export async function waitTillCommentsUpdate(comments) {
+    return new Promise(async (resolve, reject) => {
+        const promises = comments.map(comment => {
+            return new Promise(async (commentResolve, commentReject) => {
+                comment.once("update", (newComment) => {
+                    comment.stop();
+                    commentResolve(newComment);
+                })
+                await comment.update();
+            });
+
+        });
+        Promise.all(promises).then(resolve).catch(reject);
+
+    });
+}
+
 
