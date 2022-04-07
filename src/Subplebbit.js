@@ -168,7 +168,7 @@ export class Subplebbit extends EventEmitter {
                 }
                 this.#initSubplebbit(res);
                 resolve(res);
-            }).catch(reject);
+            }).catch(err => resolve(undefined));
         });
     }
 
