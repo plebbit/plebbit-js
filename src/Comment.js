@@ -27,7 +27,7 @@ class Comment extends Publication {
         this.ipnsName = props["ipnsName"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.commentIpnsKeyName = props["commentIpnsKeyName"];
         this.depth = props["depth"];
-        this.setPreviousCommentCid(props["previousCommentCid"]);
+        this.setPreviousCid(props["previousCid"]);
         // CommentUpdate props
         this._initCommentUpdate(props);
     }
@@ -53,7 +53,7 @@ class Comment extends Publication {
     toJSONIpfs() {
         return {
             ...this.toJSONSkeleton(),
-            "previousCommentCid": this.previousCommentCid,
+            "previousCid": this.previousCid,
             "ipnsName": this.ipnsName,
             "postCid": this.postCid,
             "depth": this.depth
@@ -109,8 +109,8 @@ class Comment extends Publication {
         this.commentCid = newCommentCid;
     }
 
-    setPreviousCommentCid(newPreviousCommentCid) {
-        this.previousCommentCid = newPreviousCommentCid;
+    setPreviousCid(newPreviousCid) {
+        this.previousCid = newPreviousCid;
     }
 
     setDepth(newDepth) {

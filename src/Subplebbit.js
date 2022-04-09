@@ -255,7 +255,7 @@ export class Subplebbit extends EventEmitter {
                 } else {
                     postOrCommentOrVote.setCommentIpnsKey(await this.plebbit.ipfsClient.key.gen(ipnsKeyName));
                     if (postOrCommentOrVote.getType() === "post") {
-                        postOrCommentOrVote.setPreviousCommentCid((await this.dbHandler.queryLatestPost(trx))?.commentCid);
+                        postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPost(trx))?.commentCid);
                         postOrCommentOrVote.setDepth(0);
                         const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
                         postOrCommentOrVote.setPostCid(file.path);
@@ -270,7 +270,7 @@ export class Subplebbit extends EventEmitter {
                     } else {
                         // Comment
                         const commentsUnderParent = await this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx);
-                        postOrCommentOrVote.setPreviousCommentCid(commentsUnderParent[0]?.commentCid);
+                        postOrCommentOrVote.setPreviousCid(commentsUnderParent[0]?.commentCid);
                         const depth = (await this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)).depth + 1;
                         postOrCommentOrVote.setDepth(depth);
                         const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
