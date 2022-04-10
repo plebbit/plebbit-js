@@ -70,17 +70,11 @@ export async function generateMockVote(parentPostOrComment, vote, subplebbitAddr
 export async function loadAllPagesThroughSortedComments(sortedCommentsCid, plebbit) {
     if (!sortedCommentsCid)
         return [];
-    const loadComments = async (comment) => {
-        const loadedComment = await plebbit.getPostOrComment(comment.commentCid);
-        await loadedComment.update();
-        await loadedComment.stop();
-        return loadedComment;
-    }
-    let sortedCommentsPage = new SortedComments(await loadIpfsFileAsJson(sortedCommentsCid, plebbit.ipfsClient));
-    let sortedComments = await Promise.all(sortedCommentsPage.comments.map(loadComments));
+    let sortedCommentsPage = await loadIpfsFileAsJson(sortedCommentsCid, plebbit.ipfsClient);
+    let sortedComments = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextSortedCommentsCid) {
-        sortedCommentsPage = new SortedComments(await loadIpfsFileAsJson(sortedCommentsPage.nextSortedCommentsCid, plebbit.ipfsClient));
-        sortedComments = sortedComments.concat(await Promise.all(sortedCommentsPage.comments.map(loadComments)));
+        sortedCommentsPage = await loadIpfsFileAsJson(sortedCommentsPage.nextSortedCommentsCid, plebbit.ipfsClient);
+        sortedComments = sortedComments.concat(sortedCommentsPage.comments);
     }
     return sortedComments;
 }
