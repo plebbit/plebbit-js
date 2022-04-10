@@ -1,17 +1,11 @@
 import {Plebbit} from "../src/index.js";
-import {
-    IPFS_API_1_URL,
-    IPFS_API_2_URL,
-    IPFS_GATEWAY_URL,
-    TEST_VOTE_POST_CID,
-    TEST_VOTE_SUBPLEBBIT_ADDRESS
-} from "../secrets.js";
+import {IPFS_CLIENT_CONFIGS, TEST_VOTE_POST_CID, TEST_VOTE_SUBPLEBBIT_ADDRESS} from "../secrets.js";
 import assert from 'assert';
 import {timestamp, unsubscribeAllPubsubTopics} from "../src/Util.js";
 import {generateMockVote} from "./MockUtil.js";
 
-const serverPlebbit = await Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_1_URL});
-const clientPlebbit = await Plebbit({ipfsGatewayUrl: IPFS_GATEWAY_URL, ipfsApiUrl: IPFS_API_2_URL});
+const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
+const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
 
 const subplebbit = await serverPlebbit.createSubplebbit({
     "subplebbitAddress":
@@ -23,33 +17,37 @@ const previousVotes = [];
 
 describe("Test Vote", async () => {
     before(async () => {
-        await unsubscribeAllPubsubTopics(serverPlebbit.ipfsClient);
-        await unsubscribeAllPubsubTopics(clientPlebbit.ipfsClient);
+        await unsubscribeAllPubsubTopics([serverPlebbit.ipfsClient, clientPlebbit.ipfsClient]);
     });
+    before(async () => await subplebbit.startPublishing());
+    before(async () => await subplebbit.update());
     after(async () => post.stop());
     after(async () => await subplebbit.stopPublishing());
 
 
     it("Can upvote a comment", async () => {
         return new Promise(async (resolve, reject) => {
-            const vote = await generateMockVote(post, 1, post.subplebbit);
+            const vote = await generateMockVote(post, 1, post.subplebbitAddress, clientPlebbit);
 
             subplebbit.setProvideCaptchaCallback((challengeRequestMessage) => {
                 return [null, "Captcha is skipped for all"];
             });
-            await post.update();
-            const originalUpvote = post.upvoteCount;
 
-            await subplebbit.startPublishing();
+            await (await generateMockVote(post, 0, post.subplebbitAddress, clientPlebbit)).publish(); // This vote is added just to start an "update" event and make sure originalUpvoteCount down below is accurate
 
-            vote.publish().then(async challengePublicationMessage => {
-                post.once("update", async (updatedPost) => {
-                    assert.equal(updatedPost.upvoteCount, originalUpvote + 1);
-                    previousVotes.push(vote);
-                    resolve();
+            subplebbit.once("update", async (updatedSubplebbit) => {
+                await post.update();
+                const originalUpvote = post.upvoteCount;
+                vote.publish().then(async () => {
+                    post.once("update", async (updatedPost) => {
+                        assert.equal(updatedPost.upvoteCount, originalUpvote + 1);
+                        previousVotes.push(vote);
+                        resolve();
 
-                });
-            });
+                    });
+                }).catch(reject);
+
+            })
         })
     });
 
@@ -59,7 +57,14 @@ describe("Test Vote", async () => {
                 ...previousVotes[0].toJSON(),
                 "timestamp": timestamp(),
             });
-            vote.publish().then(reject).catch(resolve);
+            vote.publish().then(() => {
+                vote.once("challengeverification", async ([challengeVerificationMsg,]) => {
+                    assert.equal(challengeVerificationMsg.challengePassed, false, "Should fail to publish since vote is duplicated");
+                    if (!challengeVerificationMsg.reason)
+                        assert.fail(`There should be a reason for failure (duplicate vote)`);
+                    resolve();
+                });
+            }).catch(reject)
         });
 
     });
@@ -74,7 +79,7 @@ describe("Test Vote", async () => {
                 "vote": -1,
                 "timestamp": timestamp(),
             });
-            vote.publish().then(async (challengeVerificationMessage) => {
+            vote.publish().then(async () => {
                 post.once("update", async (updatedPost) => {
                     assert.equal(updatedPost.upvoteCount, originalUpvote - 1, "Failed to update upvote count");
                     assert.equal(updatedPost.downvoteCount, originalDownvote + 1, "Failed to update downvote count");
@@ -96,7 +101,7 @@ describe("Test Vote", async () => {
                 "vote": 0,
                 "timestamp": timestamp(),
             });
-            vote.publish().then(async (challengeVerificationMessage) => {
+            vote.publish().then(async () => {
                 post.once("update", async (updatedPost) => {
                     assert.equal(updatedPost.downvoteCount, originalDownvote - 1);
                     resolve();
@@ -110,8 +115,8 @@ describe("Test Vote", async () => {
         return new Promise(async (resolve, reject) => {
             await post.update();
             const originalDownvote = post.downvoteCount;
-            const vote = await generateMockVote(post, -1, post.subplebbit);
-            vote.publish().then(async (challengeVerificationMessage) => {
+            const vote = await generateMockVote(post, -1, post.subplebbitAddress, clientPlebbit);
+            vote.publish().then(async () => {
                 post.once("update", async (updatedPost) => {
                     assert.equal(updatedPost.downvoteCount, originalDownvote + 1);
                     previousVotes.push(vote);
@@ -133,7 +138,7 @@ describe("Test Vote", async () => {
                 "vote": 1,
                 "timestamp": timestamp(),
             });
-            vote.publish().then(async (challengeVerificationMessage) => {
+            vote.publish().then(async () => {
                 post.once("update", async (updatedPost) => {
                     assert.equal(updatedPost.upvoteCount, originalUpvote + 1, "Failed to update upvote count");
                     assert.equal(updatedPost.downvoteCount, originalDownvote - 1, "Failed to update downvote count");
@@ -154,7 +159,7 @@ describe("Test Vote", async () => {
                 "vote": 0,
                 "timestamp": timestamp(),
             });
-            vote.publish().then(async (challengeVerificationMessage) => {
+            vote.publish().then(async () => {
                 post.once("update", async (updatedPost) => {
                     assert.equal(updatedPost.upvoteCount, originalUpvote - 1);
                     resolve();
