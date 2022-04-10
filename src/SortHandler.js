@@ -78,9 +78,10 @@ export class SortHandler {
                 SORTED_COMMENTS_TYPES.TOP_YEAR, SORTED_COMMENTS_TYPES.TOP_MONTH,
                 SORTED_COMMENTS_TYPES.TOP_WEEK, SORTED_COMMENTS_TYPES.TOP_DAY, SORTED_COMMENTS_TYPES.TOP_HOUR]
             // No need to sort these comments since they are already sorted by DB
-            if (typesAlreadySorted.includes(sortType))
+            if (typesAlreadySorted.includes(sortType)) {
                 commentsSorted = comments;
-            else {
+                debug(`Skipping sorting for ${sortType} since it's already sorted by DB`);
+            } else {
                 commentsSorted = (await Promise.all(comments.map(async comment => ({
                     "comment": comment,
                     "score": this.#score(comment, sortType)
@@ -93,7 +94,7 @@ export class SortHandler {
             const commentsChunks = chunks(commentsSorted, limit);
             const sortedComments = await this.#chunksToSortedComments(commentsChunks, sortType);
             if (sortedComments.length === 0 && commentsSorted.length > 0)
-                throw `There are ${commentsSorted.length} comments yet sortedComments has no comments`;
+                reject(`There are ${commentsSorted.length} comments yet sortedComments has no comments`);
             resolve(sortedComments[0]);
 
         });
