@@ -20,11 +20,13 @@ export async function loadIpfsFileAsJson(cid, ipfsClient) {
     return new Promise((resolve, reject) => {
         all(ipfsClient.cat(cid))
             .then(rawData => uint8ArrayConcat(rawData))
-            .catch(reject)
+            .catch(err => {
+                debug(`Failed to load file with cid ${cid} due to ${err}`);
+                reject(err);
+            })
             .then(data => {
                 if (!data) {
                     debug(`IPFS (${cid}) loads undefined object (${data})`);
-
                     reject(`IPFS (${cid}) loads undefined object (${data})`);
                 } else {
                     const jsonObject = JSON.parse(uint8ArrayToString(data));
