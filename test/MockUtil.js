@@ -1,15 +1,15 @@
 import {loadIpfsFileAsJson, TIMEFRAMES_TO_SECONDS, timestamp} from "../src/Util.js";
 import {SortedComments} from "../src/SortHandler.js";
 
-export async function generateMockComment(parentPostOrComment, subplebbit) {
+export async function generateMockComment(parentPostOrComment, subplebbitAddress, plebbit) {
     const commentTime = Date.now() / 1000;
-    const mockAuthorIpns = await subplebbit.plebbit.ipfsClient.key.gen(`Mock User - ${commentTime}`);
-    const comment = await subplebbit.plebbit.createComment({
+    const mockAuthorIpns = await plebbit.ipfsClient.key.gen(`Mock User - ${commentTime}`);
+    const comment = await plebbit.createComment({
         "author": {"displayName": `Mock Author - ${commentTime}`, "address": mockAuthorIpns["id"]},
         "content": `Mock comment - ${commentTime}`,
         "postCid": parentPostOrComment.postCid,
         "parentCid": parentPostOrComment.commentCid,
-        "subplebbitAddress": subplebbit.subplebbitAddress
+        "subplebbitAddress": subplebbitAddress
     });
     comment.once("challenge", challengeMsg => {
         comment.publishChallengeAnswers(undefined);
