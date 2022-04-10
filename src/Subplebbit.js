@@ -193,7 +193,7 @@ export class Subplebbit extends EventEmitter {
                     const newSubplebbitOptions = {
                         "sortedPosts": sortedPosts,
                         "sortedPostsCids": sortedPostsCids,
-                        "metricsCid": await this.plebbit.ipfsClient.add(JSON.stringify(metrics)),
+                        "metricsCid": (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path,
                         "latestPostCid": latestPost?.postCid,
                     };
                     if (JSON.stringify(this.sortedPosts) !== JSON.stringify(sortedPosts) ||
