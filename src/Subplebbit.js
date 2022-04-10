@@ -488,11 +488,19 @@ export class Subplebbit extends EventEmitter {
     async _addPublicationToDb(publication) {
         return new Promise(async (resolve, reject) => {
             const randomUUID = uuidv4();
-            const trx = await this.dbHandler.createTransaction();
+            const trx = publication.vote ? undefined : await this.dbHandler.createTransaction(); // No need for votes to reserve a transaction
+            const errHandle = async (err) => {
+                debug(err);
+                await trx?.rollback(err);
+                reject(err);
+            }
             await this.dbHandler.upsertChallenge(new ChallengeRequestMessage({"challengeRequestId": randomUUID}), trx);
             this.#publishPostAfterPassingChallenge(publication, randomUUID, trx).then((res) => {
-                trx.commit().then(() => resolve(res)).catch(reject);
-            }).catch(reject);
+                if (trx)
+                    trx.commit().then(() => resolve(res)).catch(errHandle);
+                else
+                    resolve(res);
+            }).catch(errHandle);
         });
     }
 
