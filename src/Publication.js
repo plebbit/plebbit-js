@@ -50,7 +50,7 @@ class Publication extends EventEmitter {
             this.emit("challenge", msgParsed);
         } else if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION) {
             if (!msgParsed.challengePassed)
-                debug(`Challenge ${msgParsed.challengeRequestId} has failed to pass`);
+                debug(`Challenge ${msgParsed.challengeRequestId} has failed to pass. Challenge errors = ${msgParsed.challengeErrors}, reason = ${msgParsed.reason}`);
             else {
                 debug(`Challenge (${msgParsed.challengeRequestId}) has passed. Will update publication props from ChallengeVerificationMessage.publication`);
                 this._initProps(msgParsed.publication);
