@@ -1,4 +1,7 @@
-import {chunks, round, TIMEFRAMES_TO_SECONDS, timestamp} from "./Util.js";
+import {chunks, controversialScore, hotScore, round, TIMEFRAMES_TO_SECONDS, timestamp, topScore} from "./Util.js";
+import Debug from "debug";
+
+const debug = Debug("plebbit-js:SortHandler");
 
 export const SORTED_COMMENTS_TYPES = Object.freeze({
     HOT: "hot",
@@ -60,28 +63,11 @@ export class SortHandler {
 
     }
 
-
-    #hotScore(dbComment) {
-        const score = dbComment.upvoteCount - dbComment.downvoteCount;
-        const order = Math.log10(Math.max(score, 1));
-        const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
-        const seconds = dbComment.timestamp - 1134028003;
-        return round(sign * order + seconds / 45000, 7);
-    }
-
-    #controversialScore(dbComment) {
-        if (dbComment.downvoteCount <= 0 || dbComment.upvoteCount <= 0)
-            return 0;
-        const magnitude = dbComment.upvoteCount + dbComment.downvoteCount;
-        const balance = dbComment.upvoteCount > dbComment.downvoteCount ? (parseFloat(dbComment.downvoteCount) / dbComment.upvoteCount) : (parseFloat(dbComment.upvoteCount) / dbComment.downvoteCount);
-        return Math.pow(magnitude, balance);
-    }
-
     #score(comment, sortType) {
         if (sortType.includes("hot"))
-            return this.#hotScore(comment);
+            return hotScore(comment);
         else if (sortType.includes("controversial"))
-            return this.#controversialScore(comment);
+            return controversialScore(comment);
     }
 
     // Resolves to sortedComments

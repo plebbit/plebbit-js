@@ -159,4 +159,28 @@ export async function waitTillCommentsUpdate(comments) {
     });
 }
 
+export function hotScore(comment) {
+    const score = comment.upvoteCount - comment.downvoteCount;
+    const order = Math.log10(Math.max(score, 1));
+    const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
+    const seconds = comment.timestamp - 1134028003;
+    return round(sign * order + seconds / 45000, 7);
+}
+
+export function controversialScore(comment) {
+    if (comment.downvoteCount <= 0 || comment.upvoteCount <= 0)
+        return 0;
+    const magnitude = comment.upvoteCount + comment.downvoteCount;
+    const balance = comment.upvoteCount > comment.downvoteCount ? (parseFloat(comment.downvoteCount) / comment.upvoteCount) : (parseFloat(comment.upvoteCount) / comment.downvoteCount);
+    return Math.pow(magnitude, balance);
+}
+
+export function topScore(comment) {
+    return comment.upvoteCount - comment.downvoteCount;
+}
+
+export function newScore(comment) {
+    return comment.timestamp
+}
+
 
