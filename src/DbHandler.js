@@ -5,6 +5,11 @@ import Comment from "./Comment.js";
 import {replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp} from "./Util.js";
 import Vote from "./Vote.js";
 
+import Debug from "debug";
+
+const debug = Debug("plebbit-js:DbHandler");
+
+
 const TABLES = Object.freeze({
     COMMENTS: "comments",
     VOTES: "votes",
@@ -20,7 +25,12 @@ class DbHandler {
     }
 
     async createTransaction() {
-        return await this.knex.transaction();
+        return new Promise(async (resolve, reject) => {
+            this.knex.transaction().then(resolve).catch(err => {
+                debug(err);
+                reject(err);
+            })
+        });
     }
 
     #baseTransaction(trx) {
@@ -190,17 +200,17 @@ class DbHandler {
                     commentsRows = [commentsRows];
                 commentsRows = commentsRows.map(props => replaceXWithY(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
                 const authors = (await this.#baseTransaction(trx)(TABLES.AUTHORS).whereIn("address", commentsRows.map(post => post.authorAddress))).map(authorProps => new Author(authorProps));
-                const posts = commentsRows.map(postProps => {
+                const comments = commentsRows.map(commentProps => {
                     const props = {
-                        ...postProps,
-                        "author": authors.filter(author => author.address === postProps.authorAddress)[0],
+                        ...commentProps,
+                        "author": authors.filter(author => author.address === commentProps.authorAddress)[0],
                     };
                     if (props["title"])
                         return new Post(props, this.subplebbit);
                     else
                         return new Comment(props, this.subplebbit);
                 });
-                resolve(posts);
+                resolve(comments);
             }
 
         });
