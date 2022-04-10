@@ -238,7 +238,7 @@ export class Subplebbit extends EventEmitter {
                     debug(`Edited content is identical to original content from comment ${postOrCommentOrVote.commentCid}`);
                     resolve({"reason": "Edited content is identical to original content"});
                 } else {
-                    await this.dbHandler.upsertComment(postOrCommentOrVote, trx);
+                    await this.dbHandler.upsertComment(postOrCommentOrVote, undefined, trx);
                     debug(`Updated editedContent for comment ${postOrCommentOrVote.commentCid}`);
                 }
 
