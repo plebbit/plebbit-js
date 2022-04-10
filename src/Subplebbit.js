@@ -410,27 +410,23 @@ export class Subplebbit extends EventEmitter {
 
     async #syncIpnsWithDb() {
         return new Promise(async (resolve, reject) => {
-            const trx = await this.dbHandler.createTransaction();
             debug("Starting to sync IPNS with DB");
             const syncComment = async (dbComment) => {
                 return new Promise(async (syncResolve, syncReject) => {
                     loadIpnsAsJson(dbComment.ipnsName, this.plebbit.ipfsClient).then(async currentIpns => {
-                        if (!shallowEqual(currentIpns, dbComment.toJSONCommentUpdate(), ["sortedReplies", "sortedRepliesCids"])) {
+                        if (!currentIpns || !shallowEqual(currentIpns, dbComment.toJSONCommentUpdate(), ["sortedReplies", "sortedRepliesCids"])) {
                             debug(`Comment (${dbComment.commentCid}) IPNS is outdated`);
-                            let [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedPosts(dbComment, trx);
+                            let [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedPosts(dbComment);
                             if (sortedReplies)
                                 sortedReplies = {[SORTED_COMMENTS_TYPES.TOP_ALL]: sortedReplies[SORTED_COMMENTS_TYPES.TOP_ALL]};
                             dbComment.setUpdatedAt(timestamp());
-                            await this.dbHandler.upsertComment(dbComment, undefined, trx);
+                            await this.dbHandler.upsertComment(dbComment, undefined);
                             dbComment.edit({
                                 ...dbComment.toJSONCommentUpdate(),
                                 "sortedReplies": sortedReplies,
                                 "sortedRepliesCids": sortedRepliesCids,
 
-                            }).then(() => {
-                                debug(`Comment (${dbComment.commentCid}) IPNS (${dbComment.ipnsName}) has been synced`);
-                                syncResolve();
-                            }).catch(syncReject);
+                            }).then(syncResolve).catch(syncReject);
                         } else {
                             debug(`Comment (${dbComment.commentCid}) is already synced`);
                             syncResolve();
@@ -441,18 +437,12 @@ export class Subplebbit extends EventEmitter {
             };
 
             const errorHandle = async (err) => {
-                await trx.rollback(err);
                 debug(`Failed to sync due to error: ${err}`);
                 reject(err);
             };
 
-            this.dbHandler.queryComments(trx).then(async comments =>
-                Promise.all([...comments.map(async comment => syncComment(comment)), this.#updateSubplebbitIpns(trx)]).then(async () => {
-                    // this.emit("update", this);
-                    debug(`Subplebbit IPNS is caught up with DB`);
-                    trx.commit().then(resolve).catch(errorHandle);
-                }).catch(errorHandle))
-                .catch(errorHandle);
+            this.dbHandler.queryComments().then(async comments =>
+                Promise.all([...comments.map(async comment => syncComment(comment)), this.#updateSubplebbitIpns()]).then(resolve).catch(errorHandle)).catch(errorHandle);
         });
 
     }
