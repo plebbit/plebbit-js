@@ -1,9 +1,24 @@
-import {round, TIMEFRAMES_TO_SECONDS, unsubscribeAllPubsubTopics} from "../src/Util.js";
-import {generateMockPostWithRandomTimestamp, generateMockVote, loadAllPagesThroughSortedComments} from "./MockUtil.js";
+import {
+    controversialScore,
+    hotScore, newScore,
+    TIMEFRAMES_TO_SECONDS,
+    topScore,
+    unsubscribeAllPubsubTopics
+} from "../src/Util.js";
+import {
+    generateMockComment,
+    generateMockPostWithRandomTimestamp,
+    generateMockVote,
+    loadAllPagesThroughSortedComments
+} from "./MockUtil.js";
 import {Plebbit} from "../src/index.js";
 import {IPFS_CLIENT_CONFIGS, TEST_PAGES_SUBPLEBBIT_ADDRESS} from "../secrets.js";
 import {SORTED_COMMENTS_TYPES} from "../src/SortHandler.js";
 import assert from "assert";
+import Debug from "debug";
+
+const debug = Debug("plebbit-js:test-Pages");
+
 
 const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
 const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
@@ -13,50 +28,94 @@ const subplebbit = await serverPlebbit.createSubplebbit({
 });
 await subplebbit.update();
 
-const testSorting = async (scoreFunction, sortName) => {
+const testSorting = async (sort, comments) => {
     return new Promise(async (resolve, reject) => {
-        let posts = [];
-        for (let i = 0; i < 1; i++)
-            posts.push(await generateMockPostWithRandomTimestamp(subplebbit.subplebbitAddress, clientPlebbit));
+        let parentComment; // This in case we wanted to test sorting under a post/comment
+        if (!comments) {
+            comments = [];
+            for (let i = 0; i < 5; i++)
+                comments.push(await generateMockPostWithRandomTimestamp(subplebbit.subplebbitAddress, clientPlebbit));
+        } else
+            parentComment = await clientPlebbit.getPostOrComment(comments[0].parentCid);
 
-        posts = await Promise.all(posts.map(async post => {
-            const publishedPost = (await subplebbit._addPublicationToDb(post)).publication;
-            return clientPlebbit.getPostOrComment(publishedPost.commentCid);
+
+        comments = await Promise.all(comments.map(async (comment, i) => {
+            const publishedComment = (await subplebbit._addPublicationToDb(comment)).publication;
+            debug(`Comment ${i} has been published`);
+            return clientPlebbit.getPostOrComment(publishedComment.commentCid);
         }));
         let votes = [];
-        for (let i = 0; i < posts.length; i++)
+        for (let i = 0; i < comments.length; i++)
             for (let j = 0; j < 5; j++)
-                votes.push(await generateMockVote(posts[i], Math.random() > 0.5 ? 1 : -1, subplebbit.subplebbitAddress, clientPlebbit));
-        await Promise.all(votes.map(async vote => subplebbit._addPublicationToDb(vote)));
+                votes.push(await generateMockVote(comments[i], Math.random() > 0.5 ? 1 : -1, subplebbit.subplebbitAddress, clientPlebbit));
+        await Promise.all(votes.map(async (vote, i) => {
+            await subplebbit._addPublicationToDb(vote);
+            debug(`Vote #${i} of ${vote.vote} has been published under comment ${vote.commentCid}`);
+        }));
 
-        const sortTypes = Object.values(SORTED_COMMENTS_TYPES).filter(type => type.includes(sortName));
+        debug(`For sort ${sort.type}, added ${comments.length} comments and ${votes.length} random votes for each comment`);
+
+        const sortTypes = Object.values(SORTED_COMMENTS_TYPES).filter(type => type.includes(sort.type));
 
 
         subplebbit.once("update", async (updatedSubplebbit) => {
+            if (parentComment) {
+                await parentComment.update();
+                parentComment.stop();
+                debug(`Updated parent comment`);
+            }
             for (let i = 0; i < sortTypes.length; i++) {
                 const sortType = sortTypes[i];
-                const alreadySortedPosts = await loadAllPagesThroughSortedComments(updatedSubplebbit.sortedPostsCids[sortType], clientPlebbit);
-                const sortStart = updatedSubplebbit.updatedAt - Object.values(TIMEFRAMES_TO_SECONDS)[i];
-                for (let j = 0; j < alreadySortedPosts.length - 1; j++) {
+                debug(`Testing sort ${sortType}`);
+                const alreadySortedComments = await loadAllPagesThroughSortedComments(parentComment ? parentComment.sortedRepliesCids[sortType] : updatedSubplebbit.sortedPostsCids[sortType], clientPlebbit);
+                // TODO load all posts from linkedlist and make sure both linkedlist and alreadySortedComments contain same comments
+                debug(`There are ${alreadySortedComments.length} comments under ${sortType}. Will test them`);
+
+                for (let j = 0; j < alreadySortedComments.length - 1; j++) {
                     // Check if timestamp is within [subplebbit.updatedAt - timeframe, subplebbit.updatedAt]
-                    if (alreadySortedPosts[j].timestamp < sortStart || alreadySortedPosts[j].timestamp > updatedSubplebbit.updatedAt)
-                        assert.fail(`${sortName} sort includes posts from different timeframes`);
-                    if (alreadySortedPosts[j + 1].timestamp < sortStart || alreadySortedPosts[j + 1].timestamp > updatedSubplebbit.updatedAt)
-                        assert.fail(`${sortName} sort includes posts from different timeframes`);
+                    if (sortTypes.length > 1) {
+                        // If sort types are more than 1 that means this particular sort type has timeframes
+                        const sortStart = updatedSubplebbit.updatedAt - Object.values(TIMEFRAMES_TO_SECONDS)[i];
+                        if (alreadySortedComments[j].timestamp < sortStart || alreadySortedComments[j].timestamp > updatedSubplebbit.updatedAt)
+                            assert.fail(`${sortType} sort includes posts from different timeframes`);
+                        if (alreadySortedComments[j + 1].timestamp < sortStart || alreadySortedComments[j + 1].timestamp > updatedSubplebbit.updatedAt)
+                            assert.fail(`${sortType} sort includes posts from different timeframes`);
+                    }
 
-                    const scoreA = scoreFunction(alreadySortedPosts[j]);
-                    const scoreB = scoreFunction(alreadySortedPosts[j + 1]);
+                    const scoreA = sort.scoreFunction(alreadySortedComments[j]);
+                    const scoreB = sort.scoreFunction(alreadySortedComments[j + 1]);
                     if (scoreB > scoreA)
-                        assert.fail(`Comments are not sorted by ${sortName} score`);
+                        assert.fail(`Comments are not sorted by ${sort.type} score`);
                 }
-
+                debug(`Passed tests for sort ${sortType}`);
             }
+            debug(`Passed tests for sort ${sort.type}`);
             resolve();
 
         });
     });
 
 }
+
+const testSortingComments = async (sort) => {
+    const post = await clientPlebbit.getPostOrComment(subplebbit.latestPostCid);
+    const comments = [];
+    for (let i = 0; i < 5; i++)
+        comments.push(await generateMockComment(post, subplebbit.subplebbitAddress, clientPlebbit));
+
+    await testSorting(sort, comments);
+
+}
+
+const sortObjects = [
+    {"type": "new", "scoreFunction": newScore},
+    {
+        "type": "top", "scoreFunction": topScore,
+    }, {
+        "type": "controversial", "scoreFunction": controversialScore
+    }, {
+        "type": "hot", "scoreFunction": hotScore
+    }];
 
 describe("Test Pages API (for sorting)", async () => {
 
@@ -65,38 +124,8 @@ describe("Test Pages API (for sorting)", async () => {
     // Stop publishing once we're done with tests
     after(async () => await subplebbit.stopPublishing());
 
-    it("Top pages are sorted correctly", async () => {
-        const topScore = (comment) => comment.upvoteCount - comment.downvoteCount;
-        await testSorting(topScore, "top");
-    });
-
-    it("Controversial pages are sorted correctly", async () => {
-
-        const controversialScore = (comment) => {
-            if (comment.downvoteCount <= 0 || comment.upvoteCount <= 0)
-                return 0;
-            const magnitude = comment.upvoteCount + comment.downvoteCount;
-            const balance = comment.upvoteCount > comment.downvoteCount ? (parseFloat(comment.downvoteCount) / comment.upvoteCount) : (parseFloat(comment.upvoteCount) / comment.downvoteCount);
-            return Math.pow(magnitude, balance);
-
-        };
-        await testSorting(controversialScore, "controversial");
-
-
-    });
-
-    it("Hot pages are sorted correctly", async () => {
-
-        const hotScore = (comment) => {
-            const score = comment.upvoteCount - comment.downvoteCount;
-            const order = Math.log10(Math.max(score, 1));
-            const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
-            const seconds = comment.timestamp - 1134028003;
-            return round(sign * order + seconds / 45000, 7);
-
-        };
-        await testSorting(hotScore, "hot");
-    });
+    sortObjects.map(sort => it(`${sort.type} pages are sorted correctly`, async () => await testSorting(sort)));
+    sortObjects.map(sort => it(`${sort.type} pages under a comment are sorted correctly`, async () => await testSortingComments(sort)));
 
 
 });
