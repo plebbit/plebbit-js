@@ -26,7 +26,7 @@ import Debug from "debug";
 
 const debug = Debug("plebbit-js:Subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
-const DEFAULT_SYNC_INTERVAL_MS = 120000;
+const DEFAULT_SYNC_INTERVAL_MS = 180000; // 3 minutes
 
 // import {Signer} from "./Signer.js";
 
