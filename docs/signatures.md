@@ -1,6 +1,6 @@
 ### Message signature types:
 
-- 'plebbit1':
+- 'rsa':
 
 ```js
 const libp2pCrypto = require('libp2p-crypto')
@@ -81,7 +81,7 @@ const createCommentSignature = async (comment, signer) => {
   const fieldsToSign = cborg.encode({subplebbitAddress, author, timestamp, parentCid, content, title, link})
   const signature = uint8ArrayToString(await keyPair.sign(fieldsToSign), 'base64')
   const publicKey = await getPublicKeyPemFromKeyPair(keyPair)
-  const type = 'plebbit1'
+  const type = 'rsa'
   return {signature, publicKey, type}
 }
 
@@ -90,7 +90,7 @@ const createSigner = async (privateKeyPem) => {
     const keyPair = await generateKeyPair()
     privateKeyPem = await getPrivateKeyPemFromKeyPair(keyPair)
   }
-  const type = 'plebbit1'
+  const type = 'rsa'
   return {privateKey: privateKeyPem, type}
 }
 
