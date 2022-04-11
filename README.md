@@ -84,11 +84,11 @@ Nft {
 }
 Signature {
   signature: string // data in base64
-  publicKey: buffer // include public key (marshalled, like IPNS does it) because the IPNS name is just a hash of it
-  type: string // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
+  publicKey: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
+  type: 'plebbit1' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
 }
 Signer {
-  privateKey?: string | buffer // to sign with metamask, no need for private key
+  privateKey?: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
   type: 'plebbit1' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm https://eips.ethereum.org/EIPS/eip-191
 }
 Subplebbit /* (IPNS record Subplebbit.address) */ {
