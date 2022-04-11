@@ -107,6 +107,7 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   rules?: string[]
   flairs: {[key: 'post' | 'author']: Flair[]} // list of post/author flairs authors and mods can choose from
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
+  encryption: SubplebbitEncryption
 }
 SubplebbitSuggested { // values suggested by the sub owner, the client/user can ignore them without breaking interoperability
   primaryColor?: string
@@ -140,6 +141,10 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   noMarkdownVideos?: boolean // don't embed videos in text posts markdown
   markdownImageReplies?: boolean
   markdownVideoReplies?: boolean
+}
+SubplebbitEncryption {
+  type: 'rsa'
+  publicKey: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
 }
 Flair {
   text: string
