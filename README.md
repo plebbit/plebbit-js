@@ -10,7 +10,7 @@
 - Pubsub topic: the string to publish/subscribe to in the pubsub https://github.com/ipfs/js-ipfs/blob/master/docs/core-api/PUBSUB.md#ipfspubsubsubscribetopic-handler-options and https://github.com/libp2p/specs/blob/master/pubsub/gossipsub/gossipsub-v1.0.md#topic-membership
 - IPNS record: https://github.com/ipfs/specs/blob/master/IPNS.md#ipns-record
 - IPNS signature: https://github.com/ipfs/notes/issues/249
-- Examples of how to sign: https://github.com/plebbit/whitepaper/blob/main/signature-examples/sign.js
+- Plebbit signature types: https://github.com/plebbit/plebbit-js/blob/master/docs/signatures.md
 
 Note: IPFS files are immutable, fetched by their CID, which is a hash of their content. IPNS records are mutable, fetched by their IPNS name, which is the hash of a public key. The private key's owner can update the content. Always use IPFS files over IPNS records when possible because they are much faster to fetch.
 
@@ -196,36 +196,6 @@ PlebbitDefaults { // fetched once when app first load, a dictionary of default s
   multisubAddresses.crypto: Address // the subplebbits to show at url plebbit.eth/p/crypto
   multisubAddresses.search: Address // list of thousands of semi-curated subplebbits to "search" for in the client (only search the Multisub metadata, don't load each subplebbit)
 }
-```
-
-### Message signature types:
-
-- 'plebbit1':
-
-```javascript
-const libp2pCrypto = require('libp2p-crypto')
-const cborg = require('cborg')
-const PeerId = require('peer-id')
-
-const encryptedPemPassword = ''
-const rsaInstance = await libp2pCrypto.keys.import(privateKeyPemString, encryptedPemPassword)
-
-const messageToSign = cborg.encode({subplebbitAddress, author, title, content, timestamp}) // use cborg to stringify deterministically instead of JSON.stringify
-const rsaInstanceSignature = await rsaInstance.sign(messageToSign)
-
-// can also be done in node (but not browser compatible)
-require('crypto').sign('sha256', messageToSign, privateKeyPemString)
-
-// to get marshalled (serialized) public key for signature.publicKey field
-signature.publicKey = rsaInstance.public.marshal()
-// or
-signature.publicKey = libp2pCrypto.keys.marshalPublicKey(rsaInstance.public, 'RSA')
-
-// to verify a signed post
-const post = {/* ...some post */}
-const postToVerify = cborg.encode({subplebbitAddress: post.subplebbitAddress, author: post.author, title: post.title, content: post.content, timestamp: post.timestamp})
-const rsaPublicKeyInstance = (await PeerId.createFromPubKey(post.signature.publicKey)).pubKey
-const signatureIsValid = await rsaPublicKeyInstance.verify(postToVerify, post.signature.signature)
 ```
 
 ### Pubsub message types
