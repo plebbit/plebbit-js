@@ -37,6 +37,13 @@ const getPublicKeyPemFromKeyPair = async (keyPair) => {
   return publicKeyPem
 }
 
+const getPublicKeyPemFromPrivateKeyPem = async (privateKeyPem, password = '') => {
+  // you can optionally encrypt the PEM by providing a password
+  // https://en.wikipedia.org/wiki/PKCS_8
+  const keyPair = await getKeyPairFromPrivateKeyPem(privateKeyPem, password)
+  return getPublicKeyPemFromKeyPair(keyPair)
+}
+
 let publicKeyRsaConstructor
 const getPublicKeyRsaConstructor = async () => {
   // we are forced to do this because publicKeyRsaConstructor isn't public
@@ -99,6 +106,21 @@ const getAddressFromSigner = async (signer) => {
   return peerId.toB58String() 
 }
 
+const encrypt = async (stringToEncrypt, publicKeyPem) => {
+  // https://en.wikipedia.org/wiki/PKCS_8
+  const peerId = await getPeerIdFromPublicKeyPem(publicKeyPem)
+  const encrypted = await peerId.pubKey.encrypt(stringToEncrypt)
+  return uint8ArrayToString(encrypted, 'base64')
+}
+
+const decrypt = async (encryptedString, privateKeyPem, privateKeyPemPassword = '') => {
+  // you can optionally encrypt the PEM by providing a password
+  // https://en.wikipedia.org/wiki/PKCS_8
+  const keyPair = await getKeyPairFromPrivateKeyPem(privateKeyPem, privateKeyPemPassword)
+  const decrypted = await keyPair.decrypt(uint8ArrayFromString(encryptedString, 'base64'))
+  return decrypted.toString()
+}
+
 // sign a comment
 ;(async () => {
   const signer = await createSigner()
@@ -113,5 +135,26 @@ const getAddressFromSigner = async (signer) => {
   const signature = await createCommentSignature(comment, signer)
   const signedComment = {...comment, signature}
   await verifyCommentSignature(signedComment)
+})()
+
+// encrypt a publication
+;(async () => {
+  const authorAddress = await getAddressFromSigner(await createSigner())
+  const publication = {
+    subplebbitAddress: 'memes.eth',
+    author: {address: authorAddress}, 
+    timestamp: Math.round(Date.now() / 1000),
+    parentCid: 'some cid...', 
+    content: 'some content...',
+  }
+
+  const subplebbitEncryptionPrivateKeyPem = (await createSigner()).privateKey
+  const subplebbitEncryptionPublicKeyPem = await getPublicKeyPemFromPrivateKeyPem(subplebbitEncryptionPrivateKeyPem)
+
+  // author encrypts his publication using subplebbit owner public key
+  const encryptedPublication = await encrypt(JSON.stringify(publication), subplebbitEncryptionPublicKeyPem)
+
+  // subplebbit owner decrypts publication with his own private key
+  const decryptedPublication = JSON.parse(await decrypt(encryptedPublication, subplebbitEncryptionPrivateKeyPem))
 })()
 ```
