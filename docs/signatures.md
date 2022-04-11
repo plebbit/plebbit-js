@@ -1,4 +1,3 @@
-
 ### Message signature types:
 
 - 'plebbit1':
@@ -9,6 +8,8 @@ const cborg = require('cborg')
 const PeerId = require('peer-id')
 const jose = require('jose')
 const assert = require('assert')
+const {fromString: uint8ArrayFromString} = require('uint8arrays/from-string')
+const {toString: uint8ArrayToString} = require('uint8arrays/to-string')
 
 const generateKeyPair = async () => {
   const keyPair = await libp2pCrypto.keys.generateKeyPair('RSA', 2048)
@@ -69,7 +70,7 @@ const verifyCommentSignature = async (comment) => {
   // note: postCid is not included because it's written by the sub owner, not the author
   const {subplebbitAddress, author, timestamp, parentCid, content, title, link} = comment
   const fieldsToVerify = cborg.encode({subplebbitAddress, author, timestamp, parentCid, content, title, link})
-  const signatureIsValid = await peerId.pubKey.verify(fieldsToVerify, comment.signature.signature)
+  const signatureIsValid = await peerId.pubKey.verify(fieldsToVerify, uint8ArrayFromString(comment.signature.signature, 'base64'))
   assert(signatureIsValid, `comment.signature invalid`)
 }
 
@@ -78,7 +79,7 @@ const createCommentSignature = async (comment, signer) => {
   const keyPair = await getKeyPairFromPrivateKeyPem(signer.privateKey)
   const {subplebbitAddress, author, timestamp, parentCid, content, title, link} = comment
   const fieldsToSign = cborg.encode({subplebbitAddress, author, timestamp, parentCid, content, title, link})
-  const signature = await keyPair.sign(fieldsToSign)
+  const signature = uint8ArrayToString(await keyPair.sign(fieldsToSign), 'base64')
   const publicKey = await getPublicKeyPemFromKeyPair(keyPair)
   const type = 'plebbit1'
   return {signature, publicKey, type}
