@@ -81,6 +81,7 @@ Nft {
   address: string // address of the NFT contract
   index: number // index of the specific NFT used
   signature: Signature // proof that author.address owns the nft
+  // plebbit-js should resolve the image URL if any, and add an `imageUrl` property for convenience
 }
 Signature {
   signature: string // data in base64
