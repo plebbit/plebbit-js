@@ -259,7 +259,6 @@ Challenge {
   - [`subplebbit.stop()`](#subplebbitstop)
   - [`subplebbit.update()`](#subplebbitupdate)
   - `subplebbit.address`
-  - `subplebbit.signer`
   - `subplebbit.moderatorsAddresses`
   - `subplebbit.posts`
   - `subplebbit.latestPostCid`
@@ -445,7 +444,7 @@ Prints:
 
 ### `plebbit.createSubplebbit(createSubplebbitOptions)`
 
-> Create a subplebbit instance. Should update itself on update events after `Subplebbit.update()` is called if `CreateSubplebbitOptions.address` exists. If `CreateSubplebbitOptions.signer` exists, can call `Subplebbit.edit(subplebbitEditOptions)` to edit the subplebbit as the owner, and `Subplebbit.start()` to listen for new posts on the pubsub and publish updates as the owner.
+> Create a subplebbit instance. Should update itself on update events after `Subplebbit.update()` is called if `CreateSubplebbitOptions.address` exists. If the subplebbit database corresponding to `subplebbit.address` exists locally, can call `Subplebbit.edit(subplebbitEditOptions)` to edit the subplebbit as the owner, and `Subplebbit.start()` to listen for new posts on the pubsub and publish updates as the owner.
 
 #### Parameters
 
@@ -460,8 +459,7 @@ An object which may have the following keys:
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | address | `string` | `undefined` | IPNS name of the subplebbit |
-| signer | `Signer` | `undefined` | (Subplebbit owners only) A `Signer` object which contains the private key of the subplebbit |
-| database | `KnexConfig` or `undefined` | `undefined` | (Subplebbit owners only) Optional [KnexConfig](https://www.npmjs.com/package/knex), defaults to SQLite database at `plebbit.dataPath/subplebbitAddress` |
+| database | `KnexConfig` or `undefined` | SQLite database at `plebbit.dataPath/subplebbitAddress` | (Subplebbit owners only) Optional [KnexConfig](https://www.npmjs.com/package/knex) |
 | ...subplebbit | `any` | `undefined` | `CreateSubplebbitOptions` can also initialize any property on the `Subplebbit` instance |
 
 #### Returns
@@ -482,7 +480,6 @@ const plebbitOptions = {
 const plebbit = Plebbit(plebbitOptions)
 const subplebbitOptions = {
   address: 'Qmb...',
-  signer: {privateKey: 'qwer...'}
 }
 // create a subplebbit instance
 const subplebbit = plebbit.createSubplebbit(subplebbitOptions)
@@ -690,7 +687,7 @@ An object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| privateKey | `string` or `undefined` | If undefined, generate a random privateKey |
+| privateKey | `string` or `undefined` | If undefined, generate a random `privateKey` |
 
 #### Returns
 
@@ -710,7 +707,7 @@ The subplebbit API for getting subplebbit updates, or creating, editing, running
 
 ### `subplebbit.edit(subplebbitEditOptions)`
 
-> Edit the content/information of a subplebbit in your local database. Only usable if `Subplebbit.signer` exists (ie. you are the subplebbit owner).
+> Edit the content/information of a subplebbit in your local database. Only usable if the subplebbit database corresponding to `subplebbit.address` exists locally  (ie. you are the subplebbit owner).
 
 #### Parameters
 
@@ -756,7 +753,7 @@ Object is of the form:
 
 ### `subplebbit.start()`
 
-> Start listening for new posts on the pubsub, and publishing them every 5 minutes. Only usable if subplebbit.signer exists.
+> Start listening for new posts on the pubsub, and publishing them every 5 minutes. Only usable if the subplebbit database corresponding to `subplebbit.address` exists locally  (ie. you are the subplebbit owner).
 
 #### Example
 
