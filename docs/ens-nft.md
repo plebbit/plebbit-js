@@ -8,32 +8,32 @@ const fetch = require('isomorphic-fetch')
 const ipfsGatewayUrl = 'https://ipfs.io'
 
 // the user can edit these blockchains settings in the account or plebbit-js settings
-const blockchains = {
+const blockchainProviders = {
   avax: {
-    providerUrl: 'https://api.avax.network/ext/bc/C/rpc',
+    url: 'https://api.avax.network/ext/bc/C/rpc',
     chainId: 43114
   },
   matic: {
-    providerUrl: 'https://polygon-rpc.com',
+    url: 'https://polygon-rpc.com',
     chainId: 137
   }
 }
 
 // cache the blockchain providers because only 1 should be running at the same time
-const blockchainProviders = {}
+const cachedBlockchainProviders = {}
 const getBlockchainProvider = (chainTicker) => {
-  if (blockchainProviders[chainTicker]) {
-    return blockchainProviders[chainTicker]
+  if (cachedBlockchainProviders[chainTicker]) {
+    return cachedBlockchainProviders[chainTicker]
   }
-  if (blockchains[chainTicker]) {
-    blockchainProviders[chainTicker] = new ethers.providers.JsonRpcProvider({url: blockchains[chainTicker].providerUrl}, blockchains[chainTicker].chainId)
-    return blockchainProviders[chainTicker]
+  if (blockchainProviders[chainTicker]) {
+    cachedBlockchainProviders[chainTicker] = new ethers.providers.JsonRpcProvider({url: blockchainProviders[chainTicker].url}, blockchainProviders[chainTicker].chainId)
+    return cachedBlockchainProviders[chainTicker]
   }
   if (chainTicker === 'eth') {
-    blockchainProviders['eth'] = ethers.getDefaultProvider()
-    return blockchainProviders['eth']
+    cachedBlockchainProviders['eth'] = ethers.getDefaultProvider()
+    return cachedBlockchainProviders['eth']
   }
-  throw Error(`no network settings for nft '${chainTicker}'`)
+  throw Error(`no blockchain provider settings for chain ticker '${chainTicker}'`)
 }
 
 const nftAbi = [
@@ -111,6 +111,11 @@ const avatarNft = {
   address: '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d', // the contract address of the nft
   index: 100 // the nft number 100 in the colletion
 }
+const avatarNft2 = {
+  chainTicker: 'matic',
+  address: '0xf6d8e606c862143556b342149a7fe0558c220375', // the contract address of the nft
+  index: 100 // the nft number 100 in the colletion
+}
 const author = {
   address: 'some test address...',
   avatar: avatarNft
@@ -125,7 +130,8 @@ const author = {
 
   // get the image url of an nft
   const nftImageUrl = await getNftImageUrl(avatarNft)
-  console.log({nftImageUrl})
+  const nftImageUrl2 = await getNftImageUrl(avatarNft2)
+  console.log({nftImageUrl, nftImageUrl2})
 
   // this is a test private key, usually you get an ethers.js signer from metamask
   // https://docs.ethers.io/v5/api/signer
