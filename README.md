@@ -338,9 +338,19 @@ An object which may have the following keys:
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| ipfsGatewayUrl | `string` | `'https://cloudflare-ipfs.com'` | URL of an IPFS gateway |
-| ipfsApiUrl | `string` | `'http://localhost:8080'` | URL of an IPFS API |
-| dataPath | `string` | .plebbit folder in the current working directory | (Node only) Folder path to create/resume the user and subplebbit databases |
+| ipfsGatewayUrl | `string` or `undefined` | `'https://cloudflare-ipfs.com'` | Optional URL of an IPFS gateway |
+| ipfsHttpClientOptions | `string` or `IpfsHttpClientOptions` or `undefined` | `'http://localhost:8080'` | Optional URL of an IPFS API or [IpfsHttpClientOptions](https://www.npmjs.com/package/ipfs-http-client#createoptions) |
+| dataPath | `string`  or `undefined` | .plebbit folder in the current working directory | (Node only) Optional folder path to create/resume the user and subplebbit databases |
+| blockchainProviders | `{[chainTicker: string]: BlockchainProvider}` or `undefined` | default providers for supported chains | Optional provider RPC URLs and chain IDs |
+
+##### BlockchainProvider
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| url | `string` | URL of the provider RPC |
+| chainId | `string` | ID of the EVM chain if any |
 
 #### Returns
 
