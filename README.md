@@ -81,7 +81,7 @@ Nft {
   address: string // address of the NFT contract
   index: number // index of the specific NFT used
   signature: Signature // proof that author.address owns the nft
-  // plebbit-js should resolve the image URL if any, and add an `imageUrl` property for convenience
+  // plebbit-js should resolve the image URL if any, and add an `imageUrl` property for convenience (not part of the IPFS file)
 }
 Signature {
   signature: string // data in base64
@@ -215,7 +215,8 @@ PubsubMessage: {
 ChallengeRequestMessage extends PubsubMessage /* (sent by post author) */ {
   challengeRequestId: string // random string choosen by sender
   acceptedChallengeTypes: string[] // list of challenge types the client can do, for example cli clients or old clients won't do all types
-  publication: Publication // include the publication so the sub owner can publish it right away
+  encryptedPublication: string // base64 string encrypted with sub owner's public key, example https://github.com/plebbit/plebbit-js/blob/master/docs/signatures.md
+  // plebbit-js should decrypt the publication when possible, and add an `publication` property for convenience (not part of the broadcasted pubsub message)
 }
 ChallengeMessage extends PubsubMessage /* (sent by subplebbit owner) */ {
   challengeRequestId: string
@@ -232,7 +233,8 @@ ChallengeVerificationMessage extends PubsubMessage /* (sent by subplebbit owner)
   challengeSuccess: bool // true if the challenge was successfully completed by the requester
   challengeErrors?: (string|undefined)[] // tell the user which challenge failed and why
   reason?: string // reason for failed verification, for example post content is too long. could also be used for successful verification that bypass the challenge, for example because an author has good history
-  publication?: Publication // include feedback about the publication if needed, for example for a Comment include Publication.cid so the author can resolve his own published comment immediately
+  encryptedPublication: string // base64 string encrypted with author's public key, example https://github.com/plebbit/plebbit-js/blob/master/docs/signatures.md, should include Publication.cid so the author can resolve his own published comment immediately
+  // plebbit-js should decrypt the publication when possible, and add an `publication` property for convenience (not part of the broadcasted pubsub message)
 }
 Challenge {
   type: 'image' | 'text' | 'audio' | 'video' | 'html' // tells the client how to display the challenge, start with implementing image and text only first
