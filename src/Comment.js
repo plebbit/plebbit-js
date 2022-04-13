@@ -1,6 +1,5 @@
-import Author from "./Author.js";
 import assert from "assert";
-import {loadIpnsAsJson, parseJsonIfString} from "./Util.js";
+import {loadIpnsAsJson, parseJsonIfString, removeKeysWithUndefinedValues} from "./Util.js";
 import Publication from "./Publication.js";
 import Debug from "debug";
 
@@ -74,7 +73,7 @@ class Comment extends Publication {
         json["commentIpnsKeyName"] = this.commentIpnsKeyName;
         json["editedContent"] = this.editedContent;
         json["updatedAt"] = this.updatedAt;
-        return json;
+        return removeKeysWithUndefinedValues(json);
     }
 
     toJSONCommentUpdate() {
@@ -113,15 +112,6 @@ class Comment extends Publication {
 
     setUpdatedAt(newUpdatedAt) {
         this.updatedAt = newUpdatedAt;
-    }
-
-    async fetchParent() {
-        return new Promise(async (resolve, reject) => {
-            this.subplebbit.plebbit.getPostOrComment(this.parentCid || this.postCid).then(res => {
-                this.parent = res;
-                resolve(this.parent);
-            }).catch(reject);
-        });
     }
 
     async #updateOnce() {

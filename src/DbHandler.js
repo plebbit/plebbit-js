@@ -142,7 +142,9 @@ class DbHandler {
             await this.#addAuthorToDbIfNeeded(postOrComment.author, trx);
             if (!challengeRequestId)
                 challengeRequestId = (await this.#baseTransaction(trx)(TABLES.COMMENTS).where({"commentCid": postOrComment.commentCid}).first()).challengeRequestId;
-            const dbObject = postOrComment.toJSONForDb(challengeRequestId);
+            const originalComment = await this.queryComment(postOrComment.commentCid, trx);
+            const dbObject = originalComment ? {...originalComment.toJSONForDb(challengeRequestId), ...postOrComment.toJSONForDb(challengeRequestId)}
+                : postOrComment.toJSONForDb(challengeRequestId);
             this.#baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(['commentCid']).merge().then(() => resolve(dbObject)).catch(err => {
                 console.error(err);
                 reject(err);

@@ -80,7 +80,6 @@ export class SortHandler {
             // No need to sort these comments since they are already sorted by DB
             if (typesAlreadySorted.includes(sortType)) {
                 commentsSorted = comments;
-                debug(`Skipping sorting for ${sortType} since it's already sorted by DB`);
             } else {
                 commentsSorted = (await Promise.all(comments.map(async comment => ({
                     "comment": comment,
