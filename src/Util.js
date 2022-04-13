@@ -10,7 +10,6 @@ export const TIMEFRAMES_TO_SECONDS = Object.freeze({
     "WEEK": 60 * 60 * 24 * 7,
     "MONTH": 60 * 60 * 24 * 7 * 4,
     "YEAR": 60 * 60 * 24 * 7 * 4 * 12,
-
     "ALL": Infinity
 });
 const debug = Debug("plebbit-js:Util");
@@ -106,6 +105,14 @@ export function replaceXWithY(obj, x, y) {
     return newObj;
 }
 
+export function keepKeys(obj, keys) {
+    const newObj = {};
+    for (const key of Object.keys(obj))
+        if (keys.includes(key))
+            newObj[key] = obj[key];
+    return newObj;
+}
+
 export function removeKeys(object1, keys) {
     const newObject = {...object1};
     keys.forEach(key => delete newObject[key]);
@@ -183,6 +190,10 @@ export function topScore(comment) {
 
 export function newScore(comment) {
     return comment.timestamp
+}
+
+export function removeKeysWithUndefinedValues(object) {
+    return JSON.parse(JSON.stringify(object));
 }
 
 
