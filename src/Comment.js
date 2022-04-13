@@ -1,6 +1,6 @@
 import Author from "./Author.js";
 import assert from "assert";
-import {loadIpnsAsJson, parseJsonIfString, timestamp} from "./Util.js";
+import {loadIpnsAsJson, parseJsonIfString} from "./Util.js";
 import Publication from "./Publication.js";
 import Debug from "debug";
 
@@ -17,9 +17,6 @@ class Comment extends Publication {
 
     _initProps(props) {
         super._initProps(props);
-        this.author = new Author(props["author"]);
-        this.timestamp = props["timestamp"] || timestamp();
-        this.signature = props["signature"];
         this.postCid = props["postCid"];
         this.commentCid = props["commentCid"];
         this.parentCid = props["parentCid"];
@@ -64,10 +61,7 @@ class Comment extends Publication {
     toJSONSkeleton() {
         return {
             ...(super.toJSONSkeleton()),
-            "author": this.author,
             "content": this.content,
-            "timestamp": this.timestamp,
-            "signature": this.signature,
             "parentCid": this.parentCid
         }
     }

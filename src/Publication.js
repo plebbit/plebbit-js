@@ -4,6 +4,8 @@ import {v4 as uuidv4} from 'uuid';
 import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
 import EventEmitter from "events";
 import Debug from "debug";
+import {timestamp} from "./Util.js";
+import Author from "./Author.js";
 
 const debug = Debug("plebbit-js:Publication");
 
@@ -17,6 +19,9 @@ class Publication extends EventEmitter {
 
     _initProps(props) {
         this.subplebbitAddress = props["subplebbitAddress"] || this.subplebbit.subplebbitAddress;
+        this.timestamp = props["timestamp"] || timestamp();
+        this.signature = props["signature"];
+        this.author = new Author(props["author"]);
     }
 
     setSubplebbit(newSubplebbit) {
@@ -38,7 +43,10 @@ class Publication extends EventEmitter {
     }
 
     toJSONSkeleton() {
-        return {"subplebbitAddress": this.subplebbitAddress};
+        return {
+            "subplebbitAddress": this.subplebbitAddress, "timestamp": this.timestamp, "signature": this.signature,
+            "author": this.author,
+        };
     }
 
     async #handleChallengeExchange(pubsubMsg) {
