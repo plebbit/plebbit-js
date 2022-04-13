@@ -101,7 +101,7 @@ const testSortingComments = async (sort) => {
     const post = await clientPlebbit.getPostOrComment(subplebbit.latestPostCid);
     const comments = [];
     for (let i = 0; i < 5; i++)
-        comments.push(await generateMockComment(post, subplebbit.subplebbitAddress, clientPlebbit));
+        comments.push(await generateMockComment(post, clientPlebbit));
 
     await testSorting(sort, comments);
 
