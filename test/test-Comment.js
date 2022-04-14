@@ -4,6 +4,7 @@ import assert from 'assert';
 import {loadIpfsFileAsJson, timestamp, unsubscribeAllPubsubTopics} from "../src/Util.js";
 import {SORTED_COMMENTS_TYPES} from "../src/SortHandler.js";
 import {generateMockComment} from "./MockUtil.js";
+import {createCommentSignature, verifyCommentSignature} from "../src/Signer.js";
 
 const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
 
@@ -21,7 +22,71 @@ describe("Test Post and Comment", async function () {
         await subplebbit.startPublishing();
     });
     after(async () => await post.subplebbit.stopPublishing());
-    after(async () => await unsubscribeAllPubsubTopics(plebbit.ipfsClient));
+
+    it("Can sign and verify a comment with randomly generated key", async () => {
+        const signer = await clientPlebbit.createSigner();
+        const comment = {
+            subplebbitAddress: post.subplebbitAddress,
+            author: {address: signer.address},
+            timestamp: timestamp(),
+            title: "Test post signature",
+            content: 'some content...',
+        };
+        const signature = await createCommentSignature(comment, signer);
+        const signedComment = {"signature": signature.toJSON(), ...comment};
+        const [isVerified, failedVerificationReason] = await verifyCommentSignature(signedComment);
+        assert.equal(isVerified, true, "Verification of signed comment should be true");
+
+    });
+
+    it("Verification fails when signature is corrupted", async () => {
+        const signer = await clientPlebbit.createSigner();
+        const comment = {
+            subplebbitAddress: post.subplebbitAddress,
+            author: {address: signer.address},
+            timestamp: timestamp(),
+            title: "Test post signature",
+            content: 'some content...',
+        };
+        const signature = await createCommentSignature(comment, signer);
+        signature.signature = signature.signature.slice(1); // Corrupt signature by deleting one character
+        const signedComment = {...signature.toJSON(), ...comment};
+        const [isVerified, failedVerificationReason] = await verifyCommentSignature(signedComment);
+        assert.equal(isVerified, false, "Verification of signed comment should be since signature is corrupted");
+
+    });
+
+    it("Can sign and verify a comment with an imported key", async () => {
+        const privateKeyPem =
+            `-----BEGIN PRIVATE KEY-----
+            MIIBVgIBADANBgkqhkiG9w0BAQEFAASCAUAwggE8AgEAAkEAq7BFUpkGp3+LQmlQ
+            Yx2eqzDV+xeG8kx/sQFV18S5JhzGeIJNA72wSeukEPojtqUyX2J0CciPBh7eqclQ
+            2zpAswIDAQABAkAgisq4+zRdrzkwH1ITV1vpytnkO/NiHcnePQiOW0VUybPyHoGM
+            /jf75C5xET7ZQpBe5kx5VHsPZj0CBb3b+wSRAiEA2mPWCBytosIU/ODRfq6EiV04
+            lt6waE7I2uSPqIC20LcCIQDJQYIHQII+3YaPqyhGgqMexuuuGx+lDKD6/Fu/JwPb
+            5QIhAKthiYcYKlL9h8bjDsQhZDUACPasjzdsDEdq8inDyLOFAiEAmCr/tZwA3qeA
+            ZoBzI10DGPIuoKXBd3nk/eBxPkaxlEECIQCNymjsoI7GldtujVnr1qT+3yedLfHK
+            srDVjIT3LsvTqw==
+            -----END PRIVATE KEY-----`;
+        const publicKeyPem =
+            "-----BEGIN PUBLIC KEY-----\n" +
+            "MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKuwRVKZBqd/i0JpUGMdnqsw1fsXhvJM\n" +
+            "f7EBVdfEuSYcxniCTQO9sEnrpBD6I7alMl9idAnIjwYe3qnJUNs6QLMCAwEAAQ==\n" +
+            "-----END PUBLIC KEY-----\n";
+        const signer = await clientPlebbit.createSigner({"privateKey": privateKeyPem, 'type': 'rsa'});
+        const comment = {
+            subplebbitAddress: post.subplebbitAddress,
+            author: {address: signer.address},
+            timestamp: timestamp(),
+            title: "Test post signature",
+            content: 'some content...',
+        };
+        const signature = await createCommentSignature(comment, signer);
+        const signedComment = {"signature": signature.toJSON(), ...comment};
+        const [isVerified, failedVerificationReason] = await verifyCommentSignature(signedComment);
+        assert.equal(isVerified, true, "Verification of signed comment should be true");
+        assert.equal(signedComment.signature.publicKey, publicKeyPem, "Generated public key should be same as provided");
+    });
 
 
     it("Can publish new comment under post", async function () {
