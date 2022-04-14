@@ -5,7 +5,7 @@ import {loadIpfsFileAsJson, loadIpnsAsJson} from "./Util.js";
 import * as path from "path";
 import Vote from "./Vote.js";
 import {create as createIpfsClient} from "ipfs-http-client";
-import {createCommentSignature, getAddressFromPublicKeyPem, Signer} from "./Signer.js";
+import {signPublication, getAddressFromPublicKeyPem, Signer} from "./Signer.js";
 import * as crypto from "libp2p-crypto";
 import * as jose from "jose";
 
@@ -39,17 +39,27 @@ export class Plebbit {
         });
     }
 
+    async #signPublicationIfNeeded(createPublicationOptions){
+        let publicationProps;
+        if (createPublicationOptions.signature)
+            publicationProps = createPublicationOptions;
+        else {
+            const commentSignature = await signPublication(createPublicationOptions, createPublicationOptions.signer);
+            if (!createPublicationOptions.author.address)
+                createPublicationOptions.author.address = await getAddressFromPublicKeyPem(commentSignature.publicKey);
+            publicationProps = {"signature": commentSignature, ...createPublicationOptions};
+        }
+        return publicationProps;
+    }
+
     async createComment(createCommentOptions) {
         const commentSubplebbit = await this.getSubplebbit(createCommentOptions.subplebbitAddress); // TODO This should be fetched from cache
-        const commentSignature = await createCommentSignature(createCommentOptions, createCommentOptions.signer);
-        if (!createCommentOptions.author.address)
-            createCommentOptions.author.address = getAddressFromPublicKeyPem(commentSignature.publicKey);
-        const commentSigned = {"signature": commentSignature, ...createCommentOptions};
-        if (createCommentOptions.title)
+        const commentProps = await this.#signPublicationIfNeeded(createCommentOptions);
+        if (commentProps.title)
             // Post
-            return new Post(commentSigned, commentSubplebbit);
+            return new Post(commentProps, commentSubplebbit);
         else
-            return new Comment(commentSigned, commentSubplebbit);
+            return new Comment(commentProps, commentSubplebbit);
     }
 
     async createSubplebbit(createSubplebbitOptions) {
@@ -67,7 +77,8 @@ export class Plebbit {
 
     async createVote(createVoteOptions) {
         const subplebbit = await this.getSubplebbit(createVoteOptions.subplebbitAddress);
-        return new Vote(createVoteOptions, subplebbit);
+        const voteProps = await this.#signPublicationIfNeeded(createVoteOptions);
+        return new Vote(voteProps, subplebbit);
     }
 
     async createCommentEdit(createCommentEditOptions) {
