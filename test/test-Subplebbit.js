@@ -44,6 +44,7 @@ describe("Test Subplebbit functionality", async () => {
             subplebbit.once("update", async (updatedSubplebbit) => {
                 await waitTillCommentsUpdate(actualPosts);
                 const loadedPosts = await loadAllPagesThroughSortedComments(updatedSubplebbit.sortedPostsCids[SORTED_COMMENTS_TYPES.NEW], clientPlebbit);
+                await Promise.all(loadedPosts.map(post => post.update()));
                 assert.equal(JSON.stringify(actualPosts), JSON.stringify(loadedPosts), "Posts have not been loaded in correct order");
                 mockPosts.push(actualPosts[0]);
                 resolve();
