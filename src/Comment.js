@@ -73,6 +73,7 @@ class Comment extends Publication {
         json["commentIpnsKeyName"] = this.commentIpnsKeyName;
         json["editedContent"] = this.editedContent;
         json["updatedAt"] = this.updatedAt;
+        json["signature"] = JSON.stringify(this.signature);
         return removeKeysWithUndefinedValues(json);
     }
 

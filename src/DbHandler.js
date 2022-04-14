@@ -49,7 +49,7 @@ class DbHandler {
             table.text("subplebbitAddress").notNullable();
             table.text("content").nullable();
             table.timestamp("timestamp").notNullable().checkPositive();
-            table.text("signature").nullable(); // Will likely revise later
+            table.text("signature").notNullable().unique(); // Will contain {signature, public key, type}
             table.text("ipnsName").notNullable().unique();
             table.text("commentIpnsKeyName").notNullable().unique();
             table.text("title").nullable();
@@ -72,7 +72,7 @@ class DbHandler {
             table.timestamp("timestamp").checkPositive().notNullable();
             table.text("subplebbitAddress").notNullable();
             table.integer("vote").checkBetween([-1, 1]).notNullable();
-            table.text("signature").nullable(); // Will likely revise later
+            table.text("signature").notNullable().unique();
 
             table.primary(["commentCid", "authorAddress"]); // An author can't have multiple votes on a comment
         });

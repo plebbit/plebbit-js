@@ -30,6 +30,7 @@ class Vote extends Publication {
         delete json["author"];
         json["authorAddress"] = this.author.address;
         json["challengeRequestId"] = challengeRequestId;
+        json["signature"] = JSON.stringify(this.signature);
         return json;
     }
 }
