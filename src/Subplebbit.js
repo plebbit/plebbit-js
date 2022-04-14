@@ -244,6 +244,7 @@ export class Subplebbit extends EventEmitter {
 
             } else if (postOrCommentOrVote instanceof Comment) {
                 // Comment and Post need to add file to ipfs
+                // TODO reject if signature is invalid
                 const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote.toJSONSkeleton()));
 
                 const ipnsKeys = (await this.plebbit.ipfsClient.key.list()).map(key => key["name"]);
@@ -261,11 +262,6 @@ export class Subplebbit extends EventEmitter {
                         postOrCommentOrVote.setPostCid(file.path);
                         postOrCommentOrVote.setCommentCid(file.path);
                         await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
-                        const defaultVote = await this.plebbit.createVote({
-                            ...postOrCommentOrVote.toJSON(),
-                            "vote": 1
-                        });
-                        await this.dbHandler.upsertVote(defaultVote, challengeRequestId, trx);
                         debug(`New post with cid ${postOrCommentOrVote.commentCid} has been inserted into DB`);
                     } else {
                         // Comment
@@ -277,11 +273,6 @@ export class Subplebbit extends EventEmitter {
                         const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
                         postOrCommentOrVote.setCommentCid(file.path);
                         await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
-                        const defaultVote = await this.plebbit.createVote({
-                            ...postOrCommentOrVote.toJSON(),
-                            "vote": 1
-                        });
-                        await this.dbHandler.upsertVote(defaultVote, challengeRequestId, trx);
                         debug(`New comment with cid ${postOrCommentOrVote.commentCid} has been inserted into DB`);
                     }
                 }
