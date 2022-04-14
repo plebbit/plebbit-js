@@ -5,7 +5,9 @@ import {loadIpfsFileAsJson, loadIpnsAsJson} from "./Util.js";
 import * as path from "path";
 import Vote from "./Vote.js";
 import {create as createIpfsClient} from "ipfs-http-client";
-import http from "http";
+import {createCommentSignature, getAddressFromPublicKeyPem, Signer} from "./Signer.js";
+import * as crypto from "libp2p-crypto";
+import * as jose from "jose";
 
 export class Plebbit {
     constructor(options) {
@@ -38,12 +40,16 @@ export class Plebbit {
     }
 
     async createComment(createCommentOptions) {
-        const commentSubplebbit = await this.getSubplebbit(createCommentOptions.subplebbitAddress);
+        const commentSubplebbit = await this.getSubplebbit(createCommentOptions.subplebbitAddress); // TODO This should be fetched from cache
+        const commentSignature = await createCommentSignature(createCommentOptions, createCommentOptions.signer);
+        if (!createCommentOptions.author.address)
+            createCommentOptions.author.address = getAddressFromPublicKeyPem(commentSignature.publicKey);
+        const commentSigned = {"signature": commentSignature, ...createCommentOptions};
         if (createCommentOptions.title)
             // Post
-            return new Post(createCommentOptions, commentSubplebbit);
+            return new Post(commentSigned, commentSubplebbit);
         else
-            return new Comment(createCommentOptions, commentSubplebbit);
+            return new Comment(commentSigned, commentSubplebbit);
     }
 
     async createSubplebbit(createSubplebbitOptions) {
@@ -67,5 +73,24 @@ export class Plebbit {
     async createCommentEdit(createCommentEditOptions) {
         const commentSubplebbit = await this.getSubplebbit(createCommentEditOptions.subplebbitAddress);
         return new CommentEdit({...createCommentEditOptions}, commentSubplebbit);
+    }
+
+    async createSigner(createSignerOptions) {
+        if (!createSignerOptions || !createSignerOptions["privateKey"]) {
+            const keyPair = await crypto.keys.generateKeyPair('RSA', 2048);
+            const privateKey = await keyPair.export('', 'pkcs-8');
+            const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RSA256');
+            const publicKey = await jose.exportSPKI(publicKeyFromJsonWebToken);
+            const address = await getAddressFromPublicKeyPem(publicKey);
+            return new Signer({"privateKey": privateKey, 'type': 'rsa', 'publicKey': publicKey, "address": address});
+        } else if (createSignerOptions["privateKey"] && createSignerOptions.type === 'rsa') {
+            const keyPair = await crypto.keys.import(createSignerOptions.privateKey, "");
+            const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RSA256');
+            const publicKeyPem = await jose.exportSPKI(publicKeyFromJsonWebToken);
+            const address = await getAddressFromPublicKeyPem(publicKeyPem);
+            return new Signer({...createSignerOptions, "publicKey": publicKeyPem, "address": address});
+
+        }
+
     }
 }
