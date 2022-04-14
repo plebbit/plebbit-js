@@ -1,5 +1,5 @@
 import {Plebbit} from "../src/index.js";
-import {IPFS_CLIENT_CONFIGS, TEST_VOTE_POST_CID, TEST_VOTE_SUBPLEBBIT_ADDRESS} from "../secrets.js";
+import {IPFS_CLIENT_CONFIGS, TEST_VOTE_POST_CID} from "../secrets.js";
 import assert from 'assert';
 import {timestamp, unsubscribeAllPubsubTopics} from "../src/Util.js";
 import {generateMockVote} from "./MockUtil.js";
@@ -7,11 +7,9 @@ import {generateMockVote} from "./MockUtil.js";
 const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
 const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
 
-const subplebbit = await serverPlebbit.createSubplebbit({
-    "subplebbitAddress":
-    TEST_VOTE_SUBPLEBBIT_ADDRESS
-});
 const post = await clientPlebbit.getPostOrComment(TEST_VOTE_POST_CID);
+
+const subplebbit = await serverPlebbit.createSubplebbit({"subplebbitAddress": post.subplebbitAddress});
 const previousVotes = [];
 
 
