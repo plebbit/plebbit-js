@@ -4,7 +4,7 @@ import assert from 'assert';
 import {loadIpfsFileAsJson, timestamp, unsubscribeAllPubsubTopics} from "../src/Util.js";
 import {SORTED_COMMENTS_TYPES} from "../src/SortHandler.js";
 import {generateMockComment} from "./MockUtil.js";
-import {createCommentSignature, verifyCommentSignature} from "../src/Signer.js";
+import {signPublication, verifyPublication} from "../src/Signer.js";
 
 const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
 
@@ -32,9 +32,9 @@ describe("Test Post and Comment", async function () {
             title: "Test post signature",
             content: 'some content...',
         };
-        const signature = await createCommentSignature(comment, signer);
+        const signature = await signPublication(comment, signer);
         const signedComment = {"signature": signature.toJSON(), ...comment};
-        const [isVerified, failedVerificationReason] = await verifyCommentSignature(signedComment);
+        const [isVerified, failedVerificationReason] = await verifyPublication(signedComment);
         assert.equal(isVerified, true, "Verification of signed comment should be true");
 
     });
@@ -48,10 +48,10 @@ describe("Test Post and Comment", async function () {
             title: "Test post signature",
             content: 'some content...',
         };
-        const signature = await createCommentSignature(comment, signer);
+        const signature = await signPublication(comment, signer);
         signature.signature = signature.signature.slice(1); // Corrupt signature by deleting one character
         const signedComment = {...signature.toJSON(), ...comment};
-        const [isVerified, failedVerificationReason] = await verifyCommentSignature(signedComment);
+        const [isVerified, failedVerificationReason] = await verifyPublication(signedComment);
         assert.equal(isVerified, false, "Verification of signed comment should be since signature is corrupted");
 
     });
@@ -81,9 +81,9 @@ describe("Test Post and Comment", async function () {
             title: "Test post signature",
             content: 'some content...',
         };
-        const signature = await createCommentSignature(comment, signer);
+        const signature = await signPublication(comment, signer);
         const signedComment = {"signature": signature.toJSON(), ...comment};
-        const [isVerified, failedVerificationReason] = await verifyCommentSignature(signedComment);
+        const [isVerified, failedVerificationReason] = await verifyPublication(signedComment);
         assert.equal(isVerified, true, "Verification of signed comment should be true");
         assert.equal(signedComment.signature.publicKey, publicKeyPem, "Generated public key should be same as provided");
     });

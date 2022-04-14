@@ -57,25 +57,25 @@ export async function getAddressFromPublicKeyPem(publicKeyPem) {
 }
 
 
-export async function createCommentSignature(comment, signer) {
+export async function signPublication(publication, signer) {
     const keyPair = await crypto.keys.import(signer.privateKey, "");
 
-    const commentEncoded = encode(keepKeys(JSON.parse(JSON.stringify(comment)), COMMENT_FIELDS_TO_SIGN));
+    const commentEncoded = encode(keepKeys(JSON.parse(JSON.stringify(publication)), COMMENT_FIELDS_TO_SIGN));
     const signatureData = uint8ArrayToString(await keyPair.sign(commentEncoded), 'base64');
     return new Signature({"signature": signatureData, "publicKey": signer.publicKey || publicKeyPem, "type": signer.type});
 }
 
 
 // Return [verification (boolean), reasonForFailing (string)]
-export async function verifyCommentSignature(comment) {
+export async function verifyPublication(publication) {
 
     try {
-        const peerId = await getPeerIdFromPublicKeyPem(comment.signature.publicKey);
-        if (!peerId.equals(PeerId.createFromB58String(comment.author.address)))
+        const peerId = await getPeerIdFromPublicKeyPem(publication.signature.publicKey);
+        if (!peerId.equals(PeerId.createFromB58String(publication.author.address)))
             return [false, "comment.author.address doesn't match comment.signature.publicKey"];
-        const commentWithFieldsToSign = keepKeys(JSON.parse(JSON.stringify(comment)), COMMENT_FIELDS_TO_SIGN);
+        const commentWithFieldsToSign = keepKeys(JSON.parse(JSON.stringify(publication)), COMMENT_FIELDS_TO_SIGN);
         const commentEncoded = encode(commentWithFieldsToSign);
-        const signatureIsValid = await peerId.pubKey.verify(commentEncoded, uint8ArrayFromString(comment.signature.signature, 'base64'));
+        const signatureIsValid = await peerId.pubKey.verify(commentEncoded, uint8ArrayFromString(publication.signature.signature, 'base64'));
         if (signatureIsValid)
             return [true,];
         else
