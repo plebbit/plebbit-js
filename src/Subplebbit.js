@@ -23,6 +23,7 @@ import * as fs from "fs";
 import {v4 as uuidv4} from 'uuid';
 import {loadIpnsAsJson, shallowEqual, timestamp} from "./Util.js";
 import Debug from "debug";
+import {verifyPublication} from "./Signer.js";
 
 const debug = Debug("plebbit-js:Subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
@@ -244,7 +245,13 @@ export class Subplebbit extends EventEmitter {
 
             } else if (postOrCommentOrVote instanceof Comment) {
                 // Comment and Post need to add file to ipfs
-                // TODO reject if signature is invalid
+                const signatureIsVerified = (await verifyPublication(postOrCommentOrVote))[0];
+                if (!signatureIsVerified) {
+                    debug(`Author (${postOrCommentOrVote.author.address}) comment's signature is invalid`);
+                    resolve({"reason": "Invalid signature"});
+                    return;
+                }
+
                 const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote.toJSONSkeleton()));
 
                 const ipnsKeys = (await this.plebbit.ipfsClient.key.list()).map(key => key["name"]);
