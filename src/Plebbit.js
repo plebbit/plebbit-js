@@ -1,7 +1,7 @@
 import Comment, {CommentEdit} from "./Comment.js";
 import Post from "./Post.js";
 import {Subplebbit} from "./Subplebbit.js";
-import {loadIpfsFileAsJson, loadIpnsAsJson} from "./Util.js";
+import {loadIpfsFileAsJson, loadIpnsAsJson, removeKeysWithUndefinedValues} from "./Util.js";
 import * as path from "path";
 import Vote from "./Vote.js";
 import {create as createIpfsClient} from "ipfs-http-client";
@@ -44,17 +44,18 @@ export class Plebbit {
         if (createPublicationOptions.signature)
             publicationProps = createPublicationOptions;
         else {
-            const commentSignature = await signPublication(createPublicationOptions, createPublicationOptions.signer);
             if (!createPublicationOptions.author.address)
-                createPublicationOptions.author.address = await getAddressFromPublicKeyPem(commentSignature.publicKey);
-            publicationProps = {"signature": commentSignature, ...createPublicationOptions};
+                createPublicationOptions.author.address = createPublicationOptions.signer.address;
+            const commentSignature = await signPublication(createPublicationOptions, createPublicationOptions.signer);
+            publicationProps = {...createPublicationOptions, "signature": commentSignature};
         }
         return publicationProps;
     }
 
     async createComment(createCommentOptions) {
         const commentSubplebbit = await this.getSubplebbit(createCommentOptions.subplebbitAddress); // TODO This should be fetched from cache
-        const commentProps = await this.#signPublicationIfNeeded(createCommentOptions);
+        const tempComment = createCommentOptions.title ? new Post(createCommentOptions, commentSubplebbit) : new Comment(createCommentOptions, commentSubplebbit); // To initialize default properties if needed (i.e.timestamp)
+        const commentProps = await this.#signPublicationIfNeeded({...removeKeysWithUndefinedValues(tempComment.toJSON()), ...createCommentOptions});
         if (commentProps.title)
             // Post
             return new Post(commentProps, commentSubplebbit);
