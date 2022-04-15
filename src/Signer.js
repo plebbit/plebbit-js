@@ -62,7 +62,7 @@ export async function signPublication(publication, signer) {
 
     const commentEncoded = encode(keepKeys(JSON.parse(JSON.stringify(publication)), COMMENT_FIELDS_TO_SIGN));
     const signatureData = uint8ArrayToString(await keyPair.sign(commentEncoded), 'base64');
-    return new Signature({"signature": signatureData, "publicKey": signer.publicKey || publicKeyPem, "type": signer.type});
+    return new Signature({"signature": signatureData, "publicKey": signer.publicKey, "type": signer.type});
 }
 
 
