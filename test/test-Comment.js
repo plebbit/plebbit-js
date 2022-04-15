@@ -115,6 +115,20 @@ describe("Test Post and Comment", async function () {
         });
     });
 
+    it("Publishing a comment with invalid signature fails", async () => {
+        return new Promise(async (resolve, reject) => {
+            const mockComment = await generateMockComment(post, clientPlebbit);
+            mockComment.signature.signature = mockComment.signature.signature.slice(1);
+            await mockComment.publish();
+            mockComment.once("challengeverification", async ([challengeVerificationMessage, updatedComment]) => {
+                assert.equal(challengeVerificationMessage.challengePassed, false, "Challenge should not succeed if comment signature is invalid");
+                assert.equal(challengeVerificationMessage.reason, "Invalid signature", "There should be an error message that tells the user that comment's signature is invalid");
+                resolve();
+            });
+        });
+
+    });
+
     it("Can edit a comment", async function () {
         return new Promise(async (resolve, reject) => {
             const editedText = "edit test";
