@@ -91,6 +91,8 @@ Signature {
 Signer {
   privateKey?: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
   type: 'rsa' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm https://eips.ethereum.org/EIPS/eip-191
+  publicKey?: string // PEM format, optional, not needed for signing
+  address?: string // public key hash, optional, not needed for signing
 }
 Subplebbit /* (IPNS record Subplebbit.address) */ {
   title?: string
@@ -702,7 +704,7 @@ An object which may have the following keys:
 
 ```js
 const newRandomSigner = await plebbit.createSigner()
-const signerFromPrivateKey = await plebbit.createSigner({privateKey: 'Qwer...'})
+const signerFromPrivateKey = await plebbit.createSigner({privateKey: '-----BEGIN ENCRYPTED PRIVATE KEY...'})
 ```
 
 ## Subplebbit API
