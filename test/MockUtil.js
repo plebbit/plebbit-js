@@ -54,7 +54,7 @@ export async function generateMockPostWithRandomTimestamp(subplebbitAddress, ple
 
 }
 
-export async function generateMockVote(parentPostOrComment, vote, subplebbitAddress, plebbit) {
+export async function generateMockVote(parentPostOrComment, vote, plebbit) {
     const voteTime = Date.now() / 1000;
     const signer = await plebbit.createSigner();
     const voteObj = await plebbit.createVote({
@@ -62,7 +62,7 @@ export async function generateMockVote(parentPostOrComment, vote, subplebbitAddr
         "signer": signer,
         "commentCid": parentPostOrComment.commentCid || parentPostOrComment.postCid,
         "vote": vote,
-        "subplebbitAddress": subplebbitAddress
+        "subplebbitAddress": parentPostOrComment.subplebbitAddress
     });
     voteObj.once("challenge", challengeMsg => {
         voteObj.publishChallengeAnswers(undefined);
