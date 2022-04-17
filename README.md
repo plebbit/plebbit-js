@@ -49,8 +49,10 @@ Vote extends Publication {
 }
 CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   content?: string // the author has edited the comment content
-  signature?: Signature // signature of the edited content by the author
+  editSignature?: Signature // signature of the edited content by the author
   editTimestamp?: number // the time of the last content edit
+  editReason?: string // reason of the author edit
+  deleted?: boolean // author deleted their comment
   upvoteCount: number
   downvoteCount: number
   replies: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
@@ -58,11 +60,10 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   spoiler?: boolean
   pinned?: boolean
   locked?: boolean
-  deleted?: boolean // author deleted their comment
   removed?: boolean // mod deleted a comment
-  reason?: string // reason the mod took a mod action
+  moderatorReason?: string // reason the mod took a mod action
   updatedAt: number // timestamp in seconds the IPNS record was updated
-  author?: Author // mod can edit the flair
+  authorFlair?: Flair // mod can edit an author's flair
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
 }
 Author {
@@ -304,7 +305,9 @@ Challenge {
   - `comment.cid`
   - `(only available after first update event)`
   - `comment.editTimestamp`
-  - `comment.original`
+  - `comment.editSignature`
+  - `comment.editReason`
+  - `comment.originalContent`
   - `comment.upvoteCount`
   - `comment.downvoteCount`
   - `comment.updatedAt`
@@ -312,7 +315,7 @@ Challenge {
   - `comment.deleted`
   - `comment.removed`
   - `comment.locked`
-  - `comment.reason`
+  - `comment.moderatorReason`
   - `comment.replies`
 - [Comment Events](#comment-events)
   - [`update`](#update)
@@ -607,31 +610,32 @@ An object which may have the following keys:
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | subplebbitAddress | `string` | IPNS name of the subplebbit |
-| cid | `string` | The comment CID to be edited |
+| commentCid | `string` | The comment CID to be edited (don't use 'cid' because eventually CommentEdit.cid will exist) |
 | signer | `Signer` | Signer of the edit, either original author or mod |
 | content | `string` or `undefined` | (Only author) Edited content of the comment |
 | editTimestamp | `number` or `undefined` | (Only author) Time of content edit in ms, `Date.now()` if undefined |
+| editReason | `string` or `undefined` | (Only author) Reason of the edit |
 | deleted | `boolean` or `undefined` | (Only author) Edited deleted status of the comment |
 | flair | `Flair` or `undefined` | (Author or mod) Edited flair of the comment |
 | spoiler | `boolean` or `undefined` | (Author or mod) Edited spoiler of the comment |
 | pinned | `boolean` or `undefined` | (Only mod) Edited pinned status of the comment |
 | locked | `boolean` or `undefined` | (Only mod) Edited locked status of the comment |
 | removed | `boolean` or `undefined` | (Only mod) Edited removed status of the comment |
-| reason | `string` or `undefined` | (Only mod) Reason for mod action |
+| moderatorReason | `string` or `undefined` | (Only mod) Reason for mod action |
 
 #### Returns
 
 | Type | Description |
 | -------- | -------- |
-| `Comment` | A `Comment` instance |
+| `CommentEdit` | A `CommentEdit` instance |
 
 #### Example
 
 ```js
 const commentEdit = plebbit.createCommentEdit(createCommentEditOptions)
-commentEdit.on('challenge', async (challengeMessage) => {
+commentEdit.on('challenge', async (challengeMessage, _commentEdit) => {
   const challengeAnswers = await askUserForChallengeAnswer(challengeMessage.challenges)
-  commentEdit.publishChallengeAnswers(challengeAnswers)
+  _commentEdit.publishChallengeAnswers(challengeAnswers)
 })
 commentEdit.publish()
 ```
@@ -669,9 +673,9 @@ An object which may have the following keys:
 
 ```js
 const vote = plebbit.createVote(createVoteOptions)
-vote.on('challenge', async (challengeMessage) => {
+vote.on('challenge', async (challengeMessage, _vote) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
-  comment.publishChallengeAnswers(challengeAnswers)
+  _vote.publishChallengeAnswers(challengeAnswers)
 })
 vote.publish()
 ```
