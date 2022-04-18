@@ -3,6 +3,9 @@ import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
 import all from 'it-all';
 import last from "it-last";
 import Debug from "debug";
+import fetch from 'node-fetch';
+import * as crypto from "libp2p-crypto";
+import FormData from "form-data";
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS = Object.freeze({
     "HOUR": 60 * 60,
@@ -194,6 +197,28 @@ export function newScore(comment) {
 
 export function removeKeysWithUndefinedValues(object) {
     return JSON.parse(JSON.stringify(object));
+}
+
+// This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
+export async function ipfsImportKey(ipnsKeyName, privateKey, password, plebbit) {
+    return new Promise(async (resolve, reject) => {
+        plebbit.ipfsClient.key.import(ipnsKeyName, privateKey, password).then(resolve).catch(async err => {
+            // Error is likely due to issue above. Will send a manual post request with key in body to comply with go-ipfs expectation
+            if (err?.message === "file argument 'key' is required\n"){
+                const keyPair =  await crypto.keys.import(privateKey, password);
+                const data = new FormData();
+                data.append('file', keyPair.bytes);
+                fetch(`${plebbit.ipfsHttpClientOptions.url}/key/import?arg=${ipnsKeyName}`, {
+                    method: 'POST',
+                    body: data,
+                    headers: plebbit.ipfsHttpClientOptions.headers
+                }).then(resolve).catch(reject);
+
+            }
+            else
+                reject(err);
+        })
+    });
 }
 
 
