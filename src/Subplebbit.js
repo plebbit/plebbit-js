@@ -14,22 +14,21 @@ import {
     PUBSUB_MESSAGE_TYPES
 } from "./Challenge.js";
 import assert from "assert";
-import knex from 'knex';
-import DbHandler from "./DbHandler.js";
+import DbHandler, {SIGNER_USAGES} from "./DbHandler.js";
 import {createCaptcha} from "captcha-canvas/js-script/extra.js";
 import {SORTED_COMMENTS_TYPES, SortHandler} from "./SortHandler.js";
 import * as path from "path";
 import * as fs from "fs";
 import {v4 as uuidv4} from 'uuid';
-import {loadIpnsAsJson, shallowEqual, timestamp} from "./Util.js";
+import {ipfsImportKey, loadIpnsAsJson, shallowEqual, timestamp} from "./Util.js";
 import Debug from "debug";
-import {verifyPublication} from "./Signer.js";
+import {Signer, verifyPublication} from "./Signer.js";
+import * as crypto from "libp2p-crypto";
+import * as jose from "jose";
 
 const debug = Debug("plebbit-js:Subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 180000; // 3 minutes
-
-// import {Signer} from "./Signer.js";
 
 
 export class Subplebbit extends EventEmitter {
@@ -54,41 +53,69 @@ export class Subplebbit extends EventEmitter {
         this._dbConfig = mergedProps["database"];
         this.sortedPosts = mergedProps["sortedPosts"];
         this.sortedPostsCids = mergedProps["sortedPostsCids"];
-        this.setIpnsKey(mergedProps["subplebbitAddress"], mergedProps["ipnsKeyName"]);
+        this.subplebbitAddress = mergedProps["subplebbitAddress"];
+        this.ipnsKeyName = mergedProps["ipnsKeyName"];
         this.pubsubTopic = mergedProps["pubsubTopic"] || this.subplebbitAddress;
         this.sortHandler = new SortHandler(this);
         this.challengeTypes = mergedProps["challengeTypes"];
         this.metricsCid = mergedProps["metricsCid"];
         this.createdAt = mergedProps["createdAt"];
         this.updatedAt = mergedProps["updatedAt"];
-        // this.signer = mergedProps["signer"] instanceof Signer ? mergedProps["signer"] : new Signer(mergedProps["signer"]);
+        this.signer = mergedProps["signer"];
+        this.encryption = mergedProps["encryption"];
     }
 
-    async #initDb() {
-        const ipfsKeys = (await this.plebbit.ipfsClient.key.list()).map(key => key["id"]);
-        const ranByOwner = ipfsKeys.includes(this.subplebbitAddress);
-        // Default settings for subplebbit owner node
-        if (ranByOwner && !this._dbConfig) {
-            fs.mkdirSync(this.plebbit.dataPath, {"recursive": true});
-            this._dbConfig = {
-                client: 'better-sqlite3', // or 'better-sqlite3'
-                connection: {
-                    filename: path.join(this.plebbit.dataPath, this.subplebbitAddress)
-                },
-                useNullAsDefault: true
+    async #initSignerIfNeeded() {
+        if (this.dbHandler) {
+            const dbSigner = await this.dbHandler.querySubplebbitSigner();
+            if (!dbSigner) {
+                assert(this.signer, "Subplebbit needs a signer to start");
+                debug(`Subplebbit has no signer in DB, will insert provided signer from createSubplebbitOptions into DB`);
+                await this.dbHandler.insertSigner({
+                    ...JSON.parse(JSON.stringify(this.signer)),
+                    "ipnsKeyName": this.signer.address,
+                    "usage": SIGNER_USAGES.SUBPLEBBIT
+                });
+            } else if (!this.signer) {
+                debug(`Subplebbit loaded signer from DB`);
+                this.signer = dbSigner;
             }
         }
 
-        if (!this._dbConfig)
-            return;
-        this.dbHandler = new DbHandler(knex(this._dbConfig), this);
-        await this.dbHandler.createTablesIfNeeded();
+        this.encryption = {"type": this.signer.type, "publicKey": this.signer.publicKey};
+
+        if (!this.subplebbitAddress && this.signer) {
+            // Look for subplebbit address (key.id) in the ipfs node
+            const ipnsKeys = (await this.plebbit.ipfsClient.key.list());
+            const ipfsKey = ipnsKeys.filter(key => key.name === this.signer.address)[0];
+            debug(Boolean(ipfsKey) ? `Owner has provided a signer that maps to ${ipfsKey.id} subplebbit address within ipfs node` : `Owner has provided a signer that doesn't map to any subplebbit address within the ipfs node`);
+            this.subplebbitAddress = ipfsKey?.id;
+        }
+
     }
 
-    setIpnsKey(newIpnsName, newIpnsKeyName) {
-        this.subplebbitAddress = newIpnsName;
-        this.ipnsKeyName = newIpnsKeyName;
+    async #initDbIfNeeded() {
+        if (!this._dbConfig) {
+            assert(this.subplebbitAddress, "Need subplebbit address to initialize a DB connection");
+            const dbPath = path.join(this.plebbit.dataPath, this.subplebbitAddress);
+            debug(`User has not provided a DB config. Will initialize DB in ${dbPath}`);
+            this._dbConfig = {
+                client: 'better-sqlite3', // or 'better-sqlite3'
+                connection: {
+                    filename: dbPath
+                },
+                useNullAsDefault: true
+            }
+        } else
+            debug(`User provided a DB config of ${this._dbConfig}`);
+
+        const dir = path.dirname(this._dbConfig.connection.filename);
+        await fs.promises.mkdir(dir, {"recursive": true});
+        this.dbHandler = new DbHandler(this._dbConfig, this);
+        await this.dbHandler.createTablesIfNeeded();
+        await this.#initSignerIfNeeded();
     }
+
 
     setProvideCaptchaCallback(newCallback) {
         this.provideCaptchaCallback = newCallback;
@@ -98,16 +125,12 @@ export class Subplebbit extends EventEmitter {
         this.validateCaptchaAnswerCallback = newCallback;
     }
 
-    async setDbConfig(dbConfig) {
-        this._dbConfig = dbConfig;
-        await this.#initDb();
-    }
-
     #toJSONInternal() {
         return {
             ...this.toJSON(),
             "ipnsKeyName": this.ipnsKeyName,
-            "database": this._dbConfig
+            "database": this._dbConfig,
+            "signer": this.signer
         };
     }
 
@@ -124,24 +147,29 @@ export class Subplebbit extends EventEmitter {
             "challengeTypes": this.challengeTypes,
             "metricsCid": this.metricsCid,
             "createdAt": this.createdAt,
-            "updatedAt": this.updatedAt
+            "updatedAt": this.updatedAt,
+            "encryption": this.encryption
         };
     }
 
     async edit(newSubplebbitOptions) {
-        this.#initSubplebbit(newSubplebbitOptions);
         return new Promise(async (resolve, reject) => {
+                this.#initSubplebbit(newSubplebbitOptions);
+                await this.#initSignerIfNeeded();
                 if (!this.subplebbitAddress) { // TODO require signer
                     debug(`Subplebbit does not have an address`);
-                    this.plebbit.ipfsClient.key.gen(this.title).then(ipnsKey => {
-                        debug(`Generated an address for subplebbit (${ipnsKey.id})`);
+                    const ipnsKeyName = this.signer.address;
+                    ipfsImportKey(ipnsKeyName, this.signer.privateKey, '', this.plebbit).then(res => res.json()).then(ipnsKey => {
+                        const subplebbitAddress = ipnsKey["id"] || ipnsKey["Id"]
+                        debug(`Generated an address for subplebbit (${subplebbitAddress})`);
                         this.edit({
-                            "subplebbitAddress": ipnsKey["id"],
-                            "ipnsKeyName": ipnsKey["name"],
+                            "subplebbitAddress": subplebbitAddress, // It seems ipfs key import returns {Id, Name} while ipfs gen returns {id, name} so we're accounting for both cases here
+                            "ipnsKeyName": ipnsKey["name"] || ipnsKey["Name"],
                             "createdAt": timestamp()
                         }).then(resolve).catch(reject);
                     }).catch(reject);
                 } else {
+                    await this.#initDbIfNeeded();
                     this.updatedAt = timestamp();
                     this.plebbit.ipfsClient.add(JSON.stringify(this)).then(file => {
                         this.plebbit.ipfsClient.name.publish(file["cid"], {
@@ -457,8 +485,10 @@ export class Subplebbit extends EventEmitter {
 
 
     async startPublishing(syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS) {
-        if (!this.dbHandler)
-            await this.#initDb();
+        await this.#initDbIfNeeded();
+        await this.#initSignerIfNeeded();
+
+
         if (!this.provideCaptchaCallback) {
             debug(`Subplebbit-startPublishing`, "Subplebbit owner has not provided any captcha. Will go with default image captcha");
             this.provideCaptchaCallback = this.#defaultProvideCaptcha;

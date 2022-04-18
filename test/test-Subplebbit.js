@@ -10,19 +10,24 @@ import {generateMockPost, loadAllPagesThroughSortedComments} from "./MockUtil.js
 const startTestTime = Date.now() / 1000;
 const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
 const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
-const subplebbit = await serverPlebbit.createSubplebbit({});
+let subplebbit;
 
 const mockPosts = [];
 describe("Test Subplebbit functionality", async () => {
 
     before(async () => {
         await unsubscribeAllPubsubTopics([serverPlebbit.ipfsClient, clientPlebbit.ipfsClient]);
-    });    // Stop publishing once we're done with tests
-    after(async () => await subplebbit.stopPublishing());
+    });
+    after(async () => await subplebbit.stopPublishing()); // Stop publishing once we're done with tests
 
 
     it("New subplebbits can be published", async function () {
-        await subplebbit.edit({"title": `Test subplebbit - ${startTestTime}`});
+        const signer = await serverPlebbit.createSigner();
+        const subplebbit = await serverPlebbit.createSubplebbit({
+            "signer": signer,
+            "title": `Test subplebbit - ${startTestTime}`
+        });
+
         // Should have ipns key now
         const loadedSubplebbit = await clientPlebbit.getSubplebbit(subplebbit.subplebbitAddress);
         assert.equal(JSON.stringify(loadedSubplebbit), JSON.stringify(subplebbit), "Failed to publish new subplebbit");

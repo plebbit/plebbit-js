@@ -4,23 +4,27 @@ import Author from "./Author.js";
 import Comment from "./Comment.js";
 import {replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp} from "./Util.js";
 import Vote from "./Vote.js";
-
+import knex from 'knex';
 import Debug from "debug";
 
 const debug = Debug("plebbit-js:DbHandler");
+
+export const SIGNER_USAGES = {SUBPLEBBIT: "subplebbit", COMMENT: "comment"};
 
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
     VOTES: "votes",
     AUTHORS: "authors",
-    CHALLENGES: "challenges"
+    CHALLENGES: "challenges",
+    SIGNERS: "signers" // To store private keys of subplebbit and comments' IPNS
 });
 
 
 class DbHandler {
-    constructor(knex, subplebbit) {
-        this.knex = knex;
+    constructor(dbConfig, subplebbit) {
+        this._dbConfig = dbConfig;
+        this.knex = knex(dbConfig);
         this.subplebbit = subplebbit;
     }
 
@@ -51,7 +55,7 @@ class DbHandler {
             table.timestamp("timestamp").notNullable().checkPositive();
             table.text("signature").notNullable().unique(); // Will contain {signature, public key, type}
             table.text("ipnsName").notNullable().unique();
-            table.text("commentIpnsKeyName").notNullable().unique();
+            table.text("commentIpnsKeyName").notNullable().unique().references("ipnsKeyName").inTable(TABLES.SIGNERS);
             table.text("title").nullable();
             table.integer("depth").notNullable();
             // CommentUpdate props
@@ -100,8 +104,19 @@ class DbHandler {
         });
     }
 
+    async #createSignersTable() {
+        await this.knex.schema.createTable(TABLES.SIGNERS, (table) => {
+            table.text("ipnsKeyName").notNullable().unique().primary();
+            table.text("privateKey").notNullable().unique();
+            table.text("publicKey").notNullable().unique();
+            table.text("address").nullable();
+            table.text("type").notNullable(); // RSA or any other type
+            table.enum("usage", Object.values(SIGNER_USAGES)).notNullable();
+        });
+    }
+
     async createTablesIfNeeded() {
-        const functions = [this.#createCommentsTable, this.#createVotesTable, this.#createAuthorsTable, this.#createChallengesTable];
+        const functions = [this.#createCommentsTable, this.#createVotesTable, this.#createAuthorsTable, this.#createChallengesTable, this.#createSignersTable];
         const tables = Object.values(TABLES);
         for (const table of tables) {
             const i = tables.indexOf(table);
@@ -351,6 +366,21 @@ class DbHandler {
             this.#baseCommentQuery(trx).whereNotNull("title").orderBy("id", "desc").first().then(async res => {
                 resolve((await this.#createCommentsFromRows.bind(this)(res, trx))[0]);
             }).catch(reject);
+        });
+    }
+
+    async insertSigner(signer, trx){
+        return new Promise(async (resolve, reject) => {
+            this.#baseTransaction(trx)(TABLES.SIGNERS).insert(signer).then(resolve).catch(err => {
+                debug(err);
+                reject(err);
+            });
+        });
+    }
+
+    async querySubplebbitSigner(trx){
+        return new Promise(async (resolve, reject) => {
+            this.#baseTransaction(trx)(TABLES.SIGNERS).where({"usage": SIGNER_USAGES.SUBPLEBBIT}).first().then(resolve).catch(reject);
         });
     }
 }
