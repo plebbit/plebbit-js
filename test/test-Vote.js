@@ -25,13 +25,13 @@ describe("Test Vote", async () => {
 
     it("Can upvote a comment", async () => {
         return new Promise(async (resolve, reject) => {
-            const vote = await generateMockVote(post, 1, post.subplebbitAddress, clientPlebbit);
+            const vote = await generateMockVote(post, 1, clientPlebbit);
 
             subplebbit.setProvideCaptchaCallback((challengeRequestMessage) => {
                 return [null, "Captcha is skipped for all"];
             });
 
-            await (await generateMockVote(post, 0, post.subplebbitAddress, clientPlebbit)).publish(); // This vote is added just to start an "update" event and make sure originalUpvoteCount down below is accurate
+            await (await generateMockVote(post, 0, clientPlebbit)).publish(); // This vote is added just to start an "update" event and make sure originalUpvoteCount down below is accurate
 
             subplebbit.once("update", async (updatedSubplebbit) => {
                 await post.update();
@@ -51,10 +51,9 @@ describe("Test Vote", async () => {
 
     it("Throws an error when vote is duplicated", async () => {
         return new Promise(async (resolve, reject) => {
-            const vote = await clientPlebbit.createVote({
-                ...previousVotes[0].toJSON(),
-                "timestamp": timestamp(),
-            });
+            const vote = await generateMockVote(post, 1, clientPlebbit);
+            vote.author = previousVotes[0].author;
+            vote.timestamp = previousVotes[0].timestamp;
             vote.publish().then(() => {
                 vote.once("challengeverification", async ([challengeVerificationMsg,]) => {
                     assert.equal(challengeVerificationMsg.challengePassed, false, "Should fail to publish since vote is duplicated");
@@ -113,7 +112,7 @@ describe("Test Vote", async () => {
         return new Promise(async (resolve, reject) => {
             await post.update();
             const originalDownvote = post.downvoteCount;
-            const vote = await generateMockVote(post, -1, post.subplebbitAddress, clientPlebbit);
+            const vote = await generateMockVote(post, -1, clientPlebbit);
             vote.publish().then(async () => {
                 post.once("update", async (updatedPost) => {
                     assert.equal(updatedPost.downvoteCount, originalDownvote + 1);
