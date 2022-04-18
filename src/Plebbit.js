@@ -72,8 +72,11 @@ export class Plebbit {
                 ...createSubplebbitOptions,
                 "ipnsKeyName": ipnsKeyName
             });
-        } else
-            return new Subplebbit(createSubplebbitOptions, this);
+        } else {
+            const subplebbit = new Subplebbit(createSubplebbitOptions, this);
+            await subplebbit.edit(createSubplebbitOptions);
+            return subplebbit;
+        }
     }
 
     async createVote(createVoteOptions) {
