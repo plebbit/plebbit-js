@@ -8,7 +8,7 @@ import * as jose from "jose";
 
 // note: postCid is not included because it's written by the sub owner, not the author
 
-const COMMENT_FIELDS_TO_SIGN = ["subplebbitAddress", "author", "timestamp", "parentCid", "content", "title", "link"];
+const PUBLICATION_FIELDS_TO_SIGN = ["subplebbitAddress", "author", "timestamp", "parentCid", "content", "title", "link", "vote"];
 
 export class Signer {
     constructor(props) {
@@ -38,7 +38,7 @@ async function getPublicKeyRsaConstructor() {
     // we are forced to do this because publicKeyRsaConstructor isn't public
     if (!publicKeyRsaConstructor) {
         const keyPair = await crypto.keys.generateKeyPair('RSA', 2048)
-        // get the constuctor for the PublicKeyRsaInstance
+        // get the constructor for the PublicKeyRsaInstance
         publicKeyRsaConstructor = keyPair.public.constructor
     }
     return publicKeyRsaConstructor
@@ -60,7 +60,7 @@ export async function getAddressFromPublicKeyPem(publicKeyPem) {
 export async function signPublication(publication, signer) {
     const keyPair = await crypto.keys.import(signer.privateKey, "");
 
-    const commentEncoded = encode(keepKeys(JSON.parse(JSON.stringify(publication)), COMMENT_FIELDS_TO_SIGN));
+    const commentEncoded = encode(keepKeys(JSON.parse(JSON.stringify(publication)), PUBLICATION_FIELDS_TO_SIGN));
     const signatureData = uint8ArrayToString(await keyPair.sign(commentEncoded), 'base64');
     return new Signature({"signature": signatureData, "publicKey": signer.publicKey, "type": signer.type});
 }
@@ -73,7 +73,7 @@ export async function verifyPublication(publication) {
         const peerId = await getPeerIdFromPublicKeyPem(publication.signature.publicKey);
         if (!peerId.equals(PeerId.createFromB58String(publication.author.address)))
             return [false, "comment.author.address doesn't match comment.signature.publicKey"];
-        const commentWithFieldsToSign = keepKeys(JSON.parse(JSON.stringify(publication)), COMMENT_FIELDS_TO_SIGN);
+        const commentWithFieldsToSign = keepKeys(JSON.parse(JSON.stringify(publication)), PUBLICATION_FIELDS_TO_SIGN);
         const commentEncoded = encode(commentWithFieldsToSign);
         const signatureIsValid = await peerId.pubKey.verify(commentEncoded, uint8ArrayFromString(publication.signature.signature, 'base64'));
         if (signatureIsValid)
