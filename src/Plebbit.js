@@ -81,7 +81,8 @@ export class Plebbit {
 
     async createVote(createVoteOptions) {
         const subplebbit = await this.getSubplebbit(createVoteOptions.subplebbitAddress);
-        const voteProps = await this.#signPublicationIfNeeded(createVoteOptions);
+        const tempVote = new Vote(createVoteOptions); // To initialize default properties if needed (i.e.timestamp)
+        const voteProps = await this.#signPublicationIfNeeded({...removeKeysWithUndefinedValues(tempVote.toJSON()), ...createVoteOptions});
         return new Vote(voteProps, subplebbit);
     }
 
