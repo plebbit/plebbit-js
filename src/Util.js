@@ -200,7 +200,7 @@ export function removeKeysWithUndefinedValues(object) {
 }
 
 // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
-export async function ipfsImportKey(ipnsKeyName, privateKey, password, plebbit) {
+export async function ipfsImportKey(ipnsKeyName, privateKey, password='', plebbit) {
     return new Promise(async (resolve, reject) => {
         plebbit.ipfsClient.key.import(ipnsKeyName, privateKey, password).then(resolve).catch(async err => {
             // Error is likely due to issue above. Will send a manual post request with key in body to comply with go-ipfs expectation
@@ -212,7 +212,7 @@ export async function ipfsImportKey(ipnsKeyName, privateKey, password, plebbit) 
                     method: 'POST',
                     body: data,
                     headers: plebbit.ipfsHttpClientOptions.headers
-                }).then(resolve).catch(reject);
+                }).then(res => res.json()).then(resolve).catch(reject);
 
             }
             else
