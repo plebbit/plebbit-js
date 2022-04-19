@@ -35,7 +35,7 @@ const getIpfsKeyFromPrivateKeyPem = async (privateKeyPem, password = '') => {
   // you can optionally encrypt the PEM by providing a password
   // https://en.wikipedia.org/wiki/PKCS_8
   const keyPair = await libp2pCrypto.keys.import(privateKeyPem, password)
-  return keyPair.marshal()
+  return keyPair.bytes
 }
 
 const getPublicKeyPemFromKeyPair = async (keyPair) => {
