@@ -218,7 +218,7 @@ PubsubMessage: {
 ChallengeRequestMessage extends PubsubMessage /* (sent by post author) */ {
   challengeRequestId: string // random string choosen by sender
   acceptedChallengeTypes: string[] // list of challenge types the client can do, for example cli clients or old clients won't do all types
-  encryptedPublication: string // base64 string encrypted with sub owner's public key, example https://github.com/plebbit/plebbit-js/blob/master/docs/signatures.md
+  encryptedPublication: Encrypted
   // plebbit-js should decrypt the publication when possible, and add an `publication` property for convenience (not part of the broadcasted pubsub message)
 }
 ChallengeMessage extends PubsubMessage /* (sent by subplebbit owner) */ {
@@ -236,12 +236,18 @@ ChallengeVerificationMessage extends PubsubMessage /* (sent by subplebbit owner)
   challengeSuccess: bool // true if the challenge was successfully completed by the requester
   challengeErrors?: (string|undefined)[] // tell the user which challenge failed and why
   reason?: string // reason for failed verification, for example post content is too long. could also be used for successful verification that bypass the challenge, for example because an author has good history
-  encryptedPublication: string // base64 string encrypted with author's public key, example https://github.com/plebbit/plebbit-js/blob/master/docs/signatures.md, should include Publication.cid so the author can resolve his own published comment immediately
+  encryptedPublication: Encrypted
   // plebbit-js should decrypt the publication when possible, and add an `publication` property for convenience (not part of the broadcasted pubsub message)
 }
 Challenge {
   type: 'image' | 'text' | 'audio' | 'video' | 'html' // tells the client how to display the challenge, start with implementing image and text only first
   challenge: buffer // data required to complete the challenge, could be html, png, etc.
+}
+Encrypted {
+  // examples available at https://github.com/plebbit/plebbit-js/blob/master/docs/signatures.md
+  encrypted: string // base64 encrypted string with AES ECB 128 // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)
+  encryptedKey: string // base64 encrypted key for the AES ECB 128 encrypted content, encrypted using subplebbit.encryption settings, always generate a new key with AES ECB or it's insecure
+  type: 'aes-ecb'
 }
 ```
 
