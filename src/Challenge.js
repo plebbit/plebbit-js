@@ -25,7 +25,7 @@ export class Challenge {
 class ChallengeBase {
     toJSONForDb() {
         const obj = JSON.parse(JSON.stringify(this));
-        delete obj.publication;
+        delete obj.encryptedPublication;
         return obj;
     }
 }
@@ -36,7 +36,7 @@ export class ChallengeRequestMessage extends ChallengeBase {
         this.type = PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST // One of CHALLENGE_STAGES
         this.challengeRequestId = props["challengeRequestId"];
         this.acceptedChallengeTypes = parseJsonIfString(props["acceptedChallengeTypes"]);
-        this.publication = props["publication"];
+        this.encryptedPublication = props["encryptedPublication"];
     }
 
     toJSONForDb() {
@@ -80,7 +80,7 @@ export class ChallengeVerificationMessage extends ChallengeBase {
         this.challengePassed = props["challengePassed"];
         this.challengeErrors = parseJsonIfString(props["challengeErrors"]);
         this.reason = props["reason"];
-        this.publication = props["publication"];
+        this.encryptedPublication = props["encryptedPublication"];
     }
 
     toJSONForDb() {

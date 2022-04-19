@@ -91,8 +91,8 @@ class Comment extends Publication {
 
     setCommentIpnsKey(ipnsKey) {
         // Contains name and id
-        this.ipnsName = ipnsKey["id"];
-        this.commentIpnsKeyName = ipnsKey["name"];
+        this.ipnsName = ipnsKey["id"] || ipnsKey["Id"];
+        this.commentIpnsKeyName = ipnsKey["name"] || ipnsKey["Name"];
     }
 
     setPostCid(newPostCid) {

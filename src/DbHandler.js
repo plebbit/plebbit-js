@@ -384,6 +384,15 @@ class DbHandler {
             this.#baseTransaction(trx)(TABLES.SIGNERS).where({"usage": SIGNER_USAGES.SUBPLEBBIT}).first().then(resolve).catch(reject);
         });
     }
+
+    async querySigner(ipnsKeyName, trx){
+        try {
+            return await this.#baseTransaction(trx)(TABLES.SIGNERS).where({"ipnsKeyName": ipnsKeyName}).first();
+        }
+        catch (e) {
+            debug(`Failed to query signer due to error = ${e}`);
+        }
+    }
 }
 
 export default DbHandler;

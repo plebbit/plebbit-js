@@ -6,6 +6,8 @@ import EventEmitter from "events";
 import Debug from "debug";
 import {parseJsonIfString, timestamp} from "./Util.js";
 import Author from "./Author.js";
+import {decrypt, encrypt} from "./Signer.js";
+
 
 const debug = Debug("plebbit-js:Publication");
 
@@ -20,6 +22,7 @@ class Publication extends EventEmitter {
     _initProps(props) {
         this.subplebbitAddress = props["subplebbitAddress"] || this.subplebbit.subplebbitAddress;
         this.timestamp = props["timestamp"] || timestamp();
+        this.signer = this.signer || props["signer"];
         this.signature = parseJsonIfString(props["signature"]);
         this.author = new Author(props["author"]);
     }
@@ -61,6 +64,7 @@ class Publication extends EventEmitter {
                 debug(`Challenge ${msgParsed.challengeRequestId} has failed to pass. Challenge errors = ${msgParsed.challengeErrors}, reason = ${msgParsed.reason}`);
             else {
                 debug(`Challenge (${msgParsed.challengeRequestId}) has passed. Will update publication props from ChallengeVerificationMessage.publication`);
+                msgParsed.publication = JSON.parse(await decrypt(msgParsed.encryptedPublication.encryptedString, msgParsed.encryptedPublication.encryptedKey,this.signer.privateKey));
                 this._initProps(msgParsed.publication);
             }
             this.emit("challengeverification", [msgParsed, this]);
@@ -79,22 +83,18 @@ class Publication extends EventEmitter {
     }
 
     async publish(userOptions) {
-        return new Promise(async (resolve, reject) => {
-            const options = {"acceptedChallengeTypes": [], ...userOptions};
-            this.challenge = new ChallengeRequestMessage({
-                "publication": this.toJSON(),
-                "challengeRequestId": uuidv4(),
-                ...options,
-            });
-            Promise.all([
-                this.subplebbit.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, uint8ArrayFromString(JSON.stringify(this.challenge))),
-                this.subplebbit.plebbit.ipfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.#handleChallengeExchange.bind(this))
-            ]).then(() => {
-                debug(`Sent a challenge request (${this.challenge.challengeRequestId})`);
-                resolve();
-            }).catch(reject);
-
+        const options = {"acceptedChallengeTypes": [], ...userOptions};
+        const encryptedPublication = await encrypt(JSON.stringify(this), this.subplebbit.encryption.publicKey);
+        this.challenge = new ChallengeRequestMessage({
+            "encryptedPublication": encryptedPublication,
+            "challengeRequestId": uuidv4(),
+            ...options,
         });
+        await Promise.all([
+            this.subplebbit.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, uint8ArrayFromString(JSON.stringify(this.challenge))),
+            this.subplebbit.plebbit.ipfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.#handleChallengeExchange.bind(this))
+        ]);
+        debug(`Sent a challenge request (${this.challenge.challengeRequestId})`);
     }
 }
 
