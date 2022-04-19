@@ -112,6 +112,7 @@ class DbHandler {
             table.text("address").nullable();
             table.text("type").notNullable(); // RSA or any other type
             table.enum("usage", Object.values(SIGNER_USAGES)).notNullable();
+            table.binary("ipfsKey").notNullable().unique();
         });
     }
 

@@ -200,15 +200,14 @@ export function removeKeysWithUndefinedValues(object) {
 }
 
 // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
-export async function ipfsImportKey(ipnsKeyName, privateKey, password='', plebbit) {
+export async function ipfsImportKey(signer, plebbit, password='') {
     return new Promise(async (resolve, reject) => {
-        plebbit.ipfsClient.key.import(ipnsKeyName, privateKey, password).then(resolve).catch(async err => {
+        plebbit.ipfsClient.key.import(signer.ipnsKeyName, signer.privateKey, password).then(resolve).catch(async err => {
             // Error is likely due to issue above. Will send a manual post request with key in body to comply with go-ipfs expectation
             if (err?.message === "file argument 'key' is required\n"){
-                const keyPair =  await crypto.keys.import(privateKey, password);
                 const data = new FormData();
-                data.append('file', keyPair.bytes);
-                fetch(`${plebbit.ipfsHttpClientOptions.url}/key/import?arg=${ipnsKeyName}`, {
+                data.append('file', signer.ipfsKey);
+                fetch(`${plebbit.ipfsHttpClientOptions.url}/key/import?arg=${signer.ipnsKeyName}`, {
                     method: 'POST',
                     body: data,
                     headers: plebbit.ipfsHttpClientOptions.headers

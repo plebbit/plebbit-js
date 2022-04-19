@@ -159,7 +159,7 @@ export class Subplebbit extends EventEmitter {
                 if (!this.subplebbitAddress) { // TODO require signer
                     debug(`Subplebbit does not have an address`);
                     const ipnsKeyName = this.signer.address;
-                    ipfsImportKey(ipnsKeyName, this.signer.privateKey, '', this.plebbit).then(ipnsKey => {
+                    ipfsImportKey({...this.signer, "ipnsKeyName": ipnsKeyName}, this.plebbit).then(ipnsKey => {
                         const subplebbitAddress = ipnsKey["id"] || ipnsKey["Id"]
                         debug(`Generated an address for subplebbit (${subplebbitAddress})`);
                         this.edit({

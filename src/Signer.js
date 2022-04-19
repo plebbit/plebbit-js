@@ -16,6 +16,7 @@ export class Signer {
         this.privateKey = props.privateKey;
         this.publicKey = props.publicKey;
         this.address = props.address;
+        this.ipfsKey = Buffer.from(props.ipfsKey);
     }
 }
 

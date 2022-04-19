@@ -39,7 +39,7 @@ export class Plebbit {
         });
     }
 
-    async #signPublicationIfNeeded(createPublicationOptions){
+    async #signPublicationIfNeeded(createPublicationOptions) {
         let publicationProps;
         if (createPublicationOptions.signature)
             publicationProps = createPublicationOptions;
@@ -98,13 +98,26 @@ export class Plebbit {
             const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RSA256');
             const publicKey = await jose.exportSPKI(publicKeyFromJsonWebToken);
             const address = await getAddressFromPublicKeyPem(publicKey);
-            return new Signer({"privateKey": privateKey, 'type': 'rsa', 'publicKey': publicKey, "address": address});
+            const ipfsKey = keyPair.bytes;
+            return new Signer({
+                "privateKey": privateKey,
+                'type': 'rsa',
+                'publicKey': publicKey,
+                "address": address,
+                "ipfsKey": ipfsKey
+            });
         } else if (createSignerOptions["privateKey"] && createSignerOptions.type === 'rsa') {
             const keyPair = await crypto.keys.import(createSignerOptions.privateKey, "");
             const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RSA256');
             const publicKeyPem = await jose.exportSPKI(publicKeyFromJsonWebToken);
             const address = await getAddressFromPublicKeyPem(publicKeyPem);
-            return new Signer({...createSignerOptions, "publicKey": publicKeyPem, "address": address});
+            const ipfsKey = keyPair.bytes;
+            return new Signer({
+                ...createSignerOptions,
+                "publicKey": publicKeyPem,
+                "address": address,
+                "ipfsKey": ipfsKey
+            });
 
         }
 
