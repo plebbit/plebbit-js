@@ -88,6 +88,7 @@ Signature {
   signature: string // data in base64
   publicKey: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
   type: 'rsa' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
+  signedPropertyNames: string[] // the fields that were signed as part of the signature e.g. ['title', 'content', 'author', etc.] client should require that certain fields be signed or reject the publication, e.g. 'content', 'author', 'timestamp' are essential
 }
 Signer {
   privateKey?: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
