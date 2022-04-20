@@ -8,11 +8,6 @@ const debug = Debug("plebbit-js:Comment");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
 class Comment extends Publication {
-    constructor(props, subplebbit) {
-        // Publication
-        super(props, subplebbit);
-        this.parent = undefined;
-    }
 
     _initProps(props) {
         super._initProps(props);
@@ -21,7 +16,7 @@ class Comment extends Publication {
         this.parentCid = props["parentCid"];
         this.content = props["content"];
         this.ipnsName = props["ipnsName"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
-        this.commentIpnsKeyName = props["commentIpnsKeyName"];
+        this.ipnsKeyName = props["ipnsKeyName"];
         this.depth = props["depth"];
         this.setPreviousCid(props["previousCid"]);
         // CommentUpdate props
@@ -70,7 +65,7 @@ class Comment extends Publication {
         [...Object.keys(this.toJSONCommentUpdate()), "author"].forEach(key => delete json[key]);
         json["authorAddress"] = this.author.address;
         json["challengeRequestId"] = challengeRequestId;
-        json["commentIpnsKeyName"] = this.commentIpnsKeyName;
+        json["ipnsKeyName"] = this.ipnsKeyName;
         json["editedContent"] = this.editedContent;
         json["updatedAt"] = this.updatedAt;
         json["signature"] = JSON.stringify(this.signature);
@@ -92,7 +87,7 @@ class Comment extends Publication {
     setCommentIpnsKey(ipnsKey) {
         // Contains name and id
         this.ipnsName = ipnsKey["id"] || ipnsKey["Id"];
-        this.commentIpnsKeyName = ipnsKey["name"] || ipnsKey["Name"];
+        this.ipnsKeyName = ipnsKey["name"] || ipnsKey["Name"];
     }
 
     setPostCid(newPostCid) {
@@ -155,13 +150,13 @@ class Comment extends Publication {
     }
 
     async edit(commentUpdateOptions) {
-        assert(this.commentIpnsKeyName, "You need to have commentUpdate");
+        assert(this.ipnsKeyName, "You need to have commentUpdate");
         return new Promise(async (resolve, reject) => {
             this._initCommentUpdate(commentUpdateOptions);
             this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate())).then(file => {
                 this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
                     "lifetime": "72h",
-                    "key": this.commentIpnsKeyName
+                    "key": this.ipnsKeyName
                 }).then(() => {
                     debug(`Comment (${this.commentCid}) IPNS (${this.ipnsName}) has been updated`);
                     resolve();

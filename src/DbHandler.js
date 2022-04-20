@@ -55,7 +55,7 @@ class DbHandler {
             table.timestamp("timestamp").notNullable().checkPositive();
             table.text("signature").notNullable().unique(); // Will contain {signature, public key, type}
             table.text("ipnsName").notNullable().unique();
-            table.text("commentIpnsKeyName").notNullable().unique().references("ipnsKeyName").inTable(TABLES.SIGNERS);
+            table.text("ipnsKeyName").notNullable().unique().references("ipnsKeyName").inTable(TABLES.SIGNERS);
             table.text("title").nullable();
             table.integer("depth").notNullable();
             // CommentUpdate props
