@@ -99,7 +99,7 @@ export async function encrypt(stringToEncrypt, publicKeyPem) {
     // encrypt the AES ECB key with public key
     const peerId = await getPeerIdFromPublicKeyPem(publicKeyPem);
     const encryptedKeyBase64 = uint8ArrayToString(await peerId.pubKey.encrypt(key), 'base64');
-    return {encryptedString: encryptedBase64, encryptedKey: encryptedKeyBase64};
+    return {encryptedString: encryptedBase64, encryptedKey: encryptedKeyBase64, type: 'aes-ecb'};
 }
 
 export async function decrypt(encryptedString, encryptedKey, privateKeyPem, privateKeyPemPassword = '') {
