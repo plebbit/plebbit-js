@@ -23,7 +23,7 @@ describe("Test Subplebbit functionality", async () => {
 
     it("New subplebbits can be published", async function () {
         const signer = await serverPlebbit.createSigner();
-        const subplebbit = await serverPlebbit.createSubplebbit({
+        subplebbit = await serverPlebbit.createSubplebbit({
             "signer": signer,
             "title": `Test subplebbit - ${startTestTime}`
         });
@@ -36,7 +36,7 @@ describe("Test Subplebbit functionality", async () => {
     const numOfPosts = SORTED_POSTS_PAGE_SIZE + 2;
     it(`Sorting ${numOfPosts} posts by new generates a two pages ordered by posts' timestamp`, async function () {
         return new Promise(async (resolve, reject) => {
-            await subplebbit.setProvideCaptchaCallback(() => [null, "No need for captcha"]);
+            subplebbit.setProvideCaptchaCallback(() => [null, "No need for captcha"]);
             await subplebbit.startPublishing();
             const actualPosts = new Array(numOfPosts);
             for (let i = actualPosts.length - 1; i >= 0; i--) {
