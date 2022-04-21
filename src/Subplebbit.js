@@ -216,8 +216,9 @@ export class Subplebbit extends EventEmitter {
         clearInterval(this._updateInterval);
     }
 
-    async #updateSubplebbitIpns(trx) {
+    async #updateSubplebbitIpns() {
         return new Promise(async (resolve, reject) => {
+            const trx = await this.dbHandler.createTransaction();
             Promise.all([this.dbHandler.querySubplebbitMetrics(trx), this.sortHandler.calculateSortedPosts(undefined, trx), this.dbHandler.queryLatestPost(trx)])
                 .then(async ([metrics, [sortedPosts, sortedPostsCids], latestPost]) => {
                     if (sortedPosts)
@@ -239,7 +240,7 @@ export class Subplebbit extends EventEmitter {
                         debug(`No need to update subplebbit IPNS`);
                         resolve();
                     }
-                }).catch(reject);
+                }).catch(reject).finally(async() => await trx.commit());
 
         });
     }
