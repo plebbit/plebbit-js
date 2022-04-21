@@ -126,7 +126,7 @@ describe("Test Subplebbit functionality", async () => {
             secondMockPost.once("challengeverification", ([challengeVerificationMessage, newComment]) => {
                 subplebbit.once("update", updatedSubplebbit => {
                     assert.equal(challengeVerificationMessage.publication.previousCid, originalLatestPostCid, "Failed to set previousPostCid");
-                    assert.equal(challengeVerificationMessage.publication.commentCid, updatedSubplebbit.latestPostCid, "Failed to set subplebbit.latestPostCid");
+                    assert.equal(challengeVerificationMessage.publication.cid, updatedSubplebbit.latestPostCid, "Failed to set subplebbit.latestPostCid");
                     mockPosts.push(challengeVerificationMessage.publication);
                     resolve();
 

@@ -42,7 +42,7 @@ const testSorting = async (sort, comments) => {
         comments = await Promise.all(comments.map(async (comment, i) => {
             const publishedComment = (await subplebbit._addPublicationToDb(comment)).publication;
             debug(`Comment ${i} has been published`);
-            return clientPlebbit.getPostOrComment(publishedComment.commentCid);
+            return clientPlebbit.getPostOrComment(publishedComment.cid);
         }));
         let votes = [];
         for (let i = 0; i < comments.length; i++)

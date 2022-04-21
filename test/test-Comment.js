@@ -97,13 +97,11 @@ describe("Test Post and Comment", async function () {
 
             await mockComment.publish();
             post.once("update", async updatedPost => {
-                const loadedComment = await clientPlebbit.getPostOrComment(mockComment.commentCid);
+                const loadedComment = await clientPlebbit.getPostOrComment(mockComment.cid);
                 loadedComment.once("update", async updatedMockComment => {
                     assert.equal(updatedMockComment.depth, 1, "Depth of comment under post should be 1");
-
-
-                    const latestCommentCid = (await loadIpfsFileAsJson(updatedPost.sortedRepliesCids[SORTED_COMMENTS_TYPES.NEW], clientPlebbit.ipfsClient)).comments[0].commentCid;
-                    assert.equal(latestCommentCid, updatedMockComment.commentCid);
+                    const latestCommentCid = (await loadIpfsFileAsJson(updatedPost.sortedRepliesCids[SORTED_COMMENTS_TYPES.NEW], clientPlebbit.ipfsClient)).comments[0].cid;
+                    assert.equal(latestCommentCid, updatedMockComment.cid);
                     assert.equal(post.replyCount, originalReplyCount + 1, "Failed to update reply count");
                     mockComments.push(mockComment);
                     resolve();
@@ -118,7 +116,7 @@ describe("Test Post and Comment", async function () {
     it("Publishing a comment with invalid signature fails", async () => {
         return new Promise(async (resolve, reject) => {
             const mockComment = await generateMockComment(post, clientPlebbit);
-            mockComment.signature.signature = mockComment.signature.signature.slice(1);
+            mockComment.signature.signature = mockComment.signature.signature.slice(1); // Corrupts signature by deleting one key
             await mockComment.publish();
             mockComment.once("challengeverification", async ([challengeVerificationMessage, updatedComment]) => {
                 assert.equal(challengeVerificationMessage.challengePassed, false, "Challenge should not succeed if comment signature is invalid");

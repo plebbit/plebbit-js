@@ -33,7 +33,7 @@ describe("Test Challenge functionality", async () => {
             const mockPostShouldSkipCaptcha = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
             await mockPostShouldSkipCaptcha.publish(null, null);
             await waitTillCommentsArePublished([mockPostShouldSkipCaptcha]);
-            assert.equal(Boolean(mockPostShouldSkipCaptcha.commentCid), true, `Post should be published since its timestamp (${mockPostShouldSkipCaptcha.timestamp}) exceeds minimum (${minimumTimestamp})`)
+            assert.equal(Boolean(mockPostShouldSkipCaptcha.cid), true, `Post should be published since its timestamp (${mockPostShouldSkipCaptcha.timestamp}) exceeds minimum (${minimumTimestamp})`)
             const mockPostShouldGetCaptcha = await clientPlebbit.createComment({
                 ...mockPostShouldSkipCaptcha.toJSON(),
                 "timestamp": minimumTimestamp - 1
