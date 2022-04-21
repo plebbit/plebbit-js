@@ -88,6 +88,7 @@ Signature {
   signature: string // data in base64
   publicKey: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
   type: 'rsa' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
+  signedPropertyNames: string[] // the fields that were signed as part of the signature e.g. ['title', 'content', 'author', etc.] client should require that certain fields be signed or reject the publication, e.g. 'content', 'author', 'timestamp' are essential
 }
 Signer {
   privateKey?: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
@@ -353,7 +354,7 @@ An object which may have the following keys:
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | ipfsGatewayUrl | `string` or `undefined` | `'https://cloudflare-ipfs.com'` | Optional URL of an IPFS gateway |
-| ipfsHttpClientOptions | `string` or `IpfsHttpClientOptions` or `undefined` | `'http://localhost:5001'` | Optional URL of an IPFS API or [IpfsHttpClientOptions](https://www.npmjs.com/package/ipfs-http-client#createoptions) |
+| ipfsHttpClientOptions | `string` or `IpfsHttpClientOptions` or `undefined` | `undefined` | Optional URL of an IPFS API or [IpfsHttpClientOptions](https://www.npmjs.com/package/ipfs-http-client#createoptions), `'http://localhost:5001'` to use a local IPFS node |
 | pubsubHttpClientOptions | `string` or `IpfsHttpClientOptions` or `undefined` | `'https://pubsubprovider.xyz'` | Optional URL or [IpfsHttpClientOptions](https://www.npmjs.com/package/ipfs-http-client#createoptions) used for pubsub publishing when `ipfsHttpClientOptions` isn't available, like in the browser |
 | dataPath | `string`  or `undefined` | .plebbit folder in the current working directory | (Node only) Optional folder path to create/resume the user and subplebbit databases |
 | blockchainProviders | `{[chainTicker: string]: BlockchainProvider}` or `undefined` | default providers for supported chains | Optional provider RPC URLs and chain IDs |
