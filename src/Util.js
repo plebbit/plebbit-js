@@ -124,9 +124,9 @@ export function removeKeys(object1, keys) {
 
 export function shallowEqual(object1, object2, excludeKeys = []) {
     object1 = removeKeys(object1 || {}, excludeKeys);
-    object1 = JSON.parse(JSON.stringify(object1)); // To get rid of keys with undefined value
+    object1 = removeKeysWithUndefinedValues(object1); // To get rid of keys with undefined value
     object2 = removeKeys(object2 || {}, excludeKeys);
-    object2 = JSON.parse(JSON.stringify(object2)); // To get rid of keys with undefined value
+    object2 = removeKeysWithUndefinedValues(object2); // To get rid of keys with undefined value
     const keys1 = Object.keys(object1);
     const keys2 = Object.keys(object2);
     if (keys1.length !== keys2.length)
