@@ -152,6 +152,32 @@ describe("Test Post and Comment", async function () {
         });
     });
 
+    it("Fails to edit a comment if not authorized", async function () {
+        return new Promise(async (resolve, reject) => {
+            const editedText = "This should fail";
+            const editReason = "To test whether editing a comment fails";
+            await mockComments[0].update();
+            const commentEdit = await clientPlebbit.createCommentEdit({
+                "subplebbitAddress": mockComments[0].subplebbitAddress,
+                "commentCid": mockComments[0].cid,
+                "editReason": editReason,
+                "content": editedText,
+                "signer": await clientPlebbit.createSigner(), // Create a new signer, different than the signer of the original comment
+            });
+            await commentEdit.publish();
+            commentEdit.once("challengeverification", async ([challengeVerificationMessage, updatedCommentEdit]) => {
+                assert.equal(challengeVerificationMessage.challengePassed, false, "Editing a comment should fail if signer of CommentEdit is different than original comment");
+                if (!challengeVerificationMessage.reason)
+                    assert.fail(`Should include a reason for refusing publication of a comment edit`);
+                await mockComments[0].update();
+                assert.notEqual(mockComments[0].content, editedText, "edited content should not be edited if user is not authorized");
+                assert.notEqual(mockComments[0].editReason, editReason, "Edit reason should not be edited if user is not authorized");
+                resolve();
+            });
+        });
+
+    });
+
 
     it("Can publish new comments under comment", async () => {
         return new Promise(async (resolve, reject) => {
