@@ -130,17 +130,20 @@ describe("Test Post and Comment", async function () {
     it("Can edit a comment", async function () {
         return new Promise(async (resolve, reject) => {
             const editedText = "edit test";
+            const editReason = "To test editing a comment";
             await mockComments[0].update();
             const commentEdit = await clientPlebbit.createCommentEdit({
-                ...mockComments[0].toJSON(),
-                "editedContent": editedText
+                "subplebbitAddress": mockComments[0].subplebbitAddress,
+                "commentCid": mockComments[0].cid,
+                "editReason": editReason,
+                "content": editedText,
+                "signer": mockComments[0].signer,
             });
             await commentEdit.publish();
             commentEdit.once("challengeverification", async ([challengeVerificationMessage, updatedCommentEdit]) => {
                 mockComments[0].once("update", async updatedComment => {
-                    const loadedPost = await clientPlebbit.getPostOrComment(mockComments[0].commentCid);
-                    await loadedPost.update();
-                    assert.equal(updatedComment.editedContent, editedText, "Comment has not been edited");
+                    assert.equal(updatedComment.content, editedText, "Comment has not been edited");
+                    assert.equal(updatedComment.editReason, editReason, "Edit reason has not been updated");
                     resolve();
                 });
 
@@ -157,10 +160,10 @@ describe("Test Post and Comment", async function () {
             const originalReplyCount = mockComments[0].replyCount;
             await mockComment.publish();
             mockComments[0].once("update", async updatedParentComment => {
-                assert.equal(mockComment.parentCid, updatedParentComment.commentCid);
+                assert.equal(mockComment.parentCid, updatedParentComment.cid);
                 assert.equal(mockComment.depth, 2, "Depth of comment under a comment should be 2");
-                const parentLatestCommentCid = (await loadIpfsFileAsJson(updatedParentComment.sortedRepliesCids[SORTED_COMMENTS_TYPES.NEW], clientPlebbit.ipfsClient)).comments[0].commentCid;
-                assert.equal(parentLatestCommentCid, mockComment.commentCid);
+                const parentLatestCommentCid = (await loadIpfsFileAsJson(updatedParentComment.sortedRepliesCids[SORTED_COMMENTS_TYPES.NEW], clientPlebbit.ipfsClient)).comments[0].cid;
+                assert.equal(parentLatestCommentCid, mockComment.cid);
                 assert.equal(updatedParentComment.replyCount, originalReplyCount + 1);
                 mockComments.push(mockComment);
                 resolve();
