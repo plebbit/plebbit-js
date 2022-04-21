@@ -1,4 +1,3 @@
-import Comment, {CommentEdit} from "./Comment.js";
 import last from "it-last";
 import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
 import EventEmitter from "events";
@@ -240,9 +239,35 @@ export class Subplebbit extends EventEmitter {
                         debug(`No need to update subplebbit IPNS`);
                         resolve();
                     }
-                }).catch(reject).finally(async() => await trx.commit());
+                }).catch(reject).finally(async () => await trx.commit());
 
         });
+    }
+
+    async handleCommentEdit(commentEdit, challengeRequestId, trx) {
+        // TODO assert CommentEdit signer is same as original comment
+        const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, trx);
+        const [signatureIsVerified, verificationFailReason] = await verifyPublication(commentEdit);
+        if (!signatureIsVerified) {
+            debug(`Comment edit of ${commentEdit.commentCid} has been rejected due to having invalid signature. Reason = ${verificationFailReason}`);
+            return {"reason": `Comment edit of ${commentEdit.commentCid} has been rejected due to having invalid signature`};
+        } else if (!commentToBeEdited) {
+            debug(`Unable to edit comment (${commentEdit.commentCid}) since it's not in local DB`);
+            return {"reason": `commentCid (${commentEdit.commentCid}) does not exist`};
+        } else if (commentEdit.editSignature.publicKey !== commentToBeEdited.signature.publicKey) {
+            // Original comment and CommentEdit need to have same key
+            // TODO make exception for moderators
+            debug(`User attempted to edit a comment (${commentEdit.commentCid}) without having its keys`);
+            return {"reason": `Comment edit of ${commentEdit.commentCid} due to having different author keys than original comment`};
+        } else if (shallowEqual(commentToBeEdited.signature, commentEdit.editSignature)) {
+            debug(`Signature of CommentEdit is identical to original comment (${commentEdit.cid})`);
+            return {"reason": `Signature of CommentEdit is identical to original comment (${commentEdit.cid})`};
+        } else {
+            await this.dbHandler.upsertComment(commentEdit, undefined, trx);
+            debug(`Updated content for comment ${commentEdit.commentCid}`);
+        }
+
+
     }
 
     async #publishPostAfterPassingChallenge(publication, challengeRequestId, trx) {
@@ -251,8 +276,8 @@ export class Subplebbit extends EventEmitter {
         delete this._challengeToPublication[challengeRequestId];
 
         const postOrCommentOrVote = publication.hasOwnProperty("vote") ? await this.plebbit.createVote(publication) :
-            publication.editedContent ? await this.plebbit.createCommentEdit(publication) : await this.plebbit.createComment(publication);
-        if (postOrCommentOrVote.getType() === "vote") {
+            publication.commentCid ? await this.plebbit.createCommentEdit(publication) : await this.plebbit.createComment(publication);
+        if (postOrCommentOrVote.vote) {
             const signatureIsVerified = (await verifyPublication(postOrCommentOrVote))[0];
             if (!signatureIsVerified) {
                 debug(`Author (${postOrCommentOrVote.author.address}) vote (${postOrCommentOrVote.vote} vote's signature is invalid`);
@@ -266,21 +291,11 @@ export class Subplebbit extends EventEmitter {
                 await this.dbHandler.upsertVote(postOrCommentOrVote, challengeRequestId, trx);
                 debug(`Inserted new vote (${postOrCommentOrVote.vote}) for comment ${postOrCommentOrVote.commentCid}`);
             }
-        } else if (postOrCommentOrVote instanceof CommentEdit) {
-            // TODO assert CommentEdit signer is same as original comment
-            const commentToBeEdited = await this.dbHandler.queryComment(postOrCommentOrVote.commentCid, trx);
-            if (!commentToBeEdited) {
-                debug(`Unable to edit comment (${commentToBeEdited.commentCid}) since it's not in local DB`);
-                return {"reason": `commentCid (${postOrCommentOrVote.commentCid}) does not exist`};
-            } else if (commentToBeEdited.content === postOrCommentOrVote.editedContent) {
-                debug(`Edited content is identical to original content from comment ${postOrCommentOrVote.commentCid}`);
-                return {"reason": "Edited content is identical to original content"};
-            } else {
-                await this.dbHandler.upsertComment(postOrCommentOrVote, undefined, trx);
-                debug(`Updated editedContent for comment ${postOrCommentOrVote.commentCid}`);
-            }
-
-        } else if (postOrCommentOrVote instanceof Comment) {
+        } else if (postOrCommentOrVote.commentCid) {
+            const res = await this.handleCommentEdit(postOrCommentOrVote, challengeRequestId, trx);
+            if (res)
+                return res;
+        } else if (postOrCommentOrVote.content) {
             // Comment and Post need to add file to ipfs
             const signatureIsVerified = (await verifyPublication(postOrCommentOrVote))[0];
             if (!signatureIsVerified) {
@@ -304,23 +319,23 @@ export class Subplebbit extends EventEmitter {
 
                 postOrCommentOrVote.setCommentIpnsKey(ipfsKey);
                 if (postOrCommentOrVote.getType() === "post") {
-                    postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPost(trx))?.commentCid);
+                    postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPost(trx))?.cid);
                     postOrCommentOrVote.setDepth(0);
                     const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
                     postOrCommentOrVote.setPostCid(file.path);
-                    postOrCommentOrVote.setCommentCid(file.path);
+                    postOrCommentOrVote.setCid(file.path);
                     await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
-                    debug(`New post with cid ${postOrCommentOrVote.commentCid} has been inserted into DB`);
+                    debug(`New post with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
                 } else {
                     // Comment
                     // TODO throw an error when user tries to comment a non existent post/comment
                     const [commentsUnderParent, parent] = await Promise.all([this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx), this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)]);
-                    postOrCommentOrVote.setPreviousCid(commentsUnderParent[0]?.commentCid);
+                    postOrCommentOrVote.setPreviousCid(commentsUnderParent[0]?.cid);
                     postOrCommentOrVote.setDepth(parent.depth + 1);
                     const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
-                    postOrCommentOrVote.setCommentCid(file.path);
+                    postOrCommentOrVote.setCid(file.path);
                     await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
-                    debug(`New comment with cid ${postOrCommentOrVote.commentCid} has been inserted into DB`);
+                    debug(`New comment with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
                 }
             }
 
@@ -344,7 +359,7 @@ export class Subplebbit extends EventEmitter {
                 await this.dbHandler.upsertChallenge(new ChallengeRequestMessage(msgParsed), trx);
                 const publishedPublication = await this.#publishPostAfterPassingChallenge(decryptedPublication, msgParsed.challengeRequestId, trx);
 
-                const restOfMsg = "publication" in publishedPublication ? {"encryptedPublication": await encrypt(JSON.stringify(publishedPublication.publication), publishedPublication.publication.signature.publicKey)} : publishedPublication;
+                const restOfMsg = "publication" in publishedPublication ? {"encryptedPublication": await encrypt(JSON.stringify(publishedPublication.publication), (publishedPublication.publication.signature || publishedPublication.publication.editSignature).publicKey)} : publishedPublication;
                 const challengeVerification = new ChallengeVerificationMessage({
                     "reason": reasonForSkippingCaptcha,
                     "challengePassed": Boolean(publishedPublication.publication), // If no publication, this will be false
@@ -467,7 +482,7 @@ export class Subplebbit extends EventEmitter {
                 return new Promise(async (syncResolve, syncReject) => {
                     loadIpnsAsJson(dbComment.ipnsName, this.plebbit.ipfsClient).then(async currentIpns => {
                         if (!currentIpns || !shallowEqual(currentIpns, dbComment.toJSONCommentUpdate(), ["sortedReplies", "sortedRepliesCids"])) {
-                            debug(`Comment (${dbComment.commentCid}) IPNS is outdated`);
+                            debug(`Comment (${dbComment.cid}) IPNS is outdated`);
                             let [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedPosts(dbComment);
                             if (sortedReplies)
                                 sortedReplies = {[SORTED_COMMENTS_TYPES.TOP_ALL]: sortedReplies[SORTED_COMMENTS_TYPES.TOP_ALL]};
@@ -480,7 +495,7 @@ export class Subplebbit extends EventEmitter {
 
                             }).then(syncResolve).catch(syncReject);
                         } else {
-                            debug(`Comment (${dbComment.commentCid}) is already synced`);
+                            debug(`Comment (${dbComment.cid}) is already synced`);
                             syncResolve();
                         }
                     }).catch(syncReject);

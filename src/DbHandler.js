@@ -1,8 +1,8 @@
 import {PUBSUB_MESSAGE_TYPES} from "./Challenge.js";
 import Post from "./Post.js";
 import Author from "./Author.js";
-import Comment from "./Comment.js";
-import {replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp} from "./Util.js";
+import {Comment} from "./Comment.js";
+import {removeKeysWithUndefinedValues, replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp} from "./Util.js";
 import Vote from "./Vote.js";
 import knex from 'knex';
 import Debug from "debug";
@@ -43,11 +43,11 @@ class DbHandler {
 
     async #createCommentsTable() {
         await this.knex.schema.createTable(TABLES.COMMENTS, (table) => {
-            table.text("commentCid").notNullable().primary().unique();
+            table.text("cid").notNullable().primary().unique();
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
-            table.text("parentCid").nullable().references("commentCid").inTable(TABLES.COMMENTS);
-            table.text("postCid").notNullable().references("commentCid").inTable(TABLES.COMMENTS);
-            table.text("previousCid").nullable().references("commentCid").inTable(TABLES.COMMENTS);
+            table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
+            table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
+            table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);
             table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
 
             table.text("subplebbitAddress").notNullable();
@@ -58,10 +58,20 @@ class DbHandler {
             table.text("ipnsKeyName").notNullable().unique().references("ipnsKeyName").inTable(TABLES.SIGNERS);
             table.text("title").nullable();
             table.integer("depth").notNullable();
-            // CommentUpdate props
-            table.text("editedContent").nullable();
             table.increments("id");
+
+            // CommentUpdate and CommentEdit props
             table.timestamp("updatedAt").nullable().checkPositive();
+            table.text("editSignature").nullable();
+            table.timestamp("editTimestamp").nullable().checkPositive();
+            table.text("editReason").nullable();
+            table.boolean("deleted").nullable();
+            table.boolean("spoiler").nullable();
+            table.boolean("pinned").nullable();
+            table.boolean("locked").nullable();
+            table.boolean("removed").nullable();
+            table.text("moderatorReason").nullable();
+
         });
 
     }
@@ -69,7 +79,7 @@ class DbHandler {
 
     async #createVotesTable() {
         await this.knex.schema.createTable(TABLES.VOTES, (table) => {
-            table.text("commentCid").notNullable().references("commentCid").inTable(TABLES.COMMENTS);
+            table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
             table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
 
@@ -155,13 +165,14 @@ class DbHandler {
 
     async upsertComment(postOrComment, challengeRequestId, trx = undefined) {
         return new Promise(async (resolve, reject) => {
-            await this.#addAuthorToDbIfNeeded(postOrComment.author, trx);
+            if (postOrComment.author) // Skip adding author (For CommentEdit)
+                await this.#addAuthorToDbIfNeeded(postOrComment.author, trx);
             if (!challengeRequestId)
-                challengeRequestId = (await this.#baseTransaction(trx)(TABLES.COMMENTS).where({"commentCid": postOrComment.commentCid}).first()).challengeRequestId;
-            const originalComment = await this.queryComment(postOrComment.commentCid, trx);
-            const dbObject = originalComment ? {...originalComment.toJSONForDb(challengeRequestId), ...postOrComment.toJSONForDb(challengeRequestId)}
+                challengeRequestId = (await this.#baseTransaction(trx)(TABLES.COMMENTS).where({"cid": postOrComment.cid || postOrComment.commentCid}).first()).challengeRequestId;
+            const originalComment = await this.queryComment(postOrComment.cid || postOrComment.commentCid, trx);
+            const dbObject = originalComment ? {...removeKeysWithUndefinedValues(originalComment.toJSONForDb(challengeRequestId)), ...removeKeysWithUndefinedValues(postOrComment.toJSONForDb(challengeRequestId))}
                 : postOrComment.toJSONForDb(challengeRequestId);
-            this.#baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(['commentCid']).merge().then(() => resolve(dbObject)).catch(err => {
+            this.#baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(['cid']).merge().then(() => resolve(dbObject)).catch(err => {
                 console.error(err);
                 reject(err);
             });
@@ -194,15 +205,15 @@ class DbHandler {
 
     #baseCommentQuery(trx) {
         const upvoteQuery = this.#baseTransaction(trx)(TABLES.VOTES).count(`${TABLES.VOTES}.vote`).where({
-            [`${TABLES.COMMENTS}.commentCid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`),
+            [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`),
             [`${TABLES.VOTES}.vote`]: 1
         }).as("upvoteCount");
         const downvoteQuery = this.#baseTransaction(trx)(TABLES.VOTES).count(`${TABLES.VOTES}.vote`).where({
-            [`${TABLES.COMMENTS}.commentCid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`),
+            [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`),
             [`${TABLES.VOTES}.vote`]: -1
         }).as("downvoteCount");
         const replyCountQuery = this.#baseTransaction(trx).from(`${TABLES.COMMENTS} AS comments2`).count("")
-            .where({"comments2.parentCid": this.knex.raw(`${TABLES.COMMENTS}.commentCid`)})
+            .where({"comments2.parentCid": this.knex.raw(`${TABLES.COMMENTS}.cid`)})
             .as("replyCount");
 
         return this.#baseTransaction(trx)(TABLES.COMMENTS)
@@ -285,11 +296,11 @@ class DbHandler {
             if (timestamp1 === Number.NEGATIVE_INFINITY)
                 timestamp1 = 0;
             const topScoreQuery = this.#baseTransaction(trx)(TABLES.VOTES).sum(`${TABLES.VOTES}.vote`).where({
-                [`${TABLES.COMMENTS}.commentCid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`)
+                [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`)
             }).as("topScore")
             const query = this.#baseCommentQuery(trx)
                 .select(topScoreQuery)
-                .groupBy(`${TABLES.COMMENTS}.commentCid`)
+                .groupBy(`${TABLES.COMMENTS}.cid`)
                 .orderBy("topScore", "desc")
                 .whereBetween(`${TABLES.COMMENTS}.timestamp`, [timestamp1, timestamp2])
                 .where({[`${TABLES.COMMENTS}.parentCid`]: parentCid});
@@ -335,7 +346,7 @@ class DbHandler {
             if (from === Number.NEGATIVE_INFINITY)
                 from = 0;
             const to = timestamp();
-            this.#baseTransaction(trx)(TABLES.COMMENTS).count("commentCid").whereBetween("timestamp", [from, to]).whereNotNull("title").then(postCount => resolve(postCount["0"]["count(`commentCid`)"])).catch(reject);
+            this.#baseTransaction(trx)(TABLES.COMMENTS).count("cid").whereBetween("timestamp", [from, to]).whereNotNull("title").then(postCount => resolve(postCount["0"]["count(`cid`)"])).catch(reject);
         })
     }
 
@@ -354,9 +365,9 @@ class DbHandler {
         });
     }
 
-    async queryComment(commentCid, trx) {
+    async queryComment(cid, trx) {
         return new Promise(async (resolve, reject) => {
-            this.#baseCommentQuery(trx).where({"commentCid": commentCid}).first().then(async res => {
+            this.#baseCommentQuery(trx).where({"cid": cid}).first().then(async res => {
                 resolve((await this.#createCommentsFromRows.bind(this)(res, trx))[0]);
             }).catch(reject);
         });

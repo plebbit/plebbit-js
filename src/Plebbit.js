@@ -1,7 +1,7 @@
-import Comment, {CommentEdit} from "./Comment.js";
+import {Comment, CommentEdit} from "./Comment.js";
 import Post from "./Post.js";
 import {Subplebbit} from "./Subplebbit.js";
-import {loadIpfsFileAsJson, loadIpnsAsJson, removeKeysWithUndefinedValues} from "./Util.js";
+import {loadIpfsFileAsJson, loadIpnsAsJson, removeKeysWithUndefinedValues, timestamp} from "./Util.js";
 import * as path from "path";
 import Vote from "./Vote.js";
 import {create as createIpfsClient} from "ipfs-http-client";
@@ -32,23 +32,22 @@ export class Plebbit {
             loadIpfsFileAsJson(cid, this.ipfsClient).then(async jsonFile => {
                 const subplebbit = await this.getSubplebbit(jsonFile["subplebbitAddress"]);
                 if (jsonFile["title"])
-                    resolve(new Post({...jsonFile, "postCid": cid, "commentCid": cid}, subplebbit));
+                    resolve(new Post({...jsonFile, "postCid": cid, "cid": cid}, subplebbit));
                 else
-                    resolve(new Comment({...jsonFile, "commentCid": cid}, subplebbit));
+                    resolve(new Comment({...jsonFile, "cid": cid}, subplebbit));
             }).catch(reject);
         });
     }
 
     async #signPublicationIfNeeded(createPublicationOptions) {
         let publicationProps;
-        if (createPublicationOptions.signature)
-            publicationProps = createPublicationOptions;
-        else {
-            if (!createPublicationOptions.author.address)
+        if (createPublicationOptions.signer) {
+            if (createPublicationOptions.author && !createPublicationOptions.author.address)
                 createPublicationOptions.author.address = createPublicationOptions.signer.address;
             const commentSignature = await signPublication(createPublicationOptions, createPublicationOptions.signer);
             publicationProps = {...createPublicationOptions, "signature": commentSignature};
-        }
+        } else
+            publicationProps = createPublicationOptions;
         return publicationProps;
     }
 
@@ -88,7 +87,17 @@ export class Plebbit {
 
     async createCommentEdit(createCommentEditOptions) {
         const commentSubplebbit = await this.getSubplebbit(createCommentEditOptions.subplebbitAddress);
-        return new CommentEdit({...createCommentEditOptions}, commentSubplebbit);
+
+        if (!createCommentEditOptions.signer) // User just wants to instantiate a CommentEdit object, not publish
+            return new CommentEdit(createCommentEditOptions, commentSubplebbit);
+        if (!createCommentEditOptions.editTimestamp)
+            createCommentEditOptions.editTimestamp = timestamp();
+        const temp = new CommentEdit({...createCommentEditOptions}, commentSubplebbit);
+        const commentEditProps = {
+            ...temp.toJSON(), ...createCommentEditOptions,
+            "editSignature": await signPublication(temp, createCommentEditOptions.signer)
+        };
+        return new CommentEdit(commentEditProps, commentSubplebbit);
     }
 
     async createSigner(createSignerOptions) {

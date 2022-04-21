@@ -1,4 +1,4 @@
-import Comment from "./Comment.js";
+import {Comment} from "./Comment.js";
 
 class Post extends Comment {
 

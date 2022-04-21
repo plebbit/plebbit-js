@@ -1,6 +1,6 @@
 import * as crypto from "libp2p-crypto";
 import {PeerId} from "ipfs-core";
-import {keepKeys} from "./Util.js";
+import {keepKeys, removeKeysWithUndefinedValues} from "./Util.js";
 import {encode} from 'cborg';
 import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
 import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string';
@@ -9,7 +9,6 @@ import forge from 'node-forge'
 
 // note: postCid is not included because it's written by the sub owner, not the author
 
-const PUBLICATION_FIELDS_TO_SIGN = ["subplebbitAddress", "author", "timestamp", "parentCid", "content", "title", "link", "vote"];
 
 export class Signer {
     constructor(props) {
@@ -26,10 +25,16 @@ export class Signature {
         this.signature = props["signature"];
         this.publicKey = props["publicKey"];
         this.type = props["type"];
+        this.signedPropertyNames = props["signedPropertyNames"];
     }
 
     toJSON() {
-        return {"signature": this.signature, "publicKey": this.publicKey, "type": this.type};
+        return {
+            "signature": this.signature,
+            "publicKey": this.publicKey,
+            "type": this.type,
+            "signedPropertyNames": this.signedPropertyNames
+        };
     }
 
 }
@@ -58,13 +63,30 @@ export async function getAddressFromPublicKeyPem(publicKeyPem) {
     return (await getPeerIdFromPublicKeyPem(publicKeyPem)).toB58String();
 }
 
+function getFieldsToSign(publication) {
+    if (publication.vote)
+        return ["subplebbitAddress", "author", "timestamp", "vote", "commentCid"];
+    else if (publication.commentCid) // CommentEdit
+        return ["subplebbitAddress", "content", "commentCid", "editTimestamp", "editReason", "deleted", "spoiler", "pinned", "locked", "removed", "moderatorReason"];
+    else if (publication.title) // Post
+        return ["subplebbitAddress", "author", "timestamp", "content", "title", "link"];
+    else if (publication.content) // Comment
+        return ["subplebbitAddress", "author", "timestamp", "parentCid", "content"];
+}
 
 export async function signPublication(publication, signer) {
     const keyPair = await crypto.keys.import(signer.privateKey, "");
+    const fieldsToSign = getFieldsToSign(publication);
+    const publicationSignFields = keepKeys(removeKeysWithUndefinedValues(publication), fieldsToSign);
 
-    const commentEncoded = encode(keepKeys(JSON.parse(JSON.stringify(publication)), PUBLICATION_FIELDS_TO_SIGN));
+    const commentEncoded = encode(publicationSignFields);
     const signatureData = uint8ArrayToString(await keyPair.sign(commentEncoded), 'base64');
-    return new Signature({"signature": signatureData, "publicKey": signer.publicKey, "type": signer.type});
+    return new Signature({
+        "signature": signatureData,
+        "publicKey": signer.publicKey,
+        "type": signer.type,
+        "signedPropertyNames": Object.keys(publicationSignFields)
+    });
 }
 
 
@@ -72,12 +94,15 @@ export async function signPublication(publication, signer) {
 export async function verifyPublication(publication) {
 
     try {
-        const peerId = await getPeerIdFromPublicKeyPem(publication.signature.publicKey);
-        if (!peerId.equals(PeerId.createFromB58String(publication.author.address)))
+        // CommentEdit won't have author prop
+        const peerId = publication.editSignature ? await getPeerIdFromPublicKeyPem(publication.editSignature.publicKey) : await getPeerIdFromPublicKeyPem(publication.signature.publicKey);
+        if (publication.author && !peerId.equals(PeerId.createFromB58String(publication.author.address)))
             return [false, "comment.author.address doesn't match comment.signature.publicKey"];
-        const commentWithFieldsToSign = keepKeys(JSON.parse(JSON.stringify(publication)), PUBLICATION_FIELDS_TO_SIGN);
+
+        const commentWithFieldsToSign = keepKeys(removeKeysWithUndefinedValues(publication), (publication.signature || publication.editSignature).signedPropertyNames);
         const commentEncoded = encode(commentWithFieldsToSign);
-        const signatureIsValid = await peerId.pubKey.verify(commentEncoded, uint8ArrayFromString(publication.signature.signature, 'base64'));
+        const signatureInstance = publication.editSignature || publication.signature;
+        const signatureIsValid = await peerId.pubKey.verify(commentEncoded, uint8ArrayFromString(signatureInstance.signature, 'base64'));
         if (signatureIsValid)
             return [true,];
         else
@@ -86,6 +111,7 @@ export async function verifyPublication(publication) {
         return [false, String(e)];
     }
 }
+
 export async function encrypt(stringToEncrypt, publicKeyPem) {
     // generate key of the cipher and encrypt the string using AES ECB 128
     // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)

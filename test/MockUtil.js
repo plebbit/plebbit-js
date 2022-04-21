@@ -8,7 +8,7 @@ export async function generateMockComment(parentPostOrComment, plebbit) {
         "signer": signer,
         "content": `Mock comment - ${commentTime}`,
         "postCid": parentPostOrComment.postCid,
-        "parentCid": parentPostOrComment.commentCid,
+        "parentCid": parentPostOrComment.cid,
         "subplebbitAddress": parentPostOrComment.subplebbitAddress
     });
     comment.once("challenge", challengeMsg => {
@@ -60,7 +60,7 @@ export async function generateMockVote(parentPostOrComment, vote, plebbit) {
     const voteObj = await plebbit.createVote({
         "author": {"displayName": `Mock Author - ${voteTime}`},
         "signer": signer,
-        "commentCid": parentPostOrComment.commentCid || parentPostOrComment.postCid,
+        "commentCid": parentPostOrComment.cid || parentPostOrComment.postCid,
         "vote": vote,
         "subplebbitAddress": parentPostOrComment.subplebbitAddress
     });

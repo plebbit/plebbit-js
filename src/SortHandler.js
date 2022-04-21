@@ -144,8 +144,8 @@ export class SortHandler {
         } else {
             return [SORTED_COMMENTS_TYPES.HOT, SORTED_COMMENTS_TYPES.NEW, SORTED_COMMENTS_TYPES.TOP_ALL, SORTED_COMMENTS_TYPES.CONTROVERSIAL_ALL].map(async type => {
                 const comments = type === SORTED_COMMENTS_TYPES.TOP_ALL ?
-                    await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(comment.commentCid, 0, timestamp(), trx)
-                    : await this.subplebbit.dbHandler.queryCommentsUnderComment(comment.commentCid, trx);
+                    await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(comment.cid, 0, timestamp(), trx)
+                    : await this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx);
                 return this.#sortComments(comments, type);
             });
 

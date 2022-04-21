@@ -24,7 +24,7 @@ class Publication extends EventEmitter {
         this.timestamp = props["timestamp"] || timestamp();
         this.signer = this.signer || props["signer"];
         this.signature = parseJsonIfString(props["signature"]);
-        this.author = new Author(props["author"]);
+        this.author = props["author"] ? new Author(props["author"]) : undefined;
     }
 
     setSubplebbit(newSubplebbit) {
@@ -64,7 +64,7 @@ class Publication extends EventEmitter {
                 debug(`Challenge ${msgParsed.challengeRequestId} has failed to pass. Challenge errors = ${msgParsed.challengeErrors}, reason = ${msgParsed.reason}`);
             else {
                 debug(`Challenge (${msgParsed.challengeRequestId}) has passed. Will update publication props from ChallengeVerificationMessage.publication`);
-                msgParsed.publication = JSON.parse(await decrypt(msgParsed.encryptedPublication.encryptedString, msgParsed.encryptedPublication.encryptedKey,this.signer.privateKey));
+                msgParsed.publication = JSON.parse(await decrypt(msgParsed.encryptedPublication.encryptedString, msgParsed.encryptedPublication.encryptedKey, this.signer.privateKey));
                 this._initProps(msgParsed.publication);
             }
             this.emit("challengeverification", [msgParsed, this]);

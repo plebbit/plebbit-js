@@ -7,12 +7,12 @@ const debug = Debug("plebbit-js:Comment");
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
-class Comment extends Publication {
+export class Comment extends Publication {
 
     _initProps(props) {
         super._initProps(props);
         this.postCid = props["postCid"];
-        this.commentCid = props["commentCid"];
+        this.cid = props["cid"];
         this.parentCid = props["parentCid"];
         this.content = props["content"];
         this.ipnsName = props["ipnsName"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
@@ -24,20 +24,30 @@ class Comment extends Publication {
     }
 
     _initCommentUpdate(props) {
-        this.editedContent = props["editedContent"]; // the author has edited the comment content
         this.upvoteCount = props["upvoteCount"];
         this.downvoteCount = props["downvoteCount"];
         this.replyCount = props["replyCount"];
         this.updatedAt = props["updatedAt"];
         this.sortedReplies = parseJsonIfString(props["sortedReplies"]);
         this.sortedRepliesCids = parseJsonIfString(props["sortedRepliesCids"]);
+        // Comment Edit props
+        this.content = props["content"] || this.content;
+        this.editSignature = parseJsonIfString(props["editSignature"]);
+        this.editTimestamp = props["editTimestamp"];
+        this.editReason = props["editReason"];
+        this.deleted = props["deleted"];
+        this.spoiler = props["spoiler"];
+        this.pinned = props["pinned"];
+        this.locked = props["locked"];
+        this.removed = props["removed"];
+        this.moderatorReason = props["moderatorReason"];
     }
 
     toJSON() {
         return {
             ...this.toJSONIpfs(),
             ...this.toJSONCommentUpdate(),
-            "commentCid": this.commentCid
+            "cid": this.cid
         };
     };
 
@@ -62,25 +72,32 @@ class Comment extends Publication {
 
     toJSONForDb(challengeRequestId) {
         const json = this.toJSON();
-        [...Object.keys(this.toJSONCommentUpdate()), "author"].forEach(key => delete json[key]);
-        json["authorAddress"] = this.author.address;
+        ["replyCount", "upvoteCount", "downvoteCount", "sortedReplies", "sortedRepliesCids", "author"].forEach(key => delete json[key]);
+        json["authorAddress"] = this?.author?.address;
         json["challengeRequestId"] = challengeRequestId;
         json["ipnsKeyName"] = this.ipnsKeyName;
-        json["editedContent"] = this.editedContent;
-        json["updatedAt"] = this.updatedAt;
         json["signature"] = JSON.stringify(this.signature);
         return removeKeysWithUndefinedValues(json);
     }
 
     toJSONCommentUpdate() {
         return {
-            "editedContent": this.editedContent,
             "replyCount": this.replyCount,
             "upvoteCount": this.upvoteCount,
             "downvoteCount": this.downvoteCount,
             "sortedReplies": this.sortedReplies,
             "sortedRepliesCids": this.sortedRepliesCids,
-            "updatedAt": this.updatedAt
+            "content": this.content,
+            "updatedAt": this.updatedAt,
+            "editSignature": this.editSignature,
+            "editTimestamp": this.editTimestamp,
+            "editReason": this.editReason,
+            "deleted": this.deleted,
+            "spoiler": this.spoiler,
+            "pinned": this.pinned,
+            "locked": this.locked,
+            "removed": this.removed,
+            "moderatorReason": this.moderatorReason
         };
     }
 
@@ -94,8 +111,8 @@ class Comment extends Publication {
         this.postCid = newPostCid;
     }
 
-    setCommentCid(newCommentCid) {
-        this.commentCid = newCommentCid;
+    setCid(newCid) {
+        this.cid = newCid;
     }
 
     setPreviousCid(newPreviousCid) {
@@ -114,7 +131,7 @@ class Comment extends Publication {
         return new Promise(async (resolve, reject) => {
             if (!this.ipnsName) {
                 resolve(undefined);
-                debug(`Comment (${this.commentCid}) has no IPNS name`);
+                debug(`Comment (${this.cid}) has no IPNS name`);
                 return;
             }
             loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit.ipfsClient).then(res => {
@@ -138,7 +155,7 @@ class Comment extends Publication {
     }
 
     update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
-        debug(`Starting to poll updates for comment (${this.commentCid}) IPNS (${this.ipnsName}) every ${updateIntervalMs} milliseconds`)
+        debug(`Starting to poll updates for comment (${this.cid}) IPNS (${this.ipnsName}) every ${updateIntervalMs} milliseconds`)
         if (this._updateInterval)
             clearInterval(this._updateInterval);
         this._updateInterval = setInterval(this.#updateOnce.bind(this), updateIntervalMs);
@@ -158,7 +175,7 @@ class Comment extends Publication {
                     "lifetime": "72h",
                     "key": this.ipnsKeyName
                 }).then(() => {
-                    debug(`Comment (${this.commentCid}) IPNS (${this.ipnsName}) has been updated`);
+                    debug(`Comment (${this.cid}) IPNS (${this.ipnsName}) has been updated`);
                     resolve();
                 }).catch(reject);
             }).catch(reject);
@@ -166,13 +183,21 @@ class Comment extends Publication {
     }
 }
 
-class CommentEdit extends Comment {
+export class CommentEdit extends Comment {
 
     _initProps(props) {
         super._initProps(props);
-        this.editedContent = props["editedContent"];
+        this.commentCid = props["commentCid"];
+    }
+
+    toJSON() {
+        return {...super.toJSON(), "commentCid": this.commentCid};
+    }
+
+    toJSONForDb(challengeRequestId) {
+        const json = super.toJSONForDb(challengeRequestId);
+        ["authorAddress", "challengeRequestId", "ipnsKeyName", "signature", "commentCid"].forEach(key => delete json[key]);
+        json["cid"] = this.commentCid;
+        return removeKeysWithUndefinedValues(json);
     }
 }
-
-export {Comment, CommentEdit};
-export default Comment;
