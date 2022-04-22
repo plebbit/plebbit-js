@@ -46,7 +46,9 @@ export class Plebbit {
                 createPublicationOptions.author.address = createPublicationOptions.signer.address;
             const commentSignature = await signPublication(createPublicationOptions, createPublicationOptions.signer);
             publicationProps = {...createPublicationOptions, "signature": commentSignature};
-        } else
+        } else if (!createPublicationOptions.signature)
+            throw(`Failed to create a publication since no signature or signer is provided.`);
+        else
             publicationProps = createPublicationOptions;
         return publicationProps;
     }
