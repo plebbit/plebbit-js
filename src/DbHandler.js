@@ -295,9 +295,9 @@ class DbHandler {
         return new Promise(async (resolve, reject) => {
             if (timestamp1 === Number.NEGATIVE_INFINITY)
                 timestamp1 = 0;
-            const topScoreQuery = this.#baseTransaction(trx)(TABLES.VOTES).sum(`${TABLES.VOTES}.vote`).where({
-                [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`)
-            }).as("topScore")
+            const topScoreQuery = this.#baseTransaction(trx)(TABLES.VOTES)
+                .select(this.knex.raw(`COALESCE(SUM(${TABLES.VOTES}.vote), 0)`)) // We're using raw expressions because there's no native method in Knexjs to return 0 if SUM is null
+                .where({[`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`)}).as("topScore");
             const query = this.#baseCommentQuery(trx)
                 .select(topScoreQuery)
                 .groupBy(`${TABLES.COMMENTS}.cid`)
@@ -381,7 +381,7 @@ class DbHandler {
         });
     }
 
-    async insertSigner(signer, trx){
+    async insertSigner(signer, trx) {
         return new Promise(async (resolve, reject) => {
             this.#baseTransaction(trx)(TABLES.SIGNERS).insert(signer).then(resolve).catch(err => {
                 debug(err);
@@ -390,17 +390,16 @@ class DbHandler {
         });
     }
 
-    async querySubplebbitSigner(trx){
+    async querySubplebbitSigner(trx) {
         return new Promise(async (resolve, reject) => {
             this.#baseTransaction(trx)(TABLES.SIGNERS).where({"usage": SIGNER_USAGES.SUBPLEBBIT}).first().then(resolve).catch(reject);
         });
     }
 
-    async querySigner(ipnsKeyName, trx){
+    async querySigner(ipnsKeyName, trx) {
         try {
             return await this.#baseTransaction(trx)(TABLES.SIGNERS).where({"ipnsKeyName": ipnsKeyName}).first();
-        }
-        catch (e) {
+        } catch (e) {
             debug(`Failed to query signer due to error = ${e}`);
         }
     }
