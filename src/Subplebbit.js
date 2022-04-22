@@ -21,10 +21,7 @@ import * as fs from "fs";
 import {v4 as uuidv4} from 'uuid';
 import {ipfsImportKey, loadIpnsAsJson, shallowEqual, timestamp} from "./Util.js";
 import Debug from "debug";
-import {decrypt, encrypt, Signer, verifyPublication} from "./Signer.js";
-
-import * as crypto from "libp2p-crypto";
-import * as jose from "jose";
+import {decrypt, encrypt, verifyPublication} from "./Signer.js";
 
 const debug = Debug("plebbit-js:Subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
@@ -244,7 +241,7 @@ export class Subplebbit extends EventEmitter {
         });
     }
 
-    async handleCommentEdit(commentEdit, challengeRequestId, trx) {
+    async #handleCommentEdit(commentEdit, challengeRequestId, trx) {
         // TODO assert CommentEdit signer is same as original comment
         const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, trx);
         const [signatureIsVerified, verificationFailReason] = await verifyPublication(commentEdit);
@@ -270,6 +267,31 @@ export class Subplebbit extends EventEmitter {
 
     }
 
+    async #handleVote(newVote, challengeRequestId, trx) {
+        const [signatureIsVerified, failedVerificationReason] = await verifyPublication(newVote);
+        if (!signatureIsVerified) {
+            debug(`Author (${newVote.author.address}) vote (${newVote.vote} vote's signature is invalid. Reason = ${failedVerificationReason}`);
+            return {"reason": "Invalid signature"};
+        }
+        const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address, trx);
+        if (lastVote && newVote.signature.publicKey !== lastVote.signature.publicKey) {
+            // Original comment and CommentEdit need to have same key
+            // TODO make exception for moderators
+            debug(`Author (${newVote.author.address}) attempted to edit a comment vote (${newVote.commentCid}) without having correct credentials`);
+            return {"reason": `Author (${newVote.author.address}) attempted to change vote on  ${newVote.commentCid} without having correct credentials`};
+        } else if (shallowEqual(newVote.signature, lastVote?.signature)) {
+            debug(`Signature of Vote is identical to original Vote (${newVote.commentCid})`);
+            return {"reason": `Signature of Vote is identical to original Vote (${newVote.commentCid}) by author ${newVote?.author?.address}`};
+        } else if (lastVote?.vote === newVote.vote) {
+            debug(`Author (${newVote?.author.address}) has duplicated their vote for comment ${newVote.commentCid}. Returning an error`);
+            return {"reason": "User duplicated their vote"};
+        } else {
+            await this.dbHandler.upsertVote(newVote, challengeRequestId, trx);
+            debug(`Upserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
+        }
+
+    }
+
     async #publishPostAfterPassingChallenge(publication, challengeRequestId, trx) {
 
         delete this._challengeToSolution[challengeRequestId];
@@ -277,22 +299,12 @@ export class Subplebbit extends EventEmitter {
 
         const postOrCommentOrVote = publication.hasOwnProperty("vote") ? await this.plebbit.createVote(publication) :
             publication.commentCid ? await this.plebbit.createCommentEdit(publication) : await this.plebbit.createComment(publication);
-        if (postOrCommentOrVote.vote) {
-            const signatureIsVerified = (await verifyPublication(postOrCommentOrVote))[0];
-            if (!signatureIsVerified) {
-                debug(`Author (${postOrCommentOrVote.author.address}) vote (${postOrCommentOrVote.vote} vote's signature is invalid`);
-                return {"reason": "Invalid signature"};
-            }
-            const lastVote = await this.dbHandler.getLastVoteOfAuthor(postOrCommentOrVote.commentCid, postOrCommentOrVote.author.address, trx);
-            if (lastVote?.vote === postOrCommentOrVote.vote) {
-                debug(`Author has duplicated their vote for comment ${postOrCommentOrVote.commentCid}. Returning an error`);
-                return {"reason": "User duplicated his vote"};
-            } else {
-                await this.dbHandler.upsertVote(postOrCommentOrVote, challengeRequestId, trx);
-                debug(`Inserted new vote (${postOrCommentOrVote.vote}) for comment ${postOrCommentOrVote.commentCid}`);
-            }
+        if (postOrCommentOrVote.getType() === "vote") {
+            const res = await this.#handleVote(postOrCommentOrVote, challengeRequestId, trx);
+            if (res)
+                return res;
         } else if (postOrCommentOrVote.commentCid) {
-            const res = await this.handleCommentEdit(postOrCommentOrVote, challengeRequestId, trx);
+            const res = await this.#handleCommentEdit(postOrCommentOrVote, challengeRequestId, trx);
             if (res)
                 return res;
         } else if (postOrCommentOrVote.content) {
