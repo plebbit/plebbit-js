@@ -47,7 +47,7 @@ const testSorting = async (sort, comments) => {
         let votes = [];
         for (let i = 0; i < comments.length; i++)
             for (let j = 0; j < 5; j++)
-                votes.push(await generateMockVote(comments[i], Math.random() > 0.5 ? 1 : -1, subplebbit.subplebbitAddress, clientPlebbit));
+                votes.push(await generateMockVote(comments[i], Math.random() > 0.5 ? 1 : -1, clientPlebbit));
         await Promise.all(votes.map(async (vote, i) => {
             await subplebbit._addPublicationToDb(vote);
             debug(`Vote #${i} of ${vote.vote} has been published under comment ${vote.commentCid}`);
