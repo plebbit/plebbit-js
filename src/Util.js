@@ -132,10 +132,9 @@ export function shallowEqual(object1, object2, excludeKeys = []) {
     if (keys1.length !== keys2.length)
         return false;
 
-    for (let key of keys1)
-        if (object1[key] !== object2[key])
+    for (const key of keys1)
+        if (JSON.stringify(object1[key]) !== JSON.stringify(object2[key]))
             return false;
-
 
     return true;
 }
@@ -200,11 +199,11 @@ export function removeKeysWithUndefinedValues(object) {
 }
 
 // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
-export async function ipfsImportKey(signer, plebbit, password='') {
+export async function ipfsImportKey(signer, plebbit, password = '') {
     return new Promise(async (resolve, reject) => {
         plebbit.ipfsClient.key.import(signer.ipnsKeyName, signer.privateKey, password).then(resolve).catch(async err => {
             // Error is likely due to issue above. Will send a manual post request with key in body to comply with go-ipfs expectation
-            if (err?.message === "file argument 'key' is required\n"){
+            if (err?.message === "file argument 'key' is required\n") {
                 const data = new FormData();
                 data.append('file', signer.ipfsKey);
                 fetch(`${plebbit.ipfsHttpClientOptions.url}/key/import?arg=${signer.ipnsKeyName}`, {
@@ -213,8 +212,7 @@ export async function ipfsImportKey(signer, plebbit, password='') {
                     headers: plebbit.ipfsHttpClientOptions.headers
                 }).then(res => res.json()).then(resolve).catch(reject);
 
-            }
-            else
+            } else
                 reject(err);
         })
     });
