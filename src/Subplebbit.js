@@ -491,28 +491,22 @@ export class Subplebbit extends EventEmitter {
         return new Promise(async (resolve, reject) => {
             debug("Starting to sync IPNS with DB");
             const syncComment = async (dbComment) => {
-                return new Promise(async (syncResolve, syncReject) => {
-                    loadIpnsAsJson(dbComment.ipnsName, this.plebbit.ipfsClient).then(async currentIpns => {
-                        if (!currentIpns || !shallowEqual(currentIpns, dbComment.toJSONCommentUpdate(), ["sortedReplies", "sortedRepliesCids"])) {
-                            debug(`Comment (${dbComment.cid}) IPNS is outdated`);
-                            let [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedPosts(dbComment);
-                            if (sortedReplies)
-                                sortedReplies = {[SORTED_COMMENTS_TYPES.TOP_ALL]: sortedReplies[SORTED_COMMENTS_TYPES.TOP_ALL]};
-                            dbComment.setUpdatedAt(timestamp());
-                            await this.dbHandler.upsertComment(dbComment, undefined);
-                            dbComment.edit({
-                                ...dbComment.toJSONCommentUpdate(),
-                                "sortedReplies": sortedReplies,
-                                "sortedRepliesCids": sortedRepliesCids,
+                const currentIpns = await loadIpnsAsJson(dbComment.ipnsName, this.plebbit.ipfsClient);
+                if (!currentIpns || !shallowEqual(currentIpns, dbComment.toJSONCommentUpdate(), ["sortedReplies", "sortedRepliesCids"])) {
+                    debug(`Comment (${dbComment.cid}) IPNS is outdated`);
+                    let [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedPosts(dbComment);
+                    if (sortedReplies)
+                        sortedReplies = {[SORTED_COMMENTS_TYPES.TOP_ALL]: sortedReplies[SORTED_COMMENTS_TYPES.TOP_ALL]};
+                    dbComment.setUpdatedAt(timestamp());
+                    await this.dbHandler.upsertComment(dbComment, undefined);
+                    return dbComment.edit({
+                        ...dbComment.toJSONCommentUpdate(),
+                        "sortedReplies": sortedReplies,
+                        "sortedRepliesCids": sortedRepliesCids,
 
-                            }).then(syncResolve).catch(syncReject);
-                        } else {
-                            debug(`Comment (${dbComment.cid}) is already synced`);
-                            syncResolve();
-                        }
-                    }).catch(syncReject);
-
-                });
+                    });
+                } else
+                    debug(`Comment (${dbComment.cid}) is already synced`);
             };
 
             const errorHandle = async (err) => {
