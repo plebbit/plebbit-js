@@ -73,6 +73,7 @@ describe("Test Vote", async () => {
             const originalDownvote = post.downvoteCount;
             const vote = await clientPlebbit.createVote({
                 ...previousVotes[0].toJSON(),
+                "signer": previousVotes[0].signer,
                 "vote": -1,
                 "timestamp": timestamp(),
             });
@@ -95,6 +96,7 @@ describe("Test Vote", async () => {
             const originalDownvote = post.downvoteCount;
             const vote = await clientPlebbit.createVote({
                 ...previousVotes[0].toJSON(),
+                "signer": previousVotes[0].signer,
                 "vote": 0,
                 "timestamp": timestamp(),
             });
@@ -132,6 +134,7 @@ describe("Test Vote", async () => {
             const originalDownvote = post.downvoteCount;
             const vote = await clientPlebbit.createVote({
                 ...previousVotes[1].toJSON(),
+                "signer": previousVotes[1].signer,
                 "vote": 1,
                 "timestamp": timestamp(),
             });
@@ -153,6 +156,7 @@ describe("Test Vote", async () => {
             const originalUpvote = post.upvoteCount;
             const vote = await clientPlebbit.createVote({
                 ...previousVotes[1].toJSON(),
+                "signer": previousVotes[1].signer,
                 "vote": 0,
                 "timestamp": timestamp(),
             });
