@@ -1,6 +1,6 @@
 import Author from "./Author.js";
 import Publication from "./Publication.js";
-import {timestamp} from "./Util.js";
+import {parseJsonIfString, timestamp} from "./Util.js";
 
 class Vote extends Publication {
     constructor(props, subplebbit) {
@@ -8,7 +8,7 @@ class Vote extends Publication {
         // Publication
         this.author = new Author(props["author"]);
         this.timestamp = props["timestamp"] || timestamp();
-        this.signature = props["signature"];
+        this.signature = parseJsonIfString(props["signature"]);
 
         this.commentCid = props["commentCid"];
         this.vote = props["vote"]; // Either 1, 0, -1 (upvote, cancel vote, downvote)
