@@ -64,7 +64,7 @@ export async function getAddressFromPublicKeyPem(publicKeyPem) {
 }
 
 function getFieldsToSign(publication) {
-    if (publication.vote)
+    if (publication.hasOwnProperty("vote"))
         return ["subplebbitAddress", "author", "timestamp", "vote", "commentCid"];
     else if (publication.commentCid) // CommentEdit
         return ["subplebbitAddress", "content", "commentCid", "editTimestamp", "editReason", "deleted", "spoiler", "pinned", "locked", "removed", "moderatorReason"];
@@ -77,7 +77,7 @@ function getFieldsToSign(publication) {
 export async function signPublication(publication, signer) {
     const keyPair = await crypto.keys.import(signer.privateKey, "");
     const fieldsToSign = getFieldsToSign(publication);
-    const publicationSignFields = keepKeys(removeKeysWithUndefinedValues(publication), fieldsToSign);
+    const publicationSignFields = keepKeys(publication, fieldsToSign);
 
     const commentEncoded = encode(publicationSignFields);
     const signatureData = uint8ArrayToString(await keyPair.sign(commentEncoded), 'base64');
@@ -95,14 +95,14 @@ export async function verifyPublication(publication) {
 
     try {
         // CommentEdit won't have author prop
-        const peerId = publication.editSignature ? await getPeerIdFromPublicKeyPem(publication.editSignature.publicKey) : await getPeerIdFromPublicKeyPem(publication.signature.publicKey);
+        const signature = publication.signature || publication.editSignature;
+        const peerId = await getPeerIdFromPublicKeyPem(signature.publicKey);
         if (publication.author && !peerId.equals(PeerId.createFromB58String(publication.author.address)))
             return [false, "comment.author.address doesn't match comment.signature.publicKey"];
 
-        const commentWithFieldsToSign = keepKeys(removeKeysWithUndefinedValues(publication), (publication.signature || publication.editSignature).signedPropertyNames);
+        const commentWithFieldsToSign = keepKeys(publication, signature.signedPropertyNames);
         const commentEncoded = encode(commentWithFieldsToSign);
-        const signatureInstance = publication.editSignature || publication.signature;
-        const signatureIsValid = await peerId.pubKey.verify(commentEncoded, uint8ArrayFromString(signatureInstance.signature, 'base64'));
+        const signatureIsValid = await peerId.pubKey.verify(commentEncoded, uint8ArrayFromString(signature.signature, 'base64'));
         if (signatureIsValid)
             return [true,];
         else
