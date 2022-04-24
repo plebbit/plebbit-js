@@ -145,7 +145,5 @@ export class SortHandler {
             debug(`Error while calculating sorted posts: ${e}`);
         }
 
-
-        });
     }
 }

@@ -194,6 +194,10 @@ export function newScore(comment) {
     return comment.timestamp
 }
 
+export function oldScore(comment){
+    return -comment.timestamp;
+}
+
 export function removeKeysWithUndefinedValues(object) {
     return JSON.parse(JSON.stringify(object));
 }

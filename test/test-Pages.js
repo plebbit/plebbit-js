@@ -1,6 +1,6 @@
 import {
     controversialScore,
-    hotScore, newScore,
+    hotScore, newScore, oldScore,
     TIMEFRAMES_TO_SECONDS,
     topScore,
     unsubscribeAllPubsubTopics
@@ -13,9 +13,9 @@ import {
 } from "./MockUtil.js";
 import {Plebbit} from "../src/index.js";
 import {IPFS_CLIENT_CONFIGS, TEST_PAGES_SUBPLEBBIT_ADDRESS} from "../secrets.js";
-import {SORTED_COMMENTS_TYPES} from "../src/SortHandler.js";
 import assert from "assert";
 import Debug from "debug";
+import {POSTS_SORT_TYPES, REPLIES_SORT_TYPES} from "../src/SortHandler.js";
 
 const debug = Debug("plebbit-js:test-Pages");
 
@@ -55,7 +55,7 @@ const testSorting = async (sort, comments) => {
 
         debug(`For sort ${sort.type}, added ${comments.length} comments and ${votes.length} random votes for each comment`);
 
-        const sortTypes = Object.values(SORTED_COMMENTS_TYPES).filter(type => type.includes(sort.type));
+        const sortTypes = Object.values(parentComment ? REPLIES_SORT_TYPES : POSTS_SORT_TYPES).filter(sortType => sortType.type.includes(sort.type));
 
 
         subplebbit.once("update", async (updatedSubplebbit) => {
@@ -66,10 +66,12 @@ const testSorting = async (sort, comments) => {
             }
             for (let i = 0; i < sortTypes.length; i++) {
                 const sortType = sortTypes[i];
-                debug(`Testing sort ${sortType}`);
-                const alreadySortedComments = await loadAllPagesThroughSortedComments(parentComment ? parentComment.sortedRepliesCids[sortType] : updatedSubplebbit.sortedPostsCids[sortType], clientPlebbit);
+                debug(`Testing sort ${sortType.type}`);
+                const alreadySortedComments = await loadAllPagesThroughSortedComments(parentComment ? parentComment.replies.pageCids[sortType.type] : updatedSubplebbit.posts.pageCids[sortType.type], clientPlebbit);
+                if (alreadySortedComments.length < comments.length)
+                    assert.fail(`Failed to load comments from pages`);
                 // TODO load all posts from linkedlist and make sure both linkedlist and alreadySortedComments contain same comments
-                debug(`There are ${alreadySortedComments.length} comments under ${sortType}. Will test them`);
+                debug(`There are ${alreadySortedComments.length} comments under ${sortType.type}. Will test them`);
 
                 for (let j = 0; j < alreadySortedComments.length - 1; j++) {
                     // Check if timestamp is within [subplebbit.updatedAt - timeframe, subplebbit.updatedAt]
@@ -77,9 +79,9 @@ const testSorting = async (sort, comments) => {
                         // If sort types are more than 1 that means this particular sort type has timeframes
                         const sortStart = updatedSubplebbit.updatedAt - Object.values(TIMEFRAMES_TO_SECONDS)[i];
                         if (alreadySortedComments[j].timestamp < sortStart || alreadySortedComments[j].timestamp > updatedSubplebbit.updatedAt)
-                            assert.fail(`${sortType} sort includes posts from different timeframes`);
+                            assert.fail(`${sortType.type} sort includes posts from different timeframes`);
                         if (alreadySortedComments[j + 1].timestamp < sortStart || alreadySortedComments[j + 1].timestamp > updatedSubplebbit.updatedAt)
-                            assert.fail(`${sortType} sort includes posts from different timeframes`);
+                            assert.fail(`${sortType.type} sort includes posts from different timeframes`);
                     }
 
                     const scoreA = sort.scoreFunction(alreadySortedComments[j]);
@@ -87,7 +89,7 @@ const testSorting = async (sort, comments) => {
                     if (scoreB > scoreA)
                         assert.fail(`Comments are not sorted by ${sort.type} score`);
                 }
-                debug(`Passed tests for sort ${sortType}`);
+                debug(`Passed tests for sort ${sortType.type}`);
             }
             debug(`Passed tests for sort ${sort.type}`);
             resolve();
@@ -107,7 +109,7 @@ const testSortingComments = async (sort) => {
 
 }
 
-const sortObjects = [
+const postSortObjects = [
     {"type": "new", "scoreFunction": newScore},
     {
         "type": "top", "scoreFunction": topScore,
@@ -115,7 +117,9 @@ const sortObjects = [
         "type": "controversial", "scoreFunction": controversialScore
     }, {
         "type": "hot", "scoreFunction": hotScore
-    }];
+    }, ];
+
+const repliesSortObjects = [...postSortObjects, {"type": "old", "scoreFunction" : oldScore}];
 
 describe("Test Pages API (for sorting)", async () => {
 
@@ -124,8 +128,8 @@ describe("Test Pages API (for sorting)", async () => {
     // Stop publishing once we're done with tests
     after(async () => await subplebbit.stopPublishing());
 
-    sortObjects.map(sort => it(`${sort.type} pages are sorted correctly`, async () => await testSorting(sort)));
-    sortObjects.map(sort => it(`${sort.type} pages under a comment are sorted correctly`, async () => await testSortingComments(sort)));
+    repliesSortObjects.map(sort => it(`${sort.type} pages under a comment are sorted correctly`, async () => await testSortingComments(sort)));
+    postSortObjects.map(sort => it(`${sort.type} pages are sorted correctly`, async () => await testSorting(sort)));
 
 
 });
