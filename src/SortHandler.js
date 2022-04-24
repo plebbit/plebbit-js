@@ -1,135 +1,108 @@
-import {chunks, controversialScore, hotScore, round, TIMEFRAMES_TO_SECONDS, timestamp, topScore} from "./Util.js";
+import {
+    chunks,
+    controversialScore,
+    hotScore,
+    keepKeys, removeKeysWithUndefinedValues,
+    TIMEFRAMES_TO_SECONDS,
+    timestamp
+} from "./Util.js";
 import Debug from "debug";
+import {Page} from "./Pages.js";
 
 const debug = Debug("plebbit-js:SortHandler");
 
-export const SORTED_COMMENTS_TYPES = Object.freeze({
-    HOT: "hot",
-    NEW: "new",
-    TOP_HOUR: "topHour",
-    TOP_DAY: "topDay",
-    TOP_WEEK: "topWeek",
-    TOP_MONTH: "topMonth",
-    TOP_YEAR: "topYear",
-    TOP_ALL: "topAll",
-    CONTROVERSIAL_HOUR: "controversialHour",
-    CONTROVERSIAL_DAY: "controversialDay",
-    CONTROVERSIAL_WEEK: "controversialWeek",
-    CONTROVERSIAL_MONTH: "controversialMonth",
-    CONTROVERSIAL_YEAR: "controversialYear",
-    CONTROVERSIAL_ALL: "controversialAll"
+export const POSTS_SORT_TYPES = Object.freeze({
+    HOT: {type: "hot", "score": hotScore},
+    NEW: {type: "new"},
+    TOP_HOUR: {type: "topHour"},
+    TOP_DAY: {type: "topDay"},
+    TOP_WEEK: {type: "topWeek"},
+    TOP_MONTH: {type: "topMonth"},
+    TOP_YEAR: {type: "topYear"},
+    TOP_ALL: {type: "topAll"},
+    CONTROVERSIAL_HOUR: {type: "controversialHour", "score": controversialScore},
+    CONTROVERSIAL_DAY: {type: "controversialDay", "score": controversialScore},
+    CONTROVERSIAL_WEEK: {type: "controversialWeek", "score": controversialScore},
+    CONTROVERSIAL_MONTH: {type: "controversialMonth", "score": controversialScore},
+    CONTROVERSIAL_YEAR: {type: "controversialYear", "score": controversialScore},
+    CONTROVERSIAL_ALL: {type: "controversialAll", "score": controversialScore}
 });
+
+export const REPLIES_SORT_TYPES = {
+    ...keepKeys(POSTS_SORT_TYPES, ["TOP_ALL", "NEW", "CONTROVERSIAL_ALL"]),
+    "OLD": {type: "old"}
+};
+
 
 export const SORTED_POSTS_PAGE_SIZE = 2;
 
-export class SortedComments {
-    constructor(props) {
-        this.nextSortedCommentsCid = props["nextSortedCommentsCid"];
-        this.comments = props["comments"];
-        this.type = props["type"];
-        this.pageCid = props["pageCid"];
-    }
-
-    setPageCid(newPageCid) {
-        this.pageCid = newPageCid;
-    }
-}
 
 export class SortHandler {
     constructor(subplebbit) {
         this.subplebbit = subplebbit;
     }
 
-    async #chunksToSortedComments(chunks, sortType) {
-        return new Promise(async (resolve, reject) => {
-            if (chunks.length === 0)
-                resolve([undefined]);
-            else {
-                const sortedPosts = new Array(chunks.length);
-                for (let i = chunks.length - 1; i >= 0; i--) {
-                    const sortedPostsPage = new SortedComments({
-                        "type": sortType, "comments": chunks[i],
-                        "nextSortedCommentsCid": sortedPosts[i + 1]?.pageCid,
-                        "pageCid": undefined
-                    }, this.subplebbit);
-                    const cid = (await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(sortedPostsPage))).path;
-                    sortedPostsPage.setPageCid(cid);
-                    sortedPosts[i] = sortedPostsPage;
-                }
-                resolve(sortedPosts);
-            }
-        });
+    async #chunksToListOfPage(chunks) {
+        if (chunks.length === 0)
+            return [[undefined], [undefined]];
 
-
+        const listOfPage = new Array(chunks.length);
+        const cids = new Array(chunks.length);
+        for (let i = chunks.length - 1; i >= 0; i--) {
+            const page = new Page({
+                "nextCid": cids[i + 1],
+                "comments": chunks[i]
+            });
+            cids[i] = (await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(page))).path;
+            listOfPage[i] = page;
+        }
+        return [listOfPage, cids];
     }
 
-    #score(comment, sortType) {
-        if (sortType.includes("hot"))
-            return hotScore(comment);
-        else if (sortType.includes("controversial"))
-            return controversialScore(comment);
-    }
 
     // Resolves to sortedComments
     async #sortComments(comments, sortType, limit = SORTED_POSTS_PAGE_SIZE) {
-        return new Promise(async (resolve, reject) => {
-            let commentsSorted;
-            const typesAlreadySorted = [SORTED_COMMENTS_TYPES.NEW, SORTED_COMMENTS_TYPES.TOP_ALL,
-                SORTED_COMMENTS_TYPES.TOP_YEAR, SORTED_COMMENTS_TYPES.TOP_MONTH,
-                SORTED_COMMENTS_TYPES.TOP_WEEK, SORTED_COMMENTS_TYPES.TOP_DAY, SORTED_COMMENTS_TYPES.TOP_HOUR]
-            // No need to sort these comments since they are already sorted by DB
-            if (typesAlreadySorted.includes(sortType)) {
-                commentsSorted = comments;
-            } else {
-                commentsSorted = (await Promise.all(comments.map(async comment => ({
-                    "comment": comment,
-                    "score": this.#score(comment, sortType)
-                }))))
-                    .sort((postA, postB) => {
-                        return postB.score - postA.score;
-                    }).map(comment => comment.comment);
+        let commentsSorted;
+        if (!sortType.score)
+            commentsSorted = comments; // If sort type has no score function, that means it already has been sorted by DB
+        else
+            commentsSorted = comments.map(comment => ({
+                "comment": comment,
+                "score": sortType.score(comment)
+            }))
+                .sort((postA, postB) => {
+                    return postB.score - postA.score;
+                }).map(comment => comment.comment);
 
-            }
-            const commentsChunks = chunks(commentsSorted, limit);
-            const sortedComments = await this.#chunksToSortedComments(commentsChunks, sortType);
-            if (sortedComments.length === 0 && commentsSorted.length > 0)
-                reject(`There are ${commentsSorted.length} comments yet sortedComments has no comments`);
-            resolve(sortedComments[0]);
+        const commentsChunks = chunks(commentsSorted, limit);
+        const [listOfPage, cids] = await this.#chunksToListOfPage(commentsChunks, sortType);
+        return [{[sortType.type]: listOfPage[0]}, cids[0]];
 
-        });
     }
 
     async #sortCommentsByHot(parentCid, trx) {
-        return new Promise(async (resolve, reject) => {
-            const comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(parentCid, trx);
-            this.#sortComments(comments, SORTED_COMMENTS_TYPES.HOT).then(resolve).catch(reject);
-        });
+        const comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(parentCid, trx);
+        return await this.#sortComments(comments, POSTS_SORT_TYPES.HOT);
     }
 
     async #sortCommentsByTop(parentCid, timeframe, trx) {
-        return new Promise(async (resolve, reject) => {
-            // Timeframe is "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL"
-            const sortType = SORTED_COMMENTS_TYPES[`TOP_${timeframe}`];
-            const comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(parentCid, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe], timestamp(), trx);
-            this.#sortComments(comments, sortType).then(resolve).catch(reject);
-        });
+        // Timeframe is "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL"
+        const sortType = POSTS_SORT_TYPES[`TOP_${timeframe}`];
+        const comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(parentCid, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe], timestamp(), trx);
+        return await this.#sortComments(comments, sortType);
     }
 
 
     async #sortCommentsByControversial(parentCid, timeframe, trx) {
-        return new Promise(async (resolve, reject) => {
-            const sortType = SORTED_COMMENTS_TYPES[`CONTROVERSIAL_${timeframe}`];
-            const comments = await this.subplebbit.dbHandler.queryCommentsBetweenTimestampRange(parentCid, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe], timestamp(), trx);
-            this.#sortComments(comments, sortType).then(resolve).catch(reject);
-        });
+        const sortType = POSTS_SORT_TYPES[`CONTROVERSIAL_${timeframe}`];
+        const comments = await this.subplebbit.dbHandler.queryCommentsBetweenTimestampRange(parentCid, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe], timestamp(), trx);
+        return await this.#sortComments(comments, sortType);
 
     }
 
     async #sortCommentsByNew(parentCid, trx) {
-        return new Promise(async (resolve, reject) => {
-            const comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, trx);
-            this.#sortComments(comments, SORTED_COMMENTS_TYPES.NEW).then(resolve).catch(reject);
-        });
+        const comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, "desc",trx);
+        return await this.#sortComments(comments, POSTS_SORT_TYPES.NEW);
     }
 
     #getSortPromises(comment, trx) {
@@ -142,28 +115,35 @@ export class SortHandler {
             }
             return sortPromises;
         } else {
-            return [SORTED_COMMENTS_TYPES.HOT, SORTED_COMMENTS_TYPES.NEW, SORTED_COMMENTS_TYPES.TOP_ALL, SORTED_COMMENTS_TYPES.CONTROVERSIAL_ALL].map(async type => {
-                const comments = type === SORTED_COMMENTS_TYPES.TOP_ALL ?
-                    await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(comment.cid, 0, timestamp(), trx)
-                    : await this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx);
-                return this.#sortComments(comments, type);
+            return Object.values(REPLIES_SORT_TYPES).map(async sortType => {
+                let comments;
+                if (sortType.type === REPLIES_SORT_TYPES.TOP_ALL.type)
+                    comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(comment.cid, 0, timestamp(), trx);
+                else if (sortType.type === REPLIES_SORT_TYPES.OLD.type)
+                    comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", trx);
+                else
+                    comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx);
+                return this.#sortComments(comments, sortType);
             });
-
         }
     }
 
-    async calculateSortedPosts(comment, trx) {
-        return new Promise(async (resolve, reject) => {
-            Promise.all(this.#getSortPromises(comment, trx)).then((sortedComments) => {
-                let sortedPosts = Object.fromEntries(sortedComments.map(sortedPost => [sortedPost?.type, sortedPost]));
-                let sortedPostsCids = Object.fromEntries(sortedComments.map(sortedPost => [sortedPost?.type, sortedPost?.pageCid]));
-                sortedPosts = JSON.stringify(sortedPosts) === "{}" ? undefined : sortedPosts;
-                sortedPostsCids = JSON.stringify(sortedPostsCids) === "{}" ? undefined : sortedPostsCids;
-                resolve([sortedPosts, sortedPostsCids]);
-            }).catch((err) => {
-                console.error(err);
-                reject(err);
-            });
+    async generatePagesUnderComment(comment, trx) {
+        try {
+            // Create "pages" and "pageCids"
+            const res = await Promise.all(this.#getSortPromises(comment, trx));
+            let [pages, pageCids] = [{}, {}];
+            for (const [page, pageCid] of res) {
+                pages = {...pages, ...page};
+                pageCids[Object.keys(page)[0]] = pageCid;
+            }
+            [pages, pageCids] = [removeKeysWithUndefinedValues(pages), removeKeysWithUndefinedValues(pageCids)];
+            if (JSON.stringify(pages) === "{}")
+                [pages, pageCids] = [undefined, undefined];
+            return [pages, pageCids];
+        } catch (e) {
+            debug(`Error while calculating sorted posts: ${e}`);
+        }
 
 
         });

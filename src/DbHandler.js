@@ -268,9 +268,9 @@ class DbHandler {
         });
     }
 
-    async queryCommentsSortedByTimestamp(parentCid, trx = undefined) {
+    async queryCommentsSortedByTimestamp(parentCid, order="desc",trx = undefined) {
         return new Promise(async (resolve, reject) => {
-            this.#baseCommentQuery(trx).where({"parentCid": parentCid}).orderBy("timestamp", "desc")
+            this.#baseCommentQuery(trx).where({"parentCid": parentCid}).orderBy("timestamp", order)
                 .then(async res => {
                     resolve(await this.#createCommentsFromRows.bind(this)(res, trx));
                 }).catch(err => {

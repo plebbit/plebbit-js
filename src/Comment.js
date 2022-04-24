@@ -2,6 +2,7 @@ import assert from "assert";
 import {loadIpnsAsJson, parseJsonIfString, removeKeysWithUndefinedValues} from "./Util.js";
 import Publication from "./Publication.js";
 import Debug from "debug";
+import {Pages} from "./Pages.js";
 
 const debug = Debug("plebbit-js:Comment");
 
@@ -28,8 +29,7 @@ export class Comment extends Publication {
         this.downvoteCount = props["downvoteCount"];
         this.replyCount = props["replyCount"];
         this.updatedAt = props["updatedAt"];
-        this.sortedReplies = parseJsonIfString(props["sortedReplies"]);
-        this.sortedRepliesCids = parseJsonIfString(props["sortedRepliesCids"]);
+        this.replies = props["replies"] ? new Pages({...props["replies"], "plebbit": this.subplebbit.plebbit}) : undefined;
         // Comment Edit props
         this.content = props["content"] || this.content;
         this.editSignature = parseJsonIfString(props["editSignature"]);
@@ -72,7 +72,7 @@ export class Comment extends Publication {
 
     toJSONForDb(challengeRequestId) {
         const json = this.toJSON();
-        ["replyCount", "upvoteCount", "downvoteCount", "sortedReplies", "sortedRepliesCids", "author"].forEach(key => delete json[key]);
+        ["replyCount", "upvoteCount", "downvoteCount", "replies", "author"].forEach(key => delete json[key]);
         json["authorAddress"] = this?.author?.address;
         json["challengeRequestId"] = challengeRequestId;
         json["ipnsKeyName"] = this.ipnsKeyName;
@@ -85,8 +85,7 @@ export class Comment extends Publication {
             "replyCount": this.replyCount,
             "upvoteCount": this.upvoteCount,
             "downvoteCount": this.downvoteCount,
-            "sortedReplies": this.sortedReplies,
-            "sortedRepliesCids": this.sortedRepliesCids,
+            "replies": this.replies,
             "content": this.content,
             "updatedAt": this.updatedAt,
             "editSignature": this.editSignature,

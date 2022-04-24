@@ -75,8 +75,8 @@ export async function loadAllPagesThroughSortedComments(sortedCommentsCid, plebb
         return [];
     let sortedCommentsPage = await loadIpfsFileAsJson(sortedCommentsCid, plebbit.ipfsClient);
     let sortedComments = sortedCommentsPage.comments;
-    while (sortedCommentsPage.nextSortedCommentsCid) {
-        sortedCommentsPage = await loadIpfsFileAsJson(sortedCommentsPage.nextSortedCommentsCid, plebbit.ipfsClient);
+    while (sortedCommentsPage.nextCid) {
+        sortedCommentsPage = await loadIpfsFileAsJson(sortedCommentsPage.nextCid, plebbit.ipfsClient);
         sortedComments = sortedComments.concat(sortedCommentsPage.comments);
     }
     sortedComments = await Promise.all(sortedComments.map(async commentProps => plebbit.createComment(commentProps)));

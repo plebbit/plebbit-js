@@ -15,13 +15,14 @@ import {
 import assert from "assert";
 import DbHandler, {SIGNER_USAGES} from "./DbHandler.js";
 import {createCaptcha} from "captcha-canvas/js-script/extra.js";
-import {SORTED_COMMENTS_TYPES, SortHandler} from "./SortHandler.js";
+import {POSTS_SORT_TYPES, REPLIES_SORT_TYPES, SortHandler} from "./SortHandler.js";
 import * as path from "path";
 import * as fs from "fs";
 import {v4 as uuidv4} from 'uuid';
 import {ipfsImportKey, loadIpnsAsJson, shallowEqual, timestamp} from "./Util.js";
 import Debug from "debug";
 import {decrypt, encrypt, verifyPublication} from "./Signer.js";
+import {Pages} from "./Pages.js";
 
 const debug = Debug("plebbit-js:Subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
@@ -48,8 +49,7 @@ export class Subplebbit extends EventEmitter {
         this.moderatorsAddresses = mergedProps["moderatorsAddresses"];
         this.latestPostCid = mergedProps["latestPostCid"];
         this._dbConfig = mergedProps["database"];
-        this.sortedPosts = mergedProps["sortedPosts"];
-        this.sortedPostsCids = mergedProps["sortedPostsCids"];
+        this.posts = mergedProps["posts"];
         this.subplebbitAddress = mergedProps["subplebbitAddress"];
         this.ipnsKeyName = mergedProps["ipnsKeyName"];
         this.pubsubTopic = mergedProps["pubsubTopic"] || this.subplebbitAddress;
@@ -141,8 +141,7 @@ export class Subplebbit extends EventEmitter {
             "latestPostCid": this.latestPostCid,
             "pubsubTopic": this.pubsubTopic,
             "subplebbitAddress": this.subplebbitAddress,
-            "sortedPosts": this.sortedPosts,
-            "sortedPostsCids": this.sortedPostsCids,
+            "posts": this.posts,
             "challengeTypes": this.challengeTypes,
             "metricsCid": this.metricsCid,
             "createdAt": this.createdAt,
@@ -215,18 +214,17 @@ export class Subplebbit extends EventEmitter {
     async #updateSubplebbitIpns() {
         return new Promise(async (resolve, reject) => {
             const trx = await this.dbHandler.createTransaction();
-            Promise.all([this.dbHandler.querySubplebbitMetrics(trx), this.sortHandler.calculateSortedPosts(undefined, trx), this.dbHandler.queryLatestPost(trx)])
+            Promise.all([this.dbHandler.querySubplebbitMetrics(trx), this.sortHandler.generatePagesUnderComment(undefined, trx), this.dbHandler.queryLatestPost(trx)])
                 .then(async ([metrics, [sortedPosts, sortedPostsCids], latestPost]) => {
+                    let posts;
                     if (sortedPosts)
-                        sortedPosts = {[SORTED_COMMENTS_TYPES.TOP_ALL]: sortedPosts[SORTED_COMMENTS_TYPES.TOP_ALL]}; // Keep only top all
+                        posts = new Pages({"pages": {[POSTS_SORT_TYPES.HOT.type]: sortedPosts[POSTS_SORT_TYPES.HOT.type]}, "pageCids": sortedPostsCids, "plebbit": this.plebbit});
                     const newSubplebbitOptions = {
-                        "sortedPosts": sortedPosts,
-                        "sortedPostsCids": sortedPostsCids,
+                        "posts": posts,
                         "metricsCid": (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path,
                         "latestPostCid": latestPost?.postCid,
                     };
-                    if (JSON.stringify(this.sortedPosts) !== JSON.stringify(sortedPosts) ||
-                        JSON.stringify(this.sortedPostsCids) !== JSON.stringify(sortedPostsCids) ||
+                    if (JSON.stringify(this.posts) !== JSON.stringify(newSubplebbitOptions.posts) ||
                         this.metricsCid !== newSubplebbitOptions.metricsCid || this.latestPostCid !== newSubplebbitOptions.latestPostCid)
                         this.edit(newSubplebbitOptions).then(() => {
                             debug(`Subplebbit IPNS has been synced with DB`);
@@ -492,18 +490,16 @@ export class Subplebbit extends EventEmitter {
             debug("Starting to sync IPNS with DB");
             const syncComment = async (dbComment) => {
                 const currentIpns = await loadIpnsAsJson(dbComment.ipnsName, this.plebbit.ipfsClient);
-                if (!currentIpns || !shallowEqual(currentIpns, dbComment.toJSONCommentUpdate(), ["sortedReplies", "sortedRepliesCids"])) {
+                if (!currentIpns || !shallowEqual(currentIpns, dbComment.toJSONCommentUpdate(), ["replies"])) {
                     debug(`Comment (${dbComment.cid}) IPNS is outdated`);
-                    let [sortedReplies, sortedRepliesCids] = await this.sortHandler.calculateSortedPosts(dbComment);
+                    let [sortedReplies, sortedRepliesCids] = await this.sortHandler.generatePagesUnderComment(dbComment);
                     if (sortedReplies)
-                        sortedReplies = {[SORTED_COMMENTS_TYPES.TOP_ALL]: sortedReplies[SORTED_COMMENTS_TYPES.TOP_ALL]};
+                        sortedReplies = new Pages({"pages": {[REPLIES_SORT_TYPES.TOP_ALL.type]: sortedReplies[REPLIES_SORT_TYPES.TOP_ALL.type]}, "pageCids": sortedRepliesCids, "plebbit": this.plebbit});
                     dbComment.setUpdatedAt(timestamp());
                     await this.dbHandler.upsertComment(dbComment, undefined);
                     return dbComment.edit({
                         ...dbComment.toJSONCommentUpdate(),
-                        "sortedReplies": sortedReplies,
-                        "sortedRepliesCids": sortedRepliesCids,
-
+                        "replies": sortedReplies,
                     });
                 } else
                     debug(`Comment (${dbComment.cid}) is already synced`);
