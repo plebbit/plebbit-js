@@ -65,6 +65,7 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   updatedAt: number // timestamp in seconds the IPNS record was updated
   authorFlair?: Flair // mod can edit an author's flair
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
+  signature: Signature // signature of the CommentUpdate by the sub owner to protect against malicious gateway
 }
 Author {
   address: string
@@ -114,6 +115,7 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   flairs: {[key: 'post' | 'author']: Flair[]} // list of post/author flairs authors and mods can choose from
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
   encryption: SubplebbitEncryption
+  signature: Signature // signature of the Subplebbit update by the sub owner to protect against malicious gateway
 }
 SubplebbitSuggested { // values suggested by the sub owner, the client/user can ignore them without breaking interoperability
   primaryColor?: string
