@@ -49,7 +49,10 @@ export class Subplebbit extends EventEmitter {
         this.moderatorsAddresses = mergedProps["moderatorsAddresses"];
         this.latestPostCid = mergedProps["latestPostCid"];
         this._dbConfig = mergedProps["database"];
-        this.posts = mergedProps["posts"];
+        this.posts = mergedProps["posts"] instanceof Object ? new Pages({
+            ...mergedProps["posts"],
+            "subplebbit": this
+        }) : mergedProps["posts"];
         this.subplebbitAddress = mergedProps["subplebbitAddress"];
         this.ipnsKeyName = mergedProps["ipnsKeyName"];
         this.pubsubTopic = mergedProps["pubsubTopic"] || this.subplebbitAddress;

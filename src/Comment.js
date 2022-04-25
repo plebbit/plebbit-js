@@ -29,7 +29,10 @@ export class Comment extends Publication {
         this.downvoteCount = props["downvoteCount"];
         this.replyCount = props["replyCount"];
         this.updatedAt = props["updatedAt"];
-        this.replies = props["replies"] ? new Pages({...props["replies"], "plebbit": this.subplebbit.plebbit}) : undefined;
+        this.replies = props["replies"] instanceof Object ? new Pages({
+            ...props["replies"],
+            "subplebbit": this.subplebbit
+        }) : undefined;
         // Comment Edit props
         this.content = props["content"] || this.content;
         this.editSignature = parseJsonIfString(props["editSignature"]);
