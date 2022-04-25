@@ -69,7 +69,7 @@ export class Subplebbit extends EventEmitter {
                 assert(this.signer, "Subplebbit needs a signer to start");
                 debug(`Subplebbit has no signer in DB, will insert provided signer from createSubplebbitOptions into DB`);
                 await this.dbHandler.insertSigner({
-                    ...JSON.parse(JSON.stringify(this.signer)),
+                    ...this.signer,
                     "ipnsKeyName": this.signer.address,
                     "usage": SIGNER_USAGES.SUBPLEBBIT
                 });
