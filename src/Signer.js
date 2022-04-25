@@ -18,6 +18,16 @@ export class Signer {
         this.address = props.address;
         this.ipfsKey = Buffer.from(props.ipfsKey);
     }
+
+    toJSON() {
+        return {
+            "type": this.type,
+            "privateKey": this.privateKey,
+            "publicKey": this.publicKey,
+            "address": this.address,
+            "ipfsKey": this.ipfsKey
+        };
+    }
 }
 
 export class Signature {

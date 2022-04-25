@@ -38,7 +38,6 @@ export class Subplebbit extends EventEmitter {
         this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
         this.provideCaptchaCallback = undefined;
         this.validateCaptchaAnswerCallback = undefined;
-        this._syncIpnsInterval = undefined;
     }
 
     #initSubplebbit(newProps) {
@@ -188,18 +187,20 @@ export class Subplebbit extends EventEmitter {
     }
 
     async #updateOnce() {
-        return new Promise(async (resolve, reject) => {
-            loadIpnsAsJson(this.subplebbitAddress, this.plebbit.ipfsClient).then(res => {
-                if (this.emittedAt !== res.updatedAt) {
-                    this.emittedAt = res.updatedAt;
-                    this.#initSubplebbit(res);
-                    debug(`Subplebbit received a new update. Will emit an update event`);
-                    this.emit("update", this);
-                }
-                this.#initSubplebbit(res);
-                resolve(res);
-            }).catch(err => resolve(undefined));
-        });
+        try {
+            const subplebbitIpns = await loadIpnsAsJson(this.subplebbitAddress, this.plebbit.ipfsClient);
+            if (this.emittedAt !== subplebbitIpns.updatedAt) {
+                this.emittedAt = subplebbitIpns.updatedAt;
+                this.#initSubplebbit(subplebbitIpns);
+                debug(`Subplebbit received a new update. Will emit an update event`);
+                this.emit("update", this);
+            }
+            this.#initSubplebbit(subplebbitIpns);
+            return this;
+        } catch (e) {
+            debug(`Failed to update subplebbit IPNS, error: ${e}`);
+        }
+
     }
 
     update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
@@ -215,31 +216,31 @@ export class Subplebbit extends EventEmitter {
     }
 
     async #updateSubplebbitIpns() {
-        return new Promise(async (resolve, reject) => {
-            const trx = await this.dbHandler.createTransaction();
-            Promise.all([this.dbHandler.querySubplebbitMetrics(trx), this.sortHandler.generatePagesUnderComment(undefined, trx), this.dbHandler.queryLatestPost(trx)])
-                .then(async ([metrics, [sortedPosts, sortedPostsCids], latestPost]) => {
-                    let posts;
-                    if (sortedPosts)
-                        posts = new Pages({"pages": {[POSTS_SORT_TYPES.HOT.type]: sortedPosts[POSTS_SORT_TYPES.HOT.type]}, "pageCids": sortedPostsCids, "plebbit": this.plebbit});
-                    const newSubplebbitOptions = {
-                        "posts": posts,
-                        "metricsCid": (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path,
-                        "latestPostCid": latestPost?.postCid,
-                    };
-                    if (JSON.stringify(this.posts) !== JSON.stringify(newSubplebbitOptions.posts) ||
-                        this.metricsCid !== newSubplebbitOptions.metricsCid || this.latestPostCid !== newSubplebbitOptions.latestPostCid)
-                        this.edit(newSubplebbitOptions).then(() => {
-                            debug(`Subplebbit IPNS has been synced with DB`);
-                            resolve();
-                        }).catch(reject);
-                    else {
-                        debug(`No need to update subplebbit IPNS`);
-                        resolve();
-                    }
-                }).catch(reject).finally(async () => await trx.commit());
+        const trx = await this.dbHandler.createTransaction();
+        const latestPost = await this.dbHandler.queryLatestPost(trx);
+        await trx.commit();
+        const [metrics, [sortedPosts, sortedPostsCids]] = await Promise.all([this.dbHandler.querySubplebbitMetrics(), this.sortHandler.generatePagesUnderComment()]);
+        let posts;
+        if (sortedPosts)
+            posts = new Pages({
+                "pages": {[POSTS_SORT_TYPES.HOT.type]: sortedPosts[POSTS_SORT_TYPES.HOT.type]},
+                "pageCids": sortedPostsCids,
+                "subplebbit": this
+            });
+        const newSubplebbitOptions = {
+            "posts": posts,
+            "metricsCid": (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path,
+            "latestPostCid": latestPost?.postCid,
+        };
+        if (JSON.stringify(this.posts) !== JSON.stringify(newSubplebbitOptions.posts) ||
+            this.metricsCid !== newSubplebbitOptions.metricsCid ||
+            this.latestPostCid !== newSubplebbitOptions.latestPostCid) {
+            await this.edit(newSubplebbitOptions);
+            debug(`Subplebbit IPNS fields [${Object.keys(newSubplebbitOptions)}] has been synced with DB`);
 
-        });
+        } else
+            debug(`No need to update subplebbit IPNS`);
+
     }
 
     async #handleCommentEdit(commentEdit, challengeRequestId, trx) {
@@ -488,34 +489,36 @@ export class Subplebbit extends EventEmitter {
         });
     }
 
-    async #syncIpnsWithDb() {
-        return new Promise(async (resolve, reject) => {
-            debug("Starting to sync IPNS with DB");
-            const syncComment = async (dbComment) => {
-                const currentIpns = await loadIpnsAsJson(dbComment.ipnsName, this.plebbit.ipfsClient);
-                if (!currentIpns || !shallowEqual(currentIpns, dbComment.toJSONCommentUpdate(), ["replies"])) {
-                    debug(`Comment (${dbComment.cid}) IPNS is outdated`);
-                    let [sortedReplies, sortedRepliesCids] = await this.sortHandler.generatePagesUnderComment(dbComment);
-                    if (sortedReplies)
-                        sortedReplies = new Pages({"pages": {[REPLIES_SORT_TYPES.TOP_ALL.type]: sortedReplies[REPLIES_SORT_TYPES.TOP_ALL.type]}, "pageCids": sortedRepliesCids, "plebbit": this.plebbit});
-                    dbComment.setUpdatedAt(timestamp());
-                    await this.dbHandler.upsertComment(dbComment, undefined);
-                    return dbComment.edit({
-                        ...dbComment.toJSONCommentUpdate(),
-                        "replies": sortedReplies,
+    async #syncIpnsWithDb(syncIntervalMs) {
+        debug("Starting to sync IPNS with DB");
+        const syncComment = async (dbComment) => {
+            const currentIpns = await loadIpnsAsJson(dbComment.ipnsName, this.plebbit.ipfsClient);
+            if (!currentIpns || !shallowEqual(currentIpns, dbComment.toJSONCommentUpdate(), ["replies"])) {
+                debug(`Comment (${dbComment.cid}) IPNS is outdated`);
+                let [sortedReplies, sortedRepliesCids] = await this.sortHandler.generatePagesUnderComment(dbComment);
+                if (sortedReplies)
+                    sortedReplies = new Pages({
+                        "pages": {[REPLIES_SORT_TYPES.TOP_ALL.type]: sortedReplies[REPLIES_SORT_TYPES.TOP_ALL.type]},
+                        "pageCids": sortedRepliesCids,
+                        "subplebbit": this
                     });
-                } else
-                    debug(`Comment (${dbComment.cid}) is already synced`);
-            };
+                dbComment.setUpdatedAt(timestamp());
+                await this.dbHandler.upsertComment(dbComment, undefined);
+                return dbComment.edit({
+                    ...dbComment.toJSONCommentUpdate(),
+                    "replies": sortedReplies,
+                });
+            }
+        };
 
-            const errorHandle = async (err) => {
-                debug(`Failed to sync due to error: ${err}`);
-                reject(err);
-            };
+        try {
+            const dbComments = await this.dbHandler.queryComments();
+            await Promise.all([...dbComments.map(async comment => syncComment(comment)), this.#updateSubplebbitIpns()]);
+        } catch (e) {
+            debug(`Failed to sync due to error: ${e}`);
+        }
 
-            this.dbHandler.queryComments().then(async comments =>
-                Promise.all([...comments.map(async comment => syncComment(comment)), this.#updateSubplebbitIpns()]).then(resolve).catch(errorHandle)).catch(errorHandle);
-        });
+        setTimeout(this.#syncIpnsWithDb.bind(this, syncIntervalMs), syncIntervalMs)
 
     }
 
@@ -534,9 +537,7 @@ export class Subplebbit extends EventEmitter {
         const subscribedTopics = (await this.plebbit.ipfsClient.pubsub.ls());
         if (!subscribedTopics.includes(this.pubsubTopic))
             await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, this.#processCaptchaPubsub.bind(this));
-        if (this._syncIpnsInterval)
-            clearInterval(this._syncIpnsInterval);
-        this._syncIpnsInterval = setInterval(this.#syncIpnsWithDb.bind(this), syncIntervalMs); // two minute
+        await this.#syncIpnsWithDb(syncIntervalMs);
     }
 
     async stopPublishing() {
@@ -560,22 +561,20 @@ export class Subplebbit extends EventEmitter {
 
     // For development purposes only
     async _addPublicationToDb(publication) {
-        return new Promise(async (resolve, reject) => {
+        const trx = publication.vote ? undefined : await this.dbHandler.createTransaction(); // No need for votes to reserve a transaction
+        try {
             const randomUUID = uuidv4();
-            const trx = publication.vote ? undefined : await this.dbHandler.createTransaction(); // No need for votes to reserve a transaction
-            const errHandle = async (err) => {
-                debug(err);
-                await trx?.rollback(err);
-                reject(err);
-            }
             await this.dbHandler.upsertChallenge(new ChallengeRequestMessage({"challengeRequestId": randomUUID}), trx);
-            this.#publishPostAfterPassingChallenge(publication, randomUUID, trx).then((res) => {
-                if (trx)
-                    trx.commit().then(() => resolve(res)).catch(errHandle);
-                else
-                    resolve(res);
-            }).catch(errHandle);
-        });
+            const publishedPublication = await this.#publishPostAfterPassingChallenge(publication, randomUUID, trx);
+            if (trx)
+                await trx.commit();
+            return publishedPublication;
+        } catch (e) {
+            debug(`Failed to add publication to DB, error ${e}`);
+            if (trx)
+                await trx.rollback();
+        }
+
     }
 
 }
