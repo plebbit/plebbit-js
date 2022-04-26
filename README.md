@@ -157,7 +157,7 @@ SubplebbitEncryption {
 Flair {
   text: string
   backgroundColor?: string
-  textgroundColor?: string
+  textColor?: string
 }
 Pages {
   pages: {[key: PostsSortType | RepliesSortType]: Page} // e.g. subplebbit.posts.pages.hot.comments[0].cid = 'Qm...'
