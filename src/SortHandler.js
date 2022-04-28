@@ -34,7 +34,7 @@ export const REPLIES_SORT_TYPES = {
 };
 
 
-export const SORTED_POSTS_PAGE_SIZE = 2;
+export const SORTED_POSTS_PAGE_SIZE = 50;
 
 
 export class SortHandler {
