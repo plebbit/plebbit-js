@@ -48,10 +48,17 @@ export class SortHandler {
 
         const listOfPage = new Array(chunks.length);
         const cids = new Array(chunks.length);
-        for (let i = chunks.length - 1; i >= 0; i--) {
+        const chunksWithReplies = await Promise.all(chunks.map(chunk => {
+            return Promise.all(chunk.map(async comment => {
+                const [sortedReplies, sortedRepliesCids] = await this.generatePagesUnderComment(comment);
+                comment.setReplies(sortedReplies, sortedRepliesCids);
+                return comment;
+            }));
+        }));
+        for (let i = chunksWithReplies.length - 1; i >= 0; i--) {
             const page = new Page({
                 "nextCid": cids[i + 1],
-                "comments": chunks[i]
+                "comments": chunksWithReplies[i]
             });
             cids[i] = (await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(page))).path;
             listOfPage[i] = page;
@@ -101,7 +108,7 @@ export class SortHandler {
     }
 
     async #sortCommentsByNew(parentCid, trx) {
-        const comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, "desc",trx);
+        const comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, "desc", trx);
         return await this.#sortComments(comments, POSTS_SORT_TYPES.NEW);
     }
 
