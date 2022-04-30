@@ -1,4 +1,7 @@
 import {loadIpfsFileAsJson, TIMEFRAMES_TO_SECONDS, timestamp} from "../src/Util.js";
+import Debug from "debug";
+
+const debug = Debug("plebbit-js:Pages");
 
 export async function generateMockComment(parentPostOrComment, plebbit) {
     const commentTime = Date.now() / 1000;
@@ -70,15 +73,20 @@ export async function generateMockVote(parentPostOrComment, vote, plebbit) {
     return voteObj;
 }
 
-export async function loadAllPagesThroughSortedComments(sortedCommentsCid, plebbit) {
+export async function loadAllPagesThroughSortedComments(sortedCommentsCid, pages) {
     if (!sortedCommentsCid)
         return [];
-    let sortedCommentsPage = await loadIpfsFileAsJson(sortedCommentsCid, plebbit.ipfsClient);
-    let sortedComments = sortedCommentsPage.comments;
-    while (sortedCommentsPage.nextCid) {
-        sortedCommentsPage = await loadIpfsFileAsJson(sortedCommentsPage.nextCid, plebbit.ipfsClient);
-        sortedComments = sortedComments.concat(sortedCommentsPage.comments);
+    try {
+        let sortedCommentsPage = await pages.getPage(sortedCommentsCid);
+        let sortedComments = sortedCommentsPage.comments;
+        while (sortedCommentsPage.nextCid) {
+            sortedCommentsPage = await pages.getPage(sortedCommentsPage.nextCid);
+            sortedComments = sortedComments.concat(sortedCommentsPage.comments);
+        }
+        sortedComments = await Promise.all(sortedComments.map(async commentProps => pages.subplebbit.plebbit.createComment(commentProps)));
+        return sortedComments;
+
+    } catch (e) {
+        debug(`Error while loading all pages under cid (${sortedCommentsCid}): ${e}`)
     }
-    sortedComments = await Promise.all(sortedComments.map(async commentProps => plebbit.createComment(commentProps)));
-    return sortedComments;
 }
