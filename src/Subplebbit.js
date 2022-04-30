@@ -262,6 +262,7 @@ export class Subplebbit extends EventEmitter {
             debug(`Signature of CommentEdit is identical to original comment (${commentEdit.cid})`);
             return {"reason": `Signature of CommentEdit is identical to original comment (${commentEdit.cid})`};
         } else {
+            commentEdit.setOriginalContent(commentToBeEdited.originalContent || commentToBeEdited.content);
             await this.dbHandler.upsertComment(commentEdit, undefined, trx);
             debug(`Updated content for comment ${commentEdit.commentCid}`);
         }
@@ -492,22 +493,18 @@ export class Subplebbit extends EventEmitter {
     async #syncIpnsWithDb(syncIntervalMs) {
         debug("Starting to sync IPNS with DB");
         const syncComment = async (dbComment) => {
-            const currentIpns = await loadIpnsAsJson(dbComment.ipnsName, this.plebbit.ipfsClient);
+            const currentIpns = await loadIpnsAsJson(dbComment.ipnsName, this.plebbit);
             if (!currentIpns || !shallowEqual(currentIpns, dbComment.toJSONCommentUpdate(), ["replies"])) {
-                debug(`Comment (${dbComment.cid}) IPNS is outdated`);
-                let [sortedReplies, sortedRepliesCids] = await this.sortHandler.generatePagesUnderComment(dbComment);
-                if (sortedReplies)
-                    sortedReplies = new Pages({
-                        "pages": {[REPLIES_SORT_TYPES.TOP_ALL.type]: sortedReplies[REPLIES_SORT_TYPES.TOP_ALL.type]},
-                        "pageCids": sortedRepliesCids,
-                        "subplebbit": this
-                    });
-                dbComment.setUpdatedAt(timestamp());
-                await this.dbHandler.upsertComment(dbComment, undefined);
-                return dbComment.edit({
-                    ...dbComment.toJSONCommentUpdate(),
-                    "replies": sortedReplies,
-                });
+                try {
+                    debug(`Comment (${dbComment.cid}) IPNS is outdated`);
+                    const [sortedReplies, sortedRepliesCids] = await this.sortHandler.generatePagesUnderComment(dbComment);
+                    dbComment.setReplies(sortedReplies, sortedRepliesCids);
+                    dbComment.setUpdatedAt(timestamp());
+                    await this.dbHandler.upsertComment(dbComment, undefined);
+                    return dbComment.edit(dbComment.toJSONCommentUpdate());
+                } catch (e) {
+                    debug(`Failed to update comment (${dbComment.cid}) due to error=${e}`);
+                }
             }
         };
 

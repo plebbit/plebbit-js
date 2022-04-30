@@ -48,8 +48,8 @@ export class SortHandler {
 
         const listOfPage = new Array(chunks.length);
         const cids = new Array(chunks.length);
-        const chunksWithReplies = await Promise.all(chunks.map(chunk => {
-            return Promise.all(chunk.map(async comment => {
+        const chunksWithReplies = await Promise.all(chunks.map(async chunk => {
+            return await Promise.all(chunk.map(async comment => {
                 const [sortedReplies, sortedRepliesCids] = await this.generatePagesUnderComment(comment);
                 comment.setReplies(sortedReplies, sortedRepliesCids);
                 return comment;
@@ -136,21 +136,19 @@ export class SortHandler {
     }
 
     async generatePagesUnderComment(comment, trx) {
-        try {
-            // Create "pages" and "pageCids"
-            const res = await Promise.all(this.#getSortPromises(comment, trx));
-            let [pages, pageCids] = [{}, {}];
-            for (const [page, pageCid] of res) {
-                pages = {...pages, ...page};
-                pageCids[Object.keys(page)[0]] = pageCid;
-            }
-            [pages, pageCids] = [removeKeysWithUndefinedValues(pages), removeKeysWithUndefinedValues(pageCids)];
-            if (JSON.stringify(pages) === "{}")
-                [pages, pageCids] = [undefined, undefined];
-            return [pages, pageCids];
-        } catch (e) {
-            debug(`Error while calculating sorted posts: ${e}`);
+
+        // Create "pages" and "pageCids"
+        const res = await Promise.all(this.#getSortPromises(comment, trx));
+        let [pages, pageCids] = [{}, {}];
+        for (const [page, pageCid] of res) {
+            pages = {...pages, ...page};
+            pageCids[Object.keys(page)[0]] = pageCid;
         }
+        [pages, pageCids] = [removeKeysWithUndefinedValues(pages), removeKeysWithUndefinedValues(pageCids)];
+        if (JSON.stringify(pages) === "{}")
+            [pages, pageCids] = [undefined, undefined];
+        return [pages, pageCids];
+
 
     }
 }

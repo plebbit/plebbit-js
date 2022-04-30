@@ -3,6 +3,7 @@ import {loadIpnsAsJson, parseJsonIfString, removeKeysWithUndefinedValues} from "
 import Publication from "./Publication.js";
 import Debug from "debug";
 import {Pages} from "./Pages.js";
+import {REPLIES_SORT_TYPES} from "./SortHandler.js";
 
 const debug = Debug("plebbit-js:Comment");
 
@@ -15,7 +16,7 @@ export class Comment extends Publication {
         this.postCid = props["postCid"];
         this.cid = props["cid"];
         this.parentCid = props["parentCid"];
-        this.content = props["content"];
+        this.originalContent = props["originalContent"];
         this.ipnsName = props["ipnsName"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.ipnsKeyName = props["ipnsKeyName"];
         this.depth = props["depth"];
@@ -29,11 +30,12 @@ export class Comment extends Publication {
         this.downvoteCount = props["downvoteCount"];
         this.replyCount = props["replyCount"];
         this.updatedAt = props["updatedAt"];
-        this.replies = props["replies"] instanceof Object ? new Pages({
+        this.replies = props["replies"] instanceof Object && JSON.stringify(props["replies"]) !== "{}" ? new Pages({
             ...props["replies"],
             "subplebbit": this.subplebbit
         }) : undefined;
         // Comment Edit props
+        this.originalContent = this.originalContent || (props.content ? this.content : undefined);
         this.content = props["content"] || this.content;
         this.editSignature = parseJsonIfString(props["editSignature"]);
         this.editTimestamp = props["editTimestamp"];
@@ -50,7 +52,8 @@ export class Comment extends Publication {
         return {
             ...this.toJSONIpfs(),
             ...this.toJSONCommentUpdate(),
-            "cid": this.cid
+            "cid": this.cid,
+            "originalContent": this.originalContent
         };
     };
 
@@ -129,6 +132,21 @@ export class Comment extends Publication {
         this.updatedAt = newUpdatedAt;
     }
 
+    setOriginalContent(newOriginalContent) {
+        this.originalContent = newOriginalContent;
+    }
+
+    setReplies(sortedReplies, sortedRepliesCids) {
+        if (sortedReplies)
+            this.replies = new Pages({
+                "pages": {[REPLIES_SORT_TYPES.TOP_ALL.type]: sortedReplies[REPLIES_SORT_TYPES.TOP_ALL.type]},
+                "pageCids": sortedRepliesCids,
+                "subplebbit": this.subplebbit,
+                "parentCommentCid": this.cid
+            });
+
+    }
+
     async #updateOnce() {
         return new Promise(async (resolve, reject) => {
             if (!this.ipnsName) {
@@ -136,7 +154,7 @@ export class Comment extends Publication {
                 debug(`Comment (${this.cid}) has no IPNS name`);
                 return;
             }
-            loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit.ipfsClient).then(res => {
+            loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit).then(res => {
                     if (!res) {
                         resolve("ipnsName is not pointing to any IPFS file yet");
                         debug(`IPNS (${this.ipnsName}) is not pointing to any file`);

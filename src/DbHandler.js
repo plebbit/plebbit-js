@@ -52,6 +52,7 @@ class DbHandler {
 
             table.text("subplebbitAddress").notNullable();
             table.text("content").nullable();
+            table.text("originalContent").nullable();
             table.timestamp("timestamp").notNullable().checkPositive();
             table.text("signature").notNullable().unique(); // Will contain {signature, public key, type}
             table.text("ipnsName").notNullable().unique();
