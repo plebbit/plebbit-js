@@ -94,9 +94,9 @@ export class Plebbit {
         if (!createCommentEditOptions.editTimestamp)
             createCommentEditOptions.editTimestamp = timestamp();
         const temp = new CommentEdit({...createCommentEditOptions}, commentSubplebbit);
+        const mergedProps = {...temp.toJSON(), ...createCommentEditOptions};
         const commentEditProps = {
-            ...temp.toJSON(), ...createCommentEditOptions,
-            "editSignature": await signPublication(temp, createCommentEditOptions.signer)
+            ...mergedProps, "editSignature": await signPublication(mergedProps, createCommentEditOptions.signer)
         };
         return new CommentEdit(commentEditProps, commentSubplebbit);
     }
