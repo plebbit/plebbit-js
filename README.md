@@ -61,6 +61,7 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   pinned?: boolean
   locked?: boolean
   removed?: boolean // mod deleted a comment
+  authorBanExpiresAt?: number // timestamp in second, if defined the author was banned for this comment
   moderatorReason?: string // reason the mod took a mod action
   updatedAt: number // timestamp in seconds the IPNS record was updated
   authorFlair?: Flair // mod can edit an author's flair
@@ -73,6 +74,7 @@ Author {
   wallets?: {[chainTicker: string]: Wallet}
   avatar?: Nft
   flair?: Flair // not part of the signature, mod can edit it after comment is published
+  banExpiresAt?: number // timestamp in second, if defined the author was banned for this comment
 }
 Wallet {
   address: string
@@ -158,6 +160,7 @@ Flair {
   text: string
   backgroundColor?: string
   textColor?: string
+  expiresAt?: timestamp in second, a flair assigned to an author by a mod will follow the author in future comments, unless it expires
 }
 Pages {
   pages: {[key: PostsSortType | RepliesSortType]: Page} // e.g. subplebbit.posts.pages.hot.comments[0].cid = 'Qm...'
@@ -632,6 +635,8 @@ An object which may have the following keys:
 | pinned | `boolean` or `undefined` | (Only mod) Edited pinned status of the comment |
 | locked | `boolean` or `undefined` | (Only mod) Edited locked status of the comment |
 | removed | `boolean` or `undefined` | (Only mod) Edited removed status of the comment |
+| authorBanExpiresAt | `number` or `undefined` | (Only author) Author was banned for this comment |
+| authorFlair | `Flair` or `undefined` | (Only mod) Edited flair of the author |
 | moderatorReason | `string` or `undefined` | (Only mod) Reason for mod action |
 
 #### Returns
