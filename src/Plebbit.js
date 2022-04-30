@@ -5,9 +5,10 @@ import {loadIpfsFileAsJson, loadIpnsAsJson, removeKeysWithUndefinedValues, times
 import * as path from "path";
 import Vote from "./Vote.js";
 import {create as createIpfsClient} from "ipfs-http-client";
-import {signPublication, getAddressFromPublicKeyPem, Signer} from "./Signer.js";
+import {getAddressFromPublicKeyPem, Signer, signPublication, verifyPublication} from "./Signer.js";
 import * as crypto from "libp2p-crypto";
 import * as jose from "jose";
+import assert from "assert";
 
 export class Plebbit {
     constructor(options) {
@@ -20,23 +21,21 @@ export class Plebbit {
     async getSubplebbit(subplebbitAddress, subplebbitProps = {}) {
         if (!subplebbitAddress.includes("/ipns/"))
             subplebbitAddress = `/ipns/${subplebbitAddress}`;
-        return new Promise(async (resolve, reject) => {
-            loadIpnsAsJson(subplebbitAddress, this.ipfsClient)
-                .then(jsonFile => resolve(new Subplebbit({...jsonFile, ...subplebbitProps}, this)))
-                .catch(reject);
-        });
+        const subplebbitJson = await loadIpnsAsJson(subplebbitAddress, this);
+        return new Subplebbit({...subplebbitJson, ...subplebbitProps}, this);
     }
 
-    async getPostOrComment(cid) {
-        return new Promise(async (resolve, reject) => {
-            loadIpfsFileAsJson(cid, this.ipfsClient).then(async jsonFile => {
-                const subplebbit = await this.getSubplebbit(jsonFile["subplebbitAddress"]);
-                if (jsonFile["title"])
-                    resolve(new Post({...jsonFile, "postCid": cid, "cid": cid}, subplebbit));
-                else
-                    resolve(new Comment({...jsonFile, "cid": cid}, subplebbit));
-            }).catch(reject);
-        });
+    async getComment(cid) {
+        const commentJson = await loadIpfsFileAsJson(cid, this);
+        const subplebbit = await this.getSubplebbit(commentJson["subplebbitAddress"]);
+        const publication = commentJson["title"] ? new Post({
+            ...commentJson,
+            "postCid": cid,
+            "cid": cid
+        }, subplebbit) : new Comment({...commentJson, "cid": cid}, subplebbit);
+        const [signatureIsVerified, failedVerificationReason] = await verifyPublication(publication);
+        assert.equal(signatureIsVerified, true, `Signature of comment/post ${cid} is invalid due to reason=${failedVerificationReason}`);
+        return publication;
     }
 
     async #signPublicationIfNeeded(createPublicationOptions) {
