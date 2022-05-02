@@ -153,37 +153,39 @@ export class Subplebbit extends EventEmitter {
     }
 
     async edit(newSubplebbitOptions) {
-        return new Promise(async (resolve, reject) => {
-                this.#initSubplebbit(newSubplebbitOptions);
-                await this.#initSignerIfNeeded();
-                if (!this.subplebbitAddress) { // TODO require signer
-                    debug(`Subplebbit does not have an address`);
-                    const ipnsKeyName = this.signer.address;
-                    ipfsImportKey({...this.signer, "ipnsKeyName": ipnsKeyName}, this.plebbit).then(ipnsKey => {
-                        const subplebbitAddress = ipnsKey["id"] || ipnsKey["Id"]
-                        debug(`Generated an address for subplebbit (${subplebbitAddress})`);
-                        this.edit({
-                            "subplebbitAddress": subplebbitAddress, // It seems ipfs key import returns {Id, Name} while ipfs gen returns {id, name} so we're accounting for both cases here
-                            "ipnsKeyName": ipnsKey["name"] || ipnsKey["Name"],
-                            "createdAt": timestamp()
-                        }).then(resolve).catch(reject);
-                    }).catch(reject);
-                } else {
-                    await this.#initDbIfNeeded();
-                    this.updatedAt = timestamp();
-                    this.plebbit.ipfsClient.add(JSON.stringify(this)).then(file => {
-                        this.plebbit.ipfsClient.name.publish(file["cid"], {
-                            "lifetime": "72h", // TODO decide on optimal time later
-                            "key": this.ipnsKeyName
-                        }).then(() => {
-                            debug(`Subplebbit (${this.subplebbitAddress}) has been edited and its IPNS updated`);
-                            resolve();
-                        }).catch(reject);
-                    }).catch(reject);
-                }
+        try {
+            this.#initSubplebbit(newSubplebbitOptions);
+            await this.#initSignerIfNeeded();
+            if (!this.subplebbitAddress) { // TODO require signer
+                debug(`Subplebbit does not have an address`);
+                assert.equal(Boolean(this.signer?.address), true, "Subplebbit needs to have either a subplebbitAddress or a Signer to initialize");
+                const ipnsKeyName = this.signer.address;
+                const ipnsKey = await ipfsImportKey({...this.signer, "ipnsKeyName": ipnsKeyName}, this.plebbit);
+                const subplebbitAddress = ipnsKey["id"] || ipnsKey["Id"]
+                debug(`Generated an address for subplebbit (${subplebbitAddress})`);
+                return this.edit({
+                    "subplebbitAddress": subplebbitAddress, // It seems ipfs key import returns {Id, Name} while ipfs gen returns {id, name} so we're accounting for both cases here
+                    "ipnsKeyName": ipnsKey["name"] || ipnsKey["Name"],
+                    "createdAt": timestamp()
+                });
+            } else {
+                await this.#initDbIfNeeded();
+                this.updatedAt = timestamp();
+                const file = await this.plebbit.ipfsClient.add(JSON.stringify(this));
+                await this.plebbit.ipfsClient.name.publish(file["cid"], {
+                    "lifetime": "72h", // TODO decide on optimal time later
+                    "key": this.ipnsKeyName
+                });
+                debug(`Subplebbit (${this.subplebbitAddress}) has been edited and its IPNS updated`);
+                return this;
 
             }
-        );
+
+        } catch (e) {
+            debug(`Failed to edit subplebbit due to ${e}`);
+        }
+
+
     }
 
     async #updateOnce() {
@@ -235,8 +237,8 @@ export class Subplebbit extends EventEmitter {
         if (JSON.stringify(this.posts) !== JSON.stringify(newSubplebbitOptions.posts) ||
             this.metricsCid !== newSubplebbitOptions.metricsCid ||
             this.latestPostCid !== newSubplebbitOptions.latestPostCid) {
-            await this.edit(newSubplebbitOptions);
-            debug(`Subplebbit IPNS fields [${Object.keys(newSubplebbitOptions)}] has been synced with DB`);
+            debug(`Will attempt to sync subplebbit IPNS fields [${Object.keys(newSubplebbitOptions)}]`);
+            return this.edit(newSubplebbitOptions);
 
         } else
             debug(`No need to update subplebbit IPNS`);
@@ -398,30 +400,17 @@ export class Subplebbit extends EventEmitter {
     }
 
     async #upsertAndPublishChallenge(challenge, trx) {
-        return new Promise(async (resolve, reject) => {
-            const errHandle = async (err) => {
-                debug(`Failed to publish challenge type ${challenge.type} (${challenge.challengeRequestId}) due to error = ${err}`);
-                if (trx)
-                    await trx.rollback();
-                reject(err);
-            };
-
-            Promise.all([this.dbHandler.upsertChallenge(challenge, trx), this.plebbit.ipfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challenge)))])
-                .then(() => {
-                    if (trx)
-                        trx.commit().then(() => {
-                                debug(`Published challenge type ${challenge.type} (${challenge.challengeRequestId})`);
-                                resolve();
-                            }
-                        ).catch(errHandle)
-                    else {
-                        debug(`Published challenge type ${challenge.type} (${challenge.challengeRequestId})`);
-                        resolve();
-                    }
-                }).catch(errHandle)
-
-        });
-
+        try {
+            await this.dbHandler.upsertChallenge(challenge, trx);
+            if (trx)
+                await trx.commit();
+            await this.plebbit.ipfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challenge)))
+            debug(`Published challenge type ${challenge.type} (${challenge.challengeRequestId})`);
+        } catch (e) {
+            debug(`Failed to either publish challenge or upsert in DB, error = ${e}`);
+            if (trx)
+                await trx.rollback();
+        }
     }
 
     async #handleChallengeAnswer(msgParsed) {
@@ -543,7 +532,6 @@ export class Subplebbit extends EventEmitter {
         this.stop();
         this.dbHandler?.knex?.destroy();
         this.dbHandler = undefined;
-        clearInterval(this._syncIpnsInterval);
     }
 
     async destroy() {
