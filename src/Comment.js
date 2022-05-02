@@ -34,8 +34,9 @@ export class Comment extends Publication {
             "subplebbit": this.subplebbit
         }) : undefined;
         // Comment Edit props
-        this.originalContent = props["originalContent"] || this.originalContent || (props["content"] ? this.content : undefined);
+        this.originalContent = props["originalContent"] || this.originalContent || (props["content"] && props["editSignature"] ? this.content : undefined);
         this.content = props["content"] || this.content;
+        assert.notEqual(this.content, this.originalContent, "Content and original content can't be equal to each other");
         this.editSignature = parseJsonIfString(props["editSignature"]);
         this.editTimestamp = props["editTimestamp"];
         this.editReason = props["editReason"];
@@ -207,7 +208,6 @@ export class CommentEdit extends Comment {
         const json = super.toJSONForDb(challengeRequestId);
         ["authorAddress", "challengeRequestId", "ipnsKeyName", "signature", "commentCid"].forEach(key => delete json[key]);
         json["cid"] = this.commentCid;
-        json["originalContent"] = this.originalContent;
         return removeKeysWithUndefinedValues(json);
     }
 }

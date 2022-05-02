@@ -21,7 +21,7 @@ class Publication extends EventEmitter {
 
     _initProps(props) {
         this.subplebbitAddress = props["subplebbitAddress"] || this.subplebbit.subplebbitAddress;
-        this.timestamp = props["timestamp"] || timestamp();
+        this.timestamp = props["timestamp"];
         this.signer = this.signer || props["signer"];
         this.signature = parseJsonIfString(props["signature"]);
         this.author = props["author"] ? new Author(props["author"]) : undefined;

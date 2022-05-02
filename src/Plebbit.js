@@ -38,29 +38,23 @@ export class Plebbit {
         return publication;
     }
 
-    async #signPublicationIfNeeded(createPublicationOptions) {
-        let publicationProps;
-        if (createPublicationOptions.signer) {
-            if (createPublicationOptions.author && !createPublicationOptions.author.address)
-                createPublicationOptions.author.address = createPublicationOptions.signer.address;
-            const commentSignature = await signPublication(createPublicationOptions, createPublicationOptions.signer);
-            publicationProps = {...createPublicationOptions, "signature": commentSignature};
-        } else if (!createPublicationOptions.signature)
-            throw(`Failed to create a publication since no signature or signer is provided.`);
-        else
-            publicationProps = createPublicationOptions;
-        return publicationProps;
+    async #signPublication(createPublicationOptions) {
+
+        if (createPublicationOptions.author && !createPublicationOptions.author.address)
+            createPublicationOptions.author.address = createPublicationOptions.signer.address;
+        const commentSignature = await signPublication(createPublicationOptions, createPublicationOptions.signer);
+        return {...createPublicationOptions, "signature": commentSignature};
+
     }
 
     async createComment(createCommentOptions) {
         const commentSubplebbit = await this.getSubplebbit(createCommentOptions.subplebbitAddress); // TODO This should be fetched from cache
-        const tempComment = createCommentOptions.title ? new Post(createCommentOptions, commentSubplebbit) : new Comment(createCommentOptions, commentSubplebbit); // To initialize default properties if needed (i.e.timestamp)
-        const commentProps = await this.#signPublicationIfNeeded({...removeKeysWithUndefinedValues(tempComment.toJSON()), ...createCommentOptions});
-        if (commentProps.title)
-            // Post
-            return new Post(commentProps, commentSubplebbit);
-        else
-            return new Comment(commentProps, commentSubplebbit);
+        if (!createCommentOptions.signer)
+            return createCommentOptions.title ? new Post(createCommentOptions, commentSubplebbit) : new Comment(createCommentOptions, commentSubplebbit);
+        if (!createCommentOptions.timestamp)
+            createCommentOptions.timestamp = timestamp();
+        const commentProps = await this.#signPublication(createCommentOptions);
+        return commentProps.title ? new Post(commentProps, commentSubplebbit) : new Comment(commentProps, commentSubplebbit);
     }
 
     async createSubplebbit(createSubplebbitOptions) {
@@ -81,8 +75,11 @@ export class Plebbit {
 
     async createVote(createVoteOptions) {
         const subplebbit = await this.getSubplebbit(createVoteOptions.subplebbitAddress);
-        const tempVote = new Vote(createVoteOptions); // To initialize default properties if needed (i.e.timestamp)
-        const voteProps = await this.#signPublicationIfNeeded({...removeKeysWithUndefinedValues(tempVote.toJSON()), ...createVoteOptions});
+        if (!createVoteOptions.signer)
+            return new Vote(createVoteOptions, subplebbit);
+        if (!createVoteOptions.timestamp)
+            createVoteOptions.timestamp = timestamp();
+        const voteProps = await this.#signPublication(createVoteOptions);
         return new Vote(voteProps, subplebbit);
     }
 
@@ -93,10 +90,9 @@ export class Plebbit {
             return new CommentEdit(createCommentEditOptions, commentSubplebbit);
         if (!createCommentEditOptions.editTimestamp)
             createCommentEditOptions.editTimestamp = timestamp();
-        const temp = new CommentEdit({...createCommentEditOptions}, commentSubplebbit);
-        const mergedProps = {...temp.toJSON(), ...createCommentEditOptions};
         const commentEditProps = {
-            ...mergedProps, "editSignature": await signPublication(mergedProps, createCommentEditOptions.signer)
+            ...createCommentEditOptions,
+            "editSignature": await signPublication(createCommentEditOptions, createCommentEditOptions.signer)
         };
         return new CommentEdit(commentEditProps, commentSubplebbit);
     }
