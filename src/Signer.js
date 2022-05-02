@@ -6,6 +6,8 @@ import {toString as uint8ArrayToString} from 'uint8arrays/to-string';
 import {fromString as uint8ArrayFromString} from 'uint8arrays/from-string';
 import * as jose from "jose";
 import forge from 'node-forge'
+import assert from "assert";
+import Publication from "./Publication.js";
 
 // note: postCid is not included because it's written by the sub owner, not the author
 
@@ -88,14 +90,13 @@ export async function signPublication(publication, signer) {
     const keyPair = await crypto.keys.import(signer.privateKey, "");
     const fieldsToSign = getFieldsToSign(publication);
     const publicationSignFields = keepKeys(publication, fieldsToSign);
-
     const commentEncoded = encode(publicationSignFields);
     const signatureData = uint8ArrayToString(await keyPair.sign(commentEncoded), 'base64');
     return new Signature({
         "signature": signatureData,
         "publicKey": signer.publicKey,
         "type": signer.type,
-        "signedPropertyNames": Object.keys(publicationSignFields)
+        "signedPropertyNames": fieldsToSign
     });
 }
 
@@ -103,20 +104,36 @@ export async function signPublication(publication, signer) {
 // Return [verification (boolean), reasonForFailing (string)]
 export async function verifyPublication(publication) {
 
-    try {
-        // CommentEdit won't have author prop
-        const signature = publication.signature || publication.editSignature;
+    const verifyAuthor = async (signature, author) => {
         const peerId = await getPeerIdFromPublicKeyPem(signature.publicKey);
-        if (publication.author && !peerId.equals(PeerId.createFromB58String(publication.author.address)))
-            return [false, "comment.author.address doesn't match comment.signature.publicKey"];
-
-        const commentWithFieldsToSign = keepKeys(publication, signature.signedPropertyNames);
+        assert.equal(peerId.equals(PeerId.createFromB58String(author.address)), true, "comment.author.address doesn't match comment.signature.publicKey");
+    };
+    const verifyPublicationSignature = async (signature, publicationToBeVerified) => {
+        const peerId = await getPeerIdFromPublicKeyPem(signature.publicKey);
+        const commentWithFieldsToSign = keepKeys(publicationToBeVerified, signature.signedPropertyNames);
         const commentEncoded = encode(commentWithFieldsToSign);
         const signatureIsValid = await peerId.pubKey.verify(commentEncoded, uint8ArrayFromString(signature.signature, 'base64'));
-        if (signatureIsValid)
-            return [true,];
-        else
-            return [false, "comment.signature invalid"];
+        assert.equal(signatureIsValid, true, "Signature is invalid");
+    };
+
+    try {
+        if (publication.originalContent) {
+            // This is a comment/post that has been edited, and we need to verify both signature and editSignature
+            publication.author ? await verifyAuthor(publication.signature, publication.author) : undefined;
+            const publicationJson = publication instanceof Publication ? publication.toJSON() : publication;
+            const originalSignatureObj = {...publicationJson, "content": publication.originalContent};
+            await verifyPublicationSignature(publication.signature, originalSignatureObj);
+            const editedSignatureObj = {...publicationJson, "commentCid": publication.cid};
+            await verifyPublicationSignature(publication.editSignature, editedSignatureObj);
+        } else if (publication.commentCid && publication.content) {
+            // Verify CommentEdit
+            await verifyPublicationSignature(publication.editSignature, publication);
+        } else {
+            publication.author ? await verifyAuthor(publication.signature, publication.author) : undefined;
+            await verifyPublicationSignature(publication.signature, publication);
+
+        }
+        return [true,];
     } catch (e) {
         return [false, String(e)];
     }
