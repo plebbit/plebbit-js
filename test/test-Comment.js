@@ -1,14 +1,14 @@
 import {Plebbit} from "../src/index.js"
 import {IPFS_CLIENT_CONFIGS, TEST_COMMENT_POST_CID} from "../secrets.js";
 import assert from 'assert';
-import {loadIpfsFileAsJson, timestamp, unsubscribeAllPubsubTopics} from "../src/Util.js";
-import {SORTED_COMMENTS_TYPES} from "../src/SortHandler.js";
-import {generateMockComment} from "./MockUtil.js";
+import {sleep, timestamp, unsubscribeAllPubsubTopics} from "../src/Util.js";
+import {REPLIES_SORT_TYPES} from "../src/SortHandler.js";
+import {generateMockComment, generateMockPost} from "./MockUtil.js";
 import {signPublication, verifyPublication} from "../src/Signer.js";
 
 const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
 
-const post = await clientPlebbit.getPostOrComment(TEST_COMMENT_POST_CID);
+const post = await clientPlebbit.getComment(TEST_COMMENT_POST_CID);
 
 const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
 const subplebbit = await serverPlebbit.createSubplebbit({"subplebbitAddress": post.subplebbitAddress});
@@ -88,30 +88,133 @@ describe("Test Post and Comment", async function () {
         assert.equal(signedComment.signature.publicKey, publicKeyPem, "Generated public key should be same as provided");
     });
 
-
-    it("Can publish new comment under post", async function () {
+    it("Can publish a post", async function () {
         return new Promise(async (resolve, reject) => {
-            const mockComment = await generateMockComment(post, clientPlebbit);
-            await post.update();
-            const originalReplyCount = post.replyCount;
+            const mockPost = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
 
-            await mockComment.publish();
-            post.once("update", async updatedPost => {
-                const loadedComment = await clientPlebbit.getPostOrComment(mockComment.cid);
-                loadedComment.once("update", async updatedMockComment => {
-                    assert.equal(updatedMockComment.depth, 1, "Depth of comment under post should be 1");
-                    const latestCommentCid = (await loadIpfsFileAsJson(updatedPost.sortedRepliesCids[SORTED_COMMENTS_TYPES.NEW], clientPlebbit.ipfsClient)).comments[0].cid;
-                    assert.equal(latestCommentCid, updatedMockComment.cid);
-                    assert.equal(post.replyCount, originalReplyCount + 1, "Failed to update reply count");
-                    mockComments.push(mockComment);
+            await subplebbit.update();
+            const originalLatestPostCid = subplebbit.latestPostCid;
+            await mockPost.publish();
+            mockPost.once("challengeverification", ([challengeVerificationMessage, mockPostWithUpdates]) => {
+                subplebbit.once("update", updatedSubplebbit => {
+                    assert.equal(mockPost.previousCid, originalLatestPostCid, "Failed to set previousPostCid");
+                    assert.equal(mockPost.cid, updatedSubplebbit.latestPostCid, "Failed to set subplebbit.latestPostCid");
+                    mockComments.push(mockPost);
                     resolve();
-
                 });
-                loadedComment.update();
+
 
             });
         });
     });
+
+    it("Can edit a comment", async function () {
+        return new Promise(async (resolve, reject) => {
+            const editedText = "edit test";
+            const editReason = "To test editing a comment";
+            const commentToBeEdited = mockComments[0];
+            await commentToBeEdited.update();
+
+            const originalContent = commentToBeEdited.content;
+            const commentEdit = await clientPlebbit.createCommentEdit({
+                "subplebbitAddress": commentToBeEdited.subplebbitAddress,
+                "commentCid": commentToBeEdited.cid,
+                "editReason": editReason,
+                "content": editedText,
+                "signer": commentToBeEdited.signer,
+            });
+            await commentEdit.publish();
+            commentEdit.once("challengeverification", async ([challengeVerificationMessage, updatedCommentEdit]) => {
+                commentToBeEdited.once("update", async updatedCommentToBeEdited => {
+                    assert.equal(updatedCommentToBeEdited.content, editedText, "Comment has not been edited");
+                    assert.equal(updatedCommentToBeEdited.originalContent, originalContent, "Original content should be preserved");
+                    assert.equal(updatedCommentToBeEdited.editReason, editReason, "Edit reason has not been updated");
+                    resolve();
+                });
+
+
+            });
+        });
+    });
+
+    it(`Can edit an edited comment`, async () => {
+        return new Promise(async (resolve, reject) => {
+            const editedText = "Double edit test";
+            const editReason = "To test double editing a comment";
+            const commentToBeEdited = mockComments[0];
+            await commentToBeEdited.update();
+            const originalContent = commentToBeEdited.originalContent;
+            const commentEdit = await clientPlebbit.createCommentEdit({
+                "subplebbitAddress": commentToBeEdited.subplebbitAddress,
+                "commentCid": commentToBeEdited.cid,
+                "editReason": editReason,
+                "content": editedText,
+                "signer": commentToBeEdited.signer,
+            });
+            await commentEdit.publish();
+            commentEdit.once("challengeverification", async ([challengeVerificationMessage, updatedCommentEdit]) => {
+                commentToBeEdited.once("update", async (updatedCommentToBeEdited) => {
+                    assert.equal(updatedCommentToBeEdited.content, editedText, "Comment has not been edited");
+                    assert.equal(updatedCommentToBeEdited.originalContent, originalContent, "Original content should be preserved");
+                    assert.equal(updatedCommentToBeEdited.editReason, editReason, "Edit reason has not been updated");
+                    resolve();
+                });
+            });
+        });
+    });
+
+    it("Fails to edit a comment if not authorized", async function () {
+        return new Promise(async (resolve, reject) => {
+            const editedText = "This should fail";
+            const editReason = "To test whether editing a comment fails";
+            const commentToBeEdited = mockComments[0];
+            await commentToBeEdited.update();
+            const commentEdit = await clientPlebbit.createCommentEdit({
+                "subplebbitAddress": commentToBeEdited.subplebbitAddress,
+                "commentCid": commentToBeEdited.cid,
+                "editReason": editReason,
+                "content": editedText,
+                "signer": await clientPlebbit.createSigner(), // Create a new signer, different than the signer of the original comment
+            });
+            await commentEdit.publish();
+            commentEdit.once("challengeverification", async ([challengeVerificationMessage, updatedCommentEdit]) => {
+                assert.equal(challengeVerificationMessage.challengePassed, false, "Editing a comment should fail if signer of CommentEdit is different than original comment");
+                if (!challengeVerificationMessage.reason)
+                    assert.fail(`Should include a reason for refusing publication of a comment edit`);
+                await commentToBeEdited.update();
+                assert.notEqual(commentToBeEdited.content, editedText, "edited content should not be edited if user is not authorized");
+                assert.notEqual(commentToBeEdited.editReason, editReason, "Edit reason should not be edited if user is not authorized");
+                resolve();
+            });
+        });
+
+    });
+
+
+    [1, 2, 3, 4].map(depth => it(`Can publish comment with depth = ${depth}`, async () => {
+        return new Promise(async (resolve, reject) => {
+            await sleep(100000); // Wait for IPNS changes to populate
+            const parentComment = mockComments[depth - 1];
+            const mockComment = await generateMockComment(parentComment, clientPlebbit);
+            await parentComment.update();
+            assert.equal(Boolean(parentComment.updatedAt), true, "Comment IPNS hasn't been propagated");
+            const originalReplyCount = parentComment.replyCount;
+            await mockComment.publish();
+            parentComment.once("update", async updatedParentComment => {
+                assert.equal(mockComment.parentCid, updatedParentComment.cid);
+                assert.equal(mockComment.depth, depth, `Depth of comment should be ${depth}`);
+                const parentLatestCommentCid = (await updatedParentComment.replies.getPage(updatedParentComment.replies.pageCids[REPLIES_SORT_TYPES.NEW.type])).comments[0].cid;
+                assert.equal(parentLatestCommentCid, mockComment.cid);
+                assert.equal(updatedParentComment.replyCount, originalReplyCount + 1);
+                mockComments.push(mockComment);
+                resolve();
+                // mockComment.once("update", () => resolve());
+            });
+
+        });
+
+    }));
+
 
     it("Publishing a comment with invalid signature fails", async () => {
         return new Promise(async (resolve, reject) => {
@@ -127,73 +230,5 @@ describe("Test Post and Comment", async function () {
 
     });
 
-    it("Can edit a comment", async function () {
-        return new Promise(async (resolve, reject) => {
-            const editedText = "edit test";
-            const editReason = "To test editing a comment";
-            await mockComments[0].update();
-            const commentEdit = await clientPlebbit.createCommentEdit({
-                "subplebbitAddress": mockComments[0].subplebbitAddress,
-                "commentCid": mockComments[0].cid,
-                "editReason": editReason,
-                "content": editedText,
-                "signer": mockComments[0].signer,
-            });
-            await commentEdit.publish();
-            commentEdit.once("challengeverification", async ([challengeVerificationMessage, updatedCommentEdit]) => {
-                mockComments[0].once("update", async updatedComment => {
-                    assert.equal(updatedComment.content, editedText, "Comment has not been edited");
-                    assert.equal(updatedComment.editReason, editReason, "Edit reason has not been updated");
-                    resolve();
-                });
 
-
-            });
-        });
-    });
-
-    it("Fails to edit a comment if not authorized", async function () {
-        return new Promise(async (resolve, reject) => {
-            const editedText = "This should fail";
-            const editReason = "To test whether editing a comment fails";
-            await mockComments[0].update();
-            const commentEdit = await clientPlebbit.createCommentEdit({
-                "subplebbitAddress": mockComments[0].subplebbitAddress,
-                "commentCid": mockComments[0].cid,
-                "editReason": editReason,
-                "content": editedText,
-                "signer": await clientPlebbit.createSigner(), // Create a new signer, different than the signer of the original comment
-            });
-            await commentEdit.publish();
-            commentEdit.once("challengeverification", async ([challengeVerificationMessage, updatedCommentEdit]) => {
-                assert.equal(challengeVerificationMessage.challengePassed, false, "Editing a comment should fail if signer of CommentEdit is different than original comment");
-                if (!challengeVerificationMessage.reason)
-                    assert.fail(`Should include a reason for refusing publication of a comment edit`);
-                await mockComments[0].update();
-                assert.notEqual(mockComments[0].content, editedText, "edited content should not be edited if user is not authorized");
-                assert.notEqual(mockComments[0].editReason, editReason, "Edit reason should not be edited if user is not authorized");
-                resolve();
-            });
-        });
-
-    });
-
-
-    it("Can publish new comments under comment", async () => {
-        return new Promise(async (resolve, reject) => {
-            const mockComment = await generateMockComment(mockComments[0], clientPlebbit);
-            await mockComments[0].update();
-            const originalReplyCount = mockComments[0].replyCount;
-            await mockComment.publish();
-            mockComments[0].once("update", async updatedParentComment => {
-                assert.equal(mockComment.parentCid, updatedParentComment.cid);
-                assert.equal(mockComment.depth, 2, "Depth of comment under a comment should be 2");
-                const parentLatestCommentCid = (await loadIpfsFileAsJson(updatedParentComment.sortedRepliesCids[SORTED_COMMENTS_TYPES.NEW], clientPlebbit.ipfsClient)).comments[0].cid;
-                assert.equal(parentLatestCommentCid, mockComment.cid);
-                assert.equal(updatedParentComment.replyCount, originalReplyCount + 1);
-                mockComments.push(mockComment);
-                resolve();
-            });
-        });
-    });
 });
