@@ -230,12 +230,14 @@ ChallengeRequestMessage extends PubsubMessage /* (sent by post author) */ {
 }
 ChallengeMessage extends PubsubMessage /* (sent by subplebbit owner) */ {
   challengeRequestId: string
-  challenges: Challenge[] // a challenge can have more than 1 challenge
+  encryptedChallenges: Encrypted // a challenge message has a challenges array with 1 or more challenges
+  // plebbit-js should decrypt the challenges when possible, and add a `challenges: Challenge[]` property for convenience (not part of the broadcasted pubsub message)
 }
 ChallengeAnswerMessage extends PubsubMessage /* (sent by post author) */ {
   challengeRequestId: string
   challengeAnswerId: string // random string choosen by sender
-  challengeAnswers: string[] // for example ['2+2=4', '1+7=8']
+  encryptedChallengeAnswers: Encrypted // for example ['2+2=4', '1+7=8']
+  // plebbit-js should decrypt the challengeAnswers when possible, and add a `challengeAnswers: string[]` property for convenience (not part of the broadcasted pubsub message)
 }
 ChallengeVerificationMessage extends PubsubMessage /* (sent by subplebbit owner) */ {
   challengeRequestId: string // include in verification in case a peer is missing it
