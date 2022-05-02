@@ -16,7 +16,6 @@ export class Comment extends Publication {
         this.postCid = props["postCid"];
         this.cid = props["cid"];
         this.parentCid = props["parentCid"];
-        this.originalContent = props["originalContent"];
         this.ipnsName = props["ipnsName"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.ipnsKeyName = props["ipnsKeyName"];
         this.depth = props["depth"];
@@ -35,7 +34,7 @@ export class Comment extends Publication {
             "subplebbit": this.subplebbit
         }) : undefined;
         // Comment Edit props
-        this.originalContent = this.originalContent || (props.content ? this.content : undefined);
+        this.originalContent = props["originalContent"] || this.originalContent || (props["content"] ? this.content : undefined);
         this.content = props["content"] || this.content;
         this.editSignature = parseJsonIfString(props["editSignature"]);
         this.editTimestamp = props["editTimestamp"];
@@ -92,7 +91,7 @@ export class Comment extends Publication {
             "upvoteCount": this.upvoteCount,
             "downvoteCount": this.downvoteCount,
             "replies": this.replies,
-            "content": this.content,
+            ...(this.originalContent ? {"content": this.content} : undefined), // Only include content if content has been changed through commentEdit
             "updatedAt": this.updatedAt,
             "editSignature": this.editSignature,
             "editTimestamp": this.editTimestamp,
@@ -148,33 +147,23 @@ export class Comment extends Publication {
     }
 
     async #updateOnce() {
-        return new Promise(async (resolve, reject) => {
-            if (!this.ipnsName) {
-                resolve(undefined);
-                debug(`Comment (${this.cid}) has no IPNS name`);
-                return;
+        const res = await loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit);
+        if (!res)
+            debug(`IPNS (${this.ipnsName}) is not pointing to any file`);
+        else {
+            if (res.updatedAt !== this.emittedAt) {
+                this.emittedAt = res.updatedAt;
+                this._initCommentUpdate(res);
+                this.emit("update", this);
             }
-            loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit).then(res => {
-                    if (!res) {
-                        resolve("ipnsName is not pointing to any IPFS file yet");
-                        debug(`IPNS (${this.ipnsName}) is not pointing to any file`);
-                    } else {
-                        if (res.updatedAt !== this.emittedAt) {
-                            this.emittedAt = res.updatedAt;
-                            this._initCommentUpdate(res);
-                            this.emit("update", this);
-                        }
-                        this._initCommentUpdate(res);
-
-
-                        resolve(this);
-                    }
-                }
-            ).catch(err => resolve(undefined))
-        });
+            this._initCommentUpdate(res);
+            return this;
+        }
     }
 
+
     update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
+        assert(this.ipnsName, "Comment need to have ipnsName field to poll updates");
         debug(`Starting to poll updates for comment (${this.cid}) IPNS (${this.ipnsName}) every ${updateIntervalMs} milliseconds`)
         if (this._updateInterval)
             clearInterval(this._updateInterval);
@@ -218,6 +207,7 @@ export class CommentEdit extends Comment {
         const json = super.toJSONForDb(challengeRequestId);
         ["authorAddress", "challengeRequestId", "ipnsKeyName", "signature", "commentCid"].forEach(key => delete json[key]);
         json["cid"] = this.commentCid;
+        json["originalContent"] = this.originalContent;
         return removeKeysWithUndefinedValues(json);
     }
 }

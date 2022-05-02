@@ -110,6 +110,7 @@ export function replaceXWithY(obj, x, y) {
 
 export function keepKeys(obj, keys) {
     const newObj = {};
+    keys.forEach(key => newObj[key] = undefined);
     for (const key of Object.keys(obj))
         if (keys.includes(key))
             newObj[key] = obj[key];
