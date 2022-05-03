@@ -190,7 +190,7 @@ export class Subplebbit extends EventEmitter {
 
     async #updateOnce() {
         try {
-            const subplebbitIpns = await loadIpnsAsJson(this.subplebbitAddress, this.plebbit.ipfsClient);
+            const subplebbitIpns = await loadIpnsAsJson(this.subplebbitAddress, this.plebbit);
             if (this.emittedAt !== subplebbitIpns.updatedAt) {
                 this.emittedAt = subplebbitIpns.updatedAt;
                 this.#initSubplebbit(subplebbitIpns);

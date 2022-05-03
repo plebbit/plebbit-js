@@ -4,7 +4,6 @@ import all from 'it-all';
 import last from "it-last";
 import Debug from "debug";
 import fetch from 'node-fetch';
-import * as crypto from "libp2p-crypto";
 import FormData from "form-data";
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS = Object.freeze({
@@ -18,35 +17,39 @@ export const TIMEFRAMES_TO_SECONDS = Object.freeze({
 const debug = Debug("plebbit-js:Util");
 
 
-export async function loadIpfsFileAsJson(cid, ipfsClient) {
-    return new Promise((resolve, reject) => {
-        all(ipfsClient.cat(cid))
-            .then(rawData => uint8ArrayConcat(rawData))
-            .catch(err => {
-                debug(`Failed to load file with cid ${cid} due to ${err}`);
-                reject(err);
-            })
-            .then(data => {
-                if (!data) {
-                    debug(`IPFS (${cid}) loads undefined object (${data})`);
-                    reject(`IPFS (${cid}) loads undefined object (${data})`);
-                } else {
-                    const jsonObject = JSON.parse(uint8ArrayToString(data));
-                    resolve(jsonObject);
-                }
-            }).catch(reject);
-    });
+export async function loadIpfsFileAsJson(cid, plebbit) {
+    if (!cid)
+        return undefined;
+    if (plebbit.ipfsGatewayUrl) {
+        const res = await fetch(`${plebbit.ipfsGatewayUrl}/ipfs/${cid}`);
+        if (res.status === 200)
+            return await res.json();
+        else
+            return undefined;
+    } else {
+        const rawData = await all(plebbit.ipfsClient.cat(cid));
+        const data = uint8ArrayConcat(rawData);
+        if (!data) {
+            debug(`IPFS (${cid}) loads undefined object (${data})`);
+            return undefined;
+        } else
+            return JSON.parse(uint8ArrayToString(data));
+
+    }
+
 }
 
-export async function loadIpnsAsJson(ipns, ipfsClient) {
-    return new Promise(async (resolve, reject) => {
-        last(ipfsClient.name.resolve(ipns)).then(cid => {
-            if (!cid)
-                resolve(undefined);
-            else
-                loadIpfsFileAsJson(cid, ipfsClient).then(resolve).catch(reject);
-        }).catch(reject);
-    });
+export async function loadIpnsAsJson(ipns, plebbit) {
+    if (plebbit.ipfsGatewayUrl) {
+        const res = await fetch(`${plebbit.ipfsGatewayUrl}/ipns/${ipns}`);
+        if (res.status === 200)
+            return await res.json();
+        else
+            return undefined;
+    } else {
+        const cid = await last(plebbit.ipfsClient.name.resolve(ipns));
+        return await loadIpfsFileAsJson(cid, plebbit);
+    }
 }
 
 export async function sleep(ms) {

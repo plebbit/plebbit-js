@@ -11,16 +11,16 @@ import * as jose from "jose";
 import assert from "assert";
 
 export class Plebbit {
-    constructor(options) {
+    constructor(options = {}) {
         this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        this.ipfsClient = createIpfsClient(this.ipfsHttpClientOptions);
+        this.ipfsGatewayUrl = this.ipfsHttpClientOptions ? undefined : (options["ipfsGatewayUrl"] || 'https://cloudflare-ipfs.com');
+        this.pubsubHttpClientOptions = this.ipfsHttpClientOptions ? undefined : (options["pubsubHttpClientOptions"] || 'https://pubsubprovider.xyz/api/v0');
+        this.ipfsClient = createIpfsClient(this.ipfsHttpClientOptions || this.pubsubHttpClientOptions);
         this.dataPath = options["dataPath"] || path.join(process.cwd(), ".plebbit");
     }
 
 
     async getSubplebbit(subplebbitAddress, subplebbitProps = {}) {
-        if (!subplebbitAddress.includes("/ipns/"))
-            subplebbitAddress = `/ipns/${subplebbitAddress}`;
         const subplebbitJson = await loadIpnsAsJson(subplebbitAddress, this);
         return new Subplebbit({...subplebbitJson, ...subplebbitProps}, this);
     }
