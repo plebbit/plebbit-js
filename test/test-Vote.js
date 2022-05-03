@@ -7,7 +7,7 @@ import {generateMockVote} from "./MockUtil.js";
 const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
 const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
 
-const post = await clientPlebbit.getPostOrComment(TEST_VOTE_POST_CID);
+const post = await clientPlebbit.getComment(TEST_VOTE_POST_CID);
 
 const subplebbit = await serverPlebbit.createSubplebbit({"subplebbitAddress": post.subplebbitAddress});
 const previousVotes = [];
@@ -51,17 +51,18 @@ describe("Test Vote", async () => {
 
     it("Throws an error when vote is duplicated", async () => {
         return new Promise(async (resolve, reject) => {
-            const vote = await generateMockVote(post, 1, clientPlebbit);
-            vote.author = previousVotes[0].author;
-            vote.timestamp = previousVotes[0].timestamp;
-            vote.publish().then(() => {
-                vote.once("challengeverification", async ([challengeVerificationMsg,]) => {
-                    assert.equal(challengeVerificationMsg.challengePassed, false, "Should fail to publish since vote is duplicated");
-                    if (!challengeVerificationMsg.reason)
-                        assert.fail(`There should be a reason for failure (duplicate vote)`);
-                    resolve();
-                });
-            }).catch(reject)
+            const vote = await clientPlebbit.createVote({
+                ...previousVotes[0].toJSON(),
+                "signer": previousVotes[0].signer,
+                "timestamp": timestamp(),
+            });
+            await vote.publish();
+            vote.once("challengeverification", async ([challengeVerificationMsg,]) => {
+                assert.equal(challengeVerificationMsg.challengePassed, false, "Should fail to publish since vote is duplicated");
+                if (!challengeVerificationMsg.reason)
+                    assert.fail(`There should be a reason for failure (duplicate vote)`);
+                resolve();
+            });
         });
 
     });

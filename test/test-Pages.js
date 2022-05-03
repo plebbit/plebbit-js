@@ -28,21 +28,18 @@ const subplebbit = await serverPlebbit.createSubplebbit({
 });
 await subplebbit.update();
 
-const testSorting = async (sort, comments) => {
+const testSorting = async (sort, parentComment) => {
     return new Promise(async (resolve, reject) => {
-        let parentComment; // This in case we wanted to test sorting under a post/comment
-        if (!comments) {
-            comments = [];
-            for (let i = 0; i < 5; i++)
-                comments.push(await generateMockPostWithRandomTimestamp(subplebbit.subplebbitAddress, clientPlebbit));
-        } else
-            parentComment = await clientPlebbit.getPostOrComment(comments[0].parentCid);
+
+        let comments = [];
+        for (let i = 0; i < 1; i++)
+            comments.push(parentComment ? await generateMockComment(parentComment, clientPlebbit) : await generateMockPostWithRandomTimestamp(subplebbit.subplebbitAddress, clientPlebbit));
 
 
         comments = await Promise.all(comments.map(async (comment, i) => {
             const publishedComment = (await subplebbit._addPublicationToDb(comment)).publication;
             debug(`Comment ${i} has been published`);
-            return clientPlebbit.getPostOrComment(publishedComment.cid);
+            return clientPlebbit.getComment(publishedComment.cid);
         }));
         let votes = [];
         for (let i = 0; i < comments.length; i++)
@@ -63,11 +60,13 @@ const testSorting = async (sort, comments) => {
                 await parentComment.update();
                 parentComment.stop();
                 debug(`Updated parent comment`);
+                assert.equal(Boolean(parentComment.replies), true, `Parent comment should at least have ${comments.length} replies`);
             }
             for (let i = 0; i < sortTypes.length; i++) {
                 const sortType = sortTypes[i];
                 debug(`Testing sort ${sortType.type}`);
-                const alreadySortedComments = await loadAllPagesThroughSortedComments(parentComment ? parentComment.replies.pageCids[sortType.type] : updatedSubplebbit.posts.pageCids[sortType.type], clientPlebbit);
+                const pages = parentComment ? parentComment.replies : updatedSubplebbit.posts;
+                const alreadySortedComments = await loadAllPagesThroughSortedComments(pages.pageCids[sortType.type], pages);
                 if (alreadySortedComments.length < comments.length)
                     assert.fail(`Failed to load comments from pages`);
                 // TODO load all posts from linkedlist and make sure both linkedlist and alreadySortedComments contain same comments
@@ -100,13 +99,8 @@ const testSorting = async (sort, comments) => {
 }
 
 const testSortingComments = async (sort) => {
-    const post = await clientPlebbit.getPostOrComment(subplebbit.latestPostCid);
-    const comments = [];
-    for (let i = 0; i < 5; i++)
-        comments.push(await generateMockComment(post, clientPlebbit));
-
-    await testSorting(sort, comments);
-
+    const post = await clientPlebbit.getComment(subplebbit.latestPostCid);
+    await testSorting(sort, post);
 }
 
 const postSortObjects = [
@@ -117,9 +111,9 @@ const postSortObjects = [
         "type": "controversial", "scoreFunction": controversialScore
     }, {
         "type": "hot", "scoreFunction": hotScore
-    }, ];
+    },];
 
-const repliesSortObjects = [...postSortObjects, {"type": "old", "scoreFunction" : oldScore}];
+const repliesSortObjects = [...postSortObjects, {"type": "old", "scoreFunction": oldScore}];
 
 describe("Test Pages API (for sorting)", async () => {
 
@@ -128,8 +122,7 @@ describe("Test Pages API (for sorting)", async () => {
     // Stop publishing once we're done with tests
     after(async () => await subplebbit.stopPublishing());
 
-    repliesSortObjects.map(sort => it(`${sort.type} pages under a comment are sorted correctly`, async () => await testSortingComments(sort)));
     postSortObjects.map(sort => it(`${sort.type} pages are sorted correctly`, async () => await testSorting(sort)));
-
+    repliesSortObjects.map(sort => it(`${sort.type} pages under a comment are sorted correctly`, async () => await testSortingComments(sort)));
 
 });

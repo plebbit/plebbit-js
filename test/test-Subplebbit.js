@@ -4,7 +4,7 @@ import {Plebbit} from "../src/index.js"
 import {sleep, unsubscribeAllPubsubTopics, waitTillCommentsArePublished, waitTillCommentsUpdate} from "../src/Util.js";
 import * as fs from 'fs/promises';
 import readline from "readline";
-import {SORTED_COMMENTS_TYPES, SORTED_POSTS_PAGE_SIZE, SortedComments} from "../src/SortHandler.js";
+import {POSTS_SORT_TYPES} from "../src/SortHandler.js";
 import {generateMockPost, loadAllPagesThroughSortedComments} from "./MockUtil.js";
 
 const startTestTime = Date.now() / 1000;
@@ -48,7 +48,7 @@ describe("Test Subplebbit functionality", async () => {
             await waitTillCommentsArePublished(actualPosts);
             subplebbit.once("update", async (updatedSubplebbit) => {
                 await waitTillCommentsUpdate(actualPosts);
-                const loadedPosts = await loadAllPagesThroughSortedComments(updatedSubplebbit.sortedPostsCids[SORTED_COMMENTS_TYPES.NEW], clientPlebbit);
+                const loadedPosts = await loadAllPagesThroughSortedComments(updatedSubplebbit.posts.pageCids[POSTS_SORT_TYPES.NEW.type], updatedSubplebbit.posts, clientPlebbit);
                 await Promise.all(loadedPosts.map(post => post.update()));
                 assert.equal(JSON.stringify(actualPosts), JSON.stringify(loadedPosts), "Posts have not been loaded in correct order");
                 mockPosts.push(actualPosts[0]);
@@ -121,29 +121,12 @@ describe("Test Subplebbit functionality", async () => {
         return new Promise(async (resolve, reject) => {
             const secondMockPost = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
 
-            const originalLatestPostCid = subplebbit.latestPostCid;
-            await secondMockPost.publish(null);
-            secondMockPost.once("challengeverification", ([challengeVerificationMessage, newComment]) => {
-                subplebbit.once("update", updatedSubplebbit => {
-                    assert.equal(challengeVerificationMessage.publication.previousCid, originalLatestPostCid, "Failed to set previousPostCid");
-                    assert.equal(challengeVerificationMessage.publication.cid, updatedSubplebbit.latestPostCid, "Failed to set subplebbit.latestPostCid");
-                    mockPosts.push(challengeVerificationMessage.publication);
-                    resolve();
-
-                });
-
-            });
-
-
-        });
-    });
 
     it("Throws an error when publishing a duplicate post", async function () {
         return new Promise(async (resolve, reject) => {
             const post = await clientPlebbit.createComment(mockPosts[0].toJSONSkeleton());
             subplebbit.setProvideCaptchaCallback(() => [null, null]);
 
-            await subplebbit.startPublishing();
             await post.publish(null);
             post.once("challengeverification", ([challengeVerificationMessage, newComment]) => {
                 assert.equal(challengeVerificationMessage.challengePassed, false, "Challenge should not succeed if post is a duplicate");
