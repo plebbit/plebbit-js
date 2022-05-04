@@ -1,0 +1,63 @@
+### How to resolve ENS names for author and subplebbit address
+
+```js
+const ethers = require('ethers')
+
+// the user can edit these blockchains settings in the account or plebbit-js settings
+const blockchainProviders = {
+  avax: {
+    url: 'https://api.avax.network/ext/bc/C/rpc',
+    chainId: 43114
+  },
+  matic: {
+    url: 'https://polygon-rpc.com',
+    chainId: 137
+  }
+}
+
+// cache the blockchain providers because only 1 should be running at the same time
+const cachedBlockchainProviders = {}
+const getBlockchainProvider = (chainTicker) => {
+  if (cachedBlockchainProviders[chainTicker]) {
+    return cachedBlockchainProviders[chainTicker]
+  }
+  if (blockchainProviders[chainTicker]) {
+    cachedBlockchainProviders[chainTicker] = new ethers.providers.JsonRpcProvider({url: blockchainProviders[chainTicker].url}, blockchainProviders[chainTicker].chainId)
+    return cachedBlockchainProviders[chainTicker]
+  }
+  if (chainTicker === 'eth') {
+    cachedBlockchainProviders['eth'] = ethers.getDefaultProvider()
+    return cachedBlockchainProviders['eth']
+  }
+  throw Error(`no blockchain provider settings for chain ticker '${chainTicker}'`)
+}
+
+const resolveEnsTxtRecord = async (ensName, txtRecordName) => {
+  const blockchainProvider = getBlockchainProvider('eth')
+  const resolver = await blockchainProvider.getResolver(ensName)
+  const txtRecordResult = await resolver.getText(txtRecordName)
+  return txtRecordResult
+}
+
+const resolveAuthorAddress = async (authorAddress) => {
+  if (authorAddress.endsWith('.eth')) {
+    return resolveEnsTxtRecord(authorAddress, 'plebbit-author-address')
+  }
+  return authorAddress
+}
+
+const resolveSubplebbitAddress = async (subplebbitAddress) => {
+  if (subplebbitAddress.endsWith('.eth')) {
+    return resolveEnsTxtRecord(subplebbitAddress, 'subplebbit-address')
+  }
+  return subplebbitAddress
+}
+
+;(async () => {
+  // resolve ens name (replace 'plebbit.eth' with 'john.eth' or whatever the address is)
+  // this needs to be called when verifying the comment.signature, but not the nft.signature
+  const authorAddressPublicKeyHash = await resolveAuthorAddress('plebbit.eth')
+  const subplebbitAddressPublicKeyHash = await resolveSubplebbitAddress('plebbit.eth')
+  console.log({authorAddressPublicKeyHash, subplebbitAddressPublicKeyHash})
+})()
+```
