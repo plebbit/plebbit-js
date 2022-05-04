@@ -414,10 +414,9 @@ export class Subplebbit extends EventEmitter {
     }
 
     async #handleChallengeAnswer(msgParsed) {
-        return new Promise(async (resolve, reject) => {
             const [challengePassed, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
-            debug(`Received a pubsub message (${msgParsed.challengeRequestId}) with type ${msgParsed.type}`);
             if (challengePassed) {
+                debug(`Challenge (${msgParsed.challengeRequestId}) has answered correctly`);
                 const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
                 const trx = storedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transactions
                 await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed), trx);
@@ -431,17 +430,17 @@ export class Subplebbit extends EventEmitter {
                     "challengeErrors": challengeErrors,
                     ...restOfMsg
                 });
-                this.#upsertAndPublishChallenge(challengeVerification, trx).then(resolve).catch(reject);
+                return this.#upsertAndPublishChallenge(challengeVerification, trx);
             } else {
+                debug(`Challenge (${msgParsed.challengeRequestId}) has answered incorrectly`);
                 const challengeVerification = new ChallengeVerificationMessage({
                     "challengeRequestId": msgParsed.challengeRequestId,
                     "challengeAnswerId": msgParsed.challengeAnswerId,
                     "challengePassed": challengePassed,
                     "challengeErrors": challengeErrors,
                 });
-                this.#upsertAndPublishChallenge(challengeVerification, undefined).then(resolve).catch(reject);
+                return this.#upsertAndPublishChallenge(challengeVerification, undefined);
             }
-        });
     }
 
     async #processCaptchaPubsub(pubsubMsg) {
@@ -461,7 +460,7 @@ export class Subplebbit extends EventEmitter {
         // captcha, captcha type, reason for skipping captcha (if it's skipped by nullifying captcha)
         return new Promise(async (resolve, reject) => {
             const {image, text} = createCaptcha(300, 100);
-            this._challengeToSolution[challengeRequestMessage.challengeRequestId] = text;
+            this._challengeToSolution[challengeRequestMessage.challengeRequestId] = [text];
             image.then(imageBuffer => resolve([[new Challenge({
                 "challenge": imageBuffer,
                 "type": CHALLENGE_TYPES.image
@@ -473,9 +472,10 @@ export class Subplebbit extends EventEmitter {
     async #defaultValidateCaptcha(challengeAnswerMessage) {
         return new Promise(async (resolve, reject) => {
             const actualSolution = this._challengeToSolution[challengeAnswerMessage.challengeRequestId];
-            const answerIsCorrect = challengeAnswerMessage.challengeAnswers === actualSolution;
-            const reason = answerIsCorrect ? "User solved captcha correctly" : "User solved captcha incorrectly";
-            resolve([answerIsCorrect, reason]);
+            const answerIsCorrect = JSON.stringify(challengeAnswerMessage.challengeAnswers) === JSON.stringify(actualSolution);
+            debug(`Challenge (${challengeAnswerMessage.challengeRequestId}): Answer's validity: ${answerIsCorrect}, user's answer: ${challengeAnswerMessage.challengeAnswers}, actual solution: ${actualSolution}`);
+            const challengeErrors = answerIsCorrect ? undefined : ["User solved captcha incorrectly"];
+            resolve([answerIsCorrect, challengeErrors]);
         });
     }
 

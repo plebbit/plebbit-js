@@ -73,6 +73,9 @@ class Publication extends EventEmitter {
     }
 
     async publishChallengeAnswers(challengeAnswers) {
+        if (!Array.isArray(challengeAnswers))
+            challengeAnswers = [challengeAnswers];
+        debug(`Challenge Answers: ${challengeAnswers}`);
         const challengeAnswer = new ChallengeAnswerMessage({
             "challengeRequestId": this.challenge.challengeRequestId,
             "challengeAnswerId": uuidv4(),
