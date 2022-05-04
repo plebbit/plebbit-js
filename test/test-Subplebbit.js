@@ -6,6 +6,9 @@ import * as fs from 'fs/promises';
 import readline from "readline";
 import {POSTS_SORT_TYPES} from "../src/SortHandler.js";
 import {generateMockPost, loadAllPagesThroughSortedComments} from "./MockUtil.js";
+import Debug from "debug";
+
+const debug = Debug("plebbit-js:test-Subplebbit");
 
 const startTestTime = Date.now() / 1000;
 const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
@@ -31,24 +34,29 @@ describe("Test Subplebbit functionality", async () => {
         // Should have ipns key now
         const loadedSubplebbit = await clientPlebbit.getSubplebbit(subplebbit.subplebbitAddress);
         assert.equal(JSON.stringify(loadedSubplebbit), JSON.stringify(subplebbit), "Failed to publish new subplebbit");
+        await subplebbit.startPublishing();
     });
 
-    const numOfPosts = SORTED_POSTS_PAGE_SIZE + 2;
+    const numOfPosts = 3;
     it(`Sorting ${numOfPosts} posts by new generates a two pages ordered by posts' timestamp`, async function () {
         return new Promise(async (resolve, reject) => {
             subplebbit.setProvideCaptchaCallback(() => [null, "No need for captcha"]);
-            await subplebbit.startPublishing();
             const actualPosts = new Array(numOfPosts);
             for (let i = actualPosts.length - 1; i >= 0; i--) {
                 actualPosts[i] = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
                 await sleep(1050);
             }
+            debug(`Generated ${actualPosts.length} posts to publish`);
             await subplebbit.update();
             await Promise.all(actualPosts.map(async post => post.publish()));
             await waitTillCommentsArePublished(actualPosts);
+            debug(`Posts are published, waiting for subplebbit update`);
             subplebbit.once("update", async (updatedSubplebbit) => {
+                debug(`Received update of subplebbit, waiting till comments update`);
                 await waitTillCommentsUpdate(actualPosts);
+                debug(`Received update of posts, waiting till posts page loading`);
                 const loadedPosts = await loadAllPagesThroughSortedComments(updatedSubplebbit.posts.pageCids[POSTS_SORT_TYPES.NEW.type], updatedSubplebbit.posts, clientPlebbit);
+                debug(`Loaded posts from page`);
                 await Promise.all(loadedPosts.map(post => post.update()));
                 assert.equal(JSON.stringify(actualPosts), JSON.stringify(loadedPosts), "Posts have not been loaded in correct order");
                 mockPosts.push(actualPosts[0]);
@@ -58,68 +66,56 @@ describe("Test Subplebbit functionality", async () => {
 
     });
 
+    it("Can post after solving image captcha", async function () {
+        return new Promise(async (resolve, reject) => {
+            await subplebbit.setProvideCaptchaCallback(null);
+            await subplebbit.startPublishing();
+            const mockPost = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
+            mockPost.removeAllListeners();
+            const solveCaptchaCallback = async (challenge) => {
+                return new Promise(async (resolve) => {
+                    // Solve captcha here
+                    const path = `.captcha/${challenge.challengeRequestId}.png`;
+                    await fs.writeFile(path, Buffer.from(challenge.challenges[0].challenge));
+                    const rl = readline.createInterface({
+                        input: process.stdin,
+                        output: process.stdout
+                    });
+
+                    // Retrieve answer from user in cli
+                    rl.question(`Please provide your answer for captcha under path ${path}\n`, answer => {
+                        resolve(answer);
+                        rl.close();
+                    });
+                })
+            };
+            mockPost.once("challenge", async challengeMsg => {
+                const answer = await solveCaptchaCallback(challengeMsg);
+                await mockPost.publishChallengeAnswers(answer);
+            });
+
+            await mockPost.publish();
+            mockPost.once("challengeverification", async ([challengeVerificationMessage, newComment]) => {
+                assert.equal(challengeVerificationMessage.challengePassed, true, "Post should be published since challenge has been solved correctly");
+                assert.equal(Boolean(challengeVerificationMessage.reason), false, "Reason should be empty since post has been published");
+                resolve();
+            });
+
+        });
+
+
+    });
+
     it("Throws an error if unable to solve image captcha", async function () {
         return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost();
-            await subplebbit.startPublishing();
-            const solveCaptchaCallback = async (challenge) => {
-                return new Promise(async (resolve) => resolve("12345"));
-            };
-            mockPost.publish(null, solveCaptchaCallback).then(reject).catch(resolve);
-        });
-
-    });
-
-    it("Captcha can be skipped under certain conditions", async () => {
-        return new Promise(async (resolve, reject) => {
-            subplebbit.setProvideCaptchaCallback((challengeWithPost) => {
-                // Return question, type
-                // Expected return is:
-                // captcha, captcha type, reason for skipping captcha (if it's skipped by nullifying captcha)
-                if (challengeWithPost.msg.timestamp > 1643740217.6)
-                    // if we return null we are skipping captcha for this particular post/comment
-                    return [null, null, "Captcha was skipped because timestamp exceeded 1643740217.6"];
-                else
-                    return ["1+1=?", CHALLENGE_TYPES.TEXT];
-            });
-            const mockPost = await generateMockPost();
-            await subplebbit.startPublishing();
-
-            mockPost.publish(null, null).then(async (challengeWithPost) => {
-                const loadedPost = await plebbit.getPostOrComment(challengeWithPost.msg.postCid);
-                const actualPost = new Post(challengeWithPost.msg);
-                assert.equal(JSON.stringify(actualPost), JSON.stringify(loadedPost), "Sent post produces different result when loaded");
-                mockPosts.push(loadedPost);
-                resolve();
-            }).catch(reject);
-        });
-
-    });
-
-
-
-
-    it("Subplebbit emits an event everytime a post is posted", async function () {
-        return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost(subplebbit);
-            subplebbit.once('post', async (post) => {
-                assert.equal(post.title, mockPost.title, "Failed to publish correct post");
-                assert.equal(post.postCid, subplebbit.latestPostCid, "Failed to update subplebbit latestPostCid");
-                const loadedPost = await plebbit.getPostOrComment(post.postCid);
-                await loadedPost.update();
-                assert.equal(JSON.stringify(loadedPost), JSON.stringify(post), "Downloaded post is missing info");
-                mockPosts.push(loadedPost);
+            const mockPost = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
+            await mockPost.publish();
+            mockPost.once("challengeverification", async ([challengeVerificationMessage, newComment]) => {
+                assert.equal(challengeVerificationMessage.challengePassed, false, "Post should not be published since challenge has been solved incorrectly");
                 resolve();
             });
-            await subplebbit.setProvideCaptchaCallback(() => [null, null, null]);
-            await subplebbit.startPublishing();
-            await mockPost.publish(null, null);
         });
     });
-
-    it("Links current post to past posts correctly", async function () {
-        return new Promise(async (resolve, reject) => {
-            const secondMockPost = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
 
 
     it("Throws an error when publishing a duplicate post", async function () {
