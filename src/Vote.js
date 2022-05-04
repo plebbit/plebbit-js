@@ -7,7 +7,7 @@ class Vote extends Publication {
         super(props, subplebbit);
         // Publication
         this.author = new Author(props["author"]);
-        this.timestamp = props["timestamp"] || timestamp();
+        this.timestamp = props["timestamp"];
         this.signature = parseJsonIfString(props["signature"]);
 
         this.commentCid = props["commentCid"];
