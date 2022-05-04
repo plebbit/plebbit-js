@@ -11,13 +11,14 @@
 - IPNS record: https://github.com/ipfs/specs/blob/master/IPNS.md#ipns-record
 - IPNS signature: https://github.com/ipfs/notes/issues/249
 - Plebbit signature types: https://github.com/plebbit/plebbit-js/blob/master/docs/signatures.md
+- Plebbit encryption types: https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
 
 Note: IPFS files are immutable, fetched by their CID, which is a hash of their content. IPNS records are mutable, fetched by their IPNS name, which is the hash of a public key. The private key's owner can update the content. Always use IPFS files over IPNS records when possible because they are much faster to fetch.
 
 ### Schema:
 
 ```js
-Address: string // A plebbit author, subplebbit or multisub "address" can be a crypto domain like memes.eth, an IPNS name, an ethereum address, etc
+Address: string // a plebbit author, subplebbit or multisub "address" can be a crypto domain like memes.eth, an IPNS name, an ethereum address, etc. How to resolve ENS names https://github.com/plebbit/plebbit-js/blob/master/docs/ens.md
 Publication {
   author: Author
   subplebbitAddress: string // all publications are directed to a subplebbit owner
@@ -86,6 +87,7 @@ Nft {
   index: number // index of the specific NFT used
   signature: Signature // proof that author.address owns the nft
   // plebbit-js should resolve the image URL if any, and add an `imageUrl` property for convenience (not part of the IPFS file)
+  // how to resolve and verify NFT signatures https://github.com/plebbit/plebbit-js/blob/master/docs/nft.md
 }
 Signature {
   signature: string // data in base64
@@ -153,7 +155,7 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   markdownVideoReplies?: boolean
 }
 SubplebbitEncryption {
-  type: 'rsa'
+  type: 'aes-ecb' // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
   publicKey: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
 }
 Flair {
@@ -253,7 +255,7 @@ Challenge {
   challenge: buffer // data required to complete the challenge, could be html, png, etc.
 }
 Encrypted {
-  // examples available at https://github.com/plebbit/plebbit-js/blob/master/docs/signatures.md
+  // examples available at https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
   encrypted: string // base64 encrypted string with AES ECB 128 // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)
   encryptedKey: string // base64 encrypted key for the AES ECB 128 encrypted content, encrypted using subplebbit.encryption settings, always generate a new key with AES ECB or it's insecure
   type: 'aes-ecb'
