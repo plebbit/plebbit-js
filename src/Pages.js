@@ -16,7 +16,7 @@ export class Pages {
 
         const page = new Page(await loadIpfsFileAsJson(pageCid, this.subplebbit.plebbit));
         const verifyComment = async (comment, parentComment) => {
-            assert.equal(comment.subplebbitAddress, this.subplebbit.subplebbitAddress, "Comment in page should be under the same subplebbit");
+            assert.equal(comment.subplebbitAddress, this.subplebbit.address, "Comment in page should be under the same subplebbit");
             if (parentComment)
                 assert.equal(parentComment.cid, comment.parentCid, "Comment under parent comment/post should have parentCid initialized");
             const [signatureIsVerified, failedVerificationReason] = await verifyPublication(comment);

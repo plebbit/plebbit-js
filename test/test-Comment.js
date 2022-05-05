@@ -11,7 +11,7 @@ const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[
 const post = await clientPlebbit.getComment(TEST_COMMENT_POST_CID);
 
 const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
-const subplebbit = await serverPlebbit.createSubplebbit({"subplebbitAddress": post.subplebbitAddress});
+const subplebbit = await serverPlebbit.createSubplebbit({"address": post.subplebbitAddress});
 
 
 const mockComments = [];
@@ -90,7 +90,7 @@ describe("Test Post and Comment", async function () {
 
     it("Can publish a post", async function () {
         return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
+            const mockPost = await generateMockPost(subplebbit.address, clientPlebbit);
 
             await subplebbit.update();
             const originalLatestPostCid = subplebbit.latestPostCid;
@@ -125,14 +125,15 @@ describe("Test Post and Comment", async function () {
             });
             await commentEdit.publish();
             commentEdit.once("challengeverification", async ([challengeVerificationMessage, updatedCommentEdit]) => {
-                commentToBeEdited.once("update", async updatedCommentToBeEdited => {
-                    assert.equal(updatedCommentToBeEdited.content, editedText, "Comment has not been edited");
-                    assert.equal(updatedCommentToBeEdited.originalContent, originalContent, "Original content should be preserved");
-                    assert.equal(updatedCommentToBeEdited.editReason, editReason, "Edit reason has not been updated");
-                    resolve();
+                subplebbit.once("update", async () => {
+                    commentToBeEdited.once("update", async updatedCommentToBeEdited => {
+                        assert.equal(updatedCommentToBeEdited.content, editedText, "Comment has not been edited");
+                        assert.equal(updatedCommentToBeEdited.originalContent, originalContent, "Original content should be preserved");
+                        assert.equal(updatedCommentToBeEdited.editReason, editReason, "Edit reason has not been updated");
+                        resolve();
+                    });
+                    await commentToBeEdited.update();
                 });
-
-
             });
         });
     });

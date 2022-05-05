@@ -20,7 +20,7 @@ import {
 const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
 const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
 
-const subplebbit = await serverPlebbit.createSubplebbit({subplebbitAddress: TEST_PLEBBIT_SUBPLEBBIT_ADDRESS});
+const subplebbit = await serverPlebbit.createSubplebbit({address: TEST_PLEBBIT_SUBPLEBBIT_ADDRESS});
 
 describe("Test Plebbit", async () => {
     before(async () => await unsubscribeAllPubsubTopics([serverPlebbit.ipfsClient, clientPlebbit.ipfsClient]));
@@ -67,7 +67,7 @@ describe("Test Plebbit", async () => {
     it("Can publish post on subplebbit with pubsub provider", async () => {
         return new Promise(async (resolve, reject) => {
             const plebbit = await Plebbit();
-            const comment = await generateMockPost(subplebbit.subplebbitAddress, plebbit);
+            const comment = await generateMockPost(subplebbit.address, plebbit);
 
             await comment.publish();
 

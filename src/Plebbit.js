@@ -58,11 +58,11 @@ export class Plebbit {
     }
 
     async createSubplebbit(createSubplebbitOptions) {
-        if (createSubplebbitOptions["subplebbitAddress"]) {
+        if (createSubplebbitOptions["address"]) {
             // Subplebbit already exists, just load it
             const localIpnsKeys = await this.ipfsClient.key.list();
-            const ipnsKeyName = localIpnsKeys.filter(key => key["id"] === createSubplebbitOptions["subplebbitAddress"])[0]?.name;
-            return this.getSubplebbit(createSubplebbitOptions["subplebbitAddress"], {
+            const ipnsKeyName = localIpnsKeys.filter(key => key["id"] === createSubplebbitOptions["address"])[0]?.name;
+            return this.getSubplebbit(createSubplebbitOptions["address"], {
                 ...createSubplebbitOptions,
                 "ipnsKeyName": ipnsKeyName
             });

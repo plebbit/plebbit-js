@@ -32,7 +32,7 @@ describe("Test Subplebbit functionality", async () => {
         });
 
         // Should have ipns key now
-        const loadedSubplebbit = await clientPlebbit.getSubplebbit(subplebbit.subplebbitAddress);
+        const loadedSubplebbit = await clientPlebbit.getSubplebbit(subplebbit.address);
         assert.equal(JSON.stringify(loadedSubplebbit), JSON.stringify(subplebbit), "Failed to publish new subplebbit");
         await subplebbit.startPublishing();
     });
@@ -43,7 +43,7 @@ describe("Test Subplebbit functionality", async () => {
             subplebbit.setProvideCaptchaCallback(() => [null, "No need for captcha"]);
             const actualPosts = new Array(numOfPosts);
             for (let i = actualPosts.length - 1; i >= 0; i--) {
-                actualPosts[i] = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
+                actualPosts[i] = await generateMockPost(subplebbit.address, clientPlebbit);
                 await sleep(1050);
             }
             debug(`Generated ${actualPosts.length} posts to publish`);
@@ -70,7 +70,7 @@ describe("Test Subplebbit functionality", async () => {
         return new Promise(async (resolve, reject) => {
             await subplebbit.setProvideCaptchaCallback(null);
             await subplebbit.startPublishing();
-            const mockPost = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
+            const mockPost = await generateMockPost(subplebbit.address, clientPlebbit);
             mockPost.removeAllListeners();
             const solveCaptchaCallback = async (challenge) => {
                 return new Promise(async (resolve) => {
@@ -108,7 +108,7 @@ describe("Test Subplebbit functionality", async () => {
 
     it("Throws an error if unable to solve image captcha", async function () {
         return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
+            const mockPost = await generateMockPost(subplebbit.address, clientPlebbit);
             await mockPost.publish();
             mockPost.once("challengeverification", async ([challengeVerificationMessage, newComment]) => {
                 assert.equal(challengeVerificationMessage.challengePassed, false, "Post should not be published since challenge has been solved incorrectly");

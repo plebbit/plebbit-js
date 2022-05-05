@@ -52,9 +52,9 @@ export class Subplebbit extends EventEmitter {
             ...mergedProps["posts"],
             "subplebbit": this
         }) : mergedProps["posts"];
-        this.subplebbitAddress = mergedProps["subplebbitAddress"];
+        this.address = mergedProps["address"];
         this.ipnsKeyName = mergedProps["ipnsKeyName"];
-        this.pubsubTopic = mergedProps["pubsubTopic"] || this.subplebbitAddress;
+        this.pubsubTopic = mergedProps["pubsubTopic"] || this.address;
         this.sortHandler = new SortHandler(this);
         this.challengeTypes = mergedProps["challengeTypes"];
         this.metricsCid = mergedProps["metricsCid"];
@@ -83,12 +83,12 @@ export class Subplebbit extends EventEmitter {
 
         this.encryption = {"type": this.signer.type, "publicKey": this.signer.publicKey};
 
-        if (!this.subplebbitAddress && this.signer) {
+        if (!this.address && this.signer) {
             // Look for subplebbit address (key.id) in the ipfs node
             const ipnsKeys = (await this.plebbit.ipfsClient.key.list());
             const ipfsKey = ipnsKeys.filter(key => key.name === this.signer.address)[0];
             debug(Boolean(ipfsKey) ? `Owner has provided a signer that maps to ${ipfsKey.id} subplebbit address within ipfs node` : `Owner has provided a signer that doesn't map to any subplebbit address within the ipfs node`);
-            this.subplebbitAddress = ipfsKey?.id;
+            this.address = ipfsKey?.id;
         }
 
     }
@@ -97,8 +97,8 @@ export class Subplebbit extends EventEmitter {
         if (this.dbHandler)
             return;
         if (!this._dbConfig) {
-            assert(this.subplebbitAddress, "Need subplebbit address to initialize a DB connection");
-            const dbPath = path.join(this.plebbit.dataPath, this.subplebbitAddress);
+            assert(this.address, "Need subplebbit address to initialize a DB connection");
+            const dbPath = path.join(this.plebbit.dataPath, this.address);
             debug(`User has not provided a DB config. Will initialize DB in ${dbPath}`);
             this._dbConfig = {
                 client: 'better-sqlite3', // or 'better-sqlite3'
@@ -142,7 +142,7 @@ export class Subplebbit extends EventEmitter {
             "moderatorsAddresses": this.moderatorsAddresses,
             "latestPostCid": this.latestPostCid,
             "pubsubTopic": this.pubsubTopic,
-            "subplebbitAddress": this.subplebbitAddress,
+            "address": this.address,
             "posts": this.posts,
             "challengeTypes": this.challengeTypes,
             "metricsCid": this.metricsCid,
@@ -156,7 +156,7 @@ export class Subplebbit extends EventEmitter {
         try {
             this.#initSubplebbit(newSubplebbitOptions);
             await this.#initSignerIfNeeded();
-            if (!this.subplebbitAddress) { // TODO require signer
+            if (!this.address) { // TODO require signer
                 debug(`Subplebbit does not have an address`);
                 assert.equal(Boolean(this.signer?.address), true, "Subplebbit needs to have either a subplebbitAddress or a Signer to initialize");
                 const ipnsKeyName = this.signer.address;
@@ -164,7 +164,7 @@ export class Subplebbit extends EventEmitter {
                 const subplebbitAddress = ipnsKey["id"] || ipnsKey["Id"]
                 debug(`Generated an address for subplebbit (${subplebbitAddress})`);
                 return this.edit({
-                    "subplebbitAddress": subplebbitAddress, // It seems ipfs key import returns {Id, Name} while ipfs gen returns {id, name} so we're accounting for both cases here
+                    "address": subplebbitAddress, // It seems ipfs key import returns {Id, Name} while ipfs gen returns {id, name} so we're accounting for both cases here
                     "ipnsKeyName": ipnsKey["name"] || ipnsKey["Name"],
                     "createdAt": timestamp()
                 });
@@ -176,7 +176,7 @@ export class Subplebbit extends EventEmitter {
                     "lifetime": "72h", // TODO decide on optimal time later
                     "key": this.ipnsKeyName
                 });
-                debug(`Subplebbit (${this.subplebbitAddress}) has been edited and its IPNS updated`);
+                debug(`Subplebbit (${this.address}) has been edited and its IPNS updated`);
                 return this;
 
             }
@@ -190,7 +190,7 @@ export class Subplebbit extends EventEmitter {
 
     async #updateOnce() {
         try {
-            const subplebbitIpns = await loadIpnsAsJson(this.subplebbitAddress, this.plebbit);
+            const subplebbitIpns = await loadIpnsAsJson(this.address, this.plebbit);
             if (this.emittedAt !== subplebbitIpns.updatedAt) {
                 this.emittedAt = subplebbitIpns.updatedAt;
                 this.#initSubplebbit(subplebbitIpns);
@@ -206,7 +206,7 @@ export class Subplebbit extends EventEmitter {
     }
 
     update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
-        debug(`Starting to poll updates for subplebbit (${this.subplebbitAddress}) every ${updateIntervalMs} milliseconds`);
+        debug(`Starting to poll updates for subplebbit (${this.address}) every ${updateIntervalMs} milliseconds`);
         if (this._updateInterval)
             clearInterval(this._updateInterval);
         this._updateInterval = setInterval(this.#updateOnce.bind(this), updateIntervalMs); // One minute
@@ -539,7 +539,7 @@ export class Subplebbit extends EventEmitter {
         // Call this only if you know what you're doing
         // rm ipns and ipfs
         await this.stopPublishing();
-        const ipfsPath = (await last(this.plebbit.ipfsClient.name.resolve(this.subplebbitAddress)));
+        const ipfsPath = (await last(this.plebbit.ipfsClient.name.resolve(this.address)));
         await this.plebbit.ipfsClient.pin.rm(ipfsPath);
         await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
     }

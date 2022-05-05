@@ -23,7 +23,7 @@ const debug = Debug("plebbit-js:test-Pages");
 const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
 const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
 const subplebbit = await serverPlebbit.createSubplebbit({
-    "subplebbitAddress":
+    "address":
     TEST_PAGES_SUBPLEBBIT_ADDRESS
 });
 await subplebbit.update();
@@ -33,7 +33,7 @@ const testSorting = async (sort, parentComment) => {
 
         let comments = [];
         for (let i = 0; i < 1; i++)
-            comments.push(parentComment ? await generateMockComment(parentComment, clientPlebbit) : await generateMockPostWithRandomTimestamp(subplebbit.subplebbitAddress, clientPlebbit));
+            comments.push(parentComment ? await generateMockComment(parentComment, clientPlebbit) : await generateMockPostWithRandomTimestamp(subplebbit.address, clientPlebbit));
 
 
         comments = await Promise.all(comments.map(async (comment, i) => {

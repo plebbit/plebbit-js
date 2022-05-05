@@ -9,7 +9,7 @@ const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[
 
 const post = await clientPlebbit.getComment(TEST_VOTE_POST_CID);
 
-const subplebbit = await serverPlebbit.createSubplebbit({"subplebbitAddress": post.subplebbitAddress});
+const subplebbit = await serverPlebbit.createSubplebbit({"address": post.subplebbitAddress});
 const previousVotes = [];
 
 

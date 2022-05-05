@@ -20,7 +20,7 @@ class Publication extends EventEmitter {
     }
 
     _initProps(props) {
-        this.subplebbitAddress = props["subplebbitAddress"] || this.subplebbit.subplebbitAddress;
+        this.subplebbitAddress = props["subplebbitAddress"] || this.subplebbit.address;
         this.timestamp = props["timestamp"];
         this.signer = this.signer || props["signer"];
         this.signature = parseJsonIfString(props["signature"]);
@@ -29,7 +29,7 @@ class Publication extends EventEmitter {
 
     setSubplebbit(newSubplebbit) {
         this.subplebbit = newSubplebbit;
-        this.subplebbitAddress = this.subplebbit.subplebbitAddress;
+        this.subplebbitAddress = this.subplebbit.address;
     }
 
     getType() {

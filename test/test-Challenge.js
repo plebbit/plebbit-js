@@ -8,7 +8,7 @@ import {Challenge, CHALLENGE_TYPES} from "../src/Challenge.js";
 const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
 const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
 
-const subplebbit = await serverPlebbit.createSubplebbit({"subplebbitAddress": TEST_CHALLENGES_SUBPLEBBIT_ADDRESS});
+const subplebbit = await serverPlebbit.createSubplebbit({"address": TEST_CHALLENGES_SUBPLEBBIT_ADDRESS});
 
 
 describe("Test Challenge functionality", async () => {
@@ -30,7 +30,7 @@ describe("Test Challenge functionality", async () => {
                     return [[new Challenge({"challenge": "1+1=?", "type": CHALLENGE_TYPES.TEXT})], null];
             });
             await subplebbit.startPublishing();
-            const mockPostShouldSkipCaptcha = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
+            const mockPostShouldSkipCaptcha = await generateMockPost(subplebbit.address, clientPlebbit);
             await mockPostShouldSkipCaptcha.publish(null, null);
             await waitTillCommentsArePublished([mockPostShouldSkipCaptcha]);
             assert.equal(Boolean(mockPostShouldSkipCaptcha.cid), true, `Post should be published since its timestamp (${mockPostShouldSkipCaptcha.timestamp}) exceeds minimum (${minimumTimestamp})`)
@@ -58,7 +58,7 @@ describe("Test Challenge functionality", async () => {
                 const challengeErrors = challengePassed ? undefined : ["Result of math expression is incorrect"];
                 return [challengePassed, challengeErrors];
             });
-            const mockPost = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
+            const mockPost = await generateMockPost(subplebbit.address, clientPlebbit);
             mockPost.removeAllListeners();
             await mockPost.publish();
             mockPost.once("challenge", (challengeMessage) => {
@@ -74,7 +74,7 @@ describe("Test Challenge functionality", async () => {
 
     it("Throws an error when user fails to solve mathcli captcha", async function () {
         return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost(subplebbit.subplebbitAddress, clientPlebbit);
+            const mockPost = await generateMockPost(subplebbit.address, clientPlebbit);
             mockPost.removeAllListeners();
 
             mockPost.once("challenge", (challengeMessage) => {
