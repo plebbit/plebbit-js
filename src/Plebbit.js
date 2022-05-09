@@ -1,7 +1,7 @@
 import {Comment, CommentEdit} from "./Comment.js";
 import Post from "./Post.js";
 import {Subplebbit} from "./Subplebbit.js";
-import {loadIpfsFileAsJson, loadIpnsAsJson, removeKeysWithUndefinedValues, timestamp} from "./Util.js";
+import {IS_BROWSER, loadIpfsFileAsJson, loadIpnsAsJson, removeKeysWithUndefinedValues, timestamp} from "./Util.js";
 import * as path from "path";
 import Vote from "./Vote.js";
 import {create as createIpfsClient} from "ipfs-http-client";
@@ -16,7 +16,7 @@ export class Plebbit {
         this.ipfsGatewayUrl = this.ipfsHttpClientOptions ? undefined : (options["ipfsGatewayUrl"] || 'https://cloudflare-ipfs.com');
         this.pubsubHttpClientOptions = this.ipfsHttpClientOptions ? undefined : (options["pubsubHttpClientOptions"] || 'https://pubsubprovider.xyz/api/v0');
         this.ipfsClient = createIpfsClient(this.ipfsHttpClientOptions || this.pubsubHttpClientOptions);
-        this.dataPath = options["dataPath"] || path.join(process.cwd(), ".plebbit");
+        this.dataPath = IS_BROWSER ? undefined : (options["dataPath"] || path.join(process.cwd(), ".plebbit"));
     }
 
 

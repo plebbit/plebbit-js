@@ -14,6 +14,7 @@ export const TIMEFRAMES_TO_SECONDS = Object.freeze({
     "YEAR": 60 * 60 * 24 * 7 * 4 * 12,
     "ALL": Infinity
 });
+export const IS_BROWSER = typeof window === 'object' && typeof document === 'object';
 const debug = Debug("plebbit-js:Util");
 
 
