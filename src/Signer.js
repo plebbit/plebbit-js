@@ -64,7 +64,7 @@ async function getPublicKeyRsaConstructor() {
 }
 
 async function getPeerIdFromPublicKeyPem(publicKeyPem) {
-    const publicKeyFromPem = await jose.importSPKI(publicKeyPem, 'RSA256');
+    const publicKeyFromPem = await jose.importSPKI(publicKeyPem, 'RS256', {extractable: true});
     const jsonWebToken = await jose.exportJWK(publicKeyFromPem);
     const PublicKeyRsa = await getPublicKeyRsaConstructor();
     const publicKeyRsaInstance = new PublicKeyRsa(jsonWebToken);

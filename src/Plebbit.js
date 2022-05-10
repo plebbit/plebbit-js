@@ -101,7 +101,7 @@ export class Plebbit {
         if (!createSignerOptions || !createSignerOptions["privateKey"]) {
             const keyPair = await crypto.keys.generateKeyPair('RSA', 2048);
             const privateKey = await keyPair.export('', 'pkcs-8');
-            const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RSA256');
+            const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {extractable: true});
             const publicKey = await jose.exportSPKI(publicKeyFromJsonWebToken);
             const address = await getAddressFromPublicKeyPem(publicKey);
             const ipfsKey = keyPair.bytes;
@@ -114,7 +114,7 @@ export class Plebbit {
             });
         } else if (createSignerOptions["privateKey"] && createSignerOptions.type === 'rsa') {
             const keyPair = await crypto.keys.import(createSignerOptions.privateKey, "");
-            const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RSA256');
+            const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {extractable: true});
             const publicKeyPem = await jose.exportSPKI(publicKeyFromJsonWebToken);
             const address = await getAddressFromPublicKeyPem(publicKeyPem);
             const ipfsKey = keyPair.bytes;
