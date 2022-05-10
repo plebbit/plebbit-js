@@ -32,9 +32,10 @@ const browserConfig = {
     },
     resolve: {
         fallback: {
-            "crypto": require.resolve("browser-crypto"),
+            "crypto": require.resolve("browser-crypto/"),
             "assert": require.resolve("assert/"),
-            "path": require.resolve("path-browserify"),
+            "path": require.resolve("path-browserify/"),
+            'buffer': require.resolve('buffer/'),
             "knex": false,
             "stream": false,
             "util": false,
@@ -67,7 +68,10 @@ const browserConfig = {
     plugins: [
         new webpack.ProvidePlugin({
             process: 'process/browser',
+        }), new webpack.ProvidePlugin({
+            Buffer: ['buffer', 'Buffer'],
         })],
+
 
 };
 
