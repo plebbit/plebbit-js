@@ -2,38 +2,33 @@
 
 const path = require('path');
 const webpack = require('webpack');
-const isProduction = process.env.NODE_ENV === 'production';
-
-
-const config = {
+const nodeConfig = {
     entry: {
         'plebbit-js': [`./src/index.js`],
     },
+    target: "node",
     output: {
-        path: path.resolve(__dirname, 'dist'),
+        path: path.resolve(__dirname, 'node_dist'),
+        // library: {"name": "plebbit-js", type},
         clean: true,
-        filename: `[name].min.js`,
-
+        filename: `build/[name].js`,
+        sourceMapFilename: 'build/[name].js.map'
     },
 
-    plugins: [
-        new webpack.ProvidePlugin({
-            process: 'process/browser',
-        }),],
-    module: {
-        rules: [
-            {
-                test: /\.(js|jsx)$/i,
-                loader: 'babel-loader',
-            },
-            {
-                test: /\.m?js/,
-                resolve: {
-                    fullySpecified: false
-                },
 
-            }
-        ],
+};
+
+const browserConfig = {
+    entry: {
+        'plebbit-js': [`./src/index.js`],
+    },
+    target: "web",
+    devtool: 'eval',
+    output: {
+        path: path.resolve(__dirname, 'browser_dist'),
+        library: {"name": "plebbit-js", type: "umd"},
+        clean: true,
+        filename: `build/[name].js`,
     },
     resolve: {
         fallback: {
@@ -50,18 +45,33 @@ const config = {
             "tty": false,
         },
         alias: {
-            process: "process/browser"
+            'knex': false,
         }
-    }
+    },
+    module: {
+        rules: [
+            {
+                test: /\.(js|jsx)$/i,
+                loader: 'babel-loader',
+            },
+            {
+                test: /\.m?js/,
+                resolve: {
+                    fullySpecified: false
+                },
+
+            }
+        ],
+    },
+
+    plugins: [
+        new webpack.ProvidePlugin({
+            process: 'process/browser',
+        })],
+
 };
 
-module.exports = () => {
-    if (isProduction) {
-        config.mode = 'production';
+module.exports = [
+    // nodeConfig,
 
-
-    } else {
-        config.mode = 'development';
-    }
-    return config;
-};
+    browserConfig];
