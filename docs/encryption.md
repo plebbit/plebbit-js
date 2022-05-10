@@ -38,7 +38,7 @@ const getIpfsKeyFromPrivateKeyPem = async (privateKeyPem, password = '') => {
 
 const getPublicKeyPemFromKeyPair = async (keyPair) => {
   // https://en.wikipedia.org/wiki/PKCS_8
-  const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RSA256')
+  const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {extractable: true})
   const publicKeyPem = await jose.exportSPKI(publicKeyFromJsonWebToken)
   return publicKeyPem
 }
@@ -62,7 +62,7 @@ const getPublicKeyRsaConstructor = async () => {
 }
 
 const getPeerIdFromPublicKeyPem = async (publicKeyPem) => {
-  const publicKeyFromPem = await jose.importSPKI(publicKeyPem, 'RSA256')
+  const publicKeyFromPem = await jose.importSPKI(publicKeyPem, 'RS256', {extractable: true})
   const jsonWebToken = await jose.exportJWK(publicKeyFromPem)
   const PublicKeyRsa = await getPublicKeyRsaConstructor()
   const publicKeyRsaInstance = new PublicKeyRsa(jsonWebToken)
