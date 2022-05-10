@@ -51,10 +51,10 @@ const browserConfig = {
     },
     module: {
         rules: [
-            {
-                test: /\.(js|jsx)$/i,
-                loader: 'babel-loader',
-            },
+            // {
+            //     test: /\.(js|jsx)$/i,
+            //     loader: 'babel-loader',
+            // },
             {
                 test: /\.m?js/,
                 resolve: {
