@@ -8,12 +8,13 @@
 
 </body>
 
-<script src="dist/plebbit-js.min.js"></script>
+<script src="browser_dist/build/plebbit-js.js"></script>
 <script>
-    // const Plebbit = require("plebbit");
-    // import Plebbit from "@plebbit/plebbit-js";
-    // const plebbit = await Plebbit();
-    // const signer = await plebbit.createSigner();
+    const plebbit = window["plebbit-js"].default();
+    console.log(plebbit);
+    plebbit.createSigner().then(console.log);
+
+
 </script>
 </html>
 
