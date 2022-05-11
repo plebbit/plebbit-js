@@ -153,6 +153,11 @@ export class Subplebbit extends EventEmitter {
     }
 
     async edit(newSubplebbitOptions) {
+        if (!this.ipnsKeyName){
+            const localIpnsKeys = await this.plebbit.ipfsClient.key.list();
+            this.ipnsKeyName = localIpnsKeys.filter(key => key["id"] === newSubplebbitOptions["address"] || key["id"] === this.address)[0]?.name;
+        }
+        assert(this.ipnsKeyName, "You need to have the proper keys to edit this subplebbit");
         try {
             this.#initSubplebbit(newSubplebbitOptions);
             await this.#initSignerIfNeeded();
@@ -189,6 +194,7 @@ export class Subplebbit extends EventEmitter {
     }
 
     async #updateOnce() {
+        assert(this.address, "Can't update subplebbit without address");
         try {
             const subplebbitIpns = await loadIpnsAsJson(this.address, this.plebbit);
             if (this.emittedAt !== subplebbitIpns.updatedAt) {
