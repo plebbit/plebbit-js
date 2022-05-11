@@ -151,7 +151,7 @@ export class Subplebbit extends EventEmitter {
         "ipnsKeyName": this.address
       }, this.plebbit);
       this.ipnsKeyName = ipfsKey["name"] || ipfsKey["Name"];
-      debug(`Imported keys into ipfs node, ${ipfsKey}`);
+      debug(`Imported keys into ipfs node, ${JSON.stringify(ipfsKey)}`);
     } else {
       debug(`Subplebbit key is already in ipfs node, no need to import (${JSON.stringify(subplebbitIpfsNodeKey)})`);
       this.ipnsKeyName = subplebbitIpfsNodeKey["name"] || subplebbitIpfsNodeKey["Name"];
