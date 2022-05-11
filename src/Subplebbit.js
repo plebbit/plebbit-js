@@ -153,7 +153,7 @@ export class Subplebbit extends EventEmitter {
     }
 
     async edit(newSubplebbitOptions) {
-        if (!this.ipnsKeyName){
+        if (!this.ipnsKeyName) {
             const localIpnsKeys = await this.plebbit.ipfsClient.key.list();
             this.ipnsKeyName = localIpnsKeys.filter(key => key["id"] === newSubplebbitOptions["address"] || key["id"] === this.address)[0]?.name;
         }
@@ -228,7 +228,7 @@ export class Subplebbit extends EventEmitter {
         const trx = await this.dbHandler.createTransaction();
         const latestPost = await this.dbHandler.queryLatestPost(trx);
         await trx.commit();
-        const [metrics, [sortedPosts, sortedPostsCids]] = await Promise.all([this.dbHandler.querySubplebbitMetrics(), this.sortHandler.generatePagesUnderComment()]);
+        const [metrics, [sortedPosts, sortedPostsCids], currentIpns] = await Promise.all([this.dbHandler.querySubplebbitMetrics(), this.sortHandler.generatePagesUnderComment(), loadIpnsAsJson(this.address, this.plebbit)]);
         let posts;
         if (sortedPosts)
             posts = new Pages({
@@ -241,9 +241,9 @@ export class Subplebbit extends EventEmitter {
             "metricsCid": (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path,
             "latestPostCid": latestPost?.postCid,
         };
-        if (JSON.stringify(this.posts) !== JSON.stringify(newSubplebbitOptions.posts) ||
-            this.metricsCid !== newSubplebbitOptions.metricsCid ||
-            this.latestPostCid !== newSubplebbitOptions.latestPostCid) {
+        if (!currentIpns || JSON.stringify(currentIpns.posts) !== JSON.stringify(newSubplebbitOptions.posts) ||
+            currentIpns.metricsCid !== newSubplebbitOptions.metricsCid ||
+            currentIpns.latestPostCid !== newSubplebbitOptions.latestPostCid) {
             debug(`Will attempt to sync subplebbit IPNS fields [${Object.keys(newSubplebbitOptions)}]`);
             return this.edit(newSubplebbitOptions);
 
@@ -421,33 +421,33 @@ export class Subplebbit extends EventEmitter {
     }
 
     async #handleChallengeAnswer(msgParsed) {
-            const [challengePassed, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
-            if (challengePassed) {
-                debug(`Challenge (${msgParsed.challengeRequestId}) has answered correctly`);
-                const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
-                const trx = storedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transactions
-                await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed), trx);
-                const publishedPublication = await this.#publishPostAfterPassingChallenge(storedPublication, msgParsed.challengeRequestId, trx); // could contain "publication" or "reason"
+        const [challengePassed, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
+        if (challengePassed) {
+            debug(`Challenge (${msgParsed.challengeRequestId}) has answered correctly`);
+            const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
+            const trx = storedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transactions
+            await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed), trx);
+            const publishedPublication = await this.#publishPostAfterPassingChallenge(storedPublication, msgParsed.challengeRequestId, trx); // could contain "publication" or "reason"
 
-                const restOfMsg = "publication" in publishedPublication ? {"encryptedPublication": await encrypt(JSON.stringify(publishedPublication.publication), publishedPublication.publication.signature.publicKey)} : publishedPublication;
-                const challengeVerification = new ChallengeVerificationMessage({
-                    "challengeRequestId": msgParsed.challengeRequestId,
-                    "challengeAnswerId": msgParsed.challengeAnswerId,
-                    "challengePassed": challengePassed,
-                    "challengeErrors": challengeErrors,
-                    ...restOfMsg
-                });
-                return this.#upsertAndPublishChallenge(challengeVerification, trx);
-            } else {
-                debug(`Challenge (${msgParsed.challengeRequestId}) has answered incorrectly`);
-                const challengeVerification = new ChallengeVerificationMessage({
-                    "challengeRequestId": msgParsed.challengeRequestId,
-                    "challengeAnswerId": msgParsed.challengeAnswerId,
-                    "challengePassed": challengePassed,
-                    "challengeErrors": challengeErrors,
-                });
-                return this.#upsertAndPublishChallenge(challengeVerification, undefined);
-            }
+            const restOfMsg = "publication" in publishedPublication ? {"encryptedPublication": await encrypt(JSON.stringify(publishedPublication.publication), publishedPublication.publication.signature.publicKey)} : publishedPublication;
+            const challengeVerification = new ChallengeVerificationMessage({
+                "challengeRequestId": msgParsed.challengeRequestId,
+                "challengeAnswerId": msgParsed.challengeAnswerId,
+                "challengePassed": challengePassed,
+                "challengeErrors": challengeErrors,
+                ...restOfMsg
+            });
+            return this.#upsertAndPublishChallenge(challengeVerification, trx);
+        } else {
+            debug(`Challenge (${msgParsed.challengeRequestId}) has answered incorrectly`);
+            const challengeVerification = new ChallengeVerificationMessage({
+                "challengeRequestId": msgParsed.challengeRequestId,
+                "challengeAnswerId": msgParsed.challengeAnswerId,
+                "challengePassed": challengePassed,
+                "challengeErrors": challengeErrors,
+            });
+            return this.#upsertAndPublishChallenge(challengeVerification, undefined);
+        }
     }
 
     async #processCaptchaPubsub(pubsubMsg) {
@@ -534,7 +534,7 @@ export class Subplebbit extends EventEmitter {
 
     async stopPublishing() {
         this.removeAllListeners();
-        this.stop();
+        await this.stop();
         this.dbHandler?.knex?.destroy();
         this.dbHandler = undefined;
     }
