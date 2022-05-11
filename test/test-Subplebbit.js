@@ -31,10 +31,10 @@ describe("Test Subplebbit functionality", async () => {
             "title": `Test subplebbit - ${startTestTime}`
         });
 
-        // Should have ipns key now
+        await subplebbit.start();
+        // Should have address
         const loadedSubplebbit = await clientPlebbit.getSubplebbit(subplebbit.address);
         assert.equal(JSON.stringify(loadedSubplebbit), JSON.stringify(subplebbit), "Failed to publish new subplebbit");
-        await subplebbit.start();
     });
 
     const numOfPosts = 3;
