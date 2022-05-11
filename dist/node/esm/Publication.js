@@ -13,6 +13,7 @@ import Debug from "debug";
 import { parseJsonIfString, timestamp } from "./Util.js";
 import Author from "./Author.js";
 import { decrypt, encrypt } from "./Signer.js";
+import assert from "assert";
 const debug = Debug("plebbit-js:Publication");
 
 var _handleChallengeExchange = /*#__PURE__*/new WeakSet();
@@ -72,10 +73,14 @@ class Publication extends EventEmitter {
   }
 
   async publish(userOptions) {
+    var _this$subplebbit;
+
     const options = {
       "acceptedChallengeTypes": [],
       ...userOptions
     };
+    this.subplebbit = await this.subplebbit.plebbit.getSubplebbit(this.subplebbitAddress);
+    assert.equal(Boolean((_this$subplebbit = this.subplebbit) === null || _this$subplebbit === void 0 ? void 0 : _this$subplebbit.encryption.publicKey), true, "Failed to load subplebbit for publishing");
     const encryptedPublication = await encrypt(JSON.stringify(this), this.subplebbit.encryption.publicKey);
     this.challenge = new ChallengeRequestMessage({
       "encryptedPublication": encryptedPublication,

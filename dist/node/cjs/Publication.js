@@ -23,6 +23,8 @@ var _Author = _interopRequireDefault(require("./Author.js"));
 
 var _Signer = require("./Signer.js");
 
+var _assert = _interopRequireDefault(require("assert"));
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classPrivateMethodInitSpec(obj, privateSet) { _checkPrivateRedeclaration(obj, privateSet); privateSet.add(obj); }
@@ -90,10 +92,16 @@ class Publication extends _events.default {
   }
 
   async publish(userOptions) {
+    var _this$subplebbit;
+
     const options = {
       "acceptedChallengeTypes": [],
       ...userOptions
     };
+    this.subplebbit = await this.subplebbit.plebbit.getSubplebbit(this.subplebbitAddress);
+
+    _assert.default.equal(Boolean((_this$subplebbit = this.subplebbit) === null || _this$subplebbit === void 0 ? void 0 : _this$subplebbit.encryption.publicKey), true, "Failed to load subplebbit for publishing");
+
     const encryptedPublication = await (0, _Signer.encrypt)(JSON.stringify(this), this.subplebbit.encryption.publicKey);
     this.challenge = new _Challenge.ChallengeRequestMessage({
       "encryptedPublication": encryptedPublication,

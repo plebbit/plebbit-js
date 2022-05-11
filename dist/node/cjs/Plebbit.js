@@ -56,11 +56,10 @@ class Plebbit {
     this.dataPath = options["dataPath"] || path.join(_process.default.cwd(), ".plebbit");
   }
 
-  async getSubplebbit(subplebbitAddress, subplebbitProps = {}) {
+  async getSubplebbit(subplebbitAddress) {
+    (0, _assert.default)(subplebbitAddress, "Subplebbit address can't be null");
     const subplebbitJson = await (0, _Util.loadIpnsAsJson)(subplebbitAddress, this);
-    return new _Subplebbit.Subplebbit({ ...subplebbitJson,
-      ...subplebbitProps
-    }, this);
+    return new _Subplebbit.Subplebbit(subplebbitJson, this);
   }
 
   async getComment(cid) {

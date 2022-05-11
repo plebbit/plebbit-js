@@ -32,11 +32,10 @@ export class Plebbit {
     this.dataPath = options["dataPath"] || path.join(process.cwd(), ".plebbit");
   }
 
-  async getSubplebbit(subplebbitAddress, subplebbitProps = {}) {
+  async getSubplebbit(subplebbitAddress) {
+    assert(subplebbitAddress, "Subplebbit address can't be null");
     const subplebbitJson = await loadIpnsAsJson(subplebbitAddress, this);
-    return new Subplebbit({ ...subplebbitJson,
-      ...subplebbitProps
-    }, this);
+    return new Subplebbit(subplebbitJson, this);
   }
 
   async getComment(cid) {
