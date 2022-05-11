@@ -11,12 +11,12 @@
     "./package.json": "./package.json"
   },
   "main": "./dist/node/cjs/index.js",
-  "browser": "./dist/browser/index.js",
+  "browser": "./dist/node/esm/index.js",
   "scripts": {
     "test": "mocha --timeout 0",
     "build:cjs": "babel src --out-dir dist/node/cjs --config-file ./config/babel-cjs.js && echo '{\"type\": \"commonjs\"}'> dist/node/cjs/package.json",
     "build:esm": "babel src --out-dir dist/node/esm --config-file ./config/babel-esm.js && echo '{\"type\": \"module\"}'> dist/node/esm/package.json",
-    "build:browser": "TODO and also add browser: ./dist/browser/index.js to package.json",
+    "build:browser": "TODO and also add 'browser: ./dist/browser/index.js' to package.json",
     "build": "npm run build:cjs && npm run build:esm"
   },
   "repository": {
@@ -52,9 +52,9 @@
     "uuid": "8.3.2"
   },
   "devDependencies": {
-    "@babel/cli": "^7.17.10",
-    "@babel/preset-env": "^7.17.10",
-    "babel-plugin-add-module-exports": "^1.0.4",
+    "@babel/cli": "7.17.10",
+    "@babel/preset-env": "7.17.10",
+    "babel-plugin-add-module-exports": "1.0.4",
     "mocha": "9.2.2"
   },
   "type": "module"
