@@ -8,7 +8,7 @@ import { Comment, CommentEdit } from "./Comment.js";
 import Post from "./Post.js";
 import { Subplebbit } from "./Subplebbit.js";
 import { loadIpfsFileAsJson, loadIpnsAsJson, timestamp } from "./Util.js";
-import * as path from "path";
+import * as path from "../browser/noop.js";
 import Vote from "./Vote.js";
 import { create as createIpfsClient } from "ipfs-http-client";
 import { getAddressFromPublicKeyPem, Signer, signPublication, verifyPublication } from "./Signer.js";

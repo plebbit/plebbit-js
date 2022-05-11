@@ -30,6 +30,8 @@ var _assert = _interopRequireDefault(require("assert"));
 
 var _Publication = _interopRequireDefault(require("./Publication.js"));
 
+var _buffer = require("buffer");
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
@@ -43,7 +45,7 @@ class Signer {
     this.privateKey = props.privateKey;
     this.publicKey = props.publicKey;
     this.address = props.address;
-    this.ipfsKey = Buffer.from(props.ipfsKey);
+    this.ipfsKey = _buffer.Buffer.from(props.ipfsKey);
   }
 
   toJSON() {

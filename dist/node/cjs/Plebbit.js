@@ -27,6 +27,8 @@ var jose = _interopRequireWildcard(require("jose"));
 
 var _assert = _interopRequireDefault(require("assert"));
 
+var _process = _interopRequireDefault(require("process"));
+
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
 
 function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
@@ -50,7 +52,8 @@ class Plebbit {
     this.ipfsGatewayUrl = this.ipfsHttpClientOptions ? undefined : options["ipfsGatewayUrl"] || 'https://cloudflare-ipfs.com';
     this.pubsubHttpClientOptions = this.ipfsHttpClientOptions ? undefined : options["pubsubHttpClientOptions"] || 'https://pubsubprovider.xyz/api/v0';
     this.ipfsClient = (0, _ipfsHttpClient.create)(this.ipfsHttpClientOptions || this.pubsubHttpClientOptions);
-    this.dataPath = options["dataPath"] || path.join(process.cwd(), ".plebbit");
+    let defaultDataPath;
+    this.dataPath = options["dataPath"] || path.join(_process.default.cwd(), ".plebbit");
   }
 
   async getSubplebbit(subplebbitAddress, subplebbitProps = {}) {
@@ -86,20 +89,7 @@ class Plebbit {
   }
 
   async createSubplebbit(createSubplebbitOptions) {
-    if (createSubplebbitOptions["address"]) {
-      var _localIpnsKeys$filter;
-
-      // Subplebbit already exists, just load it
-      const localIpnsKeys = await this.ipfsClient.key.list();
-      const ipnsKeyName = (_localIpnsKeys$filter = localIpnsKeys.filter(key => key["id"] === createSubplebbitOptions["address"])[0]) === null || _localIpnsKeys$filter === void 0 ? void 0 : _localIpnsKeys$filter.name;
-      return this.getSubplebbit(createSubplebbitOptions["address"], { ...createSubplebbitOptions,
-        "ipnsKeyName": ipnsKeyName
-      });
-    } else {
-      const subplebbit = new _Subplebbit.Subplebbit(createSubplebbitOptions, this);
-      await subplebbit.edit(createSubplebbitOptions);
-      return subplebbit;
-    }
+    return new _Subplebbit.Subplebbit(createSubplebbitOptions, this);
   }
 
   async createVote(createVoteOptions) {
@@ -138,7 +128,9 @@ class Plebbit {
         "address": address,
         "ipfsKey": ipfsKey
       });
-    } else if (createSignerOptions["privateKey"] && createSignerOptions.type === 'rsa') {
+    } else if (createSignerOptions["privateKey"]) {
+      _assert.default.equal(createSignerOptions.type, "rsa", "We can only support RSA keys at the moment");
+
       const keyPair = await crypto.keys.import(createSignerOptions.privateKey, "");
       const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {
         extractable: true

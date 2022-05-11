@@ -1,57 +1,27 @@
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.Subplebbit = void 0;
-
-var _itLast = _interopRequireDefault(require("it-last"));
-
-var _toString = require("uint8arrays/to-string");
-
-var _events = _interopRequireDefault(require("events"));
-
-var _jsSha = require("js-sha256");
-
-var _fromString = require("uint8arrays/from-string");
-
-var _Challenge = require("./Challenge.js");
-
-var _assert = _interopRequireDefault(require("assert"));
-
-var _DbHandler = _interopRequireWildcard(require("./DbHandler.js"));
-
-var _extra = require("captcha-canvas/js-script/extra.js");
-
-var _SortHandler = require("./SortHandler.js");
-
-var path = _interopRequireWildcard(require("path"));
-
-var fs = _interopRequireWildcard(require("fs"));
-
-var _uuid = require("uuid");
-
-var _Util = require("./Util.js");
-
-var _debug = _interopRequireDefault(require("debug"));
-
-var _Signer = require("./Signer.js");
-
-var _Pages = require("./Pages.js");
-
-function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
-
-function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
 function _classPrivateMethodInitSpec(obj, privateSet) { _checkPrivateRedeclaration(obj, privateSet); privateSet.add(obj); }
 
 function _checkPrivateRedeclaration(obj, privateCollection) { if (privateCollection.has(obj)) { throw new TypeError("Cannot initialize the same private elements twice on an object"); } }
 
 function _classPrivateMethodGet(receiver, privateSet, fn) { if (!privateSet.has(receiver)) { throw new TypeError("attempted to get private field on non-instance"); } return fn; }
 
-const debug = (0, _debug.default)("plebbit-js:Subplebbit");
+import last from "it-last";
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
+import EventEmitter from "events";
+import { sha256 } from "js-sha256";
+import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
+import { Challenge, CHALLENGE_TYPES, ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage, PUBSUB_MESSAGE_TYPES } from "./Challenge.js";
+import assert from "assert";
+import DbHandler, { SIGNER_USAGES } from "./DbHandler.js";
+import { createCaptcha } from "../browser/noop.js";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, SortHandler } from "./SortHandler.js";
+import * as path from "../browser/noop.js";
+import * as fs from "../browser/noop.js";
+import { v4 as uuidv4 } from 'uuid';
+import { ipfsImportKey, loadIpnsAsJson, shallowEqual, timestamp } from "./Util.js";
+import Debug from "debug";
+import { decrypt, encrypt, verifyPublication } from "./Signer.js";
+import { Pages } from "./Pages.js";
+const debug = Debug("plebbit-js:Subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 300000; // 5 minutes
 
@@ -87,7 +57,7 @@ var _defaultValidateCaptcha = /*#__PURE__*/new WeakSet();
 
 var _syncIpnsWithDb = /*#__PURE__*/new WeakSet();
 
-class Subplebbit extends _events.default {
+export class Subplebbit extends EventEmitter {
   constructor(props, plebbit) {
     super();
 
@@ -168,7 +138,7 @@ class Subplebbit extends _events.default {
       this.ipnsKeyName = (_localIpnsKeys$filter = localIpnsKeys.filter(key => key["id"] === newSubplebbitOptions["address"] || key["id"] === this.address)[0]) === null || _localIpnsKeys$filter === void 0 ? void 0 : _localIpnsKeys$filter.name;
     }
 
-    (0, _assert.default)(this.ipnsKeyName, "You need to have the proper keys to edit this subplebbit");
+    assert(this.ipnsKeyName, "You need to have the proper keys to edit this subplebbit");
 
     try {
       _classPrivateMethodGet(this, _initSubplebbit, _initSubplebbit2).call(this, newSubplebbitOptions);
@@ -180,11 +150,9 @@ class Subplebbit extends _events.default {
 
         // TODO require signer
         debug(`Subplebbit does not have an address`);
-
-        _assert.default.equal(Boolean((_this$signer = this.signer) === null || _this$signer === void 0 ? void 0 : _this$signer.address), true, "Subplebbit needs to have either a subplebbitAddress or a Signer to initialize");
-
+        assert.equal(Boolean((_this$signer = this.signer) === null || _this$signer === void 0 ? void 0 : _this$signer.address), true, "Subplebbit needs to have either a subplebbitAddress or a Signer to initialize");
         const ipnsKeyName = this.signer.address;
-        const ipnsKey = await (0, _Util.ipfsImportKey)({ ...this.signer,
+        const ipnsKey = await ipfsImportKey({ ...this.signer,
           "ipnsKeyName": ipnsKeyName
         }, this.plebbit);
         const subplebbitAddress = ipnsKey["id"] || ipnsKey["Id"];
@@ -193,11 +161,11 @@ class Subplebbit extends _events.default {
           "address": subplebbitAddress,
           // It seems ipfs key import returns {Id, Name} while ipfs gen returns {id, name} so we're accounting for both cases here
           "ipnsKeyName": ipnsKey["name"] || ipnsKey["Name"],
-          "createdAt": (0, _Util.timestamp)()
+          "createdAt": timestamp()
         });
       } else {
         await _classPrivateMethodGet(this, _initDbIfNeeded, _initDbIfNeeded2).call(this);
-        this.updatedAt = (0, _Util.timestamp)();
+        this.updatedAt = timestamp();
         const file = await this.plebbit.ipfsClient.add(JSON.stringify(this));
         await this.plebbit.ipfsClient.name.publish(file["cid"], {
           "lifetime": "72h",
@@ -235,7 +203,7 @@ class Subplebbit extends _events.default {
       this.validateCaptchaAnswerCallback = _classPrivateMethodGet(this, _defaultValidateCaptcha, _defaultValidateCaptcha2);
     }
 
-    (0, _assert.default)(this.dbHandler, "A connection to a database is needed for the hosting a subplebbit");
+    assert(this.dbHandler, "A connection to a database is needed for the hosting a subplebbit");
     const subscribedTopics = await this.plebbit.ipfsClient.pubsub.ls();
     if (!subscribedTopics.includes(this.pubsubTopic)) await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, _classPrivateMethodGet(this, _processCaptchaPubsub, _processCaptchaPubsub2).bind(this));
     await _classPrivateMethodGet(this, _syncIpnsWithDb, _syncIpnsWithDb2).call(this, syncIntervalMs);
@@ -255,7 +223,7 @@ class Subplebbit extends _events.default {
     // Call this only if you know what you're doing
     // rm ipns and ipfs
     await this.stopPublishing();
-    const ipfsPath = await (0, _itLast.default)(this.plebbit.ipfsClient.name.resolve(this.address));
+    const ipfsPath = await last(this.plebbit.ipfsClient.name.resolve(this.address));
     await this.plebbit.ipfsClient.pin.rm(ipfsPath);
     await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
   } // For development purposes only
@@ -265,8 +233,8 @@ class Subplebbit extends _events.default {
     const trx = publication.vote ? undefined : await this.dbHandler.createTransaction(); // No need for votes to reserve a transaction
 
     try {
-      const randomUUID = (0, _uuid.v4)();
-      await this.dbHandler.upsertChallenge(new _Challenge.ChallengeRequestMessage({
+      const randomUUID = uuidv4();
+      await this.dbHandler.upsertChallenge(new ChallengeRequestMessage({
         "challengeRequestId": randomUUID
       }), trx);
       const publishedPublication = await _classPrivateMethodGet(this, _publishPostAfterPassingChallenge, _publishPostAfterPassingChallenge2).call(this, publication, randomUUID, trx);
@@ -280,8 +248,6 @@ class Subplebbit extends _events.default {
 
 }
 
-exports.Subplebbit = Subplebbit;
-
 function _initSubplebbit2(newProps) {
   const oldProps = _classPrivateMethodGet(this, _toJSONInternal, _toJSONInternal2).call(this);
 
@@ -293,13 +259,13 @@ function _initSubplebbit2(newProps) {
   this.moderatorsAddresses = mergedProps["moderatorsAddresses"];
   this.latestPostCid = mergedProps["latestPostCid"];
   this._dbConfig = mergedProps["database"];
-  this.posts = mergedProps["posts"] instanceof Object ? new _Pages.Pages({ ...mergedProps["posts"],
+  this.posts = mergedProps["posts"] instanceof Object ? new Pages({ ...mergedProps["posts"],
     "subplebbit": this
   }) : mergedProps["posts"];
   this.address = mergedProps["address"];
   this.ipnsKeyName = mergedProps["ipnsKeyName"];
   this.pubsubTopic = mergedProps["pubsubTopic"] || this.address;
-  this.sortHandler = new _SortHandler.SortHandler(this);
+  this.sortHandler = new SortHandler(this);
   this.challengeTypes = mergedProps["challengeTypes"];
   this.metricsCid = mergedProps["metricsCid"];
   this.createdAt = mergedProps["createdAt"];
@@ -313,11 +279,11 @@ async function _initSignerIfNeeded2() {
     const dbSigner = await this.dbHandler.querySubplebbitSigner();
 
     if (!dbSigner) {
-      (0, _assert.default)(this.signer, "Subplebbit needs a signer to start");
+      assert(this.signer, "Subplebbit needs a signer to start");
       debug(`Subplebbit has no signer in DB, will insert provided signer from createSubplebbitOptions into DB`);
       await this.dbHandler.insertSigner({ ...this.signer,
         "ipnsKeyName": this.signer.address,
-        "usage": _DbHandler.SIGNER_USAGES.SUBPLEBBIT
+        "usage": SIGNER_USAGES.SUBPLEBBIT
       });
     } else if (!this.signer) {
       debug(`Subplebbit loaded signer from DB`);
@@ -343,7 +309,7 @@ async function _initDbIfNeeded2() {
   if (this.dbHandler) return;
 
   if (!this._dbConfig) {
-    (0, _assert.default)(this.address, "Need subplebbit address to initialize a DB connection");
+    assert(this.address, "Need subplebbit address to initialize a DB connection");
     const dbPath = path.join(this.plebbit.dataPath, this.address);
     debug(`User has not provided a DB config. Will initialize DB in ${dbPath}`);
     this._dbConfig = {
@@ -360,7 +326,7 @@ async function _initDbIfNeeded2() {
   await fs.promises.mkdir(dir, {
     "recursive": true
   });
-  this.dbHandler = new _DbHandler.default(this._dbConfig, this);
+  this.dbHandler = new DbHandler(this._dbConfig, this);
   await this.dbHandler.createTablesIfNeeded();
   await _classPrivateMethodGet(this, _initSignerIfNeeded, _initSignerIfNeeded2).call(this);
 }
@@ -374,10 +340,10 @@ function _toJSONInternal2() {
 }
 
 async function _updateOnce2() {
-  (0, _assert.default)(this.address, "Can't update subplebbit without address");
+  assert(this.address, "Can't update subplebbit without address");
 
   try {
-    const subplebbitIpns = await (0, _Util.loadIpnsAsJson)(this.address, this.plebbit);
+    const subplebbitIpns = await loadIpnsAsJson(this.address, this.plebbit);
 
     if (this.emittedAt !== subplebbitIpns.updatedAt) {
       this.emittedAt = subplebbitIpns.updatedAt;
@@ -402,9 +368,9 @@ async function _updateSubplebbitIpns2() {
   await trx.commit();
   const [metrics, [sortedPosts, sortedPostsCids]] = await Promise.all([this.dbHandler.querySubplebbitMetrics(), this.sortHandler.generatePagesUnderComment()]);
   let posts;
-  if (sortedPosts) posts = new _Pages.Pages({
+  if (sortedPosts) posts = new Pages({
     "pages": {
-      [_SortHandler.POSTS_SORT_TYPES.HOT.type]: sortedPosts[_SortHandler.POSTS_SORT_TYPES.HOT.type]
+      [POSTS_SORT_TYPES.HOT.type]: sortedPosts[POSTS_SORT_TYPES.HOT.type]
     },
     "pageCids": sortedPostsCids,
     "subplebbit": this
@@ -424,7 +390,7 @@ async function _updateSubplebbitIpns2() {
 async function _handleCommentEdit2(commentEdit, challengeRequestId, trx) {
   // TODO assert CommentEdit signer is same as original comment
   const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, trx);
-  const [signatureIsVerified, verificationFailReason] = await (0, _Signer.verifyPublication)(commentEdit);
+  const [signatureIsVerified, verificationFailReason] = await verifyPublication(commentEdit);
 
   if (!signatureIsVerified) {
     debug(`Comment edit of ${commentEdit.commentCid} has been rejected due to having invalid signature. Reason = ${verificationFailReason}`);
@@ -443,7 +409,7 @@ async function _handleCommentEdit2(commentEdit, challengeRequestId, trx) {
     return {
       "reason": `Comment edit of ${commentEdit.commentCid} due to having different author keys than original comment`
     };
-  } else if ((0, _Util.shallowEqual)(commentToBeEdited.signature, commentEdit.editSignature)) {
+  } else if (shallowEqual(commentToBeEdited.signature, commentEdit.editSignature)) {
     debug(`Signature of CommentEdit is identical to original comment (${commentEdit.cid})`);
     return {
       "reason": `Signature of CommentEdit is identical to original comment (${commentEdit.cid})`
@@ -456,7 +422,7 @@ async function _handleCommentEdit2(commentEdit, challengeRequestId, trx) {
 }
 
 async function _handleVote2(newVote, challengeRequestId, trx) {
-  const [signatureIsVerified, failedVerificationReason] = await (0, _Signer.verifyPublication)(newVote);
+  const [signatureIsVerified, failedVerificationReason] = await verifyPublication(newVote);
 
   if (!signatureIsVerified) {
     debug(`Author (${newVote.author.address}) vote (${newVote.vote} vote's signature is invalid. Reason = ${failedVerificationReason}`);
@@ -474,7 +440,7 @@ async function _handleVote2(newVote, challengeRequestId, trx) {
     return {
       "reason": `Author (${newVote.author.address}) attempted to change vote on  ${newVote.commentCid} without having correct credentials`
     };
-  } else if ((0, _Util.shallowEqual)(newVote.signature, lastVote === null || lastVote === void 0 ? void 0 : lastVote.signature)) {
+  } else if (shallowEqual(newVote.signature, lastVote === null || lastVote === void 0 ? void 0 : lastVote.signature)) {
     var _newVote$author;
 
     debug(`Signature of Vote is identical to original Vote (${newVote.commentCid})`);
@@ -505,7 +471,7 @@ async function _publishPostAfterPassingChallenge2(publication, challengeRequestI
     if (res) return res;
   } else if (postOrCommentOrVote.content) {
     // Comment and Post need to add file to ipfs
-    const signatureIsVerified = (await (0, _Signer.verifyPublication)(postOrCommentOrVote))[0];
+    const signatureIsVerified = (await verifyPublication(postOrCommentOrVote))[0];
 
     if (!signatureIsVerified) {
       debug(`Author (${postOrCommentOrVote.author.address}) comment's signature is invalid`);
@@ -514,7 +480,7 @@ async function _publishPostAfterPassingChallenge2(publication, challengeRequestI
       };
     }
 
-    const ipnsKeyName = (0, _jsSha.sha256)(JSON.stringify(postOrCommentOrVote.toJSONSkeleton()));
+    const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote.toJSONSkeleton()));
 
     if (await this.dbHandler.querySigner(ipnsKeyName, trx)) {
       const msg = `Failed to insert ${postOrCommentOrVote.getType()} due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`;
@@ -525,9 +491,9 @@ async function _publishPostAfterPassingChallenge2(publication, challengeRequestI
     } else {
       const ipfsSigner = { ...(await this.plebbit.createSigner()),
         "ipnsKeyName": ipnsKeyName,
-        "usage": _DbHandler.SIGNER_USAGES.COMMENT
+        "usage": SIGNER_USAGES.COMMENT
       };
-      const [ipfsKey] = await Promise.all([(0, _Util.ipfsImportKey)(ipfsSigner, this.plebbit), this.dbHandler.insertSigner(ipfsSigner, trx)]);
+      const [ipfsKey] = await Promise.all([ipfsImportKey(ipfsSigner, this.plebbit), this.dbHandler.insertSigner(ipfsSigner, trx)]);
       postOrCommentOrVote.setCommentIpnsKey(ipfsKey);
 
       if (postOrCommentOrVote.getType() === "post") {
@@ -564,7 +530,7 @@ async function _publishPostAfterPassingChallenge2(publication, challengeRequestI
 async function _handleChallengeRequest2(msgParsed) {
   return new Promise(async (resolve, reject) => {
     const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(msgParsed);
-    const decryptedPublication = JSON.parse(await (0, _Signer.decrypt)(msgParsed.encryptedPublication.encryptedString, msgParsed.encryptedPublication.encryptedKey, this.signer.privateKey));
+    const decryptedPublication = JSON.parse(await decrypt(msgParsed.encryptedPublication.encryptedString, msgParsed.encryptedPublication.encryptedKey, this.signer.privateKey));
     this._challengeToPublication[msgParsed.challengeRequestId] = decryptedPublication;
     debug(`Received a request to a challenge (${msgParsed.challengeRequestId})`);
 
@@ -573,12 +539,12 @@ async function _handleChallengeRequest2(msgParsed) {
       debug(`Skipping challenge for ${msgParsed.challengeRequestId}, add publication to IPFS and respond with challengeVerificationMessage right away`);
       const trx = decryptedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transaction
 
-      await this.dbHandler.upsertChallenge(new _Challenge.ChallengeRequestMessage(msgParsed), trx);
+      await this.dbHandler.upsertChallenge(new ChallengeRequestMessage(msgParsed), trx);
       const publishedPublication = await _classPrivateMethodGet(this, _publishPostAfterPassingChallenge, _publishPostAfterPassingChallenge2).call(this, decryptedPublication, msgParsed.challengeRequestId, trx);
       const restOfMsg = "publication" in publishedPublication ? {
-        "encryptedPublication": await (0, _Signer.encrypt)(JSON.stringify(publishedPublication.publication), (publishedPublication.publication.signature || publishedPublication.publication.editSignature).publicKey)
+        "encryptedPublication": await encrypt(JSON.stringify(publishedPublication.publication), (publishedPublication.publication.signature || publishedPublication.publication.editSignature).publicKey)
       } : publishedPublication;
-      const challengeVerification = new _Challenge.ChallengeVerificationMessage({
+      const challengeVerification = new ChallengeVerificationMessage({
         "reason": reasonForSkippingCaptcha,
         "challengePassed": Boolean(publishedPublication.publication),
         // If no publication, this will be false
@@ -590,7 +556,7 @@ async function _handleChallengeRequest2(msgParsed) {
 
       _classPrivateMethodGet(this, _upsertAndPublishChallenge, _upsertAndPublishChallenge2).call(this, challengeVerification, trx).then(resolve).catch(reject);
     } else {
-      const challengeMessage = new _Challenge.ChallengeMessage({
+      const challengeMessage = new ChallengeMessage({
         "challengeRequestId": msgParsed.challengeRequestId,
         "challenges": providedChallenges
       });
@@ -604,7 +570,7 @@ async function _upsertAndPublishChallenge2(challenge, trx) {
   try {
     await this.dbHandler.upsertChallenge(challenge, trx);
     if (trx) await trx.commit();
-    await this.plebbit.ipfsClient.pubsub.publish(this.pubsubTopic, (0, _fromString.fromString)(JSON.stringify(challenge)));
+    await this.plebbit.ipfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challenge)));
     debug(`Published challenge type ${challenge.type} (${challenge.challengeRequestId})`);
   } catch (e) {
     debug(`Failed to either publish challenge or upsert in DB, error = ${e}`);
@@ -620,13 +586,13 @@ async function _handleChallengeAnswer2(msgParsed) {
     const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
     const trx = storedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transactions
 
-    await this.dbHandler.upsertChallenge(new _Challenge.ChallengeAnswerMessage(msgParsed), trx);
+    await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed), trx);
     const publishedPublication = await _classPrivateMethodGet(this, _publishPostAfterPassingChallenge, _publishPostAfterPassingChallenge2).call(this, storedPublication, msgParsed.challengeRequestId, trx); // could contain "publication" or "reason"
 
     const restOfMsg = "publication" in publishedPublication ? {
-      "encryptedPublication": await (0, _Signer.encrypt)(JSON.stringify(publishedPublication.publication), publishedPublication.publication.signature.publicKey)
+      "encryptedPublication": await encrypt(JSON.stringify(publishedPublication.publication), publishedPublication.publication.signature.publicKey)
     } : publishedPublication;
-    const challengeVerification = new _Challenge.ChallengeVerificationMessage({
+    const challengeVerification = new ChallengeVerificationMessage({
       "challengeRequestId": msgParsed.challengeRequestId,
       "challengeAnswerId": msgParsed.challengeAnswerId,
       "challengePassed": challengePassed,
@@ -636,7 +602,7 @@ async function _handleChallengeAnswer2(msgParsed) {
     return _classPrivateMethodGet(this, _upsertAndPublishChallenge, _upsertAndPublishChallenge2).call(this, challengeVerification, trx);
   } else {
     debug(`Challenge (${msgParsed.challengeRequestId}) has answered incorrectly`);
-    const challengeVerification = new _Challenge.ChallengeVerificationMessage({
+    const challengeVerification = new ChallengeVerificationMessage({
       "challengeRequestId": msgParsed.challengeRequestId,
       "challengeAnswerId": msgParsed.challengeAnswerId,
       "challengePassed": challengePassed,
@@ -647,8 +613,8 @@ async function _handleChallengeAnswer2(msgParsed) {
 }
 
 async function _processCaptchaPubsub2(pubsubMsg) {
-  const msgParsed = JSON.parse((0, _toString.toString)(pubsubMsg["data"]));
-  if (msgParsed.type === _Challenge.PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST) await _classPrivateMethodGet(this, _handleChallengeRequest, _handleChallengeRequest2).call(this, msgParsed);else if (msgParsed.type === _Challenge.PUBSUB_MESSAGE_TYPES.CHALLENGEANSWER && this._challengeToPublication[msgParsed.challengeRequestId]) // Only reply to peers who started a challenge request earlier
+  const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
+  if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST) await _classPrivateMethodGet(this, _handleChallengeRequest, _handleChallengeRequest2).call(this, msgParsed);else if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEANSWER && this._challengeToPublication[msgParsed.challengeRequestId]) // Only reply to peers who started a challenge request earlier
     await _classPrivateMethodGet(this, _handleChallengeAnswer, _handleChallengeAnswer2).call(this, msgParsed);
 }
 
@@ -660,11 +626,11 @@ async function _defaultProvideCaptcha2(challengeRequestMessage) {
     const {
       image,
       text
-    } = (0, _extra.createCaptcha)(300, 100);
+    } = createCaptcha(300, 100);
     this._challengeToSolution[challengeRequestMessage.challengeRequestId] = [text];
-    image.then(imageBuffer => resolve([[new _Challenge.Challenge({
+    image.then(imageBuffer => resolve([[new Challenge({
       "challenge": imageBuffer,
-      "type": _Challenge.CHALLENGE_TYPES.image
+      "type": CHALLENGE_TYPES.image
     })], undefined])).catch(reject);
   });
 }
@@ -683,14 +649,14 @@ async function _syncIpnsWithDb2(syncIntervalMs) {
   debug("Starting to sync IPNS with DB");
 
   const syncComment = async dbComment => {
-    const currentIpns = await (0, _Util.loadIpnsAsJson)(dbComment.ipnsName, this.plebbit);
+    const currentIpns = await loadIpnsAsJson(dbComment.ipnsName, this.plebbit);
 
-    if (!currentIpns || !(0, _Util.shallowEqual)(currentIpns, dbComment.toJSONCommentUpdate(), ["replies"])) {
+    if (!currentIpns || !shallowEqual(currentIpns, dbComment.toJSONCommentUpdate(), ["replies"])) {
       try {
         debug(`Comment (${dbComment.cid}) IPNS is outdated`);
         const [sortedReplies, sortedRepliesCids] = await this.sortHandler.generatePagesUnderComment(dbComment);
         dbComment.setReplies(sortedReplies, sortedRepliesCids);
-        dbComment.setUpdatedAt((0, _Util.timestamp)());
+        dbComment.setUpdatedAt(timestamp());
         await this.dbHandler.upsertComment(dbComment, undefined);
         return dbComment.edit(dbComment.toJSONCommentUpdate());
       } catch (e) {
