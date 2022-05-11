@@ -69,7 +69,7 @@ describe("Test Subplebbit functionality", async () => {
     it("Can post after solving image captcha", async function () {
         return new Promise(async (resolve, reject) => {
             await subplebbit.setProvideCaptchaCallback(null);
-            await subplebbit.startPublishing();
+            await subplebbit.start();
             const mockPost = await generateMockPost(subplebbit.address, clientPlebbit);
             mockPost.removeAllListeners();
             const solveCaptchaCallback = async (challenge) => {
