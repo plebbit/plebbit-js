@@ -23,7 +23,7 @@ import { decrypt, encrypt, verifyPublication } from "./Signer.js";
 import { Pages } from "./Pages.js";
 const debug = Debug("plebbit-js:Subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
-const DEFAULT_SYNC_INTERVAL_MS = 180000; // 3 minutes
+const DEFAULT_SYNC_INTERVAL_MS = 300000; // 5 minutes
 
 var _initSubplebbit = /*#__PURE__*/new WeakSet();
 
@@ -131,6 +131,15 @@ export class Subplebbit extends EventEmitter {
   }
 
   async edit(newSubplebbitOptions) {
+    if (!this.ipnsKeyName) {
+      var _localIpnsKeys$filter;
+
+      const localIpnsKeys = await this.plebbit.ipfsClient.key.list();
+      this.ipnsKeyName = (_localIpnsKeys$filter = localIpnsKeys.filter(key => key["id"] === newSubplebbitOptions["address"] || key["id"] === this.address)[0]) === null || _localIpnsKeys$filter === void 0 ? void 0 : _localIpnsKeys$filter.name;
+    }
+
+    assert(this.ipnsKeyName, "You need to have the proper keys to edit this subplebbit");
+
     try {
       _classPrivateMethodGet(this, _initSubplebbit, _initSubplebbit2).call(this, newSubplebbitOptions);
 
@@ -179,16 +188,17 @@ export class Subplebbit extends EventEmitter {
     return _classPrivateMethodGet(this, _updateOnce, _updateOnce2).call(this);
   }
 
-  stop() {
+  async stop() {
     clearInterval(this._updateInterval);
+    await this.plebbit.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
   }
 
-  async startPublishing(syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS) {
+  async start(syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS) {
     await _classPrivateMethodGet(this, _initDbIfNeeded, _initDbIfNeeded2).call(this);
     await _classPrivateMethodGet(this, _initSignerIfNeeded, _initSignerIfNeeded2).call(this);
 
     if (!this.provideCaptchaCallback) {
-      debug(`Subplebbit-startPublishing`, "Subplebbit owner has not provided any captcha. Will go with default image captcha");
+      debug("Subplebbit owner has not provided any captcha. Will go with default image captcha");
       this.provideCaptchaCallback = _classPrivateMethodGet(this, _defaultProvideCaptcha, _defaultProvideCaptcha2);
       this.validateCaptchaAnswerCallback = _classPrivateMethodGet(this, _defaultValidateCaptcha, _defaultValidateCaptcha2);
     }
@@ -202,7 +212,6 @@ export class Subplebbit extends EventEmitter {
   async stopPublishing() {
     var _this$dbHandler, _this$dbHandler$knex;
 
-    await this.plebbit.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
     this.removeAllListeners();
     this.stop();
     (_this$dbHandler = this.dbHandler) === null || _this$dbHandler === void 0 ? void 0 : (_this$dbHandler$knex = _this$dbHandler.knex) === null || _this$dbHandler$knex === void 0 ? void 0 : _this$dbHandler$knex.destroy();
@@ -331,6 +340,8 @@ function _toJSONInternal2() {
 }
 
 async function _updateOnce2() {
+  assert(this.address, "Can't update subplebbit without address");
+
   try {
     const subplebbitIpns = await loadIpnsAsJson(this.address, this.plebbit);
 

@@ -4,20 +4,20 @@
   "description": "plebbit.js will be an NPM module to wrap around the IPFS APIs used by Plebbit. It will be used in all clients: CLI, Electron (Desktop GUI) and Web.",
   "exports": {
     ".": {
-      "browser": "./dist/node/esm/index.js",
+      "browser": "./dist/browser/index.js",
       "import": "./dist/node/esm/index.js",
       "require": "./dist/node/cjs/index.js"
     },
     "./package.json": "./package.json"
   },
   "main": "./dist/node/cjs/index.js",
-  "browser": "./dist/node/esm/index.js",
+  "browser": "./dist/browser/index.js",
   "scripts": {
     "test": "mocha --timeout 0",
     "build:cjs": "babel src --out-dir dist/node/cjs --config-file ./config/babel-cjs.js && echo '{\"type\": \"commonjs\"}'> dist/node/cjs/package.json",
     "build:esm": "babel src --out-dir dist/node/esm --config-file ./config/babel-esm.js && echo '{\"type\": \"module\"}'> dist/node/esm/package.json",
-    "build:browser": "TODO and also add 'browser: ./dist/browser/index.js' to package.json and exports.browser",
-    "build": "npm run build:cjs && npm run build:esm"
+    "build:browser": "babel src --out-dir dist/browser --config-file ./config/babel-browser.js && echo '{\"type\": \"module\"}'> dist/browser/package.json && cp ./config/babel-browser-noop.js dist/browser/noop.js",
+    "build": "npm run build:cjs && npm run build:esm && npm run build:browser"
   },
   "repository": {
     "type": "git",
@@ -33,7 +33,9 @@
   },
   "homepage": "https://github.com/plebbit/plebbit-js#readme",
   "dependencies": {
+    "assert": "2.0.0",
     "better-sqlite3": "7.5.1",
+    "buffer": "6.0.3",
     "captcha-canvas": "3.1.0",
     "cborg": "1.9.0",
     "debug": "4.3.4",
@@ -48,6 +50,7 @@
     "libp2p-crypto": "0.21.2",
     "node-fetch": "2.6.7",
     "node-forge": "1.3.1",
+    "process": "0.11.10",
     "uint8arrays": "3.0.0",
     "uuid": "8.3.2"
   },
@@ -55,6 +58,7 @@
     "@babel/cli": "7.17.10",
     "@babel/preset-env": "7.17.10",
     "babel-plugin-add-module-exports": "1.0.4",
+    "babel-plugin-module-resolver": "4.1.0",
     "mocha": "9.2.2"
   },
   "type": "module"

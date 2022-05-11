@@ -8,6 +8,7 @@ import * as jose from "jose";
 import forge from 'node-forge'
 import assert from "assert";
 import Publication from "./Publication.js";
+import {Buffer} from 'buffer'
 
 // note: postCid is not included because it's written by the sub owner, not the author
 
