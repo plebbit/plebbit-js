@@ -152,40 +152,44 @@ export class Subplebbit extends EventEmitter {
         };
     }
 
-    async edit(newSubplebbitOptions) {
-        if (!this.ipnsKeyName) {
-            const localIpnsKeys = await this.plebbit.ipfsClient.key.list();
-            this.ipnsKeyName = localIpnsKeys.filter(key => key["id"] === newSubplebbitOptions["address"] || key["id"] === this.address)[0]?.name;
+    async prePublish(newSubplebbitOptions = {}) {
+        // Import ipfs key into node (if not imported already)
+        // Initialize signer
+        // Initialize address (needs signer)
+        // Initialize db (needs address)
+        if (!this.signer && this.address) {
+            // Load signer from DB
+            await this.#initDbIfNeeded();
+        } else if (!this.address && this.signer)
+            this.address = this.signer.address;
+        await this.#initDbIfNeeded();
+        assert(this.address && this.signer, "Both address and signer need to be defined at this point");
+        if (!this.pubsubTopic)
+            this.pubsubTopic = this.address;
+        // import ipfs key into ipfs node
+        const subplebbitIpfsNodeKey = (await this.plebbit.ipfsClient.key.list()).filter(key => key.name === this.address)[0];
+        if (!subplebbitIpfsNodeKey) {
+            const ipfsKey = await ipfsImportKey({...this.signer, "ipnsKeyName": this.address}, this.plebbit);
+            this.ipnsKeyName = ipfsKey["name"] || ipfsKey["Name"];
+            debug(`Imported keys into ipfs node, ${ipfsKey}`);
+        } else {
+            debug(`Subplebbit key is already in ipfs node, no need to import (${JSON.stringify(subplebbitIpfsNodeKey)})`);
+            this.ipnsKeyName = subplebbitIpfsNodeKey["name"] || subplebbitIpfsNodeKey["Name"];
         }
-        assert(this.ipnsKeyName, "You need to have the proper keys to edit this subplebbit");
+        assert(this.ipnsKeyName && this.address && this.signer && this.encryption && this.pubsubTopic, "These fields are needed to run the subplebbit");
+    }
+
+    async edit(newSubplebbitOptions) {
+        await this.prePublish(newSubplebbitOptions);
         try {
-            this.#initSubplebbit(newSubplebbitOptions);
-            await this.#initSignerIfNeeded();
-            if (!this.address) { // TODO require signer
-                debug(`Subplebbit does not have an address`);
-                assert.equal(Boolean(this.signer?.address), true, "Subplebbit needs to have either a subplebbitAddress or a Signer to initialize");
-                const ipnsKeyName = this.signer.address;
-                const ipnsKey = await ipfsImportKey({...this.signer, "ipnsKeyName": ipnsKeyName}, this.plebbit);
-                const subplebbitAddress = ipnsKey["id"] || ipnsKey["Id"]
-                debug(`Generated an address for subplebbit (${subplebbitAddress})`);
-                return this.edit({
-                    "address": subplebbitAddress, // It seems ipfs key import returns {Id, Name} while ipfs gen returns {id, name} so we're accounting for both cases here
-                    "ipnsKeyName": ipnsKey["name"] || ipnsKey["Name"],
-                    "createdAt": timestamp()
-                });
-            } else {
-                await this.#initDbIfNeeded();
-                this.updatedAt = timestamp();
-                const file = await this.plebbit.ipfsClient.add(JSON.stringify(this));
-                await this.plebbit.ipfsClient.name.publish(file["cid"], {
-                    "lifetime": "72h", // TODO decide on optimal time later
-                    "key": this.ipnsKeyName
-                });
-                debug(`Subplebbit (${this.address}) has been edited and its IPNS updated`);
-                return this;
-
-            }
-
+            this.#initSubplebbit({"updatedAt": timestamp(), ...newSubplebbitOptions});
+            const file = await this.plebbit.ipfsClient.add(JSON.stringify(this));
+            await this.plebbit.ipfsClient.name.publish(file["cid"], {
+                "lifetime": "72h", // TODO decide on optimal time later
+                "key": this.ipnsKeyName
+            });
+            debug(`Subplebbit (${this.address}) props (${Object.keys(newSubplebbitOptions)}) has been edited and its IPNS updated`);
+            return this;
         } catch (e) {
             debug(`Failed to edit subplebbit due to ${e}`);
         }
@@ -237,6 +241,7 @@ export class Subplebbit extends EventEmitter {
                 "subplebbit": this
             });
         const newSubplebbitOptions = {
+            ...(currentIpns ? {} : {"createdAt": timestamp()}),
             "posts": posts,
             "metricsCid": (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path,
             "latestPostCid": latestPost?.postCid,
@@ -253,7 +258,6 @@ export class Subplebbit extends EventEmitter {
     }
 
     async #handleCommentEdit(commentEdit, challengeRequestId, trx) {
-        // TODO assert CommentEdit signer is same as original comment
         const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, trx);
         const [signatureIsVerified, verificationFailReason] = await verifyPublication(commentEdit);
         if (!signatureIsVerified) {
@@ -517,18 +521,16 @@ export class Subplebbit extends EventEmitter {
 
 
     async start(syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS) {
-        await this.#initDbIfNeeded();
-        await this.#initSignerIfNeeded();
-
+        await this.prePublish();
         if (!this.provideCaptchaCallback) {
             debug("Subplebbit owner has not provided any captcha. Will go with default image captcha");
             this.provideCaptchaCallback = this.#defaultProvideCaptcha;
             this.validateCaptchaAnswerCallback = this.#defaultValidateCaptcha;
         }
         assert(this.dbHandler, "A connection to a database is needed for the hosting a subplebbit");
-        const subscribedTopics = (await this.plebbit.ipfsClient.pubsub.ls());
-        if (!subscribedTopics.includes(this.pubsubTopic))
-            await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, this.#processCaptchaPubsub.bind(this));
+        assert(this.pubsubTopic, "Pubsub topic need to defined before publishing");
+        await this.plebbit.ipfsClient.pubsub.subscribe(this.pubsubTopic, this.#processCaptchaPubsub.bind(this));
+        debug(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
         await this.#syncIpnsWithDb(syncIntervalMs);
     }
 

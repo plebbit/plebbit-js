@@ -210,7 +210,7 @@ export function removeKeysWithUndefinedValues(object) {
 export async function ipfsImportKey(signer, plebbit, password = '') {
     const data = new FormData();
     data.append('file', signer.ipfsKey);
-    const url = `${plebbit.ipfsHttpClientOptions.url}/key/import?arg=${signer.ipnsKeyName}`
+    const url = `${plebbit.ipfsHttpClientOptions.url}/key/import?arg=${signer.ipnsKeyName}`;
     const res = await fetch(url, {
         method: 'POST',
         body: data,
