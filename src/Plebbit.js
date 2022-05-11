@@ -9,6 +9,7 @@ import {getAddressFromPublicKeyPem, Signer, signPublication, verifyPublication} 
 import * as crypto from "libp2p-crypto";
 import * as jose from "jose";
 import assert from "assert";
+import process from 'process';
 
 export class Plebbit {
     constructor(options = {}) {
@@ -16,6 +17,7 @@ export class Plebbit {
         this.ipfsGatewayUrl = this.ipfsHttpClientOptions ? undefined : (options["ipfsGatewayUrl"] || 'https://cloudflare-ipfs.com');
         this.pubsubHttpClientOptions = this.ipfsHttpClientOptions ? undefined : (options["pubsubHttpClientOptions"] || 'https://pubsubprovider.xyz/api/v0');
         this.ipfsClient = createIpfsClient(this.ipfsHttpClientOptions || this.pubsubHttpClientOptions);
+        let defaultDataPath
         this.dataPath = options["dataPath"] || path.join(process.cwd(), ".plebbit");
     }
 
