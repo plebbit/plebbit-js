@@ -1,4 +1,4 @@
-import {Plebbit} from "../src/index.js";
+import Plebbit from "../src/index.js";
 import {IPFS_CLIENT_CONFIGS, TEST_VOTE_POST_CID} from "../secrets.js";
 import assert from 'assert';
 import {timestamp, unsubscribeAllPubsubTopics} from "../src/Util.js";
@@ -17,7 +17,7 @@ describe("Test Vote", async () => {
     before(async () => {
         await unsubscribeAllPubsubTopics([serverPlebbit.ipfsClient, clientPlebbit.ipfsClient]);
     });
-    before(async () => await subplebbit.startPublishing());
+    before(async () => await subplebbit.start());
     before(async () => await subplebbit.update());
     after(async () => post.stop());
     after(async () => await subplebbit.stopPublishing());

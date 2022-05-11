@@ -1,7 +1,7 @@
 import {Comment, CommentEdit} from "./Comment.js";
 import Post from "./Post.js";
 import {Subplebbit} from "./Subplebbit.js";
-import {loadIpfsFileAsJson, loadIpnsAsJson, removeKeysWithUndefinedValues, timestamp} from "./Util.js";
+import {loadIpfsFileAsJson, loadIpnsAsJson, timestamp} from "./Util.js";
 import * as path from "path";
 import Vote from "./Vote.js";
 import {create as createIpfsClient} from "ipfs-http-client";
@@ -60,19 +60,7 @@ export class Plebbit {
     }
 
     async createSubplebbit(createSubplebbitOptions) {
-        if (createSubplebbitOptions["address"]) {
-            // Subplebbit already exists, just load it
-            const localIpnsKeys = await this.ipfsClient.key.list();
-            const ipnsKeyName = localIpnsKeys.filter(key => key["id"] === createSubplebbitOptions["address"])[0]?.name;
-            return this.getSubplebbit(createSubplebbitOptions["address"], {
-                ...createSubplebbitOptions,
-                "ipnsKeyName": ipnsKeyName
-            });
-        } else {
-            const subplebbit = new Subplebbit(createSubplebbitOptions, this);
-            await subplebbit.edit(createSubplebbitOptions);
-            return subplebbit;
-        }
+        return new Subplebbit(createSubplebbitOptions, this);
     }
 
     async createVote(createVoteOptions) {
@@ -114,7 +102,8 @@ export class Plebbit {
                 "address": address,
                 "ipfsKey": ipfsKey
             });
-        } else if (createSignerOptions["privateKey"] && createSignerOptions.type === 'rsa') {
+        } else if (createSignerOptions["privateKey"]) {
+            assert.equal(createSignerOptions.type, "rsa", "We can only support RSA keys at the moment");
             const keyPair = await crypto.keys.import(createSignerOptions.privateKey, "");
             const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {extractable: true});
             const publicKeyPem = await jose.exportSPKI(publicKeyFromJsonWebToken);

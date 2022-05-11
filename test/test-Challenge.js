@@ -1,6 +1,6 @@
 import {unsubscribeAllPubsubTopics, waitTillCommentsArePublished} from "../src/Util.js";
 import {IPFS_CLIENT_CONFIGS, TEST_CHALLENGES_SUBPLEBBIT_ADDRESS} from "../secrets.js";
-import {Plebbit} from "../src/index.js";
+import Plebbit from "../src/index.js";
 import assert from "assert";
 import {generateMockPost} from "./MockUtil.js";
 import {Challenge, CHALLENGE_TYPES} from "../src/Challenge.js";
@@ -29,7 +29,7 @@ describe("Test Challenge functionality", async () => {
                 else
                     return [[new Challenge({"challenge": "1+1=?", "type": CHALLENGE_TYPES.TEXT})], null];
             });
-            await subplebbit.startPublishing();
+            await subplebbit.start();
             const mockPostShouldSkipCaptcha = await generateMockPost(subplebbit.address, clientPlebbit);
             await mockPostShouldSkipCaptcha.publish(null, null);
             await waitTillCommentsArePublished([mockPostShouldSkipCaptcha]);

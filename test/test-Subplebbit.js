@@ -1,6 +1,6 @@
 import {IPFS_CLIENT_CONFIGS} from "../secrets.js";
 import assert from 'assert';
-import {Plebbit} from "../src/index.js"
+import Plebbit from "../src/index.js"
 import {sleep, unsubscribeAllPubsubTopics, waitTillCommentsArePublished, waitTillCommentsUpdate} from "../src/Util.js";
 import * as fs from 'fs/promises';
 import readline from "readline";
@@ -34,7 +34,7 @@ describe("Test Subplebbit functionality", async () => {
         // Should have ipns key now
         const loadedSubplebbit = await clientPlebbit.getSubplebbit(subplebbit.address);
         assert.equal(JSON.stringify(loadedSubplebbit), JSON.stringify(subplebbit), "Failed to publish new subplebbit");
-        await subplebbit.startPublishing();
+        await subplebbit.start();
     });
 
     const numOfPosts = 3;

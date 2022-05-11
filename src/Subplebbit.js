@@ -26,7 +26,7 @@ import {Pages} from "./Pages.js";
 
 const debug = Debug("plebbit-js:Subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
-const DEFAULT_SYNC_INTERVAL_MS = 180000; // 3 minutes
+const DEFAULT_SYNC_INTERVAL_MS = 300000; // 5 minutes
 
 
 export class Subplebbit extends EventEmitter {
@@ -153,6 +153,11 @@ export class Subplebbit extends EventEmitter {
     }
 
     async edit(newSubplebbitOptions) {
+        if (!this.ipnsKeyName){
+            const localIpnsKeys = await this.plebbit.ipfsClient.key.list();
+            this.ipnsKeyName = localIpnsKeys.filter(key => key["id"] === newSubplebbitOptions["address"] || key["id"] === this.address)[0]?.name;
+        }
+        assert(this.ipnsKeyName, "You need to have the proper keys to edit this subplebbit");
         try {
             this.#initSubplebbit(newSubplebbitOptions);
             await this.#initSignerIfNeeded();
@@ -189,6 +194,7 @@ export class Subplebbit extends EventEmitter {
     }
 
     async #updateOnce() {
+        assert(this.address, "Can't update subplebbit without address");
         try {
             const subplebbitIpns = await loadIpnsAsJson(this.address, this.plebbit);
             if (this.emittedAt !== subplebbitIpns.updatedAt) {
@@ -213,8 +219,9 @@ export class Subplebbit extends EventEmitter {
         return this.#updateOnce();
     }
 
-    stop() {
+    async stop() {
         clearInterval(this._updateInterval);
+        await this.plebbit.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
     }
 
     async #updateSubplebbitIpns() {
@@ -509,13 +516,12 @@ export class Subplebbit extends EventEmitter {
     }
 
 
-    async startPublishing(syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS) {
+    async start(syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS) {
         await this.#initDbIfNeeded();
         await this.#initSignerIfNeeded();
 
-
         if (!this.provideCaptchaCallback) {
-            debug(`Subplebbit-startPublishing`, "Subplebbit owner has not provided any captcha. Will go with default image captcha");
+            debug("Subplebbit owner has not provided any captcha. Will go with default image captcha");
             this.provideCaptchaCallback = this.#defaultProvideCaptcha;
             this.validateCaptchaAnswerCallback = this.#defaultValidateCaptcha;
         }
@@ -527,7 +533,6 @@ export class Subplebbit extends EventEmitter {
     }
 
     async stopPublishing() {
-        await this.plebbit.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
         this.removeAllListeners();
         this.stop();
         this.dbHandler?.knex?.destroy();

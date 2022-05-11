@@ -4,14 +4,14 @@
   "description": "plebbit.js will be an NPM module to wrap around the IPFS APIs used by Plebbit. It will be used in all clients: CLI, Electron (Desktop GUI) and Web.",
   "exports": {
     ".": {
-      "browser": "./dist/browser/index.js",
+      "browser": "./dist/node/esm/index.js",
       "import": "./dist/node/esm/index.js",
       "require": "./dist/node/cjs/index.js"
     },
     "./package.json": "./package.json"
   },
   "main": "./dist/node/cjs/index.js",
-  "browser": "./dist/browser/index.js",
+  "browser": "./dist/node/esm/index.js",
   "scripts": {
     "test": "mocha --timeout 0",
     "build:cjs": "babel src --out-dir dist/node/cjs --config-file ./config/babel-cjs.js && echo '{\"type\": \"commonjs\"}'> dist/node/cjs/package.json",
