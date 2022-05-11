@@ -1,4 +1,4 @@
-import {Plebbit} from "../src/index.js";
+import Plebbit from "../src/index.js";
 import {
     IPFS_CLIENT_CONFIGS,
     TEST_COMMENT_POST_CID,

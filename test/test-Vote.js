@@ -1,4 +1,4 @@
-import {Plebbit} from "../src/index.js";
+import Plebbit from "../src/index.js";
 import {IPFS_CLIENT_CONFIGS, TEST_VOTE_POST_CID} from "../secrets.js";
 import assert from 'assert';
 import {timestamp, unsubscribeAllPubsubTopics} from "../src/Util.js";

@@ -1,6 +1,6 @@
 import {IPFS_CLIENT_CONFIGS} from "../secrets.js";
 import assert from 'assert';
-import {Plebbit} from "../src/index.js"
+import Plebbit from "../src/index.js"
 import {sleep, unsubscribeAllPubsubTopics, waitTillCommentsArePublished, waitTillCommentsUpdate} from "../src/Util.js";
 import * as fs from 'fs/promises';
 import readline from "readline";

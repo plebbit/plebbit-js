@@ -1,6 +1,6 @@
 import {unsubscribeAllPubsubTopics, waitTillCommentsArePublished} from "../src/Util.js";
 import {IPFS_CLIENT_CONFIGS, TEST_CHALLENGES_SUBPLEBBIT_ADDRESS} from "../secrets.js";
-import {Plebbit} from "../src/index.js";
+import Plebbit from "../src/index.js";
 import assert from "assert";
 import {generateMockPost} from "./MockUtil.js";
 import {Challenge, CHALLENGE_TYPES} from "../src/Challenge.js";

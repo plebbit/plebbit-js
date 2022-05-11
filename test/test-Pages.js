@@ -11,7 +11,7 @@ import {
     generateMockVote,
     loadAllPagesThroughSortedComments
 } from "./MockUtil.js";
-import {Plebbit} from "../src/index.js";
+import Plebbit from "../src/index.js";
 import {IPFS_CLIENT_CONFIGS, TEST_PAGES_SUBPLEBBIT_ADDRESS} from "../secrets.js";
 import assert from "assert";
 import Debug from "debug";
