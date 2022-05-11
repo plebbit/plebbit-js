@@ -7,6 +7,7 @@ import Debug from "debug";
 import {parseJsonIfString, timestamp} from "./Util.js";
 import Author from "./Author.js";
 import {decrypt, encrypt} from "./Signer.js";
+import assert from "assert";
 
 
 const debug = Debug("plebbit-js:Publication");
@@ -87,6 +88,8 @@ class Publication extends EventEmitter {
 
     async publish(userOptions) {
         const options = {"acceptedChallengeTypes": [], ...userOptions};
+        this.subplebbit = await this.subplebbit.plebbit.getSubplebbit(this.subplebbitAddress);
+        assert.equal(Boolean(this.subplebbit?.encryption.publicKey), true, "Failed to load subplebbit for publishing");
         const encryptedPublication = await encrypt(JSON.stringify(this), this.subplebbit.encryption.publicKey);
         this.challenge = new ChallengeRequestMessage({
             "encryptedPublication": encryptedPublication,
