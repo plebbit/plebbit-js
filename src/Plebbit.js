@@ -112,7 +112,8 @@ export class Plebbit {
                 "address": address,
                 "ipfsKey": ipfsKey
             });
-        } else if (createSignerOptions["privateKey"] && createSignerOptions.type === 'rsa') {
+        } else if (createSignerOptions["privateKey"]) {
+            assert.equal(createSignerOptions.type, "rsa", "We can only support RSA keys at the moment");
             const keyPair = await crypto.keys.import(createSignerOptions.privateKey, "");
             const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {extractable: true});
             const publicKeyPem = await jose.exportSPKI(publicKeyFromJsonWebToken);
