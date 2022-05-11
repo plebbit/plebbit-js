@@ -26,7 +26,7 @@ describe("Test Plebbit", async () => {
     before(async () => await unsubscribeAllPubsubTopics([serverPlebbit.ipfsClient, clientPlebbit.ipfsClient]));
     before(async () => {
         subplebbit.setProvideCaptchaCallback((challengeWithMsg) => [null, null]);
-        await subplebbit.startPublishing();
+        await subplebbit.start();
     });
     after(async () => await subplebbit.stopPublishing());
 

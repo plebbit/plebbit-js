@@ -118,7 +118,7 @@ const repliesSortObjects = [...postSortObjects, {"type": "old", "scoreFunction":
 describe("Test Pages API (for sorting)", async () => {
 
     before(async () => await unsubscribeAllPubsubTopics([clientPlebbit.ipfsClient, serverPlebbit.ipfsClient]));
-    before(async () => await subplebbit.startPublishing());
+    before(async () => await subplebbit.start());
     // Stop publishing once we're done with tests
     after(async () => await subplebbit.stopPublishing());
 

@@ -26,7 +26,7 @@ import {Pages} from "./Pages.js";
 
 const debug = Debug("plebbit-js:Subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
-const DEFAULT_SYNC_INTERVAL_MS = 180000; // 3 minutes
+const DEFAULT_SYNC_INTERVAL_MS = 300000; // 5 minutes
 
 
 export class Subplebbit extends EventEmitter {
@@ -213,8 +213,9 @@ export class Subplebbit extends EventEmitter {
         return this.#updateOnce();
     }
 
-    stop() {
+    async stop() {
         clearInterval(this._updateInterval);
+        await this.plebbit.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
     }
 
     async #updateSubplebbitIpns() {
@@ -509,13 +510,12 @@ export class Subplebbit extends EventEmitter {
     }
 
 
-    async startPublishing(syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS) {
+    async start(syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS) {
         await this.#initDbIfNeeded();
         await this.#initSignerIfNeeded();
 
-
         if (!this.provideCaptchaCallback) {
-            debug(`Subplebbit-startPublishing`, "Subplebbit owner has not provided any captcha. Will go with default image captcha");
+            debug("Subplebbit owner has not provided any captcha. Will go with default image captcha");
             this.provideCaptchaCallback = this.#defaultProvideCaptcha;
             this.validateCaptchaAnswerCallback = this.#defaultValidateCaptcha;
         }
@@ -527,7 +527,6 @@ export class Subplebbit extends EventEmitter {
     }
 
     async stopPublishing() {
-        await this.plebbit.ipfsClient.pubsub.unsubscribe(this.pubsubTopic);
         this.removeAllListeners();
         this.stop();
         this.dbHandler?.knex?.destroy();

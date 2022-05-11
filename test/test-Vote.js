@@ -17,7 +17,7 @@ describe("Test Vote", async () => {
     before(async () => {
         await unsubscribeAllPubsubTopics([serverPlebbit.ipfsClient, clientPlebbit.ipfsClient]);
     });
-    before(async () => await subplebbit.startPublishing());
+    before(async () => await subplebbit.start());
     before(async () => await subplebbit.update());
     after(async () => post.stop());
     after(async () => await subplebbit.stopPublishing());

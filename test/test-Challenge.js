@@ -29,7 +29,7 @@ describe("Test Challenge functionality", async () => {
                 else
                     return [[new Challenge({"challenge": "1+1=?", "type": CHALLENGE_TYPES.TEXT})], null];
             });
-            await subplebbit.startPublishing();
+            await subplebbit.start();
             const mockPostShouldSkipCaptcha = await generateMockPost(subplebbit.address, clientPlebbit);
             await mockPostShouldSkipCaptcha.publish(null, null);
             await waitTillCommentsArePublished([mockPostShouldSkipCaptcha]);
