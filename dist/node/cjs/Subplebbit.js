@@ -563,7 +563,7 @@ async function _publishPostAfterPassingChallenge2(publication, challengeRequestI
 }
 
 async function _handleChallengeRequest2(msgParsed) {
-  return new Promise(async (resolve, reject) => {
+  try {
     const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(msgParsed);
     const decryptedPublication = JSON.parse(await (0, _Signer.decrypt)(msgParsed.encryptedPublication.encryptedString, msgParsed.encryptedPublication.encryptedKey, this.signer.privateKey));
     this._challengeToPublication[msgParsed.challengeRequestId] = decryptedPublication;
@@ -588,17 +588,17 @@ async function _handleChallengeRequest2(msgParsed) {
         "challengeRequestId": msgParsed.challengeRequestId,
         ...restOfMsg
       });
-
-      _classPrivateMethodGet(this, _upsertAndPublishChallenge, _upsertAndPublishChallenge2).call(this, challengeVerification, trx).then(resolve).catch(reject);
+      return _classPrivateMethodGet(this, _upsertAndPublishChallenge, _upsertAndPublishChallenge2).call(this, challengeVerification, trx);
     } else {
       const challengeMessage = new _Challenge.ChallengeMessage({
         "challengeRequestId": msgParsed.challengeRequestId,
         "challenges": providedChallenges
       });
-
-      _classPrivateMethodGet(this, _upsertAndPublishChallenge, _upsertAndPublishChallenge2).call(this, challengeMessage, undefined).then(resolve).catch(reject);
+      return _classPrivateMethodGet(this, _upsertAndPublishChallenge, _upsertAndPublishChallenge2).call(this, challengeMessage, undefined);
     }
-  });
+  } catch (e) {
+    debug(`Failed to handle challenge request:`, e);
+  }
 }
 
 async function _upsertAndPublishChallenge2(challenge, trx) {
@@ -614,36 +614,40 @@ async function _upsertAndPublishChallenge2(challenge, trx) {
 }
 
 async function _handleChallengeAnswer2(msgParsed) {
-  const [challengePassed, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
+  try {
+    const [challengePassed, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
 
-  if (challengePassed) {
-    debug(`Challenge (${msgParsed.challengeRequestId}) has answered correctly`);
-    const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
-    const trx = storedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transactions
+    if (challengePassed) {
+      debug(`Challenge (${msgParsed.challengeRequestId}) has answered correctly`);
+      const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
+      const trx = storedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transactions
 
-    await this.dbHandler.upsertChallenge(new _Challenge.ChallengeAnswerMessage(msgParsed), trx);
-    const publishedPublication = await _classPrivateMethodGet(this, _publishPostAfterPassingChallenge, _publishPostAfterPassingChallenge2).call(this, storedPublication, msgParsed.challengeRequestId, trx); // could contain "publication" or "reason"
+      await this.dbHandler.upsertChallenge(new _Challenge.ChallengeAnswerMessage(msgParsed), trx);
+      const publishedPublication = await _classPrivateMethodGet(this, _publishPostAfterPassingChallenge, _publishPostAfterPassingChallenge2).call(this, storedPublication, msgParsed.challengeRequestId, trx); // could contain "publication" or "reason"
 
-    const restOfMsg = "publication" in publishedPublication ? {
-      "encryptedPublication": await (0, _Signer.encrypt)(JSON.stringify(publishedPublication.publication), publishedPublication.publication.signature.publicKey)
-    } : publishedPublication;
-    const challengeVerification = new _Challenge.ChallengeVerificationMessage({
-      "challengeRequestId": msgParsed.challengeRequestId,
-      "challengeAnswerId": msgParsed.challengeAnswerId,
-      "challengePassed": challengePassed,
-      "challengeErrors": challengeErrors,
-      ...restOfMsg
-    });
-    return _classPrivateMethodGet(this, _upsertAndPublishChallenge, _upsertAndPublishChallenge2).call(this, challengeVerification, trx);
-  } else {
-    debug(`Challenge (${msgParsed.challengeRequestId}) has answered incorrectly`);
-    const challengeVerification = new _Challenge.ChallengeVerificationMessage({
-      "challengeRequestId": msgParsed.challengeRequestId,
-      "challengeAnswerId": msgParsed.challengeAnswerId,
-      "challengePassed": challengePassed,
-      "challengeErrors": challengeErrors
-    });
-    return _classPrivateMethodGet(this, _upsertAndPublishChallenge, _upsertAndPublishChallenge2).call(this, challengeVerification, undefined);
+      const restOfMsg = "publication" in publishedPublication ? {
+        "encryptedPublication": await (0, _Signer.encrypt)(JSON.stringify(publishedPublication.publication), (publishedPublication.publication.editSignature || publishedPublication.publication.signature).publicKey)
+      } : publishedPublication;
+      const challengeVerification = new _Challenge.ChallengeVerificationMessage({
+        "challengeRequestId": msgParsed.challengeRequestId,
+        "challengeAnswerId": msgParsed.challengeAnswerId,
+        "challengePassed": challengePassed,
+        "challengeErrors": challengeErrors,
+        ...restOfMsg
+      });
+      return _classPrivateMethodGet(this, _upsertAndPublishChallenge, _upsertAndPublishChallenge2).call(this, challengeVerification, trx);
+    } else {
+      debug(`Challenge (${msgParsed.challengeRequestId}) has answered incorrectly`);
+      const challengeVerification = new _Challenge.ChallengeVerificationMessage({
+        "challengeRequestId": msgParsed.challengeRequestId,
+        "challengeAnswerId": msgParsed.challengeAnswerId,
+        "challengePassed": challengePassed,
+        "challengeErrors": challengeErrors
+      });
+      return _classPrivateMethodGet(this, _upsertAndPublishChallenge, _upsertAndPublishChallenge2).call(this, challengeVerification, undefined);
+    }
+  } catch (e) {
+    debug(`Failed to handle challenge answers: `, e);
   }
 }
 
