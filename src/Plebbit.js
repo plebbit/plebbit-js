@@ -17,7 +17,6 @@ export class Plebbit {
         this.ipfsGatewayUrl = this.ipfsHttpClientOptions ? undefined : (options["ipfsGatewayUrl"] || 'https://cloudflare-ipfs.com');
         this.pubsubHttpClientOptions = this.ipfsHttpClientOptions ? undefined : (options["pubsubHttpClientOptions"] || 'https://pubsubprovider.xyz/api/v0');
         this.ipfsClient = createIpfsClient(this.ipfsHttpClientOptions || this.pubsubHttpClientOptions);
-        let defaultDataPath
         this.dataPath = options["dataPath"] || path.join(process.cwd(), ".plebbit");
     }
 

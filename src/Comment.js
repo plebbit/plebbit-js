@@ -142,7 +142,6 @@ export class Comment extends Publication {
                 "pages": {[REPLIES_SORT_TYPES.TOP_ALL.type]: sortedReplies[REPLIES_SORT_TYPES.TOP_ALL.type]},
                 "pageCids": sortedRepliesCids,
                 "subplebbit": this.subplebbit,
-                "parentCommentCid": this.cid
             });
 
     }
