@@ -10,6 +10,9 @@ import * as crypto from "libp2p-crypto";
 import * as jose from "jose";
 import assert from "assert";
 import process from 'process';
+import Debug from "debug";
+
+const debug = Debug("plebbit-js:Plebbit");
 
 export class Plebbit {
     constructor(options = {}) {
@@ -41,7 +44,6 @@ export class Plebbit {
     }
 
     async #signPublication(createPublicationOptions) {
-
         if (createPublicationOptions.author && !createPublicationOptions.author.address)
             createPublicationOptions.author.address = createPublicationOptions.signer.address;
         const commentSignature = await signPublication(createPublicationOptions, createPublicationOptions.signer);
@@ -49,12 +51,20 @@ export class Plebbit {
 
     }
 
+    #defaultTimestampIfNeeded(createPublicationOptions) {
+        if (!createPublicationOptions.timestamp) {
+            const defaultTimestamp = timestamp();
+            debug(`User hasn't provided a timestamp in options, defaulting to (${defaultTimestamp})`);
+            createPublicationOptions.timestamp = defaultTimestamp;
+        }
+        return createPublicationOptions;
+    }
+
     async createComment(createCommentOptions) {
-        const commentSubplebbit = await this.getSubplebbit(createCommentOptions.subplebbitAddress); // TODO This should be fetched from cache
+        const commentSubplebbit = {"plebbit": this};
         if (!createCommentOptions.signer)
             return createCommentOptions.title ? new Post(createCommentOptions, commentSubplebbit) : new Comment(createCommentOptions, commentSubplebbit);
-        if (!createCommentOptions.timestamp)
-            createCommentOptions.timestamp = timestamp();
+        createCommentOptions = this.#defaultTimestampIfNeeded(createCommentOptions)
         const commentProps = await this.#signPublication(createCommentOptions);
         return commentProps.title ? new Post(commentProps, commentSubplebbit) : new Comment(commentProps, commentSubplebbit);
     }
@@ -64,22 +74,25 @@ export class Plebbit {
     }
 
     async createVote(createVoteOptions) {
-        const subplebbit = await this.getSubplebbit(createVoteOptions.subplebbitAddress);
+        const subplebbit = {"plebbit": this};
         if (!createVoteOptions.signer)
             return new Vote(createVoteOptions, subplebbit);
-        if (!createVoteOptions.timestamp)
-            createVoteOptions.timestamp = timestamp();
+        createVoteOptions = this.#defaultTimestampIfNeeded(createVoteOptions);
         const voteProps = await this.#signPublication(createVoteOptions);
         return new Vote(voteProps, subplebbit);
     }
 
     async createCommentEdit(createCommentEditOptions) {
-        const commentSubplebbit = await this.getSubplebbit(createCommentEditOptions.subplebbitAddress);
+        const commentSubplebbit = {"plebbit": this};
 
         if (!createCommentEditOptions.signer) // User just wants to instantiate a CommentEdit object, not publish
             return new CommentEdit(createCommentEditOptions, commentSubplebbit);
-        if (!createCommentEditOptions.editTimestamp)
-            createCommentEditOptions.editTimestamp = timestamp();
+        if (!createCommentEditOptions.editTimestamp) {
+            const defaultTimestamp = timestamp();
+            debug(`User hasn't provided any editTimestamp for their CommentEdit, defaulted to (${defaultTimestamp})`);
+            createCommentEditOptions.editTimestamp = defaultTimestamp;
+        }
+
         const commentEditProps = {
             ...createCommentEditOptions,
             "editSignature": await signPublication(createCommentEditOptions, createCommentEditOptions.signer)
