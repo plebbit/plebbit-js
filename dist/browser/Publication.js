@@ -30,16 +30,11 @@ class Publication extends EventEmitter {
   }
 
   _initProps(props) {
-    this.subplebbitAddress = props["subplebbitAddress"] || this.subplebbit.address;
+    this.subplebbitAddress = props["subplebbitAddress"];
     this.timestamp = props["timestamp"];
     this.signer = this.signer || props["signer"];
     this.signature = parseJsonIfString(props["signature"]);
     this.author = props["author"] ? new Author(props["author"]) : undefined;
-  }
-
-  setSubplebbit(newSubplebbit) {
-    this.subplebbit = newSubplebbit;
-    this.subplebbitAddress = this.subplebbit.address;
   }
 
   getType() {
@@ -61,34 +56,43 @@ class Publication extends EventEmitter {
   }
 
   async publishChallengeAnswers(challengeAnswers) {
-    if (!Array.isArray(challengeAnswers)) challengeAnswers = [challengeAnswers];
-    debug(`Challenge Answers: ${challengeAnswers}`);
-    const challengeAnswer = new ChallengeAnswerMessage({
-      "challengeRequestId": this.challenge.challengeRequestId,
-      "challengeAnswerId": uuidv4(),
-      "challengeAnswers": challengeAnswers
-    });
-    await this.subplebbit.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeAnswer)));
-    debug(`Responded to challenge (${challengeAnswer.challengeRequestId}) with answers`);
+    try {
+      if (!Array.isArray(challengeAnswers)) challengeAnswers = [challengeAnswers];
+      debug(`Challenge Answers: ${challengeAnswers}`);
+      const challengeAnswer = new ChallengeAnswerMessage({
+        "challengeRequestId": this.challenge.challengeRequestId,
+        "challengeAnswerId": uuidv4(),
+        "challengeAnswers": challengeAnswers
+      });
+      await this.subplebbit.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeAnswer)));
+      debug(`Responded to challenge (${challengeAnswer.challengeRequestId}) with answers`);
+    } catch (e) {
+      debug(`Failed to publish challenge answers: `, e);
+    }
   }
 
   async publish(userOptions) {
-    var _this$subplebbit;
+    try {
+      var _this$subplebbit;
 
-    const options = {
-      "acceptedChallengeTypes": [],
-      ...userOptions
-    };
-    this.subplebbit = await this.subplebbit.plebbit.getSubplebbit(this.subplebbitAddress);
-    assert.equal(Boolean((_this$subplebbit = this.subplebbit) === null || _this$subplebbit === void 0 ? void 0 : _this$subplebbit.encryption.publicKey), true, "Failed to load subplebbit for publishing");
-    const encryptedPublication = await encrypt(JSON.stringify(this), this.subplebbit.encryption.publicKey);
-    this.challenge = new ChallengeRequestMessage({
-      "encryptedPublication": encryptedPublication,
-      "challengeRequestId": uuidv4(),
-      ...options
-    });
-    await Promise.all([this.subplebbit.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, uint8ArrayFromString(JSON.stringify(this.challenge))), this.subplebbit.plebbit.ipfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, _classPrivateMethodGet(this, _handleChallengeExchange, _handleChallengeExchange2).bind(this))]);
-    debug(`Sent a challenge request (${this.challenge.challengeRequestId})`);
+      const options = {
+        "acceptedChallengeTypes": [],
+        ...userOptions
+      };
+      debug(`Attempting to publish ${this.getType()} with options (${JSON.stringify(options)})`);
+      this.subplebbit = await this.subplebbit.plebbit.getSubplebbit(this.subplebbitAddress);
+      assert.equal(Boolean((_this$subplebbit = this.subplebbit) === null || _this$subplebbit === void 0 ? void 0 : _this$subplebbit.encryption.publicKey), true, "Failed to load subplebbit for publishing");
+      const encryptedPublication = await encrypt(JSON.stringify(this), this.subplebbit.encryption.publicKey);
+      this.challenge = new ChallengeRequestMessage({
+        "encryptedPublication": encryptedPublication,
+        "challengeRequestId": uuidv4(),
+        ...options
+      });
+      await Promise.all([this.subplebbit.plebbit.ipfsClient.pubsub.publish(this.subplebbit.pubsubTopic, uint8ArrayFromString(JSON.stringify(this.challenge))), this.subplebbit.plebbit.ipfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, _classPrivateMethodGet(this, _handleChallengeExchange, _handleChallengeExchange2).bind(this))]);
+      debug(`Sent a challenge request (${this.challenge.challengeRequestId})`);
+    } catch (e) {
+      debug(`Failed to publish: `, e);
+    }
   }
 
 }
@@ -97,10 +101,10 @@ async function _handleChallengeExchange2(pubsubMsg) {
   const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
   if ((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId) !== this.challenge.challengeRequestId) return; // Process only this publication's challenge
 
-  if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGE) {
+  if ((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.type) === PUBSUB_MESSAGE_TYPES.CHALLENGE) {
     debug(`Received challenges, will emit them and wait for user to solve them and call publishChallengeAnswers`);
     this.emit("challenge", msgParsed);
-  } else if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION) {
+  } else if ((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.type) === PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION) {
     if (!msgParsed.challengePassed) debug(`Challenge ${msgParsed.challengeRequestId} has failed to pass. Challenge errors = ${msgParsed.challengeErrors}, reason = ${msgParsed.reason}`);else {
       debug(`Challenge (${msgParsed.challengeRequestId}) has passed. Will update publication props from ChallengeVerificationMessage.publication`);
       msgParsed.publication = JSON.parse(await decrypt(msgParsed.encryptedPublication.encryptedString, msgParsed.encryptedPublication.encryptedKey, this.signer.privateKey));

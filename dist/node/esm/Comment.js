@@ -155,8 +155,7 @@ export class Comment extends Publication {
         [REPLIES_SORT_TYPES.TOP_ALL.type]: sortedReplies[REPLIES_SORT_TYPES.TOP_ALL.type]
       },
       "pageCids": sortedRepliesCids,
-      "subplebbit": this.subplebbit,
-      "parentCommentCid": this.cid
+      "subplebbit": this.subplebbit
     });
   }
 
@@ -174,19 +173,20 @@ export class Comment extends Publication {
 
   async edit(commentUpdateOptions) {
     assert(this.ipnsKeyName, "You need to have commentUpdate");
-    return new Promise(async (resolve, reject) => {
+
+    try {
       this._initCommentUpdate(commentUpdateOptions);
 
-      this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate())).then(file => {
-        this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
-          "lifetime": "72h",
-          "key": this.ipnsKeyName
-        }).then(() => {
-          debug(`Comment (${this.cid}) IPNS (${this.ipnsName}) has been updated`);
-          resolve();
-        }).catch(reject);
-      }).catch(reject);
-    });
+      const file = await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate()));
+      debug(`Added comment IPNS to ipfs, cid is ${file.path}`);
+      await this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
+        "lifetime": "72h",
+        "key": this.ipnsKeyName
+      });
+      debug(`Linked comment ipns name(${this.ipnsName}) to ipfs file (${file.path})`);
+    } catch (e) {
+      debug(`Failed to edit comment IPNS: `, e);
+    }
   }
 
 }

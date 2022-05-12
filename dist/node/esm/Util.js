@@ -183,6 +183,6 @@ export async function ipfsImportKey(signer, plebbit, password = '') {
     body: data,
     headers: (_plebbit$ipfsHttpClie = plebbit.ipfsHttpClientOptions) === null || _plebbit$ipfsHttpClie === void 0 ? void 0 : _plebbit$ipfsHttpClie.headers
   });
-  if (res.status !== 200) throw res.statusText;
+  if (res.status !== 200) throw Error(`failed ipfs import key: '${url}' '${res.status}' '${res.statusText}'`);
   return await res.json();
 }

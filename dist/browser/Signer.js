@@ -8,7 +8,9 @@ import * as jose from "jose";
 import forge from 'node-forge';
 import assert from "assert";
 import Publication from "./Publication.js";
-import { Buffer } from 'buffer'; // note: postCid is not included because it's written by the sub owner, not the author
+import { Buffer } from 'buffer';
+import Debug from "debug";
+const debug = Debug("plebbit-js:Signer"); // note: postCid is not included because it's written by the sub owner, not the author
 
 export class Signer {
   constructor(props) {
@@ -83,11 +85,14 @@ function getFieldsToSign(publication) {
 }
 
 export async function signPublication(publication, signer) {
+  debug(`Will attempt to sign publication (${JSON.stringify(publication)}) using signer (${JSON.stringify(signer)})`);
   const keyPair = await crypto.keys.import(signer.privateKey, "");
   const fieldsToSign = getFieldsToSign(publication);
+  debug(`Will sign fields ${JSON.stringify(fieldsToSign)}`);
   const publicationSignFields = keepKeys(publication, fieldsToSign);
   const commentEncoded = encode(publicationSignFields);
   const signatureData = uint8ArrayToString(await keyPair.sign(commentEncoded), 'base64');
+  debug(`Publication been signed, signature data is (${signatureData})`);
   return new Signature({
     "signature": signatureData,
     "publicKey": signer.publicKey,
@@ -113,59 +118,82 @@ export async function verifyPublication(publication) {
   try {
     if (publication.originalContent) {
       // This is a comment/post that has been edited, and we need to verify both signature and editSignature
+      debug("Attempting to verify a comment that has been edited. Will verify comment.author,  comment.signature and comment.editSignature");
       publication.author ? await verifyAuthor(publication.signature, publication.author) : undefined;
       const publicationJson = publication instanceof Publication ? publication.toJSON() : publication;
       const originalSignatureObj = { ...publicationJson,
         "content": publication.originalContent
       };
+      debug(`Attempting to verify comment.signature`);
       await verifyPublicationSignature(publication.signature, originalSignatureObj);
+      debug(`Attempting to verify comment.signature`);
       const editedSignatureObj = { ...publicationJson,
         "commentCid": publication.cid
       };
       await verifyPublicationSignature(publication.editSignature, editedSignatureObj);
     } else if (publication.commentCid && publication.content) {
       // Verify CommentEdit
+      debug(`Attempting to verify CommentEdit`);
       await verifyPublicationSignature(publication.editSignature, publication);
     } else {
+      debug(`Attempting to verify post/comment/vote`);
       publication.author ? await verifyAuthor(publication.signature, publication.author) : undefined;
       await verifyPublicationSignature(publication.signature, publication);
     }
 
+    debug("Publication has been verified");
     return [true];
   } catch (e) {
+    debug(`Failed to verify publication`);
     return [false, String(e)];
   }
 }
 export async function encrypt(stringToEncrypt, publicKeyPem) {
   // generate key of the cipher and encrypt the string using AES ECB 128
   // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)
-  const key = forge.random.getBytesSync(16); // not secure to reuse keys with ECB, generate new one each time
+  try {
+    debug(`Attempting to encrypt a string (${stringToEncrypt})`);
+    const key = forge.random.getBytesSync(16); // not secure to reuse keys with ECB, generate new one each time
 
-  const cipher = forge.cipher.createCipher('AES-ECB', key);
-  cipher.start();
-  cipher.update(forge.util.createBuffer(stringToEncrypt));
-  cipher.finish();
-  const encryptedBase64 = uint8ArrayToString(uint8ArrayFromString(cipher.output.toHex(), 'base16'), 'base64'); // encrypt the AES ECB key with public key
+    debug(`Generated random key for encryption (${JSON.stringify(key)})`);
+    const cipher = forge.cipher.createCipher('AES-ECB', key);
+    cipher.start();
+    cipher.update(forge.util.createBuffer(stringToEncrypt));
+    cipher.finish();
+    const encryptedBase64 = uint8ArrayToString(uint8ArrayFromString(cipher.output.toHex(), 'base16'), 'base64');
+    debug(`Encrypted string in base64 (${encryptedBase64})`); // encrypt the AES ECB key with public key
 
-  const peerId = await getPeerIdFromPublicKeyPem(publicKeyPem);
-  const encryptedKeyBase64 = uint8ArrayToString(await peerId.pubKey.encrypt(key), 'base64');
-  return {
-    encryptedString: encryptedBase64,
-    encryptedKey: encryptedKeyBase64,
-    type: 'aes-ecb'
-  };
+    const peerId = await getPeerIdFromPublicKeyPem(publicKeyPem);
+    const encryptedKeyBase64 = uint8ArrayToString(await peerId.pubKey.encrypt(key), 'base64');
+    debug(`Encrypted key in base64 (${encryptedBase64}) `);
+    return {
+      encryptedString: encryptedBase64,
+      encryptedKey: encryptedKeyBase64,
+      type: 'aes-ecb'
+    };
+  } catch (e) {
+    debug(`Failed to encrypt string`, e);
+  }
 }
 export async function decrypt(encryptedString, encryptedKey, privateKeyPem, privateKeyPemPassword = '') {
   // decrypt key
   // you can optionally encrypt the PEM by providing a password
   // https://en.wikipedia.org/wiki/PKCS_8
-  const keyPair = await crypto.keys.import(privateKeyPem, privateKeyPemPassword);
-  const key = await keyPair.decrypt(uint8ArrayFromString(encryptedKey, 'base64')); // decrypt string using AES ECB 128
-  // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)
+  try {
+    debug(`Attempting to decrypt encrypted key (${encryptedKey})`);
+    const keyPair = await crypto.keys.import(privateKeyPem, privateKeyPemPassword);
+    const key = await keyPair.decrypt(uint8ArrayFromString(encryptedKey, 'base64')); // decrypt string using AES ECB 128
+    // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)
 
-  const cipher = forge.cipher.createDecipher('AES-ECB', key.toString());
-  cipher.start();
-  cipher.update(forge.util.createBuffer(uint8ArrayFromString(encryptedString, 'base64')));
-  cipher.finish();
-  return cipher.output.toString();
+    debug(`Attempting to decrypt string (${encryptedString}) with key (${key})`);
+    const cipher = forge.cipher.createDecipher('AES-ECB', key.toString());
+    cipher.start();
+    cipher.update(forge.util.createBuffer(uint8ArrayFromString(encryptedString, 'base64')));
+    cipher.finish();
+    const decryptedString = cipher.output.toString();
+    debug(`String has been decrypted successfully, (${decryptedString})`);
+    return decryptedString;
+  } catch (e) {
+    debug(`Failed to decrypt: `, e);
+  }
 }

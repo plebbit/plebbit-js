@@ -23,7 +23,7 @@ import { decrypt, encrypt, verifyPublication } from "./Signer.js";
 import { Pages } from "./Pages.js";
 const debug = Debug("plebbit-js:Subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
-const DEFAULT_SYNC_INTERVAL_MS = 300000; // 5 minutes
+const DEFAULT_SYNC_INTERVAL_MS = 100000; // 5 minutes
 
 var _initSubplebbit = /*#__PURE__*/new WeakSet();
 

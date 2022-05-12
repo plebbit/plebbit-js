@@ -16,11 +16,17 @@ import * as crypto from "libp2p-crypto";
 import * as jose from "jose";
 import assert from "assert";
 import process from 'process';
+import Debug from "debug";
+const debug = Debug("plebbit-js:Plebbit");
 
 var _signPublication = /*#__PURE__*/new WeakSet();
 
+var _defaultTimestampIfNeeded = /*#__PURE__*/new WeakSet();
+
 export class Plebbit {
   constructor(options = {}) {
+    _classPrivateMethodInitSpec(this, _defaultTimestampIfNeeded);
+
     _classPrivateMethodInitSpec(this, _signPublication);
 
     this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
@@ -28,7 +34,6 @@ export class Plebbit {
     this.ipfsGatewayUrl = this.ipfsHttpClientOptions ? undefined : options["ipfsGatewayUrl"] || 'https://cloudflare-ipfs.com';
     this.pubsubHttpClientOptions = this.ipfsHttpClientOptions ? undefined : options["pubsubHttpClientOptions"] || 'https://pubsubprovider.xyz/api/v0';
     this.ipfsClient = createIpfsClient(this.ipfsHttpClientOptions || this.pubsubHttpClientOptions);
-    let defaultDataPath;
     this.dataPath = options["dataPath"] || path.join(process.cwd(), ".plebbit");
   }
 
@@ -53,10 +58,11 @@ export class Plebbit {
   }
 
   async createComment(createCommentOptions) {
-    const commentSubplebbit = await this.getSubplebbit(createCommentOptions.subplebbitAddress); // TODO This should be fetched from cache
-
+    const commentSubplebbit = {
+      "plebbit": this
+    };
     if (!createCommentOptions.signer) return createCommentOptions.title ? new Post(createCommentOptions, commentSubplebbit) : new Comment(createCommentOptions, commentSubplebbit);
-    if (!createCommentOptions.timestamp) createCommentOptions.timestamp = timestamp();
+    createCommentOptions = _classPrivateMethodGet(this, _defaultTimestampIfNeeded, _defaultTimestampIfNeeded2).call(this, createCommentOptions);
     const commentProps = await _classPrivateMethodGet(this, _signPublication, _signPublication2).call(this, createCommentOptions);
     return commentProps.title ? new Post(commentProps, commentSubplebbit) : new Comment(commentProps, commentSubplebbit);
   }
@@ -66,18 +72,28 @@ export class Plebbit {
   }
 
   async createVote(createVoteOptions) {
-    const subplebbit = await this.getSubplebbit(createVoteOptions.subplebbitAddress);
+    const subplebbit = {
+      "plebbit": this
+    };
     if (!createVoteOptions.signer) return new Vote(createVoteOptions, subplebbit);
-    if (!createVoteOptions.timestamp) createVoteOptions.timestamp = timestamp();
+    createVoteOptions = _classPrivateMethodGet(this, _defaultTimestampIfNeeded, _defaultTimestampIfNeeded2).call(this, createVoteOptions);
     const voteProps = await _classPrivateMethodGet(this, _signPublication, _signPublication2).call(this, createVoteOptions);
     return new Vote(voteProps, subplebbit);
   }
 
   async createCommentEdit(createCommentEditOptions) {
-    const commentSubplebbit = await this.getSubplebbit(createCommentEditOptions.subplebbitAddress);
+    const commentSubplebbit = {
+      "plebbit": this
+    };
     if (!createCommentEditOptions.signer) // User just wants to instantiate a CommentEdit object, not publish
       return new CommentEdit(createCommentEditOptions, commentSubplebbit);
-    if (!createCommentEditOptions.editTimestamp) createCommentEditOptions.editTimestamp = timestamp();
+
+    if (!createCommentEditOptions.editTimestamp) {
+      const defaultTimestamp = timestamp();
+      debug(`User hasn't provided any editTimestamp for their CommentEdit, defaulted to (${defaultTimestamp})`);
+      createCommentEditOptions.editTimestamp = defaultTimestamp;
+    }
+
     const commentEditProps = { ...createCommentEditOptions,
       "editSignature": await signPublication(createCommentEditOptions, createCommentEditOptions.signer)
     };
@@ -86,35 +102,43 @@ export class Plebbit {
 
   async createSigner(createSignerOptions) {
     if (!createSignerOptions || !createSignerOptions["privateKey"]) {
-      const keyPair = await crypto.keys.generateKeyPair('RSA', 2048);
-      const privateKey = await keyPair.export('', 'pkcs-8');
-      const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {
-        extractable: true
-      });
-      const publicKey = await jose.exportSPKI(publicKeyFromJsonWebToken);
-      const address = await getAddressFromPublicKeyPem(publicKey);
-      const ipfsKey = keyPair.bytes;
-      return new Signer({
-        "privateKey": privateKey,
-        'type': 'rsa',
-        'publicKey': publicKey,
-        "address": address,
-        "ipfsKey": ipfsKey
-      });
+      try {
+        const keyPair = await crypto.keys.generateKeyPair('RSA', 2048);
+        const privateKey = await keyPair.export('', 'pkcs-8');
+        const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {
+          extractable: true
+        });
+        const publicKey = await jose.exportSPKI(publicKeyFromJsonWebToken);
+        const address = await getAddressFromPublicKeyPem(publicKey);
+        const ipfsKey = keyPair.bytes;
+        return new Signer({
+          "privateKey": privateKey,
+          'type': 'rsa',
+          'publicKey': publicKey,
+          "address": address,
+          "ipfsKey": ipfsKey
+        });
+      } catch (e) {
+        debug(`Failed to create a new private key: `, e);
+      }
     } else if (createSignerOptions["privateKey"]) {
-      assert.equal(createSignerOptions.type, "rsa", "We can only support RSA keys at the moment");
-      const keyPair = await crypto.keys.import(createSignerOptions.privateKey, "");
-      const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {
-        extractable: true
-      });
-      const publicKeyPem = await jose.exportSPKI(publicKeyFromJsonWebToken);
-      const address = await getAddressFromPublicKeyPem(publicKeyPem);
-      const ipfsKey = keyPair.bytes;
-      return new Signer({ ...createSignerOptions,
-        "publicKey": publicKeyPem,
-        "address": address,
-        "ipfsKey": ipfsKey
-      });
+      try {
+        assert.equal(createSignerOptions.type, "rsa", "We only support RSA keys at the moment");
+        const keyPair = await crypto.keys.import(createSignerOptions.privateKey, "");
+        const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {
+          extractable: true
+        });
+        const publicKeyPem = await jose.exportSPKI(publicKeyFromJsonWebToken);
+        const address = await getAddressFromPublicKeyPem(publicKeyPem);
+        const ipfsKey = keyPair.bytes;
+        return new Signer({ ...createSignerOptions,
+          "publicKey": publicKeyPem,
+          "address": address,
+          "ipfsKey": ipfsKey
+        });
+      } catch (e) {
+        debug(`Failed to import private key: `, e);
+      }
     }
   }
 
@@ -126,4 +150,14 @@ async function _signPublication2(createPublicationOptions) {
   return { ...createPublicationOptions,
     "signature": commentSignature
   };
+}
+
+function _defaultTimestampIfNeeded2(createPublicationOptions) {
+  if (!createPublicationOptions.timestamp) {
+    const defaultTimestamp = timestamp();
+    debug(`User hasn't provided a timestamp in options, defaulting to (${defaultTimestamp})`);
+    createPublicationOptions.timestamp = defaultTimestamp;
+  }
+
+  return createPublicationOptions;
 }
