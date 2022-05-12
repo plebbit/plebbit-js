@@ -374,7 +374,7 @@ export class Subplebbit extends EventEmitter {
     }
 
     async #handleChallengeRequest(msgParsed) {
-        return new Promise(async (resolve, reject) => {
+        try {
             const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(msgParsed);
             const decryptedPublication = JSON.parse(await decrypt(msgParsed.encryptedPublication.encryptedString, msgParsed.encryptedPublication.encryptedKey, this.signer.privateKey));
             this._challengeToPublication[msgParsed.challengeRequestId] = decryptedPublication;
@@ -396,17 +396,18 @@ export class Subplebbit extends EventEmitter {
                     "challengeRequestId": msgParsed.challengeRequestId,
                     ...restOfMsg
                 });
-                this.#upsertAndPublishChallenge(challengeVerification, trx).then(resolve).catch(reject);
+                return this.#upsertAndPublishChallenge(challengeVerification, trx);
             } else {
                 const challengeMessage = new ChallengeMessage({
                     "challengeRequestId": msgParsed.challengeRequestId,
                     "challenges": providedChallenges
                 });
-                this.#upsertAndPublishChallenge(challengeMessage, undefined).then(resolve).catch(reject);
+                return this.#upsertAndPublishChallenge(challengeMessage, undefined);
             }
 
-        });
-
+        } catch (e) {
+            debug(`Failed to handle challenge request:`, e);
+        }
 
     }
 
@@ -425,33 +426,38 @@ export class Subplebbit extends EventEmitter {
     }
 
     async #handleChallengeAnswer(msgParsed) {
-        const [challengePassed, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
-        if (challengePassed) {
-            debug(`Challenge (${msgParsed.challengeRequestId}) has answered correctly`);
-            const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
-            const trx = storedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transactions
-            await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed), trx);
-            const publishedPublication = await this.#publishPostAfterPassingChallenge(storedPublication, msgParsed.challengeRequestId, trx); // could contain "publication" or "reason"
+        try {
+            const [challengePassed, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
+            if (challengePassed) {
+                debug(`Challenge (${msgParsed.challengeRequestId}) has answered correctly`);
+                const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
+                const trx = storedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transactions
+                await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed), trx);
+                const publishedPublication = await this.#publishPostAfterPassingChallenge(storedPublication, msgParsed.challengeRequestId, trx); // could contain "publication" or "reason"
 
-            const restOfMsg = "publication" in publishedPublication ? {"encryptedPublication": await encrypt(JSON.stringify(publishedPublication.publication), publishedPublication.publication.signature.publicKey)} : publishedPublication;
-            const challengeVerification = new ChallengeVerificationMessage({
-                "challengeRequestId": msgParsed.challengeRequestId,
-                "challengeAnswerId": msgParsed.challengeAnswerId,
-                "challengePassed": challengePassed,
-                "challengeErrors": challengeErrors,
-                ...restOfMsg
-            });
-            return this.#upsertAndPublishChallenge(challengeVerification, trx);
-        } else {
-            debug(`Challenge (${msgParsed.challengeRequestId}) has answered incorrectly`);
-            const challengeVerification = new ChallengeVerificationMessage({
-                "challengeRequestId": msgParsed.challengeRequestId,
-                "challengeAnswerId": msgParsed.challengeAnswerId,
-                "challengePassed": challengePassed,
-                "challengeErrors": challengeErrors,
-            });
-            return this.#upsertAndPublishChallenge(challengeVerification, undefined);
+                const restOfMsg = "publication" in publishedPublication ? {"encryptedPublication": await encrypt(JSON.stringify(publishedPublication.publication), (publishedPublication.publication.editSignature || publishedPublication.publication.signature).publicKey)} : publishedPublication;
+                const challengeVerification = new ChallengeVerificationMessage({
+                    "challengeRequestId": msgParsed.challengeRequestId,
+                    "challengeAnswerId": msgParsed.challengeAnswerId,
+                    "challengePassed": challengePassed,
+                    "challengeErrors": challengeErrors,
+                    ...restOfMsg
+                });
+                return this.#upsertAndPublishChallenge(challengeVerification, trx);
+            } else {
+                debug(`Challenge (${msgParsed.challengeRequestId}) has answered incorrectly`);
+                const challengeVerification = new ChallengeVerificationMessage({
+                    "challengeRequestId": msgParsed.challengeRequestId,
+                    "challengeAnswerId": msgParsed.challengeAnswerId,
+                    "challengePassed": challengePassed,
+                    "challengeErrors": challengeErrors,
+                });
+                return this.#upsertAndPublishChallenge(challengeVerification, undefined);
+            }
+        } catch (e) {
+            debug(`Failed to handle challenge answers: `, e);
         }
+
     }
 
     async #processCaptchaPubsub(pubsubMsg) {
