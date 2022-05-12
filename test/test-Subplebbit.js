@@ -1,7 +1,12 @@
 import {IPFS_CLIENT_CONFIGS} from "../secrets.js";
 import assert from 'assert';
 import Plebbit from "../src/index.js"
-import {sleep, unsubscribeAllPubsubTopics, waitTillCommentsArePublished, waitTillCommentsUpdate} from "../src/Util.js";
+import {
+    sleep,
+    unsubscribeAllPubsubTopics,
+    waitTillPublicationsArePublished,
+    waitTillCommentsUpdate
+} from "../src/Util.js";
 import * as fs from 'fs/promises';
 import readline from "readline";
 import {POSTS_SORT_TYPES} from "../src/SortHandler.js";
@@ -49,7 +54,7 @@ describe("Test Subplebbit functionality", async () => {
             debug(`Generated ${actualPosts.length} posts to publish`);
             await subplebbit.update();
             await Promise.all(actualPosts.map(async post => post.publish()));
-            await waitTillCommentsArePublished(actualPosts);
+            await waitTillPublicationsArePublished(actualPosts);
             debug(`Posts are published, waiting for subplebbit update`);
             subplebbit.once("update", async (updatedSubplebbit) => {
                 debug(`Received update of subplebbit, waiting till comments update`);
