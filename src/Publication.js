@@ -51,10 +51,10 @@ class Publication extends EventEmitter {
         const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
         if (msgParsed?.challengeRequestId !== this.challenge.challengeRequestId)
             return; // Process only this publication's challenge
-        if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGE) {
+        if (msgParsed?.type === PUBSUB_MESSAGE_TYPES.CHALLENGE) {
             debug(`Received challenges, will emit them and wait for user to solve them and call publishChallengeAnswers`);
             this.emit("challenge", msgParsed);
-        } else if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION) {
+        } else if (msgParsed?.type === PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION) {
             if (!msgParsed.challengePassed)
                 debug(`Challenge ${msgParsed.challengeRequestId} has failed to pass. Challenge errors = ${msgParsed.challengeErrors}, reason = ${msgParsed.reason}`);
             else {
