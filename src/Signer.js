@@ -181,9 +181,6 @@ export async function decrypt(encryptedString, encryptedKey, privateKeyPem, priv
     debug(`Attempting to decrypt encrypted key (${encryptedKey})`);
     const keyPair = await crypto.keys.import(privateKeyPem, privateKeyPemPassword);
     const key = await keyPair.decrypt(uint8ArrayFromString(encryptedKey, 'base64'));
-    if (!key)
-        throw(`Failed to decrypt encrypted key (${encryptedKey})`);
-
     // decrypt string using AES ECB 128
     // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)
     debug(`Attempting to decrypt string (${encryptedString}) with key (${key})`);

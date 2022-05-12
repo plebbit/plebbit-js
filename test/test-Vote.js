@@ -1,51 +1,45 @@
 import Plebbit from "../src/index.js";
-import {IPFS_CLIENT_CONFIGS, TEST_VOTE_POST_CID} from "../secrets.js";
+import {
+    IPFS_CLIENT_CONFIGS
+} from "../secrets.js";
 import assert from 'assert';
 import {timestamp, unsubscribeAllPubsubTopics} from "../src/Util.js";
-import {generateMockVote} from "./MockUtil.js";
+import {generateMockVote, getLatestSubplebbitAddress} from "./MockUtil.js";
 
-const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
+
+const subplebbitAddress = "" || await getLatestSubplebbitAddress();
+
 const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
+const subplebbit = await clientPlebbit.getSubplebbit(subplebbitAddress);
+await subplebbit.update();
 
-const post = await clientPlebbit.getComment(TEST_VOTE_POST_CID);
 
-const subplebbit = await serverPlebbit.createSubplebbit({"address": post.subplebbitAddress});
+const post = await clientPlebbit.getComment(subplebbit.latestPostCid);
 const previousVotes = [];
 
 
 describe("Test Vote", async () => {
     before(async () => {
-        await unsubscribeAllPubsubTopics([serverPlebbit.ipfsClient, clientPlebbit.ipfsClient]);
+        await unsubscribeAllPubsubTopics([clientPlebbit.ipfsClient]);
     });
-    before(async () => await subplebbit.start());
-    before(async () => await subplebbit.update());
-    after(async () => post.stop());
-    after(async () => await subplebbit.stopPublishing());
 
 
     it("Can upvote a comment", async () => {
         return new Promise(async (resolve, reject) => {
             const vote = await generateMockVote(post, 1, clientPlebbit);
 
-            subplebbit.setProvideCaptchaCallback((challengeRequestMessage) => {
-                return [null, "Captcha is skipped for all"];
-            });
-
             await (await generateMockVote(post, 0, clientPlebbit)).publish(); // This vote is added just to start an "update" event and make sure originalUpvoteCount down below is accurate
 
             subplebbit.once("update", async (updatedSubplebbit) => {
                 await post.update();
                 const originalUpvote = post.upvoteCount;
-                vote.publish().then(async () => {
-                    post.once("update", async (updatedPost) => {
-                        assert.equal(updatedPost.upvoteCount, originalUpvote + 1);
-                        previousVotes.push(vote);
-                        resolve();
-
-                    });
-                }).catch(reject);
-
-            })
+                await vote.publish();
+                post.once("update", async (updatedPost) => {
+                    assert.equal(updatedPost.upvoteCount, originalUpvote + 1);
+                    previousVotes.push(vote);
+                    resolve();
+                });
+            });
         })
     });
 

@@ -1,32 +1,23 @@
 import Plebbit from "../src/index.js"
-import {IPFS_CLIENT_CONFIGS, TEST_COMMENT_POST_CID} from "../secrets.js";
+import {IPFS_CLIENT_CONFIGS} from "../secrets.js";
 import assert from 'assert';
 import {sleep, timestamp, unsubscribeAllPubsubTopics} from "../src/Util.js";
 import {REPLIES_SORT_TYPES} from "../src/SortHandler.js";
-import {generateMockComment, generateMockPost} from "./MockUtil.js";
+import {generateMockComment, generateMockPost, getLatestSubplebbitAddress} from "./MockUtil.js";
 import {signPublication, verifyPublication} from "../src/Signer.js";
 
 const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
 
-const post = await clientPlebbit.getComment(TEST_COMMENT_POST_CID);
-
-const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
-const subplebbit = await serverPlebbit.createSubplebbit({"address": post.subplebbitAddress});
-
+const subplebbitAddress = "" || await getLatestSubplebbitAddress(); // Replace empty quotes in case you wanted to test another subplebbit
 
 const mockComments = [];
 describe("Test Post and Comment", async function () {
-    before(async () => await unsubscribeAllPubsubTopics([serverPlebbit.ipfsClient, clientPlebbit.ipfsClient]));
-    before(async () => {
-        subplebbit.setProvideCaptchaCallback((challengeWithMsg) => [null, null]);
-        await subplebbit.start();
-    });
-    after(async () => await post.subplebbit.stopPublishing());
+    before(async () => await unsubscribeAllPubsubTopics([clientPlebbit.ipfsClient]));
 
     it("Can sign and verify a comment with randomly generated key", async () => {
         const signer = await clientPlebbit.createSigner();
         const comment = {
-            subplebbitAddress: post.subplebbitAddress,
+            subplebbitAddress: subplebbitAddress,
             author: {address: signer.address},
             timestamp: timestamp(),
             title: "Test post signature",
@@ -42,7 +33,7 @@ describe("Test Post and Comment", async function () {
     it("Verification fails when signature is corrupted", async () => {
         const signer = await clientPlebbit.createSigner();
         const comment = {
-            subplebbitAddress: post.subplebbitAddress,
+            subplebbitAddress: subplebbitAddress,
             author: {address: signer.address},
             timestamp: timestamp(),
             title: "Test post signature",
@@ -75,7 +66,7 @@ describe("Test Post and Comment", async function () {
             "-----END PUBLIC KEY-----\n";
         const signer = await clientPlebbit.createSigner({"privateKey": privateKeyPem, 'type': 'rsa'});
         const comment = {
-            subplebbitAddress: post.subplebbitAddress,
+            subplebbitAddress: subplebbitAddress,
             author: {address: signer.address},
             timestamp: timestamp(),
             title: "Test post signature",
@@ -90,8 +81,8 @@ describe("Test Post and Comment", async function () {
 
     it("Can publish a post", async function () {
         return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost(subplebbit.address, clientPlebbit);
-
+            const mockPost = await generateMockPost(subplebbitAddress, clientPlebbit);
+            const subplebbit = await clientPlebbit.getSubplebbit(subplebbitAddress);
             await subplebbit.update();
             const originalLatestPostCid = subplebbit.latestPostCid;
             await mockPost.publish();
@@ -115,6 +106,8 @@ describe("Test Post and Comment", async function () {
             const commentToBeEdited = mockComments[0];
             await commentToBeEdited.update();
 
+            const subplebbit = await clientPlebbit.getSubplebbit(subplebbitAddress);
+            await subplebbit.update();
             const originalContent = commentToBeEdited.content;
             const commentEdit = await clientPlebbit.createCommentEdit({
                 "subplebbitAddress": commentToBeEdited.subplebbitAddress,
@@ -124,17 +117,15 @@ describe("Test Post and Comment", async function () {
                 "signer": commentToBeEdited.signer,
             });
             await commentEdit.publish();
-            commentEdit.once("challengeverification", async ([challengeVerificationMessage, updatedCommentEdit]) => {
-                subplebbit.once("update", async () => {
-                    commentToBeEdited.once("update", async updatedCommentToBeEdited => {
-                        assert.equal(updatedCommentToBeEdited.content, editedText, "Comment has not been edited");
-                        assert.equal(updatedCommentToBeEdited.originalContent, originalContent, "Original content should be preserved");
-                        assert.equal(updatedCommentToBeEdited.editReason, editReason, "Edit reason has not been updated");
-                        resolve();
-                    });
-                    await commentToBeEdited.update();
-                });
+            commentToBeEdited.on("update", async updatedCommentToBeEdited => {
+                if (!updatedCommentToBeEdited.originalContent)
+                    return; // Wait until comment is updated with new content
+                assert.equal(updatedCommentToBeEdited.content, editedText, "Comment has not been edited");
+                assert.equal(updatedCommentToBeEdited.originalContent, originalContent, "Original content should be preserved");
+                assert.equal(updatedCommentToBeEdited.editReason, editReason, "Edit reason has not been updated");
+                resolve();
             });
+            commentToBeEdited.update();
         });
     });
 
@@ -143,6 +134,7 @@ describe("Test Post and Comment", async function () {
             const editedText = "Double edit test";
             const editReason = "To test double editing a comment";
             const commentToBeEdited = mockComments[0];
+            commentToBeEdited.removeAllListeners();
             await commentToBeEdited.update();
             const originalContent = commentToBeEdited.originalContent;
             const commentEdit = await clientPlebbit.createCommentEdit({
@@ -191,6 +183,30 @@ describe("Test Post and Comment", async function () {
 
     });
 
+    it("Can publish post on subplebbit with pubsub provider", async () => {
+        return new Promise(async (resolve, reject) => {
+            const plebbit = await Plebbit(); // Will default to cloudflare and pubsubprovider
+            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            await subplebbit.update();
+            const comment = await generateMockPost(subplebbitAddress, plebbit);
+
+            await comment.publish();
+
+            comment.once("challengeverification", async ([challengeVerificationMessage, updatedComment]) => {
+                assert.equal(challengeVerificationMessage.challengePassed, true);
+
+                comment.once("update", async (updatedComment) => {
+                    if (!comment.updatedAt)
+                        assert.fail("Comment has not been included in subplebbit");
+                    resolve();
+                });
+                await comment.update();
+
+            });
+        });
+
+    });
+
 
     [1, 2, 3, 4].map(depth => it(`Can publish comment with depth = ${depth}`, async () => {
         return new Promise(async (resolve, reject) => {
@@ -209,7 +225,6 @@ describe("Test Post and Comment", async function () {
                 assert.equal(updatedParentComment.replyCount, originalReplyCount + 1);
                 mockComments.push(mockComment);
                 resolve();
-                // mockComment.once("update", () => resolve());
             });
 
         });
@@ -219,7 +234,7 @@ describe("Test Post and Comment", async function () {
 
     it("Publishing a comment with invalid signature fails", async () => {
         return new Promise(async (resolve, reject) => {
-            const mockComment = await generateMockComment(post, clientPlebbit);
+            const mockComment = await generateMockComment(mockComments[0], clientPlebbit);
             mockComment.signature.signature = mockComment.signature.signature.slice(1); // Corrupts signature by deleting one key
             await mockComment.publish();
             mockComment.once("challengeverification", async ([challengeVerificationMessage, updatedComment]) => {

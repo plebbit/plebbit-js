@@ -1,5 +1,6 @@
 import {loadIpfsFileAsJson, TIMEFRAMES_TO_SECONDS, timestamp} from "../src/Util.js";
 import Debug from "debug";
+import * as fs from "fs";
 
 const debug = Debug("plebbit-js:Pages");
 
@@ -88,5 +89,26 @@ export async function loadAllPagesThroughSortedComments(sortedCommentsCid, pages
 
     } catch (e) {
         debug(`Error while loading all pages under cid (${sortedCommentsCid}): ${e}`)
+    }
+}
+
+function lsDirWithFilesSortedByTime(dir, timeKey = 'mtime') {
+    return (
+        fs.readdirSync(dir)
+            .map(name => ({
+                name,
+                time: fs.statSync(`${dir}/${name}`)[timeKey].getTime()
+            }))
+            .sort((a, b) => (b.time - a.time)) // descending
+            .map(f => f.name)
+    );
+}
+
+export async function getLatestSubplebbitAddress() {
+    try {
+        const dbsSorted = lsDirWithFilesSortedByTime(".plebbit"); // You need to be in test directory to detect .plebbit
+        return dbsSorted[0];
+    } catch {
+        console.error(`Failed to find .plebbit within current directory, or you have no databases in .plebbit`);
     }
 }
