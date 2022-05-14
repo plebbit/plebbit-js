@@ -77,15 +77,15 @@ const getPeerIdFromPrivateKeyPem = async (privateKeyPem) => {
   return peerId
 }
 
-const verifyCommentSignature = async (comment) => {
-  const peerId = await getPeerIdFromPublicKeyPem(comment.signature.publicKey)
-  assert(peerId.equals(PeerId.createFromB58String(comment.author.address)), `comment.author.address doesn't match comment.signature.publicKey`)
+const generatePrivateKeyPem = async (privateKeyPem) => {
+  const keyPair = await generateKeyPair()
+  privateKeyPem = await getPrivateKeyPemFromKeyPair(keyPair)
+  return privateKeyPem
+}
 
-  // note: postCid is not included because it's written by the sub owner, not the author
-  const {subplebbitAddress, author, timestamp, parentCid, content, title, link} = comment
-  const fieldsToVerify = cborg.encode({subplebbitAddress, author, timestamp, parentCid, content, title, link})
-  const signatureIsValid = await peerId.pubKey.verify(fieldsToVerify, uint8ArrayFromString(comment.signature.signature, 'base64'))
-  assert(signatureIsValid, `comment.signature invalid`)
+const getPlebbitAddressFromPrivateKeyPem = async (privateKeyPem) => {
+  const peerId = await getPeerIdFromPrivateKeyPem(privateKeyPem)
+  return peerId.toB58String() 
 }
 
 const createCommentSignature = async (comment, signer) => {
@@ -99,25 +99,22 @@ const createCommentSignature = async (comment, signer) => {
   return {signature, publicKey, type}
 }
 
-const createSigner = async (privateKeyPem) => {
-  if (!privateKeyPem) {
-    const keyPair = await generateKeyPair()
-    privateKeyPem = await getPrivateKeyPemFromKeyPair(keyPair)
-  }
-  const type = 'rsa'
-  return {privateKey: privateKeyPem, type}
-}
+const verifyCommentSignature = async (comment) => {
+  const peerId = await getPeerIdFromPublicKeyPem(comment.signature.publicKey)
+  assert(peerId.equals(PeerId.createFromB58String(comment.author.address)), `comment.author.address doesn't match comment.signature.publicKey`)
 
-const getAddressFromSigner = async (signer) => {
-  const peerId = await getPeerIdFromPrivateKeyPem(signer.privateKey)
-  return peerId.toB58String() 
+  // note: postCid is not included because it's written by the sub owner, not the author
+  const {subplebbitAddress, author, timestamp, parentCid, content, title, link} = comment
+  const fieldsToVerify = cborg.encode({subplebbitAddress, author, timestamp, parentCid, content, title, link})
+  const signatureIsValid = await peerId.pubKey.verify(fieldsToVerify, uint8ArrayFromString(comment.signature.signature, 'base64'))
+  assert(signatureIsValid, `comment.signature invalid`)
 }
-
 
 // sign a comment
 ;(async () => {
-  const signer = await createSigner()
-  const authorAddress = await getAddressFromSigner(signer)
+  const privateKeyPem = await generatePrivateKeyPem()
+  const signer = {privateKey: privateKeyPem}
+  const authorAddress = await getPlebbitAddressFromPrivateKeyPem(privateKeyPem)
   const comment = {
     subplebbitAddress: 'memes.eth',
     author: {address: authorAddress}, 
