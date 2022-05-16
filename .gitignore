@@ -107,3 +107,6 @@ dist
 .plebbit/
 # Test captchas directory
 .captcha/
+
+# browser tests for karma built by webpack
+test-karma-webpack
