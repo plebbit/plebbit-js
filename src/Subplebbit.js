@@ -26,7 +26,7 @@ import {Pages} from "./Pages.js";
 
 const debug = Debug("plebbit-js:Subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
-const DEFAULT_SYNC_INTERVAL_MS = 100000; // 5 minutes
+const DEFAULT_SYNC_INTERVAL_MS = 300000; // 5 minutes
 
 
 export class Subplebbit extends EventEmitter {
@@ -555,24 +555,6 @@ export class Subplebbit extends EventEmitter {
         const ipfsPath = (await last(this.plebbit.ipfsClient.name.resolve(this.address)));
         await this.plebbit.ipfsClient.pin.rm(ipfsPath);
         await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
-    }
-
-    // For development purposes only
-    async _addPublicationToDb(publication) {
-        const trx = publication.vote ? undefined : await this.dbHandler.createTransaction(); // No need for votes to reserve a transaction
-        try {
-            const randomUUID = uuidv4();
-            await this.dbHandler.upsertChallenge(new ChallengeRequestMessage({"challengeRequestId": randomUUID}), trx);
-            const publishedPublication = await this.#publishPostAfterPassingChallenge(publication, randomUUID, trx);
-            if (trx)
-                await trx.commit();
-            return publishedPublication;
-        } catch (e) {
-            debug(`Failed to add publication to DB, error ${e}`);
-            if (trx)
-                await trx.rollback();
-        }
-
     }
 
 }
