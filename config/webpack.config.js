@@ -60,9 +60,6 @@ module.exports = {
 
                         // fix ReferenceError: regeneratorRuntime is not defined
                         plugins: ["@babel/plugin-transform-runtime"]
-
-                        // apparently faster with this option
-                        // cacheDirectory: true
                     }
                 }
             }
