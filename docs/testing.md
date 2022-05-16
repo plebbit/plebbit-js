@@ -22,3 +22,5 @@
 #### Build
 
 - `npm run build`
+
+> TODO: add config to to run a single file when doing `npm run test file-name`, for now to run a single file use `describe.only()` and `it.only()` in tests files.
