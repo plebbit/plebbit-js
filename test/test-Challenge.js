@@ -1,9 +1,11 @@
-import {unsubscribeAllPubsubTopics, waitTillCommentsArePublished} from "../src/Util.js";
+import {unsubscribeAllPubsubTopics, waitTillPublicationsArePublished} from "../src/Util.js";
 import {IPFS_CLIENT_CONFIGS, TEST_CHALLENGES_SUBPLEBBIT_ADDRESS} from "../secrets.js";
 import Plebbit from "../src/index.js";
 import assert from "assert";
 import {generateMockPost} from "./MockUtil.js";
 import {Challenge, CHALLENGE_TYPES} from "../src/Challenge.js";
+import fs from "fs/promises";
+import readline from "readline";
 
 const serverPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[0]});
 const clientPlebbit = await Plebbit({ipfsHttpClientOptions: IPFS_CLIENT_CONFIGS[1]});
@@ -32,7 +34,7 @@ describe("Test Challenge functionality", async () => {
             await subplebbit.start();
             const mockPostShouldSkipCaptcha = await generateMockPost(subplebbit.address, clientPlebbit);
             await mockPostShouldSkipCaptcha.publish(null, null);
-            await waitTillCommentsArePublished([mockPostShouldSkipCaptcha]);
+            await waitTillPublicationsArePublished([mockPostShouldSkipCaptcha]);
             assert.equal(Boolean(mockPostShouldSkipCaptcha.cid), true, `Post should be published since its timestamp (${mockPostShouldSkipCaptcha.timestamp}) exceeds minimum (${minimumTimestamp})`)
             const mockPostShouldGetCaptcha = await clientPlebbit.createComment({
                 ...mockPostShouldSkipCaptcha.toJSON(),
@@ -87,5 +89,56 @@ describe("Test Challenge functionality", async () => {
             });
         });
 
+    });
+
+    it("Can post after solving image captcha", async function () {
+        return new Promise(async (resolve, reject) => {
+            await subplebbit.setProvideCaptchaCallback(null);
+            await subplebbit.start();
+            const mockPost = await generateMockPost(subplebbit.address, clientPlebbit);
+            mockPost.removeAllListeners();
+            const solveCaptchaCallback = async (challenge) => {
+                return new Promise(async (resolve) => {
+                    // Solve captcha here
+                    const path = `.captcha/${challenge.challengeRequestId}.png`;
+                    await fs.writeFile(path, Buffer.from(challenge.challenges[0].challenge));
+                    const rl = readline.createInterface({
+                        input: process.stdin,
+                        output: process.stdout
+                    });
+
+                    // Retrieve answer from user in cli
+                    rl.question(`Please provide your answer for captcha under path ${path}\n`, answer => {
+                        resolve(answer);
+                        rl.close();
+                    });
+                })
+            };
+            mockPost.once("challenge", async challengeMsg => {
+                const answer = await solveCaptchaCallback(challengeMsg);
+                await mockPost.publishChallengeAnswers(answer);
+            });
+
+            await mockPost.publish();
+            mockPost.once("challengeverification", async ([challengeVerificationMessage, newComment]) => {
+                assert.equal(challengeVerificationMessage.challengePassed, true, "Post should be published since challenge has been solved correctly");
+                assert.equal(Boolean(challengeVerificationMessage.reason), false, "Reason should be empty since post has been published");
+                resolve();
+            });
+
+        });
+
+
+    });
+
+    it("Throws an error if unable to solve image captcha", async function () {
+        return new Promise(async (resolve, reject) => {
+            const mockPost = await generateMockPost(subplebbit.address, clientPlebbit);
+            await mockPost.publish();
+            mockPost.once("challengeverification", async ([challengeVerificationMessage, newComment]) => {
+                assert.equal(challengeVerificationMessage.challengePassed, false, "Post should not be published since challenge has been solved incorrectly");
+                resolve();
+            });
+        });
     });
 });
