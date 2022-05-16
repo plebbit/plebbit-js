@@ -102,42 +102,34 @@ export class Plebbit {
 
     async createSigner(createSignerOptions) {
         if (!createSignerOptions || !createSignerOptions["privateKey"]) {
-            try {
-                const keyPair = await crypto.keys.generateKeyPair('RSA', 2048);
-                const privateKey = await keyPair.export('', 'pkcs-8');
-                const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {extractable: true});
-                const publicKey = await jose.exportSPKI(publicKeyFromJsonWebToken);
-                const address = await getAddressFromPublicKeyPem(publicKey);
-                const ipfsKey = keyPair.bytes;
-                return new Signer({
-                    "privateKey": privateKey,
-                    'type': 'rsa',
-                    'publicKey': publicKey,
-                    "address": address,
-                    "ipfsKey": ipfsKey
-                });
-            } catch (e) {
-                debug(`Failed to create a new private key: `, e);
-            }
+            const keyPair = await crypto.keys.generateKeyPair('RSA', 2048);
+            const privateKey = await keyPair.export('', 'pkcs-8');
+            const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {extractable: true});
+            const publicKey = await jose.exportSPKI(publicKeyFromJsonWebToken);
+            const address = await getAddressFromPublicKeyPem(publicKey);
+            const ipfsKey = keyPair.bytes;
+            return new Signer({
+                "privateKey": privateKey,
+                'type': 'rsa',
+                'publicKey': publicKey,
+                "address": address,
+                "ipfsKey": ipfsKey
+            });
 
 
         } else if (createSignerOptions["privateKey"]) {
-            try {
-                assert.equal(createSignerOptions.type, "rsa", "We only support RSA keys at the moment");
-                const keyPair = await crypto.keys.import(createSignerOptions.privateKey, "");
-                const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {extractable: true});
-                const publicKeyPem = await jose.exportSPKI(publicKeyFromJsonWebToken);
-                const address = await getAddressFromPublicKeyPem(publicKeyPem);
-                const ipfsKey = keyPair.bytes;
-                return new Signer({
-                    ...createSignerOptions,
-                    "publicKey": publicKeyPem,
-                    "address": address,
-                    "ipfsKey": ipfsKey
-                });
-            } catch (e) {
-                debug(`Failed to import private key: `, e);
-            }
+            assert.equal(createSignerOptions.type, "rsa", "We only support RSA keys at the moment");
+            const keyPair = await crypto.keys.import(createSignerOptions.privateKey, "");
+            const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {extractable: true});
+            const publicKeyPem = await jose.exportSPKI(publicKeyFromJsonWebToken);
+            const address = await getAddressFromPublicKeyPem(publicKeyPem);
+            const ipfsKey = keyPair.bytes;
+            return new Signer({
+                ...createSignerOptions,
+                "publicKey": publicKeyPem,
+                "address": address,
+                "ipfsKey": ipfsKey
+            });
 
 
         }
