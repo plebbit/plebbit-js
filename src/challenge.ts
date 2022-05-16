@@ -1,4 +1,5 @@
-import {parseJsonIfString} from "./Util.js";
+import { parseJsonIfString } from "./util";
+import { Encrypted } from "./types";
 
 export const PUBSUB_MESSAGE_TYPES = Object.freeze({
     CHALLENGEREQUEST: "CHALLENGEREQUEST",
@@ -16,6 +17,8 @@ export const CHALLENGE_TYPES = Object.freeze({
 });
 
 export class Challenge {
+    challenge: any[];
+    type: string;
     constructor(props) {
         this.challenge = props["challenge"];
         this.type = props["type"]; // will be dozens of challenge types, like holding a certain amount of a token
@@ -23,6 +26,12 @@ export class Challenge {
 }
 
 class ChallengeBase {
+    type: string;
+    challengeRequestId: string;
+    acceptedChallengeTypes: string[];
+    encryptedPublication: Encrypted;
+    challengeAnswerId: string;
+
     toJSONForDb() {
         const obj = JSON.parse(JSON.stringify(this));
         delete obj.encryptedPublication;
@@ -33,18 +42,20 @@ class ChallengeBase {
 export class ChallengeRequestMessage extends ChallengeBase {
     constructor(props) {
         super();
-        this.type = PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST // One of CHALLENGE_STAGES
+        this.type = PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST; // One of CHALLENGE_STAGES
         this.challengeRequestId = props["challengeRequestId"];
         this.acceptedChallengeTypes = parseJsonIfString(props["acceptedChallengeTypes"]);
         this.encryptedPublication = props["encryptedPublication"];
     }
 
     toJSONForDb() {
-        return {...super.toJSONForDb(), "acceptedChallengeTypes": JSON.stringify(this.acceptedChallengeTypes)};
+        return { ...super.toJSONForDb(), acceptedChallengeTypes: JSON.stringify(this.acceptedChallengeTypes) };
     }
 }
 
 export class ChallengeMessage extends ChallengeBase {
+    challenges: Challenge[];
+
     constructor(props) {
         super();
         this.type = PUBSUB_MESSAGE_TYPES.CHALLENGE;
@@ -53,11 +64,13 @@ export class ChallengeMessage extends ChallengeBase {
     }
 
     toJSONForDb() {
-        return {...super.toJSONForDb(), "challenges": JSON.stringify(this.challenges)};
+        return { ...super.toJSONForDb(), challenges: JSON.stringify(this.challenges) };
     }
 }
 
 export class ChallengeAnswerMessage extends ChallengeBase {
+    challengeAnswers: string[];
+
     constructor(props) {
         super();
         this.type = PUBSUB_MESSAGE_TYPES.CHALLENGEANSWER;
@@ -67,16 +80,23 @@ export class ChallengeAnswerMessage extends ChallengeBase {
     }
 
     toJSONForDb() {
-        return {...super.toJSONForDb(), "challengeAnswers": JSON.stringify(this.challengeAnswers)};
+        return { ...super.toJSONForDb(), challengeAnswers: JSON.stringify(this.challengeAnswers) };
     }
 }
 
 export class ChallengeVerificationMessage extends ChallengeBase {
+    // TODO: change to challengeSuccess
+    challengePassed: boolean;
+    challengeErrors: (string | null)[];
+    reason: string;
+
     constructor(props) {
         super();
         this.type = PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION;
         this.challengeRequestId = props["challengeRequestId"];
         this.challengeAnswerId = props["challengeAnswerId"];
+        // TODO: change to challengeSuccess
+        console.log("TODO: change to ChallengeVerificationMessage.challengeSuccess");
         this.challengePassed = props["challengePassed"];
         this.challengeErrors = parseJsonIfString(props["challengeErrors"]);
         this.reason = props["reason"];
@@ -84,6 +104,6 @@ export class ChallengeVerificationMessage extends ChallengeBase {
     }
 
     toJSONForDb() {
-        return {...super.toJSONForDb(), "challengeErrors": JSON.stringify(this.challengeErrors)};
+        return { ...super.toJSONForDb(), challengeErrors: JSON.stringify(this.challengeErrors) };
     }
 }

@@ -1,8 +1,12 @@
-import Author from "./Author.js";
-import Publication from "./Publication.js";
-import {parseJsonIfString, timestamp} from "./Util.js";
+import Author from "./author";
+import Publication from "./publication";
+import { parseJsonIfString, timestamp } from "./util";
+import { Signature } from "./signer";
 
 class Vote extends Publication {
+    commentCid: string;
+    vote: number;
+
     constructor(props, subplebbit) {
         super(props, subplebbit);
         // Publication
@@ -16,13 +20,13 @@ class Vote extends Publication {
 
     toJSON() {
         return {
-            ...(super.toJSON()),
-            "author": this.author,
-            "timestamp": this.timestamp,
-            "signature": this.signature,
-            "commentCid": this.commentCid,
-            "vote": this.vote
-        }
+            ...super.toJSON(),
+            author: this.author,
+            timestamp: this.timestamp,
+            signature: this.signature,
+            commentCid: this.commentCid,
+            vote: this.vote
+        };
     }
 
     toJSONForDb(challengeRequestId) {

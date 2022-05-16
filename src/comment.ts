@@ -1,15 +1,44 @@
 import assert from "assert";
-import {loadIpnsAsJson, parseJsonIfString, removeKeysWithUndefinedValues} from "./Util.js";
-import Publication from "./Publication.js";
+import { loadIpnsAsJson, parseJsonIfString, removeKeysWithUndefinedValues } from "./util";
+import Publication from "./publication";
 import Debug from "debug";
-import {Pages} from "./Pages.js";
-import {REPLIES_SORT_TYPES} from "./SortHandler.js";
+import { Pages } from "./pages";
+import { REPLIES_SORT_TYPES } from "./sort-handler";
+import { Signature } from "./signer";
 
-const debug = Debug("plebbit-js:Comment");
+const debug = Debug("plebbit-js:comment");
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
 export class Comment extends Publication {
+    // public
+    postCid?: string;
+    cid?: string;
+    parentCid?: string;
+    ipnsName?: string;
+    ipnsKeyName?: string;
+    depth?: number;
+    upvoteCount?: number;
+    downvoteCount?: number;
+    replyCount?: number;
+    updatedAt?: number;
+    replies?: Pages;
+    originalContent?: string;
+    content?: string;
+    editSignature?: Signature;
+    editTimestamp?: number;
+    editReason?: string;
+    deleted?: boolean;
+    spoiler?: boolean;
+    pinned?: boolean;
+    locked?: boolean;
+    removed?: boolean;
+    moderatorReason?: string;
+    previousCid?: string;
+
+    // private
+    emittedAt?: number;
+    _updateInterval?: any;
 
     _initProps(props) {
         super._initProps(props);
@@ -29,14 +58,24 @@ export class Comment extends Publication {
         this.downvoteCount = props["downvoteCount"];
         this.replyCount = props["replyCount"];
         this.updatedAt = props["updatedAt"];
-        this.replies = props["replies"] instanceof Object && JSON.stringify(props["replies"]) !== "{}" ? new Pages({
-            ...props["replies"],
-            "subplebbit": this.subplebbit
-        }) : undefined;
+        this.replies =
+            props["replies"] instanceof Object && JSON.stringify(props["replies"]) !== "{}"
+                ? new Pages({
+                      ...props["replies"],
+                      subplebbit: this.subplebbit
+                  })
+                : undefined;
         // Comment Edit props
-        this.originalContent = props["originalContent"] || this.originalContent || (props["content"] && props["editSignature"] ? this.content : undefined);
+        this.originalContent =
+            props["originalContent"] ||
+            this.originalContent ||
+            (props["content"] && props["editSignature"] ? this.content : undefined);
         this.content = props["content"] || this.content;
-        assert.notEqual(this.content, this.originalContent, "Content and original content can't be equal to each other");
+        assert.notEqual(
+            this.content,
+            this.originalContent,
+            "Content and original content can't be equal to each other"
+        );
         this.editSignature = parseJsonIfString(props["editSignature"]);
         this.editTimestamp = props["editTimestamp"];
         this.editReason = props["editReason"];
@@ -52,33 +91,32 @@ export class Comment extends Publication {
         return {
             ...this.toJSONIpfs(),
             ...this.toJSONCommentUpdate(),
-            "cid": this.cid,
-            "originalContent": this.originalContent
+            cid: this.cid,
+            originalContent: this.originalContent
         };
-    };
+    }
 
     toJSONIpfs() {
         return {
             ...this.toJSONSkeleton(),
-            "previousCid": this.previousCid,
-            "ipnsName": this.ipnsName,
-            "postCid": this.postCid,
-            "depth": this.depth
+            previousCid: this.previousCid,
+            ipnsName: this.ipnsName,
+            postCid: this.postCid,
+            depth: this.depth
         };
     }
 
-
     toJSONSkeleton() {
         return {
-            ...(super.toJSONSkeleton()),
-            "content": this.content,
-            "parentCid": this.parentCid
-        }
+            ...super.toJSONSkeleton(),
+            content: this.content,
+            parentCid: this.parentCid
+        };
     }
 
     toJSONForDb(challengeRequestId) {
         const json = this.toJSON();
-        ["replyCount", "upvoteCount", "downvoteCount", "replies", "author"].forEach(key => delete json[key]);
+        ["replyCount", "upvoteCount", "downvoteCount", "replies", "author"].forEach((key) => delete json[key]);
         json["authorAddress"] = this?.author?.address;
         json["challengeRequestId"] = challengeRequestId;
         json["ipnsKeyName"] = this.ipnsKeyName;
@@ -88,21 +126,21 @@ export class Comment extends Publication {
 
     toJSONCommentUpdate() {
         return {
-            "replyCount": this.replyCount,
-            "upvoteCount": this.upvoteCount,
-            "downvoteCount": this.downvoteCount,
-            "replies": this.replies,
-            ...(this.originalContent ? {"content": this.content} : undefined), // Only include content if content has been changed through commentEdit
-            "updatedAt": this.updatedAt,
-            "editSignature": this.editSignature,
-            "editTimestamp": this.editTimestamp,
-            "editReason": this.editReason,
-            "deleted": this.deleted,
-            "spoiler": this.spoiler,
-            "pinned": this.pinned,
-            "locked": this.locked,
-            "removed": this.removed,
-            "moderatorReason": this.moderatorReason
+            replyCount: this.replyCount,
+            upvoteCount: this.upvoteCount,
+            downvoteCount: this.downvoteCount,
+            replies: this.replies,
+            ...(this.originalContent ? { content: this.content } : undefined), // Only include content if content has been changed through commentEdit
+            updatedAt: this.updatedAt,
+            editSignature: this.editSignature,
+            editTimestamp: this.editTimestamp,
+            editReason: this.editReason,
+            deleted: this.deleted,
+            spoiler: this.spoiler,
+            pinned: this.pinned,
+            locked: this.locked,
+            removed: this.removed,
+            moderatorReason: this.moderatorReason
         };
     }
 
@@ -139,17 +177,16 @@ export class Comment extends Publication {
     setReplies(sortedReplies, sortedRepliesCids) {
         if (sortedReplies)
             this.replies = new Pages({
-                "pages": {[REPLIES_SORT_TYPES.TOP_ALL.type]: sortedReplies[REPLIES_SORT_TYPES.TOP_ALL.type]},
-                "pageCids": sortedRepliesCids,
-                "subplebbit": this.subplebbit,
+                // @ts-ignore
+                pages: { [REPLIES_SORT_TYPES.TOP_ALL.type]: sortedReplies[REPLIES_SORT_TYPES.TOP_ALL.type] },
+                pageCids: sortedRepliesCids,
+                subplebbit: this.subplebbit
             });
-
     }
 
-    async #updateOnce() {
+    async updateOnce() {
         const res = await loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit);
-        if (!res)
-            debug(`IPNS (${this.ipnsName}) is not pointing to any file`);
+        if (!res) debug(`IPNS (${this.ipnsName}) is not pointing to any file`);
         else {
             if (res.updatedAt !== this.emittedAt) {
                 this.emittedAt = res.updatedAt;
@@ -161,14 +198,14 @@ export class Comment extends Publication {
         }
     }
 
-
     update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
         assert(this.ipnsName, "Comment need to have ipnsName field to poll updates");
-        debug(`Starting to poll updates for comment (${this.cid}) IPNS (${this.ipnsName}) every ${updateIntervalMs} milliseconds`)
-        if (this._updateInterval)
-            clearInterval(this._updateInterval);
-        this._updateInterval = setInterval(this.#updateOnce.bind(this), updateIntervalMs);
-        return this.#updateOnce();
+        debug(
+            `Starting to poll updates for comment (${this.cid}) IPNS (${this.ipnsName}) every ${updateIntervalMs} milliseconds`
+        );
+        if (this._updateInterval) clearInterval(this._updateInterval);
+        this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
+        return this.updateOnce();
     }
 
     stop() {
@@ -182,18 +219,18 @@ export class Comment extends Publication {
             const file = await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate()));
             debug(`Added comment IPNS to ipfs, cid is ${file.path}`);
             await this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
-                "lifetime": "72h",
-                "key": this.ipnsKeyName
+                lifetime: "72h",
+                key: this.ipnsKeyName
             });
             debug(`Linked comment ipns name(${this.ipnsName}) to ipfs file (${file.path})`);
         } catch (e) {
             debug(`Failed to edit comment IPNS: `, e);
         }
-
     }
 }
 
 export class CommentEdit extends Comment {
+    commentCid?: string;
 
     _initProps(props) {
         super._initProps(props);
@@ -201,12 +238,14 @@ export class CommentEdit extends Comment {
     }
 
     toJSON() {
-        return {...super.toJSON(), "commentCid": this.commentCid};
+        return { ...super.toJSON(), commentCid: this.commentCid };
     }
 
     toJSONForDb(challengeRequestId) {
         const json = super.toJSONForDb(challengeRequestId);
-        ["authorAddress", "challengeRequestId", "ipnsKeyName", "signature", "commentCid"].forEach(key => delete json[key]);
+        ["authorAddress", "challengeRequestId", "ipnsKeyName", "signature", "commentCid"].forEach(
+            (key) => delete json[key]
+        );
         json["cid"] = this.commentCid;
         return removeKeysWithUndefinedValues(json);
     }

@@ -1,6 +1,7 @@
-import {Comment} from "./Comment.js";
+import { Comment } from "./comment";
 
 class Post extends Comment {
+    title?: string;
 
     _initProps(props) {
         super._initProps(props);
@@ -10,9 +11,9 @@ class Post extends Comment {
 
     toJSONSkeleton() {
         return {
-            ...(super.toJSONSkeleton()),
-            "title": this.title
-        }
+            ...super.toJSONSkeleton(),
+            title: this.title
+        };
     }
 }
 
