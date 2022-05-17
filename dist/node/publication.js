@@ -132,7 +132,7 @@ var Publication = /** @class */ (function (_super) {
                         debug("Challenge (".concat(msgParsed.challengeRequestId, ") has passed. Will update publication props from ChallengeVerificationMessage.publication"));
                         _a = msgParsed;
                         _c = (_b = JSON).parse;
-                        return [4 /*yield*/, (0, signer_1.decrypt)(msgParsed.encryptedPublication.encryptedString, msgParsed.encryptedPublication.encryptedKey, this.signer.privateKey)];
+                        return [4 /*yield*/, (0, signer_1.decrypt)(msgParsed.encryptedPublication.encrypted, msgParsed.encryptedPublication.encryptedKey, this.signer.privateKey)];
                     case 3:
                         _a.publication = _c.apply(_b, [_d.sent()]);
                         this._initProps(msgParsed.publication);

@@ -593,7 +593,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 1:
                         _a = _g.sent(), providedChallenges = _a[0], reasonForSkippingCaptcha = _a[1];
                         _c = (_b = JSON).parse;
-                        return [4 /*yield*/, (0, signer_1.decrypt)(msgParsed.encryptedPublication.encryptedString, msgParsed.encryptedPublication.encryptedKey, this.signer.privateKey)];
+                        return [4 /*yield*/, (0, signer_1.decrypt)(msgParsed.encryptedPublication.encrypted, msgParsed.encryptedPublication.encryptedKey, this.signer.privateKey)];
                     case 2:
                         decryptedPublication = _c.apply(_b, [_g.sent()]);
                         this._challengeToPublication[msgParsed.challengeRequestId] = decryptedPublication;
