@@ -423,7 +423,7 @@ export class Subplebbit extends EventEmitter {
             const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(msgParsed);
             const decryptedPublication = JSON.parse(
                 await decrypt(
-                    msgParsed.encryptedPublication.encryptedString,
+                    msgParsed.encryptedPublication.encrypted,
                     msgParsed.encryptedPublication.encryptedKey,
                     this.signer.privateKey
                 )

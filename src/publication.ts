@@ -72,7 +72,7 @@ class Publication extends EventEmitter {
                 );
                 msgParsed.publication = JSON.parse(
                     await decrypt(
-                        msgParsed.encryptedPublication.encryptedString,
+                        msgParsed.encryptedPublication.encrypted,
                         msgParsed.encryptedPublication.encryptedKey,
                         this.signer.privateKey
                     )
