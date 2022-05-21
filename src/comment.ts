@@ -186,14 +186,19 @@ export class Comment extends Publication {
 
     async updateOnce() {
         const res = await loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit);
-        if (!res) debug(`IPNS (${this.ipnsName}) is not pointing to any file`);
+        if (!res) debug(`Comment (${this.cid}) IPNS (${this.ipnsName}) is not pointing to any file`);
         else {
             if (res.updatedAt !== this.emittedAt) {
+                debug(
+                    `Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Emitting an update event...`
+                );
                 this.emittedAt = res.updatedAt;
                 this._initCommentUpdate(res);
                 this.emit("update", this);
+            } else {
+                debug(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
+                this._initCommentUpdate(res);
             }
-            this._initCommentUpdate(res);
             return this;
         }
     }
@@ -217,12 +222,13 @@ export class Comment extends Publication {
         try {
             this._initCommentUpdate(commentUpdateOptions);
             const file = await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate()));
-            debug(`Added comment IPNS to ipfs, cid is ${file.path}`);
+            debug(`Added comment (${this.cid}) IPNS (${this.ipnsName}) to ipfs, cid is ${file.path}`);
             await this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
                 lifetime: "72h",
-                key: this.ipnsKeyName
+                key: this.ipnsKeyName,
+                allowOffline: true
             });
-            debug(`Linked comment ipns name(${this.ipnsName}) to ipfs file (${file.path})`);
+            debug(`Linked comment (${this.cid}) ipns name(${this.ipnsName}) to ipfs file (${file.path})`);
         } catch (e) {
             debug(`Failed to edit comment IPNS: `, e);
         }
