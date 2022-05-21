@@ -6,8 +6,6 @@ import { Subplebbit } from "./subplebbit";
 import { loadIpfsFileAsJson, loadIpnsAsJson, timestamp } from "./util";
 import Vote from "./vote";
 import { create as createIpfsClient, IPFSHTTPClient } from "ipfs-http-client";
-import * as crypto from "libp2p-crypto";
-import * as jose from "jose";
 import assert from "assert";
 import Debug from "debug";
 import { createSigner, Signer, signPublication, verifyPublication } from "./signer";
@@ -19,6 +17,7 @@ export class Plebbit {
     ipfsGatewayUrl: string;
     pubsubHttpClientOptions: string | any;
     ipfsClient: IPFSHTTPClient;
+    pubsubIpfsClient: IPFSHTTPClient;
     dataPath: string | undefined;
 
     constructor(options: PlebbitOptions = {}) {
@@ -26,15 +25,18 @@ export class Plebbit {
         this.ipfsGatewayUrl = this.ipfsHttpClientOptions
             ? undefined
             : options["ipfsGatewayUrl"] || "https://cloudflare-ipfs.com";
-        this.pubsubHttpClientOptions = this.ipfsHttpClientOptions
-            ? undefined
-            : options["pubsubHttpClientOptions"] || "https://pubsubprovider.xyz/api/v0";
-        this.ipfsClient = createIpfsClient(this.ipfsHttpClientOptions || this.pubsubHttpClientOptions);
+        this.ipfsClient = this.ipfsHttpClientOptions ? createIpfsClient(this.ipfsHttpClientOptions) : undefined;
+        this.pubsubIpfsClient = options["pubsubHttpClientOptions"]
+            ? createIpfsClient(options["pubsubHttpClientOptions"])
+            : this.ipfsClient
+            ? this.ipfsClient
+            : createIpfsClient({ url: "https://pubsubprovider.xyz/api/v0" });
         this.dataPath = options["dataPath"] || plebbitUtil.getDefaultDataPath();
     }
 
     async getSubplebbit(subplebbitAddress) {
-        assert(subplebbitAddress, "Subplebbit address can't be null");
+        assert(typeof subplebbitAddress === "string");
+        assert(subplebbitAddress.length > 0);
         const subplebbitJson = await loadIpnsAsJson(subplebbitAddress, this);
         return new Subplebbit(subplebbitJson, this);
     }

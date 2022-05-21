@@ -92,7 +92,7 @@ class Publication extends EventEmitter {
                 challengeAnswerId: uuidv4(),
                 challengeAnswers: challengeAnswers
             });
-            await this.subplebbit.plebbit.ipfsClient.pubsub.publish(
+            await this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(
                 this.subplebbit.pubsubTopic,
                 uint8ArrayFromString(JSON.stringify(challengeAnswer))
             );
@@ -107,11 +107,7 @@ class Publication extends EventEmitter {
             const options = { acceptedChallengeTypes: [], ...userOptions };
             debug(`Attempting to publish ${this.getType()} with options (${JSON.stringify(options)})`);
             this.subplebbit = await this.subplebbit.plebbit.getSubplebbit(this.subplebbitAddress);
-            assert.equal(
-                Boolean(this.subplebbit?.encryption.publicKey),
-                true,
-                "Failed to load subplebbit for publishing"
-            );
+            assert.ok(this.subplebbit?.encryption?.publicKey, "Failed to load subplebbit for publishing");
             const encryptedPublication = await encrypt(JSON.stringify(this), this.subplebbit.encryption.publicKey);
             this.challenge = new ChallengeRequestMessage({
                 encryptedPublication: encryptedPublication,
@@ -119,11 +115,11 @@ class Publication extends EventEmitter {
                 ...options
             });
             await Promise.all([
-                this.subplebbit.plebbit.ipfsClient.pubsub.publish(
+                this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(
                     this.subplebbit.pubsubTopic,
                     uint8ArrayFromString(JSON.stringify(this.challenge))
                 ),
-                this.subplebbit.plebbit.ipfsClient.pubsub.subscribe(
+                this.subplebbit.plebbit.pubsubIpfsClient.pubsub.subscribe(
                     this.subplebbit.pubsubTopic,
                     this.handleChallengeExchange.bind(this)
                 )

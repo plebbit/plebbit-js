@@ -11,6 +11,7 @@ import Debug from "debug";
 import { Page } from "./pages";
 import { Subplebbit } from "./subplebbit";
 import DbHandler from "./runtime/node/db-handler";
+import assert from "assert";
 
 const debug = Debug("plebbit-js:sort-handler");
 
@@ -55,9 +56,20 @@ export class SortHandler {
             chunks.map(async (chunk) => {
                 return await Promise.all(
                     chunk.map(async (comment) => {
-                        // @ts-ignore
-                        const [sortedReplies, sortedRepliesCids] = await this.generatePagesUnderComment(comment);
-                        comment.setReplies(sortedReplies, sortedRepliesCids);
+                        if (comment.replyCount === 0) return comment;
+
+                        if (await this.subplebbit._keyv.has(comment.cid)) {
+                            const cachedComment = await this.subplebbit._keyv.get(comment.cid);
+                            comment.setReplies(cachedComment.sortedReplies, cachedComment.sortedRepliesCids);
+                        } else {
+                            const [sortedReplies, sortedRepliesCids] = await this.generatePagesUnderComment(
+                                comment,
+                                undefined
+                            );
+                            assert.ok(sortedReplies);
+                            await this.subplebbit._keyv.set(comment.cid, { sortedReplies, sortedRepliesCids });
+                            comment.setReplies(sortedReplies, sortedRepliesCids);
+                        }
                         return comment;
                     })
                 );
@@ -162,6 +174,7 @@ export class SortHandler {
 
     async generatePagesUnderComment(comment, trx) {
         // Create "pages" and "pageCids"
+        if (comment?.replyCount === 0) return [undefined, undefined];
         const res = await Promise.all(this.getSortPromises(comment, trx));
         let [pages, pageCids] = [{}, {}];
         for (const [page, pageCid] of res) {

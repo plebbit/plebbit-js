@@ -10,6 +10,7 @@ import { Subplebbit } from "../../subplebbit";
 import path from "path";
 import assert from "assert";
 import fs from "fs";
+import Keyv from "keyv";
 
 const debug = Debug("plebbit-js:db-handler");
 
@@ -524,6 +525,7 @@ export const subplebbitInitDbIfNeeded = async (subplebbit) => {
     subplebbit.dbHandler = new DbHandler(subplebbit._dbConfig, subplebbit);
     await subplebbit.dbHandler.createTablesIfNeeded();
     await subplebbit.initSignerIfNeeded();
+    subplebbit._keyv = new Keyv(`sqlite://${subplebbit._dbConfig.connection.filename}`); // TODO make this work with DBs other than sqlite
 };
 
 export default DbHandler;
