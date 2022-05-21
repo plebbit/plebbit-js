@@ -16,14 +16,14 @@ export const TIMEFRAMES_TO_SECONDS = Object.freeze({
 });
 const debug = Debug("plebbit-js:util");
 
-export async function loadIpfsFileAsJson(cid, plebbit) {
+export async function loadIpfsFileAsJson(cid, plebbit, defaultOptions = { timeout: 60000 }) {
     if (!cid) return undefined;
     if (plebbit.ipfsGatewayUrl) {
         const res = await fetch(`${plebbit.ipfsGatewayUrl}/ipfs/${cid}`);
         if (res.status === 200) return await res.json();
         else return undefined;
     } else {
-        const rawData: any = await all(plebbit.ipfsClient.cat(cid));
+        const rawData: any = await all(plebbit.ipfsClient.cat(cid, defaultOptions));
         const data = uint8ArrayConcat(rawData);
         if (!data) {
             debug(`IPFS (${cid}) loads undefined object (${data})`);
@@ -45,29 +45,6 @@ export async function loadIpnsAsJson(ipns, plebbit) {
 
 export async function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export async function unsubscribeAllPubsubTopics(ipfsClients) {
-    return new Promise(async (resolve, reject) => {
-        if (!Array.isArray(ipfsClients)) ipfsClients = [ipfsClients];
-        const errHandle = (err) => {
-            console.error(err);
-            reject(err);
-        };
-        const unsubscribePromises = ipfsClients.map((ipfsClient) => {
-            return new Promise(async (nestedResolve, nestedReject) => {
-                ipfsClient.pubsub
-                    .ls()
-                    .then(async (pubsubTopics) => {
-                        Promise.all(pubsubTopics.map((topic) => ipfsClient.pubsub.unsubscribe(topic)))
-                            .then(nestedResolve)
-                            .catch(nestedResolve);
-                    })
-                    .catch(nestedReject);
-            });
-        });
-        Promise.all(unsubscribePromises).then(resolve).catch(errHandle);
-    });
 }
 
 export function chunks(arr, len) {
