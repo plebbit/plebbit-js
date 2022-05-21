@@ -26,11 +26,12 @@ export class Plebbit {
             ? undefined
             : options["ipfsGatewayUrl"] || "https://cloudflare-ipfs.com";
         this.ipfsClient = this.ipfsHttpClientOptions ? createIpfsClient(this.ipfsHttpClientOptions) : undefined;
+        this.pubsubHttpClientOptions = options["pubsubHttpClientOptions"] || "https://pubsubprovider.xyz/api/v0";
         this.pubsubIpfsClient = options["pubsubHttpClientOptions"]
             ? createIpfsClient(options["pubsubHttpClientOptions"])
             : this.ipfsClient
             ? this.ipfsClient
-            : createIpfsClient({ url: "https://pubsubprovider.xyz/api/v0" });
+            : createIpfsClient(this.pubsubHttpClientOptions);
         this.dataPath = options["dataPath"] || plebbitUtil.getDefaultDataPath();
     }
 
