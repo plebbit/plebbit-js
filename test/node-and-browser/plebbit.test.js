@@ -4,14 +4,7 @@ const Plebbit = require("../../dist/node");
 const fixtureSigner = require("../fixtures/signers")[0];
 const { expect } = require("chai");
 const signers = require("../fixtures/signers");
-const {
-    loadIpfsFileAsJson,
-    loadIpnsAsJson,
-    removeKeys,
-    removeKeysWithUndefinedValues
-} = require("../../dist/node/util");
-const Post = require("../../dist/node/post");
-const { Subplebbit } = require("../../dist/node/subplebbit");
+const { loadIpfsFileAsJson, loadIpnsAsJson } = require("../../dist/node/util");
 
 describe("plebbit (node and browser)", () => {
     let plebbit, signer, subplebbitSigner;
@@ -112,9 +105,7 @@ describe("plebbit (node and browser)", () => {
         it("loads subplebbit correctly", async () => {
             const _subplebbitIpns = await loadIpnsAsJson(subplebbitSigner.address, plebbit);
             const expectedSubplebbit = await plebbit.createSubplebbit(_subplebbitIpns);
-            expect(expectedSubplebbit instanceof Subplebbit).to.equal(true);
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
-            expect(expectedSubplebbit instanceof Subplebbit).to.equal(true);
             expect(JSON.stringify(loadedSubplebbit)).to.equal(JSON.stringify(expectedSubplebbit));
         });
     });
