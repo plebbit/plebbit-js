@@ -175,7 +175,7 @@ describe("comment (node and browser)", async () => {
                 const editedText = "edit test";
                 const editReason = "To test editing a comment";
                 const commentToBeEdited = mockComments[0];
-                await commentToBeEdited.update();
+                await commentToBeEdited.update(10000);
 
                 const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
                 await subplebbit.update();
@@ -210,7 +210,7 @@ describe("comment (node and browser)", async () => {
                 const editReason = "To test double editing a comment";
                 const commentToBeEdited = mockComments[0];
                 commentToBeEdited.removeAllListeners();
-                await commentToBeEdited.update();
+                await commentToBeEdited.update(10000);
                 const originalContent = commentToBeEdited.originalContent;
                 const commentEdit = await plebbit.createCommentEdit({
                     subplebbitAddress: commentToBeEdited.subplebbitAddress,
