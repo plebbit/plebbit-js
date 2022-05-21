@@ -113,3 +113,6 @@ dist/
 
 # browser tests for karma built by webpack
 test-karma-webpack
+
+# test ipfs node
+.test-ipfs*
