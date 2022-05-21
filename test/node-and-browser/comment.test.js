@@ -1,14 +1,13 @@
 const Plebbit = require("../../dist/node");
 const { expect } = require("chai");
 const signers = require("../fixtures/signers");
-const { timestamp, sleep, waitTillCommentsUpdate } = require("../../dist/node/util");
+const { timestamp, waitTillCommentsUpdate } = require("../../dist/node/util");
 const { signPublication, verifyPublication } = require("../../dist/node/signer");
 const { generateMockPost, generateMockComment } = require("../test-util");
-const subplebbits = require("../fixtures/subplebbits");
 const { REPLIES_SORT_TYPES } = require("../../dist/node/sort-handler");
 
 let plebbit;
-const subplebbitAddress = subplebbits[0].address;
+const subplebbitAddress = signers[0].address;
 const mockComments = [];
 
 before(async () => {

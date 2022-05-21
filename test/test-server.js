@@ -9,7 +9,7 @@ const ipfsPath = getIpfsPath();
 // in order to test the repo like a real user would
 const Plebbit = require("../dist/node");
 const { generateMockPost, generateMockComment } = require("./test-util");
-const subplebbits = require("./fixtures/subplebbits");
+const signers = require("./fixtures/signers");
 const path = require("path");
 const http = require("http");
 // allow * origin on ipfs api to bypass cors browser error
@@ -120,7 +120,7 @@ const setupSubplebbit = async (subplebbit, plebbit) => {
             agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
         }
     });
-    const signer = await plebbit.createSigner(subplebbits[0].signer);
+    const signer = await plebbit.createSigner(signers[0]);
     const subplebbit = await plebbit.createSubplebbit({ signer: signer });
     await subplebbit.setProvideCaptchaCallback(() => [null, null]); // TODO change later to allow changing captcha callback while test-server.js is running (needed for test-Challenge.js)
     await subplebbit.start(10000); // 10 seconds
