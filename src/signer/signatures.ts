@@ -59,7 +59,6 @@ function getFieldsToSign(publication) {
 }
 
 export async function signPublication(publication, signer) {
-    debug(`Will attempt to sign publication (${JSON.stringify(publication)}) using signer (${JSON.stringify(signer)})`);
     const keyPair = await getKeyPairFromPrivateKeyPem(signer.privateKey, "");
     const fieldsToSign = getFieldsToSign(publication);
     debug(`Will sign fields ${JSON.stringify(fieldsToSign)}`);
