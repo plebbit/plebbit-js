@@ -1,6 +1,6 @@
-async function generateMockPost(subplebbitAddress, plebbit) {
+async function generateMockPost(subplebbitAddress, plebbit, postSigner = undefined) {
     const postStartTestTime = Date.now() / 1000;
-    const signer = await plebbit.createSigner();
+    const signer = postSigner || (await plebbit.createSigner());
     const post = await plebbit.createComment({
         author: { displayName: `Mock Author - ${postStartTestTime}` },
         signer: signer,
@@ -14,14 +14,14 @@ async function generateMockPost(subplebbitAddress, plebbit) {
     return post;
 }
 
-async function generateMockComment(parentPostOrComment, plebbit) {
+async function generateMockComment(parentPostOrComment, plebbit, commentSigner = undefined) {
     const commentTime = Date.now() / 1000;
-    const signer = await plebbit.createSigner();
+    const signer = commentSigner || (await plebbit.createSigner());
     const comment = await plebbit.createComment({
         author: { displayName: `Mock Author - ${commentTime}` },
         signer: signer,
         content: `Mock comment - ${commentTime}`,
-        postCid: parentPostOrComment.cid,
+        postCid: parentPostOrComment.postCid || parentPostOrComment.cid,
         parentCid: parentPostOrComment.cid,
         subplebbitAddress: parentPostOrComment.subplebbitAddress
     });

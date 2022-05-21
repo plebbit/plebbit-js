@@ -8,39 +8,90 @@ const ipfsPath = getIpfsPath();
 // with plain Javascript and commonjs require (not import)
 // in order to test the repo like a real user would
 const Plebbit = require("../dist/node");
-const signers = require("./fixtures/signers");
 const { generateMockPost, generateMockComment } = require("./test-util");
+const subplebbits = require("./fixtures/subplebbits");
+const path = require("path");
+const http = require("http");
 // allow * origin on ipfs api to bypass cors browser error
 // very insecure do not do this in production
-execSync(`${ipfsPath} config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]'`, { stdio: "inherit" });
+const offlineNodeArgs = {
+    dir: path.join(process.cwd(), ".test-ipfs-offline"),
+    apiPort: 5001,
+    gatewayPort: 8080,
+    args: "--offline"
+};
+const onlineNodeArgs = {
+    dir: path.join(process.cwd(), ".test-ipfs-online"),
+    apiPort: 5002,
+    gatewayPort: 8081,
+    args: "--enable-pubsub-experiment"
+};
 
-// start ipfs daemon
-const ipfsProcess = exec(`${ipfsPath}  daemon --enable-pubsub-experiment`);
-console.log(`${ipfsPath}  process started with pid ${ipfsProcess.pid}`);
-ipfsProcess.stderr.on("data", console.error);
-ipfsProcess.stdin.on("data", console.log);
-ipfsProcess.stdout.on("data", console.log);
-ipfsProcess.on("error", console.error);
-ipfsProcess.on("exit", () => {
-    console.error(`${ipfsPath}  process with pid ${ipfsProcess.pid} exited`);
-    process.exit(1);
-});
-process.on("exit", () => {
-    exec(`kill ${ipfsProcess.pid + 1}`);
-});
+const clientNodeArgs = {
+    dir: path.join(process.cwd(), ".test-ipfs-client"),
+    apiPort: 5003,
+    gatewayPort: 8082,
+    args: "--enable-pubsub-experiment"
+};
 
-const ipfsDaemonIsReady = () =>
-    new Promise((resolve) => {
-        ipfsProcess.stdout.on("data", (data) => {
-            if (data.match("Daemon is ready")) {
-                resolve();
-            }
-        });
-    });
+const startIpfsNodes = async () => {
+    await Promise.all(
+        [offlineNodeArgs, onlineNodeArgs, clientNodeArgs].map(async (nodeArgs) => {
+            try {
+                execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} init`, { stdio: "ignore" });
+            } catch {}
+
+            execSync(
+                `IPFS_PATH=${nodeArgs.dir} ${ipfsPath} config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]'`,
+                { stdio: "inherit" }
+            );
+            execSync(
+                `IPFS_PATH=${nodeArgs.dir} ${ipfsPath} config  Addresses.API /ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`,
+                { stdio: "inherit" }
+            );
+            execSync(
+                `IPFS_PATH=${nodeArgs.dir} ${ipfsPath} config  Addresses.Gateway /ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`,
+                { stdio: "inherit" }
+            );
+
+            const ipfsCmd = `IPFS_PATH=${nodeArgs.dir} ${ipfsPath} daemon ${nodeArgs.args}`;
+            console.log(ipfsCmd);
+            const ipfsProcess = exec(ipfsCmd);
+            ipfsProcess.stderr.on("data", console.error);
+            ipfsProcess.stdin.on("data", console.log);
+            ipfsProcess.stdout.on("data", console.log);
+            ipfsProcess.on("error", console.error);
+            ipfsProcess.on("exit", () => {
+                console.error(`${ipfsPath}  process with pid ${ipfsProcess.pid} exited`);
+                process.exit(1);
+            });
+            process.on("exit", () => {
+                exec(`kill ${ipfsProcess.pid + 1}`);
+            });
+
+            const ipfsDaemonIsReady = () =>
+                new Promise((resolve) => {
+                    ipfsProcess.stdout.on("data", (data) => {
+                        if (data.match("Daemon is ready")) {
+                            resolve();
+                        }
+                    });
+                });
+            return ipfsDaemonIsReady();
+        })
+    );
+};
 
 const setupSubplebbit = async (subplebbit, plebbit) => {
     return new Promise(async (resolve) => {
         // Add mock post to use in other tests
+        subplebbit.on("update", async () => {
+            if (subplebbit.posts?.pages?.hot?.comments[0]?.replies) {
+                resolve();
+                console.log("This subplebbit already has one post with at least one comment under it");
+                subplebbit.removeAllListeners();
+            }
+        });
         await subplebbit.update();
         const post = await generateMockPost(subplebbit.address, plebbit);
         await post.publish();
@@ -49,28 +100,30 @@ const setupSubplebbit = async (subplebbit, plebbit) => {
             const comment = await generateMockComment(updatedPost, plebbit);
             await comment.publish();
         });
-
-        subplebbit.on("update", async () => {
-            if (subplebbit.posts?.pages?.hot?.comments[0]?.replies) {
-                resolve();
-                console.log("A post has been published with one comment successfully");
-                subplebbit.removeAllListeners();
-            }
-        });
     });
 };
 
 (async () => {
-    await ipfsDaemonIsReady();
-
     // do more stuff here, like start some subplebbits
-
+    await startIpfsNodes();
     const plebbit = await Plebbit({
-        ipfsHttpClientOptions: "http://localhost:5001/api/v0"
+        ipfsHttpClientOptions: `http://localhost:${offlineNodeArgs.apiPort}/api/v0`,
+        pubsubHttpClientOptions: {
+            url: `http://localhost:${onlineNodeArgs.apiPort}/api/v0`,
+            agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
+        }
     });
-    const signer = await plebbit.createSigner(signers[0]);
+    const clientPlebbit = await Plebbit({
+        ipfsHttpClientOptions: `http://localhost:${offlineNodeArgs.apiPort}/api/v0`,
+        pubsubHttpClientOptions: {
+            url: `http://localhost:${onlineNodeArgs.apiPort}/api/v0`,
+            agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
+        }
+    });
+    const signer = await plebbit.createSigner(subplebbits[0].signer);
     const subplebbit = await plebbit.createSubplebbit({ signer: signer });
-    await subplebbit.start();
     await subplebbit.setProvideCaptchaCallback(() => [null, null]); // TODO change later to allow changing captcha callback while test-server.js is running (needed for test-Challenge.js)
-    await setupSubplebbit(subplebbit, plebbit);
+    await subplebbit.start(10000); // 10 seconds
+    await setupSubplebbit(subplebbit, clientPlebbit);
+    await subplebbit.stop();
 })();
