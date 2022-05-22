@@ -1,0 +1,168 @@
+import Publication from "./publication";
+import {Pages} from "./pages";
+import {Signature} from "./signer";
+
+export declare class Comment extends Publication {
+    postCid?: string;
+    cid?: string;
+    parentCid?: string;
+    ipnsName?: string;
+    ipnsKeyName?: string;
+    depth?: number;
+    upvoteCount?: number;
+    downvoteCount?: number;
+    replyCount?: number;
+    updatedAt?: number;
+    replies?: Pages;
+    originalContent?: string;
+    content?: string;
+    editSignature?: Signature;
+    editTimestamp?: number;
+    editReason?: string;
+    deleted?: boolean;
+    spoiler?: boolean;
+    pinned?: boolean;
+    locked?: boolean;
+    removed?: boolean;
+    moderatorReason?: string;
+    previousCid?: string;
+    emittedAt?: number;
+    _updateInterval?: any;
+
+    _initProps(props: any): void;
+
+    _initCommentUpdate(props: any): void;
+
+    toJSON(): {
+        cid: string;
+        originalContent: string;
+        updatedAt: number;
+        editSignature: Signature;
+        editTimestamp: number;
+        editReason: string;
+        deleted: boolean;
+        spoiler: boolean;
+        pinned: boolean;
+        locked: boolean;
+        removed: boolean;
+        moderatorReason: string;
+        content: string;
+        replyCount: number;
+        upvoteCount: number;
+        downvoteCount: number;
+        replies: Pages;
+        previousCid: string;
+        ipnsName: string;
+        postCid: string;
+        depth: number;
+        parentCid: string;
+        subplebbitAddress: string;
+        timestamp: number;
+        signature: string;
+        author: import("./author").default;
+    };
+
+    toJSONIpfs(): {
+        previousCid: string;
+        ipnsName: string;
+        postCid: string;
+        depth: number;
+        content: string;
+        parentCid: string;
+        subplebbitAddress: string;
+        timestamp: number;
+        signature: string;
+        author: import("./author").default;
+    };
+
+    toJSONSkeleton(): {
+        content: string;
+        parentCid: string;
+        subplebbitAddress: string;
+        timestamp: number;
+        signature: string;
+        author: import("./author").default;
+    };
+
+    toJSONForDb(challengeRequestId: any): any;
+
+    toJSONCommentUpdate(): {
+        updatedAt: number;
+        editSignature: Signature;
+        editTimestamp: number;
+        editReason: string;
+        deleted: boolean;
+        spoiler: boolean;
+        pinned: boolean;
+        locked: boolean;
+        removed: boolean;
+        moderatorReason: string;
+        content: string;
+        replyCount: number;
+        upvoteCount: number;
+        downvoteCount: number;
+        replies: Pages;
+    };
+
+    setCommentIpnsKey(ipnsKey: any): void;
+
+    setPostCid(newPostCid: any): void;
+
+    setCid(newCid: any): void;
+
+    setPreviousCid(newPreviousCid: any): void;
+
+    setDepth(newDepth: any): void;
+
+    setUpdatedAt(newUpdatedAt: any): void;
+
+    setOriginalContent(newOriginalContent: any): void;
+
+    setReplies(sortedReplies: any, sortedRepliesCids: any): void;
+
+    updateOnce(): Promise<this>;
+
+    update(updateIntervalMs?: number): Promise<this>;
+
+    stop(): void;
+
+    edit(commentUpdateOptions: any): Promise<void>;
+}
+
+export declare class CommentEdit extends Comment {
+    commentCid?: string;
+
+    _initProps(props: any): void;
+
+    toJSON(): {
+        commentCid: string;
+        cid: string;
+        originalContent: string;
+        updatedAt: number;
+        editSignature: Signature;
+        editTimestamp: number;
+        editReason: string;
+        deleted: boolean;
+        spoiler: boolean;
+        pinned: boolean;
+        locked: boolean;
+        removed: boolean;
+        moderatorReason: string;
+        content: string;
+        replyCount: number;
+        upvoteCount: number;
+        downvoteCount: number;
+        replies: Pages;
+        previousCid: string;
+        ipnsName: string;
+        postCid: string;
+        depth: number;
+        parentCid: string;
+        subplebbitAddress: string;
+        timestamp: number;
+        signature: string;
+        author: import("./author").default;
+    };
+
+    toJSONForDb(challengeRequestId: any): any;
+}

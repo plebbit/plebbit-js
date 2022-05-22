@@ -84,17 +84,31 @@ const startIpfsNodes = async () => {
 };
 
 const setupSubplebbit = async (subplebbit, plebbit) => {
-    return new Promise(async (resolve) => {
-        // Add mock post to use in other tests
-        const post = await generateMockPost(subplebbit.address, plebbit);
-        await post.publish();
+    const databaseConfig = {
+        client: "better-sqlite3", // or 'better-sqlite3'
+        connection: {
+            filename: ":memory:"
+        },
+        useNullAsDefault: true
+    };
 
-        post.once("challengeverification", async ([challengeVerificationMsg, updatedPost]) => {
-            const comment = await generateMockComment(updatedPost, plebbit);
-            await comment.publish();
-            resolve();
+    const syncInterval = 4000; // 4 seconds
+
+    return new Promise(async (resolve) => {
+        subplebbit.once("update", async () => {
+            // Add mock post to use in other tests
+            const post = await generateMockPost(subplebbit.address, plebbit);
+            await post.publish();
+
+            post.once("challengeverification", async ([challengeVerificationMsg, updatedPost]) => {
+                const comment = await generateMockComment(updatedPost, plebbit);
+                await comment.publish();
+                await subplebbit.stop();
+                resolve();
+            });
         });
     });
+    await subplebbit.update();
 };
 
 const startMathCliSubplebbit = async () => {
@@ -106,11 +120,10 @@ const startMathCliSubplebbit = async () => {
         }
     });
     const signer = await plebbit.createSigner(signers[1]);
-    const subplebbit = await plebbit.createSubplebbit({ signer: signer });
+    const subplebbit = await plebbit.createSubplebbit({ signer: signer, database: databaseConfig });
     await subplebbit.setProvideCaptchaCallback((challengeRequestMessage) => {
         // Expected return is:
         // Challenge[], reason for skipping captcha (if it's skipped by nullifying Challenge[])
-
         return [[new Challenge({ challenge: "1+1=?", type: CHALLENGE_TYPES.TEXT })]];
     });
 
@@ -119,7 +132,7 @@ const startMathCliSubplebbit = async () => {
         const challengeErrors = challengeSuccess ? undefined : ["Result of math expression is incorrect"];
         return [challengeSuccess, challengeErrors];
     });
-    await subplebbit.start(10000); // 10 seconds
+    await subplebbit.start(syncInterval);
 };
 
 const startImageCaptchaSubplebbit = async () => {
@@ -131,11 +144,10 @@ const startImageCaptchaSubplebbit = async () => {
         }
     });
     const signer = await plebbit.createSigner(signers[2]);
-    const subplebbit = await plebbit.createSubplebbit({ signer: signer });
+    const subplebbit = await plebbit.createSubplebbit({ signer: signer, database: databaseConfig });
 
     // Image captcha are default
-    // await subplebbit.setProvideCaptchaCallback(() => [null, null]); // TODO change later to allow changing captcha callback while test-server.js is running (needed for test-Challenge.js)
-    await subplebbit.start(10000); // 10 seconds
+    await subplebbit.start(syncInterval);
     subplebbit.setValidateCaptchaAnswerCallback((challengeAnswerMessage) => {
         const challengeSuccess = challengeAnswerMessage.challengeAnswers[0] === "1234";
         const challengeErrors = challengeSuccess ? undefined : ["User answered image captcha incorrectly"];
@@ -161,10 +173,10 @@ const startImageCaptchaSubplebbit = async () => {
         }
     });
     const signer = await plebbit.createSigner(signers[0]);
-    const subplebbit = await plebbit.createSubplebbit({ signer: signer });
+    const subplebbit = await plebbit.createSubplebbit({ signer: signer, database: databaseConfig });
     await subplebbit.setProvideCaptchaCallback(() => [null, null]); // TODO change later to allow changing captcha callback while test-server.js is running (needed for test-Challenge.js)
 
-    subplebbit.start(10000); // 10 seconds
+    subplebbit.start(syncInterval);
     startImageCaptchaSubplebbit();
     startMathCliSubplebbit();
 

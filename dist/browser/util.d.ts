@@ -1,0 +1,50 @@
+export declare const TIMEFRAMES_TO_SECONDS: Readonly<{
+    HOUR: number;
+    DAY: number;
+    WEEK: number;
+    MONTH: number;
+    YEAR: number;
+    ALL: number;
+}>;
+
+export declare function loadIpfsFileAsJson(cid: any, plebbit: any, defaultOptions?: {
+    timeout: number;
+}): Promise<any>;
+
+export declare function loadIpnsAsJson(ipns: any, plebbit: any): Promise<any>;
+
+export declare function sleep(ms: any): Promise<unknown>;
+
+export declare function chunks(arr: any, len: any): any[];
+
+export declare function round(number: any, decimalPlaces: any): number;
+
+export declare function parseJsonIfString(x: any): any;
+
+export declare function timestamp(): number;
+
+export declare function keepKeys(obj: any, keys: any): {};
+
+export declare function removeKeys(object1: any, keys: any): any;
+
+export declare function replaceXWithY(obj: any, x: any, y: any): {};
+
+export declare function shallowEqual(object1: any, object2: any, excludeKeys?: any[]): boolean;
+
+export declare function waitTillPublicationsArePublished(publications: any): Promise<any[]>;
+
+export declare function waitTillCommentsUpdate(comments: any, updateInterval: any): Promise<unknown>;
+
+export declare function hotScore(comment: any): number;
+
+export declare function controversialScore(comment: any): number;
+
+export declare function topScore(comment: any): number;
+
+export declare function newScore(comment: any): any;
+
+export declare function oldScore(comment: any): number;
+
+export declare function removeKeysWithUndefinedValues(object: any): any;
+
+export declare function ipfsImportKey(signer: any, plebbit: any, password?: string): Promise<any>;
