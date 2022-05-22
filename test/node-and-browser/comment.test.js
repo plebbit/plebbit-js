@@ -106,6 +106,17 @@ describe("comment (node and browser)", async () => {
             });
         });
 
+        it("Throws an error when publishing a duplicate post", async function () {
+            return new Promise(async (resolve, reject) => {
+                await mockComments[0].publish();
+                mockComments[0].once("challengeverification", ([challengeVerificationMessage, newComment]) => {
+                    expect(challengeVerificationMessage.challengePassed).to.be.false;
+                    expect(challengeVerificationMessage.reason).to.be.a("string");
+                    resolve();
+                });
+            });
+        });
+
         [1, 2, 3, 4, 5, 6].map((depth) =>
             it(`Can publish comment with depth = ${depth}`, async () => {
                 return new Promise(async (resolve, reject) => {
@@ -147,14 +158,13 @@ describe("comment (node and browser)", async () => {
                 const commentToBeEdited = await plebbit.getComment(subplebbit.latestPostCid);
                 commentToBeEdited.removeAllListeners();
                 await commentToBeEdited.update();
-                const originalReason = commentToBeEdited.editReason,
-                    commentEdit = await plebbit.createCommentEdit({
-                        subplebbitAddress: commentToBeEdited.subplebbitAddress,
-                        commentCid: commentToBeEdited.cid,
-                        editReason: editReason,
-                        content: editedText,
-                        signer: await plebbit.createSigner() // Create a new signer, different than the signer of the original comment
-                    });
+                const commentEdit = await plebbit.createCommentEdit({
+                    subplebbitAddress: commentToBeEdited.subplebbitAddress,
+                    commentCid: commentToBeEdited.cid,
+                    editReason: editReason,
+                    content: editedText,
+                    signer: await plebbit.createSigner() // Create a new signer, different than the signer of the original comment
+                });
                 await commentEdit.publish();
                 commentEdit.once(
                     "challengeverification",
