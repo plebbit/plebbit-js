@@ -556,37 +556,21 @@ export class Subplebbit extends EventEmitter {
         // Return question, type
         // Expected return is:
         // captcha, captcha type, reason for skipping captcha (if it's skipped by nullifying captcha)
-        return new Promise(async (resolve, reject) => {
-            const { image, text } = createCaptcha(300, 100);
-            this._challengeToSolution[challengeRequestMessage.challengeRequestId] = [text];
-            image
-                .then((imageBuffer) =>
-                    resolve([
-                        [
-                            new Challenge({
-                                challenge: imageBuffer,
-                                // @ts-ignore
-                                type: CHALLENGE_TYPES.image
-                            })
-                        ],
-                        undefined
-                    ])
-                )
-                .catch(reject);
-        });
+        const { image, text } = createCaptcha(300, 100);
+        this._challengeToSolution[challengeRequestMessage.challengeRequestId] = [text];
+        const imageBuffer = await image;
+        return [[new Challenge({ challenge: imageBuffer, type: CHALLENGE_TYPES.IMAGE })]];
     }
 
     async defaultValidateCaptcha(challengeAnswerMessage) {
-        return new Promise(async (resolve, reject) => {
-            const actualSolution = this._challengeToSolution[challengeAnswerMessage.challengeRequestId];
-            const answerIsCorrect =
-                JSON.stringify(challengeAnswerMessage.challengeAnswers) === JSON.stringify(actualSolution);
-            debug(
-                `Challenge (${challengeAnswerMessage.challengeRequestId}): Answer's validity: ${answerIsCorrect}, user's answer: ${challengeAnswerMessage.challengeAnswers}, actual solution: ${actualSolution}`
-            );
-            const challengeErrors = answerIsCorrect ? undefined : ["User solved captcha incorrectly"];
-            resolve([answerIsCorrect, challengeErrors]);
-        });
+        const actualSolution = this._challengeToSolution[challengeAnswerMessage.challengeRequestId];
+        const answerIsCorrect =
+            JSON.stringify(challengeAnswerMessage.challengeAnswers) === JSON.stringify(actualSolution);
+        debug(
+            `Challenge (${challengeAnswerMessage.challengeRequestId}): Answer's validity: ${answerIsCorrect}, user's answer: ${challengeAnswerMessage.challengeAnswers}, actual solution: ${actualSolution}`
+        );
+        const challengeErrors = answerIsCorrect ? undefined : ["User solved captcha incorrectly"];
+        return [answerIsCorrect, challengeErrors];
     }
 
     async syncIpnsWithDb(syncIntervalMs) {
