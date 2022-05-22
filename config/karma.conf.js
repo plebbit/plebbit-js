@@ -70,7 +70,7 @@ module.exports = function (config) {
         autoWatch: false,
 
         // how the test logs are displayed
-        // reporters: ["spec", "progress"],
+        reporters: ["spec"],
 
         port: 9876,
         colors: true,
