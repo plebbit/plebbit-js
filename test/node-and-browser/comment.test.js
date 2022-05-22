@@ -3,7 +3,7 @@ const { expect } = require("chai");
 const signers = require("../fixtures/signers");
 const { timestamp, waitTillCommentsUpdate } = require("../../dist/node/util");
 const { signPublication, verifyPublication } = require("../../dist/node/signer");
-const { generateMockPost, generateMockComment } = require("../test-util");
+const { generateMockPost, generateMockComment } = require("../../dist/node/test-util");
 const { REPLIES_SORT_TYPES } = require("../../dist/node/sort-handler");
 
 let plebbit;

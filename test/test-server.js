@@ -8,7 +8,7 @@ const ipfsPath = getIpfsPath();
 // with plain Javascript and commonjs require (not import)
 // in order to test the repo like a real user would
 const Plebbit = require("../dist/node");
-const { generateMockPost, generateMockComment } = require("./test-util");
+const { generateMockPost, generateMockComment } = require("../dist/node/test-util");
 const signers = require("./fixtures/signers");
 const path = require("path");
 const http = require("http");
