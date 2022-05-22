@@ -12,6 +12,7 @@ const { generateMockPost, generateMockComment } = require("../dist/node/test-uti
 const signers = require("./fixtures/signers");
 const path = require("path");
 const http = require("http");
+const { Challenge, CHALLENGE_TYPES } = require("../dist/node/challenge");
 // allow * origin on ipfs api to bypass cors browser error
 // very insecure do not do this in production
 const offlineNodeArgs = {
@@ -85,21 +86,60 @@ const startIpfsNodes = async () => {
 const setupSubplebbit = async (subplebbit, plebbit) => {
     return new Promise(async (resolve) => {
         // Add mock post to use in other tests
-        subplebbit.on("update", async () => {
-            if (subplebbit.posts?.pages?.hot?.comments[0]?.replies) {
-                resolve();
-                console.log("This subplebbit already has one post with at least one comment under it");
-                subplebbit.removeAllListeners();
-            }
-        });
-        await subplebbit.update();
         const post = await generateMockPost(subplebbit.address, plebbit);
         await post.publish();
 
         post.once("challengeverification", async ([challengeVerificationMsg, updatedPost]) => {
             const comment = await generateMockComment(updatedPost, plebbit);
             await comment.publish();
+            resolve();
         });
+    });
+};
+
+const startMathCliSubplebbit = async () => {
+    const plebbit = await Plebbit({
+        ipfsHttpClientOptions: `http://localhost:${offlineNodeArgs.apiPort}/api/v0`,
+        pubsubHttpClientOptions: {
+            url: `http://localhost:${onlineNodeArgs.apiPort}/api/v0`,
+            agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
+        }
+    });
+    const signer = await plebbit.createSigner(signers[1]);
+    const subplebbit = await plebbit.createSubplebbit({ signer: signer });
+    await subplebbit.setProvideCaptchaCallback((challengeRequestMessage) => {
+        // Expected return is:
+        // Challenge[], reason for skipping captcha (if it's skipped by nullifying Challenge[])
+
+        return [[new Challenge({ challenge: "1+1=?", type: CHALLENGE_TYPES.TEXT })]];
+    });
+
+    subplebbit.setValidateCaptchaAnswerCallback((challengeAnswerMessage) => {
+        const challengePassed = challengeAnswerMessage.challengeAnswers[0] === "2";
+        const challengeErrors = challengePassed ? undefined : ["Result of math expression is incorrect"];
+        return [challengePassed, challengeErrors];
+    });
+    await subplebbit.start(10000); // 10 seconds
+};
+
+const startImageCaptchaSubplebbit = async () => {
+    const plebbit = await Plebbit({
+        ipfsHttpClientOptions: `http://localhost:${offlineNodeArgs.apiPort}/api/v0`,
+        pubsubHttpClientOptions: {
+            url: `http://localhost:${onlineNodeArgs.apiPort}/api/v0`,
+            agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
+        }
+    });
+    const signer = await plebbit.createSigner(signers[2]);
+    const subplebbit = await plebbit.createSubplebbit({ signer: signer });
+
+    // Image captcha are default
+    // await subplebbit.setProvideCaptchaCallback(() => [null, null]); // TODO change later to allow changing captcha callback while test-server.js is running (needed for test-Challenge.js)
+    await subplebbit.start(10000); // 10 seconds
+    subplebbit.setValidateCaptchaAnswerCallback((challengeAnswerMessage) => {
+        const challengePassed = challengeAnswerMessage.challengeAnswers[0] === "1234";
+        const challengeErrors = challengePassed ? undefined : ["User answered image captcha incorrectly"];
+        return [challengePassed, challengeErrors];
     });
 };
 
@@ -123,7 +163,11 @@ const setupSubplebbit = async (subplebbit, plebbit) => {
     const signer = await plebbit.createSigner(signers[0]);
     const subplebbit = await plebbit.createSubplebbit({ signer: signer });
     await subplebbit.setProvideCaptchaCallback(() => [null, null]); // TODO change later to allow changing captcha callback while test-server.js is running (needed for test-Challenge.js)
-    await subplebbit.start(10000); // 10 seconds
+
+    subplebbit.start(10000); // 10 seconds
+    startImageCaptchaSubplebbit();
+    startMathCliSubplebbit();
+
     await setupSubplebbit(subplebbit, clientPlebbit);
-    await subplebbit.stop();
+    console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 })();
