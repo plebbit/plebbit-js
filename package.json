@@ -1,24 +1,90 @@
 {
   "name": "@plebbit/plebbit-js",
   "version": "0.0.3",
-  "description": "plebbit.js will be an NPM module to wrap around the IPFS APIs used by Plebbit. It will be used in all clients: CLI, Electron (Desktop GUI) and Web.",
-  "exports": {
-    ".": {
-      "browser": "./dist/browser/index.js",
-      "import": "./dist/node/esm/index.js",
-      "require": "./dist/node/cjs/index.js"
-    },
-    "./package.json": "./package.json"
-  },
-  "main": "./dist/node/cjs/index.js",
-  "browser": "./dist/browser/index.js",
   "scripts": {
-    "test": "mocha --timeout 0",
-    "build:cjs": "babel src --out-dir dist/node/cjs --config-file ./config/babel-cjs.js && echo '{\"type\": \"commonjs\"}'> dist/node/cjs/package.json",
-    "build:esm": "babel src --out-dir dist/node/esm --config-file ./config/babel-esm.js && echo '{\"type\": \"module\"}'> dist/node/esm/package.json",
-    "build:browser": "babel src --out-dir dist/browser --config-file ./config/babel-browser.js && echo '{\"type\": \"module\"}'> dist/browser/package.json && cp ./config/babel-browser-noop.js dist/browser/noop.js",
-    "build": "npm run build:cjs && npm run build:esm && npm run build:browser"
+    "build": "npm run clean && run-s build:node build:browser",
+    "build:watch": "concurrently --raw \"tsc --project config/tsconfig.json --watch\" \"node config/build-browser --watch\"",
+    "build:node": "tsc --project config/tsconfig.json",
+    "build:node:watch": "tsc --project config/tsconfig.json --watch",
+    "build:browser": "node config/build-browser",
+    "build:browser:watch": "node config/build-browser --watch --debug",
+    "webpack:watch": "while true; do webpack watch --mode development --config config/webpack.config.js; sleep 1; done",
+    "test": "run-s test:node test:browser",
+    "test:node": "mocha --config config/.mocharc.js test/{node,node-and-browser}/**/*.test.js",
+    "test:browser": "karma start config/karma.conf.js",
+    "test:server": "node test/test-server.js",
+    "clean": "rimraf dist",
+    "prettier": "prettier {src,test,config}/**/*.{js,ts} --write --config config/prettier.config.js",
+    "test:prettier": "prettier-check {src,test,config}/**/*.{js,ts} --config config/prettier.config.js"
   },
+  "main": "dist/node/index.js",
+  "types": "dist/node/index.d.ts",
+  "browser": {
+    ".": "dist/browser/index.js",
+    "./dist/node": "./dist/browser"
+  },
+  "files": [
+    "dist/"
+  ],
+  "dependencies": {
+    "@keyv/sqlite": "^3.5.1",
+    "assert": "2.0.0",
+    "better-sqlite3": "^7.5.3",
+    "buffer": "6.0.3",
+    "captcha-canvas": "3.1.0",
+    "ipfs-core": "0.14.3",
+    "ipfs-http-client": "56.0.3",
+    "jose": "4.8.1",
+    "js-sha256": "0.9.0",
+    "keyv": "^4.2.9",
+    "knex": "2.0.0",
+    "libp2p-crypto": "0.21.2"
+  },
+  "devDependencies": {
+    "@babel/core": "7.17.10",
+    "@babel/plugin-transform-runtime": "7.17.10",
+    "@babel/preset-env": "7.17.10",
+    "@types/mocha": "9.1.1",
+    "@types/node": "17.0.25",
+    "@types/url-parse": "1.4.8",
+    "babel-loader": "8.2.5",
+    "chai": "4.3.6",
+    "chai-as-promised": "7.1.1",
+    "chokidar": "3.5.3",
+    "concurrently": "7.1.0",
+    "dotenv": "16.0.1",
+    "go-ipfs": "0.12.2",
+    "husky": "4.3.8",
+    "karma": "6.3.19",
+    "karma-chai": "0.1.0",
+    "karma-chrome-launcher": "3.1.1",
+    "karma-firefox-launcher": "2.1.1",
+    "karma-mocha": "2.0.1",
+    "karma-sinon": "1.0.5",
+    "karma-spec-reporter": "0.0.34",
+    "lint-staged": "12.3.8",
+    "mocha": "9.2.2",
+    "npm-run-all": "4.1.5",
+    "prettier": "2.6.2",
+    "prettier-check": "2.0.0",
+    "rimraf": "3.0.2",
+    "sinon": "13.0.2",
+    "typescript": "4.6.3",
+    "webpack": "5.72.0",
+    "webpack-cli": "4.9.2",
+    "webpack-watch-files-plugin": "1.2.1"
+  },
+  "lint-staged": {
+    "{src,test,config}/**/*.{js,ts}": [
+      "prettier --write --config config/prettier.config.js"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "description": "plebbit.js will be an NPM module to wrap around the IPFS APIs used by Plebbit. It will be used in all clients: CLI, Electron (Desktop GUI) and Web.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/plebbit/plebbit-js.git"
@@ -31,35 +97,5 @@
   "bugs": {
     "url": "https://github.com/plebbit/plebbit-js/issues"
   },
-  "homepage": "https://github.com/plebbit/plebbit-js#readme",
-  "dependencies": {
-    "assert": "2.0.0",
-    "better-sqlite3": "7.5.1",
-    "buffer": "6.0.3",
-    "captcha-canvas": "3.1.0",
-    "cborg": "1.9.0",
-    "debug": "4.3.4",
-    "form-data": "4.0.0",
-    "ipfs-core": "0.14.2",
-    "ipfs-http-client": "56.0.2",
-    "it-all": "1.0.6",
-    "it-last": "1.0.6",
-    "jose": "4.6.1",
-    "js-sha256": "0.9.0",
-    "knex": "1.0.7",
-    "libp2p-crypto": "0.21.2",
-    "node-fetch": "2.6.7",
-    "node-forge": "1.3.1",
-    "process": "0.11.10",
-    "uint8arrays": "3.0.0",
-    "uuid": "8.3.2"
-  },
-  "devDependencies": {
-    "@babel/cli": "7.17.10",
-    "@babel/preset-env": "7.17.10",
-    "babel-plugin-add-module-exports": "1.0.4",
-    "babel-plugin-module-resolver": "4.1.0",
-    "mocha": "9.2.2"
-  },
-  "type": "module"
+  "homepage": "https://github.com/plebbit/plebbit-js#readme"
 }

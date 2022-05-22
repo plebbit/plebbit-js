@@ -81,6 +81,9 @@ typings/
 # Nuxt.js build / generate output
 .nuxt
 dist
+/dist
+dist/
+/dist/
 
 # Gatsby files
 .cache/
@@ -107,3 +110,9 @@ dist
 .plebbit/
 # Test captchas directory
 .captcha/
+
+# browser tests for karma built by webpack
+test-karma-webpack
+
+# test ipfs node
+.test-ipfs*
