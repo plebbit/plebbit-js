@@ -83,17 +83,16 @@ const startIpfsNodes = async () => {
     );
 };
 
+const syncInterval = 100;
+const databaseConfig = {
+    client: "better-sqlite3", // or 'better-sqlite3'
+    connection: {
+        filename: ":memory:"
+    },
+    useNullAsDefault: true
+};
+
 const setupSubplebbit = async (subplebbit, plebbit) => {
-    const databaseConfig = {
-        client: "better-sqlite3", // or 'better-sqlite3'
-        connection: {
-            filename: ":memory:"
-        },
-        useNullAsDefault: true
-    };
-
-    const syncInterval = 4000; // 4 seconds
-
     return new Promise(async (resolve) => {
         subplebbit.once("update", async () => {
             // Add mock post to use in other tests
@@ -107,8 +106,8 @@ const setupSubplebbit = async (subplebbit, plebbit) => {
                 resolve();
             });
         });
+        await subplebbit.update(syncInterval);
     });
-    await subplebbit.update();
 };
 
 const startMathCliSubplebbit = async () => {
