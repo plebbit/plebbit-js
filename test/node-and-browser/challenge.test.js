@@ -25,7 +25,7 @@ describe("Test challenges", async () => {
                     mockPost.publishChallengeAnswers(["2"]);
                 });
                 mockPost.once("challengeverification", async ([challengeVerificationMessage, newComment]) => {
-                    expect(challengeVerificationMessage.challengePassed).to.be.true;
+                    expect(challengeVerificationMessage.challengeSuccess).to.be.true;
                     resolve();
                 });
             });
@@ -41,7 +41,7 @@ describe("Test challenges", async () => {
                 });
                 await mockPost.publish();
                 mockPost.once("challengeverification", ([challengeVerificationMessage, newComment]) => {
-                    expect(challengeVerificationMessage.challengePassed).to.be.false;
+                    expect(challengeVerificationMessage.challengeSuccess).to.be.false;
                     resolve();
                 });
             });
@@ -62,7 +62,7 @@ describe("image captcha", async () => {
 
             await mockPost.publish();
             mockPost.once("challengeverification", async ([challengeVerificationMessage, newComment]) => {
-                expect(challengeVerificationMessage.challengePassed).to.be.true;
+                expect(challengeVerificationMessage.challengeSuccess).to.be.true;
                 expect(challengeVerificationMessage.reason).to.be.undefined;
                 resolve();
             });
@@ -74,7 +74,7 @@ describe("image captcha", async () => {
             const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
             await mockPost.publish();
             mockPost.once("challengeverification", async ([challengeVerificationMessage, newComment]) => {
-                expect(challengeVerificationMessage.challengePassed).to.be.false;
+                expect(challengeVerificationMessage.challengeSuccess).to.be.false;
                 resolve();
             });
         });

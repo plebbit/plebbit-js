@@ -49,7 +49,7 @@ describe("Test Vote", async () => {
             });
             await vote.publish();
             vote.once("challengeverification", async ([challengeVerificationMsg]) => {
-                expect(challengeVerificationMsg.challengePassed).to.be.false;
+                expect(challengeVerificationMsg.challengeSuccess).to.be.false;
                 expect(challengeVerificationMsg.reason).to.be.a("string").with.length.at.least(1);
                 resolve();
             });

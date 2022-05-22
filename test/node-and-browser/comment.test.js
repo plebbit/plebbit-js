@@ -110,7 +110,7 @@ describe("comment (node and browser)", async () => {
             return new Promise(async (resolve, reject) => {
                 await mockComments[0].publish();
                 mockComments[0].once("challengeverification", ([challengeVerificationMessage, newComment]) => {
-                    expect(challengeVerificationMessage.challengePassed).to.be.false;
+                    expect(challengeVerificationMessage.challengeSuccess).to.be.false;
                     expect(challengeVerificationMessage.reason).to.be.a("string");
                     resolve();
                 });
@@ -170,7 +170,7 @@ describe("comment (node and browser)", async () => {
                     "challengeverification",
                     async ([challengeVerificationMessage, updatedCommentEdit]) => {
                         // Challenge verification should fail if signer is different than original signer
-                        expect(challengeVerificationMessage.challengePassed).to.be.false;
+                        expect(challengeVerificationMessage.challengeSuccess).to.be.false;
                         expect(challengeVerificationMessage.reason).to.be.a(
                             "string",
                             `Should include a reason for refusing publication of a comment edit`

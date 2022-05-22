@@ -115,9 +115,9 @@ const startMathCliSubplebbit = async () => {
     });
 
     subplebbit.setValidateCaptchaAnswerCallback((challengeAnswerMessage) => {
-        const challengePassed = challengeAnswerMessage.challengeAnswers[0] === "2";
-        const challengeErrors = challengePassed ? undefined : ["Result of math expression is incorrect"];
-        return [challengePassed, challengeErrors];
+        const challengeSuccess = challengeAnswerMessage.challengeAnswers[0] === "2";
+        const challengeErrors = challengeSuccess ? undefined : ["Result of math expression is incorrect"];
+        return [challengeSuccess, challengeErrors];
     });
     await subplebbit.start(10000); // 10 seconds
 };
@@ -137,9 +137,9 @@ const startImageCaptchaSubplebbit = async () => {
     // await subplebbit.setProvideCaptchaCallback(() => [null, null]); // TODO change later to allow changing captcha callback while test-server.js is running (needed for test-Challenge.js)
     await subplebbit.start(10000); // 10 seconds
     subplebbit.setValidateCaptchaAnswerCallback((challengeAnswerMessage) => {
-        const challengePassed = challengeAnswerMessage.challengeAnswers[0] === "1234";
-        const challengeErrors = challengePassed ? undefined : ["User answered image captcha incorrectly"];
-        return [challengePassed, challengeErrors];
+        const challengeSuccess = challengeAnswerMessage.challengeAnswers[0] === "1234";
+        const challengeErrors = challengeSuccess ? undefined : ["User answered image captcha incorrectly"];
+        return [challengeSuccess, challengeErrors];
     });
 };
 

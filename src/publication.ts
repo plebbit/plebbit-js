@@ -62,7 +62,7 @@ class Publication extends EventEmitter {
             );
             this.emit("challenge", msgParsed);
         } else if (msgParsed?.type === PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION) {
-            if (!msgParsed.challengePassed)
+            if (!msgParsed.challengeSuccess)
                 debug(
                     `Challenge ${msgParsed.challengeRequestId} has failed to pass. Challenge errors = ${msgParsed.challengeErrors}, reason = ${msgParsed.reason}`
                 );

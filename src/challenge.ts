@@ -86,7 +86,7 @@ export class ChallengeAnswerMessage extends ChallengeBase {
 
 export class ChallengeVerificationMessage extends ChallengeBase {
     // TODO: change to challengeSuccess
-    challengePassed: boolean;
+    challengeSuccess: boolean;
     challengeErrors: (string | null)[];
     reason: string;
 
@@ -95,9 +95,7 @@ export class ChallengeVerificationMessage extends ChallengeBase {
         this.type = PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION;
         this.challengeRequestId = props["challengeRequestId"];
         this.challengeAnswerId = props["challengeAnswerId"];
-        // TODO: change to challengeSuccess
-        console.log("TODO: change to ChallengeVerificationMessage.challengeSuccess");
-        this.challengePassed = props["challengePassed"];
+        this.challengeSuccess = props["challengeSuccess"];
         this.challengeErrors = parseJsonIfString(props["challengeErrors"]);
         this.reason = props["reason"];
         this.encryptedPublication = props["encryptedPublication"];

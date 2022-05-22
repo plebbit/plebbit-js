@@ -115,7 +115,7 @@ export class DbHandler {
             table.json("challenges").nullable();
             table.uuid("challengeAnswerId").nullable();
             table.json("challengeAnswers").nullable();
-            table.boolean("challengePassed").nullable();
+            table.boolean("challengeSuccess").nullable();
             table.json("challengeErrors").nullable();
             table.text("reason").nullable();
         });
@@ -518,7 +518,7 @@ export const subplebbitInitDbIfNeeded = async (subplebbit) => {
             },
             useNullAsDefault: true
         };
-    } else debug(`User provided a DB config of ${subplebbit._dbConfig}`);
+    } else debug(`User provided a DB config of ${JSON.stringify(subplebbit._dbConfig)}`);
 
     const dir = path.dirname(subplebbit._dbConfig.connection.filename);
     await fs.promises.mkdir(dir, { recursive: true });

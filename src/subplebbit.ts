@@ -457,7 +457,7 @@ export class Subplebbit extends EventEmitter {
                         : publishedPublication;
                 const challengeVerification = new ChallengeVerificationMessage({
                     reason: reasonForSkippingCaptcha,
-                    challengePassed: Boolean(publishedPublication.publication), // If no publication, this will be false
+                    challengeSuccess: Boolean(publishedPublication.publication), // If no publication, this will be false
                     challengeAnswerId: msgParsed.challengeAnswerId,
                     challengeErrors: undefined,
                     challengeRequestId: msgParsed.challengeRequestId,
@@ -493,8 +493,8 @@ export class Subplebbit extends EventEmitter {
 
     async handleChallengeAnswer(msgParsed) {
         try {
-            const [challengePassed, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
-            if (challengePassed) {
+            const [challengeSuccess, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
+            if (challengeSuccess) {
                 debug(`Challenge (${msgParsed.challengeRequestId}) has answered correctly`);
                 const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
                 const trx = storedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transactions
@@ -520,7 +520,7 @@ export class Subplebbit extends EventEmitter {
                 const challengeVerification = new ChallengeVerificationMessage({
                     challengeRequestId: msgParsed.challengeRequestId,
                     challengeAnswerId: msgParsed.challengeAnswerId,
-                    challengePassed: challengePassed,
+                    challengeSuccess: challengeSuccess,
                     challengeErrors: challengeErrors,
                     ...restOfMsg
                 });
@@ -530,7 +530,7 @@ export class Subplebbit extends EventEmitter {
                 const challengeVerification = new ChallengeVerificationMessage({
                     challengeRequestId: msgParsed.challengeRequestId,
                     challengeAnswerId: msgParsed.challengeAnswerId,
-                    challengePassed: challengePassed,
+                    challengeSuccess: challengeSuccess,
                     challengeErrors: challengeErrors
                 });
                 return this.upsertAndPublishChallenge(challengeVerification, undefined);
@@ -598,7 +598,7 @@ export class Subplebbit extends EventEmitter {
 
         try {
             // @ts-ignore
-            const dbComments: any = await this.dbHandler.queryComments();
+            const dbComments: any = await this.dbHandler.queryComments(undefined);
             await Promise.all([
                 ...dbComments.map(async (comment) => syncComment(comment)),
                 this.updateSubplebbitIpns()
