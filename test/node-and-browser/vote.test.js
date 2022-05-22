@@ -9,7 +9,7 @@ const subplebbitAddress = signers[0].address;
 let plebbit, subplebbit, postToVote;
 
 const previousVotes = [];
-
+const updateInterval = 100;
 describe("Test Vote", async () => {
     before(async () => {
         plebbit = await Plebbit({
@@ -17,7 +17,7 @@ describe("Test Vote", async () => {
             pubsubHttpClientOptions: `http://localhost:5002/api/v0`
         });
         subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-        await subplebbit.update(5000);
+        await subplebbit.update(updateInterval);
         postToVote = await plebbit.getComment(subplebbit.latestPostCid);
     });
 
@@ -28,7 +28,7 @@ describe("Test Vote", async () => {
             await (await generateMockVote(postToVote, 1, plebbit)).publish(); // This vote is added just to start an "update" event and make sure originalUpvoteCount down below is accurate
 
             subplebbit.once("update", async (updatedSubplebbit) => {
-                await postToVote.update(5000);
+                await postToVote.update(updateInterval);
                 const originalUpvote = postToVote.upvoteCount;
                 await vote.publish();
                 postToVote.once("update", async (updatedPost) => {
@@ -58,7 +58,7 @@ describe("Test Vote", async () => {
 
     it("Can change upvote to downvote", async () => {
         return new Promise(async (resolve, reject) => {
-            await postToVote.update(5000);
+            await postToVote.update(updateInterval);
             const originalUpvote = postToVote.upvoteCount;
             const originalDownvote = postToVote.downvoteCount;
             const vote = await plebbit.createVote({

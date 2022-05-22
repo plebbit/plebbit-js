@@ -26,6 +26,8 @@ const numOfCommentsToPublish = 1;
 const votesPerCommentToPublish = 4;
 expect(numOfCommentsToPublish * votesPerCommentToPublish).to.be.lessThan(6); // As of now we can only publish 6 publications at once due to limitation in pubsub for browser
 
+const updateInterval = 100;
+
 const testSorting = async (sort, parentComment) => {
     return new Promise(async (resolve, reject) => {
         // We use a plebbit for each comment/vote so that when we unsubscribe from a pubsub it doesn't affect other publications
@@ -46,7 +48,7 @@ const testSorting = async (sort, parentComment) => {
             );
 
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-        await subplebbit.update(5000);
+        await subplebbit.update(updateInterval);
 
         await Promise.all(comments.map(async (comment) => comment.publish()));
         await waitTillPublicationsArePublished(comments);
@@ -79,7 +81,7 @@ const testSorting = async (sort, parentComment) => {
 
         subplebbit.once("update", async (updatedSubplebbit) => {
             if (parentComment) {
-                await parentComment.update();
+                await parentComment.update(updateInterval);
                 parentComment.stop();
                 expect(parentComment.replies).to.be.a(
                     "object",
@@ -132,7 +134,8 @@ const testSorting = async (sort, parentComment) => {
 
 const testSortingComments = async (sort) => {
     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-    await subplebbit.update();
+    await subplebbit.update(updateInterval);
+    await subplebbit.stop();
     const post = await plebbit.getComment(subplebbit.latestPostCid);
     await testSorting(sort, post);
 };

@@ -9,6 +9,7 @@ const { REPLIES_SORT_TYPES } = require("../../dist/node/sort-handler");
 let plebbit;
 const subplebbitAddress = signers[0].address;
 const mockComments = [];
+const updateInterval = 100;
 
 before(async () => {
     plebbit = await Plebbit({
@@ -77,7 +78,7 @@ describe("comment (node and browser)", async () => {
                 mockComment.signature.signature = mockComment.signature.signature.slice(1); // Corrupts signature by deleting one key
                 await mockComment.publish();
                 mockComment.once("challengeverification", async ([challengeVerificationMessage, updatedComment]) => {
-                    expect(challengeVerificationMessage.challengePassed).to.be.false;
+                    expect(challengeVerificationMessage.challengeSuccess).to.be.false;
                     expect(challengeVerificationMessage.reason).to.have.lengthOf.above(
                         0,
                         "There should be an error message that tells the user that comment's signature is invalid"
@@ -91,7 +92,7 @@ describe("comment (node and browser)", async () => {
             return new Promise(async (resolve, reject) => {
                 const mockPost = await generateMockPost(subplebbitAddress, plebbit);
                 const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-                await subplebbit.update(1000);
+                await subplebbit.update(updateInterval);
                 const originalLatestPostCid = subplebbit.latestPostCid;
                 await mockPost.publish();
                 mockPost.once("challengeverification", ([challengeVerificationMessage, mockPostWithUpdates]) => {
@@ -120,11 +121,10 @@ describe("comment (node and browser)", async () => {
         [1, 2, 3, 4, 5, 6].map((depth) =>
             it(`Can publish comment with depth = ${depth}`, async () => {
                 return new Promise(async (resolve, reject) => {
-                    // await sleep(100000); // Wait for IPNS changes to populate
                     const parentComment = mockComments[depth - 1];
                     const mockComment = await generateMockComment(parentComment, plebbit);
-                    await waitTillCommentsUpdate([parentComment]);
-                    await parentComment.update(5000);
+                    await waitTillCommentsUpdate([parentComment], updateInterval);
+                    await parentComment.update(updateInterval);
                     expect(parentComment.updatedAt).to.be.a("number");
                     const originalReplyCount = parentComment.replyCount;
                     expect(originalReplyCount).to.be.equal(0);
@@ -154,10 +154,10 @@ describe("comment (node and browser)", async () => {
                 const editedText = "This should fail";
                 const editReason = "To test whether editing a comment fails";
                 const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-                await subplebbit.update();
+                await subplebbit.update(updateInterval);
                 const commentToBeEdited = await plebbit.getComment(subplebbit.latestPostCid);
                 commentToBeEdited.removeAllListeners();
-                await commentToBeEdited.update();
+                await commentToBeEdited.update(updateInterval);
                 const commentEdit = await plebbit.createCommentEdit({
                     subplebbitAddress: commentToBeEdited.subplebbitAddress,
                     commentCid: commentToBeEdited.cid,
@@ -188,10 +188,10 @@ describe("comment (node and browser)", async () => {
                 const editedText = "edit test";
                 const editReason = "To test editing a comment";
                 const commentToBeEdited = mockComments[0];
-                await commentToBeEdited.update(10000);
+                await commentToBeEdited.update(updateInterval);
 
                 const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-                await subplebbit.update();
+                await subplebbit.update(updateInterval);
                 const originalContent = commentToBeEdited.content;
                 const commentEdit = await plebbit.createCommentEdit({
                     subplebbitAddress: commentToBeEdited.subplebbitAddress,
@@ -225,7 +225,7 @@ describe("comment (node and browser)", async () => {
                 const editReason = "To test double editing a comment";
                 const commentToBeEdited = mockComments[0];
                 commentToBeEdited.removeAllListeners();
-                await commentToBeEdited.update(10000);
+                await commentToBeEdited.update(updateInterval);
                 const originalContent = commentToBeEdited.originalContent;
                 const commentEdit = await plebbit.createCommentEdit({
                     subplebbitAddress: commentToBeEdited.subplebbitAddress,

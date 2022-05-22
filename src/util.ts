@@ -121,7 +121,7 @@ export async function waitTillPublicationsArePublished(publications) {
 }
 
 // Takes a list of Comments, run .update on them and make sure at least one update has been polled
-export async function waitTillCommentsUpdate(comments) {
+export async function waitTillCommentsUpdate(comments, updateInterval) {
     return new Promise(async (resolve, reject) => {
         const promises = comments.map((comment) => {
             return new Promise(async (commentResolve, commentReject) => {
@@ -129,7 +129,7 @@ export async function waitTillCommentsUpdate(comments) {
                     comment.stop();
                     commentResolve(newComment);
                 });
-                await comment.update();
+                await comment.update(updateInterval);
             });
         });
         Promise.all(promises).then(resolve).catch(reject);
