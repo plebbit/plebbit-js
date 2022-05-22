@@ -99,6 +99,7 @@ describe("comment (node and browser)", async () => {
                     subplebbit.once("update", async (updatedSubplebbit) => {
                         expect(mockPost.cid).to.equal(updatedSubplebbit.latestPostCid);
                         mockComments.push(mockPost);
+                        await subplebbit.stop();
                         resolve();
                     });
                 });
@@ -164,6 +165,8 @@ describe("comment (node and browser)", async () => {
                             "string",
                             `Should include a reason for refusing publication of a comment edit`
                         );
+                        await commentToBeEdited.stop();
+                        await subplebbit.stop();
                         resolve();
                     }
                 );
@@ -199,6 +202,8 @@ describe("comment (node and browser)", async () => {
                         editReason,
                         "Edit reason has not been updated"
                     );
+                    await subplebbit.stop();
+                    await commentToBeEdited.stop();
                     resolve();
                 });
             });
@@ -230,6 +235,7 @@ describe("comment (node and browser)", async () => {
                         editReason,
                         "Edit reason has not been updated"
                     );
+                    await commentToBeEdited.stop();
                     resolve();
                 });
             });
