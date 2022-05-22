@@ -16,7 +16,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             resolve(value);
         });
     }
-
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) {
             try {
@@ -159,7 +158,6 @@ var DbHandler = /** @class */ (function () {
         this.knex = (0, knex_1.default)(dbConfig);
         this.subplebbit = subplebbit;
     }
-
     DbHandler.prototype.createTransaction = function () {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;

@@ -18,7 +18,6 @@ var __extends = (this && this.__extends) || (function () {
         function __() {
             this.constructor = d;
         }
-
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
@@ -37,11 +36,9 @@ Object.defineProperty(exports, "__esModule", {value: true});
 var comment_1 = require("./comment");
 var Post = /** @class */ (function (_super) {
     __extends(Post, _super);
-
     function Post() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-
     Post.prototype._initProps = function (props) {
         _super.prototype._initProps.call(this, props);
         this.parentCid = undefined;

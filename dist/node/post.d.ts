@@ -1,10 +1,7 @@
 import {Comment} from "./comment";
-
 declare class Post extends Comment {
     title?: string;
-
     _initProps(props: any): void;
-
     toJSONSkeleton(): {
         title: string;
         content: string;
@@ -15,5 +12,4 @@ declare class Post extends Comment {
         author: import("./author").default;
     };
 }
-
 export default Post;

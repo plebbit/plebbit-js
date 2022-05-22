@@ -18,18 +18,11 @@ export declare class Plebbit {
     getSubplebbit(subplebbitAddress: any): Promise<Subplebbit>;
 
     getComment(cid: any): Promise<Comment>;
-
     signPublication(createPublicationOptions: any): Promise<any>;
-
     defaultTimestampIfNeeded(createPublicationOptions: any): any;
-
     createComment(createCommentOptions: any): Promise<Comment>;
-
     createSubplebbit(createSubplebbitOptions: any): Promise<Subplebbit>;
-
     createVote(createVoteOptions: any): Promise<Vote>;
-
     createCommentEdit(createCommentEditOptions: any): Promise<CommentEdit>;
-
     createSigner(createSignerOptions?: CreateSignerOptions): Promise<Signer>;
 }

@@ -18,7 +18,6 @@ var __extends = (this && this.__extends) || (function () {
         function __() {
             this.constructor = d;
         }
-
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
@@ -39,7 +38,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             resolve(value);
         });
     }
-
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) {
             try {
@@ -158,14 +156,12 @@ var signer_1 = require("./signer");
 var debug = (0, debug_1.default)("plebbit-js:publication");
 var Publication = /** @class */ (function (_super) {
     __extends(Publication, _super);
-
     function Publication(props, subplebbit) {
         var _this = _super.call(this) || this;
         _this.subplebbit = subplebbit;
         _this._initProps(props);
         return _this;
     }
-
     Publication.prototype._initProps = function (props) {
         this.subplebbitAddress = props["subplebbitAddress"];
         this.timestamp = props["timestamp"];

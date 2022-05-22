@@ -18,7 +18,6 @@ var __extends = (this && this.__extends) || (function () {
         function __() {
             this.constructor = d;
         }
-
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
@@ -42,7 +41,6 @@ var publication_1 = __importDefault(require("./publication"));
 var util_1 = require("./util");
 var Vote = /** @class */ (function (_super) {
     __extends(Vote, _super);
-
     function Vote(props, subplebbit) {
         var _this = _super.call(this, props, subplebbit) || this;
         // Publication
@@ -53,7 +51,6 @@ var Vote = /** @class */ (function (_super) {
         _this.vote = props["vote"]; // Either 1, 0, -1 (upvote, cancel vote, downvote)
         return _this;
     }
-
     Vote.prototype.toJSON = function () {
         return __assign(__assign({}, _super.prototype.toJSON.call(this)), {
             author: this.author,

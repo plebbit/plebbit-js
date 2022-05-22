@@ -5,7 +5,6 @@ exports.DbHandler = void 0;
 var DbHandler = /** @class */ (function () {
     function DbHandler() {
     }
-
     return DbHandler;
 }());
 exports.DbHandler = DbHandler;

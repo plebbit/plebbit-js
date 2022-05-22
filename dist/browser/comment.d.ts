@@ -28,11 +28,8 @@ export declare class Comment extends Publication {
     previousCid?: string;
     emittedAt?: number;
     _updateInterval?: any;
-
     _initProps(props: any): void;
-
     _initCommentUpdate(props: any): void;
-
     toJSON(): {
         cid: string;
         originalContent: string;
@@ -61,7 +58,6 @@ export declare class Comment extends Publication {
         signature: string;
         author: import("./author").default;
     };
-
     toJSONIpfs(): {
         previousCid: string;
         ipnsName: string;
@@ -74,7 +70,6 @@ export declare class Comment extends Publication {
         signature: string;
         author: import("./author").default;
     };
-
     toJSONSkeleton(): {
         content: string;
         parentCid: string;
@@ -83,9 +78,7 @@ export declare class Comment extends Publication {
         signature: string;
         author: import("./author").default;
     };
-
     toJSONForDb(challengeRequestId: any): any;
-
     toJSONCommentUpdate(): {
         updatedAt: number;
         editSignature: Signature;
@@ -103,37 +96,22 @@ export declare class Comment extends Publication {
         downvoteCount: number;
         replies: Pages;
     };
-
     setCommentIpnsKey(ipnsKey: any): void;
-
     setPostCid(newPostCid: any): void;
-
     setCid(newCid: any): void;
-
     setPreviousCid(newPreviousCid: any): void;
-
     setDepth(newDepth: any): void;
-
     setUpdatedAt(newUpdatedAt: any): void;
-
     setOriginalContent(newOriginalContent: any): void;
-
     setReplies(sortedReplies: any, sortedRepliesCids: any): void;
-
     updateOnce(): Promise<this>;
-
     update(updateIntervalMs?: number): Promise<this>;
-
     stop(): void;
-
     edit(commentUpdateOptions: any): Promise<void>;
 }
-
 export declare class CommentEdit extends Comment {
     commentCid?: string;
-
     _initProps(props: any): void;
-
     toJSON(): {
         commentCid: string;
         cid: string;
@@ -163,6 +141,5 @@ export declare class CommentEdit extends Comment {
         signature: string;
         author: import("./author").default;
     };
-
     toJSONForDb(challengeRequestId: any): any;
 }

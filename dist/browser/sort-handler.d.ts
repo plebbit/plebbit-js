@@ -59,26 +59,16 @@ export declare const REPLIES_SORT_TYPES: {
     };
 };
 export declare const SORTED_POSTS_PAGE_SIZE = 50;
-
 export declare class SortHandler {
     subplebbit: Subplebbit;
     dbHandler: DbHandler;
-
     constructor(subplebbit: any);
-
     chunksToListOfPage(chunks: any): Promise<any[][]>;
-
     sortComments(comments: any, sortType: any, limit?: number): Promise<any[]>;
-
     sortCommentsByHot(parentCid: any, trx: any): Promise<any[]>;
-
     sortCommentsByTop(parentCid: any, timeframe: any, trx: any): Promise<any[]>;
-
     sortCommentsByControversial(parentCid: any, timeframe: any, trx: any): Promise<any[]>;
-
     sortCommentsByNew(parentCid: any, trx: any): Promise<any[]>;
-
     getSortPromises(comment: any, trx: any): any[];
-
     generatePagesUnderComment(comment: any, trx: any): Promise<{}[]>;
 }

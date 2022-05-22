@@ -18,7 +18,6 @@ var __extends = (this && this.__extends) || (function () {
         function __() {
             this.constructor = d;
         }
-
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
@@ -54,14 +53,12 @@ var Challenge = /** @class */ (function () {
         this.challenge = props["challenge"];
         this.type = props["type"]; // will be dozens of challenge types, like holding a certain amount of a token
     }
-
     return Challenge;
 }());
 exports.Challenge = Challenge;
 var ChallengeBase = /** @class */ (function () {
     function ChallengeBase() {
     }
-
     ChallengeBase.prototype.toJSONForDb = function () {
         var obj = JSON.parse(JSON.stringify(this));
         delete obj.encryptedPublication;
@@ -71,7 +68,6 @@ var ChallengeBase = /** @class */ (function () {
 }());
 var ChallengeRequestMessage = /** @class */ (function (_super) {
     __extends(ChallengeRequestMessage, _super);
-
     function ChallengeRequestMessage(props) {
         var _this = _super.call(this) || this;
         _this.type = exports.PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST; // One of CHALLENGE_STAGES
@@ -80,7 +76,6 @@ var ChallengeRequestMessage = /** @class */ (function (_super) {
         _this.encryptedPublication = props["encryptedPublication"];
         return _this;
     }
-
     ChallengeRequestMessage.prototype.toJSONForDb = function () {
         return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), {acceptedChallengeTypes: JSON.stringify(this.acceptedChallengeTypes)});
     };
@@ -89,7 +84,6 @@ var ChallengeRequestMessage = /** @class */ (function (_super) {
 exports.ChallengeRequestMessage = ChallengeRequestMessage;
 var ChallengeMessage = /** @class */ (function (_super) {
     __extends(ChallengeMessage, _super);
-
     function ChallengeMessage(props) {
         var _this = _super.call(this) || this;
         _this.type = exports.PUBSUB_MESSAGE_TYPES.CHALLENGE;
@@ -97,7 +91,6 @@ var ChallengeMessage = /** @class */ (function (_super) {
         _this.challenges = (0, util_1.parseJsonIfString)(props["challenges"]);
         return _this;
     }
-
     ChallengeMessage.prototype.toJSONForDb = function () {
         return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), {challenges: JSON.stringify(this.challenges)});
     };
@@ -106,7 +99,6 @@ var ChallengeMessage = /** @class */ (function (_super) {
 exports.ChallengeMessage = ChallengeMessage;
 var ChallengeAnswerMessage = /** @class */ (function (_super) {
     __extends(ChallengeAnswerMessage, _super);
-
     function ChallengeAnswerMessage(props) {
         var _this = _super.call(this) || this;
         _this.type = exports.PUBSUB_MESSAGE_TYPES.CHALLENGEANSWER;
@@ -115,7 +107,6 @@ var ChallengeAnswerMessage = /** @class */ (function (_super) {
         _this.challengeAnswers = (0, util_1.parseJsonIfString)(props["challengeAnswers"]);
         return _this;
     }
-
     ChallengeAnswerMessage.prototype.toJSONForDb = function () {
         return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), {challengeAnswers: JSON.stringify(this.challengeAnswers)});
     };
@@ -124,7 +115,6 @@ var ChallengeAnswerMessage = /** @class */ (function (_super) {
 exports.ChallengeAnswerMessage = ChallengeAnswerMessage;
 var ChallengeVerificationMessage = /** @class */ (function (_super) {
     __extends(ChallengeVerificationMessage, _super);
-
     function ChallengeVerificationMessage(props) {
         var _this = _super.call(this) || this;
         _this.type = exports.PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION;
@@ -136,7 +126,6 @@ var ChallengeVerificationMessage = /** @class */ (function (_super) {
         _this.encryptedPublication = props["encryptedPublication"];
         return _this;
     }
-
     ChallengeVerificationMessage.prototype.toJSONForDb = function () {
         return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), {challengeErrors: JSON.stringify(this.challengeErrors)});
     };

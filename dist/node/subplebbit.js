@@ -18,7 +18,6 @@ var __extends = (this && this.__extends) || (function () {
         function __() {
             this.constructor = d;
         }
-
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
@@ -39,7 +38,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             resolve(value);
         });
     }
-
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) {
             try {
@@ -174,7 +172,6 @@ var DEFAULT_UPDATE_INTERVAL_MS = 60000;
 var DEFAULT_SYNC_INTERVAL_MS = 100000; // 5 minutes
 var Subplebbit = /** @class */ (function (_super) {
     __extends(Subplebbit, _super);
-
     function Subplebbit(props, plebbit) {
         var _this = _super.call(this) || this;
         _this.plebbit = plebbit;
@@ -185,7 +182,6 @@ var Subplebbit = /** @class */ (function (_super) {
         _this.validateCaptchaAnswerCallback = undefined;
         return _this;
     }
-
     Subplebbit.prototype.initSubplebbit = function (newProps) {
         var oldProps = this.toJSONInternal();
         var mergedProps = __assign(__assign({}, oldProps), newProps);

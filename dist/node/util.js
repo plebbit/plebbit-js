@@ -16,7 +16,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             resolve(value);
         });
     }
-
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) {
             try {
@@ -140,7 +139,6 @@ exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     ALL: Infinity
 });
 var debug = (0, debug_1.default)("plebbit-js:util");
-
 function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
     if (defaultOptions === void 0) {
         defaultOptions = {timeout: 60000};
@@ -181,9 +179,7 @@ function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
         });
     });
 }
-
 exports.loadIpfsFileAsJson = loadIpfsFileAsJson;
-
 function loadIpnsAsJson(ipns, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
         var res, cid;
@@ -215,9 +211,7 @@ function loadIpnsAsJson(ipns, plebbit) {
         });
     });
 }
-
 exports.loadIpnsAsJson = loadIpnsAsJson;
-
 function sleep(ms) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
@@ -227,38 +221,28 @@ function sleep(ms) {
         });
     });
 }
-
 exports.sleep = sleep;
-
 function chunks(arr, len) {
     var chunks = [], i = 0;
     while (i < arr.length)
         chunks.push(arr.slice(i, (i += len)));
     return chunks;
 }
-
 exports.chunks = chunks;
-
 function round(number, decimalPlaces) {
     var factorOfTen = Math.pow(10, decimalPlaces);
     return Math.round(number * factorOfTen) / factorOfTen;
 }
-
 exports.round = round;
-
 function parseJsonIfString(x) {
     // @ts-ignore
     return x instanceof String || typeof x === "string" ? JSON.parse(x) : x;
 }
-
 exports.parseJsonIfString = parseJsonIfString;
-
 function timestamp() {
     return Math.round(Date.now() / 1000);
 }
-
 exports.timestamp = timestamp;
-
 function keepKeys(obj, keys) {
     var newObj = {};
     keys.forEach(function (key) {
@@ -271,9 +255,7 @@ function keepKeys(obj, keys) {
     }
     return newObj;
 }
-
 exports.keepKeys = keepKeys;
-
 function removeKeys(object1, keys) {
     var newObject = __assign({}, object1);
     keys.forEach(function (key) {
@@ -281,9 +263,7 @@ function removeKeys(object1, keys) {
     });
     return newObject;
 }
-
 exports.removeKeys = removeKeys;
-
 function replaceXWithY(obj, x, y) {
     // obj is a JS object
     var newObj = {};
@@ -301,9 +281,7 @@ function replaceXWithY(obj, x, y) {
     });
     return newObj;
 }
-
 exports.replaceXWithY = replaceXWithY;
-
 function shallowEqual(object1, object2, excludeKeys) {
     if (excludeKeys === void 0) {
         excludeKeys = [];
@@ -323,9 +301,7 @@ function shallowEqual(object1, object2, excludeKeys) {
     }
     return true;
 }
-
 exports.shallowEqual = shallowEqual;
-
 function waitTillPublicationsArePublished(publications) {
     return __awaiter(this, void 0, void 0, function () {
         var promises;
@@ -353,9 +329,7 @@ function waitTillPublicationsArePublished(publications) {
         });
     });
 }
-
 exports.waitTillPublicationsArePublished = waitTillPublicationsArePublished;
-
 // Takes a list of Comments, run .update on them and make sure at least one update has been polled
 function waitTillCommentsUpdate(comments, updateInterval) {
     return __awaiter(this, void 0, void 0, function () {
@@ -393,9 +367,7 @@ function waitTillCommentsUpdate(comments, updateInterval) {
         });
     });
 }
-
 exports.waitTillCommentsUpdate = waitTillCommentsUpdate;
-
 function hotScore(comment) {
     var score = comment.upvoteCount - comment.downvoteCount;
     var order = Math.log10(Math.max(score, 1));
@@ -403,9 +375,7 @@ function hotScore(comment) {
     var seconds = comment.timestamp - 1134028003;
     return round(sign * order + seconds / 45000, 7);
 }
-
 exports.hotScore = hotScore;
-
 function controversialScore(comment) {
     if (comment.downvoteCount <= 0 || comment.upvoteCount <= 0)
         return 0;
@@ -415,33 +385,23 @@ function controversialScore(comment) {
         : parseFloat(comment.upvoteCount) / comment.downvoteCount;
     return Math.pow(magnitude, balance);
 }
-
 exports.controversialScore = controversialScore;
-
 function topScore(comment) {
     return comment.upvoteCount - comment.downvoteCount;
 }
-
 exports.topScore = topScore;
-
 function newScore(comment) {
     return comment.timestamp;
 }
-
 exports.newScore = newScore;
-
 function oldScore(comment) {
     return -comment.timestamp;
 }
-
 exports.oldScore = oldScore;
-
 function removeKeysWithUndefinedValues(object) {
     return JSON.parse(JSON.stringify(object));
 }
-
 exports.removeKeysWithUndefinedValues = removeKeysWithUndefinedValues;
-
 // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
 function ipfsImportKey(signer, plebbit, password) {
     var _a;
@@ -477,5 +437,4 @@ function ipfsImportKey(signer, plebbit, password) {
         });
     });
 }
-
 exports.ipfsImportKey = ipfsImportKey;

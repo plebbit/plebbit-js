@@ -13,7 +13,6 @@ export declare class Pages {
     constructor(props: any);
 
     getPage(pageCid: any): Promise<Page>;
-
     toJSON(): {
         pages: {
             [sortType: string]: Page;
@@ -23,10 +22,8 @@ export declare class Pages {
         };
     };
 }
-
 export declare class Page {
     comments: Comment[];
     nextCid: string;
-
     constructor(props: any);
 }
