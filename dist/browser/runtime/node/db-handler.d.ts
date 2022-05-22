@@ -1,0 +1,42 @@
+import { Subplebbit } from "../../subplebbit";
+export declare const SIGNER_USAGES: {
+    SUBPLEBBIT: string;
+    COMMENT: string;
+};
+export declare class DbHandler {
+    _dbConfig: any;
+    knex: any;
+    subplebbit: Subplebbit;
+    constructor(dbConfig: any, subplebbit: any);
+    createTransaction(): Promise<unknown>;
+    baseTransaction(trx: any): any;
+    createCommentsTable(): Promise<void>;
+    createVotesTable(): Promise<void>;
+    createAuthorsTable(): Promise<void>;
+    createChallengesTable(): Promise<void>;
+    createSignersTable(): Promise<void>;
+    createTablesIfNeeded(): Promise<void>;
+    addAuthorToDbIfNeeded(author: any, trx?: any): Promise<unknown>;
+    upsertVote(vote: any, challengeRequestId: any, trx?: any): Promise<unknown>;
+    upsertComment(postOrComment: any, challengeRequestId: any, trx?: any): Promise<unknown>;
+    upsertChallenge(challenge: any, trx?: any): Promise<unknown>;
+    getLastVoteOfAuthor(commentCid: any, authorAddress: any, trx?: any): Promise<unknown>;
+    baseCommentQuery(trx: any): any;
+    createCommentsFromRows(commentsRows: any, trx: any): Promise<unknown>;
+    createVotesFromRows(voteRows: any, trx: any): Promise<unknown>;
+    queryCommentsSortedByTimestamp(parentCid: any, order?: string, trx?: any): Promise<unknown>;
+    queryCommentsBetweenTimestampRange(parentCid: any, timestamp1: any, timestamp2: any, trx?: any): Promise<unknown>;
+    queryTopCommentsBetweenTimestampRange(parentCid: any, timestamp1: any, timestamp2: any, trx?: any): Promise<unknown>;
+    queryCommentsUnderComment(parentCid: any, trx: any): Promise<unknown>;
+    queryComments(trx: any): Promise<unknown>;
+    querySubplebbitActiveUserCount(timeframe: any, trx: any): Promise<unknown>;
+    querySubplebbitPostCount(timeframe: any, trx: any): Promise<unknown>;
+    querySubplebbitMetrics(trx: any): Promise<unknown>;
+    queryComment(cid: any, trx: any): Promise<unknown>;
+    queryLatestPost(trx: any): Promise<unknown>;
+    insertSigner(signer: any, trx: any): Promise<unknown>;
+    querySubplebbitSigner(trx: any): Promise<unknown>;
+    querySigner(ipnsKeyName: any, trx: any): Promise<any>;
+}
+export declare const subplebbitInitDbIfNeeded: (subplebbit: any) => Promise<void>;
+export default DbHandler;
