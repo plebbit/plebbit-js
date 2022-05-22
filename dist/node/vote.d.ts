@@ -1,12 +1,9 @@
 import Author from "./author";
 import Publication from "./publication";
-
 declare class Vote extends Publication {
     commentCid: string;
     vote: number;
-
     constructor(props: any, subplebbit: any);
-
     toJSON(): {
         author: Author;
         timestamp: number;
@@ -15,7 +12,6 @@ declare class Vote extends Publication {
         vote: number;
         subplebbitAddress: string;
     };
-
     toJSONForDb(challengeRequestId: any): {
         author: Author;
         timestamp: number;
@@ -25,5 +21,4 @@ declare class Vote extends Publication {
         subplebbitAddress: string;
     };
 }
-
 export default Vote;

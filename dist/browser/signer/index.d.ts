@@ -22,5 +22,4 @@ export declare class Signer {
         ipfsKey: Buffer;
     };
 }
-
 export declare const createSigner: (createSignerOptions?: CreateSignerOptions) => Promise<Signer>;

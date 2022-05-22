@@ -18,7 +18,7 @@ declare class Publication extends EventEmitter {
 
     _initProps(props: any): void;
 
-    getType(): "post" | "vote" | "comment";
+    getType(): "vote" | "post" | "comment";
 
     toJSON(): {
         subplebbitAddress: string;
@@ -26,19 +26,14 @@ declare class Publication extends EventEmitter {
         signature: string;
         author: Author;
     };
-
     toJSONSkeleton(): {
         subplebbitAddress: string;
         timestamp: number;
         signature: string;
         author: Author;
     };
-
     handleChallengeExchange(pubsubMsg: any): Promise<void>;
-
     publishChallengeAnswers(challengeAnswers: any): Promise<void>;
-
     publish(userOptions: any): Promise<void>;
 }
-
 export default Publication;

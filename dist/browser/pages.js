@@ -5,7 +5,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             resolve(value);
         });
     }
-
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) {
             try {
@@ -123,7 +122,6 @@ var Pages = /** @class */ (function () {
         this.pageCids = props["pageCids"];
         this.subplebbit = props["subplebbit"];
     }
-
     Pages.prototype.getPage = function (pageCid) {
         return __awaiter(this, void 0, void 0, function () {
             var page, _a, verifyComment;
@@ -210,7 +208,6 @@ var Page = /** @class */ (function () {
         this.comments = props["comments"];
         this.nextCid = props["nextCid"];
     }
-
     return Page;
 }());
 exports.Page = Page;

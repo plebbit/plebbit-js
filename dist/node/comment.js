@@ -18,7 +18,6 @@ var __extends = (this && this.__extends) || (function () {
         function __() {
             this.constructor = d;
         }
-
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
@@ -39,7 +38,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             resolve(value);
         });
     }
-
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) {
             try {
@@ -156,11 +154,9 @@ var debug = (0, debug_1.default)("plebbit-js:comment");
 var DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 var Comment = /** @class */ (function (_super) {
     __extends(Comment, _super);
-
     function Comment() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-
     Comment.prototype._initProps = function (props) {
         _super.prototype._initProps.call(this, props);
         this.postCid = props["postCid"];
@@ -364,11 +360,9 @@ var Comment = /** @class */ (function (_super) {
 exports.Comment = Comment;
 var CommentEdit = /** @class */ (function (_super) {
     __extends(CommentEdit, _super);
-
     function CommentEdit() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-
     CommentEdit.prototype._initProps = function (props) {
         _super.prototype._initProps.call(this, props);
         this.commentCid = props["commentCid"];

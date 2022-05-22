@@ -16,7 +16,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             resolve(value);
         });
     }
-
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) {
             try {
@@ -150,7 +149,6 @@ var SortHandler = /** @class */ (function () {
     function SortHandler(subplebbit) {
         this.subplebbit = subplebbit;
     }
-
     SortHandler.prototype.chunksToListOfPage = function (chunks) {
         return __awaiter(this, void 0, void 0, function () {
             var listOfPage, cids, chunksWithReplies, i, page, _a, _b;

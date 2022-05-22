@@ -16,7 +16,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             resolve(value);
         });
     }
-
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) {
             try {
@@ -140,7 +139,6 @@ var Signature = /** @class */ (function () {
         this.type = props["type"];
         this.signedPropertyNames = props["signedPropertyNames"];
     }
-
     Signature.prototype.toJSON = function () {
         return {
             signature: this.signature,
@@ -152,7 +150,6 @@ var Signature = /** @class */ (function () {
     return Signature;
 }());
 exports.Signature = Signature;
-
 function getFieldsToSign(publication) {
     if (publication.hasOwnProperty("vote"))
         return ["subplebbitAddress", "author", "timestamp", "vote", "commentCid"];
@@ -178,7 +175,6 @@ function getFieldsToSign(publication) {
         // Comment
         return ["subplebbitAddress", "author", "timestamp", "parentCid", "content"];
 }
-
 function signPublication(publication, signer) {
     return __awaiter(this, void 0, void 0, function () {
         var keyPair, fieldsToSign, publicationSignFields, commentEncoded, signatureData, _a;
@@ -207,9 +203,7 @@ function signPublication(publication, signer) {
         });
     });
 }
-
 exports.signPublication = signPublication;
-
 // Return [verification (boolean), reasonForFailing (string)]
 function verifyPublication(publication) {
     return __awaiter(this, void 0, void 0, function () {
@@ -319,5 +313,4 @@ function verifyPublication(publication) {
         });
     });
 }
-
 exports.verifyPublication = verifyPublication;

@@ -5,7 +5,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             resolve(value);
         });
     }
-
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) {
             try {
@@ -115,7 +114,6 @@ exports.loadAllPages = exports.generateMockVote = exports.generateMockPostWithRa
 var util_1 = require("./util");
 var debug_1 = __importDefault(require("debug")); // This import is to suppress a warning statement. Leave it
 var debug = (0, debug_1.default)("plebbit-js:test-util");
-
 function generateMockPost(subplebbitAddress, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
         var postStartTestTime, signer, post;
@@ -143,9 +141,7 @@ function generateMockPost(subplebbitAddress, plebbit) {
         });
     });
 }
-
 exports.generateMockPost = generateMockPost;
-
 function generateMockComment(parentPostOrComment, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
         var commentTime, signer, comment;
@@ -174,9 +170,7 @@ function generateMockComment(parentPostOrComment, plebbit) {
         });
     });
 }
-
 exports.generateMockComment = generateMockComment;
-
 function generateMockPostWithRandomTimestamp(subplebbitAddress, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
         var randomTimeframeIndex, postTimestamp, postTime, signer, post;
@@ -207,9 +201,7 @@ function generateMockPostWithRandomTimestamp(subplebbitAddress, plebbit) {
         });
     });
 }
-
 exports.generateMockPostWithRandomTimestamp = generateMockPostWithRandomTimestamp;
-
 function generateMockVote(parentPostOrComment, vote, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
         var voteTime, signer, voteObj;
@@ -237,9 +229,7 @@ function generateMockVote(parentPostOrComment, vote, plebbit) {
         });
     });
 }
-
 exports.generateMockVote = generateMockVote;
-
 function loadAllPages(pageCid, pagesInstance) {
     return __awaiter(this, void 0, void 0, function () {
         var sortedCommentsPage, sortedComments, e_1;
@@ -285,5 +275,4 @@ function loadAllPages(pageCid, pagesInstance) {
         });
     });
 }
-
 exports.loadAllPages = loadAllPages;

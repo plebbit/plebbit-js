@@ -3,9 +3,7 @@ export declare class Signature {
     publicKey: string;
     type: "rsa";
     signedPropertyNames: string[];
-
     constructor(props: any);
-
     toJSON(): {
         signature: string;
         publicKey: string;
@@ -13,7 +11,5 @@ export declare class Signature {
         signedPropertyNames: string[];
     };
 }
-
 export declare function signPublication(publication: any, signer: any): Promise<Signature>;
-
 export declare function verifyPublication(publication: any): Promise<(string | boolean)[]>;
