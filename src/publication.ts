@@ -97,7 +97,11 @@ class Publication extends EventEmitter {
                 this.subplebbit.pubsubTopic,
                 uint8ArrayFromString(JSON.stringify(challengeAnswer))
             );
-            debug(`Responded to challenge (${challengeAnswer.challengeRequestId}) with answers`);
+            debug(
+                `Responded to challenge (${challengeAnswer.challengeRequestId}) with answers ${JSON.stringify(
+                    challengeAnswers
+                )}`
+            );
         } catch (e) {
             debug(`Failed to publish challenge answers: `, e);
         }
