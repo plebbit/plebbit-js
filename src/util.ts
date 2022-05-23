@@ -112,8 +112,8 @@ export function shallowEqual(object1, object2, excludeKeys = []) {
 export async function waitTillPublicationsArePublished(publications) {
     const promises = publications.map((publication) => {
         return new Promise(async (publicationResolve, publicationReject) => {
-            publication.once("challengeverification", ([challengeVerificationMessage, newPublication]) => {
-                publicationResolve(newPublication);
+            publication.once("challengeverification", (challengeVerificationMessage, newComment) => {
+                publicationResolve(challengeVerificationMessage);
             });
         });
     });

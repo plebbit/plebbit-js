@@ -79,7 +79,7 @@ class Publication extends EventEmitter {
                 );
                 this._initProps(msgParsed.publication);
             }
-            this.emit("challengeverification", [msgParsed, this]);
+            this.emit("challengeverification", msgParsed, this);
             await this.subplebbit.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic);
         }
     }

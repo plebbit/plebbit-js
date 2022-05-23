@@ -99,7 +99,7 @@ const setupSubplebbit = async (subplebbit, plebbit) => {
             const post = await generateMockPost(subplebbit.address, plebbit);
             await post.publish();
 
-            post.once("challengeverification", async ([challengeVerificationMsg, updatedPost]) => {
+            post.once("challengeverification", async (challengeVerificationMsg, updatedPost) => {
                 const comment = await generateMockComment(updatedPost, plebbit);
                 await comment.publish();
                 await subplebbit.stop();

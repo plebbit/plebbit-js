@@ -77,7 +77,7 @@ describe("comment (node and browser)", async () => {
                 const mockComment = await generateMockPost(subplebbitAddress, plebbit);
                 mockComment.signature.signature = mockComment.signature.signature.slice(1); // Corrupts signature by deleting one key
                 await mockComment.publish();
-                mockComment.once("challengeverification", async ([challengeVerificationMessage, updatedComment]) => {
+                mockComment.once("challengeverification", (challengeVerificationMessage, newComment) => {
                     expect(challengeVerificationMessage.challengeSuccess).to.be.false;
                     expect(challengeVerificationMessage.reason).to.have.lengthOf.above(
                         0,
@@ -95,8 +95,8 @@ describe("comment (node and browser)", async () => {
                 await subplebbit.update(updateInterval);
                 const originalLatestPostCid = subplebbit.latestPostCid;
                 await mockPost.publish();
-                mockPost.once("challengeverification", ([challengeVerificationMessage, mockPostWithUpdates]) => {
-                    expect(mockPostWithUpdates.previousCid).to.equal(originalLatestPostCid);
+                mockPost.once("challengeverification", (challengeVerificationMessage, updatedComment) => {
+                    expect(updatedComment.previousCid).to.equal(originalLatestPostCid);
                     subplebbit.once("update", async (updatedSubplebbit) => {
                         expect(mockPost.cid).to.equal(updatedSubplebbit.latestPostCid);
                         mockComments.push(mockPost);
@@ -110,7 +110,7 @@ describe("comment (node and browser)", async () => {
         it("Throws an error when publishing a duplicate post", async function () {
             return new Promise(async (resolve, reject) => {
                 await mockComments[0].publish();
-                mockComments[0].once("challengeverification", ([challengeVerificationMessage, newComment]) => {
+                mockComments[0].once("challengeverification", (challengeVerificationMessage, updatedComment) => {
                     expect(challengeVerificationMessage.challengeSuccess).to.be.false;
                     expect(challengeVerificationMessage.reason).to.be.a("string");
                     resolve();
@@ -166,20 +166,17 @@ describe("comment (node and browser)", async () => {
                     signer: await plebbit.createSigner() // Create a new signer, different than the signer of the original comment
                 });
                 await commentEdit.publish();
-                commentEdit.once(
-                    "challengeverification",
-                    async ([challengeVerificationMessage, updatedCommentEdit]) => {
-                        // Challenge verification should fail if signer is different than original signer
-                        expect(challengeVerificationMessage.challengeSuccess).to.be.false;
-                        expect(challengeVerificationMessage.reason).to.be.a(
-                            "string",
-                            `Should include a reason for refusing publication of a comment edit`
-                        );
-                        await commentToBeEdited.stop();
-                        await subplebbit.stop();
-                        resolve();
-                    }
-                );
+                commentEdit.once("challengeverification", async (challengeVerificationMessage, updatedCommentEdit) => {
+                    // Challenge verification should fail if signer is different than original signer
+                    expect(challengeVerificationMessage.challengeSuccess).to.be.false;
+                    expect(challengeVerificationMessage.reason).to.be.a(
+                        "string",
+                        `Should include a reason for refusing publication of a comment edit`
+                    );
+                    await commentToBeEdited.stop();
+                    await subplebbit.stop();
+                    resolve();
+                });
             });
         });
 

@@ -48,7 +48,7 @@ describe("Test Vote", async () => {
                 timestamp: timestamp()
             });
             await vote.publish();
-            vote.once("challengeverification", async ([challengeVerificationMsg]) => {
+            vote.once("challengeverification", async (challengeVerificationMsg, updatedVote) => {
                 expect(challengeVerificationMsg.challengeSuccess).to.be.false;
                 expect(challengeVerificationMsg.reason).to.be.a("string").with.length.at.least(1);
                 resolve();

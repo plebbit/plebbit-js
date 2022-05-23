@@ -24,7 +24,7 @@ describe("Test challenges", async () => {
                 mockPost.once("challenge", (challengeMessage) => {
                     mockPost.publishChallengeAnswers(["2"]);
                 });
-                mockPost.once("challengeverification", async ([challengeVerificationMessage, newComment]) => {
+                mockPost.once("challengeverification", async (challengeVerificationMessage, newComment) => {
                     expect(challengeVerificationMessage.challengeSuccess).to.be.true;
                     resolve();
                 });
@@ -40,7 +40,7 @@ describe("Test challenges", async () => {
                     mockPost.publishChallengeAnswers(["3"]);
                 });
                 await mockPost.publish();
-                mockPost.once("challengeverification", ([challengeVerificationMessage, newComment]) => {
+                mockPost.once("challengeverification", (challengeVerificationMessage, newComment) => {
                     expect(challengeVerificationMessage.challengeSuccess).to.be.false;
                     resolve();
                 });
@@ -61,7 +61,7 @@ describe("image captcha", async () => {
             });
 
             await mockPost.publish();
-            mockPost.once("challengeverification", async ([challengeVerificationMessage, newComment]) => {
+            mockPost.once("challengeverification", (challengeVerificationMessage, newComment) => {
                 expect(challengeVerificationMessage.challengeSuccess).to.be.true;
                 expect(challengeVerificationMessage.reason).to.be.undefined;
                 resolve();
@@ -73,7 +73,7 @@ describe("image captcha", async () => {
         return new Promise(async (resolve, reject) => {
             const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
             await mockPost.publish();
-            mockPost.once("challengeverification", async ([challengeVerificationMessage, newComment]) => {
+            mockPost.once("challengeverification", async (challengeVerificationMessage, newComment) => {
                 expect(challengeVerificationMessage.challengeSuccess).to.be.false;
                 resolve();
             });
