@@ -203,23 +203,19 @@ export class Subplebbit extends EventEmitter {
 
     async edit(newSubplebbitOptions) {
         await this.prePublish(newSubplebbitOptions);
-        try {
-            this.initSubplebbit({ updatedAt: timestamp(), ...newSubplebbitOptions });
-            const file = await this.plebbit.ipfsClient.add(JSON.stringify(this));
-            await this.plebbit.ipfsClient.name.publish(file["cid"], {
-                lifetime: "72h", // TODO decide on optimal time later
-                key: this.ipnsKeyName,
-                allowOffline: true
-            });
-            debug(
-                `Subplebbit (${this.address}) props (${Object.keys(
-                    newSubplebbitOptions
-                )}) has been edited and its IPNS updated`
-            );
-            return this;
-        } catch (e) {
-            debug(`Failed to edit subplebbit due to ${e}`);
-        }
+        this.initSubplebbit({ updatedAt: timestamp(), ...newSubplebbitOptions });
+        const file = await this.plebbit.ipfsClient.add(JSON.stringify(this));
+        await this.plebbit.ipfsClient.name.publish(file["cid"], {
+            lifetime: "72h", // TODO decide on optimal time later
+            key: this.ipnsKeyName,
+            allowOffline: true
+        });
+        debug(
+            `Subplebbit (${this.address}) props (${Object.keys(
+                newSubplebbitOptions
+            )}) has been edited and its IPNS updated`
+        );
+        return this;
     }
 
     async updateOnce() {
@@ -418,125 +414,112 @@ export class Subplebbit extends EventEmitter {
     }
 
     async handleChallengeRequest(msgParsed) {
-        try {
-            const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(msgParsed);
-            const decryptedPublication = JSON.parse(
-                await decrypt(
-                    msgParsed.encryptedPublication.encrypted,
-                    msgParsed.encryptedPublication.encryptedKey,
-                    this.signer.privateKey
-                )
+        const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(msgParsed);
+        const decryptedPublication = JSON.parse(
+            await decrypt(
+                msgParsed.encryptedPublication.encrypted,
+                msgParsed.encryptedPublication.encryptedKey,
+                this.signer.privateKey
+            )
+        );
+        this._challengeToPublication[msgParsed.challengeRequestId] = decryptedPublication;
+        debug(`Received a request to a challenge (${msgParsed.challengeRequestId})`);
+        if (!providedChallenges) {
+            // Subplebbit owner has chosen to skip challenging this user or post
+            debug(
+                `Skipping challenge for ${msgParsed.challengeRequestId}, add publication to IPFS and respond with challengeVerificationMessage right away`
             );
-            this._challengeToPublication[msgParsed.challengeRequestId] = decryptedPublication;
-            debug(`Received a request to a challenge (${msgParsed.challengeRequestId})`);
-            if (!providedChallenges) {
-                // Subplebbit owner has chosen to skip challenging this user or post
-                debug(
-                    `Skipping challenge for ${msgParsed.challengeRequestId}, add publication to IPFS and respond with challengeVerificationMessage right away`
-                );
-                const trx = decryptedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transaction
+            const trx = decryptedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transaction
 
-                await this.dbHandler.upsertChallenge(new ChallengeRequestMessage(msgParsed), trx);
-                const publishedPublication: any = await this.publishPostAfterPassingChallenge(
-                    decryptedPublication,
-                    msgParsed.challengeRequestId,
-                    trx
-                );
+            await this.dbHandler.upsertChallenge(new ChallengeRequestMessage(msgParsed), trx);
+            const publishedPublication: any = await this.publishPostAfterPassingChallenge(
+                decryptedPublication,
+                msgParsed.challengeRequestId,
+                trx
+            );
 
-                const restOfMsg =
-                    "publication" in publishedPublication
-                        ? {
-                              encryptedPublication: await encrypt(
-                                  JSON.stringify(publishedPublication.publication),
-                                  (
-                                      publishedPublication.publication.signature ||
-                                      publishedPublication.publication.editSignature
-                                  ).publicKey
-                              )
-                          }
-                        : publishedPublication;
-                const challengeVerification = new ChallengeVerificationMessage({
-                    reason: reasonForSkippingCaptcha,
-                    challengeSuccess: Boolean(publishedPublication.publication), // If no publication, this will be false
-                    challengeAnswerId: msgParsed.challengeAnswerId,
-                    challengeErrors: undefined,
-                    challengeRequestId: msgParsed.challengeRequestId,
-                    ...restOfMsg
-                });
-                return this.upsertAndPublishChallenge(challengeVerification, trx);
-            } else {
-                const challengeMessage = new ChallengeMessage({
-                    challengeRequestId: msgParsed.challengeRequestId,
-                    challenges: providedChallenges
-                });
-                return this.upsertAndPublishChallenge(challengeMessage, undefined);
-            }
-        } catch (e) {
-            debug(`Failed to handle challenge request:`, e);
+            const restOfMsg =
+                "publication" in publishedPublication
+                    ? {
+                          encryptedPublication: await encrypt(
+                              JSON.stringify(publishedPublication.publication),
+                              (
+                                  publishedPublication.publication.signature ||
+                                  publishedPublication.publication.editSignature
+                              ).publicKey
+                          )
+                      }
+                    : publishedPublication;
+            const challengeVerification = new ChallengeVerificationMessage({
+                reason: reasonForSkippingCaptcha,
+                challengeSuccess: Boolean(publishedPublication.publication), // If no publication, this will be false
+                challengeAnswerId: msgParsed.challengeAnswerId,
+                challengeErrors: undefined,
+                challengeRequestId: msgParsed.challengeRequestId,
+                ...restOfMsg
+            });
+            return this.upsertAndPublishChallenge(challengeVerification, trx);
+        } else {
+            const challengeMessage = new ChallengeMessage({
+                challengeRequestId: msgParsed.challengeRequestId,
+                challenges: providedChallenges
+            });
+            return this.upsertAndPublishChallenge(challengeMessage, undefined);
         }
     }
 
     async upsertAndPublishChallenge(challenge, trx) {
-        try {
-            await this.dbHandler.upsertChallenge(challenge, trx);
-            if (trx) await trx.commit();
-            await this.plebbit.pubsubIpfsClient.pubsub.publish(
-                this.pubsubTopic,
-                uint8ArrayFromString(JSON.stringify(challenge))
-            );
-            debug(`Published challenge type ${challenge.type} (${challenge.challengeRequestId})`);
-        } catch (e) {
-            debug(`Failed to either publish challenge or upsert in DB, error = ${e}`);
-            if (trx) await trx.rollback();
-        }
+        await this.dbHandler.upsertChallenge(challenge, trx);
+        if (trx) await trx.commit();
+        await this.plebbit.pubsubIpfsClient.pubsub.publish(
+            this.pubsubTopic,
+            uint8ArrayFromString(JSON.stringify(challenge))
+        );
+        debug(`Published challenge type ${challenge.type} (${challenge.challengeRequestId})`);
     }
 
     async handleChallengeAnswer(msgParsed) {
-        try {
-            const [challengeSuccess, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
-            if (challengeSuccess) {
-                debug(`Challenge (${msgParsed.challengeRequestId}) has answered correctly`);
-                const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
-                const trx = storedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transactions
-                await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed), trx);
-                const publishedPublication = await this.publishPostAfterPassingChallenge(
-                    storedPublication,
-                    msgParsed.challengeRequestId,
-                    trx
-                ); // could contain "publication" or "reason"
+        const [challengeSuccess, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
+        if (challengeSuccess) {
+            debug(`Challenge (${msgParsed.challengeRequestId}) has answered correctly`);
+            const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
+            const trx = storedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transactions
+            await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed), trx);
+            const publishedPublication = await this.publishPostAfterPassingChallenge(
+                storedPublication,
+                msgParsed.challengeRequestId,
+                trx
+            ); // could contain "publication" or "reason"
 
-                const restOfMsg =
-                    "publication" in publishedPublication
-                        ? {
-                              encryptedPublication: await encrypt(
-                                  JSON.stringify(publishedPublication.publication),
-                                  (
-                                      publishedPublication.publication.editSignature ||
-                                      publishedPublication.publication.signature
-                                  ).publicKey
-                              )
-                          }
-                        : publishedPublication;
-                const challengeVerification = new ChallengeVerificationMessage({
-                    challengeRequestId: msgParsed.challengeRequestId,
-                    challengeAnswerId: msgParsed.challengeAnswerId,
-                    challengeSuccess: challengeSuccess,
-                    challengeErrors: challengeErrors,
-                    ...restOfMsg
-                });
-                return this.upsertAndPublishChallenge(challengeVerification, trx);
-            } else {
-                debug(`Challenge (${msgParsed.challengeRequestId}) has answered incorrectly`);
-                const challengeVerification = new ChallengeVerificationMessage({
-                    challengeRequestId: msgParsed.challengeRequestId,
-                    challengeAnswerId: msgParsed.challengeAnswerId,
-                    challengeSuccess: challengeSuccess,
-                    challengeErrors: challengeErrors
-                });
-                return this.upsertAndPublishChallenge(challengeVerification, undefined);
-            }
-        } catch (e) {
-            debug(`Failed to handle challenge answers: `, e);
+            const restOfMsg =
+                "publication" in publishedPublication
+                    ? {
+                          encryptedPublication: await encrypt(
+                              JSON.stringify(publishedPublication.publication),
+                              (
+                                  publishedPublication.publication.editSignature ||
+                                  publishedPublication.publication.signature
+                              ).publicKey
+                          )
+                      }
+                    : publishedPublication;
+            const challengeVerification = new ChallengeVerificationMessage({
+                challengeRequestId: msgParsed.challengeRequestId,
+                challengeAnswerId: msgParsed.challengeAnswerId,
+                challengeSuccess: challengeSuccess,
+                challengeErrors: challengeErrors,
+                ...restOfMsg
+            });
+            return this.upsertAndPublishChallenge(challengeVerification, trx);
+        } else {
+            debug(`Challenge (${msgParsed.challengeRequestId}) has answered incorrectly`);
+            const challengeVerification = new ChallengeVerificationMessage({
+                challengeRequestId: msgParsed.challengeRequestId,
+                challengeAnswerId: msgParsed.challengeAnswerId,
+                challengeSuccess: challengeSuccess,
+                challengeErrors: challengeErrors
+            });
+            return this.upsertAndPublishChallenge(challengeVerification, undefined);
         }
     }
 

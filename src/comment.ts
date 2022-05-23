@@ -219,19 +219,15 @@ export class Comment extends Publication {
 
     async edit(commentUpdateOptions) {
         assert(this.ipnsKeyName, "You need to have commentUpdate");
-        try {
-            this._initCommentUpdate(commentUpdateOptions);
-            const file = await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate()));
-            debug(`Added comment (${this.cid}) IPNS (${this.ipnsName}) to ipfs, cid is ${file.path}`);
-            await this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
-                lifetime: "72h",
-                key: this.ipnsKeyName,
-                allowOffline: true
-            });
-            debug(`Linked comment (${this.cid}) ipns name(${this.ipnsName}) to ipfs file (${file.path})`);
-        } catch (e) {
-            debug(`Failed to edit comment IPNS: `, e);
-        }
+        this._initCommentUpdate(commentUpdateOptions);
+        const file = await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate()));
+        debug(`Added comment (${this.cid}) IPNS (${this.ipnsName}) to ipfs, cid is ${file.path}`);
+        await this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
+            lifetime: "72h",
+            key: this.ipnsKeyName,
+            allowOffline: true
+        });
+        debug(`Linked comment (${this.cid}) ipns name(${this.ipnsName}) to ipfs file (${file.path})`);
     }
 }
 
