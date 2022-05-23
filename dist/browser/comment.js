@@ -214,33 +214,25 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.edit = function (commentUpdateOptions) {
         return __awaiter(this, void 0, void 0, function () {
-            var file, e_1;
+            var file;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         (0, assert_1.default)(this.ipnsKeyName, "You need to have commentUpdate");
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 4, , 5]);
                         this._initCommentUpdate(commentUpdateOptions);
                         return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate()))];
-                    case 2:
+                    case 1:
                         file = _a.sent();
                         debug("Added comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") to ipfs, cid is ").concat(file.path));
                         return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
-                                lifetime: "72h",
-                                key: this.ipnsKeyName,
-                                allowOffline: true
-                            })];
-                    case 3:
+                            lifetime: "72h",
+                            key: this.ipnsKeyName,
+                            allowOffline: true
+                        })];
+                    case 2:
                         _a.sent();
                         debug("Linked comment (".concat(this.cid, ") ipns name(").concat(this.ipnsName, ") to ipfs file (").concat(file.path, ")"));
-                        return [3 /*break*/, 5];
-                    case 4:
-                        e_1 = _a.sent();
-                        debug("Failed to edit comment IPNS: ", e_1);
-                        return [3 /*break*/, 5];
-                    case 5: return [2 /*return*/];
+                        return [2 /*return*/];
                 }
             });
         });

@@ -251,40 +251,32 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.edit = function (newSubplebbitOptions) {
         return __awaiter(this, void 0, void 0, function () {
-            var file, e_1;
+            var file;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.prePublish(newSubplebbitOptions)];
                     case 1:
                         _a.sent();
-                        _a.label = 2;
-                    case 2:
-                        _a.trys.push([2, 5, , 6]);
-                        this.initSubplebbit(__assign({ updatedAt: (0, util_1.timestamp)() }, newSubplebbitOptions));
+                        this.initSubplebbit(__assign({updatedAt: (0, util_1.timestamp)()}, newSubplebbitOptions));
                         return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(this))];
-                    case 3:
+                    case 2:
                         file = _a.sent();
                         return [4 /*yield*/, this.plebbit.ipfsClient.name.publish(file["cid"], {
-                                lifetime: "72h",
-                                key: this.ipnsKeyName,
-                                allowOffline: true
-                            })];
-                    case 4:
+                            lifetime: "72h",
+                            key: this.ipnsKeyName,
+                            allowOffline: true
+                        })];
+                    case 3:
                         _a.sent();
                         debug("Subplebbit (".concat(this.address, ") props (").concat(Object.keys(newSubplebbitOptions), ") has been edited and its IPNS updated"));
                         return [2 /*return*/, this];
-                    case 5:
-                        e_1 = _a.sent();
-                        debug("Failed to edit subplebbit due to ".concat(e_1));
-                        return [3 /*break*/, 6];
-                    case 6: return [2 /*return*/];
                 }
             });
         });
     };
     Subplebbit.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var subplebbitIpns, e_2;
+            var subplebbitIpns, e_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -304,10 +296,11 @@ var Subplebbit = /** @class */ (function (_super) {
                         this.initSubplebbit(subplebbitIpns);
                         return [2 /*return*/, this];
                     case 3:
-                        e_2 = _a.sent();
-                        debug("Failed to update subplebbit IPNS, error: ".concat(e_2));
+                        e_1 = _a.sent();
+                        debug("Failed to update subplebbit IPNS, error: ".concat(e_1));
                         return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
+                    case 4:
+                        return [2 /*return*/];
                 }
             });
         });
@@ -576,12 +569,12 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.handleChallengeRequest = function (msgParsed) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, providedChallenges, reasonForSkippingCaptcha, decryptedPublication, _b, _c, trx, _d, publishedPublication, restOfMsg, _e, challengeVerification, challengeMessage, e_3;
+            var _a, providedChallenges, reasonForSkippingCaptcha, decryptedPublication, _b, _c, trx, _d,
+                publishedPublication, restOfMsg, _e, challengeVerification, challengeMessage;
             var _f;
             return __generator(this, function (_g) {
                 switch (_g.label) {
                     case 0:
-                        _g.trys.push([0, 13, , 14]);
                         return [4 /*yield*/, this.provideCaptchaCallback(msgParsed)];
                     case 1:
                         _a = _g.sent(), providedChallenges = _a[0], reasonForSkippingCaptcha = _a[1];
@@ -630,23 +623,15 @@ var Subplebbit = /** @class */ (function (_super) {
                             challenges: providedChallenges
                         });
                         return [2 /*return*/, this.upsertAndPublishChallenge(challengeMessage, undefined)];
-                    case 12: return [3 /*break*/, 14];
-                    case 13:
-                        e_3 = _g.sent();
-                        debug("Failed to handle challenge request:", e_3);
-                        return [3 /*break*/, 14];
-                    case 14: return [2 /*return*/];
                 }
             });
         });
     };
     Subplebbit.prototype.upsertAndPublishChallenge = function (challenge, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var e_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 5, , 8]);
                         return [4 /*yield*/, this.dbHandler.upsertChallenge(challenge, trx)];
                     case 1:
                         _a.sent();
@@ -659,29 +644,19 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 4:
                         _a.sent();
                         debug("Published challenge type ".concat(challenge.type, " (").concat(challenge.challengeRequestId, ")"));
-                        return [3 /*break*/, 8];
-                    case 5:
-                        e_4 = _a.sent();
-                        debug("Failed to either publish challenge or upsert in DB, error = ".concat(e_4));
-                        if (!trx) return [3 /*break*/, 7];
-                        return [4 /*yield*/, trx.rollback()];
-                    case 6:
-                        _a.sent();
-                        _a.label = 7;
-                    case 7: return [3 /*break*/, 8];
-                    case 8: return [2 /*return*/];
+                        return [2 /*return*/];
                 }
             });
         });
     };
     Subplebbit.prototype.handleChallengeAnswer = function (msgParsed) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, challengeSuccess, challengeErrors, storedPublication, trx, _b, publishedPublication, restOfMsg, _c, challengeVerification, challengeVerification, e_5;
+            var _a, challengeSuccess, challengeErrors, storedPublication, trx, _b, publishedPublication, restOfMsg, _c,
+                challengeVerification, challengeVerification;
             var _d;
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
-                        _e.trys.push([0, 12, , 13]);
                         return [4 /*yield*/, this.validateCaptchaAnswerCallback(msgParsed)];
                     case 1:
                         _a = _e.sent(), challengeSuccess = _a[0], challengeErrors = _a[1];
@@ -727,12 +702,6 @@ var Subplebbit = /** @class */ (function (_super) {
                             challengeErrors: challengeErrors
                         });
                         return [2 /*return*/, this.upsertAndPublishChallenge(challengeVerification, undefined)];
-                    case 11: return [3 /*break*/, 13];
-                    case 12:
-                        e_5 = _e.sent();
-                        debug("Failed to handle challenge answers: ", e_5);
-                        return [3 /*break*/, 13];
-                    case 13: return [2 /*return*/];
                 }
             });
         });
@@ -793,14 +762,14 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.syncIpnsWithDb = function (syncIntervalMs) {
         return __awaiter(this, void 0, void 0, function () {
-            var syncComment, dbComments, e_6;
+            var syncComment, dbComments, e_2;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         debug("Starting to sync IPNS with DB");
                         syncComment = function (dbComment) { return __awaiter(_this, void 0, void 0, function () {
-                            var currentIpns, _a, sortedReplies, sortedRepliesCids, e_7;
+                            var currentIpns, _a, sortedReplies, sortedRepliesCids, e_3;
                             return __generator(this, function (_b) {
                                 switch (_b.label) {
                                     case 0: return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(dbComment.ipnsName, this.plebbit)];
@@ -830,10 +799,11 @@ var Subplebbit = /** @class */ (function (_super) {
                                         _b.sent();
                                         return [2 /*return*/, dbComment.edit(dbComment.toJSONCommentUpdate())];
                                     case 8:
-                                        e_7 = _b.sent();
-                                        debug("Failed to update comment (".concat(dbComment.cid, ") due to error=").concat(e_7));
+                                        e_3 = _b.sent();
+                                        debug("Failed to update comment (".concat(dbComment.cid, ") due to error=").concat(e_3));
                                         return [3 /*break*/, 9];
-                                    case 9: return [2 /*return*/];
+                                    case 9:
+                                        return [2 /*return*/];
                                 }
                             });
                         }); };
@@ -852,8 +822,8 @@ var Subplebbit = /** @class */ (function (_super) {
                         _a.sent();
                         return [3 /*break*/, 5];
                     case 4:
-                        e_6 = _a.sent();
-                        debug("Failed to sync due to error: ".concat(e_6));
+                        e_2 = _a.sent();
+                        debug("Failed to sync due to error: ".concat(e_2));
                         return [3 /*break*/, 5];
                     case 5:
                         setTimeout(this.syncIpnsWithDb.bind(this, syncIntervalMs), syncIntervalMs);
@@ -865,9 +835,11 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.start = function (syncIntervalMs) {
         if (syncIntervalMs === void 0) { syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS; }
         return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.prePublish()];
+                    case 0:
+                        return [4 /*yield*/, this.prePublish()];
                     case 1:
                         _a.sent();
                         if (!this.provideCaptchaCallback) {
@@ -877,7 +849,28 @@ var Subplebbit = /** @class */ (function (_super) {
                         }
                         (0, assert_1.default)(this.dbHandler, "A connection to a database is needed for the hosting a subplebbit");
                         (0, assert_1.default)(this.pubsubTopic, "Pubsub topic need to defined before publishing");
-                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, this.processCaptchaPubsub.bind(this))];
+                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, function (pubsubMessage) {
+                            return __awaiter(_this, void 0, void 0, function () {
+                                var e_4;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            _a.trys.push([0, 2, , 3]);
+                                            return [4 /*yield*/, this.processCaptchaPubsub(pubsubMessage)];
+                                        case 1:
+                                            _a.sent();
+                                            return [3 /*break*/, 3];
+                                        case 2:
+                                            e_4 = _a.sent();
+                                            e_4.message = "failed process captcha: " + e_4.message;
+                                            debug(e_4);
+                                            return [3 /*break*/, 3];
+                                        case 3:
+                                            return [2 /*return*/];
+                                    }
+                                });
+                            });
+                        })];
                     case 2:
                         _a.sent();
                         debug("Waiting for publications on pubsub topic (".concat(this.pubsubTopic, ")"));

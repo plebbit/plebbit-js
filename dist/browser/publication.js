@@ -138,7 +138,7 @@ var Publication = /** @class */ (function (_super) {
                         this._initProps(msgParsed.publication);
                         _d.label = 4;
                     case 4:
-                        this.emit("challengeverification", [msgParsed, this]);
+                        this.emit("challengeverification", msgParsed, this);
                         return [4 /*yield*/, this.subplebbit.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic)];
                     case 5:
                         _d.sent();

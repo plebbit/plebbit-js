@@ -58,6 +58,7 @@ var it_last_1 = __importDefault(require("it-last"));
 var debug_1 = __importDefault(require("debug"));
 var node_fetch_1 = __importDefault(require("node-fetch"));
 var form_data_1 = __importDefault(require("form-data"));
+var assert_1 = __importDefault(require("assert"));
 //This is temp. TODO replace this with accurate mapping
 exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -71,21 +72,24 @@ var debug = (0, debug_1.default)("plebbit-js:util");
 function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
     if (defaultOptions === void 0) { defaultOptions = { timeout: 60000 }; }
     return __awaiter(this, void 0, void 0, function () {
-        var res, rawData, data;
+        var url, res, rawData, data;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!cid)
-                        return [2 /*return*/, undefined];
+                    assert_1.default.ok(cid, "Cid has to not be null to load");
                     if (!plebbit.ipfsGatewayUrl) return [3 /*break*/, 5];
-                    return [4 /*yield*/, (0, node_fetch_1.default)("".concat(plebbit.ipfsGatewayUrl, "/ipfs/").concat(cid))];
+                    url = "".concat(plebbit.ipfsGatewayUrl, "/ipfs/").concat(cid);
+                    return [4 /*yield*/, (0, node_fetch_1.default)(url)];
                 case 1:
                     res = _a.sent();
                     if (!(res.status === 200)) return [3 /*break*/, 3];
                     return [4 /*yield*/, res.json()];
-                case 2: return [2 /*return*/, _a.sent()];
-                case 3: return [2 /*return*/, undefined];
-                case 4: return [3 /*break*/, 7];
+                case 2:
+                    return [2 /*return*/, _a.sent()];
+                case 3:
+                    throw "Failed to load IPFS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText);
+                case 4:
+                    return [3 /*break*/, 7];
                 case 5: return [4 /*yield*/, (0, it_all_1.default)(plebbit.ipfsClient.cat(cid, defaultOptions))];
                 case 6:
                     rawData = _a.sent();
@@ -105,24 +109,32 @@ function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
 exports.loadIpfsFileAsJson = loadIpfsFileAsJson;
 function loadIpnsAsJson(ipns, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
-        var res, cid;
+        var url, res, cid;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     if (!plebbit.ipfsGatewayUrl) return [3 /*break*/, 5];
-                    return [4 /*yield*/, (0, node_fetch_1.default)("".concat(plebbit.ipfsGatewayUrl, "/ipns/").concat(ipns))];
+                    url = "".concat(plebbit.ipfsGatewayUrl, "/ipns/").concat(ipns);
+                    return [4 /*yield*/, (0, node_fetch_1.default)(url)];
                 case 1:
                     res = _a.sent();
                     if (!(res.status === 200)) return [3 /*break*/, 3];
                     return [4 /*yield*/, res.json()];
-                case 2: return [2 /*return*/, _a.sent()];
-                case 3: return [2 /*return*/, undefined];
-                case 4: return [3 /*break*/, 8];
-                case 5: return [4 /*yield*/, (0, it_last_1.default)(plebbit.ipfsClient.name.resolve(ipns))];
+                case 2:
+                    return [2 /*return*/, _a.sent()];
+                case 3:
+                    throw "Failed to load IPNS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText);
+                case 4:
+                    return [3 /*break*/, 8];
+                case 5:
+                    return [4 /*yield*/, (0, it_last_1.default)(plebbit.ipfsClient.name.resolve(ipns))];
                 case 6:
                     cid = _a.sent();
+                    if (!cid)
+                        return [2 /*return*/, undefined];
                     return [4 /*yield*/, loadIpfsFileAsJson(cid, plebbit)];
-                case 7: return [2 /*return*/, _a.sent()];
+                case 7:
+                    return [2 /*return*/, _a.sent()];
                 case 8: return [2 /*return*/];
             }
         });
@@ -221,9 +233,8 @@ function waitTillPublicationsArePublished(publications) {
                     promises = publications.map(function (publication) {
                         return new Promise(function (publicationResolve, publicationReject) { return __awaiter(_this, void 0, void 0, function () {
                             return __generator(this, function (_a) {
-                                publication.once("challengeverification", function (_a) {
-                                    var challengeVerificationMessage = _a[0], newPublication = _a[1];
-                                    publicationResolve(newPublication);
+                                publication.once("challengeverification", function (challengeVerificationMessage, newComment) {
+                                    publicationResolve(challengeVerificationMessage);
                                 });
                                 return [2 /*return*/];
                             });
