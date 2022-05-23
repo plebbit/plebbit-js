@@ -174,12 +174,20 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var res;
+            var res, e_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.subplebbit.plebbit)];
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.subplebbit.plebbit)];
                     case 1:
                         res = _a.sent();
+                        return [3 /*break*/, 3];
+                    case 2:
+                        e_1 = _a.sent();
+                        debug("Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error = ").concat(e_1.message));
+                        return [3 /*break*/, 3];
+                    case 3:
                         if (!res)
                             debug("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") is not pointing to any file"));
                         else {
@@ -188,8 +196,7 @@ var Comment = /** @class */ (function (_super) {
                                 this.emittedAt = res.updatedAt;
                                 this._initCommentUpdate(res);
                                 this.emit("update", this);
-                            }
-                            else {
+                            } else {
                                 debug("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
                                 this._initCommentUpdate(res);
                             }

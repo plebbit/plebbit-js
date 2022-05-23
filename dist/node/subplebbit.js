@@ -415,26 +415,35 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.handleVote = function (newVote, challengeRequestId, trx) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var _b, signatureIsVerified, failedVerificationReason, lastVote;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
-                    case 0: return [4 /*yield*/, (0, signer_1.verifyPublication)(newVote)];
+            var _b, signatureIsVerified, failedVerificationReason, _c, lastVote, parentComment, msg;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        return [4 /*yield*/, (0, signer_1.verifyPublication)(newVote)];
                     case 1:
-                        _b = _c.sent(), signatureIsVerified = _b[0], failedVerificationReason = _b[1];
+                        _b = _d.sent(), signatureIsVerified = _b[0], failedVerificationReason = _b[1];
                         if (!signatureIsVerified) {
                             debug("Author (".concat(newVote.author.address, ") vote (").concat(newVote.vote, " vote's signature is invalid. Reason = ").concat(failedVerificationReason));
-                            return [2 /*return*/, { reason: "Invalid signature" }];
+                            return [2 /*return*/, {reason: "Invalid signature"}];
                         }
-                        return [4 /*yield*/, this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address, trx)];
+                        return [4 /*yield*/, Promise.all([
+                            this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address, trx),
+                            this.dbHandler.queryComment(newVote.commentCid, trx)
+                        ])];
                     case 2:
-                        lastVote = _c.sent();
+                        _c = _d.sent(), lastVote = _c[0], parentComment = _c[1];
+                        if (!parentComment) {
+                            msg = "User is trying to publish a vote under a comment (".concat(newVote.commentCid, ") that does not exist");
+                            debug(msg);
+                            return [2 /*return*/, {reason: msg}];
+                        }
                         if (!(lastVote && newVote.signature.publicKey !== lastVote.signature.publicKey)) return [3 /*break*/, 3];
                         // Original comment and CommentEdit need to have same key
                         // TODO make exception for moderators
                         debug("Author (".concat(newVote.author.address, ") attempted to edit a comment vote (").concat(newVote.commentCid, ") without having correct credentials"));
                         return [2 /*return*/, {
-                                reason: "Author (".concat(newVote.author.address, ") attempted to change vote on  ").concat(newVote.commentCid, " without having correct credentials")
-                            }];
+                            reason: "Author (".concat(newVote.author.address, ") attempted to change vote on  ").concat(newVote.commentCid, " without having correct credentials")
+                        }];
                     case 3:
                         if (!(0, util_1.shallowEqual)(newVote.signature, lastVote === null || lastVote === void 0 ? void 0 : lastVote.signature)) return [3 /*break*/, 4];
                         debug("Signature of Vote is identical to original Vote (".concat(newVote.commentCid, ")"));
@@ -447,9 +456,9 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [2 /*return*/, { reason: "User duplicated their vote" }];
                     case 5: return [4 /*yield*/, this.dbHandler.upsertVote(newVote, challengeRequestId, trx)];
                     case 6:
-                        _c.sent();
+                        _d.sent();
                         debug("Upserted new vote (".concat(newVote.vote, ") for comment ").concat(newVote.commentCid));
-                        _c.label = 7;
+                        _d.label = 7;
                     case 7: return [2 /*return*/];
                 }
             });
@@ -458,7 +467,8 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.publishPostAfterPassingChallenge = function (publication, challengeRequestId, trx) {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
-            var postOrCommentOrVote, _c, _d, res, res, signatureIsVerified, ipnsKeyName, msg, ipfsSigner, _e, ipfsKey, _f, _g, file, _h, commentsUnderParent, parent_1, file;
+            var postOrCommentOrVote, _c, _d, res, res, signatureIsVerified, ipnsKeyName, msg, ipfsSigner, _e, ipfsKey,
+                _f, _g, file, _h, commentsUnderParent, parent_1, msg, file;
             return __generator(this, function (_j) {
                 switch (_j.label) {
                     case 0:
@@ -545,12 +555,18 @@ var Subplebbit = /** @class */ (function (_super) {
                         _j.sent();
                         debug("New post with cid ".concat(postOrCommentOrVote.cid, " has been inserted into DB"));
                         return [3 /*break*/, 24];
-                    case 20: return [4 /*yield*/, Promise.all([
+                    case 20:
+                        return [4 /*yield*/, Promise.all([
                             this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx),
                             this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)
                         ])];
                     case 21:
                         _h = _j.sent(), commentsUnderParent = _h[0], parent_1 = _h[1];
+                        if (!parent_1) {
+                            msg = "User is trying to publish a comment with content (".concat(postOrCommentOrVote.content, ") with incorrect parentCid");
+                            debug(msg);
+                            return [2 /*return*/, {reason: msg}];
+                        }
                         postOrCommentOrVote.setPreviousCid((_b = commentsUnderParent[0]) === null || _b === void 0 ? void 0 : _b.cid);
                         postOrCommentOrVote.setDepth(parent_1.depth + 1);
                         return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()))];
