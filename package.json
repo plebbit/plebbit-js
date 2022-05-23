@@ -27,16 +27,16 @@
     "dist/"
   ],
   "dependencies": {
-    "@keyv/sqlite": "^3.5.1",
+    "@keyv/sqlite": "3.5.1",
     "assert": "2.0.0",
-    "better-sqlite3": "^7.5.3",
+    "better-sqlite3": "7.5.3",
     "buffer": "6.0.3",
     "captcha-canvas": "3.1.0",
     "ipfs-core": "0.14.3",
     "ipfs-http-client": "56.0.3",
     "jose": "4.8.1",
     "js-sha256": "0.9.0",
-    "keyv": "^4.2.9",
+    "keyv": "4.2.9",
     "knex": "2.0.0",
     "libp2p-crypto": "0.21.2"
   },
