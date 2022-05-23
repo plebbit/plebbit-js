@@ -5,6 +5,7 @@ import last from "it-last";
 import Debug from "debug";
 import fetch from "node-fetch";
 import FormData from "form-data";
+import assert from "assert";
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -17,11 +18,12 @@ export const TIMEFRAMES_TO_SECONDS = Object.freeze({
 const debug = Debug("plebbit-js:util");
 
 export async function loadIpfsFileAsJson(cid, plebbit, defaultOptions = { timeout: 60000 }) {
-    if (!cid) return undefined;
+    assert.ok(cid, "Cid has to not be null to load");
     if (plebbit.ipfsGatewayUrl) {
-        const res = await fetch(`${plebbit.ipfsGatewayUrl}/ipfs/${cid}`);
+        const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
+        const res = await fetch(url);
         if (res.status === 200) return await res.json();
-        else return undefined;
+        else throw `Failed to load IPFS via url (${url}). Status code ${res.status} and status text ${res.statusText}`;
     } else {
         const rawData: any = await all(plebbit.ipfsClient.cat(cid, defaultOptions));
         const data = uint8ArrayConcat(rawData);
@@ -34,11 +36,13 @@ export async function loadIpfsFileAsJson(cid, plebbit, defaultOptions = { timeou
 
 export async function loadIpnsAsJson(ipns, plebbit) {
     if (plebbit.ipfsGatewayUrl) {
-        const res = await fetch(`${plebbit.ipfsGatewayUrl}/ipns/${ipns}`);
+        const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
+        const res = await fetch(url);
         if (res.status === 200) return await res.json();
-        else return undefined;
+        else throw `Failed to load IPNS via url (${url}). Status code ${res.status} and status text ${res.statusText}`;
     } else {
         const cid = await last(plebbit.ipfsClient.name.resolve(ipns));
+        if (!cid) return undefined;
         return await loadIpfsFileAsJson(cid, plebbit);
     }
 }
