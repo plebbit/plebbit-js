@@ -56,7 +56,7 @@ describe("image captcha", async () => {
             mockPost.removeAllListeners();
 
             mockPost.once("challenge", async (challengeMsg) => {
-                expect(challengeMsg?.challenges[0]?.challenge?.type).to.equal("Buffer");
+                expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
                 await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
             });
 

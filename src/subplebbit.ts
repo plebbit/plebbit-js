@@ -558,7 +558,7 @@ export class Subplebbit extends EventEmitter {
         // captcha, captcha type, reason for skipping captcha (if it's skipped by nullifying captcha)
         const { image, text } = createCaptcha(300, 100);
         this._challengeToSolution[challengeRequestMessage.challengeRequestId] = [text];
-        const imageBuffer = await image;
+        const imageBuffer = (await image).toString("base64");
         return [[new Challenge({ challenge: imageBuffer, type: CHALLENGE_TYPES.IMAGE })]];
     }
 
