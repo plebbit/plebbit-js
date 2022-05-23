@@ -103,7 +103,7 @@ export class DbHandler {
     async createAuthorsTable() {
         await this.knex.schema.createTable(TABLES.AUTHORS, (table) => {
             table.text("address").notNullable().primary().unique();
-            table.text("displayName").notNullable();
+            table.text("displayName").nullable();
         });
     }
 
