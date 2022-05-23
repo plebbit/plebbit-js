@@ -317,7 +317,16 @@ export class Subplebbit extends EventEmitter {
             );
             return { reason: "Invalid signature" };
         }
-        const lastVote: any = await this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address, trx);
+        const [lastVote, parentComment]: [any, any] = await Promise.all([
+            this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address, trx),
+            this.dbHandler.queryComment(newVote.commentCid, trx)
+        ]);
+
+        if (!parentComment) {
+            const msg = `User is trying to publish a vote under a comment (${newVote.commentCid}) that does not exist`;
+            debug(msg);
+            return { reason: msg };
+        }
         if (lastVote && newVote.signature.publicKey !== lastVote.signature.publicKey) {
             // Original comment and CommentEdit need to have same key
             // TODO make exception for moderators
@@ -395,11 +404,15 @@ export class Subplebbit extends EventEmitter {
                     debug(`New post with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
                 } else {
                     // Comment
-                    // TODO throw an error when user tries to comment a non existent post/comment
                     const [commentsUnderParent, parent]: any = await Promise.all([
                         this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx),
                         this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)
                     ]);
+                    if (!parent) {
+                        const msg = `User is trying to publish a comment with content (${postOrCommentOrVote.content}) with incorrect parentCid`;
+                        debug(msg);
+                        return { reason: msg };
+                    }
                     postOrCommentOrVote.setPreviousCid(commentsUnderParent[0]?.cid);
                     postOrCommentOrVote.setDepth(parent.depth + 1);
                     const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
