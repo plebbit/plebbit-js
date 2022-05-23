@@ -56,6 +56,19 @@ describe("Test Vote", async () => {
         });
     });
 
+    it("Throws an error when vote's comment does not exist", async () => {
+        return new Promise(async (resolve, reject) => {
+            const vote = await generateMockVote(postToVote, 1, plebbit);
+            vote.commentCid = vote.commentCid.slice(1); // Corrupt commentCid
+            await vote.publish();
+            vote.once("challengeverification", async (challengeVerificationMsg, updatedVote) => {
+                expect(challengeVerificationMsg.challengeSuccess).to.be.false;
+                expect(challengeVerificationMsg.reason).to.be.a("string").with.length.at.least(1);
+                resolve();
+            });
+        });
+    });
+
     it("Can change upvote to downvote", async () => {
         return new Promise(async (resolve, reject) => {
             await postToVote.update(updateInterval);

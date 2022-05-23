@@ -118,6 +118,20 @@ describe("comment (node and browser)", async () => {
             });
         });
 
+        it("Throws an error when a user attempts to publish a comment under a non existent parent", async () => {
+            return new Promise(async (resolve) => {
+                const comment = await generateMockComment(mockComments[0], plebbit);
+                comment.parentCid = comment.parentCid.slice(1); // Corrupt parentCid
+                await comment.publish();
+                comment.once("challengeverification", (challengeVerificationMessage, updatedComment) => {
+                    expect(challengeVerificationMessage.challengeSuccess).to.be.false;
+                    // TODO we should probably document challengeVerificationMessage.reason somewhere
+                    expect(challengeVerificationMessage.reason).to.be.a("string");
+                    resolve();
+                });
+            });
+        });
+
         [1, 2, 3, 4, 5, 6].map((depth) =>
             it(`Can publish comment with depth = ${depth}`, async () => {
                 return new Promise(async (resolve, reject) => {
