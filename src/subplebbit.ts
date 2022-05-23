@@ -619,7 +619,14 @@ export class Subplebbit extends EventEmitter {
         }
         assert(this.dbHandler, "A connection to a database is needed for the hosting a subplebbit");
         assert(this.pubsubTopic, "Pubsub topic need to defined before publishing");
-        await this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, this.processCaptchaPubsub.bind(this));
+        await this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, async (pubsubMessage) => {
+            try {
+                await this.processCaptchaPubsub(pubsubMessage);
+            } catch (e) {
+                e.message = "failed process captcha: " + e.message;
+                debug(e);
+            }
+        });
         debug(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
         await this.syncIpnsWithDb(syncIntervalMs);
     }
