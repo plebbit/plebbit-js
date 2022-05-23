@@ -185,7 +185,12 @@ export class Comment extends Publication {
     }
 
     async updateOnce() {
-        const res = await loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit);
+        let res;
+        try {
+            res = await loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit);
+        } catch (e) {
+            debug(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error = ${e.message}`);
+        }
         if (!res) debug(`Comment (${this.cid}) IPNS (${this.ipnsName}) is not pointing to any file`);
         else {
             if (res.updatedAt !== this.emittedAt) {
