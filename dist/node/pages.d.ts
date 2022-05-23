@@ -1,6 +1,5 @@
-import {Subplebbit} from "./subplebbit";
-import {Comment} from "./comment";
-
+import { Subplebbit } from "./subplebbit";
+import { Comment } from "./comment";
 export declare class Pages {
     pages: {
         [sortType: string]: Page;
@@ -9,9 +8,7 @@ export declare class Pages {
         [sortType: string]: string;
     };
     subplebbit: Subplebbit;
-
     constructor(props: any);
-
     getPage(pageCid: any): Promise<Page>;
     toJSON(): {
         pages: {

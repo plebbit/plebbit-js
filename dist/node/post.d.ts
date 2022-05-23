@@ -1,4 +1,4 @@
-import {Comment} from "./comment";
+import { Comment } from "./comment";
 declare class Post extends Comment {
     title?: string;
     _initProps(props: any): void;

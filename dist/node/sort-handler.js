@@ -1,6 +1,6 @@
 "use strict";
 var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function (t) {
+    __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
             s = arguments[i];
             for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -11,116 +11,45 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) {
-        return value instanceof P ? value : new P(function (resolve) {
-            resolve(value);
-        });
-    }
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) {
-            try {
-                step(generator.next(value));
-            } catch (e) {
-                reject(e);
-            }
-        }
-
-        function rejected(value) {
-            try {
-                step(generator["throw"](value));
-            } catch (e) {
-                reject(e);
-            }
-        }
-
-        function step(result) {
-            result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
-        }
-
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = {
-        label: 0, sent: function () {
-            if (t[0] & 1) throw t[1];
-            return t[1];
-        }, trys: [], ops: []
-    }, f, y, t, g;
-    return g = {
-        next: verb(0),
-        "throw": verb(1),
-        "return": verb(2)
-    }, typeof Symbol === "function" && (g[Symbol.iterator] = function () {
-        return this;
-    }), g;
-
-    function verb(n) {
-        return function (v) {
-            return step([n, v]);
-        };
-    }
-
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
-                case 0:
-                case 1:
-                    t = op;
-                    break;
-                case 4:
-                    _.label++;
-                    return {value: op[1], done: false};
-                case 5:
-                    _.label++;
-                    y = op[1];
-                    op = [0];
-                    continue;
-                case 7:
-                    op = _.ops.pop();
-                    _.trys.pop();
-                    continue;
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
                 default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) {
-                        _ = 0;
-                        continue;
-                    }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) {
-                        _.label = op[1];
-                        break;
-                    }
-                    if (op[0] === 6 && _.label < t[1]) {
-                        _.label = t[1];
-                        t = op;
-                        break;
-                    }
-                    if (t && _.label < t[2]) {
-                        _.label = t[2];
-                        _.ops.push(op);
-                        break;
-                    }
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
                     if (t[2]) _.ops.pop();
-                    _.trys.pop();
-                    continue;
+                    _.trys.pop(); continue;
             }
             op = body.call(thisArg, _);
-        } catch (e) {
-            op = [6, e];
-            y = 0;
-        } finally {
-            f = t = 0;
-        }
-        if (op[0] & 5) throw op[1];
-        return {value: op[0] ? op[1] : void 0, done: true};
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
 var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : {"default": mod};
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-Object.defineProperty(exports, "__esModule", {value: true});
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.SortHandler = exports.SORTED_POSTS_PAGE_SIZE = exports.REPLIES_SORT_TYPES = exports.POSTS_SORT_TYPES = void 0;
 var util_1 = require("./util");
 var debug_1 = __importDefault(require("debug"));
@@ -128,22 +57,22 @@ var pages_1 = require("./pages");
 var assert_1 = __importDefault(require("assert"));
 var debug = (0, debug_1.default)("plebbit-js:sort-handler");
 exports.POSTS_SORT_TYPES = Object.freeze({
-    HOT: {type: "hot", score: util_1.hotScore},
-    NEW: {type: "new"},
-    TOP_HOUR: {type: "topHour"},
-    TOP_DAY: {type: "topDay"},
-    TOP_WEEK: {type: "topWeek"},
-    TOP_MONTH: {type: "topMonth"},
-    TOP_YEAR: {type: "topYear"},
-    TOP_ALL: {type: "topAll"},
-    CONTROVERSIAL_HOUR: {type: "controversialHour", score: util_1.controversialScore},
-    CONTROVERSIAL_DAY: {type: "controversialDay", score: util_1.controversialScore},
-    CONTROVERSIAL_WEEK: {type: "controversialWeek", score: util_1.controversialScore},
-    CONTROVERSIAL_MONTH: {type: "controversialMonth", score: util_1.controversialScore},
-    CONTROVERSIAL_YEAR: {type: "controversialYear", score: util_1.controversialScore},
-    CONTROVERSIAL_ALL: {type: "controversialAll", score: util_1.controversialScore}
+    HOT: { type: "hot", score: util_1.hotScore },
+    NEW: { type: "new" },
+    TOP_HOUR: { type: "topHour" },
+    TOP_DAY: { type: "topDay" },
+    TOP_WEEK: { type: "topWeek" },
+    TOP_MONTH: { type: "topMonth" },
+    TOP_YEAR: { type: "topYear" },
+    TOP_ALL: { type: "topAll" },
+    CONTROVERSIAL_HOUR: { type: "controversialHour", score: util_1.controversialScore },
+    CONTROVERSIAL_DAY: { type: "controversialDay", score: util_1.controversialScore },
+    CONTROVERSIAL_WEEK: { type: "controversialWeek", score: util_1.controversialScore },
+    CONTROVERSIAL_MONTH: { type: "controversialMonth", score: util_1.controversialScore },
+    CONTROVERSIAL_YEAR: { type: "controversialYear", score: util_1.controversialScore },
+    CONTROVERSIAL_ALL: { type: "controversialAll", score: util_1.controversialScore }
 });
-exports.REPLIES_SORT_TYPES = __assign(__assign({}, (0, util_1.keepKeys)(exports.POSTS_SORT_TYPES, ["TOP_ALL", "NEW", "CONTROVERSIAL_ALL"])), {OLD: {type: "old"}});
+exports.REPLIES_SORT_TYPES = __assign(__assign({}, (0, util_1.keepKeys)(exports.POSTS_SORT_TYPES, ["TOP_ALL", "NEW", "CONTROVERSIAL_ALL"])), { OLD: { type: "old" } });
 exports.SORTED_POSTS_PAGE_SIZE = 50;
 var SortHandler = /** @class */ (function () {
     function SortHandler(subplebbit) {
@@ -160,53 +89,42 @@ var SortHandler = /** @class */ (function () {
                             return [2 /*return*/, [[undefined], [undefined]]];
                         listOfPage = new Array(chunks.length);
                         cids = new Array(chunks.length);
-                        return [4 /*yield*/, Promise.all(chunks.map(function (chunk) {
-                            return __awaiter(_this, void 0, void 0, function () {
+                        return [4 /*yield*/, Promise.all(chunks.map(function (chunk) { return __awaiter(_this, void 0, void 0, function () {
                                 var _this = this;
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
-                                        case 0:
-                                            return [4 /*yield*/, Promise.all(chunk.map(function (comment) {
-                                                return __awaiter(_this, void 0, void 0, function () {
-                                                    var cachedComment, _a, sortedReplies, sortedRepliesCids;
-                                                    return __generator(this, function (_b) {
-                                                        switch (_b.label) {
-                                                            case 0:
-                                                                if (comment.replyCount === 0)
-                                                                    return [2 /*return*/, comment];
-                                                                return [4 /*yield*/, this.subplebbit._keyv.has(comment.cid)];
-                                                            case 1:
-                                                                if (!_b.sent()) return [3 /*break*/, 3];
-                                                                return [4 /*yield*/, this.subplebbit._keyv.get(comment.cid)];
-                                                            case 2:
-                                                                cachedComment = _b.sent();
-                                                                comment.setReplies(cachedComment.sortedReplies, cachedComment.sortedRepliesCids);
-                                                                return [3 /*break*/, 6];
-                                                            case 3:
-                                                                return [4 /*yield*/, this.generatePagesUnderComment(comment, undefined)];
-                                                            case 4:
-                                                                _a = _b.sent(), sortedReplies = _a[0], sortedRepliesCids = _a[1];
-                                                                assert_1.default.ok(sortedReplies);
-                                                                return [4 /*yield*/, this.subplebbit._keyv.set(comment.cid, {
-                                                                    sortedReplies: sortedReplies,
-                                                                    sortedRepliesCids: sortedRepliesCids
-                                                                })];
-                                                            case 5:
-                                                                _b.sent();
-                                                                comment.setReplies(sortedReplies, sortedRepliesCids);
-                                                                _b.label = 6;
-                                                            case 6:
+                                        case 0: return [4 /*yield*/, Promise.all(chunk.map(function (comment) { return __awaiter(_this, void 0, void 0, function () {
+                                                var cachedComment, _a, sortedReplies, sortedRepliesCids;
+                                                return __generator(this, function (_b) {
+                                                    switch (_b.label) {
+                                                        case 0:
+                                                            if (comment.replyCount === 0)
                                                                 return [2 /*return*/, comment];
-                                                        }
-                                                    });
+                                                            return [4 /*yield*/, this.subplebbit._keyv.has(comment.cid)];
+                                                        case 1:
+                                                            if (!_b.sent()) return [3 /*break*/, 3];
+                                                            return [4 /*yield*/, this.subplebbit._keyv.get(comment.cid)];
+                                                        case 2:
+                                                            cachedComment = _b.sent();
+                                                            comment.setReplies(cachedComment.sortedReplies, cachedComment.sortedRepliesCids);
+                                                            return [3 /*break*/, 6];
+                                                        case 3: return [4 /*yield*/, this.generatePagesUnderComment(comment, undefined)];
+                                                        case 4:
+                                                            _a = _b.sent(), sortedReplies = _a[0], sortedRepliesCids = _a[1];
+                                                            assert_1.default.ok(sortedReplies);
+                                                            return [4 /*yield*/, this.subplebbit._keyv.set(comment.cid, { sortedReplies: sortedReplies, sortedRepliesCids: sortedRepliesCids })];
+                                                        case 5:
+                                                            _b.sent();
+                                                            comment.setReplies(sortedReplies, sortedRepliesCids);
+                                                            _b.label = 6;
+                                                        case 6: return [2 /*return*/, comment];
+                                                    }
                                                 });
-                                            }))];
-                                        case 1:
-                                            return [2 /*return*/, _a.sent()];
+                                            }); }))];
+                                        case 1: return [2 /*return*/, _a.sent()];
                                     }
                                 });
-                            });
-                        }))];
+                            }); }))];
                     case 1:
                         chunksWithReplies = _c.sent();
                         i = chunksWithReplies.length - 1;
@@ -227,17 +145,14 @@ var SortHandler = /** @class */ (function () {
                     case 4:
                         i--;
                         return [3 /*break*/, 2];
-                    case 5:
-                        return [2 /*return*/, [listOfPage, cids]];
+                    case 5: return [2 /*return*/, [listOfPage, cids]];
                 }
             });
         });
     };
     // Resolves to sortedComments
     SortHandler.prototype.sortComments = function (comments, sortType, limit) {
-        if (limit === void 0) {
-            limit = exports.SORTED_POSTS_PAGE_SIZE;
-        }
+        if (limit === void 0) { limit = exports.SORTED_POSTS_PAGE_SIZE; }
         return __awaiter(this, void 0, void 0, function () {
             var commentsSorted, commentsChunks, _a, listOfPage, cids;
             var _b;
@@ -249,18 +164,14 @@ var SortHandler = /** @class */ (function () {
                         // If sort type has no score function, that means it already has been sorted by DB
                         else
                             commentsSorted = comments
-                                .map(function (comment) {
-                                    return ({
-                                        comment: comment,
-                                        score: sortType.score(comment)
-                                    });
-                                })
+                                .map(function (comment) { return ({
+                                comment: comment,
+                                score: sortType.score(comment)
+                            }); })
                                 .sort(function (postA, postB) {
-                                    return postB.score - postA.score;
-                                })
-                                .map(function (comment) {
-                                    return comment.comment;
-                                });
+                                return postB.score - postA.score;
+                            })
+                                .map(function (comment) { return comment.comment; });
                         commentsChunks = (0, util_1.chunks)(commentsSorted, limit);
                         return [4 /*yield*/, this.chunksToListOfPage(commentsChunks, sortType)];
                     case 1:
@@ -275,13 +186,11 @@ var SortHandler = /** @class */ (function () {
             var comments;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsUnderComment(parentCid, trx)];
+                    case 0: return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsUnderComment(parentCid, trx)];
                     case 1:
                         comments = _a.sent();
                         return [4 /*yield*/, this.sortComments(comments, exports.POSTS_SORT_TYPES.HOT)];
-                    case 2:
-                        return [2 /*return*/, _a.sent()];
+                    case 2: return [2 /*return*/, _a.sent()];
                 }
             });
         });
@@ -297,8 +206,7 @@ var SortHandler = /** @class */ (function () {
                     case 1:
                         comments = _a.sent();
                         return [4 /*yield*/, this.sortComments(comments, sortType)];
-                    case 2:
-                        return [2 /*return*/, _a.sent()];
+                    case 2: return [2 /*return*/, _a.sent()];
                 }
             });
         });
@@ -314,8 +222,7 @@ var SortHandler = /** @class */ (function () {
                     case 1:
                         comments = _a.sent();
                         return [4 /*yield*/, this.sortComments(comments, sortType)];
-                    case 2:
-                        return [2 /*return*/, _a.sent()];
+                    case 2: return [2 /*return*/, _a.sent()];
                 }
             });
         });
@@ -325,13 +232,11 @@ var SortHandler = /** @class */ (function () {
             var comments;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, "desc", trx)];
+                    case 0: return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, "desc", trx)];
                     case 1:
                         comments = _a.sent();
                         return [4 /*yield*/, this.sortComments(comments, exports.POSTS_SORT_TYPES.NEW)];
-                    case 2:
-                        return [2 /*return*/, _a.sent()];
+                    case 2: return [2 /*return*/, _a.sent()];
                 }
             });
         });
@@ -350,35 +255,32 @@ var SortHandler = /** @class */ (function () {
                 sortPromises.push(this.sortCommentsByControversial.bind(this)(null, timeframe, trx));
             }
             return sortPromises;
-        } else {
-            return Object.values(exports.REPLIES_SORT_TYPES).map(function (sortType) {
-                return __awaiter(_this, void 0, void 0, function () {
-                    var comments;
-                    return __generator(this, function (_a) {
-                        switch (_a.label) {
-                            case 0:
-                                if (!(sortType.type === exports.REPLIES_SORT_TYPES.TOP_ALL.type)) return [3 /*break*/, 2];
-                                return [4 /*yield*/, this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(comment.cid, 0, (0, util_1.timestamp)(), trx)];
-                            case 1:
-                                comments = _a.sent();
-                                return [3 /*break*/, 6];
-                            case 2:
-                                if (!(sortType.type === exports.REPLIES_SORT_TYPES.OLD.type)) return [3 /*break*/, 4];
-                                return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", trx)];
-                            case 3:
-                                comments = _a.sent();
-                                return [3 /*break*/, 6];
-                            case 4:
-                                return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx)];
-                            case 5:
-                                comments = _a.sent();
-                                _a.label = 6;
-                            case 6:
-                                return [2 /*return*/, this.sortComments(comments, sortType)];
-                        }
-                    });
+        }
+        else {
+            return Object.values(exports.REPLIES_SORT_TYPES).map(function (sortType) { return __awaiter(_this, void 0, void 0, function () {
+                var comments;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            if (!(sortType.type === exports.REPLIES_SORT_TYPES.TOP_ALL.type)) return [3 /*break*/, 2];
+                            return [4 /*yield*/, this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(comment.cid, 0, (0, util_1.timestamp)(), trx)];
+                        case 1:
+                            comments = _a.sent();
+                            return [3 /*break*/, 6];
+                        case 2:
+                            if (!(sortType.type === exports.REPLIES_SORT_TYPES.OLD.type)) return [3 /*break*/, 4];
+                            return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", trx)];
+                        case 3:
+                            comments = _a.sent();
+                            return [3 /*break*/, 6];
+                        case 4: return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx)];
+                        case 5:
+                            comments = _a.sent();
+                            _a.label = 6;
+                        case 6: return [2 /*return*/, this.sortComments(comments, sortType)];
+                    }
                 });
-            });
+            }); });
         }
     };
     SortHandler.prototype.generatePagesUnderComment = function (comment, trx) {

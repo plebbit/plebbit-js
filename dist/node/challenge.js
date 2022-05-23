@@ -2,27 +2,20 @@
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
-            ({__proto__: []} instanceof Array && function (d, b) {
-                d.__proto__ = b;
-            }) ||
-            function (d, b) {
-                for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p];
-            };
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
         return extendStatics(d, b);
     };
     return function (d, b) {
         if (typeof b !== "function" && b !== null)
             throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
-
-        function __() {
-            this.constructor = d;
-        }
+        function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
 var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function (t) {
+    __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
             s = arguments[i];
             for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -32,7 +25,7 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-Object.defineProperty(exports, "__esModule", {value: true});
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChallengeVerificationMessage = exports.ChallengeAnswerMessage = exports.ChallengeMessage = exports.ChallengeRequestMessage = exports.Challenge = exports.CHALLENGE_TYPES = exports.PUBSUB_MESSAGE_TYPES = void 0;
 var util_1 = require("./util");
 exports.PUBSUB_MESSAGE_TYPES = Object.freeze({
@@ -77,7 +70,7 @@ var ChallengeRequestMessage = /** @class */ (function (_super) {
         return _this;
     }
     ChallengeRequestMessage.prototype.toJSONForDb = function () {
-        return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), {acceptedChallengeTypes: JSON.stringify(this.acceptedChallengeTypes)});
+        return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), { acceptedChallengeTypes: JSON.stringify(this.acceptedChallengeTypes) });
     };
     return ChallengeRequestMessage;
 }(ChallengeBase));
@@ -92,7 +85,7 @@ var ChallengeMessage = /** @class */ (function (_super) {
         return _this;
     }
     ChallengeMessage.prototype.toJSONForDb = function () {
-        return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), {challenges: JSON.stringify(this.challenges)});
+        return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), { challenges: JSON.stringify(this.challenges) });
     };
     return ChallengeMessage;
 }(ChallengeBase));
@@ -108,7 +101,7 @@ var ChallengeAnswerMessage = /** @class */ (function (_super) {
         return _this;
     }
     ChallengeAnswerMessage.prototype.toJSONForDb = function () {
-        return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), {challengeAnswers: JSON.stringify(this.challengeAnswers)});
+        return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), { challengeAnswers: JSON.stringify(this.challengeAnswers) });
     };
     return ChallengeAnswerMessage;
 }(ChallengeBase));
@@ -127,7 +120,7 @@ var ChallengeVerificationMessage = /** @class */ (function (_super) {
         return _this;
     }
     ChallengeVerificationMessage.prototype.toJSONForDb = function () {
-        return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), {challengeErrors: JSON.stringify(this.challengeErrors)});
+        return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), { challengeErrors: JSON.stringify(this.challengeErrors) });
     };
     return ChallengeVerificationMessage;
 }(ChallengeBase));

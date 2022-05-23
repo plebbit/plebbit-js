@@ -1,7 +1,6 @@
 import Publication from "./publication";
-import {Pages} from "./pages";
-import {Signature} from "./signer";
-
+import { Pages } from "./pages";
+import { Signature } from "./signer";
 export declare class Comment extends Publication {
     postCid?: string;
     cid?: string;

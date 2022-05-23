@@ -1,10 +1,9 @@
-import {PlebbitOptions, CreateSignerOptions} from "./types";
-import {Comment, CommentEdit} from "./comment";
-import {Subplebbit} from "./subplebbit";
+import { PlebbitOptions, CreateSignerOptions } from "./types";
+import { Comment, CommentEdit } from "./comment";
+import { Subplebbit } from "./subplebbit";
 import Vote from "./vote";
-import {IPFSHTTPClient} from "ipfs-http-client";
-import {Signer} from "./signer";
-
+import { IPFSHTTPClient } from "ipfs-http-client";
+import { Signer } from "./signer";
 export declare class Plebbit {
     ipfsHttpClientOptions: string | any;
     ipfsGatewayUrl: string;
@@ -12,11 +11,8 @@ export declare class Plebbit {
     ipfsClient: IPFSHTTPClient;
     pubsubIpfsClient: IPFSHTTPClient;
     dataPath: string | undefined;
-
     constructor(options?: PlebbitOptions);
-
     getSubplebbit(subplebbitAddress: any): Promise<Subplebbit>;
-
     getComment(cid: any): Promise<Comment>;
     signPublication(createPublicationOptions: any): Promise<any>;
     defaultTimestampIfNeeded(createPublicationOptions: any): any;

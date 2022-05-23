@@ -1,4 +1,4 @@
-import {Encrypted} from "./types";
+import { Encrypted } from "./types";
 export declare const PUBSUB_MESSAGE_TYPES: Readonly<{
     CHALLENGEREQUEST: string;
     CHALLENGE: string;

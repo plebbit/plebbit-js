@@ -1,12 +1,11 @@
 /// <reference types="node" />
 import EventEmitter from "events";
-import {Challenge} from "./challenge";
+import { Challenge } from "./challenge";
 import DbHandler from "./runtime/node/db-handler";
-import {Signer} from "./signer";
-import {Pages} from "./pages";
-import {Plebbit} from "./plebbit";
-import {SubplebbitEncryption} from "./types";
-
+import { Signer } from "./signer";
+import { Pages } from "./pages";
+import { Plebbit } from "./plebbit";
+import { SubplebbitEncryption } from "./types";
 export declare class Subplebbit extends EventEmitter {
     address: string;
     title?: string;

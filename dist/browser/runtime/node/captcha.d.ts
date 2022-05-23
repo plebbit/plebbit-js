@@ -1,1 +1,1 @@
-export {createCaptcha} from "captcha-canvas/js-script/extra";
+export { createCaptcha } from "captcha-canvas/js-script/extra";

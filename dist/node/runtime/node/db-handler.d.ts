@@ -1,4 +1,4 @@
-import {Subplebbit} from "../../subplebbit";
+import { Subplebbit } from "../../subplebbit";
 export declare const SIGNER_USAGES: {
     SUBPLEBBIT: string;
     COMMENT: string;

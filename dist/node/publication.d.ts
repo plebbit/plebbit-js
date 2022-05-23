@@ -1,10 +1,9 @@
 /// <reference types="node" />
-import {ChallengeRequestMessage} from "./challenge";
+import { ChallengeRequestMessage } from "./challenge";
 import EventEmitter from "events";
 import Author from "./author";
-import {Subplebbit} from "./types";
-import {Signer} from "./signer";
-
+import { Subplebbit } from "./types";
+import { Signer } from "./signer";
 declare class Publication extends EventEmitter {
     subplebbit: Subplebbit;
     subplebbitAddress: string;
@@ -13,13 +12,9 @@ declare class Publication extends EventEmitter {
     signature: string;
     author: Author;
     challenge: ChallengeRequestMessage;
-
     constructor(props: any, subplebbit: any);
-
     _initProps(props: any): void;
-
     getType(): "vote" | "post" | "comment";
-
     toJSON(): {
         subplebbitAddress: string;
         timestamp: number;

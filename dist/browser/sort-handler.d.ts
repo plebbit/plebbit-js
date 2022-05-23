@@ -1,7 +1,6 @@
-import {controversialScore, hotScore} from "./util";
-import {Subplebbit} from "./subplebbit";
+import { controversialScore, hotScore } from "./util";
+import { Subplebbit } from "./subplebbit";
 import DbHandler from "./runtime/browser/db-handler";
-
 export declare const POSTS_SORT_TYPES: Readonly<{
     HOT: {
         type: string;
