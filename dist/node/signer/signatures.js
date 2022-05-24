@@ -115,7 +115,7 @@ function signPublication(publication, signer) {
                     fieldsToSign = getFieldsToSign(publication);
                     debug("Will sign fields ".concat(JSON.stringify(fieldsToSign)));
                     publicationSignFields = (0, util_2.keepKeys)(publication, fieldsToSign);
-                    commentEncoded = (0, cborg_1.encode)(publicationSignFields);
+                    commentEncoded = (0, cborg_1.encode)((0, util_2.removeKeysWithUndefinedValues)(publicationSignFields));
                     _a = to_string_1.toString;
                     return [4 /*yield*/, keyPair.sign(commentEncoded)];
                 case 2:
@@ -160,7 +160,7 @@ function verifyPublication(publication) {
                                 case 1:
                                     peerId = _a.sent();
                                     commentWithFieldsToSign = (0, util_2.keepKeys)(publicationToBeVerified, signature.signedPropertyNames);
-                                    commentEncoded = (0, cborg_1.encode)(commentWithFieldsToSign);
+                                    commentEncoded = (0, cborg_1.encode)((0, util_2.removeKeysWithUndefinedValues)(commentWithFieldsToSign));
                                     return [4 /*yield*/, peerId.pubKey.verify(commentEncoded, (0, from_string_1.fromString)(signature.signature, "base64"))];
                                 case 2:
                                     signatureIsValid = _a.sent();
