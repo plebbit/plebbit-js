@@ -109,5 +109,17 @@ describe("plebbit (node and browser)", () => {
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             expect(JSON.stringify(loadedSubplebbit)).to.equal(JSON.stringify(expectedSubplebbit));
         });
+
+        it("Throws an error when subplebbit address is incorrect", async () => {
+            return new Promise(async (resolve, reject) => {
+                const address = "0xdeadbeef";
+                try {
+                    await plebbit.getSubplebbit(address);
+                    reject();
+                } catch (e) {
+                    resolve();
+                }
+            });
+        });
     });
 });
