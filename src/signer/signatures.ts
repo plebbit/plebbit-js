@@ -5,7 +5,7 @@ import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import assert from "assert";
 import PeerId from "peer-id";
-import { keepKeys } from "../util";
+import { keepKeys, removeKeysWithUndefinedValues } from "../util";
 import Publication from "../publication";
 
 const debug = Debug("plebbit-js:signer:signatures");
@@ -63,7 +63,7 @@ export async function signPublication(publication, signer) {
     const fieldsToSign = getFieldsToSign(publication);
     debug(`Will sign fields ${JSON.stringify(fieldsToSign)}`);
     const publicationSignFields = keepKeys(publication, fieldsToSign);
-    const commentEncoded = encode(publicationSignFields);
+    const commentEncoded = encode(removeKeysWithUndefinedValues(publicationSignFields)); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
     const signatureData = uint8ArrayToString(await keyPair.sign(commentEncoded), "base64");
     debug(`Publication been signed, signature data is (${signatureData})`);
     return new Signature({
@@ -87,7 +87,7 @@ export async function verifyPublication(publication) {
     const verifyPublicationSignature = async (signature, publicationToBeVerified) => {
         const peerId = await getPeerIdFromPublicKeyPem(signature.publicKey);
         const commentWithFieldsToSign = keepKeys(publicationToBeVerified, signature.signedPropertyNames);
-        const commentEncoded = encode(commentWithFieldsToSign);
+        const commentEncoded = encode(removeKeysWithUndefinedValues(commentWithFieldsToSign));
         const signatureIsValid = await peerId.pubKey.verify(commentEncoded, uint8ArrayFromString(signature.signature, "base64"));
         assert.equal(signatureIsValid, true, "Signature is invalid");
     };
