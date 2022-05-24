@@ -64,7 +64,9 @@ async function deleteCommentsOlderThan() {
             const limit = currentTimestamp - DELETE_COMMENTS_THAN_ARE_OLDER_THAN;
             // Delete any comments whose timestamp is less than limit
             const numOfDeletedComments = await knex("comments").whereBetween("timestamp", [0, limit]).delete();
-            console.log(`Deleted ${numOfDeletedComments} comments since they were older than 12 hours`);
+            if (numOfDeletedComments > 0)
+                console.log(`Deleted ${numOfDeletedComments} comments since they were older than 12 hours`);
+            await knex.destroy();
             setTimeout(deleteCommentsOlderThan, CHECK_IF_COMMENTS_SHOULD_BE_DELETED_EVERY);
         })
     );
