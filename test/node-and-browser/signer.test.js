@@ -60,6 +60,21 @@ describe("signer (node and browser)", async () => {
                 "AssertionError [ERR_ASSERTION]: comment.author.address doesn't match comment.signature.publicKey"
             ]);
         });
+
+        it("can sign a comment with author.displayName = undefined", async () => {
+            const signer = await plebbit.createSigner();
+
+            const comment = await plebbit.createComment({
+                title: "comment title",
+                content: "comment content",
+                subplebbitAddress: signer.address,
+                signer,
+                author: { address: signer.address }
+            });
+            const [validity, failedVerificationReason] = await verifyPublication(comment);
+            expect(validity).to.be.true;
+            expect(failedVerificationReason).to.be.undefined;
+        });
     });
 
     describe("encryption", () => {
