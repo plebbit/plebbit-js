@@ -246,11 +246,16 @@ export class Subplebbit extends EventEmitter {
         const trx: any = await this.dbHandler.createTransaction();
         const latestPost: any = await this.dbHandler.queryLatestPost(trx);
         await trx.commit();
-        const [metrics, [sortedPosts, sortedPostsCids], currentIpns] = await Promise.all([
+        const [metrics, [sortedPosts, sortedPostsCids]] = await Promise.all([
             this.dbHandler.querySubplebbitMetrics(undefined),
-            this.sortHandler.generatePagesUnderComment(undefined, undefined),
-            loadIpnsAsJson(this.address, this.plebbit)
+            this.sortHandler.generatePagesUnderComment(undefined, undefined)
         ]);
+        let currentIpns;
+        try {
+            currentIpns = await loadIpnsAsJson(this.address, this.plebbit);
+        } catch (e) {
+            debug(`Subplebbit IPNS (${this.address}) is not defined, will publish a new record`);
+        }
         let posts;
         if (sortedPosts)
             posts = new Pages({
@@ -261,7 +266,7 @@ export class Subplebbit extends EventEmitter {
                 subplebbit: this
             });
         const newSubplebbitOptions = {
-            ...(currentIpns ? {} : { createdAt: timestamp() }),
+            ...(currentIpns && !posts ? {} : { createdAt: timestamp() }),
             posts: posts,
             metricsCid: (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path,
             latestPostCid: latestPost?.postCid
@@ -558,20 +563,21 @@ export class Subplebbit extends EventEmitter {
     async syncIpnsWithDb(syncIntervalMs) {
         debug("Starting to sync IPNS with DB");
         const syncComment = async (dbComment) => {
-            const currentIpns = await loadIpnsAsJson(dbComment.ipnsName, this.plebbit);
-            if (!currentIpns || !shallowEqual(currentIpns, dbComment.toJSONCommentUpdate(), ["replies"])) {
-                try {
-                    await this._keyv.delete(dbComment.cid);
-                    if (dbComment.parentCid) await this._keyv.delete(dbComment.parentCid);
-                    debug(`Comment (${dbComment.cid}) IPNS is outdated`);
-                    const [sortedReplies, sortedRepliesCids] = await this.sortHandler.generatePagesUnderComment(dbComment, undefined);
-                    dbComment.setReplies(sortedReplies, sortedRepliesCids);
-                    dbComment.setUpdatedAt(timestamp());
-                    await this.dbHandler.upsertComment(dbComment, undefined);
-                    return dbComment.edit(dbComment.toJSONCommentUpdate());
-                } catch (e) {
-                    debug(`Failed to update comment (${dbComment.cid}) due to error=${e}`);
-                }
+            let commentIpns;
+            try {
+                commentIpns = await loadIpnsAsJson(dbComment.ipnsName, this.plebbit);
+            } catch (e) {
+                debug(`Comment (${dbComment.cid}) IPNS (${dbComment.ipnsName}) is not loading. Will attempt to publish a new IPNS record`);
+            }
+            if (!commentIpns || !shallowEqual(commentIpns, dbComment.toJSONCommentUpdate(), ["replies"])) {
+                await this._keyv.delete(dbComment.cid);
+                if (dbComment.parentCid) await this._keyv.delete(dbComment.parentCid);
+                debug(`Comment (${dbComment.cid}) IPNS is outdated`);
+                const [sortedReplies, sortedRepliesCids] = await this.sortHandler.generatePagesUnderComment(dbComment, undefined);
+                dbComment.setReplies(sortedReplies, sortedRepliesCids);
+                dbComment.setUpdatedAt(timestamp());
+                await this.dbHandler.upsertComment(dbComment, undefined);
+                return dbComment.edit(dbComment.toJSONCommentUpdate());
             }
         };
 
