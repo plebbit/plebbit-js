@@ -151,9 +151,7 @@ export class DbHandler {
 
     async addAuthorToDbIfNeeded(author, trx = undefined) {
         return new Promise(async (resolve, reject) => {
-            const authorFromDb = await this.baseTransaction(trx)(TABLES.AUTHORS)
-                .where({ address: author.address })
-                .first();
+            const authorFromDb = await this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first();
             if (!authorFromDb)
                 // Author is new. Add to database
                 this.baseTransaction(trx)(TABLES.AUTHORS)
@@ -191,7 +189,9 @@ export class DbHandler {
             if (!challengeRequestId)
                 challengeRequestId = (
                     await this.baseTransaction(trx)(TABLES.COMMENTS)
-                        .where({ cid: postOrComment.cid || postOrComment.commentCid })
+                        .where({
+                            cid: postOrComment.cid || postOrComment.commentCid
+                        })
                         .first()
                 ).challengeRequestId;
             const originalComment: any = await this.queryComment(postOrComment.cid || postOrComment.commentCid, trx);
@@ -219,7 +219,10 @@ export class DbHandler {
             const existingChallenge = await this.baseTransaction(trx)(TABLES.CHALLENGES)
                 .where({ challengeRequestId: challenge.challengeRequestId })
                 .first();
-            const dbObject = { ...existingChallenge, ...challenge.toJSONForDb() };
+            const dbObject = {
+                ...existingChallenge,
+                ...challenge.toJSONForDb()
+            };
             this.baseTransaction(trx)(TABLES.CHALLENGES)
                 .insert(dbObject)
                 .onConflict("challengeRequestId")
@@ -266,15 +269,12 @@ export class DbHandler {
         const replyCountQuery = this.baseTransaction(trx)
             .from(`${TABLES.COMMENTS} AS comments2`)
             .count("")
-            .where({ "comments2.parentCid": this.knex.raw(`${TABLES.COMMENTS}.cid`) })
+            .where({
+                "comments2.parentCid": this.knex.raw(`${TABLES.COMMENTS}.cid`)
+            })
             .as("replyCount");
 
-        return this.baseTransaction(trx)(TABLES.COMMENTS).select(
-            `${TABLES.COMMENTS}.*`,
-            upvoteQuery,
-            downvoteQuery,
-            replyCountQuery
-        );
+        return this.baseTransaction(trx)(TABLES.COMMENTS).select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery);
     }
 
     async createCommentsFromRows(commentsRows, trx) {
@@ -364,7 +364,9 @@ export class DbHandler {
             if (timestamp1 === Number.NEGATIVE_INFINITY) timestamp1 = 0;
             const topScoreQuery = this.baseTransaction(trx)(TABLES.VOTES)
                 .select(this.knex.raw(`COALESCE(SUM(${TABLES.VOTES}.vote), 0)`)) // We're using raw expressions because there's no native method in Knexjs to return 0 if SUM is null
-                .where({ [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`) })
+                .where({
+                    [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`)
+                })
                 .as("topScore");
             const query = this.baseCommentQuery(trx)
                 .select(topScoreQuery)
@@ -440,10 +442,8 @@ export class DbHandler {
             for (const metricType of ["ActiveUserCount", "PostCount"])
                 for (const timeframe of Object.keys(TIMEFRAMES_TO_SECONDS)) {
                     const propertyName = `${timeframe.toLowerCase()}${metricType}`;
-                    if (metricType === "ActiveUserCount")
-                        metrics[propertyName] = await this.querySubplebbitActiveUserCount(timeframe, trx);
-                    else if (metricType === "PostCount")
-                        metrics[propertyName] = await this.querySubplebbitPostCount(timeframe, trx);
+                    if (metricType === "ActiveUserCount") metrics[propertyName] = await this.querySubplebbitActiveUserCount(timeframe, trx);
+                    else if (metricType === "PostCount") metrics[propertyName] = await this.querySubplebbitPostCount(timeframe, trx);
                 }
             resolve(metrics);
         });
@@ -488,11 +488,7 @@ export class DbHandler {
 
     async querySubplebbitSigner(trx) {
         return new Promise(async (resolve, reject) => {
-            this.baseTransaction(trx)(TABLES.SIGNERS)
-                .where({ usage: SIGNER_USAGES.SUBPLEBBIT })
-                .first()
-                .then(resolve)
-                .catch(reject);
+            this.baseTransaction(trx)(TABLES.SIGNERS).where({ usage: SIGNER_USAGES.SUBPLEBBIT }).first().then(resolve).catch(reject);
         });
     }
 

@@ -64,10 +64,7 @@ describe("comment (node and browser)", async () => {
             const signedComment = { signature: signature.toJSON(), ...comment };
             const [isVerified, failedVerificationReason] = await verifyPublication(signedComment);
             expect(isVerified).to.be.true;
-            expect(signedComment.signature.publicKey).to.be.equal(
-                signers[1].publicKey,
-                "Generated public key should be same as provided"
-            );
+            expect(signedComment.signature.publicKey).to.be.equal(signers[1].publicKey, "Generated public key should be same as provided");
         });
     });
 
@@ -148,9 +145,7 @@ describe("comment (node and browser)", async () => {
                         expect(mockComment.depth).to.be.equal(depth);
                         expect(updatedParentComment.replyCount).to.equal(originalReplyCount + 1);
                         const parentLatestCommentCid = (
-                            await updatedParentComment.replies.getPage(
-                                updatedParentComment.replies.pageCids[REPLIES_SORT_TYPES.NEW.type]
-                            )
+                            await updatedParentComment.replies.getPage(updatedParentComment.replies.pageCids[REPLIES_SORT_TYPES.NEW.type])
                         ).comments[0].cid;
                         expect(parentLatestCommentCid).to.equal(mockComment.cid);
                         mockComments.push(mockComment);
@@ -215,14 +210,8 @@ describe("comment (node and browser)", async () => {
                 commentToBeEdited.on("update", async (updatedCommentToBeEdited) => {
                     if (!updatedCommentToBeEdited.originalContent) return; // Wait until comment is updated with new content
                     expect(updatedCommentToBeEdited.content).to.equal(editedText, "Comment has not been edited");
-                    expect(updatedCommentToBeEdited.originalContent).to.equal(
-                        originalContent,
-                        "Original content should be preserved"
-                    );
-                    expect(updatedCommentToBeEdited.editReason).to.equal(
-                        editReason,
-                        "Edit reason has not been updated"
-                    );
+                    expect(updatedCommentToBeEdited.originalContent).to.equal(originalContent, "Original content should be preserved");
+                    expect(updatedCommentToBeEdited.editReason).to.equal(editReason, "Edit reason has not been updated");
                     await subplebbit.stop();
                     await commentToBeEdited.stop();
                     resolve();
@@ -248,14 +237,8 @@ describe("comment (node and browser)", async () => {
                 await commentEdit.publish();
                 commentToBeEdited.on("update", async (updatedCommentToBeEdited) => {
                     expect(updatedCommentToBeEdited.content).to.equal(editedText, "Comment has not been edited");
-                    expect(updatedCommentToBeEdited.originalContent).to.equal(
-                        originalContent,
-                        "Original content should be preserved"
-                    );
-                    expect(updatedCommentToBeEdited.editReason).to.equal(
-                        editReason,
-                        "Edit reason has not been updated"
-                    );
+                    expect(updatedCommentToBeEdited.originalContent).to.equal(originalContent, "Original content should be preserved");
+                    expect(updatedCommentToBeEdited.editReason).to.equal(editReason, "Edit reason has not been updated");
                     await commentToBeEdited.stop();
                     resolve();
                 });

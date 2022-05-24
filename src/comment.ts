@@ -67,15 +67,9 @@ export class Comment extends Publication {
                 : undefined;
         // Comment Edit props
         this.originalContent =
-            props["originalContent"] ||
-            this.originalContent ||
-            (props["content"] && props["editSignature"] ? this.content : undefined);
+            props["originalContent"] || this.originalContent || (props["content"] && props["editSignature"] ? this.content : undefined);
         this.content = props["content"] || this.content;
-        assert.notEqual(
-            this.content,
-            this.originalContent,
-            "Content and original content can't be equal to each other"
-        );
+        assert.notEqual(this.content, this.originalContent, "Content and original content can't be equal to each other");
         this.editSignature = parseJsonIfString(props["editSignature"]);
         this.editTimestamp = props["editTimestamp"];
         this.editReason = props["editReason"];
@@ -194,9 +188,7 @@ export class Comment extends Publication {
         if (!res) debug(`Comment (${this.cid}) IPNS (${this.ipnsName}) is not pointing to any file`);
         else {
             if (res.updatedAt !== this.emittedAt) {
-                debug(
-                    `Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Emitting an update event...`
-                );
+                debug(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Emitting an update event...`);
                 this.emittedAt = res.updatedAt;
                 this._initCommentUpdate(res);
                 this.emit("update", this);
@@ -210,9 +202,7 @@ export class Comment extends Publication {
 
     update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
         assert(this.ipnsName, "Comment need to have ipnsName field to poll updates");
-        debug(
-            `Starting to poll updates for comment (${this.cid}) IPNS (${this.ipnsName}) every ${updateIntervalMs} milliseconds`
-        );
+        debug(`Starting to poll updates for comment (${this.cid}) IPNS (${this.ipnsName}) every ${updateIntervalMs} milliseconds`);
         if (this._updateInterval) clearInterval(this._updateInterval);
         this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
         return this.updateOnce();
@@ -250,9 +240,7 @@ export class CommentEdit extends Comment {
 
     toJSONForDb(challengeRequestId) {
         const json = super.toJSONForDb(challengeRequestId);
-        ["authorAddress", "challengeRequestId", "ipnsKeyName", "signature", "commentCid"].forEach(
-            (key) => delete json[key]
-        );
+        ["authorAddress", "challengeRequestId", "ipnsKeyName", "signature", "commentCid"].forEach((key) => delete json[key]);
         json["cid"] = this.commentCid;
         return removeKeysWithUndefinedValues(json);
     }

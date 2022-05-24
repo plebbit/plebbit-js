@@ -57,9 +57,7 @@ class Publication extends EventEmitter {
         const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
         if (msgParsed?.challengeRequestId !== this.challenge.challengeRequestId) return; // Process only this publication's challenge
         if (msgParsed?.type === PUBSUB_MESSAGE_TYPES.CHALLENGE) {
-            debug(
-                `Received challenges, will emit them and wait for user to solve them and call publishChallengeAnswers`
-            );
+            debug(`Received challenges, will emit them and wait for user to solve them and call publishChallengeAnswers`);
             this.emit("challenge", msgParsed);
         } else if (msgParsed?.type === PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION) {
             if (!msgParsed.challengeSuccess)
@@ -97,11 +95,7 @@ class Publication extends EventEmitter {
                 this.subplebbit.pubsubTopic,
                 uint8ArrayFromString(JSON.stringify(challengeAnswer))
             );
-            debug(
-                `Responded to challenge (${challengeAnswer.challengeRequestId}) with answers ${JSON.stringify(
-                    challengeAnswers
-                )}`
-            );
+            debug(`Responded to challenge (${challengeAnswer.challengeRequestId}) with answers ${JSON.stringify(challengeAnswers)}`);
         } catch (e) {
             debug(`Failed to publish challenge answers: `, e);
         }

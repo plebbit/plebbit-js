@@ -85,7 +85,6 @@ export class ChallengeAnswerMessage extends ChallengeBase {
 }
 
 export class ChallengeVerificationMessage extends ChallengeBase {
-    // TODO: change to challengeSuccess
     challengeSuccess: boolean;
     challengeErrors: (string | null)[];
     reason: string;

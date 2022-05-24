@@ -12,12 +12,7 @@ const { expect } = require("chai");
 const debug = require("debug")("plebbit-js:pages.test");
 const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../dist/node/sort-handler");
 const signers = require("../fixtures/signers");
-const {
-    generateMockComment,
-    generateMockPostWithRandomTimestamp,
-    generateMockVote,
-    loadAllPages
-} = require("../../dist/node/test-util");
+const { generateMockComment, generateMockPostWithRandomTimestamp, generateMockVote, loadAllPages } = require("../../dist/node/test-util");
 
 let plebbit;
 const subplebbitAddress = signers[0].address;
@@ -65,15 +60,11 @@ const testSorting = async (sort, parentComment) => {
         );
         for (let i = 0; i < comments.length; i++)
             for (let j = 0; j < votesPerCommentToPublish; j++)
-                votes.push(
-                    await generateMockVote(comments[i], Math.random() > 0.5 ? 1 : -1, votePlebbits[votes.length])
-                );
+                votes.push(await generateMockVote(comments[i], Math.random() > 0.5 ? 1 : -1, votePlebbits[votes.length]));
         await Promise.all(votes.map(async (vote) => vote.publish()));
         await waitTillPublicationsArePublished(votes);
 
-        debug(
-            `For sort ${sort.type}, added ${comments.length} comments and ${votes.length} random votes for each comment`
-        );
+        debug(`For sort ${sort.type}, added ${comments.length} comments and ${votes.length} random votes for each comment`);
 
         const sortTypes = Object.values(parentComment ? REPLIES_SORT_TYPES : POSTS_SORT_TYPES).filter((sortType) =>
             sortType.type.includes(sort.type)
@@ -83,10 +74,7 @@ const testSorting = async (sort, parentComment) => {
             if (parentComment) {
                 await parentComment.update(updateInterval);
                 parentComment.stop();
-                expect(parentComment.replies).to.be.a(
-                    "object",
-                    `Parent comment should at least have ${comments.length} replies`
-                );
+                expect(parentComment.replies).to.be.a("object", `Parent comment should at least have ${comments.length} replies`);
             }
             for (let i = 0; i < sortTypes.length; i++) {
                 const sortType = sortTypes[i];
@@ -109,15 +97,9 @@ const testSorting = async (sort, parentComment) => {
                         const sortStart = updatedSubplebbit.updatedAt - Object.values(TIMEFRAMES_TO_SECONDS)[i];
                         const errMsg = `${sortType.type} sort includes posts from different timeframes`;
                         expect(alreadySortedComments[j].timestamp).to.be.greaterThanOrEqual(sortStart, errMsg);
-                        expect(alreadySortedComments[j].timestamp).to.be.lessThanOrEqual(
-                            updatedSubplebbit.updatedAt,
-                            errMsg
-                        );
+                        expect(alreadySortedComments[j].timestamp).to.be.lessThanOrEqual(updatedSubplebbit.updatedAt, errMsg);
                         expect(alreadySortedComments[j + 1].timestamp).to.be.greaterThanOrEqual(sortStart, errMsg);
-                        expect(alreadySortedComments[j + 1].timestamp).to.be.lessThanOrEqual(
-                            updatedSubplebbit.updatedAt,
-                            errMsg
-                        );
+                        expect(alreadySortedComments[j + 1].timestamp).to.be.lessThanOrEqual(updatedSubplebbit.updatedAt, errMsg);
                     }
 
                     const scoreA = sort.scoreFunction(alreadySortedComments[j]);

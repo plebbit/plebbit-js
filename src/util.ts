@@ -178,10 +178,7 @@ export function removeKeysWithUndefinedValues(object) {
 export async function ipfsImportKey(signer, plebbit, password = "") {
     const data = new FormData();
     data.append("file", signer.ipfsKey);
-    const nodeUrl =
-        typeof plebbit.ipfsHttpClientOptions === "string"
-            ? plebbit.ipfsHttpClientOptions
-            : plebbit.ipfsHttpClientOptions.url;
+    const nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
     if (!nodeUrl) throw "Can't figure out ipfs node URL";
     const url = `${nodeUrl}/key/import?arg=${signer.ipnsKeyName}`;
     const res = await fetch(url, {

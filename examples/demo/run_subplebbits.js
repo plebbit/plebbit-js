@@ -1,5 +1,5 @@
 import Plebbit from "@plebbit/plebbit-js";
-import {subplebbitsPrivateKeys} from "./secrets.js";
+import { subplebbitsPrivateKeys } from "./secrets.js";
 import http from "http";
 import path from "path";
 import Knex from "knex";
@@ -7,36 +7,36 @@ import Knex from "knex";
 const plebbit = Plebbit({
     ipfsHttpClientOptions: {
         url: `http://localhost:5003/api/v0`,
-        "agent": new http.Agent({keepAlive: true, maxSockets: Infinity})
+        agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
     }
 });
 
-const subplebbitsProps = [{
-    "title": "Funny",
-    "description": "Welcome to p/Funny, Plebbit's largest humour depository.",
-    "signer": await plebbit.createSigner(subplebbitsPrivateKeys[0])
-},
+const subplebbitsProps = [
     {
-        "title": "Politics",
-        "description": "p/Politics is for news and discussion politics",
-        "signer": await plebbit.createSigner(subplebbitsPrivateKeys[1])
+        title: "Funny",
+        description: "Welcome to p/Funny, Plebbit's largest humour depository.",
+        signer: await plebbit.createSigner(subplebbitsPrivateKeys[0])
     },
     {
-        "title": "Crypto",
-        "description": "For discussing anything related to cryptocurrencies",
+        title: "Politics",
+        description: "p/Politics is for news and discussion politics",
+        signer: await plebbit.createSigner(subplebbitsPrivateKeys[1])
+    },
+    {
+        title: "Crypto",
+        description: "For discussing anything related to cryptocurrencies",
         signer: await plebbit.createSigner(subplebbitsPrivateKeys[2])
     },
     {
-        "title": "gifs",
-        "description": "Funny, animated GIFs: Your favorite computer file type! Officially pronounced with a hard \"J\"",
+        title: "gifs",
+        description: 'Funny, animated GIFs: Your favorite computer file type! Officially pronounced with a hard "J"',
         signer: await plebbit.createSigner(subplebbitsPrivateKeys[3])
     },
     {
-        "title": "Videos",
-        "description": "Plebbit's main subplebbit for videos",
+        title: "Videos",
+        description: "Plebbit's main subplebbit for videos",
         signer: await plebbit.createSigner(subplebbitsPrivateKeys[4])
     }
-
 ];
 
 async function runSubplebbit(props) {
@@ -44,25 +44,27 @@ async function runSubplebbit(props) {
     await subplebbit.start(300000); // Sync every 5 minutes
     console.log(`Subplebbit ${props.title} is running now`);
 }
+
 // By default delete comments older 12 hours
-async function deleteCommentsOlderThan(range=60*60*12){
-    await Promise.all(subplebbitsProps.map(async props => {
-        const dbPath = path.join(process.cwd(), ".plebbit", props.signer.address);
-        const knex = Knex({
-            client: 'better-sqlite3',
-            connection: {
-                filename: dbPath
-            },
-            useNullAsDefault: true
-        });
-        const currentTimestamp = Math.round(Date.now() / 1000.0);
-        const limit = currentTimestamp - range;
-        // Delete any comments whose timestamp is less than limit
-        const numOfDeletedComments = await knex("comments").whereBetween("timestamp", [0, limit]).delete();
-        console.log(`Deleted ${numOfDeletedComments} comments since they were older than 12 hours`);
-    }));
+async function deleteCommentsOlderThan(range = 60 * 60 * 12) {
+    await Promise.all(
+        subplebbitsProps.map(async (props) => {
+            const dbPath = path.join(process.cwd(), ".plebbit", props.signer.address);
+            const knex = Knex({
+                client: "better-sqlite3",
+                connection: {
+                    filename: dbPath
+                },
+                useNullAsDefault: true
+            });
+            const currentTimestamp = Math.round(Date.now() / 1000.0);
+            const limit = currentTimestamp - range;
+            // Delete any comments whose timestamp is less than limit
+            const numOfDeletedComments = await knex("comments").whereBetween("timestamp", [0, limit]).delete();
+            console.log(`Deleted ${numOfDeletedComments} comments since they were older than 12 hours`);
+        })
+    );
 }
 
 setTimeout(deleteCommentsOlderThan, 30000);
-await Promise.all(subplebbitsProps.map(prop => runSubplebbit(prop)));
-
+await Promise.all(subplebbitsProps.map((prop) => runSubplebbit(prop)));

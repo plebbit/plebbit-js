@@ -21,26 +21,16 @@ export class Pages {
     async getPage(pageCid) {
         const page = new Page(await loadIpfsFileAsJson(pageCid, this.subplebbit.plebbit));
         const verifyComment = async (comment, parentComment) => {
-            assert.equal(
-                comment.subplebbitAddress,
-                this.subplebbit.address,
-                "Comment in page should be under the same subplebbit"
-            );
+            assert.equal(comment.subplebbitAddress, this.subplebbit.address, "Comment in page should be under the same subplebbit");
             if (parentComment)
-                assert.equal(
-                    parentComment.cid,
-                    comment.parentCid,
-                    "Comment under parent comment/post should have parentCid initialized"
-                );
+                assert.equal(parentComment.cid, comment.parentCid, "Comment under parent comment/post should have parentCid initialized");
             const [signatureIsVerified, failedVerificationReason] = await verifyPublication(comment);
             assert.equal(
                 signatureIsVerified,
                 true,
                 `Signature of published comment should be valid, Failed verification reason is ${failedVerificationReason}`
             );
-            debug(
-                `Comment (${comment.cid}) has been verified. Will attempt to verify its ${comment.replyCount} replies`
-            );
+            debug(`Comment (${comment.cid}) has been verified. Will attempt to verify its ${comment.replyCount} replies`);
             if (comment.replies) {
                 const preloadedCommentsChunks = Object.keys(comment.replies.pages).map(
                     (sortType) => comment.replies.pages[sortType].comments
@@ -48,9 +38,7 @@ export class Pages {
                 await Promise.all(
                     preloadedCommentsChunks.map(
                         async (preloadedComments) =>
-                            await Promise.all(
-                                preloadedComments.map((preloadedComment) => verifyComment(preloadedComment, comment))
-                            )
+                            await Promise.all(preloadedComments.map((preloadedComment) => verifyComment(preloadedComment, comment)))
                     )
                 );
             }

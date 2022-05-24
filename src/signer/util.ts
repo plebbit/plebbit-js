@@ -100,8 +100,5 @@ const validatePrivateKeyPem = (privateKeyPem) => {
 
 const validatePublicKeyPem = (publicKeyPem) => {
     assert(typeof publicKeyPem === "string", `invalid public key pem '${publicKeyPem}' not a string`);
-    assert(
-        publicKeyPem.startsWith("-----BEGIN PUBLIC KEY-----"),
-        `invalid public key pem '${publicKeyPem}' not public key pem`
-    );
+    assert(publicKeyPem.startsWith("-----BEGIN PUBLIC KEY-----"), `invalid public key pem '${publicKeyPem}' not public key pem`);
 };

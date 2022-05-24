@@ -22,9 +22,7 @@ export class Plebbit {
 
     constructor(options: PlebbitOptions = {}) {
         this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        this.ipfsGatewayUrl = this.ipfsHttpClientOptions
-            ? undefined
-            : options["ipfsGatewayUrl"] || "https://cloudflare-ipfs.com";
+        this.ipfsGatewayUrl = this.ipfsHttpClientOptions ? undefined : options["ipfsGatewayUrl"] || "https://cloudflare-ipfs.com";
         this.ipfsClient = this.ipfsHttpClientOptions ? createIpfsClient(this.ipfsHttpClientOptions) : undefined;
         this.pubsubHttpClientOptions = options["pubsubHttpClientOptions"] || "https://pubsubprovider.xyz/api/v0";
         this.pubsubIpfsClient = options["pubsubHttpClientOptions"]
@@ -56,11 +54,7 @@ export class Plebbit {
               )
             : new Comment({ ...commentJson, cid: cid }, subplebbit);
         const [signatureIsVerified, failedVerificationReason] = await verifyPublication(publication);
-        assert.equal(
-            signatureIsVerified,
-            true,
-            `Signature of comment/post ${cid} is invalid due to reason=${failedVerificationReason}`
-        );
+        assert.equal(signatureIsVerified, true, `Signature of comment/post ${cid} is invalid due to reason=${failedVerificationReason}`);
         return publication;
     }
 
@@ -88,9 +82,7 @@ export class Plebbit {
                 : new Comment(createCommentOptions, commentSubplebbit);
         createCommentOptions = this.defaultTimestampIfNeeded(createCommentOptions);
         const commentProps = await this.signPublication(createCommentOptions);
-        return commentProps.title
-            ? new Post(commentProps, commentSubplebbit)
-            : new Comment(commentProps, commentSubplebbit);
+        return commentProps.title ? new Post(commentProps, commentSubplebbit) : new Comment(commentProps, commentSubplebbit);
     }
 
     async createSubplebbit(createSubplebbitOptions) {

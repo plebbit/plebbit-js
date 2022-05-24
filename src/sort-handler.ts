@@ -1,12 +1,4 @@
-import {
-    chunks,
-    controversialScore,
-    hotScore,
-    keepKeys,
-    removeKeysWithUndefinedValues,
-    TIMEFRAMES_TO_SECONDS,
-    timestamp
-} from "./util";
+import { chunks, controversialScore, hotScore, keepKeys, removeKeysWithUndefinedValues, TIMEFRAMES_TO_SECONDS, timestamp } from "./util";
 import Debug from "debug";
 import { Page } from "./pages";
 import { Subplebbit } from "./subplebbit";
@@ -62,10 +54,7 @@ export class SortHandler {
                             const cachedComment = await this.subplebbit._keyv.get(comment.cid);
                             comment.setReplies(cachedComment.sortedReplies, cachedComment.sortedRepliesCids);
                         } else {
-                            const [sortedReplies, sortedRepliesCids] = await this.generatePagesUnderComment(
-                                comment,
-                                undefined
-                            );
+                            const [sortedReplies, sortedRepliesCids] = await this.generatePagesUnderComment(comment, undefined);
                             assert.ok(sortedReplies);
                             await this.subplebbit._keyv.set(comment.cid, { sortedReplies, sortedRepliesCids });
                             comment.setReplies(sortedReplies, sortedRepliesCids);
@@ -144,10 +133,7 @@ export class SortHandler {
     getSortPromises(comment, trx) {
         if (!comment) {
             // Sorting posts on a subplebbit level
-            const sortPromises = [
-                this.sortCommentsByHot.bind(this)(null, trx),
-                this.sortCommentsByNew.bind(this)(null, trx)
-            ];
+            const sortPromises = [this.sortCommentsByHot.bind(this)(null, trx), this.sortCommentsByNew.bind(this)(null, trx)];
             for (const timeframe of Object.keys(TIMEFRAMES_TO_SECONDS)) {
                 sortPromises.push(this.sortCommentsByTop.bind(this)(null, timeframe, trx));
                 sortPromises.push(this.sortCommentsByControversial.bind(this)(null, timeframe, trx));
@@ -158,12 +144,7 @@ export class SortHandler {
                 let comments;
                 // @ts-ignore
                 if (sortType.type === REPLIES_SORT_TYPES.TOP_ALL.type)
-                    comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(
-                        comment.cid,
-                        0,
-                        timestamp(),
-                        trx
-                    );
+                    comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(comment.cid, 0, timestamp(), trx);
                 else if (sortType.type === REPLIES_SORT_TYPES.OLD.type)
                     comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", trx);
                 else comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx);

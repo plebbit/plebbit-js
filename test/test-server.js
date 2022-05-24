@@ -42,18 +42,15 @@ const startIpfsNodes = async () => {
                 execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} init`, { stdio: "ignore" });
             } catch {}
 
-            execSync(
-                `IPFS_PATH=${nodeArgs.dir} ${ipfsPath} config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]'`,
-                { stdio: "inherit" }
-            );
-            execSync(
-                `IPFS_PATH=${nodeArgs.dir} ${ipfsPath} config  Addresses.API /ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`,
-                { stdio: "inherit" }
-            );
-            execSync(
-                `IPFS_PATH=${nodeArgs.dir} ${ipfsPath} config  Addresses.Gateway /ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`,
-                { stdio: "inherit" }
-            );
+            execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]'`, {
+                stdio: "inherit"
+            });
+            execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} config  Addresses.API /ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`, {
+                stdio: "inherit"
+            });
+            execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} config  Addresses.Gateway /ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`, {
+                stdio: "inherit"
+            });
 
             const ipfsCmd = `IPFS_PATH=${nodeArgs.dir} ${ipfsPath} daemon ${nodeArgs.args}`;
             console.log(ipfsCmd);

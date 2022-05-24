@@ -88,10 +88,7 @@ export async function verifyPublication(publication) {
         const peerId = await getPeerIdFromPublicKeyPem(signature.publicKey);
         const commentWithFieldsToSign = keepKeys(publicationToBeVerified, signature.signedPropertyNames);
         const commentEncoded = encode(commentWithFieldsToSign);
-        const signatureIsValid = await peerId.pubKey.verify(
-            commentEncoded,
-            uint8ArrayFromString(signature.signature, "base64")
-        );
+        const signatureIsValid = await peerId.pubKey.verify(commentEncoded, uint8ArrayFromString(signature.signature, "base64"));
         assert.equal(signatureIsValid, true, "Signature is invalid");
     };
 
