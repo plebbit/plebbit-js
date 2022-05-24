@@ -27,14 +27,13 @@ export async function loadIpfsFileAsJson(cid, plebbit, defaultOptions = { timeou
     } else {
         const rawData: any = await all(plebbit.ipfsClient.cat(cid, defaultOptions));
         const data = uint8ArrayConcat(rawData);
-        if (!data) {
-            debug(`IPFS (${cid}) loads undefined object (${data})`);
-            return undefined;
-        } else return JSON.parse(uint8ArrayToString(data));
+        if (!data) throw new Error(`IPFS file (${cid}) is empty or does not exist`);
+        else return JSON.parse(uint8ArrayToString(data));
     }
 }
 
 export async function loadIpnsAsJson(ipns, plebbit) {
+    assert.ok(ipns, "ipns has to be not null to load");
     if (plebbit.ipfsGatewayUrl) {
         const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
         const res = await fetch(url);
@@ -42,8 +41,9 @@ export async function loadIpnsAsJson(ipns, plebbit) {
         else throw `Failed to load IPNS via url (${url}). Status code ${res.status} and status text ${res.statusText}`;
     } else {
         const cid = await last(plebbit.ipfsClient.name.resolve(ipns));
-        if (!cid) return undefined;
-        return await loadIpfsFileAsJson(cid, plebbit);
+        if (!cid) throw new Error(`IPNS (${ipns}) resolves to undefined`);
+        debug(`IPNS (${ipns}) resolved to ${cid}`);
+        return loadIpfsFileAsJson(cid, plebbit);
     }
 }
 
