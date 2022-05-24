@@ -39,6 +39,9 @@ const subplebbitsProps = [
     }
 ];
 
+const CHECK_IF_COMMENTS_SHOULD_BE_DELETED_EVERY = 30000; // Check for comments that need to be deleted every 5 minutes
+const DELETE_COMMENTS_THAN_ARE_OLDER_THAN = 60 * 60 * 12; // Delete comments that are older 12 hours
+
 async function runSubplebbit(props) {
     const subplebbit = await plebbit.createSubplebbit(props);
     await subplebbit.start(300000); // Sync every 5 minutes
@@ -46,7 +49,7 @@ async function runSubplebbit(props) {
 }
 
 // By default delete comments older 12 hours
-async function deleteCommentsOlderThan(range = 60 * 60 * 12) {
+async function deleteCommentsOlderThan() {
     await Promise.all(
         subplebbitsProps.map(async (props) => {
             const dbPath = path.join(process.cwd(), ".plebbit", props.signer.address);
@@ -58,13 +61,14 @@ async function deleteCommentsOlderThan(range = 60 * 60 * 12) {
                 useNullAsDefault: true
             });
             const currentTimestamp = Math.round(Date.now() / 1000.0);
-            const limit = currentTimestamp - range;
+            const limit = currentTimestamp - DELETE_COMMENTS_THAN_ARE_OLDER_THAN;
             // Delete any comments whose timestamp is less than limit
             const numOfDeletedComments = await knex("comments").whereBetween("timestamp", [0, limit]).delete();
             console.log(`Deleted ${numOfDeletedComments} comments since they were older than 12 hours`);
+            setTimeout(deleteCommentsOlderThan, CHECK_IF_COMMENTS_SHOULD_BE_DELETED_EVERY);
         })
     );
 }
 
-setTimeout(deleteCommentsOlderThan, 30000);
+setTimeout(deleteCommentsOlderThan, CHECK_IF_COMMENTS_SHOULD_BE_DELETED_EVERY);
 await Promise.all(subplebbitsProps.map((prop) => runSubplebbit(prop)));
