@@ -66,9 +66,7 @@ var Plebbit = /** @class */ (function () {
     function Plebbit(options) {
         if (options === void 0) { options = {}; }
         this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        this.ipfsGatewayUrl = this.ipfsHttpClientOptions
-            ? undefined
-            : options["ipfsGatewayUrl"] || "https://cloudflare-ipfs.com";
+        this.ipfsGatewayUrl = this.ipfsHttpClientOptions ? undefined : options["ipfsGatewayUrl"] || "https://cloudflare-ipfs.com";
         this.ipfsClient = this.ipfsHttpClientOptions ? (0, ipfs_http_client_1.create)(this.ipfsHttpClientOptions) : undefined;
         this.pubsubHttpClientOptions = options["pubsubHttpClientOptions"] || "https://pubsubprovider.xyz/api/v0";
         this.pubsubIpfsClient = options["pubsubHttpClientOptions"]
@@ -156,9 +154,7 @@ var Plebbit = /** @class */ (function () {
                         return [4 /*yield*/, this.signPublication(createCommentOptions)];
                     case 1:
                         commentProps = _a.sent();
-                        return [2 /*return*/, commentProps.title
-                                ? new post_1.default(commentProps, commentSubplebbit)
-                                : new comment_1.Comment(commentProps, commentSubplebbit)];
+                        return [2 /*return*/, commentProps.title ? new post_1.default(commentProps, commentSubplebbit) : new comment_1.Comment(commentProps, commentSubplebbit)];
                 }
             });
         });

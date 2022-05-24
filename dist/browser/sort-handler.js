@@ -245,10 +245,7 @@ var SortHandler = /** @class */ (function () {
         var _this = this;
         if (!comment) {
             // Sorting posts on a subplebbit level
-            var sortPromises = [
-                this.sortCommentsByHot.bind(this)(null, trx),
-                this.sortCommentsByNew.bind(this)(null, trx)
-            ];
+            var sortPromises = [this.sortCommentsByHot.bind(this)(null, trx), this.sortCommentsByNew.bind(this)(null, trx)];
             for (var _i = 0, _a = Object.keys(util_1.TIMEFRAMES_TO_SECONDS); _i < _a.length; _i++) {
                 var timeframe = _a[_i];
                 sortPromises.push(this.sortCommentsByTop.bind(this)(null, timeframe, trx));

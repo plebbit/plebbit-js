@@ -84,20 +84,15 @@ function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
                     res = _a.sent();
                     if (!(res.status === 200)) return [3 /*break*/, 3];
                     return [4 /*yield*/, res.json()];
-                case 2:
-                    return [2 /*return*/, _a.sent()];
-                case 3:
-                    throw "Failed to load IPFS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText);
-                case 4:
-                    return [3 /*break*/, 7];
+                case 2: return [2 /*return*/, _a.sent()];
+                case 3: throw "Failed to load IPFS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText);
+                case 4: return [3 /*break*/, 7];
                 case 5: return [4 /*yield*/, (0, it_all_1.default)(plebbit.ipfsClient.cat(cid, defaultOptions))];
                 case 6:
                     rawData = _a.sent();
                     data = (0, concat_1.concat)(rawData);
-                    if (!data) {
-                        debug("IPFS (".concat(cid, ") loads undefined object (").concat(data, ")"));
-                        return [2 /*return*/, undefined];
-                    }
+                    if (!data)
+                        throw new Error("IPFS file (".concat(cid, ") is empty or does not exist"));
                     else
                         return [2 /*return*/, JSON.parse((0, to_string_1.toString)(data))];
                     _a.label = 7;
@@ -113,6 +108,7 @@ function loadIpnsAsJson(ipns, plebbit) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
+                    assert_1.default.ok(ipns, "ipns has to be not null to load");
                     if (!plebbit.ipfsGatewayUrl) return [3 /*break*/, 5];
                     url = "".concat(plebbit.ipfsGatewayUrl, "/ipns/").concat(ipns);
                     return [4 /*yield*/, (0, node_fetch_1.default)(url)];
@@ -120,22 +116,17 @@ function loadIpnsAsJson(ipns, plebbit) {
                     res = _a.sent();
                     if (!(res.status === 200)) return [3 /*break*/, 3];
                     return [4 /*yield*/, res.json()];
-                case 2:
-                    return [2 /*return*/, _a.sent()];
-                case 3:
-                    throw "Failed to load IPNS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText);
-                case 4:
-                    return [3 /*break*/, 8];
-                case 5:
-                    return [4 /*yield*/, (0, it_last_1.default)(plebbit.ipfsClient.name.resolve(ipns))];
+                case 2: return [2 /*return*/, _a.sent()];
+                case 3: throw "Failed to load IPNS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText);
+                case 4: return [3 /*break*/, 7];
+                case 5: return [4 /*yield*/, (0, it_last_1.default)(plebbit.ipfsClient.name.resolve(ipns))];
                 case 6:
                     cid = _a.sent();
                     if (!cid)
-                        return [2 /*return*/, undefined];
-                    return [4 /*yield*/, loadIpfsFileAsJson(cid, plebbit)];
-                case 7:
-                    return [2 /*return*/, _a.sent()];
-                case 8: return [2 /*return*/];
+                        throw new Error("IPNS (".concat(ipns, ") resolves to undefined"));
+                    debug("IPNS (".concat(ipns, ") resolved to ").concat(cid));
+                    return [2 /*return*/, loadIpfsFileAsJson(cid, plebbit)];
+                case 7: return [2 /*return*/];
             }
         });
     });
@@ -326,9 +317,7 @@ function ipfsImportKey(signer, plebbit, password) {
                 case 0:
                     data = new form_data_1.default();
                     data.append("file", signer.ipfsKey);
-                    nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string"
-                        ? plebbit.ipfsHttpClientOptions
-                        : plebbit.ipfsHttpClientOptions.url;
+                    nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
                     if (!nodeUrl)
                         throw "Can't figure out ipfs node URL";
                     url = "".concat(nodeUrl, "/key/import?arg=").concat(signer.ipnsKeyName);

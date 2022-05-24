@@ -78,14 +78,12 @@ var Pages = /** @class */ (function () {
                                         debug("Comment (".concat(comment.cid, ") has been verified. Will attempt to verify its ").concat(comment.replyCount, " replies"));
                                         if (!comment.replies) return [3 /*break*/, 3];
                                         preloadedCommentsChunks = Object.keys(comment.replies.pages).map(function (sortType) { return comment.replies.pages[sortType].comments; });
-                                        return [4 /*yield*/, Promise.all(preloadedCommentsChunks.map(function (preloadedComments) { return __awaiter(_this, void 0, void 0, function () {
-                                                return __generator(this, function (_a) {
-                                                    switch (_a.label) {
-                                                        case 0: return [4 /*yield*/, Promise.all(preloadedComments.map(function (preloadedComment) { return verifyComment(preloadedComment, comment); }))];
-                                                        case 1: return [2 /*return*/, _a.sent()];
-                                                    }
-                                                });
-                                            }); }))];
+                                        return [4 /*yield*/, Promise.all(preloadedCommentsChunks.map(function (preloadedComments) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                                                switch (_a.label) {
+                                                    case 0: return [4 /*yield*/, Promise.all(preloadedComments.map(function (preloadedComment) { return verifyComment(preloadedComment, comment); }))];
+                                                    case 1: return [2 /*return*/, _a.sent()];
+                                                }
+                                            }); }); }))];
                                     case 2:
                                         _b.sent();
                                         _b.label = 3;

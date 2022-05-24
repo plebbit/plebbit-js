@@ -272,9 +272,7 @@ var DbHandler = /** @class */ (function () {
                         var authorFromDb;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
-                                case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS)
-                                        .where({ address: author.address })
-                                        .first()];
+                                case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first()];
                                 case 1:
                                     authorFromDb = _a.sent();
                                     if (!authorFromDb)
@@ -344,7 +342,9 @@ var DbHandler = /** @class */ (function () {
                                 case 2:
                                     if (!!challengeRequestId) return [3 /*break*/, 4];
                                     return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS)
-                                            .where({ cid: postOrComment.cid || postOrComment.commentCid })
+                                            .where({
+                                            cid: postOrComment.cid || postOrComment.commentCid
+                                        })
                                             .first()];
                                 case 3:
                                     challengeRequestId = (_a.sent()).challengeRequestId;
@@ -452,7 +452,9 @@ var DbHandler = /** @class */ (function () {
         var replyCountQuery = this.baseTransaction(trx)
             .from("".concat(TABLES.COMMENTS, " AS comments2"))
             .count("")
-            .where({ "comments2.parentCid": this.knex.raw("".concat(TABLES.COMMENTS, ".cid")) })
+            .where({
+            "comments2.parentCid": this.knex.raw("".concat(TABLES.COMMENTS, ".cid"))
+        })
             .as("replyCount");
         return this.baseTransaction(trx)(TABLES.COMMENTS).select("".concat(TABLES.COMMENTS, ".*"), upvoteQuery, downvoteQuery, replyCountQuery);
     };
@@ -600,7 +602,9 @@ var DbHandler = /** @class */ (function () {
                                 timestamp1 = 0;
                             topScoreQuery = this.baseTransaction(trx)(TABLES.VOTES)
                                 .select(this.knex.raw("COALESCE(SUM(".concat(TABLES.VOTES, ".vote), 0)"))) // We're using raw expressions because there's no native method in Knexjs to return 0 if SUM is null
-                                .where((_a = {}, _a["".concat(TABLES.COMMENTS, ".cid")] = this.knex.raw("".concat(TABLES.VOTES, ".commentCid")), _a))
+                                .where((_a = {},
+                                _a["".concat(TABLES.COMMENTS, ".cid")] = this.knex.raw("".concat(TABLES.VOTES, ".commentCid")),
+                                _a))
                                 .as("topScore");
                             query = this.baseCommentQuery(trx)
                                 .select(topScoreQuery)
@@ -849,11 +853,7 @@ var DbHandler = /** @class */ (function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
-                            this.baseTransaction(trx)(TABLES.SIGNERS)
-                                .where({ usage: exports.SIGNER_USAGES.SUBPLEBBIT })
-                                .first()
-                                .then(resolve)
-                                .catch(reject);
+                            this.baseTransaction(trx)(TABLES.SIGNERS).where({ usage: exports.SIGNER_USAGES.SUBPLEBBIT }).first().then(resolve).catch(reject);
                             return [2 /*return*/];
                         });
                     }); })];

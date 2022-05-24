@@ -102,9 +102,7 @@ var Comment = /** @class */ (function (_super) {
                 : undefined;
         // Comment Edit props
         this.originalContent =
-            props["originalContent"] ||
-                this.originalContent ||
-                (props["content"] && props["editSignature"] ? this.content : undefined);
+            props["originalContent"] || this.originalContent || (props["content"] && props["editSignature"] ? this.content : undefined);
         this.content = props["content"] || this.content;
         assert_1.default.notEqual(this.content, this.originalContent, "Content and original content can't be equal to each other");
         this.editSignature = (0, util_1.parseJsonIfString)(props["editSignature"]);
@@ -196,7 +194,8 @@ var Comment = /** @class */ (function (_super) {
                                 this.emittedAt = res.updatedAt;
                                 this._initCommentUpdate(res);
                                 this.emit("update", this);
-                            } else {
+                            }
+                            else {
                                 debug("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
                                 this._initCommentUpdate(res);
                             }
@@ -232,10 +231,10 @@ var Comment = /** @class */ (function (_super) {
                         file = _a.sent();
                         debug("Added comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") to ipfs, cid is ").concat(file.path));
                         return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
-                            lifetime: "72h",
-                            key: this.ipnsKeyName,
-                            allowOffline: true
-                        })];
+                                lifetime: "72h",
+                                key: this.ipnsKeyName,
+                                allowOffline: true
+                            })];
                     case 2:
                         _a.sent();
                         debug("Linked comment (".concat(this.cid, ") ipns name(").concat(this.ipnsName, ") to ipfs file (").concat(file.path, ")"));
