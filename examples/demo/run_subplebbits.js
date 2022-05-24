@@ -39,7 +39,7 @@ const subplebbitsProps = [
     }
 ];
 
-const CHECK_IF_COMMENTS_SHOULD_BE_DELETED_EVERY = 30000; // Check for comments that need to be deleted every 5 minutes
+const CHECK_IF_COMMENTS_SHOULD_BE_DELETED_EVERY = 300000; // Check for comments that need to be deleted every 5 minutes
 const DELETE_COMMENTS_THAN_ARE_OLDER_THAN = 60 * 60 * 12; // Delete comments that are older 12 hours
 
 async function runSubplebbit(props) {
