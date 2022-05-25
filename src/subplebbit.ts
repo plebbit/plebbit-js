@@ -399,7 +399,6 @@ export class Subplebbit extends EventEmitter {
 
                 postOrCommentOrVote.setCommentIpnsKey(ipfsKey);
                 if (postOrCommentOrVote.getType() === "post") {
-                    // @ts-ignore
                     postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPost(trx))?.cid);
                     postOrCommentOrVote.setDepth(0);
                     const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
@@ -409,7 +408,7 @@ export class Subplebbit extends EventEmitter {
                     debug(`New post with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
                 } else {
                     // Comment
-                    const [commentsUnderParent, parent]: any = await Promise.all([
+                    const [commentsUnderParent, parent] = await Promise.all([
                         this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx),
                         this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)
                     ]);
@@ -443,14 +442,15 @@ export class Subplebbit extends EventEmitter {
             debug(
                 `Skipping challenge for ${msgParsed.challengeRequestId}, add publication to IPFS and respond with challengeVerificationMessage right away`
             );
+            await this.dbHandler.upsertChallenge(new ChallengeRequestMessage(msgParsed), undefined);
             const trx = decryptedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transaction
 
-            await this.dbHandler.upsertChallenge(new ChallengeRequestMessage(msgParsed), trx);
             const publishedPublication: any = await this.publishPostAfterPassingChallenge(
                 decryptedPublication,
                 msgParsed.challengeRequestId,
                 trx
             );
+            await trx?.commit();
 
             const restOfMsg =
                 "publication" in publishedPublication
@@ -469,32 +469,33 @@ export class Subplebbit extends EventEmitter {
                 challengeRequestId: msgParsed.challengeRequestId,
                 ...restOfMsg
             });
-            return this.upsertAndPublishChallenge(challengeVerification, trx);
+            await Promise.all([
+                this.dbHandler.upsertChallenge(challengeVerification, undefined),
+                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
+            ]);
+            debug(`Published ${challengeVerification.type} (${challengeVerification.challengeRequestId}) over pubsub`);
         } else {
             const challengeMessage = new ChallengeMessage({
                 challengeRequestId: msgParsed.challengeRequestId,
                 challenges: providedChallenges
             });
-            return this.upsertAndPublishChallenge(challengeMessage, undefined);
+            await Promise.all([
+                this.dbHandler.upsertChallenge(challengeMessage, undefined),
+                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeMessage)))
+            ]);
+            debug(`Published ${challengeMessage.type} (${challengeMessage.challengeRequestId}) over pubsub`);
         }
-    }
-
-    async upsertAndPublishChallenge(challenge, trx) {
-        await this.dbHandler.upsertChallenge(challenge, trx);
-        if (trx) await trx.commit();
-        await this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challenge)));
-        debug(`Published challenge type ${challenge.type} (${challenge.challengeRequestId})`);
     }
 
     async handleChallengeAnswer(msgParsed) {
         const [challengeSuccess, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
         if (challengeSuccess) {
-            debug(`Challenge (${msgParsed.challengeRequestId}) has answered correctly`);
+            debug(`Challenge (${msgParsed.challengeRequestId}) has been answered correctly`);
             const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
+            await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed), undefined);
             const trx = storedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transactions
-            await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed), trx);
             const publishedPublication = await this.publishPostAfterPassingChallenge(storedPublication, msgParsed.challengeRequestId, trx); // could contain "publication" or "reason"
-
+            await trx?.commit();
             const restOfMsg =
                 "publication" in publishedPublication
                     ? {
@@ -511,7 +512,11 @@ export class Subplebbit extends EventEmitter {
                 challengeErrors: challengeErrors,
                 ...restOfMsg
             });
-            return this.upsertAndPublishChallenge(challengeVerification, trx);
+            await Promise.all([
+                this.dbHandler.upsertChallenge(challengeVerification, undefined),
+                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
+            ]);
+            debug(`Published successful ${challengeVerification.type} (${challengeVerification.challengeRequestId}) over pubsub`);
         } else {
             debug(`Challenge (${msgParsed.challengeRequestId}) has answered incorrectly`);
             const challengeVerification = new ChallengeVerificationMessage({
@@ -520,7 +525,11 @@ export class Subplebbit extends EventEmitter {
                 challengeSuccess: challengeSuccess,
                 challengeErrors: challengeErrors
             });
-            return this.upsertAndPublishChallenge(challengeVerification, undefined);
+            await Promise.all([
+                this.dbHandler.upsertChallenge(challengeVerification, undefined),
+                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
+            ]);
+            debug(`Published failed ${challengeVerification.type} (${challengeVerification.challengeRequestId})`);
         }
     }
 
