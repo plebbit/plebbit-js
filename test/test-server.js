@@ -19,25 +19,27 @@ const offlineNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-offline"),
     apiPort: 5001,
     gatewayPort: 8080,
-    args: "--offline"
+    daemonArgs: "--offline"
 };
-const onlineNodeArgs = {
+const ipfsNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-online"),
     apiPort: 5002,
     gatewayPort: 8081,
-    args: "--enable-pubsub-experiment"
+    daemonArgs: "--enable-pubsub-experiment",
+    extraCommands: ["bootstrap rm --all"]
 };
 
 const clientNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-client"),
     apiPort: 5003,
     gatewayPort: 8082,
-    args: "--enable-pubsub-experiment"
+    daemonArgs: "--enable-pubsub-experiment",
+    extraCommands: ["bootstrap rm --all"]
 };
 
 const startIpfsNodes = async () => {
     await Promise.all(
-        [offlineNodeArgs, onlineNodeArgs, clientNodeArgs].map(async (nodeArgs) => {
+        [offlineNodeArgs, ipfsNodeArgs, clientNodeArgs].map(async (nodeArgs) => {
             try {
                 execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} init`, { stdio: "ignore" });
             } catch {}
@@ -48,11 +50,17 @@ const startIpfsNodes = async () => {
             execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} config  Addresses.API /ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`, {
                 stdio: "inherit"
             });
-            execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} config  Addresses.Gateway /ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`, {
+            execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} config Addresses.Gateway /ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`, {
                 stdio: "inherit"
             });
 
-            const ipfsCmd = `IPFS_PATH=${nodeArgs.dir} ${ipfsPath} daemon ${nodeArgs.args}`;
+            if (nodeArgs.extraCommands)
+                for (const extraCommand of nodeArgs.extraCommands)
+                    execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} ${extraCommand}`, {
+                        stdio: "inherit"
+                    });
+
+            const ipfsCmd = `IPFS_PATH=${nodeArgs.dir} ${ipfsPath} daemon ${nodeArgs.daemonArgs}`;
             console.log(ipfsCmd);
             const ipfsProcess = exec(ipfsCmd);
             ipfsProcess.stderr.on("data", console.error);
@@ -111,7 +119,7 @@ const startMathCliSubplebbit = async () => {
     const plebbit = await Plebbit({
         ipfsHttpClientOptions: `http://localhost:${offlineNodeArgs.apiPort}/api/v0`,
         pubsubHttpClientOptions: {
-            url: `http://localhost:${onlineNodeArgs.apiPort}/api/v0`,
+            url: `http://localhost:${ipfsNodeArgs.apiPort}/api/v0`,
             agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
         }
     });
@@ -135,7 +143,7 @@ const startImageCaptchaSubplebbit = async () => {
     const plebbit = await Plebbit({
         ipfsHttpClientOptions: `http://localhost:${offlineNodeArgs.apiPort}/api/v0`,
         pubsubHttpClientOptions: {
-            url: `http://localhost:${onlineNodeArgs.apiPort}/api/v0`,
+            url: `http://localhost:${ipfsNodeArgs.apiPort}/api/v0`,
             agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
         }
     });
@@ -157,14 +165,14 @@ const startImageCaptchaSubplebbit = async () => {
     const plebbit = await Plebbit({
         ipfsHttpClientOptions: `http://localhost:${offlineNodeArgs.apiPort}/api/v0`,
         pubsubHttpClientOptions: {
-            url: `http://localhost:${onlineNodeArgs.apiPort}/api/v0`,
+            url: `http://localhost:${ipfsNodeArgs.apiPort}/api/v0`,
             agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
         }
     });
     const clientPlebbit = await Plebbit({
         ipfsHttpClientOptions: `http://localhost:${offlineNodeArgs.apiPort}/api/v0`,
         pubsubHttpClientOptions: {
-            url: `http://localhost:${onlineNodeArgs.apiPort}/api/v0`,
+            url: `http://localhost:${ipfsNodeArgs.apiPort}/api/v0`,
             agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
         }
     });
