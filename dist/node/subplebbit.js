@@ -18,9 +18,11 @@ var __extends =
             if (typeof b !== "function" && b !== null)
                 throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
             extendStatics(d, b);
+
             function __() {
                 this.constructor = d;
             }
+
             d.prototype = b === null ? Object.create(b) : ((__.prototype = b.prototype), new __());
         };
     })();
@@ -48,6 +50,7 @@ var __awaiter =
                       resolve(value);
                   });
         }
+
         return new (P || (P = Promise))(function (resolve, reject) {
             function fulfilled(value) {
                 try {
@@ -56,6 +59,7 @@ var __awaiter =
                     reject(e);
                 }
             }
+
             function rejected(value) {
                 try {
                     step(generator["throw"](value));
@@ -63,9 +67,11 @@ var __awaiter =
                     reject(e);
                 }
             }
+
             function step(result) {
                 result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
             }
+
             step((generator = generator.apply(thisArg, _arguments || [])).next());
         });
     };
@@ -86,18 +92,24 @@ var __generator =
             t,
             g;
         return (
-            (g = { next: verb(0), throw: verb(1), return: verb(2) }),
+            (g = {
+                next: verb(0),
+                throw: verb(1),
+                return: verb(2)
+            }),
             typeof Symbol === "function" &&
                 (g[Symbol.iterator] = function () {
                     return this;
                 }),
             g
         );
+
         function verb(n) {
             return function (v) {
                 return step([n, v]);
             };
         }
+
         function step(op) {
             if (f) throw new TypeError("Generator is already executing.");
             while (_)
@@ -783,7 +795,10 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 15:
                         ipfsSigner = __assign.apply(void 0, [
                             __assign.apply(void 0, _e.concat([_j.sent()])),
-                            { ipnsKeyName: ipnsKeyName, usage: db_handler_1.SIGNER_USAGES.COMMENT }
+                            {
+                                ipnsKeyName: ipnsKeyName,
+                                usage: db_handler_1.SIGNER_USAGES.COMMENT
+                            }
                         ]);
                         return [
                             4 /*yield*/,
