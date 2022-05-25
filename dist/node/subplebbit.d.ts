@@ -87,7 +87,6 @@ export declare class Subplebbit extends EventEmitter {
         publication: any;
     }>;
     handleChallengeRequest(msgParsed: any): Promise<void>;
-    upsertAndPublishChallenge(challenge: any, trx: any): Promise<void>;
     handleChallengeAnswer(msgParsed: any): Promise<void>;
     processCaptchaPubsub(pubsubMsg: any): Promise<void>;
     defaultProvideCaptcha(challengeRequestMessage: any): Promise<Challenge[][]>;

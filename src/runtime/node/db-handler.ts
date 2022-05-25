@@ -4,13 +4,14 @@ import Author from "../../author";
 import { Comment } from "../../comment";
 import { removeKeysWithUndefinedValues, replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
 import Vote from "../../vote";
-import knex from "knex";
+import knex, { Knex } from "knex";
 import Debug from "debug";
 import { Subplebbit } from "../../subplebbit";
 import path from "path";
 import assert from "assert";
 import fs from "fs";
 import Keyv from "keyv";
+import Transaction = Knex.Transaction;
 
 const debug = Debug("plebbit-js:db-handler");
 
@@ -35,7 +36,7 @@ export class DbHandler {
         this.subplebbit = subplebbit;
     }
 
-    async createTransaction() {
+    async createTransaction(): Promise<Transaction> {
         return new Promise(async (resolve, reject) => {
             this.knex
                 .transaction()
@@ -384,7 +385,7 @@ export class DbHandler {
         });
     }
 
-    async queryCommentsUnderComment(parentCid, trx) {
+    async queryCommentsUnderComment(parentCid, trx): Promise<Comment[] | Post[]> {
         return new Promise(async (resolve, reject) => {
             this.baseCommentQuery(trx)
                 .where({ parentCid: parentCid })
@@ -449,7 +450,7 @@ export class DbHandler {
         });
     }
 
-    async queryComment(cid, trx) {
+    async queryComment(cid, trx): Promise<Comment | Post> {
         return new Promise(async (resolve, reject) => {
             this.baseCommentQuery(trx)
                 .where({ cid: cid })
@@ -461,7 +462,7 @@ export class DbHandler {
         });
     }
 
-    async queryLatestPost(trx) {
+    async queryLatestPost(trx): Promise<Post> {
         return new Promise(async (resolve, reject) => {
             this.baseCommentQuery(trx)
                 .whereNotNull("title")
