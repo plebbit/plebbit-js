@@ -75,7 +75,11 @@ module.exports = function (config) {
         port: 9876,
         colors: true,
         logLevel: config.LOG_INFO,
-        browserNoActivityTimeout: 210000
+
+        // fix various timeout errors
+        browserNoActivityTimeout: 210000,
+        browserDisconnectTimeout: mochaConfig.timeout,
+        browserDisconnectTolerance: 10
     });
 };
 
