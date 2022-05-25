@@ -67,10 +67,9 @@ async function deleteCommentsOlderThan() {
             if (numOfDeletedComments > 0)
                 console.log(`Deleted ${numOfDeletedComments} comments since they were older than 12 hours`);
             await knex.destroy();
-            setTimeout(deleteCommentsOlderThan, CHECK_IF_COMMENTS_SHOULD_BE_DELETED_EVERY);
         })
     );
 }
 
-setTimeout(deleteCommentsOlderThan, CHECK_IF_COMMENTS_SHOULD_BE_DELETED_EVERY);
+setInterval(deleteCommentsOlderThan, CHECK_IF_COMMENTS_SHOULD_BE_DELETED_EVERY);
 await Promise.all(subplebbitsProps.map((prop) => runSubplebbit(prop)));
