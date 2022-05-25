@@ -252,7 +252,7 @@ ChallengeVerificationMessage extends PubsubMessage /* (sent by subplebbit owner)
 }
 Challenge {
   type: 'image' | 'text' | 'audio' | 'video' | 'html' // tells the client how to display the challenge, start with implementing image and text only first
-  challenge: buffer // data required to complete the challenge, could be html, png, etc.
+  challenge: string // base64 or utf8 required to complete the challenge, could be html, png, etc.
 }
 Encrypted {
   // examples available at https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
