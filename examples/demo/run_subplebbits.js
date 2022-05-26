@@ -7,7 +7,7 @@ import Knex from "knex";
 const plebbit = Plebbit({
     ipfsHttpClientOptions: {
         url: `http://localhost:5001/api/v0`,
-        agent: new http.Agent({keepAlive: true, maxSockets: Infinity})
+        agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
     }
 });
 
@@ -63,9 +63,11 @@ async function deleteCommentsOlderThan() {
             const currentTimestamp = Math.round(Date.now() / 1000.0);
             const limit = currentTimestamp - DELETE_COMMENTS_THAN_ARE_OLDER_THAN;
             // Delete any comments whose timestamp is less than limit
+            const commentsToDelete = (await knex("comments").whereBetween("timestamp", [0, limit])).map((comment) => comment.cid);
+            const deletedVotes = await knex("votes").whereIn("commentCid", commentsToDelete).delete();
             const numOfDeletedComments = await knex("comments").whereBetween("timestamp", [0, limit]).delete();
             if (numOfDeletedComments > 0)
-                console.log(`Deleted ${numOfDeletedComments} comments since they were older than 12 hours`);
+                console.log(`Deleted ${numOfDeletedComments} comments and ${deletedVotes} since they were older than 12 hours`);
             await knex.destroy();
         })
     );
