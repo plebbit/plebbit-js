@@ -266,7 +266,7 @@ export class Subplebbit extends EventEmitter {
                 subplebbit: this
             });
         const newSubplebbitOptions = {
-            ...(!currentIpns && !posts ? { createdAt: timestamp() } : {}),
+            ...(!currentIpns && !posts && !this.createdAt ? { createdAt: timestamp() } : {}),
             posts: posts,
             metricsCid: (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path,
             latestPostCid: latestPost?.postCid

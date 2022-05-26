@@ -518,7 +518,7 @@ var Subplebbit = /** @class */ (function (_super) {
                                 pageCids: sortedPostsCids,
                                 subplebbit: this
                             });
-                        _c = [__assign({}, !currentIpns && !posts ? { createdAt: (0, util_1.timestamp)() } : {})];
+                        _c = [__assign({}, !currentIpns && !posts && !this.createdAt ? { createdAt: (0, util_1.timestamp)() } : {})];
                         _e = { posts: posts };
                         return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(metrics))];
                     case 9:
