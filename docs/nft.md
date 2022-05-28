@@ -44,7 +44,7 @@ const nftAbi = [
 const getNftImageUrl = async (nft) => {
   const blockchainProvider = getBlockchainProvider(nft.chainTicker)
   const nftContract = new ethers.Contract(nft.address, nftAbi, blockchainProvider)
-  let nftUrl = await nftContract.tokenURI(nft.index)
+  let nftUrl = await nftContract.tokenURI(nft.id)
 
   // if the ipfs nft is json, get the image url using the ipfs gateway in account settings
   if (nftUrl.startsWith('ipfs://')) {
@@ -67,8 +67,15 @@ const getNftImageUrl = async (nft) => {
 }
 
 const createNftSignature = async (nft, authorAddress, ethersJsSigner) => {
+  // use plain JSON so the user can read what he's signing
+  const messageToSign = JSON.stringify({
+    domainSeparator: 'plebbit-author-avatar', 
+    tokenAddress: nft.address, 
+    tokenId: nft.id, 
+    authorAddress
+  })
+
   // the ethers.js signer is usually gotten from metamask https://docs.ethers.io/v5/api/signer/
-  const messageToSign = JSON.stringify({chainTicker: nft.chainTicker, address: nft.address, index: nft.index, authorAddress})
   const signature = await ethersJsSigner.signMessage(messageToSign)
   return signature
 }
@@ -76,9 +83,14 @@ const createNftSignature = async (nft, authorAddress, ethersJsSigner) => {
 const verifyNftSignature = async (nft, authorAddress) => {
   const blockchainProvider = getBlockchainProvider(nft.chainTicker)
   const nftContract = new ethers.Contract(nft.address, nftAbi, blockchainProvider)
-  // get the owner of the nft at nft.index
-  const currentNftOwnerAddress = await nftContract.ownerOf(nft.index)
-  const messageThatShouldBeSigned = JSON.stringify({chainTicker: nft.chainTicker, address: nft.address, index: nft.index, authorAddress})
+  // get the owner of the nft at nft.id
+  const currentNftOwnerAddress = await nftContract.ownerOf(nft.id)
+  const messageThatShouldBeSigned = JSON.stringify({
+    domainSeparator: 'plebbit-author-avatar', 
+    address: nft.address, 
+    id: nft.id, 
+    authorAddress
+  })
   const signatureAddress = ethers.utils.verifyMessage(messageThatShouldBeSigned, nft.signature)
   if (currentNftOwnerAddress !== signatureAddress) {
     throw Error(`invalid nft signature address '${signatureAddress}' does not equal '${currentNftOwnerAddress}'`)
@@ -88,12 +100,12 @@ const verifyNftSignature = async (nft, authorAddress) => {
 const avatarNft = {
   chainTicker: 'eth',
   address: '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d', // the contract address of the nft
-  index: 100 // the nft number 100 in the colletion
+  id: 100 // the nft number 100 in the colletion
 }
 const avatarNft2 = {
   chainTicker: 'matic',
   address: '0xf6d8e606c862143556b342149a7fe0558c220375', // the contract address of the nft
-  index: 100 // the nft number 100 in the colletion
+  id: 100 // the nft number 100 in the colletion
 }
 const author = {
   address: 'some test address...',
