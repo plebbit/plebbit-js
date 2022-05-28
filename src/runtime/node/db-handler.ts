@@ -395,7 +395,7 @@ export class DbHandler {
         });
     }
 
-    async queryComments(trx) {
+    async queryComments(trx): Promise<Comment[]> {
         return new Promise(async (resolve, reject) => {
             this.baseCommentQuery(trx)
                 .orderBy("id", "desc")
