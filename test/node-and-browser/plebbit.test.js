@@ -93,10 +93,11 @@ describe("plebbit (node and browser)", () => {
             const expectedComment = await plebbit.createComment({ cid: comment.cid, ...expectedCommentProps });
             expect(expectedComment.getType()).to.equal("comment");
             await expectedComment.update();
-
+            await expectedComment.stop();
             const loadedComment = await plebbit.getComment(comment.cid);
             expect(loadedComment.getType()).to.equal("comment");
             await loadedComment.update();
+            await loadedComment.stop();
 
             expect(JSON.stringify(loadedComment)).to.equal(JSON.stringify(expectedComment));
         });
