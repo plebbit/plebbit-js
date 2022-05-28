@@ -32,7 +32,7 @@ export declare class DbHandler {
     queryCommentsBetweenTimestampRange(parentCid: any, timestamp1: any, timestamp2: any, trx?: any): Promise<unknown>;
     queryTopCommentsBetweenTimestampRange(parentCid: any, timestamp1: any, timestamp2: any, trx?: any): Promise<unknown>;
     queryCommentsUnderComment(parentCid: any, trx: any): Promise<Comment[] | Post[]>;
-    queryComments(trx: any): Promise<unknown>;
+    queryComments(trx: any): Promise<Comment[]>;
     querySubplebbitActiveUserCount(timeframe: any, trx: any): Promise<unknown>;
     querySubplebbitPostCount(timeframe: any, trx: any): Promise<unknown>;
     querySubplebbitMetrics(trx: any): Promise<unknown>;

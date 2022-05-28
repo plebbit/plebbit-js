@@ -1,4 +1,8 @@
+import Post from "../../post";
+import { Comment } from "../../comment";
+import { Knex } from "knex";
 import { Subplebbit } from "../../subplebbit";
+import Transaction = Knex.Transaction;
 export declare const SIGNER_USAGES: {
     SUBPLEBBIT: string;
     COMMENT: string;
@@ -8,7 +12,7 @@ export declare class DbHandler {
     knex: any;
     subplebbit: Subplebbit;
     constructor(dbConfig: any, subplebbit: any);
-    createTransaction(): Promise<unknown>;
+    createTransaction(): Promise<Transaction>;
     baseTransaction(trx: any): any;
     createCommentsTable(): Promise<void>;
     createVotesTable(): Promise<void>;
@@ -27,13 +31,13 @@ export declare class DbHandler {
     queryCommentsSortedByTimestamp(parentCid: any, order?: string, trx?: any): Promise<unknown>;
     queryCommentsBetweenTimestampRange(parentCid: any, timestamp1: any, timestamp2: any, trx?: any): Promise<unknown>;
     queryTopCommentsBetweenTimestampRange(parentCid: any, timestamp1: any, timestamp2: any, trx?: any): Promise<unknown>;
-    queryCommentsUnderComment(parentCid: any, trx: any): Promise<unknown>;
-    queryComments(trx: any): Promise<unknown>;
+    queryCommentsUnderComment(parentCid: any, trx: any): Promise<Comment[] | Post[]>;
+    queryComments(trx: any): Promise<Comment[]>;
     querySubplebbitActiveUserCount(timeframe: any, trx: any): Promise<unknown>;
     querySubplebbitPostCount(timeframe: any, trx: any): Promise<unknown>;
     querySubplebbitMetrics(trx: any): Promise<unknown>;
-    queryComment(cid: any, trx: any): Promise<unknown>;
-    queryLatestPost(trx: any): Promise<unknown>;
+    queryComment(cid: any, trx: any): Promise<Comment | Post>;
+    queryLatestPost(trx: any): Promise<Post>;
     insertSigner(signer: any, trx: any): Promise<unknown>;
     querySubplebbitSigner(trx: any): Promise<unknown>;
     querySigner(ipnsKeyName: any, trx: any): Promise<any>;

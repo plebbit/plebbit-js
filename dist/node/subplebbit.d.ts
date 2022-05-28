@@ -69,7 +69,7 @@ export declare class Subplebbit extends EventEmitter {
         updatedAt: number;
         encryption: any;
     };
-    prePublish(newSubplebbitOptions?: {}): Promise<void>;
+    prePublish(): Promise<void>;
     edit(newSubplebbitOptions: any): Promise<this>;
     updateOnce(): Promise<this>;
     update(updateIntervalMs?: number): Promise<this>;
@@ -81,7 +81,7 @@ export declare class Subplebbit extends EventEmitter {
     handleVote(newVote: any, challengeRequestId: any, trx: any): Promise<{
         reason: string;
     }>;
-    publishPostAfterPassingChallenge(publication: any, challengeRequestId: any, trx: any): Promise<{
+    publishPostAfterPassingChallenge(publication: any, challengeRequestId: any): Promise<{
         reason: string;
     } | {
         publication: any;
@@ -91,6 +91,7 @@ export declare class Subplebbit extends EventEmitter {
     processCaptchaPubsub(pubsubMsg: any): Promise<void>;
     defaultProvideCaptcha(challengeRequestMessage: any): Promise<Challenge[][]>;
     defaultValidateCaptcha(challengeAnswerMessage: any): Promise<(boolean | string[])[]>;
+    syncComment(dbComment: any): Promise<void>;
     syncIpnsWithDb(syncIntervalMs: any): Promise<void>;
     start(syncIntervalMs?: number): Promise<void>;
     stopPublishing(): Promise<void>;
