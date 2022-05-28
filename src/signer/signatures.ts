@@ -58,13 +58,30 @@ function getFieldsToSign(publication) {
         return ["subplebbitAddress", "author", "timestamp", "parentCid", "content"];
 }
 
+const isProbablyBuffer = (arg) => arg && typeof arg !== "string" && typeof arg !== "number";
+
+export const signBufferRsa = async (bufferToSign, privateKeyPem, privateKeyPemPassword = "") => {
+    assert(isProbablyBuffer(bufferToSign), `signBufferRsa invalid bufferToSign '${bufferToSign}' not buffer`);
+    const keyPair = await getKeyPairFromPrivateKeyPem(privateKeyPem, privateKeyPemPassword);
+    // do not use libp2p keyPair.sign to sign strings, it doesn't encode properly in the browser
+    const signature = await keyPair.sign(bufferToSign);
+    return signature;
+};
+
+export const verifyBufferRsa = async (bufferToSign, bufferSignature, publicKeyPem) => {
+    assert(isProbablyBuffer(bufferToSign), `verifyBufferRsa invalid bufferSignature '${bufferToSign}' not buffer`);
+    assert(isProbablyBuffer(bufferSignature), `verifyBufferRsa invalid bufferSignature '${bufferSignature}' not buffer`);
+    const peerId = await getPeerIdFromPublicKeyPem(publicKeyPem);
+    const verified = await peerId.pubKey.verify(bufferToSign, bufferSignature);
+    return verified;
+};
+
 export async function signPublication(publication, signer) {
-    const keyPair = await getKeyPairFromPrivateKeyPem(signer.privateKey, "");
     const fieldsToSign = getFieldsToSign(publication);
     debug(`Will sign fields ${JSON.stringify(fieldsToSign)}`);
     const publicationSignFields = keepKeys(publication, fieldsToSign);
     const commentEncoded = encode(removeKeysWithUndefinedValues(publicationSignFields)); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
-    const signatureData = uint8ArrayToString(await keyPair.sign(commentEncoded), "base64");
+    const signatureData = uint8ArrayToString(await signBufferRsa(commentEncoded, signer.privateKey), "base64");
     debug(`Publication been signed, signature data is (${signatureData})`);
     return new Signature({
         signature: signatureData,
@@ -88,7 +105,11 @@ export async function verifyPublication(publication) {
         const peerId = await getPeerIdFromPublicKeyPem(signature.publicKey);
         const commentWithFieldsToSign = keepKeys(publicationToBeVerified, signature.signedPropertyNames);
         const commentEncoded = encode(removeKeysWithUndefinedValues(commentWithFieldsToSign));
-        const signatureIsValid = await peerId.pubKey.verify(commentEncoded, uint8ArrayFromString(signature.signature, "base64"));
+        const signatureIsValid = await verifyBufferRsa(
+            commentEncoded,
+            uint8ArrayFromString(signature.signature, "base64"),
+            signature.publicKey
+        );
         assert.equal(signatureIsValid, true, "Signature is invalid");
     };
 
