@@ -105,7 +105,7 @@ Signer {
 Subplebbit /* (IPNS record Subplebbit.address) */ {
   title?: string
   description?: string
-  moderatorsAddresses?: string[]
+  roles?: {[authorAddress: string]: SubplebbitRole} // each author address can be mapped to 1 SubplebbitRole
   pubsubTopic?: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   latestPostCid: string // the most recent post in the linked list of posts
   posts: Pages // only preload page 1 sorted by 'hot', might preload more later, comments should include Comment + CommentUpdate data
@@ -157,6 +157,10 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
 SubplebbitEncryption {
   type: 'aes-ecb' // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
   publicKey: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
+}
+SubplebbitRole {
+  role: 'owner' | 'admin' | 'moderator'
+  // TODO: custom roles with other props
 }
 Flair {
   text: string
@@ -221,6 +225,7 @@ PlebbitDefaults { // fetched once when app first load, a dictionary of default s
 ```js
 PubsubMessage: {
   type: 'CHALLENGEREQUEST' | 'CHALLENGE' | 'CHALLENGEANSWER' | 'CHALLENGEVERIFICATION'
+  signature: Signature
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
   userAgent: `/plebbit-js:${require('./package.json').version}/` // client name and version using this standard https://en.bitcoin.it/wiki/BIP_0014#Proposal
 }
@@ -271,18 +276,20 @@ Encrypted {
   - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
   - `plebbit.createMultisub(createMultisubOptions)`
   - [`plebbit.createSubplebbit(createSubplebbitOptions)`](#plebbitcreatesubplebbitcreatesubplebbitoptions)
+  - `plebbit.createSubplebbitEdit(createSubplebbitEditOptions)`
   - [`plebbit.createComment(createCommentOptions)`](#plebbitcreatecommentcreatecommentoptions)
   - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
   - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
   - `plebbit.getDefaults()`
   - [`plebbit.createSigner(createSignerOptions)`](#plebbitcreatesignercreatesigneroptions)
+  - [`plebbit.listSubplebbits()`](#plebbitlistsubplebbits)
 - [Subplebbit API](#subplebbit-api)
   - [`subplebbit.edit(subplebbitEditOptions)`](#subplebbiteditsubplebbiteditoptions)
   - [`subplebbit.start()`](#subplebbitstart)
   - [`subplebbit.stop()`](#subplebbitstop)
   - [`subplebbit.update()`](#subplebbitupdate)
   - `subplebbit.address`
-  - `subplebbit.moderatorsAddresses`
+  - `subplebbit.roles`
   - `subplebbit.posts`
   - `subplebbit.latestPostCid`
   - `subplebbit.pubsubTopic`
@@ -294,6 +301,7 @@ Encrypted {
   - `subplebbit.createdAt`
   - `subplebbit.updatedAt`
   - `subplebbit.metrics`
+  - `subplebbit.signer`
 - [Subplebbit Events](#subplebbit-events)
   - [`update`](#update)
   - [`challengerequest`](#challengerequest)
@@ -381,7 +389,7 @@ An object which may have the following keys:
 
 | Type | Description |
 | -------- | -------- |
-| `Plebbit` | A `Plebbit` instance |
+| `Promise<Plebbit>` | A `Plebbit` instance |
 
 #### Example
 
@@ -392,18 +400,18 @@ const options = {
   ipfsApiUrl: 'http://localhost:5001',
   dataPath: __dirname
 }
-const plebbit = Plebbit(options) // should be independent instance, not singleton
+const plebbit = await Plebbit(options) // should be independent instance, not singleton
 ```
 
 ### `plebbit.getSubplebbit(subplebbitAddress)`
 
-> Get a subplebbit comment by its IPNS name.
+> Get a subplebbit comment by its `Address`.
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| subplebbitAddress | `string` | The IPNS name of the subplebbit |
+| subplebbitAddress | `string` | The `Address` of the subplebbit |
 
 #### Returns
 
@@ -484,15 +492,16 @@ An object which may have the following keys:
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| address | `string` | `undefined` | IPNS name of the subplebbit |
-| database | `KnexConfig` or `undefined` | SQLite database at `plebbit.dataPath/subplebbitAddress` | (Subplebbit owners only) Optional [KnexConfig](https://www.npmjs.com/package/knex) |
+| address | `string` | `undefined` | `Address` of the subplebbit |
+| signer | `Signer` or `undefined` | `undefined` | (Subplebbit owners only) Optional `Signer` of the subplebbit to create a subplebbit with a specific private key |
+| database | `KnexConfig` or `undefined` | SQLite database at `plebbit.dataPath/subplebbits/subplebbitAddress` | (Subplebbit owners only) Optional [KnexConfig](https://www.npmjs.com/package/knex) |
 | ...subplebbit | `any` | `undefined` | `CreateSubplebbitOptions` can also initialize any property on the `Subplebbit` instance |
 
 #### Returns
 
 | Type | Description |
 | -------- | -------- |
-| `Subplebbit` | A `Subplebbit` instance |
+| `Promise<Subplebbit>` | A `Subplebbit` instance |
 
 #### Example
 
@@ -503,12 +512,12 @@ const plebbitOptions = {
   ipfsApiUrl: 'http://localhost:5001',
   dataPath: __dirname
 }
-const plebbit = Plebbit(plebbitOptions)
+const plebbit = await Plebbit(plebbitOptions)
 const subplebbitOptions = {
   address: 'Qmb...',
 }
 // create a subplebbit instance
-const subplebbit = plebbit.createSubplebbit(subplebbitOptions)
+const subplebbit = await plebbit.createSubplebbit(subplebbitOptions)
 // edit the subplebbit info in the database
 subplebbit.edit({
   title: 'Memes',
@@ -519,7 +528,7 @@ subplebbit.edit({
 subplebbit.start()
 
 // initialize any property on the Subplebbit instance
-const subplebbit = plebbit.createSubplebbit({
+const subplebbit = await plebbit.createSubplebbit({
   address: 'Qmb...',
   title: 'Memes',
   posts: {
@@ -552,7 +561,7 @@ An object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| subplebbitAddress | `string` | IPNS name of the subplebbit |
+| subplebbitAddress | `string` | `Address` of the subplebbit |
 | parentCid | `string` or `undefined` | The parent comment CID, undefined if comment is a post, same as postCid if comment is top level |
 | content | `string` or `undefined` | Content of the comment, link posts have no content |
 | title | `string` or `undefined` | If comment is a post, it needs a title |
@@ -571,12 +580,12 @@ An object which may have the following keys:
 
 | Type | Description |
 | -------- | -------- |
-| `Comment` | A `Comment` instance |
+| `Promise<Comment>` | A `Comment` instance |
 
 #### Example
 
 ```js
-const comment = plebbit.createComment(createCommentOptions)
+const comment = await plebbit.createComment(createCommentOptions)
 comment.on('challenge', async (challengeMessage) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
   comment.publishChallengeAnswers(challengeAnswers)
@@ -584,13 +593,13 @@ comment.on('challenge', async (challengeMessage) => {
 comment.publish()
 
 // or if you already fetched a comment but want to get updates
-const comment = plebbit.createComment({ipnsName: 'Qm...'})
+const comment = await plebbit.createComment({ipnsName: 'Qm...'})
 // looks for updates in the background every 5 minutes
 comment.on('update', (updatedComment) => console.log(updatedComment))
 comment.update()
 
 // initialize any property on the Comment instance
-const comment = plebbit.createComment({
+const comment = await plebbit.createComment({
   cid: 'Qmb...',
   content: 'My first post',
   locked: true,
@@ -627,7 +636,7 @@ An object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| subplebbitAddress | `string` | IPNS name of the subplebbit |
+| subplebbitAddress | `string` | `Address` of the subplebbit |
 | commentCid | `string` | The comment CID to be edited (don't use 'cid' because eventually CommentEdit.cid will exist) |
 | signer | `Signer` | Signer of the edit, either original author or mod |
 | content | `string` or `undefined` | (Only author) Edited content of the comment |
@@ -647,12 +656,12 @@ An object which may have the following keys:
 
 | Type | Description |
 | -------- | -------- |
-| `CommentEdit` | A `CommentEdit` instance |
+| `Promise<CommentEdit>` | A `CommentEdit` instance |
 
 #### Example
 
 ```js
-const commentEdit = plebbit.createCommentEdit(createCommentEditOptions)
+const commentEdit = await plebbit.createCommentEdit(createCommentEditOptions)
 commentEdit.on('challenge', async (challengeMessage, _commentEdit) => {
   const challengeAnswers = await askUserForChallengeAnswer(challengeMessage.challenges)
   _commentEdit.publishChallengeAnswers(challengeAnswers)
@@ -676,7 +685,7 @@ An object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| subplebbitAddress | `string` | IPNS name of the subplebbit |
+| subplebbitAddress | `string` | `Address` of the subplebbit |
 | commentCid | `string` | The comment or post to vote on |
 | timestamp | `number` or `undefined` | Time of publishing in ms, `Date.now()` if undefined |
 | author | `Author` | Author of the comment, will be needed for voting with NFTs or tokens |
@@ -687,12 +696,12 @@ An object which may have the following keys:
 
 | Type | Description |
 | -------- | -------- |
-| `Vote` | A `Vote` instance |
+| `Promise<Vote>` | A `Vote` instance |
 
 #### Example
 
 ```js
-const vote = plebbit.createVote(createVoteOptions)
+const vote = await plebbit.createVote(createVoteOptions)
 vote.on('challenge', async (challengeMessage, _vote) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
   _vote.publishChallengeAnswers(challengeAnswers)
@@ -731,6 +740,27 @@ const newRandomSigner = await plebbit.createSigner()
 const signerFromPrivateKey = await plebbit.createSigner({privateKey: '-----BEGIN ENCRYPTED PRIVATE KEY...'})
 ```
 
+### `plebbit.listSubplebbits()`
+
+> (Node only) Get all the subplebbit addresses in the dataPath/subplebbits folder. Same as doing `ls dataPath/subplebbits`.
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<Address[]>` | An array of `Address` strings |
+
+#### Example
+
+```js
+// start all the subplebbits you own and have stored locally
+const subplebbitAddresses = await plebbit.listSubplebbits()
+for (const address of subplebbitAddresses) {
+  const subplebbit = await plebbit.createSubplebbit({address})
+  await subplebbit.start()
+}
+```
+
 ## Subplebbit API
 The subplebbit API for getting subplebbit updates, or creating, editing, running a subplebbit as an owner.
 
@@ -752,7 +782,7 @@ An object which may have the following keys:
 | ---- | ---- | ----------- |
 | title | `string` or `undefined` | Title of the subplebbit |
 | description | `string` or `undefined` | Description of the subplebbit |
-| moderatorsAddresses | `string[]` or `undefined` | IPNS names of the moderators |
+| roles | `{[authorAddress: string]: SubplebbitRole}` or `undefined` | Author addresses of the moderators |
 | latestPostCid | `string` or `undefined` | The most recent post in the linked list of posts |
 | posts | `Pages` or `undefined` | Only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post |
 | pubsubTopic | `string` or `undefined` | The string to publish to in the pubsub, a public key of the subplebbit owner's choice |
@@ -761,18 +791,6 @@ An object which may have the following keys:
 | features | `SubplebbitFeatures` or `undefined` | The features of the subplebbit |
 | suggested | `SubplebbitSuggested` or `undefined` | The suggested client settings for the subplebbit |
 | flairs | `Flair[]` or `undefined` | The list of flairs (colored labels for comments) authors or mods can choose from |
-
-#### Returns
-
-| Type | Description |
-| -------- | -------- |
-| `Promise<SubplebbitEditResponse>` | The Knex response from the database |
-
-Object is of the form:
-
-```js
-{ // ...TODO }
-```
 
 #### Example
 
@@ -790,15 +808,15 @@ Object is of the form:
 const options = {
   title: 'Your subplebbit title'
 }
-const subplebbit = plebbit.createSubplebbit(options)
+const subplebbit = await plebbit.createSubplebbit(options)
 // edit the subplebbit info in the database
-subplebbit.edit({
+await subplebbit.edit({
   title: 'Memes',
   description: 'Post your memes here.',
   pubsubTopic: 'Qmb...'
 })
 // start publishing updates/new posts
-subplebbit.start()
+await subplebbit.start()
 ```
 
 ### `subplebbit.stop()`
@@ -815,7 +833,7 @@ subplebbit.start()
 const options = {
   address: 'Qmb...'
 }
-const subplebbit = plebbit.createSubplebbit(options)
+const subplebbit = await plebbit.createSubplebbit(options)
 subplebbit.on('update', (updatedSubplebbitInstance) => {
   console.log(updatedSubplebbitInstance)
 
@@ -844,7 +862,7 @@ The subplebbit events.
 const options = {
   address: 'Qmb...'
 }
-const subplebbit = plebbit.createSubplebbit(options)
+const subplebbit = await plebbit.createSubplebbit(options)
 subplebbit.on('update', (updatedSubplebbit) => console.log(updatedSubplebbit))
 subplebbit.update()
 
@@ -906,12 +924,12 @@ The comment API for publishing a comment as an author, or getting comment update
 #### Example
 
 ```js
-const comment = plebbit.createComment(commentObject)
+const comment = await plebbit.createComment(commentObject)
 comment.on('challenge', async (challengeMessage) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
   comment.publishChallengeAnswers(challengeAnswers)
 })
-comment.publish()
+await comment.publish()
 ```
 
 ### `comment.publishChallengeAnswers(challengeAnswers)`
@@ -927,12 +945,12 @@ comment.publish()
 #### Example
 
 ```js
-const comment = plebbit.createComment(commentObject)
+const comment = await plebbit.createComment(commentObject)
 comment.on('challenge', async (challengeMessage) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
   comment.publishChallengeAnswers(challengeAnswers)
 })
-comment.publish()
+await comment.publish()
 ```
 
 ### `comment.update()`
@@ -954,7 +972,7 @@ comment.update()
 
 // if you already fetched the comment and only want the updates
 const commentDataFetchedEarlier = {content, author, cid, ipnsName, ...comment}
-const comment = plebbit.createComment(commentDataFetchedEarlier)
+const comment = await plebbit.createComment(commentDataFetchedEarlier)
 comment.on('update', () => {
   console.log('the comment instance updated itself:', comment)
 })
@@ -1016,12 +1034,12 @@ Object is of the form:
 #### Example
 
 ```js
-const comment = plebbit.createComment(commentObject)
+const comment = await plebbit.createComment(commentObject)
 comment.on('challenge', async (challengeMessage) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
   comment.publishChallengeAnswers(challengeAnswers)
 })
-comment.publish()
+await comment.publish()
 ```
 
 ### `challengeverification`
@@ -1043,13 +1061,13 @@ Object is of the form:
 #### Example
 
 ```js
-const comment = plebbit.createComment(commentObject)
+const comment = await plebbit.createComment(commentObject)
 comment.on('challenge', async (challengeMessage) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
   comment.publishChallengeAnswers(challengeAnswers)
 })
 comment.on('challengeverification', (challengeVerification) => console.log('published post cid is', challengeVerification?.publication?.cid))
-comment.publish()
+await comment.publish()
 ```
 
 ## Pages API
