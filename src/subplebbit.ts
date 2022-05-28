@@ -66,6 +66,12 @@ export class Subplebbit extends EventEmitter {
         this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
         this.provideCaptchaCallback = undefined;
         this.validateCaptchaAnswerCallback = undefined;
+
+        // these functions might get separated from their `this` when used
+        this.start = this.start.bind(this);
+        this.update = this.update.bind(this);
+        this.stop = this.stop.bind(this);
+        this.edit = this.edit.bind(this);
     }
 
     initSubplebbit(newProps) {

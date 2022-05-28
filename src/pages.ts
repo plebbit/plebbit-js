@@ -16,6 +16,9 @@ export class Pages {
         this.pages = props["pages"];
         this.pageCids = props["pageCids"];
         this.subplebbit = props["subplebbit"];
+
+        // these functions might get separated from their `this` when used
+        this.getPage = this.getPage.bind(this);
     }
 
     async getPage(pageCid) {

@@ -51,6 +51,11 @@ export class Comment extends Publication {
         this.setPreviousCid(props["previousCid"]);
         // CommentUpdate props
         this._initCommentUpdate(props);
+
+        // these functions might get separated from their `this` when used
+        this.publish = this.publish.bind(this);
+        this.update = this.update.bind(this);
+        this.stop = this.stop.bind(this);
     }
 
     _initCommentUpdate(props) {
