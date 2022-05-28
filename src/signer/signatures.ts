@@ -102,7 +102,6 @@ export async function verifyPublication(publication) {
         );
     };
     const verifyPublicationSignature = async (signature, publicationToBeVerified) => {
-        const peerId = await getPeerIdFromPublicKeyPem(signature.publicKey);
         const commentWithFieldsToSign = keepKeys(publicationToBeVerified, signature.signedPropertyNames);
         const commentEncoded = encode(removeKeysWithUndefinedValues(commentWithFieldsToSign));
         const signatureIsValid = await verifyBufferRsa(
