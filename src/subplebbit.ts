@@ -426,7 +426,7 @@ export class Subplebbit extends EventEmitter {
                     postOrCommentOrVote.setDepth(parent.depth + 1);
                     const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
                     postOrCommentOrVote.setCid(file.path);
-                    await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
+                    await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, undefined);
                     debug(`New comment with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
                 }
             }
@@ -475,6 +475,7 @@ export class Subplebbit extends EventEmitter {
                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
             ]);
             debug(`Published ${challengeVerification.type} (${challengeVerification.challengeRequestId}) over pubsub`);
+            this.emit("challengeverification", challengeVerification);
         } else {
             const challengeMessage = new ChallengeMessage({
                 challengeRequestId: msgParsed.challengeRequestId,
@@ -529,6 +530,7 @@ export class Subplebbit extends EventEmitter {
                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
             ]);
             debug(`Published failed ${challengeVerification.type} (${challengeVerification.challengeRequestId})`);
+            this.emit("challengeverification", challengeVerification);
         }
     }
 
@@ -568,31 +570,34 @@ export class Subplebbit extends EventEmitter {
         return [answerIsCorrect, challengeErrors];
     }
 
+    async syncComment(dbComment) {
+        assert(dbComment instanceof Comment);
+        let commentIpns;
+        try {
+            commentIpns = await loadIpnsAsJson(dbComment.ipnsName, this.plebbit);
+        } catch (e) {
+            debug(
+                `Failed to load Comment (${dbComment.cid}) IPNS (${dbComment.ipnsName}) while syncing. Will attempt to publish a new IPNS record`
+            );
+        }
+        if (!commentIpns || !shallowEqual(commentIpns, dbComment.toJSONCommentUpdate(), ["replies"])) {
+            await this._keyv.delete(dbComment.cid);
+            if (dbComment.parentCid) await this._keyv.delete(dbComment.parentCid);
+            debug(`Comment (${dbComment.cid}) IPNS is outdated`);
+            const [sortedReplies, sortedRepliesCids] = await this.sortHandler.generatePagesUnderComment(dbComment, undefined);
+            dbComment.setReplies(sortedReplies, sortedRepliesCids);
+            dbComment.setUpdatedAt(timestamp());
+            await this.dbHandler.upsertComment(dbComment, undefined);
+            return dbComment.edit(dbComment.toJSONCommentUpdate());
+        }
+    }
+
     async syncIpnsWithDb(syncIntervalMs) {
         debug("Starting to sync IPNS with DB");
-        const syncComment = async (dbComment) => {
-            let commentIpns;
-            try {
-                commentIpns = await loadIpnsAsJson(dbComment.ipnsName, this.plebbit);
-            } catch (e) {
-                debug(`Comment (${dbComment.cid}) IPNS (${dbComment.ipnsName}) is not loading. Will attempt to publish a new IPNS record`);
-            }
-            if (!commentIpns || !shallowEqual(commentIpns, dbComment.toJSONCommentUpdate(), ["replies"])) {
-                await this._keyv.delete(dbComment.cid);
-                if (dbComment.parentCid) await this._keyv.delete(dbComment.parentCid);
-                debug(`Comment (${dbComment.cid}) IPNS is outdated`);
-                const [sortedReplies, sortedRepliesCids] = await this.sortHandler.generatePagesUnderComment(dbComment, undefined);
-                dbComment.setReplies(sortedReplies, sortedRepliesCids);
-                dbComment.setUpdatedAt(timestamp());
-                await this.dbHandler.upsertComment(dbComment, undefined);
-                return dbComment.edit(dbComment.toJSONCommentUpdate());
-            }
-        };
-
         try {
-            // @ts-ignore
             const dbComments: any = await this.dbHandler.queryComments(undefined);
-            await Promise.all([...dbComments.map(async (comment) => syncComment(comment)), this.updateSubplebbitIpns()]);
+            // const dbComments = [];
+            await Promise.all([...dbComments.map(async (comment) => this.syncComment(comment)), this.updateSubplebbitIpns()]);
         } catch (e) {
             debug(`Failed to sync due to error: ${e}`);
         }
