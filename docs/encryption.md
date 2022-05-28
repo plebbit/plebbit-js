@@ -3,12 +3,12 @@
 - 'aes-ecb':
 
 ```js
-const libp2pCrypto = require('libp2p-crypto')
 const PeerId = require('peer-id')
 const jose = require('jose')
 const {fromString: uint8ArrayFromString} = require('uint8arrays/from-string')
 const {toString: uint8ArrayToString} = require('uint8arrays/to-string')
 const forge = require('node-forge')
+const libp2pCrypto = require('libp2p-crypto')
 
 const generateKeyPair = async () => {
   const keyPair = await libp2pCrypto.keys.generateKeyPair('RSA', 2048)
@@ -87,60 +87,67 @@ const getPlebbitAddressFromPrivateKeyPem = async (privateKeyPem) => {
   return peerId.toB58String() 
 }
 
-const createCommentSignature = async (comment, signer) => {
-  // private and public key PEM are https://en.wikipedia.org/wiki/PKCS_8
-  const keyPair = await getKeyPairFromPrivateKeyPem(signer.privateKey)
-  const {subplebbitAddress, author, timestamp, parentCid, content, title, link} = comment
-  const fieldsToSign = cborg.encode({subplebbitAddress, author, timestamp, parentCid, content, title, link})
-  const signature = uint8ArrayToString(await keyPair.sign(fieldsToSign), 'base64')
-  const publicKey = await getPublicKeyPemFromKeyPair(keyPair)
-  const type = 'rsa'
-  return {signature, publicKey, type}
-}
+const generateKeyAesEcb = async () => {
+    // key should be 16 bytes for AES ECB 128
+    return libp2pCrypto.randomBytes(16);
+};
 
-const verifyCommentSignature = async (comment) => {
-  const peerId = await getPeerIdFromPublicKeyPem(comment.signature.publicKey)
-  assert(peerId.equals(PeerId.createFromB58String(comment.author.address)), `comment.author.address doesn't match comment.signature.publicKey`)
+const encryptStringAesEcb = async (stringToEncrypt, key) => {
+    // node-forge takes in buffers and string weirdly in the browser so use hex instead
+    const keyAsForgeBuffer = forge.util.createBuffer(uint8ArrayToString(key, "base16"), "hex");
+    const cipher = forge.cipher.createCipher("AES-ECB", keyAsForgeBuffer);
+    cipher.start();
+    cipher.update(forge.util.createBuffer(stringToEncrypt, "utf8"));
+    cipher.finish();
+    const encryptedBase64 = uint8ArrayToString(uint8ArrayFromString(cipher.output.toHex(), "base16"), "base64");
+    return encryptedBase64;
+};
 
-  // note: postCid is not included because it's written by the sub owner, not the author
-  const {subplebbitAddress, author, timestamp, parentCid, content, title, link} = comment
-  const fieldsToVerify = cborg.encode({subplebbitAddress, author, timestamp, parentCid, content, title, link})
-  const signatureIsValid = await peerId.pubKey.verify(fieldsToVerify, uint8ArrayFromString(comment.signature.signature, 'base64'))
-  assert(signatureIsValid, `comment.signature invalid`)
-}
+const decryptStringAesEcb = async (encryptedString, key) => {
+    // node-forge takes in buffers and string weirdly in the browser so use hex instead
+    const keyAsForgeBuffer = forge.util.createBuffer(uint8ArrayToString(key, "base16"), "hex");
+    const cipher = forge.cipher.createDecipher("AES-ECB", keyAsForgeBuffer);
+    cipher.start();
+    cipher.update(forge.util.createBuffer(uint8ArrayFromString(encryptedString, "base64")));
+    cipher.finish();
+    const decrypted = cipher.output.toString();
+    return decrypted;
+};
+
+const encryptBufferRsa = async (stringToEncrypt, publicKeyPem) => {
+    const peerId = await getPeerIdFromPublicKeyPem(publicKeyPem);
+    const encryptedKeyBase64 = uint8ArrayToString(await peerId.pubKey.encrypt(stringToEncrypt), "base64");
+    return encryptedKeyBase64;
+};
+
+const decryptBufferRsa = async (encryptedStringBase64, privateKeyPem, privateKeyPemPassword = "") => {
+    const keyPair = await getKeyPairFromPrivateKeyPem(privateKeyPem, privateKeyPemPassword);
+    const decrypted = await keyPair.decrypt(uint8ArrayFromString(encryptedStringBase64, "base64"));
+    return decrypted;
+};
 
 const encrypt = async (stringToEncrypt, publicKeyPem) => {
-  // generate key of the cipher and encrypt the string using AES ECB 128
-  // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)
-  const key = forge.random.getBytesSync(16) // not secure to reuse keys with ECB, generate new one each time
-  const cipher = forge.cipher.createCipher('AES-ECB', key)
-  cipher.start()
-  cipher.update(forge.util.createBuffer(stringToEncrypt))
-  cipher.finish()
-  const encryptedBase64 = uint8ArrayToString(uint8ArrayFromString(cipher.output.toHex(), 'base16'), 'base64')
+    // generate key of the cipher and encrypt the string using AES ECB 128
+    // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)
+    const key = await generateKeyAesEcb(); // not secure to reuse keys with ECB, generate new one each time
+    const encryptedBase64 = await encryptStringAesEcb(stringToEncrypt, key);
 
-  // encrypt the AES ECB key with public key
-  const peerId = await getPeerIdFromPublicKeyPem(publicKeyPem)
-  const encryptedKeyBase64 = uint8ArrayToString(await peerId.pubKey.encrypt(key), 'base64')
-  return {encrypted: encryptedBase64, encryptedKey: encryptedKeyBase64}
-}
+    // encrypt the AES ECB key with public key
+    const encryptedKeyBase64 = await encryptBufferRsa(key, publicKeyPem);
+    return { encrypted: encryptedBase64, encryptedKey: encryptedKeyBase64, type: "aes-ecb" };
+};
 
-const decrypt = async (encryptedString, encryptedKey, privateKeyPem, privateKeyPemPassword = '') => {
-  // decrypt key
-  // you can optionally encrypt the PEM by providing a password
-  // https://en.wikipedia.org/wiki/PKCS_8
-  const keyPair = await getKeyPairFromPrivateKeyPem(privateKeyPem, privateKeyPemPassword)
-  const key = await keyPair.decrypt(uint8ArrayFromString(encryptedKey, 'base64'))
+const decrypt = async (encryptedString, encryptedKey, privateKeyPem, privateKeyPemPassword = "") => {
+    // decrypt key
+    // you can optionally encrypt the PEM by providing a password
+    // https://en.wikipedia.org/wiki/PKCS_8
+    const key = await decryptBufferRsa(encryptedKey, privateKeyPem);
 
-  // decrypt string using AES ECB 128
-  // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)
-  const cipher = forge.cipher.createDecipher('AES-ECB', key.toString())
-  cipher.start()
-  cipher.update(forge.util.createBuffer(uint8ArrayFromString(encryptedString, 'base64')))
-  cipher.finish()
-  const decrypted = cipher.output.toString()
-  return decrypted
-}
+    // decrypt string using AES ECB 128
+    // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)
+    const decrypted = await decryptStringAesEcb(encryptedString, key);
+    return decrypted;
+};
 
 // encrypt a publication
 ;(async () => {
