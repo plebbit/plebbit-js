@@ -22,6 +22,7 @@ import { decrypt, encrypt, verifyPublication, Signer } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
 import { SubplebbitEncryption } from "./types";
+import { Comment } from "./comment";
 
 const debug = Debug("plebbit-js:subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
@@ -170,7 +171,7 @@ export class Subplebbit extends EventEmitter {
         };
     }
 
-    async prePublish(newSubplebbitOptions = {}) {
+    async prePublish() {
         // Import ipfs key into node (if not imported already)
         // Initialize signer
         // Initialize address (needs signer)
@@ -199,7 +200,7 @@ export class Subplebbit extends EventEmitter {
     }
 
     async edit(newSubplebbitOptions) {
-        await this.prePublish(newSubplebbitOptions);
+        await this.prePublish();
         this.initSubplebbit({
             updatedAt: timestamp(),
             ...newSubplebbitOptions
@@ -357,7 +358,7 @@ export class Subplebbit extends EventEmitter {
         }
     }
 
-    async publishPostAfterPassingChallenge(publication, challengeRequestId, trx) {
+    async publishPostAfterPassingChallenge(publication, challengeRequestId) {
         delete this._challengeToSolution[challengeRequestId];
         delete this._challengeToPublication[challengeRequestId];
 
@@ -367,10 +368,10 @@ export class Subplebbit extends EventEmitter {
             ? await this.plebbit.createCommentEdit(publication)
             : await this.plebbit.createComment(publication);
         if (postOrCommentOrVote.getType() === "vote") {
-            const res = await this.handleVote(postOrCommentOrVote, challengeRequestId, trx);
+            const res = await this.handleVote(postOrCommentOrVote, challengeRequestId, undefined);
             if (res) return res;
         } else if (postOrCommentOrVote.commentCid) {
-            const res = await this.handleCommentEdit(postOrCommentOrVote, challengeRequestId, trx);
+            const res = await this.handleCommentEdit(postOrCommentOrVote, challengeRequestId, undefined);
             if (res) return res;
         } else if (postOrCommentOrVote.content) {
             // Comment and Post need to add file to ipfs
@@ -382,7 +383,7 @@ export class Subplebbit extends EventEmitter {
 
             const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote.toJSONSkeleton()));
 
-            if (await this.dbHandler.querySigner(ipnsKeyName, trx)) {
+            if (await this.dbHandler.querySigner(ipnsKeyName, undefined)) {
                 const msg = `Failed to insert ${postOrCommentOrVote.getType()} due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`;
                 debug(msg);
                 return { reason: msg };
@@ -394,24 +395,28 @@ export class Subplebbit extends EventEmitter {
                 };
                 const [ipfsKey] = await Promise.all([
                     ipfsImportKey(ipfsSigner, this.plebbit),
-                    this.dbHandler.insertSigner(ipfsSigner, trx)
+                    this.dbHandler.insertSigner(ipfsSigner, undefined)
                 ]);
 
                 postOrCommentOrVote.setCommentIpnsKey(ipfsKey);
                 if (postOrCommentOrVote.getType() === "post") {
+                    const trx = await this.dbHandler.createTransaction();
                     postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPost(trx))?.cid);
+                    await trx.commit();
                     postOrCommentOrVote.setDepth(0);
                     const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
                     postOrCommentOrVote.setPostCid(file.path);
                     postOrCommentOrVote.setCid(file.path);
-                    await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
+                    await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, undefined);
                     debug(`New post with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
                 } else {
                     // Comment
+                    const trx = await this.dbHandler.createTransaction();
                     const [commentsUnderParent, parent] = await Promise.all([
                         this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx),
                         this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)
                     ]);
+                    await trx.commit();
                     if (!parent) {
                         const msg = `User is trying to publish a comment with content (${postOrCommentOrVote.content}) with incorrect parentCid`;
                         debug(msg);
@@ -443,15 +448,11 @@ export class Subplebbit extends EventEmitter {
                 `Skipping challenge for ${msgParsed.challengeRequestId}, add publication to IPFS and respond with challengeVerificationMessage right away`
             );
             await this.dbHandler.upsertChallenge(new ChallengeRequestMessage(msgParsed), undefined);
-            const trx = decryptedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transaction
 
             const publishedPublication: any = await this.publishPostAfterPassingChallenge(
                 decryptedPublication,
-                msgParsed.challengeRequestId,
-                trx
+                msgParsed.challengeRequestId
             );
-            await trx?.commit();
-
             const restOfMsg =
                 "publication" in publishedPublication
                     ? {
@@ -493,9 +494,7 @@ export class Subplebbit extends EventEmitter {
             debug(`Challenge (${msgParsed.challengeRequestId}) has been answered correctly`);
             const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
             await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed), undefined);
-            const trx = storedPublication.vote ? undefined : await this.dbHandler.createTransaction(); // Votes don't need transactions
-            const publishedPublication = await this.publishPostAfterPassingChallenge(storedPublication, msgParsed.challengeRequestId, trx); // could contain "publication" or "reason"
-            await trx?.commit();
+            const publishedPublication = await this.publishPostAfterPassingChallenge(storedPublication, msgParsed.challengeRequestId); // could contain "publication" or "reason"
             const restOfMsg =
                 "publication" in publishedPublication
                     ? {
