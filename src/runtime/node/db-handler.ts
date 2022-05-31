@@ -10,6 +10,7 @@ import path from "path";
 import assert from "assert";
 import fs from "fs";
 import Keyv from "keyv";
+import { Signer } from "../../signer";
 import Transaction = Knex.Transaction;
 
 const debugs = getDebugLevels("db-handler");
@@ -25,7 +26,7 @@ const TABLES = Object.freeze({
 });
 
 export class DbHandler {
-    _dbConfig: any;
+    _dbConfig: Object;
     knex: any;
     subplebbit: Subplebbit;
 
@@ -36,15 +37,7 @@ export class DbHandler {
     }
 
     async createTransaction(): Promise<Transaction> {
-        return new Promise(async (resolve, reject) => {
-            this.knex
-                .transaction()
-                .then(resolve)
-                .catch((err) => {
-                    debug(err);
-                    reject(err);
-                });
-        });
+        return await this.knex.transaction();
     }
 
     baseTransaction(trx) {
@@ -55,6 +48,7 @@ export class DbHandler {
         await this.knex.schema.createTable(TABLES.COMMENTS, (table) => {
             table.text("cid").notNullable().primary().unique();
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
+            table.json("author").notNullable();
             table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);
@@ -89,6 +83,7 @@ export class DbHandler {
         await this.knex.schema.createTable(TABLES.VOTES, (table) => {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
+            table.json("author").notNullable();
             table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
 
             table.timestamp("timestamp").checkPositive().notNullable();
@@ -103,7 +98,6 @@ export class DbHandler {
     async createAuthorsTable() {
         await this.knex.schema.createTable(TABLES.AUTHORS, (table) => {
             table.text("address").notNullable().primary().unique();
-            table.text("displayName").nullable();
         });
     }
 

@@ -114,10 +114,11 @@ export class Comment extends Publication {
 
     toJSONForDb(challengeRequestId) {
         const json = this.toJSON();
-        ["replyCount", "upvoteCount", "downvoteCount", "replies", "author"].forEach((key) => delete json[key]);
+        ["replyCount", "upvoteCount", "downvoteCount", "replies"].forEach((key) => delete json[key]);
         json["authorAddress"] = this?.author?.address;
         json["challengeRequestId"] = challengeRequestId;
         json["ipnsKeyName"] = this.ipnsKeyName;
+        // @ts-ignore
         json["signature"] = JSON.stringify(this.signature);
         return removeKeysWithUndefinedValues(json);
     }
@@ -252,7 +253,7 @@ export class CommentEdit extends Comment {
 
     toJSONForDb(challengeRequestId) {
         const json = super.toJSONForDb(challengeRequestId);
-        ["authorAddress", "challengeRequestId", "ipnsKeyName", "signature", "commentCid"].forEach((key) => delete json[key]);
+        ["challengeRequestId", "ipnsKeyName", "signature", "commentCid"].forEach((key) => delete json[key]);
         json["cid"] = this.commentCid;
         return removeKeysWithUndefinedValues(json);
     }

@@ -10,6 +10,10 @@ class Author {
     toJSON() {
         return { address: this.address, displayName: this.displayName };
     }
+
+    toJSONForDb() {
+        return { address: this.address };
+    }
 }
 
 export default Author;

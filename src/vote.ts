@@ -1,7 +1,5 @@
-import Author from "./author";
 import Publication from "./publication";
-import { parseJsonIfString, timestamp } from "./util";
-import { Signature } from "./signer";
+import assert from "assert";
 
 class Vote extends Publication {
     commentCid: string;
@@ -26,9 +24,11 @@ class Vote extends Publication {
 
     toJSONForDb(challengeRequestId) {
         const json = this.toJSON();
-        delete json["author"];
+        // @ts-ignore
+        json["author"] = JSON.stringify(this.author);
         json["authorAddress"] = this.author.address;
         json["challengeRequestId"] = challengeRequestId;
+        // @ts-ignore
         json["signature"] = JSON.stringify(this.signature);
         return json;
     }
