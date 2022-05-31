@@ -8,6 +8,9 @@ var Author = /** @class */ (function () {
     Author.prototype.toJSON = function () {
         return { address: this.address, displayName: this.displayName };
     };
+    Author.prototype.toJSONForDb = function () {
+        return { address: this.address };
+    };
     return Author;
 }());
 exports.default = Author;

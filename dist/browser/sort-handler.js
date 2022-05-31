@@ -52,10 +52,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SortHandler = exports.SORTED_POSTS_PAGE_SIZE = exports.REPLIES_SORT_TYPES = exports.POSTS_SORT_TYPES = void 0;
 var util_1 = require("./util");
-var debug_1 = __importDefault(require("debug"));
 var pages_1 = require("./pages");
 var assert_1 = __importDefault(require("assert"));
-var debug = (0, debug_1.default)("plebbit-js:sort-handler");
+var debugs = (0, util_1.getDebugLevels)("sort-handler");
 exports.POSTS_SORT_TYPES = Object.freeze({
     HOT: { type: "hot", score: util_1.hotScore },
     NEW: { type: "new" },

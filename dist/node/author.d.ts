@@ -6,5 +6,8 @@ declare class Author {
         address: string;
         displayName: string;
     };
+    toJSONForDb(): {
+        address: string;
+    };
 }
 export default Author;

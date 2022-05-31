@@ -8,8 +8,9 @@ declare class Post extends Comment {
         parentCid: string;
         subplebbitAddress: string;
         timestamp: number;
-        signature: string;
+        signature: import("./signer").Signature;
         author: import("./author").default;
     };
+    publish(userOptions: any): Promise<void>;
 }
 export default Post;

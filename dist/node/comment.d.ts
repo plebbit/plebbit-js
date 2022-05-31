@@ -54,7 +54,7 @@ export declare class Comment extends Publication {
         parentCid: string;
         subplebbitAddress: string;
         timestamp: number;
-        signature: string;
+        signature: Signature;
         author: import("./author").default;
     };
     toJSONIpfs(): {
@@ -66,7 +66,7 @@ export declare class Comment extends Publication {
         parentCid: string;
         subplebbitAddress: string;
         timestamp: number;
-        signature: string;
+        signature: Signature;
         author: import("./author").default;
     };
     toJSONSkeleton(): {
@@ -74,7 +74,7 @@ export declare class Comment extends Publication {
         parentCid: string;
         subplebbitAddress: string;
         timestamp: number;
-        signature: string;
+        signature: Signature;
         author: import("./author").default;
     };
     toJSONForDb(challengeRequestId: any): any;
@@ -107,6 +107,7 @@ export declare class Comment extends Publication {
     update(updateIntervalMs?: number): Promise<this>;
     stop(): void;
     edit(commentUpdateOptions: any): Promise<void>;
+    publish(userOptions: any): Promise<void>;
 }
 export declare class CommentEdit extends Comment {
     commentCid?: string;
@@ -137,8 +138,9 @@ export declare class CommentEdit extends Comment {
         parentCid: string;
         subplebbitAddress: string;
         timestamp: number;
-        signature: string;
+        signature: Signature;
         author: import("./author").default;
     };
     toJSONForDb(challengeRequestId: any): any;
+    publish(userOptions: any): Promise<void>;
 }

@@ -1,14 +1,17 @@
 import Post from "../../post";
+import Author from "../../author";
 import { Comment } from "../../comment";
+import Vote from "../../vote";
 import { Knex } from "knex";
 import { Subplebbit } from "../../subplebbit";
+import { Signer } from "../../signer";
 import Transaction = Knex.Transaction;
 export declare const SIGNER_USAGES: {
     SUBPLEBBIT: string;
     COMMENT: string;
 };
 export declare class DbHandler {
-    _dbConfig: any;
+    _dbConfig: Object;
     knex: any;
     subplebbit: Subplebbit;
     constructor(dbConfig: any, subplebbit: any);
@@ -20,27 +23,26 @@ export declare class DbHandler {
     createChallengesTable(): Promise<void>;
     createSignersTable(): Promise<void>;
     createTablesIfNeeded(): Promise<void>;
-    addAuthorToDbIfNeeded(author: any, trx?: any): Promise<unknown>;
-    upsertVote(vote: any, challengeRequestId: any, trx?: any): Promise<unknown>;
+    addAuthorToDbIfNeeded(author: Author, trx: Transaction | undefined): Promise<any>;
+    upsertVote(vote: any, challengeRequestId: any, trx?: any): Promise<any>;
     upsertComment(postOrComment: any, challengeRequestId: any, trx?: any): Promise<unknown>;
     upsertChallenge(challenge: any, trx?: any): Promise<unknown>;
-    getLastVoteOfAuthor(commentCid: any, authorAddress: any, trx?: any): Promise<unknown>;
+    getLastVoteOfAuthor(commentCid: any, authorAddress: any, trx?: any): Promise<Vote>;
     baseCommentQuery(trx: any): any;
-    createCommentsFromRows(commentsRows: any, trx: any): Promise<unknown>;
+    createCommentsFromRows(commentsRows: any, trx: Transaction | undefined): Promise<Comment[] | Post[]>;
     createVotesFromRows(voteRows: any, trx: any): Promise<unknown>;
     queryCommentsSortedByTimestamp(parentCid: any, order?: string, trx?: any): Promise<unknown>;
     queryCommentsBetweenTimestampRange(parentCid: any, timestamp1: any, timestamp2: any, trx?: any): Promise<unknown>;
     queryTopCommentsBetweenTimestampRange(parentCid: any, timestamp1: any, timestamp2: any, trx?: any): Promise<unknown>;
-    queryCommentsUnderComment(parentCid: any, trx: any): Promise<Comment[] | Post[]>;
+    queryCommentsUnderComment(parentCid: string, trx: Transaction | undefined): Promise<Comment[] | Post[]>;
     queryComments(trx: any): Promise<Comment[]>;
     querySubplebbitActiveUserCount(timeframe: any, trx: any): Promise<unknown>;
     querySubplebbitPostCount(timeframe: any, trx: any): Promise<unknown>;
     querySubplebbitMetrics(trx: any): Promise<unknown>;
-    queryComment(cid: any, trx: any): Promise<Comment | Post>;
-    queryLatestPost(trx: any): Promise<Post>;
-    insertSigner(signer: any, trx: any): Promise<unknown>;
-    querySubplebbitSigner(trx: any): Promise<unknown>;
-    querySigner(ipnsKeyName: any, trx: any): Promise<any>;
+    queryComment(cid: string, trx: Transaction | undefined): Promise<Comment | Post>;
+    queryLatestPost(trx: Transaction | undefined): Promise<Post | undefined>;
+    insertSigner(signer: any, trx: any): Promise<any>;
+    querySubplebbitSigner(trx: any): Promise<Signer>;
+    querySigner(ipnsKeyName: any, trx: any): Promise<Signer | undefined>;
 }
 export declare const subplebbitInitDbIfNeeded: (subplebbit: any) => Promise<void>;
-export default DbHandler;

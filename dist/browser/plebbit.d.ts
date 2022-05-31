@@ -1,5 +1,6 @@
 import { PlebbitOptions, CreateSignerOptions } from "./types";
 import { Comment, CommentEdit } from "./comment";
+import Post from "./post";
 import { Subplebbit } from "./subplebbit";
 import Vote from "./vote";
 import { IPFSHTTPClient } from "ipfs-http-client";
@@ -16,7 +17,7 @@ export declare class Plebbit {
     getComment(cid: any): Promise<Comment>;
     signPublication(createPublicationOptions: any): Promise<any>;
     defaultTimestampIfNeeded(createPublicationOptions: any): any;
-    createComment(createCommentOptions: any): Promise<Comment>;
+    createComment(createCommentOptions: any): Promise<Comment | Post>;
     createSubplebbit(createSubplebbitOptions: any): Promise<Subplebbit>;
     createVote(createVoteOptions: any): Promise<Vote>;
     createCommentEdit(createCommentEditOptions: any): Promise<CommentEdit>;

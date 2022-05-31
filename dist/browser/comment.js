@@ -69,10 +69,9 @@ exports.CommentEdit = exports.Comment = void 0;
 var assert_1 = __importDefault(require("assert"));
 var util_1 = require("./util");
 var publication_1 = __importDefault(require("./publication"));
-var debug_1 = __importDefault(require("debug"));
 var pages_1 = require("./pages");
 var sort_handler_1 = require("./sort-handler");
-var debug = (0, debug_1.default)("plebbit-js:comment");
+var debugs = (0, util_1.getDebugLevels)("comment");
 var DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 var Comment = /** @class */ (function (_super) {
     __extends(Comment, _super);
@@ -90,6 +89,10 @@ var Comment = /** @class */ (function (_super) {
         this.setPreviousCid(props["previousCid"]);
         // CommentUpdate props
         this._initCommentUpdate(props);
+        // these functions might get separated from their `this` when used
+        this.publish = this.publish.bind(this);
+        this.update = this.update.bind(this);
+        this.stop = this.stop.bind(this);
     };
     Comment.prototype._initCommentUpdate = function (props) {
         this.upvoteCount = props["upvoteCount"];
@@ -127,10 +130,11 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype.toJSONForDb = function (challengeRequestId) {
         var _a;
         var json = this.toJSON();
-        ["replyCount", "upvoteCount", "downvoteCount", "replies", "author"].forEach(function (key) { return delete json[key]; });
+        ["replyCount", "upvoteCount", "downvoteCount", "replies"].forEach(function (key) { return delete json[key]; });
         json["authorAddress"] = (_a = this === null || this === void 0 ? void 0 : this.author) === null || _a === void 0 ? void 0 : _a.address;
         json["challengeRequestId"] = challengeRequestId;
         json["ipnsKeyName"] = this.ipnsKeyName;
+        // @ts-ignore
         json["signature"] = JSON.stringify(this.signature);
         return (0, util_1.removeKeysWithUndefinedValues)(json);
     };
@@ -183,20 +187,19 @@ var Comment = /** @class */ (function (_super) {
                         return [3 /*break*/, 3];
                     case 2:
                         e_1 = _a.sent();
-                        debug("Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error = ").concat(e_1.message));
+                        debugs.WARN("Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error = ").concat(e_1.message));
                         return [3 /*break*/, 3];
                     case 3:
                         if (!res)
-                            debug("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") is not pointing to any file"));
+                            return [2 /*return*/];
                         else {
-                            if (res.updatedAt !== this.emittedAt) {
-                                debug("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Emitting an update event..."));
-                                this.emittedAt = res.updatedAt;
+                            if (!(0, util_1.shallowEqual)(this.toJSONCommentUpdate(), res)) {
+                                debugs.DEBUG("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Emitting an update event..."));
                                 this._initCommentUpdate(res);
                                 this.emit("update", this);
                             }
                             else {
-                                debug("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
+                                debugs.TRACE("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
                                 this._initCommentUpdate(res);
                             }
                             return [2 /*return*/, this];
@@ -209,7 +212,7 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype.update = function (updateIntervalMs) {
         if (updateIntervalMs === void 0) { updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS; }
         (0, assert_1.default)(this.ipnsName, "Comment need to have ipnsName field to poll updates");
-        debug("Starting to poll updates for comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") every ").concat(updateIntervalMs, " milliseconds"));
+        debugs.DEBUG("Starting to poll updates for comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") every ").concat(updateIntervalMs, " milliseconds"));
         if (this._updateInterval)
             clearInterval(this._updateInterval);
         this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
@@ -229,7 +232,6 @@ var Comment = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate()))];
                     case 1:
                         file = _a.sent();
-                        debug("Added comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") to ipfs, cid is ").concat(file.path));
                         return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
                                 lifetime: "72h",
                                 key: this.ipnsKeyName,
@@ -237,9 +239,22 @@ var Comment = /** @class */ (function (_super) {
                             })];
                     case 2:
                         _a.sent();
-                        debug("Linked comment (".concat(this.cid, ") ipns name(").concat(this.ipnsName, ") to ipfs file (").concat(file.path, ")"));
+                        debugs.DEBUG("Linked comment (".concat(this.cid, ") ipns name(").concat(this.ipnsName, ") to ipfs file (").concat(file.path, ")"));
                         return [2 /*return*/];
                 }
+            });
+        });
+    };
+    Comment.prototype.publish = function (userOptions) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                (0, assert_1.default)(this.content, "Need content field to publish comment");
+                if (!this.toJSON().hasOwnProperty("commentCid")) {
+                    // Assert timestamp only if this is not a CommentEdit
+                    (0, assert_1.default)(this.timestamp, "Need timestamp field to publish comment");
+                    (0, assert_1.default)(this.author, "Need author to publish comment");
+                }
+                return [2 /*return*/, _super.prototype.publish.call(this, userOptions)];
             });
         });
     };
@@ -260,9 +275,19 @@ var CommentEdit = /** @class */ (function (_super) {
     };
     CommentEdit.prototype.toJSONForDb = function (challengeRequestId) {
         var json = _super.prototype.toJSONForDb.call(this, challengeRequestId);
-        ["authorAddress", "challengeRequestId", "ipnsKeyName", "signature", "commentCid"].forEach(function (key) { return delete json[key]; });
+        ["challengeRequestId", "ipnsKeyName", "signature", "commentCid"].forEach(function (key) { return delete json[key]; });
         json["cid"] = this.commentCid;
         return (0, util_1.removeKeysWithUndefinedValues)(json);
+    };
+    CommentEdit.prototype.publish = function (userOptions) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                (0, assert_1.default)(this.commentCid, "Need commentCid to be defined to publish CommentEdit");
+                (0, assert_1.default)(this.editTimestamp, "Need editTimestamp to be defined to publish CommentEdit");
+                (0, assert_1.default)(this.editSignature, "Need to have editSignature to publish CommentEdit");
+                return [2 /*return*/, _super.prototype.publish.call(this, userOptions)];
+            });
+        });
     };
     return CommentEdit;
 }(Comment));

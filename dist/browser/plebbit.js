@@ -59,9 +59,8 @@ var util_2 = require("./util");
 var vote_1 = __importDefault(require("./vote"));
 var ipfs_http_client_1 = require("ipfs-http-client");
 var assert_1 = __importDefault(require("assert"));
-var debug_1 = __importDefault(require("debug"));
 var signer_1 = require("./signer");
-var debug = (0, debug_1.default)("plebbit-js:plebbit");
+var debugs = (0, util_2.getDebugLevels)("plebbit");
 var Plebbit = /** @class */ (function () {
     function Plebbit(options) {
         if (options === void 0) { options = {}; }
@@ -134,7 +133,7 @@ var Plebbit = /** @class */ (function () {
     Plebbit.prototype.defaultTimestampIfNeeded = function (createPublicationOptions) {
         if (!createPublicationOptions.timestamp) {
             var defaultTimestamp = (0, util_2.timestamp)();
-            debug("User hasn't provided a timestamp in options, defaulting to (".concat(defaultTimestamp, ")"));
+            debugs.DEBUG("User hasn't provided a timestamp in options, defaulting to (".concat(defaultTimestamp, ")"));
             createPublicationOptions.timestamp = defaultTimestamp;
         }
         return createPublicationOptions;
@@ -197,7 +196,7 @@ var Plebbit = /** @class */ (function () {
                             return [2 /*return*/, new comment_1.CommentEdit(createCommentEditOptions, commentSubplebbit)];
                         if (!createCommentEditOptions.editTimestamp) {
                             defaultTimestamp = (0, util_2.timestamp)();
-                            debug("User hasn't provided any editTimestamp for their CommentEdit, defaulted to (".concat(defaultTimestamp, ")"));
+                            debugs.DEBUG("User hasn't provided any editTimestamp for their CommentEdit, defaulted to (".concat(defaultTimestamp, ")"));
                             createCommentEditOptions.editTimestamp = defaultTimestamp;
                         }
                         _a = [__assign({}, createCommentEditOptions)];

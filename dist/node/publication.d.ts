@@ -3,28 +3,28 @@ import { ChallengeRequestMessage } from "./challenge";
 import EventEmitter from "events";
 import Author from "./author";
 import { Subplebbit } from "./types";
-import { Signer } from "./signer";
+import { Signature, Signer } from "./signer";
 declare class Publication extends EventEmitter {
     subplebbit: Subplebbit;
     subplebbitAddress: string;
     timestamp: number;
     signer: Signer;
-    signature: string;
+    signature: Signature;
     author: Author;
     challenge: ChallengeRequestMessage;
     constructor(props: any, subplebbit: any);
     _initProps(props: any): void;
-    getType(): "vote" | "post" | "comment";
+    getType(): "comment" | "post" | "vote";
     toJSON(): {
         subplebbitAddress: string;
         timestamp: number;
-        signature: string;
+        signature: Signature;
         author: Author;
     };
     toJSONSkeleton(): {
         subplebbitAddress: string;
         timestamp: number;
-        signature: string;
+        signature: Signature;
         author: Author;
     };
     handleChallengeExchange(pubsubMsg: any): Promise<void>;

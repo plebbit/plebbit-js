@@ -61,18 +61,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.subplebbitInitDbIfNeeded = exports.DbHandler = exports.SIGNER_USAGES = void 0;
 var challenge_1 = require("../../challenge");
-var post_1 = __importDefault(require("../../post"));
-var author_1 = __importDefault(require("../../author"));
-var comment_1 = require("../../comment");
 var util_1 = require("../../util");
 var vote_1 = __importDefault(require("../../vote"));
 var knex_1 = __importDefault(require("knex"));
-var debug_1 = __importDefault(require("debug"));
 var path_1 = __importDefault(require("path"));
 var assert_1 = __importDefault(require("assert"));
 var fs_1 = __importDefault(require("fs"));
 var keyv_1 = __importDefault(require("keyv"));
-var debug = (0, debug_1.default)("plebbit-js:db-handler");
+var debugs = (0, util_1.getDebugLevels)("db-handler");
 exports.SIGNER_USAGES = { SUBPLEBBIT: "subplebbit", COMMENT: "comment" };
 var TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -89,20 +85,11 @@ var DbHandler = /** @class */ (function () {
     }
     DbHandler.prototype.createTransaction = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        return __generator(this, function (_a) {
-                            this.knex
-                                .transaction()
-                                .then(resolve)
-                                .catch(function (err) {
-                                debug(err);
-                                reject(err);
-                            });
-                            return [2 /*return*/];
-                        });
-                    }); })];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.knex.transaction()];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
             });
         });
     };
@@ -116,6 +103,7 @@ var DbHandler = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.COMMENTS, function (table) {
                             table.text("cid").notNullable().primary().unique();
                             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
+                            table.json("author").notNullable();
                             table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);
@@ -156,6 +144,7 @@ var DbHandler = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.VOTES, function (table) {
                             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
+                            table.json("author").notNullable();
                             table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
                             table.timestamp("timestamp").checkPositive().notNullable();
                             table.text("subplebbitAddress").notNullable();
@@ -176,7 +165,6 @@ var DbHandler = /** @class */ (function () {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.AUTHORS, function (table) {
                             table.text("address").notNullable().primary().unique();
-                            table.text("displayName").nullable();
                         })];
                     case 1:
                         _a.sent();
@@ -264,61 +252,40 @@ var DbHandler = /** @class */ (function () {
         });
     };
     DbHandler.prototype.addAuthorToDbIfNeeded = function (author, trx) {
-        if (trx === void 0) { trx = undefined; }
         return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
+            var authorFromDb;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var authorFromDb;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first()];
-                                case 1:
-                                    authorFromDb = _a.sent();
-                                    if (!authorFromDb)
-                                        // Author is new. Add to database
-                                        this.baseTransaction(trx)(TABLES.AUTHORS)
-                                            .insert(author.toJSON())
-                                            .then(function () { return resolve(author.toJSON()); })
-                                            .catch(function (err) {
-                                            console.error(err);
-                                            reject(err);
-                                        });
-                                    else
-                                        resolve(authorFromDb);
-                                    return [2 /*return*/];
-                            }
-                        });
-                    }); })];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first()];
+                    case 1:
+                        authorFromDb = _a.sent();
+                        if (!!authorFromDb) return [3 /*break*/, 3];
+                        // Author is new. Add to database
+                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).insert(author.toJSONForDb())];
+                    case 2:
+                        // Author is new. Add to database
+                        _a.sent();
+                        return [2 /*return*/, author.toJSONForDb()];
+                    case 3: return [2 /*return*/, authorFromDb];
+                }
             });
         });
     };
     DbHandler.prototype.upsertVote = function (vote, challengeRequestId, trx) {
         if (trx === void 0) { trx = undefined; }
         return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
+            var dbObject;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var dbObject;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0: return [4 /*yield*/, this.addAuthorToDbIfNeeded(vote.author, trx)];
-                                case 1:
-                                    _a.sent();
-                                    dbObject = vote.toJSONForDb(challengeRequestId);
-                                    this.baseTransaction(trx)(TABLES.VOTES)
-                                        .insert(dbObject)
-                                        .onConflict(["commentCid", "authorAddress"])
-                                        .merge()
-                                        .then(function () { return resolve(dbObject); })
-                                        .catch(function (err) {
-                                        console.error(err);
-                                        reject(err);
-                                    });
-                                    return [2 /*return*/];
-                            }
-                        });
-                    }); })];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.addAuthorToDbIfNeeded(vote.author, trx)];
+                    case 1:
+                        _a.sent();
+                        dbObject = vote.toJSONForDb(challengeRequestId);
+                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.VOTES).insert(dbObject).onConflict(["commentCid", "authorAddress"]).merge()];
+                    case 2:
+                        _a.sent();
+                        return [2 /*return*/, dbObject];
+                }
             });
         });
     };
@@ -404,32 +371,20 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype.getLastVoteOfAuthor = function (commentCid, authorAddress, trx) {
         if (trx === void 0) { trx = undefined; }
         return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
+            var voteObj;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var _this = this;
-                        return __generator(this, function (_a) {
-                            this.baseTransaction(trx)(TABLES.VOTES)
-                                .where({
-                                commentCid: commentCid,
-                                authorAddress: authorAddress
-                            })
-                                .first()
-                                .then(function (res) { return __awaiter(_this, void 0, void 0, function () { var _a; return __generator(this, function (_b) {
-                                switch (_b.label) {
-                                    case 0:
-                                        _a = resolve;
-                                        return [4 /*yield*/, this.createVotesFromRows.bind(this)(res, trx)];
-                                    case 1: return [2 /*return*/, _a.apply(void 0, [(_b.sent())[0]])];
-                                }
-                            }); }); })
-                                .catch(function (err) {
-                                console.error(err);
-                                reject(err);
-                            });
-                            return [2 /*return*/];
-                        });
-                    }); })];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.VOTES)
+                            .where({
+                            commentCid: commentCid,
+                            authorAddress: authorAddress
+                        })
+                            .first()];
+                    case 1:
+                        voteObj = _a.sent();
+                        return [4 /*yield*/, this.createVotesFromRows(voteObj, trx)];
+                    case 2: return [2 /*return*/, (_a.sent())[0]];
+                }
             });
         });
     };
@@ -462,36 +417,19 @@ var DbHandler = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var authors_1, comments;
-                        var _this = this;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    if (!!commentsRows) return [3 /*break*/, 1];
-                                    resolve([undefined]);
-                                    return [3 /*break*/, 3];
-                                case 1:
-                                    if (!Array.isArray(commentsRows))
-                                        commentsRows = [commentsRows];
-                                    commentsRows = commentsRows.map(function (props) { return (0, util_1.replaceXWithY)(props, null, undefined); }); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
-                                    return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).whereIn("address", commentsRows.map(function (post) { return post.authorAddress; }))];
-                                case 2:
-                                    authors_1 = (_a.sent()).map(function (authorProps) { return new author_1.default(authorProps); });
-                                    comments = commentsRows.map(function (commentProps) {
-                                        var props = __assign(__assign({}, commentProps), { author: authors_1.filter(function (author) { return author.address === commentProps.authorAddress; })[0] });
-                                        if (props["title"])
-                                            // @ts-ignore
-                                            return new post_1.default(props, _this.subplebbit);
-                                        else
-                                            return new comment_1.Comment(props, _this.subplebbit);
-                                    });
-                                    resolve(comments);
-                                    _a.label = 3;
-                                case 3: return [2 /*return*/];
-                            }
-                        });
-                    }); })];
+                switch (_a.label) {
+                    case 0:
+                        if (!commentsRows)
+                            return [2 /*return*/, [undefined]];
+                        if (!Array.isArray(commentsRows))
+                            commentsRows = [commentsRows];
+                        commentsRows = commentsRows.map(function (props) { return (0, util_1.replaceXWithY)(props, null, undefined); }); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
+                        return [4 /*yield*/, Promise.all(commentsRows.map(function (commentProps) {
+                                return _this.subplebbit.plebbit.createComment(commentProps);
+                            }))];
+                    case 1: // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
+                    return [2 /*return*/, _a.sent()];
+                }
             });
         });
     };
@@ -500,29 +438,21 @@ var DbHandler = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var authors_2, votes;
+                        var votes;
                         var _this = this;
                         return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    if (!!voteRows) return [3 /*break*/, 1];
-                                    resolve([undefined]);
-                                    return [3 /*break*/, 3];
-                                case 1:
-                                    if (!Array.isArray(voteRows))
-                                        voteRows = [voteRows];
-                                    voteRows = voteRows.map(function (props) { return (0, util_1.replaceXWithY)(props, null, undefined); }); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
-                                    return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).whereIn("address", voteRows.map(function (vote) { return vote.authorAddress; }))];
-                                case 2:
-                                    authors_2 = (_a.sent()).map(function (authorProps) { return new author_1.default(authorProps); });
-                                    votes = voteRows.map(function (voteProps) {
-                                        var props = __assign(__assign({}, voteProps), { author: authors_2.filter(function (author) { return author.address === voteProps.authorAddress; })[0] });
-                                        return new vote_1.default(props, _this.subplebbit);
-                                    });
-                                    resolve(votes);
-                                    _a.label = 3;
-                                case 3: return [2 /*return*/];
+                            if (!voteRows)
+                                resolve([undefined]);
+                            else {
+                                if (!Array.isArray(voteRows))
+                                    voteRows = [voteRows];
+                                voteRows = voteRows.map(function (props) { return (0, util_1.replaceXWithY)(props, null, undefined); }); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
+                                votes = voteRows.map(function (voteProps) {
+                                    return new vote_1.default(voteProps, _this.subplebbit);
+                                });
+                                resolve(votes);
                             }
+                            return [2 /*return*/];
                         });
                     }); })];
             });
@@ -626,19 +556,15 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.queryCommentsUnderComment = function (parentCid, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
+            var commentsObjs;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var _this = this;
-                        return __generator(this, function (_a) {
-                            this.baseCommentQuery(trx)
-                                .where({ parentCid: parentCid })
-                                .orderBy("timestamp", "desc")
-                                .then(function (res) { return resolve(_this.createCommentsFromRows.bind(_this)(res, trx)); })
-                                .catch(reject);
-                            return [2 /*return*/];
-                        });
-                    }); })];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", "desc")];
+                    case 1:
+                        commentsObjs = _a.sent();
+                        return [4 /*yield*/, this.createCommentsFromRows(commentsObjs, trx)];
+                    case 2: return [2 /*return*/, _a.sent()];
+                }
             });
         });
     };
@@ -769,112 +695,52 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.queryComment = function (cid, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
+            var commentObj;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var _this = this;
-                        return __generator(this, function (_a) {
-                            this.baseCommentQuery(trx)
-                                .where({ cid: cid })
-                                .first()
-                                .then(function (res) { return __awaiter(_this, void 0, void 0, function () {
-                                var _a;
-                                return __generator(this, function (_b) {
-                                    switch (_b.label) {
-                                        case 0:
-                                            _a = resolve;
-                                            return [4 /*yield*/, this.createCommentsFromRows.bind(this)(res, trx)];
-                                        case 1:
-                                            _a.apply(void 0, [(_b.sent())[0]]);
-                                            return [2 /*return*/];
-                                    }
-                                });
-                            }); })
-                                .catch(reject);
-                            return [2 /*return*/];
-                        });
-                    }); })];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.baseCommentQuery(trx).where({ cid: cid }).first()];
+                    case 1:
+                        commentObj = _a.sent();
+                        return [4 /*yield*/, this.createCommentsFromRows(commentObj, trx)];
+                    case 2: return [2 /*return*/, (_a.sent())[0]];
+                }
             });
         });
     };
     DbHandler.prototype.queryLatestPost = function (trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
+            var commentObj;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var _this = this;
-                        return __generator(this, function (_a) {
-                            this.baseCommentQuery(trx)
-                                .whereNotNull("title")
-                                .orderBy("id", "desc")
-                                .first()
-                                .then(function (res) { return __awaiter(_this, void 0, void 0, function () {
-                                var _a;
-                                return __generator(this, function (_b) {
-                                    switch (_b.label) {
-                                        case 0:
-                                            _a = resolve;
-                                            return [4 /*yield*/, this.createCommentsFromRows.bind(this)(res, trx)];
-                                        case 1:
-                                            _a.apply(void 0, [(_b.sent())[0]]);
-                                            return [2 /*return*/];
-                                    }
-                                });
-                            }); })
-                                .catch(reject);
-                            return [2 /*return*/];
-                        });
-                    }); })];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.baseCommentQuery(trx).whereNotNull("title").orderBy("id", "desc").first()];
+                    case 1:
+                        commentObj = _a.sent();
+                        return [4 /*yield*/, this.createCommentsFromRows(commentObj, trx)];
+                    case 2: 
+                    // @ts-ignore
+                    return [2 /*return*/, (_a.sent())[0]];
+                }
             });
         });
     };
     DbHandler.prototype.insertSigner = function (signer, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        return __generator(this, function (_a) {
-                            this.baseTransaction(trx)(TABLES.SIGNERS)
-                                .insert(signer)
-                                .then(resolve)
-                                .catch(function (err) {
-                                debug(err);
-                                reject(err);
-                            });
-                            return [2 /*return*/];
-                        });
-                    }); })];
+                return [2 /*return*/, this.baseTransaction(trx)(TABLES.SIGNERS).insert(signer)];
             });
         });
     };
     DbHandler.prototype.querySubplebbitSigner = function (trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        return __generator(this, function (_a) {
-                            this.baseTransaction(trx)(TABLES.SIGNERS).where({ usage: exports.SIGNER_USAGES.SUBPLEBBIT }).first().then(resolve).catch(reject);
-                            return [2 /*return*/];
-                        });
-                    }); })];
+                return [2 /*return*/, this.baseTransaction(trx)(TABLES.SIGNERS).where({ usage: exports.SIGNER_USAGES.SUBPLEBBIT }).first()];
             });
         });
     };
     DbHandler.prototype.querySigner = function (ipnsKeyName, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var e_1;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName: ipnsKeyName }).first()];
-                    case 1: return [2 /*return*/, _a.sent()];
-                    case 2:
-                        e_1 = _a.sent();
-                        debug("Failed to query signer due to error = ".concat(e_1));
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
-                }
+                return [2 /*return*/, this.baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName: ipnsKeyName }).first()];
             });
         });
     };
@@ -891,17 +757,18 @@ var subplebbitInitDbIfNeeded = function (subplebbit) { return __awaiter(void 0, 
                 if (!subplebbit._dbConfig) {
                     (0, assert_1.default)(subplebbit.address, "Need subplebbit address to initialize a DB connection");
                     dbPath = path_1.default.join(subplebbit.plebbit.dataPath, subplebbit.address);
-                    debug("User has not provided a DB config. Will initialize DB in ".concat(dbPath));
+                    debugs.INFO("User has not provided a DB config. Will initialize DB in ".concat(dbPath));
                     subplebbit._dbConfig = {
                         client: "better-sqlite3",
                         connection: {
                             filename: dbPath
                         },
-                        useNullAsDefault: true
+                        useNullAsDefault: true,
+                        acquireConnectionTimeout: 120000
                     };
                 }
                 else
-                    debug("User provided a DB config of ".concat(JSON.stringify(subplebbit._dbConfig)));
+                    debugs.DEBUG("User provided a DB config of ".concat(JSON.stringify(subplebbit._dbConfig)));
                 dir = path_1.default.dirname(subplebbit._dbConfig.connection.filename);
                 return [4 /*yield*/, fs_1.default.promises.mkdir(dir, { recursive: true })];
             case 1:
@@ -919,4 +786,3 @@ var subplebbitInitDbIfNeeded = function (subplebbit) { return __awaiter(void 0, 
     });
 }); };
 exports.subplebbitInitDbIfNeeded = subplebbitInitDbIfNeeded;
-exports.default = DbHandler;

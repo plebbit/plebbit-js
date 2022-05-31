@@ -86,11 +86,10 @@ var db_handler_1 = require("./runtime/browser/db-handler");
 var captcha_1 = require("./runtime/browser/captcha");
 var sort_handler_1 = require("./sort-handler");
 var util_1 = require("./util");
-var debug_1 = __importDefault(require("debug"));
 var signer_1 = require("./signer");
 var pages_1 = require("./pages");
 var comment_1 = require("./comment");
-var debug = (0, debug_1.default)("plebbit-js:subplebbit");
+var debugs = (0, util_1.getDebugLevels)("subplebbit");
 var DEFAULT_UPDATE_INTERVAL_MS = 60000;
 var DEFAULT_SYNC_INTERVAL_MS = 100000; // 5 minutes
 var Subplebbit = /** @class */ (function (_super) {
@@ -103,6 +102,11 @@ var Subplebbit = /** @class */ (function (_super) {
         _this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
         _this.provideCaptchaCallback = undefined;
         _this.validateCaptchaAnswerCallback = undefined;
+        // these functions might get separated from their `this` when used
+        _this.start = _this.start.bind(_this);
+        _this.update = _this.update.bind(_this);
+        _this.stop = _this.stop.bind(_this);
+        _this.edit = _this.edit.bind(_this);
         return _this;
     }
     Subplebbit.prototype.initSubplebbit = function (newProps) {
@@ -136,22 +140,19 @@ var Subplebbit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         if (!this.dbHandler) return [3 /*break*/, 4];
-                        return [4 /*yield*/, this.dbHandler.querySubplebbitSigner()];
+                        return [4 /*yield*/, this.dbHandler.querySubplebbitSigner(undefined)];
                     case 1:
                         dbSigner = _a.sent();
                         if (!!dbSigner) return [3 /*break*/, 3];
                         (0, assert_1.default)(this.signer, "Subplebbit needs a signer to start");
-                        debug("Subplebbit has no signer in DB, will insert provided signer from createSubplebbitOptions into DB");
-                        // @ts-ignore
-                        return [4 /*yield*/, this.dbHandler.insertSigner(__assign(__assign({}, this.signer), { ipnsKeyName: this.signer.address, usage: db_handler_1.SIGNER_USAGES.SUBPLEBBIT }))];
+                        debugs.INFO("Subplebbit has no signer in DB, will insert provided signer from createSubplebbitOptions into DB");
+                        return [4 /*yield*/, this.dbHandler.insertSigner(__assign(__assign({}, this.signer), { ipnsKeyName: this.signer.address, usage: db_handler_1.SIGNER_USAGES.SUBPLEBBIT }), undefined)];
                     case 2:
-                        // @ts-ignore
                         _a.sent();
                         return [3 /*break*/, 4];
                     case 3:
                         if (!this.signer) {
-                            debug("Subplebbit loaded signer from DB");
-                            // @ts-ignore
+                            debugs.DEBUG("Subplebbit loaded signer from DB");
                             this.signer = dbSigner;
                         }
                         _a.label = 4;
@@ -165,7 +166,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 5:
                         ipnsKeys = _a.sent();
                         ipfsKey = ipnsKeys.filter(function (key) { return key.name === _this.signer.address; })[0];
-                        debug(Boolean(ipfsKey)
+                        debugs.DEBUG(Boolean(ipfsKey)
                             ? "Owner has provided a signer that maps to ".concat(ipfsKey.id, " subplebbit address within ipfs node")
                             : "Owner has provided a signer that doesn't map to any subplebbit address within the ipfs node");
                         this.address = ipfsKey === null || ipfsKey === void 0 ? void 0 : ipfsKey.id;
@@ -239,10 +240,10 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 6:
                         ipfsKey = _a.sent();
                         this.ipnsKeyName = ipfsKey["name"] || ipfsKey["Name"];
-                        debug("Imported keys into ipfs node, ".concat(JSON.stringify(ipfsKey)));
+                        debugs.INFO("Imported subplebbit keys into ipfs node, ".concat(JSON.stringify(ipfsKey)));
                         return [3 /*break*/, 8];
                     case 7:
-                        debug("Subplebbit key is already in ipfs node, no need to import (".concat(JSON.stringify(subplebbitIpfsNodeKey), ")"));
+                        debugs.TRACE("Subplebbit key is already in ipfs node, no need to import (".concat(JSON.stringify(subplebbitIpfsNodeKey), ")"));
                         this.ipnsKeyName = subplebbitIpfsNodeKey["name"] || subplebbitIpfsNodeKey["Name"];
                         _a.label = 8;
                     case 8:
@@ -271,7 +272,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             })];
                     case 3:
                         _a.sent();
-                        debug("Subplebbit (".concat(this.address, ") props (").concat(Object.keys(newSubplebbitOptions), ") has been edited and its IPNS updated"));
+                        debugs.INFO("Subplebbit (".concat(this.address, ") props (").concat(Object.keys(newSubplebbitOptions), ") has been edited and its IPNS updated"));
                         return [2 /*return*/, this];
                 }
             });
@@ -293,14 +294,14 @@ var Subplebbit = /** @class */ (function (_super) {
                         if (this.emittedAt !== subplebbitIpns.updatedAt) {
                             this.emittedAt = subplebbitIpns.updatedAt;
                             this.initSubplebbit(subplebbitIpns);
-                            debug("Subplebbit received a new update. Will emit an update event");
+                            debugs.INFO("Subplebbit received a new update. Will emit an update event");
                             this.emit("update", this);
                         }
                         this.initSubplebbit(subplebbitIpns);
                         return [2 /*return*/, this];
                     case 3:
                         e_1 = _a.sent();
-                        debug("Failed to update subplebbit IPNS, error: ".concat(e_1));
+                        debugs.ERROR("Failed to update subplebbit IPNS, error: ".concat(e_1));
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/];
                 }
@@ -309,7 +310,7 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.update = function (updateIntervalMs) {
         if (updateIntervalMs === void 0) { updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS; }
-        debug("Starting to poll updates for subplebbit (".concat(this.address, ") every ").concat(updateIntervalMs, " milliseconds"));
+        debugs.DEBUG("Starting to poll updates for subplebbit (".concat(this.address, ") every ").concat(updateIntervalMs, " milliseconds"));
         if (this._updateInterval)
             clearInterval(this._updateInterval);
         this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs); // One minute
@@ -325,59 +326,55 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.updateSubplebbitIpns = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var trx, latestPost, _a, metrics, _b, sortedPosts, sortedPostsCids, currentIpns, e_2, posts, newSubplebbitOptions, _c;
-            var _d, _e;
-            return __generator(this, function (_f) {
-                switch (_f.label) {
+            var trx, latestPost, _a, metrics, _b, sortedPosts, sortedPostsCids, currentIpns, e_2, posts, metricsCid, newSubplebbitOptions;
+            var _c;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0: return [4 /*yield*/, this.dbHandler.createTransaction()];
                     case 1:
-                        trx = _f.sent();
+                        trx = _d.sent();
                         return [4 /*yield*/, this.dbHandler.queryLatestPost(trx)];
                     case 2:
-                        latestPost = _f.sent();
+                        latestPost = _d.sent();
                         return [4 /*yield*/, trx.commit()];
                     case 3:
-                        _f.sent();
+                        _d.sent();
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.querySubplebbitMetrics(undefined),
                                 this.sortHandler.generatePagesUnderComment(undefined, undefined)
                             ])];
                     case 4:
-                        _a = _f.sent(), metrics = _a[0], _b = _a[1], sortedPosts = _b[0], sortedPostsCids = _b[1];
-                        _f.label = 5;
+                        _a = _d.sent(), metrics = _a[0], _b = _a[1], sortedPosts = _b[0], sortedPostsCids = _b[1];
+                        _d.label = 5;
                     case 5:
-                        _f.trys.push([5, 7, , 8]);
+                        _d.trys.push([5, 7, , 8]);
                         return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.address, this.plebbit)];
                     case 6:
-                        currentIpns = _f.sent();
+                        currentIpns = _d.sent();
                         return [3 /*break*/, 8];
                     case 7:
-                        e_2 = _f.sent();
-                        debug("Subplebbit IPNS (".concat(this.address, ") is not defined, will publish a new record"));
+                        e_2 = _d.sent();
+                        debugs.ERROR("Subplebbit IPNS (".concat(this.address, ") is not defined, will publish a new record"));
                         return [3 /*break*/, 8];
                     case 8:
                         if (sortedPosts)
                             posts = new pages_1.Pages({
-                                pages: (_d = {},
-                                    _d[sort_handler_1.POSTS_SORT_TYPES.HOT.type] = sortedPosts[sort_handler_1.POSTS_SORT_TYPES.HOT.type],
-                                    _d),
+                                pages: (_c = {},
+                                    _c[sort_handler_1.POSTS_SORT_TYPES.HOT.type] = sortedPosts[sort_handler_1.POSTS_SORT_TYPES.HOT.type],
+                                    _c),
                                 pageCids: sortedPostsCids,
                                 subplebbit: this
                             });
-                        _c = [__assign({}, (!currentIpns && !posts && !this.createdAt ? { createdAt: (0, util_1.timestamp)() } : {}))];
-                        _e = { posts: posts };
                         return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(metrics))];
                     case 9:
-                        newSubplebbitOptions = __assign.apply(void 0, _c.concat([(_e.metricsCid = (_f.sent()).path, _e.latestPostCid = latestPost === null || latestPost === void 0 ? void 0 : latestPost.postCid, _e)]));
-                        if (!currentIpns ||
-                            JSON.stringify(currentIpns.posts) !== JSON.stringify(newSubplebbitOptions.posts) ||
-                            currentIpns.metricsCid !== newSubplebbitOptions.metricsCid ||
-                            currentIpns.latestPostCid !== newSubplebbitOptions.latestPostCid) {
-                            debug("Will attempt to sync subplebbit IPNS fields [".concat(Object.keys(newSubplebbitOptions), "]"));
+                        metricsCid = (_d.sent()).path;
+                        newSubplebbitOptions = __assign(__assign(__assign(__assign({}, (!currentIpns && !posts && !this.createdAt ? { createdAt: (0, util_1.timestamp)() } : {})), (JSON.stringify(posts) !== JSON.stringify(this.posts) ? { posts: posts } : {})), (metricsCid !== this.metricsCid ? { metricsCid: metricsCid } : {})), ((latestPost === null || latestPost === void 0 ? void 0 : latestPost.postCid) !== this.latestPostCid ? { latestPostCid: latestPost === null || latestPost === void 0 ? void 0 : latestPost.postCid } : {}));
+                        if (JSON.stringify(newSubplebbitOptions) !== "{}") {
+                            debugs.DEBUG("Will attempt to sync subplebbit IPNS fields [".concat(Object.keys(newSubplebbitOptions), "]"));
                             return [2 /*return*/, this.edit(newSubplebbitOptions)];
                         }
                         else
-                            debug("No need to update subplebbit IPNS");
+                            debugs.TRACE("No need to sync subplebbit IPNS");
                         return [2 /*return*/];
                 }
             });
@@ -395,13 +392,13 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 2:
                         _a = _b.sent(), signatureIsVerified = _a[0], verificationFailReason = _a[1];
                         if (!!signatureIsVerified) return [3 /*break*/, 3];
-                        debug("Comment edit of ".concat(commentEdit.commentCid, " has been rejected due to having invalid signature. Reason = ").concat(verificationFailReason));
+                        debugs.INFO("Comment edit of ".concat(commentEdit.commentCid, " has been rejected due to having invalid signature. Reason = ").concat(verificationFailReason));
                         return [2 /*return*/, {
                                 reason: "Comment edit of ".concat(commentEdit.commentCid, " has been rejected due to having invalid signature")
                             }];
                     case 3:
                         if (!!commentToBeEdited) return [3 /*break*/, 4];
-                        debug("Unable to edit comment (".concat(commentEdit.commentCid, ") since it's not in local DB"));
+                        debugs.INFO("Unable to edit comment (".concat(commentEdit.commentCid, ") since it's not in local DB. Rejecting user's request to edit comment"));
                         return [2 /*return*/, {
                                 reason: "commentCid (".concat(commentEdit.commentCid, ") does not exist")
                             }];
@@ -409,13 +406,13 @@ var Subplebbit = /** @class */ (function (_super) {
                         if (!(commentEdit.editSignature.publicKey !== commentToBeEdited.signature.publicKey)) return [3 /*break*/, 5];
                         // Original comment and CommentEdit need to have same key
                         // TODO make exception for moderators
-                        debug("User attempted to edit a comment (".concat(commentEdit.commentCid, ") without having its keys"));
+                        debugs.INFO("User attempted to edit a comment (".concat(commentEdit.commentCid, ") without having its signer's keys."));
                         return [2 /*return*/, {
                                 reason: "Comment edit of ".concat(commentEdit.commentCid, " due to having different author keys than original comment")
                             }];
                     case 5:
                         if (!(0, util_1.shallowEqual)(commentToBeEdited.signature, commentEdit.editSignature)) return [3 /*break*/, 6];
-                        debug("Signature of CommentEdit is identical to original comment (".concat(commentEdit.cid, ")"));
+                        debugs.INFO("Signature of CommentEdit is identical to original comment (".concat(commentEdit.cid, ")"));
                         return [2 /*return*/, {
                                 reason: "Signature of CommentEdit is identical to original comment (".concat(commentEdit.cid, ")")
                             }];
@@ -424,7 +421,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.dbHandler.upsertComment(commentEdit, undefined, trx)];
                     case 7:
                         _b.sent();
-                        debug("Updated content for comment ".concat(commentEdit.commentCid));
+                        debugs.INFO("Updated content for comment ".concat(commentEdit.commentCid));
                         _b.label = 8;
                     case 8: return [2 /*return*/];
                 }
@@ -441,7 +438,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 1:
                         _b = _d.sent(), signatureIsVerified = _b[0], failedVerificationReason = _b[1];
                         if (!signatureIsVerified) {
-                            debug("Author (".concat(newVote.author.address, ") vote (").concat(newVote.vote, " vote's signature is invalid. Reason = ").concat(failedVerificationReason));
+                            debugs.INFO("Author (".concat(newVote.author.address, ") vote (").concat(newVote.vote, " vote's signature is invalid. Reason = ").concat(failedVerificationReason));
                             return [2 /*return*/, { reason: "Invalid signature" }];
                         }
                         return [4 /*yield*/, Promise.all([
@@ -452,30 +449,30 @@ var Subplebbit = /** @class */ (function (_super) {
                         _c = _d.sent(), lastVote = _c[0], parentComment = _c[1];
                         if (!parentComment) {
                             msg = "User is trying to publish a vote under a comment (".concat(newVote.commentCid, ") that does not exist");
-                            debug(msg);
+                            debugs.INFO(msg);
                             return [2 /*return*/, { reason: msg }];
                         }
                         if (!(lastVote && newVote.signature.publicKey !== lastVote.signature.publicKey)) return [3 /*break*/, 3];
                         // Original comment and CommentEdit need to have same key
                         // TODO make exception for moderators
-                        debug("Author (".concat(newVote.author.address, ") attempted to edit a comment vote (").concat(newVote.commentCid, ") without having correct credentials"));
+                        debugs.INFO("Author (".concat(newVote.author.address, ") attempted to edit a comment vote (").concat(newVote.commentCid, ") without having correct credentials"));
                         return [2 /*return*/, {
                                 reason: "Author (".concat(newVote.author.address, ") attempted to change vote on  ").concat(newVote.commentCid, " without having correct credentials")
                             }];
                     case 3:
                         if (!(0, util_1.shallowEqual)(newVote.signature, lastVote === null || lastVote === void 0 ? void 0 : lastVote.signature)) return [3 /*break*/, 4];
-                        debug("Signature of Vote is identical to original Vote (".concat(newVote.commentCid, ")"));
+                        debugs.INFO("Signature of Vote is identical to original Vote (".concat(newVote.commentCid, ")"));
                         return [2 /*return*/, {
                                 reason: "Signature of Vote is identical to original Vote (".concat(newVote.commentCid, ") by author ").concat((_a = newVote === null || newVote === void 0 ? void 0 : newVote.author) === null || _a === void 0 ? void 0 : _a.address)
                             }];
                     case 4:
                         if (!((lastVote === null || lastVote === void 0 ? void 0 : lastVote.vote) === newVote.vote)) return [3 /*break*/, 5];
-                        debug("Author (".concat(newVote === null || newVote === void 0 ? void 0 : newVote.author.address, ") has duplicated their vote for comment ").concat(newVote.commentCid, ". Returning an error"));
+                        debugs.INFO("Author (".concat(newVote === null || newVote === void 0 ? void 0 : newVote.author.address, ") has duplicated their vote for comment ").concat(newVote.commentCid, ". Returning an error"));
                         return [2 /*return*/, { reason: "User duplicated their vote" }];
                     case 5: return [4 /*yield*/, this.dbHandler.upsertVote(newVote, challengeRequestId, trx)];
                     case 6:
                         _d.sent();
-                        debug("Upserted new vote (".concat(newVote.vote, ") for comment ").concat(newVote.commentCid));
+                        debugs.INFO("Upserted new vote (".concat(newVote.vote, ") for comment ").concat(newVote.commentCid));
                         _d.label = 7;
                     case 7: return [2 /*return*/];
                 }
@@ -532,7 +529,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 12:
                         signatureIsVerified = (_j.sent())[0];
                         if (!signatureIsVerified) {
-                            debug("Author (".concat(postOrCommentOrVote.author.address, ") comment's signature is invalid"));
+                            debugs.INFO("Author (".concat(postOrCommentOrVote.author.address, ") comment's signature is invalid"));
                             return [2 /*return*/, { reason: "Invalid signature" }];
                         }
                         ipnsKeyName = (0, js_sha256_1.sha256)(JSON.stringify(postOrCommentOrVote.toJSONSkeleton()));
@@ -540,7 +537,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 13:
                         if (!_j.sent()) return [3 /*break*/, 14];
                         msg = "Failed to insert ".concat(postOrCommentOrVote.getType(), " due to previous ").concat(postOrCommentOrVote.getType(), " having same ipns key name (duplicate?)");
-                        debug(msg);
+                        debugs.INFO(msg);
                         return [2 /*return*/, { reason: msg }];
                     case 14:
                         _e = [{}];
@@ -574,7 +571,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, undefined)];
                     case 21:
                         _j.sent();
-                        debug("New post with cid ".concat(postOrCommentOrVote.cid, " has been inserted into DB"));
+                        debugs.INFO("New post with cid ".concat(postOrCommentOrVote.cid, " has been inserted into DB"));
                         return [3 /*break*/, 28];
                     case 22: return [4 /*yield*/, this.dbHandler.createTransaction()];
                     case 23:
@@ -590,7 +587,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _j.sent();
                         if (!parent_1) {
                             msg = "User is trying to publish a comment with content (".concat(postOrCommentOrVote.content, ") with incorrect parentCid");
-                            debug(msg);
+                            debugs.INFO(msg);
                             return [2 /*return*/, { reason: msg }];
                         }
                         postOrCommentOrVote.setPreviousCid((_b = commentsUnderParent[0]) === null || _b === void 0 ? void 0 : _b.cid);
@@ -602,7 +599,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, undefined)];
                     case 27:
                         _j.sent();
-                        debug("New comment with cid ".concat(postOrCommentOrVote.cid, " has been inserted into DB"));
+                        debugs.INFO("New comment with cid ".concat(postOrCommentOrVote.cid, " has been inserted into DB"));
                         _j.label = 28;
                     case 28: return [2 /*return*/, { publication: postOrCommentOrVote }];
                 }
@@ -623,10 +620,10 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 2:
                         decryptedPublication = _c.apply(_b, [_f.sent()]);
                         this._challengeToPublication[msgParsed.challengeRequestId] = decryptedPublication;
-                        debug("Received a request to a challenge (".concat(msgParsed.challengeRequestId, ")"));
+                        debugs.DEBUG("Received a request to a challenge (".concat(msgParsed.challengeRequestId, ")"));
                         if (!!providedChallenges) return [3 /*break*/, 9];
                         // Subplebbit owner has chosen to skip challenging this user or post
-                        debug("Skipping challenge for ".concat(msgParsed.challengeRequestId, ", add publication to IPFS and respond with challengeVerificationMessage right away"));
+                        debugs.DEBUG("Skipping challenge for ".concat(msgParsed.challengeRequestId, ", add publication to IPFS and respond with challengeVerificationMessage right away"));
                         return [4 /*yield*/, this.dbHandler.upsertChallenge(new challenge_1.ChallengeRequestMessage(msgParsed), undefined)];
                     case 3:
                         _f.sent();
@@ -652,7 +649,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 8:
                         _f.sent();
-                        debug("Published ".concat(challengeVerification.type, " (").concat(challengeVerification.challengeRequestId, ") over pubsub"));
+                        debugs.INFO("Published ".concat(challengeVerification.type, " (").concat(challengeVerification.challengeRequestId, ") over pubsub"));
                         this.emit("challengeverification", challengeVerification);
                         return [3 /*break*/, 11];
                     case 9:
@@ -666,7 +663,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 10:
                         _f.sent();
-                        debug("Published ".concat(challengeMessage.type, " (").concat(challengeMessage.challengeRequestId, ") over pubsub"));
+                        debugs.INFO("Published ".concat(challengeMessage.type, " (").concat(challengeMessage.challengeRequestId, ") over pubsub"));
                         _f.label = 11;
                     case 11: return [2 /*return*/];
                 }
@@ -683,7 +680,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 1:
                         _a = _d.sent(), challengeSuccess = _a[0], challengeErrors = _a[1];
                         if (!challengeSuccess) return [3 /*break*/, 8];
-                        debug("Challenge (".concat(msgParsed.challengeRequestId, ") has been answered correctly"));
+                        debugs.DEBUG("Challenge (".concat(msgParsed.challengeRequestId, ") has been answered correctly"));
                         storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
                         return [4 /*yield*/, this.dbHandler.upsertChallenge(new challenge_1.ChallengeAnswerMessage(msgParsed), undefined)];
                     case 2:
@@ -710,10 +707,10 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 7:
                         _d.sent();
-                        debug("Published successful ".concat(challengeVerification.type, " (").concat(challengeVerification.challengeRequestId, ") over pubsub"));
+                        debugs.INFO("Published successful ".concat(challengeVerification.type, " (").concat(challengeVerification.challengeRequestId, ") over pubsub"));
                         return [3 /*break*/, 10];
                     case 8:
-                        debug("Challenge (".concat(msgParsed.challengeRequestId, ") has answered incorrectly"));
+                        debugs.INFO("Challenge (".concat(msgParsed.challengeRequestId, ") has answered incorrectly"));
                         challengeVerification = new challenge_1.ChallengeVerificationMessage({
                             challengeRequestId: msgParsed.challengeRequestId,
                             challengeAnswerId: msgParsed.challengeAnswerId,
@@ -726,7 +723,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 9:
                         _d.sent();
-                        debug("Published failed ".concat(challengeVerification.type, " (").concat(challengeVerification.challengeRequestId, ")"));
+                        debugs.INFO("Published failed ".concat(challengeVerification.type, " (").concat(challengeVerification.challengeRequestId, ")"));
                         this.emit("challengeverification", challengeVerification);
                         _d.label = 10;
                     case 10: return [2 /*return*/];
@@ -788,7 +785,7 @@ var Subplebbit = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 actualSolution = this._challengeToSolution[challengeAnswerMessage.challengeRequestId];
                 answerIsCorrect = JSON.stringify(challengeAnswerMessage.challengeAnswers) === JSON.stringify(actualSolution);
-                debug("Challenge (".concat(challengeAnswerMessage.challengeRequestId, "): Answer's validity: ").concat(answerIsCorrect, ", user's answer: ").concat(challengeAnswerMessage.challengeAnswers, ", actual solution: ").concat(actualSolution));
+                debugs.DEBUG("Challenge (".concat(challengeAnswerMessage.challengeRequestId, "): Answer's validity: ").concat(answerIsCorrect, ", user's answer: ").concat(challengeAnswerMessage.challengeAnswers, ", actual solution: ").concat(actualSolution));
                 challengeErrors = answerIsCorrect ? undefined : ["User solved captcha incorrectly"];
                 return [2 /*return*/, [answerIsCorrect, challengeErrors]];
             });
@@ -810,7 +807,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [3 /*break*/, 4];
                     case 3:
                         e_3 = _b.sent();
-                        debug("Failed to load Comment (".concat(dbComment.cid, ") IPNS (").concat(dbComment.ipnsName, ") while syncing. Will attempt to publish a new IPNS record"));
+                        debugs.DEBUG("Failed to load Comment (".concat(dbComment.cid, ") IPNS (").concat(dbComment.ipnsName, ") while syncing. Will attempt to publish a new IPNS record"));
                         return [3 /*break*/, 4];
                     case 4:
                         if (!(!commentIpns || !(0, util_1.shallowEqual)(commentIpns, dbComment.toJSONCommentUpdate(), ["replies"]))) return [3 /*break*/, 10];
@@ -823,7 +820,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _b.sent();
                         _b.label = 7;
                     case 7:
-                        debug("Comment (".concat(dbComment.cid, ") IPNS is outdated"));
+                        debugs.DEBUG("Comment (".concat(dbComment.cid, ") IPNS is outdated"));
                         return [4 /*yield*/, this.sortHandler.generatePagesUnderComment(dbComment, undefined)];
                     case 8:
                         _a = _b.sent(), sortedReplies = _a[0], sortedRepliesCids = _a[1];
@@ -833,7 +830,9 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 9:
                         _b.sent();
                         return [2 /*return*/, dbComment.edit(dbComment.toJSONCommentUpdate())];
-                    case 10: return [2 /*return*/];
+                    case 10:
+                        debugs.TRACE("Comment (".concat(dbComment.cid, ") is up-to-date and does not need syncing"));
+                        return [2 /*return*/];
                 }
             });
         });
@@ -845,22 +844,26 @@ var Subplebbit = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        debug("Starting to sync IPNS with DB");
+                        debugs.TRACE("Starting to sync IPNS with DB");
                         _a.label = 1;
                     case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        dbComments = [];
+                        _a.trys.push([1, 4, , 5]);
+                        return [4 /*yield*/, this.dbHandler.queryComments(undefined)];
+                    case 2:
+                        dbComments = _a.sent();
+                        // const dbComments = [];
                         return [4 /*yield*/, Promise.all(__spreadArray(__spreadArray([], dbComments.map(function (comment) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                                 return [2 /*return*/, this.syncComment(comment)];
                             }); }); }), true), [this.updateSubplebbitIpns()], false))];
-                    case 2:
-                        _a.sent();
-                        return [3 /*break*/, 4];
                     case 3:
-                        e_4 = _a.sent();
-                        debug("Failed to sync due to error: ".concat(e_4));
-                        return [3 /*break*/, 4];
+                        // const dbComments = [];
+                        _a.sent();
+                        return [3 /*break*/, 5];
                     case 4:
+                        e_4 = _a.sent();
+                        debugs.WARN("Failed to sync due to error: ".concat(e_4));
+                        return [3 /*break*/, 5];
+                    case 5:
                         setTimeout(this.syncIpnsWithDb.bind(this, syncIntervalMs), syncIntervalMs);
                         return [2 /*return*/];
                 }
@@ -877,7 +880,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 1:
                         _a.sent();
                         if (!this.provideCaptchaCallback) {
-                            debug("Subplebbit owner has not provided any captcha. Will go with default image captcha");
+                            debugs.INFO("Subplebbit owner has not provided any captcha. Will go with default image captcha");
                             this.provideCaptchaCallback = this.defaultProvideCaptcha;
                             this.validateCaptchaAnswerCallback = this.defaultValidateCaptcha;
                         }
@@ -896,7 +899,7 @@ var Subplebbit = /** @class */ (function (_super) {
                                         case 2:
                                             e_5 = _a.sent();
                                             e_5.message = "failed process captcha: " + e_5.message;
-                                            debug(e_5);
+                                            debugs.ERROR(e_5);
                                             return [3 /*break*/, 3];
                                         case 3: return [2 /*return*/];
                                     }
@@ -904,7 +907,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             }); })];
                     case 2:
                         _a.sent();
-                        debug("Waiting for publications on pubsub topic (".concat(this.pubsubTopic, ")"));
+                        debugs.INFO("Waiting for publications on pubsub topic (".concat(this.pubsubTopic, ")"));
                         return [4 /*yield*/, this.syncIpnsWithDb(syncIntervalMs)];
                     case 3:
                         _a.sent();

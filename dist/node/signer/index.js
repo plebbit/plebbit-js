@@ -42,7 +42,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createSigner = exports.Signer = exports.decrypt = exports.encrypt = exports.Signature = exports.verifyPublication = exports.signPublication = void 0;
 var util_1 = require("./util");
 var assert_1 = __importDefault(require("assert"));
-var buffer_1 = require("buffer");
 var signatures_1 = require("./signatures");
 Object.defineProperty(exports, "signPublication", { enumerable: true, get: function () { return signatures_1.signPublication; } });
 Object.defineProperty(exports, "verifyPublication", { enumerable: true, get: function () { return signatures_1.verifyPublication; } });
@@ -56,7 +55,7 @@ var Signer = /** @class */ (function () {
         this.privateKey = props.privateKey;
         this.publicKey = props.publicKey;
         this.address = props.address;
-        this.ipfsKey = buffer_1.Buffer.from(props.ipfsKey);
+        this.ipfsKey = new Uint8Array(props.ipfsKey);
     }
     Signer.prototype.toJSON = function () {
         return {

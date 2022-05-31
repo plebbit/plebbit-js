@@ -50,8 +50,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyPublication = exports.signPublication = exports.Signature = void 0;
-var debug_1 = __importDefault(require("debug"));
+exports.verifyPublication = exports.signPublication = exports.verifyBufferRsa = exports.signBufferRsa = exports.Signature = void 0;
 var util_1 = require("./util");
 var cborg_1 = require("cborg");
 var to_string_1 = require("uint8arrays/to-string");
@@ -60,7 +59,7 @@ var assert_1 = __importDefault(require("assert"));
 var peer_id_1 = __importDefault(require("peer-id"));
 var util_2 = require("../util");
 var publication_1 = __importDefault(require("../publication"));
-var debug = (0, debug_1.default)("plebbit-js:signer:signatures");
+var debugs = (0, util_2.getDebugLevels)("signer:signatures");
 var Signature = /** @class */ (function () {
     function Signature(props) {
         this.signature = props["signature"];
@@ -104,23 +103,58 @@ function getFieldsToSign(publication) {
         // Comment
         return ["subplebbitAddress", "author", "timestamp", "parentCid", "content"];
 }
+var isProbablyBuffer = function (arg) { return arg && typeof arg !== "string" && typeof arg !== "number"; };
+var signBufferRsa = function (bufferToSign, privateKeyPem, privateKeyPemPassword) {
+    if (privateKeyPemPassword === void 0) { privateKeyPemPassword = ""; }
+    return __awaiter(void 0, void 0, void 0, function () {
+        var keyPair;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    (0, assert_1.default)(isProbablyBuffer(bufferToSign), "signBufferRsa invalid bufferToSign '".concat(bufferToSign, "' not buffer"));
+                    return [4 /*yield*/, (0, util_1.getKeyPairFromPrivateKeyPem)(privateKeyPem, privateKeyPemPassword)];
+                case 1:
+                    keyPair = _a.sent();
+                    return [4 /*yield*/, keyPair.sign(bufferToSign)];
+                case 2: 
+                // do not use libp2p keyPair.sign to sign strings, it doesn't encode properly in the browser
+                return [2 /*return*/, _a.sent()];
+            }
+        });
+    });
+};
+exports.signBufferRsa = signBufferRsa;
+var verifyBufferRsa = function (bufferToSign, bufferSignature, publicKeyPem) { return __awaiter(void 0, void 0, void 0, function () {
+    var peerId;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                (0, assert_1.default)(isProbablyBuffer(bufferToSign), "verifyBufferRsa invalid bufferSignature '".concat(bufferToSign, "' not buffer"));
+                (0, assert_1.default)(isProbablyBuffer(bufferSignature), "verifyBufferRsa invalid bufferSignature '".concat(bufferSignature, "' not buffer"));
+                return [4 /*yield*/, (0, util_1.getPeerIdFromPublicKeyPem)(publicKeyPem)];
+            case 1:
+                peerId = _a.sent();
+                return [4 /*yield*/, peerId.pubKey.verify(bufferToSign, bufferSignature)];
+            case 2: return [2 /*return*/, _a.sent()];
+        }
+    });
+}); };
+exports.verifyBufferRsa = verifyBufferRsa;
 function signPublication(publication, signer) {
     return __awaiter(this, void 0, void 0, function () {
-        var keyPair, fieldsToSign, publicationSignFields, commentEncoded, signatureData, _a;
+        var fieldsToSign, publicationSignFields, commentEncoded, signatureData, _a;
         return __generator(this, function (_b) {
             switch (_b.label) {
-                case 0: return [4 /*yield*/, (0, util_1.getKeyPairFromPrivateKeyPem)(signer.privateKey, "")];
-                case 1:
-                    keyPair = _b.sent();
+                case 0:
                     fieldsToSign = getFieldsToSign(publication);
-                    debug("Will sign fields ".concat(JSON.stringify(fieldsToSign)));
-                    publicationSignFields = (0, util_2.keepKeys)(publication, fieldsToSign);
-                    commentEncoded = (0, cborg_1.encode)((0, util_2.removeKeysWithUndefinedValues)(publicationSignFields));
+                    publicationSignFields = (0, util_2.removeKeysWithUndefinedValues)((0, util_2.keepKeys)(publication, fieldsToSign));
+                    debugs.TRACE("Fields to sign: ".concat(JSON.stringify(fieldsToSign), ". Publication object to sign:  ").concat(JSON.stringify(publicationSignFields)));
+                    commentEncoded = (0, cborg_1.encode)(publicationSignFields);
                     _a = to_string_1.toString;
-                    return [4 /*yield*/, keyPair.sign(commentEncoded)];
-                case 2:
+                    return [4 /*yield*/, (0, exports.signBufferRsa)(commentEncoded, signer.privateKey)];
+                case 1:
                     signatureData = _a.apply(void 0, [_b.sent(), "base64"]);
-                    debug("Publication been signed, signature data is (".concat(signatureData, ")"));
+                    debugs.DEBUG("Publication been signed, signature data is (".concat(signatureData, ")"));
                     return [2 /*return*/, new Signature({
                             signature: signatureData,
                             publicKey: signer.publicKey,
@@ -153,16 +187,15 @@ function verifyPublication(publication) {
                         });
                     }); };
                     verifyPublicationSignature = function (signature, publicationToBeVerified) { return __awaiter(_this, void 0, void 0, function () {
-                        var peerId, commentWithFieldsToSign, commentEncoded, signatureIsValid;
+                        var commentWithFieldsToSign, commentEncoded, signatureIsValid;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
-                                case 0: return [4 /*yield*/, (0, util_1.getPeerIdFromPublicKeyPem)(signature.publicKey)];
-                                case 1:
-                                    peerId = _a.sent();
+                                case 0:
                                     commentWithFieldsToSign = (0, util_2.keepKeys)(publicationToBeVerified, signature.signedPropertyNames);
+                                    debugs.DEBUG("signature.signedPropertyNames: [".concat(signature.signedPropertyNames, "], Attempt to verify a publication: ").concat(JSON.stringify(commentWithFieldsToSign)));
                                     commentEncoded = (0, cborg_1.encode)((0, util_2.removeKeysWithUndefinedValues)(commentWithFieldsToSign));
-                                    return [4 /*yield*/, peerId.pubKey.verify(commentEncoded, (0, from_string_1.fromString)(signature.signature, "base64"))];
-                                case 2:
+                                    return [4 /*yield*/, (0, exports.verifyBufferRsa)(commentEncoded, (0, from_string_1.fromString)(signature.signature, "base64"), signature.publicKey)];
+                                case 1:
                                     signatureIsValid = _a.sent();
                                     assert_1.default.equal(signatureIsValid, true, "Signature is invalid");
                                     return [2 /*return*/];
@@ -174,7 +207,7 @@ function verifyPublication(publication) {
                     _c.trys.push([1, 15, , 16]);
                     if (!publication.originalContent) return [3 /*break*/, 7];
                     // This is a comment/post that has been edited, and we need to verify both signature and editSignature
-                    debug("Attempting to verify a comment that has been edited. Will verify comment.author,  comment.signature and comment.editSignature");
+                    debugs.TRACE("Attempting to verify a comment that has been edited. Will verify comment.author,  comment.signature and comment.editSignature");
                     if (!publication.author) return [3 /*break*/, 3];
                     return [4 /*yield*/, verifyAuthor(publication.signature, publication.author)];
                 case 2:
@@ -187,11 +220,11 @@ function verifyPublication(publication) {
                     _a;
                     publicationJson = publication instanceof publication_1.default ? publication.toJSON() : publication;
                     originalSignatureObj = __assign(__assign({}, publicationJson), { content: publication.originalContent });
-                    debug("Attempting to verify comment.signature");
+                    debugs.TRACE("Attempting to verify comment.signature");
                     return [4 /*yield*/, verifyPublicationSignature(publication.signature, originalSignatureObj)];
                 case 5:
                     _c.sent();
-                    debug("Attempting to verify comment.signature");
+                    debugs.TRACE("Attempting to verify comment.editSignature");
                     editedSignatureObj = __assign(__assign({}, publicationJson), { commentCid: publication.cid });
                     return [4 /*yield*/, verifyPublicationSignature(publication.editSignature, editedSignatureObj)];
                 case 6:
@@ -200,13 +233,13 @@ function verifyPublication(publication) {
                 case 7:
                     if (!(publication.commentCid && publication.content)) return [3 /*break*/, 9];
                     // Verify CommentEdit
-                    debug("Attempting to verify CommentEdit");
+                    debugs.TRACE("Attempting to verify CommentEdit");
                     return [4 /*yield*/, verifyPublicationSignature(publication.editSignature, publication)];
                 case 8:
                     _c.sent();
                     return [3 /*break*/, 14];
                 case 9:
-                    debug("Attempting to verify post/comment/vote");
+                    debugs.TRACE("Attempting to verify post/comment/vote");
                     if (!publication.author) return [3 /*break*/, 11];
                     return [4 /*yield*/, verifyAuthor(publication.signature, publication.author)];
                 case 10:
@@ -222,11 +255,11 @@ function verifyPublication(publication) {
                     _c.sent();
                     _c.label = 14;
                 case 14:
-                    debug("Publication has been verified");
+                    debugs.TRACE("Publication has been verified");
                     return [2 /*return*/, [true]];
                 case 15:
                     e_1 = _c.sent();
-                    debug("Failed to verify publication");
+                    debugs.WARN("Failed to verify publication");
                     return [2 /*return*/, [false, String(e_1)]];
                 case 16: return [2 /*return*/];
             }

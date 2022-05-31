@@ -46,11 +46,20 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ipfsImportKey = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.waitTillCommentsUpdate = exports.waitTillPublicationsArePublished = exports.shallowEqual = exports.replaceXWithY = exports.removeKeys = exports.keepKeys = exports.timestamp = exports.parseJsonIfString = exports.round = exports.chunks = exports.sleep = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.getDebugLevels = exports.ipfsImportKey = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.waitTillCommentsUpdate = exports.waitTillPublicationsArePublished = exports.shallowEqual = exports.replaceXWithY = exports.removeKeys = exports.keepKeys = exports.timestamp = exports.parseJsonIfString = exports.round = exports.chunks = exports.sleep = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var concat_1 = require("uint8arrays/concat");
 var to_string_1 = require("uint8arrays/to-string");
 var it_all_1 = __importDefault(require("it-all"));
@@ -68,7 +77,7 @@ exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     YEAR: 60 * 60 * 24 * 7 * 4 * 12,
     ALL: Infinity
 });
-var debug = (0, debug_1.default)("plebbit-js:util");
+var debugs = getDebugLevels("util");
 function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
     if (defaultOptions === void 0) { defaultOptions = { timeout: 60000 }; }
     return __awaiter(this, void 0, void 0, function () {
@@ -124,7 +133,7 @@ function loadIpnsAsJson(ipns, plebbit) {
                     cid = _a.sent();
                     if (!cid)
                         throw new Error("IPNS (".concat(ipns, ") resolves to undefined"));
-                    debug("IPNS (".concat(ipns, ") resolved to ").concat(cid));
+                    debugs.TRACE("IPNS (".concat(ipns, ") resolved to ").concat(cid));
                     return [2 /*return*/, loadIpfsFileAsJson(cid, plebbit)];
                 case 7: return [2 /*return*/];
             }
@@ -316,10 +325,10 @@ function ipfsImportKey(signer, plebbit, password) {
             switch (_b.label) {
                 case 0:
                     data = new form_data_1.default();
-                    data.append("file", signer.ipfsKey);
+                    data.append("file", Buffer.from(signer.ipfsKey));
                     nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
                     if (!nodeUrl)
-                        throw "Can't figure out ipfs node URL";
+                        throw new Error("Can't figure out ipfs node URL");
                     url = "".concat(nodeUrl, "/key/import?arg=").concat(signer.ipnsKeyName);
                     return [4 /*yield*/, (0, node_fetch_1.default)(url, {
                             method: "POST",
@@ -329,7 +338,7 @@ function ipfsImportKey(signer, plebbit, password) {
                 case 1:
                     res = _b.sent();
                     if (res.status !== 200)
-                        throw Error("failed ipfs import key: '".concat(url, "' '").concat(res.status, "' '").concat(res.statusText, "'"));
+                        throw new Error("failed ipfs import key: '".concat(url, "' '").concat(res.status, "' '").concat(res.statusText, "'"));
                     return [4 /*yield*/, res.json()];
                 case 2: return [2 /*return*/, _b.sent()];
             }
@@ -337,3 +346,13 @@ function ipfsImportKey(signer, plebbit, password) {
     });
 }
 exports.ipfsImportKey = ipfsImportKey;
+function getDebugLevels(baseName) {
+    var debugsObj = ["FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE"].map(function (debugLevel) {
+        var _a;
+        return (_a = {},
+            _a[debugLevel] = (0, debug_1.default)("plebbit-js:".concat(baseName, ":").concat(debugLevel)),
+            _a);
+    });
+    return Object.assign.apply(Object, __spreadArray([{}], debugsObj, false));
+}
+exports.getDebugLevels = getDebugLevels;

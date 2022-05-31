@@ -1,6 +1,4 @@
-/// <reference types="node" />
 import { CreateSignerOptions } from "../types";
-import { Buffer } from "buffer";
 export { signPublication, verifyPublication, Signature } from "./signatures";
 export { encrypt, decrypt } from "./encryption";
 export declare class Signer {
@@ -8,14 +6,14 @@ export declare class Signer {
     privateKey: string;
     publicKey?: string;
     address?: string;
-    ipfsKey?: Buffer;
+    ipfsKey?: Uint8Array;
     constructor(props: any);
     toJSON(): {
         type: "rsa";
         privateKey: string;
         publicKey: string;
         address: string;
-        ipfsKey: Buffer;
+        ipfsKey: Uint8Array;
     };
 }
 export declare const createSigner: (createSignerOptions?: CreateSignerOptions) => Promise<Signer>;

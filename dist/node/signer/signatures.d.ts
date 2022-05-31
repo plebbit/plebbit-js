@@ -11,5 +11,7 @@ export declare class Signature {
         signedPropertyNames: string[];
     };
 }
+export declare const signBufferRsa: (bufferToSign: any, privateKeyPem: any, privateKeyPemPassword?: string) => Promise<any>;
+export declare const verifyBufferRsa: (bufferToSign: any, bufferSignature: any, publicKeyPem: any) => Promise<any>;
 export declare function signPublication(publication: any, signer: any): Promise<Signature>;
 export declare function verifyPublication(publication: any): Promise<(string | boolean)[]>;

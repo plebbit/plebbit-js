@@ -70,12 +70,11 @@ var from_string_1 = require("uint8arrays/from-string");
 var uuid_1 = require("uuid");
 var to_string_1 = require("uint8arrays/to-string");
 var events_1 = __importDefault(require("events"));
-var debug_1 = __importDefault(require("debug"));
 var util_1 = require("./util");
 var author_1 = __importDefault(require("./author"));
 var assert_1 = __importDefault(require("assert"));
 var signer_1 = require("./signer");
-var debug = (0, debug_1.default)("plebbit-js:publication");
+var debugs = (0, util_1.getDebugLevels)("publication");
 var Publication = /** @class */ (function (_super) {
     __extends(Publication, _super);
     function Publication(props, subplebbit) {
@@ -89,7 +88,7 @@ var Publication = /** @class */ (function (_super) {
         this.timestamp = props["timestamp"];
         this.signer = this.signer || props["signer"];
         this.signature = (0, util_1.parseJsonIfString)(props["signature"]);
-        this.author = props["author"] ? new author_1.default(props["author"]) : undefined;
+        this.author = props["author"] ? new author_1.default((0, util_1.parseJsonIfString)(props["author"])) : undefined;
     };
     Publication.prototype.getType = function () {
         if (this.hasOwnProperty("title"))
@@ -120,16 +119,16 @@ var Publication = /** @class */ (function (_super) {
                         if ((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId) !== this.challenge.challengeRequestId)
                             return [2 /*return*/]; // Process only this publication's challenge
                         if (!((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.type) === challenge_1.PUBSUB_MESSAGE_TYPES.CHALLENGE)) return [3 /*break*/, 1];
-                        debug("Received challenges, will emit them and wait for user to solve them and call publishChallengeAnswers");
+                        debugs.INFO("Received challenges, will emit them and wait for user to solve them and call publishChallengeAnswers");
                         this.emit("challenge", msgParsed);
                         return [3 /*break*/, 6];
                     case 1:
                         if (!((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.type) === challenge_1.PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION)) return [3 /*break*/, 6];
                         if (!!msgParsed.challengeSuccess) return [3 /*break*/, 2];
-                        debug("Challenge ".concat(msgParsed.challengeRequestId, " has failed to pass. Challenge errors = ").concat(msgParsed.challengeErrors, ", reason = ").concat(msgParsed.reason));
+                        debugs.WARN("Challenge ".concat(msgParsed.challengeRequestId, " has failed to pass. Challenge errors = ").concat(msgParsed.challengeErrors, ", reason = ").concat(msgParsed.reason));
                         return [3 /*break*/, 4];
                     case 2:
-                        debug("Challenge (".concat(msgParsed.challengeRequestId, ") has passed. Will update publication props from ChallengeVerificationMessage.publication"));
+                        debugs.INFO("Challenge (".concat(msgParsed.challengeRequestId, ") has passed. Will update publication props from ChallengeVerificationMessage.publication"));
                         _a = msgParsed;
                         _c = (_b = JSON).parse;
                         return [4 /*yield*/, (0, signer_1.decrypt)(msgParsed.encryptedPublication.encrypted, msgParsed.encryptedPublication.encryptedKey, this.signer.privateKey)];
@@ -157,7 +156,7 @@ var Publication = /** @class */ (function (_super) {
                         _a.trys.push([0, 2, , 3]);
                         if (!Array.isArray(challengeAnswers))
                             challengeAnswers = [challengeAnswers];
-                        debug("Challenge Answers: ".concat(challengeAnswers));
+                        debugs.DEBUG("Challenge Answers: ".concat(challengeAnswers));
                         challengeAnswer = new challenge_1.ChallengeAnswerMessage({
                             challengeRequestId: this.challenge.challengeRequestId,
                             challengeAnswerId: (0, uuid_1.v4)(),
@@ -166,11 +165,11 @@ var Publication = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeAnswer)))];
                     case 1:
                         _a.sent();
-                        debug("Responded to challenge (".concat(challengeAnswer.challengeRequestId, ") with answers ").concat(JSON.stringify(challengeAnswers)));
+                        debugs.DEBUG("Responded to challenge (".concat(challengeAnswer.challengeRequestId, ") with answers ").concat(JSON.stringify(challengeAnswers)));
                         return [3 /*break*/, 3];
                     case 2:
                         e_1 = _a.sent();
-                        debug("Failed to publish challenge answers: ", e_1);
+                        debugs.ERROR("Failed to publish challenge answers: ", e_1);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
@@ -180,35 +179,33 @@ var Publication = /** @class */ (function (_super) {
     Publication.prototype.publish = function (userOptions) {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
-            var options, _c, encryptedPublication, e_2;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
-                    case 0:
-                        _d.trys.push([0, 4, , 5]);
-                        options = __assign({ acceptedChallengeTypes: [] }, userOptions);
-                        debug("Attempting to publish ".concat(this.getType(), " with options (").concat(JSON.stringify(options), ")"));
-                        _c = this;
-                        return [4 /*yield*/, this.subplebbit.plebbit.getSubplebbit(this.subplebbitAddress)];
+            var _c, isSignatureValid, failedVerificationReason, options, _d, encryptedPublication;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
+                    case 0: return [4 /*yield*/, (0, signer_1.verifyPublication)(this)];
                     case 1:
-                        _c.subplebbit = _d.sent();
+                        _c = _e.sent(), isSignatureValid = _c[0], failedVerificationReason = _c[1];
+                        assert_1.default.ok(isSignatureValid, "Failed to publish since signature is invalid, failed verification reason: ".concat(failedVerificationReason));
+                        assert_1.default.ok(this.subplebbitAddress);
+                        options = __assign({ acceptedChallengeTypes: [] }, userOptions);
+                        debugs.DEBUG("Attempting to publish ".concat(this.getType(), " with options (").concat(JSON.stringify(options), ")"));
+                        _d = this;
+                        return [4 /*yield*/, this.subplebbit.plebbit.getSubplebbit(this.subplebbitAddress)];
+                    case 2:
+                        _d.subplebbit = _e.sent();
                         assert_1.default.ok((_b = (_a = this.subplebbit) === null || _a === void 0 ? void 0 : _a.encryption) === null || _b === void 0 ? void 0 : _b.publicKey, "Failed to load subplebbit for publishing");
                         return [4 /*yield*/, (0, signer_1.encrypt)(JSON.stringify(this), this.subplebbit.encryption.publicKey)];
-                    case 2:
-                        encryptedPublication = _d.sent();
+                    case 3:
+                        encryptedPublication = _e.sent();
                         this.challenge = new challenge_1.ChallengeRequestMessage(__assign({ encryptedPublication: encryptedPublication, challengeRequestId: (0, uuid_1.v4)() }, options));
                         return [4 /*yield*/, Promise.all([
                                 this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(this.challenge))),
                                 this.subplebbit.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this))
                             ])];
-                    case 3:
-                        _d.sent();
-                        debug("Sent a challenge request (".concat(this.challenge.challengeRequestId, ")"));
-                        return [3 /*break*/, 5];
                     case 4:
-                        e_2 = _d.sent();
-                        debug("Failed to publish: ", e_2);
-                        return [3 /*break*/, 5];
-                    case 5: return [2 /*return*/];
+                        _e.sent();
+                        debugs.INFO("Sent a challenge request (".concat(this.challenge.challengeRequestId, ")"));
+                        return [2 /*return*/];
                 }
             });
         });

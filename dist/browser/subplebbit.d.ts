@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import EventEmitter from "events";
 import { Challenge } from "./challenge";
-import DbHandler from "./runtime/browser/db-handler";
+import { DbHandler } from "./runtime/browser/db-handler";
 import { Signer } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
@@ -15,7 +15,7 @@ export declare class Subplebbit extends EventEmitter {
     posts?: Pages;
     pubsubTopic?: string;
     challengeTypes?: string[];
-    metricsCid?: string[];
+    metricsCid?: string;
     createdAt?: number;
     updatedAt?: number;
     signer?: Signer;
@@ -50,7 +50,7 @@ export declare class Subplebbit extends EventEmitter {
         address: string;
         posts: Pages;
         challengeTypes: string[];
-        metricsCid: string[];
+        metricsCid: string;
         createdAt: number;
         updatedAt: number;
         encryption: any;
@@ -64,7 +64,7 @@ export declare class Subplebbit extends EventEmitter {
         address: string;
         posts: Pages;
         challengeTypes: string[];
-        metricsCid: string[];
+        metricsCid: string;
         createdAt: number;
         updatedAt: number;
         encryption: any;

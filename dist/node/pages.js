@@ -43,13 +43,14 @@ exports.Page = exports.Pages = void 0;
 var util_1 = require("./util");
 var signer_1 = require("./signer");
 var assert_1 = __importDefault(require("assert"));
-var debug_1 = __importDefault(require("debug"));
-var debug = (0, debug_1.default)("plebbit-js:pages");
+var debugs = (0, util_1.getDebugLevels)("pages");
 var Pages = /** @class */ (function () {
     function Pages(props) {
         this.pages = props["pages"];
         this.pageCids = props["pageCids"];
         this.subplebbit = props["subplebbit"];
+        // these functions might get separated from their `this` when used
+        this.getPage = this.getPage.bind(this);
     }
     Pages.prototype.getPage = function (pageCid) {
         return __awaiter(this, void 0, void 0, function () {
@@ -71,11 +72,12 @@ var Pages = /** @class */ (function () {
                                         assert_1.default.equal(comment.subplebbitAddress, this.subplebbit.address, "Comment in page should be under the same subplebbit");
                                         if (parentComment)
                                             assert_1.default.equal(parentComment.cid, comment.parentCid, "Comment under parent comment/post should have parentCid initialized");
+                                        debugs.TRACE("In page (".concat(pageCid, "), Attempting to verify comment (").concat(comment.cid, ") under parent comment (").concat(parentComment === null || parentComment === void 0 ? void 0 : parentComment.cid, ")"));
                                         return [4 /*yield*/, (0, signer_1.verifyPublication)(comment)];
                                     case 1:
                                         _a = _b.sent(), signatureIsVerified = _a[0], failedVerificationReason = _a[1];
                                         assert_1.default.equal(signatureIsVerified, true, "Signature of published comment should be valid, Failed verification reason is ".concat(failedVerificationReason));
-                                        debug("Comment (".concat(comment.cid, ") has been verified. Will attempt to verify its ").concat(comment.replyCount, " replies"));
+                                        debugs.TRACE("Comment (".concat(comment.cid, ") has been verified. Will attempt to verify its ").concat(comment.replyCount, " replies"));
                                         if (!comment.replies) return [3 /*break*/, 3];
                                         preloadedCommentsChunks = Object.keys(comment.replies.pages).map(function (sortType) { return comment.replies.pages[sortType].comments; });
                                         return [4 /*yield*/, Promise.all(preloadedCommentsChunks.map(function (preloadedComments) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
@@ -94,11 +96,8 @@ var Pages = /** @class */ (function () {
                         return [4 /*yield*/, Promise.all(page.comments.map(function (comment) { return __awaiter(_this, void 0, void 0, function () {
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
-                                        case 0: 
-                                        // TODO verify signature
-                                        return [4 /*yield*/, verifyComment(comment, undefined)];
+                                        case 0: return [4 /*yield*/, verifyComment(comment, undefined)];
                                         case 1:
-                                            // TODO verify signature
                                             _a.sent();
                                             return [2 /*return*/];
                                     }

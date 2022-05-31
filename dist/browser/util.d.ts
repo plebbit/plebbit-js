@@ -1,3 +1,4 @@
+import Debug from "debug";
 export declare const TIMEFRAMES_TO_SECONDS: Readonly<{
     HOUR: number;
     DAY: number;
@@ -28,3 +29,11 @@ export declare function newScore(comment: any): any;
 export declare function oldScore(comment: any): number;
 export declare function removeKeysWithUndefinedValues(object: any): any;
 export declare function ipfsImportKey(signer: any, plebbit: any, password?: string): Promise<any>;
+export declare function getDebugLevels(baseName: string): {
+    FATAL: Debug;
+    ERROR: Debug;
+    WARN: Debug;
+    INFO: Debug;
+    DEBUG: Debug;
+    TRACE: Debug;
+};

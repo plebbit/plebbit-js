@@ -1,6 +1,9 @@
 import { controversialScore, hotScore } from "./util";
 import { Subplebbit } from "./subplebbit";
-import DbHandler from "./runtime/browser/db-handler";
+import { DbHandler } from "./runtime/browser/db-handler";
+import { Knex } from "knex";
+import { Comment } from "./comment";
+import Transaction = Knex.Transaction;
 export declare const POSTS_SORT_TYPES: Readonly<{
     HOT: {
         type: string;
@@ -69,5 +72,5 @@ export declare class SortHandler {
     sortCommentsByControversial(parentCid: any, timeframe: any, trx: any): Promise<any[]>;
     sortCommentsByNew(parentCid: any, trx: any): Promise<any[]>;
     getSortPromises(comment: any, trx: any): any[];
-    generatePagesUnderComment(comment: any, trx: any): Promise<{}[]>;
+    generatePagesUnderComment(comment: Comment | undefined, trx: Transaction): Promise<[Object | undefined, Object | undefined]>;
 }

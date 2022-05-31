@@ -43,16 +43,21 @@ exports.loadAllPages = exports.generateMockVote = exports.generateMockPostWithRa
 var util_1 = require("./util");
 var debug_1 = __importDefault(require("debug")); // This import is to suppress a warning statement. Leave it
 var debug = (0, debug_1.default)("plebbit-js:test-util");
-function generateMockPost(subplebbitAddress, plebbit) {
+function generateMockPost(subplebbitAddress, plebbit, signer) {
     return __awaiter(this, void 0, void 0, function () {
-        var postStartTestTime, signer, post;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var postStartTestTime, _a, post;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     postStartTestTime = Date.now() / 1000;
+                    _a = signer;
+                    if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, plebbit.createSigner()];
                 case 1:
-                    signer = _a.sent();
+                    _a = (_b.sent());
+                    _b.label = 2;
+                case 2:
+                    signer = _a;
                     return [4 /*yield*/, plebbit.createComment({
                             author: { displayName: "Mock Author - ".concat(postStartTestTime) },
                             signer: signer,
@@ -60,8 +65,8 @@ function generateMockPost(subplebbitAddress, plebbit) {
                             content: "Mock content - ".concat(postStartTestTime),
                             subplebbitAddress: subplebbitAddress
                         })];
-                case 2:
-                    post = _a.sent();
+                case 3:
+                    post = _b.sent();
                     post.once("challenge", function (challengeMsg) {
                         post.publishChallengeAnswers(undefined);
                     });
@@ -71,16 +76,21 @@ function generateMockPost(subplebbitAddress, plebbit) {
     });
 }
 exports.generateMockPost = generateMockPost;
-function generateMockComment(parentPostOrComment, plebbit) {
+function generateMockComment(parentPostOrComment, plebbit, signer) {
     return __awaiter(this, void 0, void 0, function () {
-        var commentTime, signer, comment;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var commentTime, _a, comment;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     commentTime = Date.now() / 1000;
+                    _a = signer;
+                    if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, plebbit.createSigner()];
                 case 1:
-                    signer = _a.sent();
+                    _a = (_b.sent());
+                    _b.label = 2;
+                case 2:
+                    signer = _a;
                     return [4 /*yield*/, plebbit.createComment({
                             author: { displayName: "Mock Author - ".concat(commentTime) },
                             signer: signer,
@@ -89,8 +99,8 @@ function generateMockComment(parentPostOrComment, plebbit) {
                             parentCid: parentPostOrComment.cid,
                             subplebbitAddress: parentPostOrComment.subplebbitAddress
                         })];
-                case 2:
-                    comment = _a.sent();
+                case 3:
+                    comment = _b.sent();
                     comment.once("challenge", function (challengeMsg) {
                         comment.publishChallengeAnswers(undefined);
                     });
@@ -100,18 +110,23 @@ function generateMockComment(parentPostOrComment, plebbit) {
     });
 }
 exports.generateMockComment = generateMockComment;
-function generateMockPostWithRandomTimestamp(subplebbitAddress, plebbit) {
+function generateMockPostWithRandomTimestamp(subplebbitAddress, plebbit, signer) {
     return __awaiter(this, void 0, void 0, function () {
-        var randomTimeframeIndex, postTimestamp, postTime, signer, post;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var randomTimeframeIndex, postTimestamp, postTime, _a, post;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     randomTimeframeIndex = Math.floor(Math.random() * (Object.keys(util_1.TIMEFRAMES_TO_SECONDS).length - 1));
                     postTimestamp = (0, util_1.timestamp)() - (Math.random() > 0.5 ? util_1.TIMEFRAMES_TO_SECONDS[randomTimeframeIndex] : 0);
                     postTime = Date.now();
+                    _a = signer;
+                    if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, plebbit.createSigner()];
                 case 1:
-                    signer = _a.sent();
+                    _a = (_b.sent());
+                    _b.label = 2;
+                case 2:
+                    signer = _a;
                     return [4 /*yield*/, plebbit.createComment({
                             author: { displayName: "Mock Author - ".concat(postTime) },
                             signer: signer,
@@ -120,8 +135,8 @@ function generateMockPostWithRandomTimestamp(subplebbitAddress, plebbit) {
                             subplebbitAddress: subplebbitAddress,
                             timestamp: postTimestamp
                         })];
-                case 2:
-                    post = _a.sent();
+                case 3:
+                    post = _b.sent();
                     post.once("challenge", function (challengeMsg) {
                         post.publishChallengeAnswers(undefined);
                     });
@@ -131,16 +146,21 @@ function generateMockPostWithRandomTimestamp(subplebbitAddress, plebbit) {
     });
 }
 exports.generateMockPostWithRandomTimestamp = generateMockPostWithRandomTimestamp;
-function generateMockVote(parentPostOrComment, vote, plebbit) {
+function generateMockVote(parentPostOrComment, vote, plebbit, signer) {
     return __awaiter(this, void 0, void 0, function () {
-        var voteTime, signer, voteObj;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var voteTime, _a, voteObj;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     voteTime = Date.now() / 1000;
+                    _a = signer;
+                    if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, plebbit.createSigner()];
                 case 1:
-                    signer = _a.sent();
+                    _a = (_b.sent());
+                    _b.label = 2;
+                case 2:
+                    signer = _a;
                     return [4 /*yield*/, plebbit.createVote({
                             author: { displayName: "Mock Author - ".concat(voteTime) },
                             signer: signer,
@@ -148,8 +168,8 @@ function generateMockVote(parentPostOrComment, vote, plebbit) {
                             vote: vote,
                             subplebbitAddress: parentPostOrComment.subplebbitAddress
                         })];
-                case 2:
-                    voteObj = _a.sent();
+                case 3:
+                    voteObj = _b.sent();
                     voteObj.once("challenge", function (challengeMsg) {
                         voteObj.publishChallengeAnswers(undefined);
                     });
