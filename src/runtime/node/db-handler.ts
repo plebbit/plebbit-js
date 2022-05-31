@@ -425,7 +425,8 @@ export const subplebbitInitDbIfNeeded = async (subplebbit) => {
             connection: {
                 filename: dbPath
             },
-            useNullAsDefault: true
+            useNullAsDefault: true,
+            acquireConnectionTimeout: 120000
         };
     } else debugs.DEBUG(`User provided a DB config of ${JSON.stringify(subplebbit._dbConfig)}`);
 
