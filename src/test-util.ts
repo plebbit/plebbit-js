@@ -3,9 +3,9 @@ import { Plebbit } from "./plebbit";
 import Debug from "debug"; // This import is to suppress a warning statement. Leave it
 const debug = Debug("plebbit-js:test-util");
 
-export async function generateMockPost(subplebbitAddress, plebbit) {
+export async function generateMockPost(subplebbitAddress, plebbit, signer) {
     const postStartTestTime = Date.now() / 1000;
-    const signer = await plebbit.createSigner();
+    signer = signer || (await plebbit.createSigner());
     const post = await plebbit.createComment({
         author: { displayName: `Mock Author - ${postStartTestTime}` },
         signer: signer,
@@ -19,9 +19,9 @@ export async function generateMockPost(subplebbitAddress, plebbit) {
     return post;
 }
 
-export async function generateMockComment(parentPostOrComment, plebbit) {
+export async function generateMockComment(parentPostOrComment, plebbit, signer) {
     const commentTime = Date.now() / 1000;
-    const signer = await plebbit.createSigner();
+    signer = signer || (await plebbit.createSigner());
     const comment = await plebbit.createComment({
         author: { displayName: `Mock Author - ${commentTime}` },
         signer: signer,
@@ -36,11 +36,11 @@ export async function generateMockComment(parentPostOrComment, plebbit) {
     return comment;
 }
 
-export async function generateMockPostWithRandomTimestamp(subplebbitAddress, plebbit) {
+export async function generateMockPostWithRandomTimestamp(subplebbitAddress, plebbit, signer) {
     const randomTimeframeIndex = Math.floor(Math.random() * (Object.keys(TIMEFRAMES_TO_SECONDS).length - 1));
     const postTimestamp = timestamp() - (Math.random() > 0.5 ? TIMEFRAMES_TO_SECONDS[randomTimeframeIndex] : 0);
     const postTime = Date.now();
-    const signer = await plebbit.createSigner();
+    signer = signer || (await plebbit.createSigner());
     const post = await plebbit.createComment({
         author: { displayName: `Mock Author - ${postTime}` },
         signer: signer,
@@ -56,9 +56,9 @@ export async function generateMockPostWithRandomTimestamp(subplebbitAddress, ple
     return post;
 }
 
-export async function generateMockVote(parentPostOrComment, vote, plebbit) {
+export async function generateMockVote(parentPostOrComment, vote, plebbit, signer) {
     const voteTime = Date.now() / 1000;
-    const signer = await plebbit.createSigner();
+    signer = signer || (await plebbit.createSigner());
     const voteObj = await plebbit.createVote({
         author: { displayName: `Mock Author - ${voteTime}` },
         signer: signer,

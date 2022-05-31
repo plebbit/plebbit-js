@@ -13,7 +13,7 @@ import {
     PUBSUB_MESSAGE_TYPES
 } from "./challenge";
 import assert from "assert";
-import DbHandler, { SIGNER_USAGES, subplebbitInitDbIfNeeded } from "./runtime/node/db-handler";
+import { DbHandler, SIGNER_USAGES, subplebbitInitDbIfNeeded } from "./runtime/node/db-handler";
 import { createCaptcha } from "./runtime/node/captcha";
 import { POSTS_SORT_TYPES, SortHandler } from "./sort-handler";
 import { getDebugLevels, ipfsImportKey, loadIpnsAsJson, shallowEqual, timestamp } from "./util";
@@ -22,6 +22,7 @@ import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
 import { SubplebbitEncryption } from "./types";
 import { Comment } from "./comment";
+import Vote from "./vote";
 
 const debugs = getDebugLevels("subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
@@ -37,7 +38,7 @@ export class Subplebbit extends EventEmitter {
     posts?: Pages;
     pubsubTopic?: string;
     challengeTypes?: string[];
-    metricsCid?: string[];
+    metricsCid?: string;
     createdAt?: number;
     updatedAt?: number;
     signer?: Signer;
@@ -102,8 +103,7 @@ export class Subplebbit extends EventEmitter {
 
     async initSignerIfNeeded() {
         if (this.dbHandler) {
-            // @ts-ignore
-            const dbSigner = await this.dbHandler.querySubplebbitSigner();
+            const dbSigner = await this.dbHandler.querySubplebbitSigner(undefined);
             if (!dbSigner) {
                 assert(this.signer, "Subplebbit needs a signer to start");
                 debugs.INFO(`Subplebbit has no signer in DB, will insert provided signer from createSubplebbitOptions into DB`);
@@ -272,11 +272,12 @@ export class Subplebbit extends EventEmitter {
                 pageCids: sortedPostsCids,
                 subplebbit: this
             });
+        const metricsCid = (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path;
         const newSubplebbitOptions = {
             ...(!currentIpns && !posts && !this.createdAt ? { createdAt: timestamp() } : {}),
-            posts: posts,
-            metricsCid: (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path,
-            latestPostCid: latestPost?.postCid
+            ...(JSON.stringify(posts) !== JSON.stringify(this.posts) ? { posts: posts } : {}),
+            ...(metricsCid !== this.metricsCid ? { metricsCid: metricsCid } : {}),
+            ...(latestPost?.postCid !== this.latestPostCid ? { latestPostCid: latestPost?.postCid } : {})
         };
         if (JSON.stringify(newSubplebbitOptions) !== "{}") {
             debugs.DEBUG(`Will attempt to sync subplebbit IPNS fields [${Object.keys(newSubplebbitOptions)}]`);

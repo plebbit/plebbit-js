@@ -8,7 +8,6 @@ const ipfsPath = getIpfsPath();
 // with plain Javascript and commonjs require (not import)
 // in order to test the repo like a real user would
 const Plebbit = require("../dist/node");
-const { generateMockPost, generateMockComment } = require("../dist/node/test-util");
 const signers = require("./fixtures/signers");
 const path = require("path");
 const http = require("http");
@@ -22,7 +21,7 @@ const offlineNodeArgs = {
     daemonArgs: "--offline"
 };
 const ipfsNodeArgs = {
-    dir: path.join(process.cwd(), ".test-ipfs-online"),
+    dir: path.join(process.cwd(), ".test-ipfs-pubsub"),
     apiPort: 5002,
     gatewayPort: 8081,
     daemonArgs: "--enable-pubsub-experiment",
@@ -97,24 +96,6 @@ const databaseConfig = {
     useNullAsDefault: true
 };
 
-const setupSubplebbit = async (subplebbit, plebbit) => {
-    return new Promise(async (resolve) => {
-        subplebbit.once("update", async () => {
-            // Add mock post to use in other tests
-            const post = await generateMockPost(subplebbit.address, plebbit);
-            await post.publish();
-
-            post.once("challengeverification", async (challengeVerificationMsg, updatedPost) => {
-                const comment = await generateMockComment(updatedPost, plebbit);
-                await comment.publish();
-                await subplebbit.stop();
-                resolve();
-            });
-        });
-        await subplebbit.update(syncInterval);
-    });
-};
-
 const startMathCliSubplebbit = async () => {
     const plebbit = await Plebbit({
         ipfsHttpClientOptions: `http://localhost:${offlineNodeArgs.apiPort}/api/v0`,
@@ -137,6 +118,7 @@ const startMathCliSubplebbit = async () => {
         return [challengeSuccess, challengeErrors];
     });
     await subplebbit.start(syncInterval);
+    return subplebbit;
 };
 
 const startImageCaptchaSubplebbit = async () => {
@@ -157,6 +139,7 @@ const startImageCaptchaSubplebbit = async () => {
         const challengeErrors = challengeSuccess ? undefined : ["User answered image captcha incorrectly"];
         return [challengeSuccess, challengeErrors];
     });
+    return subplebbit;
 };
 
 (async () => {
@@ -169,21 +152,13 @@ const startImageCaptchaSubplebbit = async () => {
             agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
         }
     });
-    const clientPlebbit = await Plebbit({
-        ipfsHttpClientOptions: `http://localhost:${offlineNodeArgs.apiPort}/api/v0`,
-        pubsubHttpClientOptions: {
-            url: `http://localhost:${ipfsNodeArgs.apiPort}/api/v0`,
-            agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
-        }
-    });
     const signer = await plebbit.createSigner(signers[0]);
     const subplebbit = await plebbit.createSubplebbit({ signer: signer, database: databaseConfig });
-    await subplebbit.setProvideCaptchaCallback(() => [null, null]); // TODO change later to allow changing captcha callback while test-server.js is running (needed for test-Challenge.js)
+    await subplebbit.setProvideCaptchaCallback(() => [null, null]);
 
     subplebbit.start(syncInterval);
-    startImageCaptchaSubplebbit();
-    startMathCliSubplebbit();
+    const imageSubplebbit = await startImageCaptchaSubplebbit();
+    const mathSubplebbit = await startMathCliSubplebbit();
 
-    await setupSubplebbit(subplebbit, clientPlebbit);
     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 })();
