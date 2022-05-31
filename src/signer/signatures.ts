@@ -1,14 +1,13 @@
-import Debug from "debug";
 import { getKeyPairFromPrivateKeyPem, getPeerIdFromPublicKeyPem } from "./util";
 import { encode } from "cborg";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import assert from "assert";
 import PeerId from "peer-id";
-import { keepKeys, removeKeysWithUndefinedValues } from "../util";
+import { getDebugLevels, keepKeys, removeKeysWithUndefinedValues } from "../util";
 import Publication from "../publication";
 
-const debug = Debug("plebbit-js:signer:signatures");
+const debugs = getDebugLevels("signer:signatures");
 
 export class Signature {
     signature: string;
@@ -64,25 +63,23 @@ export const signBufferRsa = async (bufferToSign, privateKeyPem, privateKeyPemPa
     assert(isProbablyBuffer(bufferToSign), `signBufferRsa invalid bufferToSign '${bufferToSign}' not buffer`);
     const keyPair = await getKeyPairFromPrivateKeyPem(privateKeyPem, privateKeyPemPassword);
     // do not use libp2p keyPair.sign to sign strings, it doesn't encode properly in the browser
-    const signature = await keyPair.sign(bufferToSign);
-    return signature;
+    return await keyPair.sign(bufferToSign);
 };
 
 export const verifyBufferRsa = async (bufferToSign, bufferSignature, publicKeyPem) => {
     assert(isProbablyBuffer(bufferToSign), `verifyBufferRsa invalid bufferSignature '${bufferToSign}' not buffer`);
     assert(isProbablyBuffer(bufferSignature), `verifyBufferRsa invalid bufferSignature '${bufferSignature}' not buffer`);
     const peerId = await getPeerIdFromPublicKeyPem(publicKeyPem);
-    const verified = await peerId.pubKey.verify(bufferToSign, bufferSignature);
-    return verified;
+    return await peerId.pubKey.verify(bufferToSign, bufferSignature);
 };
 
 export async function signPublication(publication, signer) {
     const fieldsToSign = getFieldsToSign(publication);
-    debug(`Will sign fields ${JSON.stringify(fieldsToSign)}`);
-    const publicationSignFields = keepKeys(publication, fieldsToSign);
-    const commentEncoded = encode(removeKeysWithUndefinedValues(publicationSignFields)); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    const publicationSignFields = removeKeysWithUndefinedValues(keepKeys(publication, fieldsToSign));
+    debugs.TRACE(`Fields to sign: ${JSON.stringify(fieldsToSign)}. Publication object to sign:  ${JSON.stringify(publicationSignFields)}`);
+    const commentEncoded = encode(publicationSignFields); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
     const signatureData = uint8ArrayToString(await signBufferRsa(commentEncoded, signer.privateKey), "base64");
-    debug(`Publication been signed, signature data is (${signatureData})`);
+    debugs.DEBUG(`Publication been signed, signature data is (${signatureData})`);
     return new Signature({
         signature: signatureData,
         publicKey: signer.publicKey,
@@ -103,6 +100,11 @@ export async function verifyPublication(publication) {
     };
     const verifyPublicationSignature = async (signature, publicationToBeVerified) => {
         const commentWithFieldsToSign = keepKeys(publicationToBeVerified, signature.signedPropertyNames);
+        debugs.DEBUG(
+            `signature.signedPropertyNames: [${signature.signedPropertyNames}], Attempt to verify a publication: ${JSON.stringify(
+                commentWithFieldsToSign
+            )}`
+        );
         const commentEncoded = encode(removeKeysWithUndefinedValues(commentWithFieldsToSign));
         const signatureIsValid = await verifyBufferRsa(
             commentEncoded,
@@ -115,30 +117,30 @@ export async function verifyPublication(publication) {
     try {
         if (publication.originalContent) {
             // This is a comment/post that has been edited, and we need to verify both signature and editSignature
-            debug(
+            debugs.TRACE(
                 "Attempting to verify a comment that has been edited. Will verify comment.author,  comment.signature and comment.editSignature"
             );
             publication.author ? await verifyAuthor(publication.signature, publication.author) : undefined;
             const publicationJson = publication instanceof Publication ? publication.toJSON() : publication;
             const originalSignatureObj = { ...publicationJson, content: publication.originalContent };
-            debug(`Attempting to verify comment.signature`);
+            debugs.TRACE(`Attempting to verify comment.signature`);
             await verifyPublicationSignature(publication.signature, originalSignatureObj);
-            debug(`Attempting to verify comment.signature`);
+            debugs.TRACE(`Attempting to verify comment.editSignature`);
             const editedSignatureObj = { ...publicationJson, commentCid: publication.cid };
             await verifyPublicationSignature(publication.editSignature, editedSignatureObj);
         } else if (publication.commentCid && publication.content) {
             // Verify CommentEdit
-            debug(`Attempting to verify CommentEdit`);
+            debugs.TRACE(`Attempting to verify CommentEdit`);
             await verifyPublicationSignature(publication.editSignature, publication);
         } else {
-            debug(`Attempting to verify post/comment/vote`);
+            debugs.TRACE(`Attempting to verify post/comment/vote`);
             publication.author ? await verifyAuthor(publication.signature, publication.author) : undefined;
             await verifyPublicationSignature(publication.signature, publication);
         }
-        debug("Publication has been verified");
+        debugs.TRACE("Publication has been verified");
         return [true];
     } catch (e) {
-        debug(`Failed to verify publication`);
+        debugs.WARN(`Failed to verify publication`);
         return [false, String(e)];
     }
 }

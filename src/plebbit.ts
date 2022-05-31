@@ -3,14 +3,13 @@ import plebbitUtil from "./runtime/node/util";
 import { Comment, CommentEdit } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
-import { loadIpfsFileAsJson, loadIpnsAsJson, timestamp } from "./util";
+import { getDebugLevels, loadIpfsFileAsJson, loadIpnsAsJson, timestamp } from "./util";
 import Vote from "./vote";
 import { create as createIpfsClient, IPFSHTTPClient } from "ipfs-http-client";
 import assert from "assert";
-import Debug from "debug";
 import { createSigner, Signer, signPublication, verifyPublication } from "./signer";
 
-const debug = Debug("plebbit-js:plebbit");
+const debugs = getDebugLevels("plebbit");
 
 export class Plebbit {
     ipfsHttpClientOptions: string | any;
@@ -68,13 +67,13 @@ export class Plebbit {
     defaultTimestampIfNeeded(createPublicationOptions) {
         if (!createPublicationOptions.timestamp) {
             const defaultTimestamp = timestamp();
-            debug(`User hasn't provided a timestamp in options, defaulting to (${defaultTimestamp})`);
+            debugs.DEBUG(`User hasn't provided a timestamp in options, defaulting to (${defaultTimestamp})`);
             createPublicationOptions.timestamp = defaultTimestamp;
         }
         return createPublicationOptions;
     }
 
-    async createComment(createCommentOptions) {
+    async createComment(createCommentOptions): Promise<Comment | Post> {
         const commentSubplebbit = { plebbit: this };
         if (!createCommentOptions.signer)
             return createCommentOptions.title
@@ -85,11 +84,11 @@ export class Plebbit {
         return commentProps.title ? new Post(commentProps, commentSubplebbit) : new Comment(commentProps, commentSubplebbit);
     }
 
-    async createSubplebbit(createSubplebbitOptions) {
+    async createSubplebbit(createSubplebbitOptions): Promise<Subplebbit> {
         return new Subplebbit(createSubplebbitOptions, this);
     }
 
-    async createVote(createVoteOptions) {
+    async createVote(createVoteOptions): Promise<Vote> {
         const subplebbit = { plebbit: this };
         if (!createVoteOptions.signer) return new Vote(createVoteOptions, subplebbit);
         createVoteOptions = this.defaultTimestampIfNeeded(createVoteOptions);
@@ -97,7 +96,7 @@ export class Plebbit {
         return new Vote(voteProps, subplebbit);
     }
 
-    async createCommentEdit(createCommentEditOptions) {
+    async createCommentEdit(createCommentEditOptions): Promise<CommentEdit> {
         const commentSubplebbit = { plebbit: this };
 
         if (!createCommentEditOptions.signer)
@@ -105,7 +104,7 @@ export class Plebbit {
             return new CommentEdit(createCommentEditOptions, commentSubplebbit);
         if (!createCommentEditOptions.editTimestamp) {
             const defaultTimestamp = timestamp();
-            debug(`User hasn't provided any editTimestamp for their CommentEdit, defaulted to (${defaultTimestamp})`);
+            debugs.DEBUG(`User hasn't provided any editTimestamp for their CommentEdit, defaulted to (${defaultTimestamp})`);
             createCommentEditOptions.editTimestamp = defaultTimestamp;
         }
 

@@ -1,12 +1,11 @@
 import assert from "assert";
-import { loadIpnsAsJson, parseJsonIfString, removeKeysWithUndefinedValues } from "./util";
+import { getDebugLevels, loadIpnsAsJson, parseJsonIfString, removeKeysWithUndefinedValues, shallowEqual } from "./util";
 import Publication from "./publication";
-import Debug from "debug";
 import { Pages } from "./pages";
 import { REPLIES_SORT_TYPES } from "./sort-handler";
 import { Signature } from "./signer";
 
-const debug = Debug("plebbit-js:comment");
+const debugs = getDebugLevels("comment");
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
@@ -188,17 +187,16 @@ export class Comment extends Publication {
         try {
             res = await loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit);
         } catch (e) {
-            debug(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error = ${e.message}`);
+            debugs.WARN(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error = ${e.message}`);
         }
-        if (!res) debug(`Comment (${this.cid}) IPNS (${this.ipnsName}) is not pointing to any file`);
+        if (!res) return;
         else {
-            if (res.updatedAt !== this.emittedAt) {
-                debug(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Emitting an update event...`);
-                this.emittedAt = res.updatedAt;
+            if (!shallowEqual(this.toJSONCommentUpdate(), res)) {
+                debugs.DEBUG(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Emitting an update event...`);
                 this._initCommentUpdate(res);
                 this.emit("update", this);
             } else {
-                debug(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
+                debugs.TRACE(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
                 this._initCommentUpdate(res);
             }
             return this;
@@ -207,7 +205,7 @@ export class Comment extends Publication {
 
     update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
         assert(this.ipnsName, "Comment need to have ipnsName field to poll updates");
-        debug(`Starting to poll updates for comment (${this.cid}) IPNS (${this.ipnsName}) every ${updateIntervalMs} milliseconds`);
+        debugs.DEBUG(`Starting to poll updates for comment (${this.cid}) IPNS (${this.ipnsName}) every ${updateIntervalMs} milliseconds`);
         if (this._updateInterval) clearInterval(this._updateInterval);
         this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
         return this.updateOnce();
@@ -221,13 +219,22 @@ export class Comment extends Publication {
         assert(this.ipnsKeyName, "You need to have commentUpdate");
         this._initCommentUpdate(commentUpdateOptions);
         const file = await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate()));
-        debug(`Added comment (${this.cid}) IPNS (${this.ipnsName}) to ipfs, cid is ${file.path}`);
         await this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
             lifetime: "72h",
             key: this.ipnsKeyName,
             allowOffline: true
         });
-        debug(`Linked comment (${this.cid}) ipns name(${this.ipnsName}) to ipfs file (${file.path})`);
+        debugs.DEBUG(`Linked comment (${this.cid}) ipns name(${this.ipnsName}) to ipfs file (${file.path})`);
+    }
+
+    async publish(userOptions): Promise<void> {
+        assert(this.content, "Need content field to publish comment");
+        if (!this.toJSON().hasOwnProperty("commentCid")) {
+            // Assert timestamp only if this is not a CommentEdit
+            assert(this.timestamp, "Need timestamp field to publish comment");
+            assert(this.author, "Need author to publish comment");
+        }
+        return super.publish(userOptions);
     }
 }
 

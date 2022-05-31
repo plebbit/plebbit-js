@@ -2,10 +2,9 @@ import { PUBSUB_MESSAGE_TYPES } from "../../challenge";
 import Post from "../../post";
 import Author from "../../author";
 import { Comment } from "../../comment";
-import { removeKeysWithUndefinedValues, replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
+import { getDebugLevels, removeKeysWithUndefinedValues, replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
 import Vote from "../../vote";
 import knex, { Knex } from "knex";
-import Debug from "debug";
 import { Subplebbit } from "../../subplebbit";
 import path from "path";
 import assert from "assert";
@@ -13,7 +12,7 @@ import fs from "fs";
 import Keyv from "keyv";
 import Transaction = Knex.Transaction;
 
-const debug = Debug("plebbit-js:db-handler");
+const debugs = getDebugLevels("db-handler");
 
 export const SIGNER_USAGES = { SUBPLEBBIT: "subplebbit", COMMENT: "comment" };
 
@@ -507,7 +506,7 @@ export const subplebbitInitDbIfNeeded = async (subplebbit) => {
     if (!subplebbit._dbConfig) {
         assert(subplebbit.address, "Need subplebbit address to initialize a DB connection");
         const dbPath = path.join(subplebbit.plebbit.dataPath, subplebbit.address);
-        debug(`User has not provided a DB config. Will initialize DB in ${dbPath}`);
+        debugs.INFO(`User has not provided a DB config. Will initialize DB in ${dbPath}`);
         subplebbit._dbConfig = {
             client: "better-sqlite3", // or 'better-sqlite3'
             connection: {
@@ -515,7 +514,7 @@ export const subplebbitInitDbIfNeeded = async (subplebbit) => {
             },
             useNullAsDefault: true
         };
-    } else debug(`User provided a DB config of ${JSON.stringify(subplebbit._dbConfig)}`);
+    } else debugs.DEBUG(`User provided a DB config of ${JSON.stringify(subplebbit._dbConfig)}`);
 
     const dir = path.dirname(subplebbit._dbConfig.connection.filename);
     await fs.promises.mkdir(dir, { recursive: true });
@@ -524,5 +523,3 @@ export const subplebbitInitDbIfNeeded = async (subplebbit) => {
     await subplebbit.initSignerIfNeeded();
     subplebbit._keyv = new Keyv(`sqlite://${subplebbit._dbConfig.connection.filename}`); // TODO make this work with DBs other than sqlite
 };
-
-export default DbHandler;

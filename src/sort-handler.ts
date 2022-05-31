@@ -1,11 +1,22 @@
-import { chunks, controversialScore, hotScore, keepKeys, removeKeysWithUndefinedValues, TIMEFRAMES_TO_SECONDS, timestamp } from "./util";
-import Debug from "debug";
+import {
+    chunks,
+    controversialScore,
+    getDebugLevels,
+    hotScore,
+    keepKeys,
+    removeKeysWithUndefinedValues,
+    TIMEFRAMES_TO_SECONDS,
+    timestamp
+} from "./util";
 import { Page } from "./pages";
 import { Subplebbit } from "./subplebbit";
-import DbHandler from "./runtime/node/db-handler";
+import { DbHandler } from "./runtime/node/db-handler";
 import assert from "assert";
+import { Knex } from "knex";
+import { Comment } from "./comment";
+import Transaction = Knex.Transaction;
 
-const debug = Debug("plebbit-js:sort-handler");
+const debugs = getDebugLevels("sort-handler");
 
 export const POSTS_SORT_TYPES = Object.freeze({
     HOT: { type: "hot", score: hotScore },
@@ -153,7 +164,7 @@ export class SortHandler {
         }
     }
 
-    async generatePagesUnderComment(comment, trx) {
+    async generatePagesUnderComment(comment: Comment | undefined, trx: Transaction): Promise<[Object | undefined, Object | undefined]> {
         // Create "pages" and "pageCids"
         if (comment?.replyCount === 0) return [undefined, undefined];
         const res = await Promise.all(this.getSortPromises(comment, trx));

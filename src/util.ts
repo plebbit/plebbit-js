@@ -15,7 +15,7 @@ export const TIMEFRAMES_TO_SECONDS = Object.freeze({
     YEAR: 60 * 60 * 24 * 7 * 4 * 12,
     ALL: Infinity
 });
-const debug = Debug("plebbit-js:util");
+const debugs = getDebugLevels("util");
 
 export async function loadIpfsFileAsJson(cid, plebbit, defaultOptions = { timeout: 60000 }) {
     assert.ok(cid, "Cid has to not be null to load");
@@ -188,4 +188,11 @@ export async function ipfsImportKey(signer, plebbit, password = "") {
     });
     if (res.status !== 200) throw Error(`failed ipfs import key: '${url}' '${res.status}' '${res.statusText}'`);
     return await res.json();
+}
+
+export function getDebugLevels(baseName: string): { FATAL: Debug; ERROR: Debug; WARN: Debug; INFO: Debug; DEBUG: Debug; TRACE: Debug } {
+    const debugsObj = ["FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE"].map((debugLevel) => ({
+        [debugLevel]: Debug(`plebbit-js:${baseName}:${debugLevel}`)
+    }));
+    return Object.assign({}, ...debugsObj);
 }

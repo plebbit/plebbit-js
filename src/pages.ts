@@ -1,11 +1,10 @@
-import { loadIpfsFileAsJson } from "./util";
+import { getDebugLevels, loadIpfsFileAsJson } from "./util";
 import { verifyPublication } from "./signer";
 import assert from "assert";
-import Debug from "debug";
 import { Subplebbit } from "./subplebbit";
 import { Comment } from "./comment";
 
-const debug = Debug("plebbit-js:pages");
+const debugs = getDebugLevels("pages");
 
 export class Pages {
     pages: { [sortType: string]: Page };
@@ -27,13 +26,16 @@ export class Pages {
             assert.equal(comment.subplebbitAddress, this.subplebbit.address, "Comment in page should be under the same subplebbit");
             if (parentComment)
                 assert.equal(parentComment.cid, comment.parentCid, "Comment under parent comment/post should have parentCid initialized");
+            debugs.TRACE(
+                `In page (${pageCid}), Attempting to verify comment (${comment.cid}) under parent comment (${parentComment?.cid})`
+            );
             const [signatureIsVerified, failedVerificationReason] = await verifyPublication(comment);
             assert.equal(
                 signatureIsVerified,
                 true,
                 `Signature of published comment should be valid, Failed verification reason is ${failedVerificationReason}`
             );
-            debug(`Comment (${comment.cid}) has been verified. Will attempt to verify its ${comment.replyCount} replies`);
+            debugs.TRACE(`Comment (${comment.cid}) has been verified. Will attempt to verify its ${comment.replyCount} replies`);
             if (comment.replies) {
                 const preloadedCommentsChunks = Object.keys(comment.replies.pages).map(
                     (sortType) => comment.replies.pages[sortType].comments
@@ -49,7 +51,6 @@ export class Pages {
 
         await Promise.all(
             page.comments.map(async (comment) => {
-                // TODO verify signature
                 await verifyComment(comment, undefined);
             })
         );
