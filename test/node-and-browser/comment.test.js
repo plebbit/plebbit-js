@@ -21,30 +21,28 @@ before(async () => {
 describe("comment (node and browser)", async () => {
     describe("createComment", async () => {
         it("Can sign and verify a comment with randomly generated key", async () => {
-            const signer = await plebbit.createSigner();
             const comment = {
                 subplebbitAddress: subplebbitAddress,
-                author: { address: signer.address },
+                author: { address: signers[0].address },
                 timestamp: timestamp(),
                 title: "Test post signature",
                 content: "some content..."
             };
-            const signature = await signPublication(comment, signer);
+            const signature = await signPublication(comment, signers[0]);
             const signedComment = { signature: signature.toJSON(), ...comment };
             const [isVerified, failedVerificationReason] = await verifyPublication(signedComment);
             expect(isVerified).to.be.true;
         });
 
         it("Verification fails when signature is corrupted", async () => {
-            const signer = await plebbit.createSigner();
             const comment = {
                 subplebbitAddress: subplebbitAddress,
-                author: { address: signer.address },
+                author: { address: signers[0].address },
                 timestamp: timestamp(),
                 title: "Test post signature",
                 content: "some content..."
             };
-            const signature = await signPublication(comment, signer);
+            const signature = await signPublication(comment, signers[0]);
             signature.signature = signature.signature.slice(1); // Corrupt signature by deleting one character
             const signedComment = { signature: signature.toJSON(), ...comment };
             const [isVerified, failedVerificationReason] = await verifyPublication(signedComment);
@@ -71,23 +69,20 @@ describe("comment (node and browser)", async () => {
     describe("publishing", async () => {
         it("Publishing a comment with invalid signature fails", async () => {
             return new Promise(async (resolve, reject) => {
-                const mockComment = await generateMockPost(subplebbitAddress, plebbit);
+                const mockComment = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
                 mockComment.signature.signature = mockComment.signature.signature.slice(1); // Corrupts signature by deleting one key
-                await mockComment.publish();
-                mockComment.once("challengeverification", (challengeVerificationMessage, newComment) => {
-                    expect(challengeVerificationMessage.challengeSuccess).to.be.false;
-                    expect(challengeVerificationMessage.reason).to.have.lengthOf.above(
-                        0,
-                        "There should be an error message that tells the user that comment's signature is invalid"
-                    );
+                try {
+                    await mockComment.publish();
+                    expect.fail("comment.publish should throw an error");
+                } catch {
                     resolve();
-                });
+                }
             });
         });
 
         it("Can publish a post", async function () {
             return new Promise(async (resolve, reject) => {
-                const mockPost = await generateMockPost(subplebbitAddress, plebbit);
+                const mockPost = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
                 const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
                 await subplebbit.update(updateInterval);
                 const originalLatestPostCid = subplebbit.latestPostCid;
@@ -117,8 +112,14 @@ describe("comment (node and browser)", async () => {
 
         it("Throws an error when a user attempts to publish a comment under a non existent parent", async () => {
             return new Promise(async (resolve) => {
-                const comment = await generateMockComment(mockComments[0], plebbit);
-                comment.parentCid = comment.parentCid.slice(1); // Corrupt parentCid
+                const comment = await plebbit.createComment({
+                    parentCid: "gibberish", // invalid parentCid,
+                    author: { displayName: `Mock Author - ${Date.now()}` },
+                    signer: signers[0],
+                    content: `Mock comment - ${Date.now()}`,
+                    postCid: mockComments[0].postCid,
+                    subplebbitAddress: mockComments[0].subplebbitAddress
+                });
                 await comment.publish();
                 comment.once("challengeverification", (challengeVerificationMessage, updatedComment) => {
                     expect(challengeVerificationMessage.challengeSuccess).to.be.false;
@@ -133,7 +134,7 @@ describe("comment (node and browser)", async () => {
             it(`Can publish comment with depth = ${depth}`, async () => {
                 return new Promise(async (resolve, reject) => {
                     const parentComment = mockComments[depth - 1];
-                    const mockComment = await generateMockComment(parentComment, plebbit);
+                    const mockComment = await generateMockComment(parentComment, plebbit, signers[4]);
                     await waitTillCommentsUpdate([parentComment], updateInterval);
                     await parentComment.update(updateInterval);
                     expect(parentComment.updatedAt).to.be.a("number");
@@ -172,7 +173,7 @@ describe("comment (node and browser)", async () => {
                     commentCid: commentToBeEdited.cid,
                     editReason: editReason,
                     content: editedText,
-                    signer: await plebbit.createSigner() // Create a new signer, different than the signer of the original comment
+                    signer: signers[7] // Create a new signer, different than the signer of the original comment
                 });
                 await commentEdit.publish();
                 commentEdit.once("challengeverification", async (challengeVerificationMessage, updatedCommentEdit) => {

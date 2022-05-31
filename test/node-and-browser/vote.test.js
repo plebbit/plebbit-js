@@ -1,8 +1,8 @@
 const Plebbit = require("../../dist/node");
 const { expect } = require("chai");
 const signers = require("../fixtures/signers");
-const { generateMockVote } = require("../../dist/node/test-util");
-const { timestamp } = require("../../dist/node/util");
+const { generateMockVote, generateMockPost } = require("../../dist/node/test-util");
+const { timestamp, waitTillPublicationsArePublished, waitTillCommentsUpdate } = require("../../dist/node/util");
 
 const subplebbitAddress = signers[0].address;
 
@@ -18,25 +18,29 @@ describe("Test Vote", async () => {
         });
         subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         await subplebbit.update(updateInterval);
-        postToVote = await plebbit.getComment(subplebbit.latestPostCid);
+        postToVote = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
+        await postToVote.publish();
+        await waitTillPublicationsArePublished([postToVote]);
+        await waitTillCommentsUpdate([postToVote], updateInterval);
+        expect(postToVote.cid).to.be.a("string");
     });
 
     it("Can upvote a comment", async () => {
         return new Promise(async (resolve, reject) => {
-            const vote = await generateMockVote(postToVote, 1, plebbit);
+            const vote = await generateMockVote(postToVote, 1, plebbit, signers[0]);
 
-            await (await generateMockVote(postToVote, 1, plebbit)).publish(); // This vote is added just to start an "update" event and make sure originalUpvoteCount down below is accurate
+            await (await generateMockVote(postToVote, 1, plebbit, signers[1])).publish(); // This vote is added just to start an "update" event and make sure originalUpvoteCount down below is accurate
 
-            subplebbit.once("update", async (updatedSubplebbit) => {
-                await postToVote.update(updateInterval);
-                const originalUpvote = postToVote.upvoteCount;
-                await vote.publish();
-                postToVote.once("update", async (updatedPost) => {
-                    expect(updatedPost.upvoteCount).to.be.equal(originalUpvote + 1);
-                    previousVotes.push(vote);
-                    resolve();
-                });
+            await waitTillCommentsUpdate([postToVote], updateInterval);
+            await postToVote.update(updateInterval);
+            const originalUpvote = postToVote.upvoteCount;
+            await vote.publish();
+            postToVote.once("update", async (updatedPost) => {
+                expect(updatedPost.upvoteCount).to.be.equal(originalUpvote + 1);
+                previousVotes.push(vote);
+                resolve();
             });
+            await subplebbit.stop();
         });
     });
 
@@ -58,8 +62,7 @@ describe("Test Vote", async () => {
 
     it("Throws an error when vote's comment does not exist", async () => {
         return new Promise(async (resolve, reject) => {
-            const vote = await generateMockVote(postToVote, 1, plebbit);
-            vote.commentCid = vote.commentCid.slice(1); // Corrupt commentCid
+            const vote = await generateMockVote({ ...postToVote.toJSON(), commentCid: "gibbrish" }, 1, plebbit, signers[0]);
             await vote.publish();
             vote.once("challengeverification", async (challengeVerificationMsg, updatedVote) => {
                 expect(challengeVerificationMsg.challengeSuccess).to.be.false;
@@ -109,7 +112,7 @@ describe("Test Vote", async () => {
     it("Can downvote a comment", async () => {
         return new Promise(async (resolve, reject) => {
             const originalDownvote = postToVote.downvoteCount;
-            const vote = await generateMockVote(postToVote, -1, plebbit);
+            const vote = await generateMockVote(postToVote, -1, plebbit, signers[2]);
             await vote.publish();
             postToVote.once("update", async (updatedPost) => {
                 expect(updatedPost.downvoteCount).to.equal(originalDownvote + 1);
@@ -129,12 +132,13 @@ describe("Test Vote", async () => {
                 vote: 1,
                 timestamp: timestamp()
             });
-            await vote.publish();
+            await postToVote.update(updateInterval);
             postToVote.once("update", async (updatedPost) => {
                 expect(updatedPost.upvoteCount).to.equal(originalUpvote + 1, "Failed to update upvote count");
                 expect(updatedPost.downvoteCount).to.equal(originalDownvote - 1, "Failed to update downvote count");
                 resolve();
             });
+            await vote.publish();
         });
     });
 

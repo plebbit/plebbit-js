@@ -18,7 +18,7 @@ describe("Test challenges", async () => {
     describe("math-cli", async () => {
         it("can post after answering correctly", async function () {
             return new Promise(async (resolve, reject) => {
-                const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit);
+                const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[0]);
                 mockPost.removeAllListeners();
                 await mockPost.publish();
                 mockPost.once("challenge", (challengeMessage) => {
@@ -33,7 +33,7 @@ describe("Test challenges", async () => {
 
         it("Throws an error when user fails to solve mathcli captcha", async function () {
             return new Promise(async (resolve, reject) => {
-                const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit);
+                const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[0]);
                 mockPost.removeAllListeners();
 
                 mockPost.once("challenge", (challengeMessage) => {
@@ -52,7 +52,7 @@ describe("Test challenges", async () => {
 describe("image captcha", async () => {
     it("can post after answering correctly", async function () {
         return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+            const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit, signers[0]);
             mockPost.removeAllListeners();
 
             mockPost.once("challenge", async (challengeMsg) => {
@@ -71,7 +71,7 @@ describe("image captcha", async () => {
 
     it("Throws an error if unable to solve image captcha", async function () {
         return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+            const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit, signers[0]);
             await mockPost.publish();
             mockPost.once("challengeverification", async (challengeVerificationMessage, newComment) => {
                 expect(challengeVerificationMessage.challengeSuccess).to.be.false;
