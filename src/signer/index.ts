@@ -6,7 +6,6 @@ import {
     getIpfsKeyFromPrivateKeyPem
 } from "./util";
 import assert from "assert";
-import { Buffer } from "buffer";
 export { signPublication, verifyPublication, Signature } from "./signatures";
 export { encrypt, decrypt } from "./encryption";
 
@@ -15,14 +14,14 @@ export class Signer {
     privateKey: string;
     publicKey?: string;
     address?: string;
-    ipfsKey?: Buffer;
+    ipfsKey?: Uint8Array;
 
     constructor(props) {
         this.type = props.type;
         this.privateKey = props.privateKey;
         this.publicKey = props.publicKey;
         this.address = props.address;
-        this.ipfsKey = Buffer.from(props.ipfsKey);
+        this.ipfsKey = new Uint8Array(props.ipfsKey);
     }
 
     toJSON() {

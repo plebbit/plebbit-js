@@ -42,7 +42,7 @@ export async function loadIpnsAsJson(ipns, plebbit) {
     } else {
         const cid = await last(plebbit.ipfsClient.name.resolve(ipns));
         if (!cid) throw new Error(`IPNS (${ipns}) resolves to undefined`);
-        debug(`IPNS (${ipns}) resolved to ${cid}`);
+        debugs.TRACE(`IPNS (${ipns}) resolved to ${cid}`);
         return loadIpfsFileAsJson(cid, plebbit);
     }
 }
@@ -177,16 +177,16 @@ export function removeKeysWithUndefinedValues(object) {
 // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
 export async function ipfsImportKey(signer, plebbit, password = "") {
     const data = new FormData();
-    data.append("file", signer.ipfsKey);
+    data.append("file", Buffer.from(signer.ipfsKey));
     const nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
-    if (!nodeUrl) throw "Can't figure out ipfs node URL";
+    if (!nodeUrl) throw new Error("Can't figure out ipfs node URL");
     const url = `${nodeUrl}/key/import?arg=${signer.ipnsKeyName}`;
     const res = await fetch(url, {
         method: "POST",
         body: data,
         headers: plebbit.ipfsHttpClientOptions?.headers
     });
-    if (res.status !== 200) throw Error(`failed ipfs import key: '${url}' '${res.status}' '${res.statusText}'`);
+    if (res.status !== 200) throw new Error(`failed ipfs import key: '${url}' '${res.status}' '${res.statusText}'`);
     return await res.json();
 }
 
