@@ -143,36 +143,20 @@ export class DbHandler {
         }
     }
 
-    async addAuthorToDbIfNeeded(author, trx = undefined) {
-        return new Promise(async (resolve, reject) => {
-            const authorFromDb = await this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first();
-            if (!authorFromDb)
-                // Author is new. Add to database
-                this.baseTransaction(trx)(TABLES.AUTHORS)
-                    .insert(author.toJSON())
-                    .then(() => resolve(author.toJSON()))
-                    .catch((err) => {
-                        console.error(err);
-                        reject(err);
-                    });
-            else resolve(authorFromDb);
-        });
+    async addAuthorToDbIfNeeded(author: Author, trx: Transaction | undefined) {
+        const authorFromDb = await this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first();
+        if (!authorFromDb) {
+            // Author is new. Add to database
+            await this.baseTransaction(trx)(TABLES.AUTHORS).insert(author.toJSONForDb());
+            return author.toJSONForDb();
+        } else return authorFromDb;
     }
 
     async upsertVote(vote, challengeRequestId, trx = undefined) {
-        return new Promise(async (resolve, reject) => {
-            await this.addAuthorToDbIfNeeded(vote.author, trx);
-            const dbObject = vote.toJSONForDb(challengeRequestId);
-            this.baseTransaction(trx)(TABLES.VOTES)
-                .insert(dbObject)
-                .onConflict(["commentCid", "authorAddress"])
-                .merge()
-                .then(() => resolve(dbObject))
-                .catch((err) => {
-                    console.error(err);
-                    reject(err);
-                });
-        });
+        await this.addAuthorToDbIfNeeded(vote.author, trx);
+        const dbObject = vote.toJSONForDb(challengeRequestId);
+        await this.baseTransaction(trx)(TABLES.VOTES).insert(dbObject).onConflict(["commentCid", "authorAddress"]).merge();
+        return dbObject;
     }
 
     async upsertComment(postOrComment: any, challengeRequestId, trx = undefined) {
@@ -229,20 +213,14 @@ export class DbHandler {
         });
     }
 
-    async getLastVoteOfAuthor(commentCid, authorAddress, trx = undefined) {
-        return new Promise(async (resolve, reject) => {
-            this.baseTransaction(trx)(TABLES.VOTES)
-                .where({
-                    commentCid: commentCid,
-                    authorAddress: authorAddress
-                })
-                .first()
-                .then(async (res) => resolve((await this.createVotesFromRows.bind(this)(res, trx))[0]))
-                .catch((err) => {
-                    console.error(err);
-                    reject(err);
-                });
-        });
+    async getLastVoteOfAuthor(commentCid, authorAddress, trx = undefined): Promise<Vote> {
+        const voteObj = await this.baseTransaction(trx)(TABLES.VOTES)
+            .where({
+                commentCid: commentCid,
+                authorAddress: authorAddress
+            })
+            .first();
+        return (await this.createVotesFromRows(voteObj, trx))[0];
     }
 
     baseCommentQuery(trx) {
@@ -271,31 +249,16 @@ export class DbHandler {
         return this.baseTransaction(trx)(TABLES.COMMENTS).select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery);
     }
 
-    async createCommentsFromRows(commentsRows, trx) {
-        return new Promise(async (resolve, reject) => {
-            if (!commentsRows) resolve([undefined]);
-            else {
-                if (!Array.isArray(commentsRows)) commentsRows = [commentsRows];
-                commentsRows = commentsRows.map((props) => replaceXWithY(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
-                const authors = (
-                    await this.baseTransaction(trx)(TABLES.AUTHORS).whereIn(
-                        "address",
-                        commentsRows.map((post) => post.authorAddress)
-                    )
-                ).map((authorProps) => new Author(authorProps));
-                const comments = commentsRows.map((commentProps) => {
-                    const props = {
-                        ...commentProps,
-                        author: authors.filter((author) => author.address === commentProps.authorAddress)[0]
-                    };
-                    if (props["title"])
-                        // @ts-ignore
-                        return new Post(props, this.subplebbit);
-                    else return new Comment(props, this.subplebbit);
-                });
-                resolve(comments);
-            }
-        });
+    async createCommentsFromRows(commentsRows, trx: Transaction | undefined): Promise<Comment[] | Post[]> {
+        if (!commentsRows) return [undefined];
+
+        if (!Array.isArray(commentsRows)) commentsRows = [commentsRows];
+        commentsRows = commentsRows.map((props) => replaceXWithY(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
+        return await Promise.all(
+            commentsRows.map((commentProps) => {
+                return this.subplebbit.plebbit.createComment(commentProps);
+            })
+        );
     }
 
     async createVotesFromRows(voteRows, trx) {
@@ -304,19 +267,8 @@ export class DbHandler {
             else {
                 if (!Array.isArray(voteRows)) voteRows = [voteRows];
                 voteRows = voteRows.map((props) => replaceXWithY(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
-
-                const authors = (
-                    await this.baseTransaction(trx)(TABLES.AUTHORS).whereIn(
-                        "address",
-                        voteRows.map((vote) => vote.authorAddress)
-                    )
-                ).map((authorProps) => new Author(authorProps));
                 const votes = voteRows.map((voteProps) => {
-                    const props = {
-                        ...voteProps,
-                        author: authors.filter((author) => author.address === voteProps.authorAddress)[0]
-                    };
-                    return new Vote(props, this.subplebbit);
+                    return new Vote(voteProps, this.subplebbit);
                 });
                 resolve(votes);
             }
@@ -378,14 +330,9 @@ export class DbHandler {
         });
     }
 
-    async queryCommentsUnderComment(parentCid, trx): Promise<Comment[] | Post[]> {
-        return new Promise(async (resolve, reject) => {
-            this.baseCommentQuery(trx)
-                .where({ parentCid: parentCid })
-                .orderBy("timestamp", "desc")
-                .then((res) => resolve(this.createCommentsFromRows.bind(this)(res, trx)))
-                .catch(reject);
-        });
+    async queryCommentsUnderComment(parentCid: string, trx: Transaction | undefined): Promise<Comment[] | Post[]> {
+        const commentsObjs = await this.baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", "desc");
+        return await this.createCommentsFromRows(commentsObjs, trx);
     }
 
     async queryComments(trx): Promise<Comment[]> {
@@ -443,55 +390,27 @@ export class DbHandler {
         });
     }
 
-    async queryComment(cid, trx): Promise<Comment | Post> {
-        return new Promise(async (resolve, reject) => {
-            this.baseCommentQuery(trx)
-                .where({ cid: cid })
-                .first()
-                .then(async (res) => {
-                    resolve((await this.createCommentsFromRows.bind(this)(res, trx))[0]);
-                })
-                .catch(reject);
-        });
+    async queryComment(cid: string, trx: Transaction | undefined): Promise<Comment | Post> {
+        const commentObj = await this.baseCommentQuery(trx).where({ cid: cid }).first();
+        return (await this.createCommentsFromRows(commentObj, trx))[0];
     }
 
-    async queryLatestPost(trx): Promise<Post> {
-        return new Promise(async (resolve, reject) => {
-            this.baseCommentQuery(trx)
-                .whereNotNull("title")
-                .orderBy("id", "desc")
-                .first()
-                .then(async (res) => {
-                    resolve((await this.createCommentsFromRows.bind(this)(res, trx))[0]);
-                })
-                .catch(reject);
-        });
+    async queryLatestPost(trx: Transaction | undefined): Promise<Post | undefined> {
+        const commentObj = await this.baseCommentQuery(trx).whereNotNull("title").orderBy("id", "desc").first();
+        // @ts-ignore
+        return (await this.createCommentsFromRows(commentObj, trx))[0];
     }
 
     async insertSigner(signer, trx) {
-        return new Promise(async (resolve, reject) => {
-            this.baseTransaction(trx)(TABLES.SIGNERS)
-                .insert(signer)
-                .then(resolve)
-                .catch((err) => {
-                    debug(err);
-                    reject(err);
-                });
-        });
+        return this.baseTransaction(trx)(TABLES.SIGNERS).insert(signer);
     }
 
-    async querySubplebbitSigner(trx) {
-        return new Promise(async (resolve, reject) => {
-            this.baseTransaction(trx)(TABLES.SIGNERS).where({ usage: SIGNER_USAGES.SUBPLEBBIT }).first().then(resolve).catch(reject);
-        });
+    async querySubplebbitSigner(trx): Promise<Signer> {
+        return this.baseTransaction(trx)(TABLES.SIGNERS).where({ usage: SIGNER_USAGES.SUBPLEBBIT }).first();
     }
 
-    async querySigner(ipnsKeyName, trx) {
-        try {
-            return await this.baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName: ipnsKeyName }).first();
-        } catch (e) {
-            debug(`Failed to query signer due to error = ${e}`);
-        }
+    async querySigner(ipnsKeyName, trx): Promise<Signer | undefined> {
+        return this.baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName: ipnsKeyName }).first();
     }
 }
 
