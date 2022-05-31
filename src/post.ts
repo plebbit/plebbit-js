@@ -1,4 +1,5 @@
 import { Comment } from "./comment";
+import assert from "assert";
 
 class Post extends Comment {
     title?: string;
@@ -14,6 +15,11 @@ class Post extends Comment {
             ...super.toJSONSkeleton(),
             title: this.title
         };
+    }
+
+    async publish(userOptions): Promise<void> {
+        assert(this.title, "Post needs a title to publish");
+        return super.publish(userOptions);
     }
 }
 

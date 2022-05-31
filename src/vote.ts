@@ -32,6 +32,13 @@ class Vote extends Publication {
         json["signature"] = JSON.stringify(this.signature);
         return json;
     }
+
+    async publish(userOptions): Promise<void> {
+        assert([-1, 0, 1].includes(this.vote) && this.commentCid, "Need vote and commentCid to be defined to publish Vote");
+        assert(this.timestamp, "Need timestamp field to publish comment");
+        assert(this.author, "Need author to publish comment");
+        return super.publish(userOptions);
+    }
 }
 
 export default Vote;

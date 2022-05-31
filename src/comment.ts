@@ -257,4 +257,11 @@ export class CommentEdit extends Comment {
         json["cid"] = this.commentCid;
         return removeKeysWithUndefinedValues(json);
     }
+
+    async publish(userOptions): Promise<void> {
+        assert(this.commentCid, "Need commentCid to be defined to publish CommentEdit");
+        assert(this.editTimestamp, "Need editTimestamp to be defined to publish CommentEdit");
+        assert(this.editSignature, "Need to have editSignature to publish CommentEdit");
+        return super.publish(userOptions);
+    }
 }
