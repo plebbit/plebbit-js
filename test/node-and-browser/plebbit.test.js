@@ -38,7 +38,7 @@ describe("plebbit (node and browser)", () => {
             expect(signer.publicKey).to.match(/-----BEGIN PUBLIC KEY-----/);
             expect(signer.address).to.match(/^Qm/);
             expect(signer.type).to.equal("rsa");
-            expect(signer.ipfsKey?.constructor.name).to.equal("Buffer");
+            expect(signer.ipfsKey?.constructor.name).to.equal("Uint8Array");
         });
 
         it("with private key argument", async () => {
@@ -48,7 +48,7 @@ describe("plebbit (node and browser)", () => {
             expect(signer.publicKey).to.equal(fixtureSigner.publicKey);
             expect(signer.address).to.equal(fixtureSigner.address);
             expect(signer.type).to.equal("rsa");
-            expect(signer.ipfsKey?.constructor.name).to.equal("Buffer");
+            expect(signer.ipfsKey?.constructor.name).to.equal("Uint8Array");
         });
 
         it("generate same signer twice", async () => {
