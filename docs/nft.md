@@ -69,6 +69,7 @@ const getNftImageUrl = async (nft) => {
 const createNftSignature = async (nft, authorAddress, ethersJsSigner) => {
   // use plain JSON so the user can read what he's signing
   const messageToSign = JSON.stringify({
+    // the property names must be in this order for the signature to match
     domainSeparator: 'plebbit-author-avatar', 
     tokenAddress: nft.address, 
     tokenId: nft.id, 
@@ -86,6 +87,7 @@ const verifyNftSignature = async (nft, authorAddress) => {
   // get the owner of the nft at nft.id
   const currentNftOwnerAddress = await nftContract.ownerOf(nft.id)
   const messageThatShouldBeSigned = JSON.stringify({
+    // the property names must be in this order for the signature to match
     domainSeparator: 'plebbit-author-avatar', 
     address: nft.address, 
     id: nft.id, 
