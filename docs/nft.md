@@ -67,14 +67,15 @@ const getNftImageUrl = async (nft) => {
 }
 
 const createNftSignature = async (nft, authorAddress, ethersJsSigner) => {
+  let messageToSign = {}
+  // the property names must be in this order for the signature to match
+  // insert props one at a time otherwise babel/webpack will reorder
+  messageToSign.domainSeparator = 'plebbit-author-avatar'
+  messageToSign.tokenAddress =  nft.address
+  messageToSign.tokenId = nft.id
+  messageToSign.authorAddress = authorAddress
   // use plain JSON so the user can read what he's signing
-  const messageToSign = JSON.stringify({
-    // the property names must be in this order for the signature to match
-    domainSeparator: 'plebbit-author-avatar', 
-    tokenAddress: nft.address, 
-    tokenId: nft.id, 
-    authorAddress
-  })
+  messageToSign = JSON.stringify(messageToSign)
 
   // the ethers.js signer is usually gotten from metamask https://docs.ethers.io/v5/api/signer/
   const signature = await ethersJsSigner.signMessage(messageToSign)
@@ -86,13 +87,15 @@ const verifyNftSignature = async (nft, authorAddress) => {
   const nftContract = new ethers.Contract(nft.address, nftAbi, blockchainProvider)
   // get the owner of the nft at nft.id
   const currentNftOwnerAddress = await nftContract.ownerOf(nft.id)
-  const messageThatShouldBeSigned = JSON.stringify({
-    // the property names must be in this order for the signature to match
-    domainSeparator: 'plebbit-author-avatar', 
-    address: nft.address, 
-    id: nft.id, 
-    authorAddress
-  })
+  let messageThatShouldBeSigned = {}
+  // the property names must be in this order for the signature to match
+  // insert props one at a time otherwise babel/webpack will reorder
+  messageThatShouldBeSigned.domainSeparator = 'plebbit-author-avatar'
+  messageThatShouldBeSigned.tokenAddress =  nft.address
+  messageThatShouldBeSigned.tokenId = nft.id
+  messageThatShouldBeSigned.authorAddress = authorAddress
+  messageThatShouldBeSigned = JSON.stringify(messageThatShouldBeSigned)
+
   const signatureAddress = ethers.utils.verifyMessage(messageThatShouldBeSigned, nft.signature)
   if (currentNftOwnerAddress !== signatureAddress) {
     throw Error(`invalid nft signature address '${signatureAddress}' does not equal '${currentNftOwnerAddress}'`)
