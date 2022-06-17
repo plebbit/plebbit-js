@@ -8,6 +8,7 @@ import Vote from "./vote";
 import { create as createIpfsClient, IPFSHTTPClient } from "ipfs-http-client";
 import assert from "assert";
 import { createSigner, Signer, signPublication, verifyPublication } from "./signer";
+import { Resolver } from "./resolver";
 
 const debugs = getDebugLevels("plebbit");
 
@@ -15,9 +16,10 @@ export class Plebbit {
     ipfsHttpClientOptions: string | any;
     ipfsGatewayUrl: string;
     pubsubHttpClientOptions: string | any;
-    ipfsClient: IPFSHTTPClient;
+    ipfsClient: IPFSHTTPClient | undefined;
     pubsubIpfsClient: IPFSHTTPClient;
     dataPath: string | undefined;
+    resolver: Resolver;
 
     constructor(options: PlebbitOptions = {}) {
         this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
@@ -30,16 +32,18 @@ export class Plebbit {
             ? this.ipfsClient
             : createIpfsClient(this.pubsubHttpClientOptions);
         this.dataPath = options["dataPath"] || plebbitUtil.getDefaultDataPath();
+        this.resolver = new Resolver(options["blockchainProviders"]);
     }
 
-    async getSubplebbit(subplebbitAddress) {
+    async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
         assert(typeof subplebbitAddress === "string");
         assert(subplebbitAddress.length > 0);
-        const subplebbitJson = await loadIpnsAsJson(subplebbitAddress, this);
+        const resolvedSubplebbitAddress = await this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
+        const subplebbitJson = await loadIpnsAsJson(resolvedSubplebbitAddress, this);
         return new Subplebbit(subplebbitJson, this);
     }
 
-    async getComment(cid) {
+    async getComment(cid: string): Promise<Comment | Post> {
         const commentJson = await loadIpfsFileAsJson(cid, this);
         const subplebbit = await this.getSubplebbit(commentJson["subplebbitAddress"]);
         const publication = commentJson["title"]
