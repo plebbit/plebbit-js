@@ -36,6 +36,11 @@ const subplebbitsProps = [
         title: "Videos",
         description: "Plebbit's main subplebbit for videos",
         signer: await plebbit.createSigner(subplebbitsPrivateKeys[4])
+    },
+    {
+        title: "Pleb whales (plebwhales.eth)",
+        description: "For those destined to make it. Minimum 1B PLEB in wallet to post",
+        signer: await plebbit.createSigner(subplebbitsPrivateKeys[5])
     }
 ];
 
