@@ -78,5 +78,5 @@ async function deleteCommentsOlderThan() {
     );
 }
 
-setInterval(deleteCommentsOlderThan, CHECK_IF_COMMENTS_SHOULD_BE_DELETED_EVERY);
+// setInterval(deleteCommentsOlderThan, CHECK_IF_COMMENTS_SHOULD_BE_DELETED_EVERY);
 await Promise.all(subplebbitsProps.map((prop) => runSubplebbit(prop)));
