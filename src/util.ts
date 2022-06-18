@@ -6,6 +6,7 @@ import Debug from "debug";
 import fetch from "node-fetch";
 import FormData from "form-data";
 import assert from "assert";
+import { Plebbit } from "./plebbit";
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -17,9 +18,9 @@ export const TIMEFRAMES_TO_SECONDS = Object.freeze({
 });
 const debugs = getDebugLevels("util");
 
-export async function loadIpfsFileAsJson(cid, plebbit, defaultOptions = { timeout: 60000 }) {
+export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultOptions = { timeout: 60000 }) {
     assert.ok(cid, "Cid has to not be null to load");
-    if (plebbit.ipfsGatewayUrl) {
+    if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
         const res = await fetch(url);
         if (res.status === 200) return await res.json();
@@ -32,9 +33,9 @@ export async function loadIpfsFileAsJson(cid, plebbit, defaultOptions = { timeou
     }
 }
 
-export async function loadIpnsAsJson(ipns, plebbit) {
+export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
     assert.ok(ipns, "ipns has to be not null to load");
-    if (plebbit.ipfsGatewayUrl) {
+    if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
         const res = await fetch(url);
         if (res.status === 200) return await res.json();
