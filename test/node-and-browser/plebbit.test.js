@@ -26,6 +26,18 @@ describe("plebbit (node and browser)", () => {
         });
     });
 
+    describe("Plebbit options set up correctly", async () => {
+        it("Only ipfsHttpClientOptions is provided", async () => {
+            const options = { ipfsHttpClientOptions: "http://localhost:5001/api/v0" };
+            const testPlebbit = await Plebbit(options);
+            expect(testPlebbit.ipfsClient).to.exist;
+            expect(testPlebbit.pubsubIpfsClient).to.exist;
+            expect(testPlebbit.ipfsClient).to.equal(testPlebbit.ipfsClient);
+            expect(testPlebbit.ipfsGatewayUrl).to.equal("http://127.0.0.1:8080");
+            expect(testPlebbit.pubsubHttpClientOptions).to.equal("https://pubsubprovider.xyz/api/v0");
+        });
+    });
+
     describe("plebbit.createSigner", () => {
         before(async () => {
             signer = await plebbit.createSigner();
@@ -67,7 +79,7 @@ describe("plebbit (node and browser)", () => {
         it("loads post correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             await subplebbit.update();
-            expect(subplebbit).to.have.property("latestPostCid"); // Part of setting up test-server.js to publish a test post
+            expect(subplebbit.latestPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
             const expectedPostProps = await loadIpfsFileAsJson(subplebbit.latestPostCid, plebbit);
             const expectedPost = await plebbit.createComment({
                 cid: subplebbit.latestPostCid,
