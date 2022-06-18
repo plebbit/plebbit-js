@@ -19,11 +19,11 @@ export class Plebbit {
     ipfsClient: IPFSHTTPClient | undefined;
     pubsubIpfsClient: IPFSHTTPClient;
     dataPath: string | undefined;
+
     resolver: Resolver;
 
     constructor(options: PlebbitOptions = {}) {
         this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        this.ipfsGatewayUrl = this.ipfsHttpClientOptions ? undefined : options["ipfsGatewayUrl"] || "https://cloudflare-ipfs.com";
         this.ipfsClient = this.ipfsHttpClientOptions ? createIpfsClient(this.ipfsHttpClientOptions) : undefined;
         this.pubsubHttpClientOptions = options["pubsubHttpClientOptions"] || "https://pubsubprovider.xyz/api/v0";
         this.pubsubIpfsClient = options["pubsubHttpClientOptions"]
@@ -32,7 +32,25 @@ export class Plebbit {
             ? this.ipfsClient
             : createIpfsClient(this.pubsubHttpClientOptions);
         this.dataPath = options["dataPath"] || plebbitUtil.getDefaultDataPath();
-        this.resolver = new Resolver(options["blockchainProviders"]);
+        this.resolver = new Resolver({ plebbit: this, blockchainProviders: options["blockchainProviders"] });
+    }
+
+    async _init(options: PlebbitOptions = {}) {
+        if (options["ipfsGatewayUrl"]) this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
+        else {
+            try {
+                let gatewayFromNode = await this.ipfsClient.config.get("Addresses.Gateway");
+                debugs.TRACE(`Gateway from node: ${JSON.stringify(gatewayFromNode)}`);
+                if (Array.isArray(gatewayFromNode)) gatewayFromNode = gatewayFromNode[0];
+
+                const splits = gatewayFromNode.toString().split("/");
+                this.ipfsGatewayUrl = `http://${splits[2]}:${splits[4]}`;
+                debugs.DEBUG(`plebbit.ipfsGatewayUrl retrieved from IPFS node: ${this.ipfsGatewayUrl}`);
+            } catch (e) {
+                this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
+                debugs.ERROR(`${e.msg}: Failed to retrieve gateway url from ipfs node, will default to ${this.ipfsGatewayUrl}`);
+            }
+        }
     }
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {

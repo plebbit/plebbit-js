@@ -1,5 +1,13 @@
+import { Options } from "ipfs-http-client";
+
 // TODO: define types
-export type PlebbitOptions = any;
+export type PlebbitOptions = {
+    ipfsHttpClientOptions: Options;
+    ipfsGatewayUrl: string;
+    pubsubHttpClientOptions: Options;
+    dataPath: string;
+    blockchainProviders: Object;
+};
 export type CreateSignerOptions = any;
 export type Subplebbit = any;
 export type Encrypted = any;
