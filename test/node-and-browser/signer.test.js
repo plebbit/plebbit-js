@@ -79,8 +79,8 @@ describe("signer (node and browser)", async () => {
         let authorSignature, randomSignature, signedPublication;
 
         before(async () => {
-            authorSignature = await signPublication(fixtureComment, authorSigner);
-            randomSignature = await signPublication(fixtureComment, randomSigner);
+            authorSignature = await signPublication(fixtureComment, authorSigner, plebbit);
+            randomSignature = await signPublication(fixtureComment, randomSigner, plebbit);
             signedPublication = { ...fixtureComment, signature: authorSignature };
         });
 

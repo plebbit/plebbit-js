@@ -16,6 +16,11 @@ before(async () => {
         ipfsHttpClientOptions: "http://localhost:5001/api/v0",
         pubsubHttpClientOptions: `http://localhost:5002/api/v0`
     });
+    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
+        if (authorAddress === "plebbit.eth") return signers[6].address;
+        else if (authorAddress === "testgibbreish.eth") return undefined;
+        return authorAddress;
+    };
 });
 
 describe("comment (node and browser)", async () => {
@@ -28,9 +33,9 @@ describe("comment (node and browser)", async () => {
                 title: "Test post signature",
                 content: "some content..."
             };
-            const signature = await signPublication(comment, signers[0]);
+            const signature = await signPublication(comment, signers[0], plebbit);
             const signedComment = { signature: signature.toJSON(), ...comment };
-            const [isVerified, failedVerificationReason] = await verifyPublication(signedComment);
+            const [isVerified, failedVerificationReason] = await verifyPublication(signedComment, plebbit);
             expect(isVerified).to.be.true;
         });
 
@@ -42,10 +47,10 @@ describe("comment (node and browser)", async () => {
                 title: "Test post signature",
                 content: "some content..."
             };
-            const signature = await signPublication(comment, signers[0]);
+            const signature = await signPublication(comment, signers[0], plebbit);
             signature.signature = signature.signature.slice(1); // Corrupt signature by deleting one character
             const signedComment = { signature: signature.toJSON(), ...comment };
-            const [isVerified, failedVerificationReason] = await verifyPublication(signedComment);
+            const [isVerified, failedVerificationReason] = await verifyPublication(signedComment, plebbit);
             expect(isVerified).to.be.false;
         });
 
@@ -58,9 +63,9 @@ describe("comment (node and browser)", async () => {
                 title: "Test post signature",
                 content: "some content..."
             };
-            const signature = await signPublication(comment, signer);
+            const signature = await signPublication(comment, signer, plebbit);
             const signedComment = { signature: signature.toJSON(), ...comment };
-            const [isVerified, failedVerificationReason] = await verifyPublication(signedComment);
+            const [isVerified, failedVerificationReason] = await verifyPublication(signedComment, plebbit);
             expect(isVerified).to.be.true;
             expect(signedComment.signature.publicKey).to.be.equal(signers[1].publicKey, "Generated public key should be same as provided");
         });
@@ -244,6 +249,81 @@ describe("comment (node and browser)", async () => {
                     resolve();
                 });
             });
+        });
+    });
+
+    describe("Comments with Authors as domains", async () => {
+        it(`post.author.address resolves correctly for author plebbit.eth `, async () => {
+            return new Promise(async (resolve) => {
+                // I've mocked plebbit.resolver.resolveAuthorAddressIfNeeded to return signers[6] address for plebbit.eth
+                const mockPost = await plebbit.createComment({
+                    author: { displayName: `Mock Author - ${Date.now()}`, address: "plebbit.eth" },
+                    signer: signers[6],
+                    content: `Mock post - ${Date.now()}`,
+                    title: "Mock post title",
+                    subplebbitAddress: subplebbitAddress
+                });
+
+                await mockPost.publish();
+                expect(mockPost.author.address).to.equal("plebbit.eth");
+
+                mockPost.once("challengeverification", async (challengeVerificationMessage, updatedComment) => {
+                    expect(updatedComment.author.address).to.equal("plebbit.eth");
+                    expect(challengeVerificationMessage.challengeSuccess).to.be.true;
+                    mockComments.push(updatedComment);
+
+                    resolve();
+                });
+            });
+        });
+
+        it(`.publish() throws error when signer points to a different address than plebbit-author-address`, async () => {
+            try {
+                await plebbit.createComment({
+                    author: { displayName: `Mock Author - ${Date.now()}`, address: "plebbit.eth" },
+                    signer: signers[7], // plebbit.eth resolves to signers[6], this should give us an error
+                    content: `Mock post - ${Date.now()}`,
+                    title: "Mock post title",
+                    subplebbitAddress: subplebbitAddress
+                });
+                expect.fail("publish() should throw if domain resolves to a different address than signer");
+            } catch {}
+        });
+
+        it(`challengeverification fails to pass if plebbit-author-address points to a different address than signer`, async () => {
+            return new Promise(async (resolve) => {
+                // There are two mocks of resovleAuthorAddressIfNeeded, one return undefined on testgibbreish.eth (server side) and this one returns signers[6]
+                // The purpose is to test whether server rejects publications that has different plebbit-author-address and signer address
+                plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
+                    if (authorAddress === "testgibbreish.eth") return signers[6].address;
+                    return authorAddress;
+                };
+                const mockPost = await plebbit.createComment({
+                    author: { displayName: `Mock Author - ${Date.now()}`, address: "testgibbreish.eth" },
+                    signer: signers[6],
+                    content: `Mock comment - ${Date.now()}`,
+                    title: "Mock post Title",
+                    subplebbitAddress: subplebbitAddress
+                });
+
+                await mockPost.publish();
+                expect(mockPost.author.address).to.equal("testgibbreish.eth");
+
+                mockPost.once("challengeverification", async (challengeVerificationMessage, updatedComment) => {
+                    expect(challengeVerificationMessage.challengeSuccess).to.be.false;
+                    resolve();
+                });
+            });
+        });
+
+        it(`getComment corrects author.address to derived address in case plebbit-author-address points to another address`, async () => {
+            plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
+                if (authorAddress === "plebbit.eth") return signers[7].address;
+                return authorAddress;
+            };
+            // verifyPublication in getComment should overwrite author.address to derived address
+            const post = await plebbit.getComment(mockComments[mockComments.length - 1].cid);
+            expect(post.author.address).to.equal(signers[6].address);
         });
     });
 });

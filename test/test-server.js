@@ -152,6 +152,11 @@ const startImageCaptchaSubplebbit = async () => {
             agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
         }
     });
+    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
+        if (authorAddress === "plebbit.eth") return signers[6].address;
+        else if (authorAddress === "testgibbreish.eth") return undefined;
+        return authorAddress;
+    };
     const signer = await plebbit.createSigner(signers[0]);
     const subplebbit = await plebbit.createSubplebbit({ signer: signer, database: databaseConfig });
     await subplebbit.setProvideCaptchaCallback(() => [null, null]);
