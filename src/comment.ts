@@ -240,7 +240,7 @@ export class Comment extends Publication {
 }
 
 export class CommentEdit extends Comment {
-    commentCid?: string;
+    commentCid: string;
 
     _initProps(props) {
         super._initProps(props);

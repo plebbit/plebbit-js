@@ -21,8 +21,10 @@ import { decrypt, encrypt, verifyPublication, Signer, Signature } from "./signer
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
 import { SubplebbitEncryption } from "./types";
-import { Comment } from "./comment";
+import { Comment, CommentEdit } from "./comment";
 import Vote from "./vote";
+import Post from "./post";
+import { getPlebbitAddressFromPublicKeyPem } from "./signer/util";
 
 const debugs = getDebugLevels("subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
@@ -45,7 +47,7 @@ export class Subplebbit extends EventEmitter {
     encryption?: SubplebbitEncryption;
 
     // private
-    plebbit?: Plebbit;
+    plebbit: Plebbit;
     dbHandler?: DbHandler;
     _challengeToSolution: any;
     _challengeToPublication: any;
@@ -286,16 +288,8 @@ export class Subplebbit extends EventEmitter {
     }
 
     async handleCommentEdit(commentEdit, challengeRequestId, trx) {
-        const commentToBeEdited: any = await this.dbHandler.queryComment(commentEdit.commentCid, trx);
-        const [signatureIsVerified, verificationFailReason] = await verifyPublication(commentEdit);
-        if (!signatureIsVerified) {
-            debugs.INFO(
-                `Comment edit of ${commentEdit.commentCid} has been rejected due to having invalid signature. Reason = ${verificationFailReason}`
-            );
-            return {
-                reason: `Comment edit of ${commentEdit.commentCid} has been rejected due to having invalid signature`
-            };
-        } else if (!commentToBeEdited) {
+        const commentToBeEdited: Comment = await this.dbHandler.queryComment(commentEdit.commentCid, trx);
+        if (!commentToBeEdited) {
             debugs.INFO(
                 `Unable to edit comment (${commentEdit.commentCid}) since it's not in local DB. Rejecting user's request to edit comment`
             );
@@ -322,13 +316,6 @@ export class Subplebbit extends EventEmitter {
     }
 
     async handleVote(newVote, challengeRequestId, trx) {
-        const [signatureIsVerified, failedVerificationReason] = await verifyPublication(newVote);
-        if (!signatureIsVerified) {
-            debugs.INFO(
-                `Author (${newVote.author.address}) vote (${newVote.vote} vote's signature is invalid. Reason = ${failedVerificationReason}`
-            );
-            return { reason: "Invalid signature" };
-        }
         const [lastVote, parentComment]: [Vote | undefined, Comment] = await Promise.all([
             this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address, trx),
             this.dbHandler.queryComment(newVote.commentCid, trx)
@@ -364,29 +351,47 @@ export class Subplebbit extends EventEmitter {
         }
     }
 
-    async publishPostAfterPassingChallenge(publication, challengeRequestId) {
+    async publishPostAfterPassingChallenge(publication, challengeRequestId): Promise<any> {
         delete this._challengeToSolution[challengeRequestId];
         delete this._challengeToPublication[challengeRequestId];
 
-        const postOrCommentOrVote: any = publication.hasOwnProperty("vote")
+        const postOrCommentOrVote: Vote | CommentEdit | Post | Comment = publication.hasOwnProperty("vote")
             ? await this.plebbit.createVote(publication)
             : publication.commentCid
             ? await this.plebbit.createCommentEdit(publication)
             : await this.plebbit.createComment(publication);
-        if (postOrCommentOrVote.getType() === "vote") {
+
+        debugs.TRACE(`Attempting to insert new publication into DB: ${JSON.stringify(postOrCommentOrVote)}`);
+        const derivedAddress = await getPlebbitAddressFromPublicKeyPem(
+            (postOrCommentOrVote instanceof CommentEdit ? postOrCommentOrVote.editSignature : postOrCommentOrVote.signature).publicKey
+        );
+        const resolvedAddress = await this.plebbit.resolver.resolveAuthorAddressIfNeeded(publication?.author?.address);
+
+        if (resolvedAddress !== publication?.author?.address) {
+            // Means author.address is a crypto domain
+            if (resolvedAddress !== derivedAddress) {
+                // Means ENS's plebbit-author-address is resolving to another address, which shouldn't happen
+                const msg = `domain (${postOrCommentOrVote.author.address})'s plebbit-author-address (${resolvedAddress}) resolve`;
+                debugs.INFO(msg);
+                return { reason: msg };
+            }
+        }
+        const [signatureIsVerified, failedVerificationReason] = await verifyPublication(postOrCommentOrVote, this.plebbit);
+        if (!signatureIsVerified) {
+            const msg = `Author (${
+                postOrCommentOrVote.author.address
+            }) ${postOrCommentOrVote.getType()}'s signature is invalid: ${failedVerificationReason}`;
+            debugs.INFO(msg);
+            return { reason: msg };
+        }
+        if (postOrCommentOrVote instanceof Vote) {
             const res = await this.handleVote(postOrCommentOrVote, challengeRequestId, undefined);
             if (res) return res;
-        } else if (postOrCommentOrVote.commentCid) {
+        } else if (postOrCommentOrVote instanceof CommentEdit) {
             const res = await this.handleCommentEdit(postOrCommentOrVote, challengeRequestId, undefined);
             if (res) return res;
-        } else if (postOrCommentOrVote.content) {
+        } else if (postOrCommentOrVote instanceof Comment) {
             // Comment and Post need to add file to ipfs
-            const signatureIsVerified = (await verifyPublication(postOrCommentOrVote))[0];
-            if (!signatureIsVerified) {
-                debugs.INFO(`Author (${postOrCommentOrVote.author.address}) comment's signature is invalid`);
-                return { reason: "Invalid signature" };
-            }
-
             const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote.toJSONSkeleton()));
 
             if (await this.dbHandler.querySigner(ipnsKeyName, undefined)) {
@@ -405,7 +410,7 @@ export class Subplebbit extends EventEmitter {
                 ]);
 
                 postOrCommentOrVote.setCommentIpnsKey(ipfsKey);
-                if (postOrCommentOrVote.getType() === "post") {
+                if (postOrCommentOrVote instanceof Post) {
                     const trx = await this.dbHandler.createTransaction();
                     postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPost(trx))?.cid);
                     await trx.commit();
@@ -415,7 +420,7 @@ export class Subplebbit extends EventEmitter {
                     postOrCommentOrVote.setCid(file.path);
                     await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, undefined);
                     debugs.INFO(`New post with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
-                } else {
+                } else if (postOrCommentOrVote instanceof Comment) {
                     // Comment
                     const trx = await this.dbHandler.createTransaction();
                     const [commentsUnderParent, parent] = await Promise.all([
@@ -625,7 +630,7 @@ export class Subplebbit extends EventEmitter {
             try {
                 await this.processCaptchaPubsub(pubsubMessage);
             } catch (e) {
-                e.message = "failed process captcha: " + e.message;
+                e.message = `failed process captcha: ${e.message}\nPubsub Message: ${pubsubMessage}`;
                 debugs.ERROR(e);
             }
         });

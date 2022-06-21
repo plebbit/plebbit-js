@@ -1,4 +1,9 @@
-import { getKeyPairFromPrivateKeyPem, getPeerIdFromPublicKeyPem } from "./util";
+import {
+    getKeyPairFromPrivateKeyPem,
+    getPeerIdFromPublicKeyPem,
+    getPlebbitAddressFromPrivateKeyPem,
+    getPlebbitAddressFromPublicKeyPem
+} from "./util";
 import { encode } from "cborg";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
@@ -6,6 +11,8 @@ import assert from "assert";
 import PeerId from "peer-id";
 import { getDebugLevels, keepKeys, removeKeysWithUndefinedValues } from "../util";
 import Publication from "../publication";
+import { Plebbit } from "../plebbit";
+import { Signer } from ".";
 
 const debugs = getDebugLevels("signer:signatures");
 
@@ -73,7 +80,17 @@ export const verifyBufferRsa = async (bufferToSign, bufferSignature, publicKeyPe
     return await peerId.pubKey.verify(bufferToSign, bufferSignature);
 };
 
-export async function signPublication(publication, signer) {
+export async function signPublication(publication: Publication, signer: Signer, plebbit: Plebbit): Promise<Signature> {
+    if (publication?.author?.address) {
+        const resolvedAddress = await plebbit.resolver.resolveAuthorAddressIfNeeded(publication.author.address);
+        const derivedAddress = await getPlebbitAddressFromPrivateKeyPem(signer.privateKey);
+        assert.equal(
+            resolvedAddress,
+            derivedAddress,
+            `domain (${publication.author.address}) resolved address (${resolvedAddress}) is invalid. For this publication to be signed, user needs to ensure plebbit-author-address points to same key used by signer`
+        );
+    }
+
     const fieldsToSign = getFieldsToSign(publication);
     const publicationSignFields = removeKeysWithUndefinedValues(keepKeys(publication, fieldsToSign));
     debugs.TRACE(`Fields to sign: ${JSON.stringify(fieldsToSign)}. Publication object to sign:  ${JSON.stringify(publicationSignFields)}`);
@@ -89,14 +106,32 @@ export async function signPublication(publication, signer) {
 }
 
 // Return [verification (boolean), reasonForFailing (string)]
-export async function verifyPublication(publication) {
+export async function verifyPublication(publication, plebbit: Plebbit, overrideAuthorAddressIfInvalid = true) {
     const verifyAuthor = async (signature, author) => {
-        const peerId = await getPeerIdFromPublicKeyPem(signature.publicKey);
-        assert.equal(
-            peerId.equals(PeerId.createFromB58String(author.address)),
-            true,
-            "comment.author.address doesn't match comment.signature.publicKey"
-        );
+        const signaturePeerId = await getPeerIdFromPublicKeyPem(signature.publicKey);
+        let authorPeerId: PeerId | undefined;
+        try {
+            // There are cases where author.address is a crypto domain so PeerId.createFromB58String crashes
+            authorPeerId = PeerId.createFromB58String(author.address);
+        } catch {}
+        if (authorPeerId)
+            assert.equal(signaturePeerId.equals(authorPeerId), true, "comment.author.address doesn't match comment.signature.publicKey");
+        else if (overrideAuthorAddressIfInvalid && publication?.author?.address) {
+            // Meaning author is a domain, crypto one likely
+            const resolvedAddress = await plebbit.resolver.resolveAuthorAddressIfNeeded(publication.author.address);
+            if (resolvedAddress !== publication.author.address) {
+                // Means author.address is a crypto domain
+                const derivedAddress = await getPlebbitAddressFromPublicKeyPem(publication.signature.publicKey);
+                if (resolvedAddress !== derivedAddress) {
+                    // Means plebbit-author-address text record is resolving to another comment (oudated?)
+                    // Will always use address derived from publication.signature.publicKey as truth
+                    debugs.INFO(
+                        `domain (${publication.author.address}) resolved address (${resolvedAddress}) is invalid, changing publication.author.address to derived address ${derivedAddress}`
+                    );
+                    publication.author.address = derivedAddress;
+                }
+            }
+        }
     };
     const verifyPublicationSignature = async (signature, publicationToBeVerified) => {
         const commentWithFieldsToSign = keepKeys(publicationToBeVerified, signature.signedPropertyNames);
@@ -120,7 +155,6 @@ export async function verifyPublication(publication) {
             debugs.TRACE(
                 "Attempting to verify a comment that has been edited. Will verify comment.author,  comment.signature and comment.editSignature"
             );
-            publication.author ? await verifyAuthor(publication.signature, publication.author) : undefined;
             const publicationJson = publication instanceof Publication ? publication.toJSON() : publication;
             const originalSignatureObj = { ...publicationJson, content: publication.originalContent };
             debugs.TRACE(`Attempting to verify comment.signature`);
@@ -128,19 +162,21 @@ export async function verifyPublication(publication) {
             debugs.TRACE(`Attempting to verify comment.editSignature`);
             const editedSignatureObj = { ...publicationJson, commentCid: publication.cid };
             await verifyPublicationSignature(publication.editSignature, editedSignatureObj);
+            // Verify author at the end since we might change author.address which will fail signature verification
+            publication.author ? await verifyAuthor(publication.signature, publication.author) : undefined;
         } else if (publication.commentCid && publication.content) {
             // Verify CommentEdit
             debugs.TRACE(`Attempting to verify CommentEdit`);
             await verifyPublicationSignature(publication.editSignature, publication);
         } else {
             debugs.TRACE(`Attempting to verify post/comment/vote`);
-            publication.author ? await verifyAuthor(publication.signature, publication.author) : undefined;
             await verifyPublicationSignature(publication.signature, publication);
+            publication.author ? await verifyAuthor(publication.signature, publication.author) : undefined;
         }
         debugs.TRACE("Publication has been verified");
         return [true];
     } catch (e) {
-        debugs.WARN(`Failed to verify publication`);
+        debugs.WARN(`Failed to verify publication due to error: ${e}`);
         return [false, String(e)];
     }
 }

@@ -1,4 +1,4 @@
-import { PlebbitOptions, CreateSignerOptions } from "./types";
+import { CreateSignerOptions } from "./types";
 import plebbitUtil from "./runtime/node/util";
 import { Comment, CommentEdit } from "./comment";
 import Post from "./post";
@@ -9,6 +9,7 @@ import { create as createIpfsClient, IPFSHTTPClient } from "ipfs-http-client";
 import assert from "assert";
 import { createSigner, Signer, signPublication, verifyPublication } from "./signer";
 import { Resolver } from "./resolver";
+import TinyCache from "tinycache";
 
 const debugs = getDebugLevels("plebbit");
 
@@ -21,8 +22,9 @@ export class Plebbit {
     dataPath: string | undefined;
 
     resolver: Resolver;
+    _memCache: TinyCache;
 
-    constructor(options: PlebbitOptions = {}) {
+    constructor(options = {}) {
         this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
         this.ipfsClient = this.ipfsHttpClientOptions ? createIpfsClient(this.ipfsHttpClientOptions) : undefined;
         this.pubsubHttpClientOptions = options["pubsubHttpClientOptions"] || "https://pubsubprovider.xyz/api/v0";
@@ -33,9 +35,10 @@ export class Plebbit {
             : createIpfsClient(this.pubsubHttpClientOptions);
         this.dataPath = options["dataPath"] || plebbitUtil.getDefaultDataPath();
         this.resolver = new Resolver({ plebbit: this, blockchainProviders: options["blockchainProviders"] });
+        this._memCache = new TinyCache();
     }
 
-    async _init(options: PlebbitOptions = {}) {
+    async _init(options = {}) {
         if (options["ipfsGatewayUrl"]) this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
         else {
             try {
@@ -74,7 +77,7 @@ export class Plebbit {
                   subplebbit
               )
             : new Comment({ ...commentJson, cid: cid }, subplebbit);
-        const [signatureIsVerified, failedVerificationReason] = await verifyPublication(publication);
+        const [signatureIsVerified, failedVerificationReason] = await verifyPublication(publication, this);
         assert.equal(signatureIsVerified, true, `Signature of comment/post ${cid} is invalid due to reason=${failedVerificationReason}`);
         return publication;
     }
@@ -82,7 +85,7 @@ export class Plebbit {
     async signPublication(createPublicationOptions) {
         if (createPublicationOptions.author && !createPublicationOptions.author.address)
             createPublicationOptions.author.address = createPublicationOptions.signer.address;
-        const commentSignature = await signPublication(createPublicationOptions, createPublicationOptions.signer);
+        const commentSignature = await signPublication(createPublicationOptions, createPublicationOptions.signer, this);
         return { ...createPublicationOptions, signature: commentSignature };
     }
 
@@ -119,11 +122,9 @@ export class Plebbit {
     }
 
     async createCommentEdit(createCommentEditOptions): Promise<CommentEdit> {
-        const commentSubplebbit = { plebbit: this };
-
         if (!createCommentEditOptions.signer)
             // User just wants to instantiate a CommentEdit object, not publish
-            return new CommentEdit(createCommentEditOptions, commentSubplebbit);
+            return new CommentEdit(createCommentEditOptions, { plebbit: this });
         if (!createCommentEditOptions.editTimestamp) {
             const defaultTimestamp = timestamp();
             debugs.DEBUG(`User hasn't provided any editTimestamp for their CommentEdit, defaulted to (${defaultTimestamp})`);
@@ -132,9 +133,9 @@ export class Plebbit {
 
         const commentEditProps = {
             ...createCommentEditOptions,
-            editSignature: await signPublication(createCommentEditOptions, createCommentEditOptions.signer)
+            editSignature: await signPublication(createCommentEditOptions, createCommentEditOptions.signer, this)
         };
-        return new CommentEdit(commentEditProps, commentSubplebbit);
+        return new CommentEdit(commentEditProps, { plebbit: this });
     }
 
     createSigner(createSignerOptions: CreateSignerOptions = {}): Promise<Signer> {

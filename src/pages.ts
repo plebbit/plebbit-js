@@ -3,6 +3,7 @@ import { verifyPublication } from "./signer";
 import assert from "assert";
 import { Subplebbit } from "./subplebbit";
 import { Comment } from "./comment";
+import Post from "./post";
 
 const debugs = getDebugLevels("pages");
 
@@ -20,16 +21,16 @@ export class Pages {
         this.getPage = this.getPage.bind(this);
     }
 
-    async getPage(pageCid) {
+    async getPage(pageCid: string) {
         const page = new Page(await loadIpfsFileAsJson(pageCid, this.subplebbit.plebbit));
-        const verifyComment = async (comment, parentComment) => {
+        const verifyComment = async (comment: Comment | Post, parentComment?: Comment | Post) => {
             assert.equal(comment.subplebbitAddress, this.subplebbit.address, "Comment in page should be under the same subplebbit");
             if (parentComment)
                 assert.equal(parentComment.cid, comment.parentCid, "Comment under parent comment/post should have parentCid initialized");
             debugs.TRACE(
                 `In page (${pageCid}), Attempting to verify comment (${comment.cid}) under parent comment (${parentComment?.cid})`
             );
-            const [signatureIsVerified, failedVerificationReason] = await verifyPublication(comment);
+            const [signatureIsVerified, failedVerificationReason] = await verifyPublication(comment, this.subplebbit.plebbit);
             assert.equal(
                 signatureIsVerified,
                 true,

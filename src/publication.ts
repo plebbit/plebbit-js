@@ -101,7 +101,7 @@ class Publication extends EventEmitter {
     }
 
     async publish(userOptions) {
-        const [isSignatureValid, failedVerificationReason] = await verifyPublication(this);
+        const [isSignatureValid, failedVerificationReason] = await verifyPublication(this, this.subplebbit.plebbit, false);
         assert.ok(
             isSignatureValid,
             `Failed to publish since signature is invalid, failed verification reason: ${failedVerificationReason}`
