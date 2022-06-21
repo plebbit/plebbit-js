@@ -1,9 +1,13 @@
 import { TIMEFRAMES_TO_SECONDS, timestamp } from "./util";
-import { Plebbit } from "./plebbit";
 import Debug from "debug"; // This import is to suppress a warning statement. Leave it
+import { Signer } from "./signer";
+import { Comment } from "./comment";
+import Post from "./post";
+import assert from "assert";
+import { Plebbit } from "./plebbit";
 const debug = Debug("plebbit-js:test-util");
 
-export async function generateMockPost(subplebbitAddress, plebbit, signer) {
+export async function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, signer?: Signer): Promise<Post> {
     const postStartTestTime = Date.now() / 1000;
     signer = signer || (await plebbit.createSigner());
     const post = await plebbit.createComment({
@@ -13,13 +17,14 @@ export async function generateMockPost(subplebbitAddress, plebbit, signer) {
         content: `Mock content - ${postStartTestTime}`,
         subplebbitAddress: subplebbitAddress
     });
+    assert(post instanceof Post);
     post.once("challenge", (challengeMsg) => {
         post.publishChallengeAnswers(undefined);
     });
     return post;
 }
 
-export async function generateMockComment(parentPostOrComment, plebbit, signer) {
+export async function generateMockComment(parentPostOrComment: Post | Comment, plebbit: Plebbit, signer?: Signer) {
     const commentTime = Date.now() / 1000;
     signer = signer || (await plebbit.createSigner());
     const comment = await plebbit.createComment({
