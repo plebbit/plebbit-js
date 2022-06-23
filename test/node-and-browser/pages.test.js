@@ -51,12 +51,19 @@ const testSorting = async (sort, parentComment) => {
         expect(comments.every((comment) => Boolean(comment.cid))).to.be.true;
         const votes = [];
         const votePlebbits = await Promise.all(
-            new Array(numOfCommentsToPublish * votesPerCommentToPublish).fill(null).map(async () =>
-                Plebbit({
+            new Array(numOfCommentsToPublish * votesPerCommentToPublish).fill(null).map(async () => {
+                const plebbit = await Plebbit({
                     ipfsHttpClientOptions: "http://localhost:5001/api/v0",
                     pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-                })
-            )
+                });
+                plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
+                    if (authorAddress === "plebbit.eth") return signers[6].address;
+                    else if (authorAddress === "testgibbreish.eth")
+                        throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
+                    return authorAddress;
+                };
+                return plebbit;
+            })
         );
         for (let i = 0; i < comments.length; i++)
             for (let j = 0; j < votesPerCommentToPublish; j++)
@@ -145,6 +152,11 @@ before(async () => {
         ipfsHttpClientOptions: "http://localhost:5001/api/v0",
         pubsubHttpClientOptions: `http://localhost:5002/api/v0`
     });
+    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
+        if (authorAddress === "plebbit.eth") return signers[6].address;
+        else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
+        return authorAddress;
+    };
 });
 
 describe("subplebbit.posts", async () => {

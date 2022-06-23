@@ -30,12 +30,10 @@ describe("Test challenges", async () => {
                 });
             });
         });
-
         it("Throws an error when user fails to solve mathcli captcha", async function () {
             return new Promise(async (resolve, reject) => {
                 const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[0]);
                 mockPost.removeAllListeners();
-
                 mockPost.once("challenge", (challengeMessage) => {
                     mockPost.publishChallengeAnswers(["3"]);
                 });

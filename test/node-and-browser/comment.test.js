@@ -18,7 +18,7 @@ before(async () => {
     });
     plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
         if (authorAddress === "plebbit.eth") return signers[6].address;
-        else if (authorAddress === "testgibbreish.eth") return undefined;
+        else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
         return authorAddress;
     };
 });
