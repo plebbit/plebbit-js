@@ -60,6 +60,10 @@ export class Plebbit {
         assert(typeof subplebbitAddress === "string");
         assert(subplebbitAddress.length > 0);
         const resolvedSubplebbitAddress = await this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
+        assert(
+            typeof resolvedSubplebbitAddress === "string" && resolvedSubplebbitAddress.length > 0,
+            "Resolved address of a subplebbit needs to be defined"
+        );
         const subplebbitJson = await loadIpnsAsJson(resolvedSubplebbitAddress, this);
         return new Subplebbit(subplebbitJson, this);
     }
@@ -83,8 +87,12 @@ export class Plebbit {
     }
 
     async signPublication(createPublicationOptions) {
-        if (createPublicationOptions.author && !createPublicationOptions.author.address)
+        if (createPublicationOptions.author && !createPublicationOptions.author.address) {
             createPublicationOptions.author.address = createPublicationOptions.signer.address;
+            debugs.DEBUG(
+                `createPublicationOptions did not provide author.address, will define it to signer.address (${createPublicationOptions.signer.address})`
+            );
+        }
         const commentSignature = await signPublication(createPublicationOptions, createPublicationOptions.signer, this);
         return { ...createPublicationOptions, signature: commentSignature };
     }

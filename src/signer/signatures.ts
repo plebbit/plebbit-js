@@ -87,7 +87,7 @@ export async function signPublication(publication: Publication, signer: Signer, 
         assert.equal(
             resolvedAddress,
             derivedAddress,
-            `domain (${publication.author.address}) resolved address (${resolvedAddress}) is invalid. For this publication to be signed, user needs to ensure plebbit-author-address points to same key used by signer`
+            `author.address (${publication.author.address}) does not equate its resolved address (${resolvedAddress}) is invalid. For this publication to be signed, user needs to ensure plebbit-author-address points to same key used by signer (${derivedAddress})`
         );
     }
 

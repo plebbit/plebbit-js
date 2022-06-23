@@ -1,13 +1,12 @@
-import { TIMEFRAMES_TO_SECONDS, timestamp } from "./util";
-import Debug from "debug"; // This import is to suppress a warning statement. Leave it
+import { getDebugLevels, TIMEFRAMES_TO_SECONDS, timestamp } from "./util";
 import { Signer } from "./signer";
 import { Comment } from "./comment";
 import Post from "./post";
 import assert from "assert";
 import { Plebbit } from "./plebbit";
-const debug = Debug("plebbit-js:test-util");
+const debugs = getDebugLevels("test-util");
 
-export async function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, signer?: Signer): Promise<Post> {
+export async function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, signer?: Signer) {
     const postStartTestTime = Date.now() / 1000;
     signer = signer || (await plebbit.createSigner());
     const post = await plebbit.createComment({
@@ -17,14 +16,14 @@ export async function generateMockPost(subplebbitAddress: string, plebbit: Plebb
         content: `Mock content - ${postStartTestTime}`,
         subplebbitAddress: subplebbitAddress
     });
-    assert(post instanceof Post);
+    assert.equal(post.constructor.name, "Post", "createComment should return Post if title is provided");
     post.once("challenge", (challengeMsg) => {
         post.publishChallengeAnswers(undefined);
     });
     return post;
 }
 
-export async function generateMockComment(parentPostOrComment: Post | Comment, plebbit: Plebbit, signer?: Signer) {
+export async function generateMockComment(parentPostOrComment: Post | Comment, plebbit: Plebbit, signer?: Signer): Promise<Comment> {
     const commentTime = Date.now() / 1000;
     signer = signer || (await plebbit.createSigner());
     const comment = await plebbit.createComment({
@@ -91,6 +90,6 @@ export async function loadAllPages(pageCid, pagesInstance) {
         );
         return sortedComments;
     } catch (e) {
-        debug(`Error while loading all pages under cid (${pageCid}): ${e}`);
+        debugs.ERROR(`Error while loading all pages under cid (${pageCid}): ${e}`);
     }
 }

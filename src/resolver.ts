@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { Plebbit } from "./plebbit";
 import { getDebugLevels } from "./util";
-const debugs = getDebugLevels("subplebbit");
+const debugs = getDebugLevels("resolver");
 
 export class Resolver {
     blockchainProviders: Object;
@@ -44,7 +44,10 @@ export class Resolver {
     async _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string> {
         const cachedResponse = this.plebbit._memCache.get(ensName + txtRecordName);
         debugs.TRACE(`Attempting to resolve ENS (${ensName}) text record (${txtRecordName}), cached response: ${cachedResponse}`);
-        if (cachedResponse) return cachedResponse;
+        if (cachedResponse) {
+            debugs.DEBUG(`ENS (${ensName}) text record (${txtRecordName}) is already cached: ${JSON.stringify(cachedResponse)}`);
+            return cachedResponse;
+        }
         const blockchainProvider = this._getBlockchainProvider("eth");
         const resolver = await blockchainProvider.getResolver(ensName);
         const txtRecordResult = await resolver.getText(txtRecordName);
@@ -58,6 +61,7 @@ export class Resolver {
 
     async resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string> {
         if (authorAddress?.endsWith(".eth")) {
+            debugs.DEBUG(`Will attempt to resolve plebbit-author-address of ${authorAddress}`);
             return this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address");
         }
         return authorAddress;
@@ -65,6 +69,7 @@ export class Resolver {
 
     async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string> {
         if (subplebbitAddress?.endsWith(".eth")) {
+            debugs.DEBUG(`Will attempt to resolve subplebbit-address of ${subplebbitAddress}`);
             return this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address");
         }
         return subplebbitAddress;

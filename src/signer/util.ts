@@ -12,7 +12,7 @@ export const generatePrivateKeyPem = async () => {
     return privateKeyPem.trim();
 };
 
-export const getPlebbitAddressFromPrivateKeyPem = async (privateKeyPem) => {
+export const getPlebbitAddressFromPrivateKeyPem = async (privateKeyPem): Promise<string> => {
     validatePrivateKeyPem(privateKeyPem);
     const peerId = await getPeerIdFromPrivateKeyPem(privateKeyPem);
     return peerId.toB58String().trim();
