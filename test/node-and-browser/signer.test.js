@@ -23,7 +23,10 @@ describe("signer (node and browser)", async () => {
     let plebbit, authorSigner, randomSigner;
 
     before(async function () {
-        plebbit = await Plebbit();
+        plebbit = await Plebbit({
+            ipfsHttpClientOptions: "http://localhost:5001/api/v0",
+            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
+        });
         authorSigner = await plebbit.createSigner({ privateKey: authorSignerFixture.privateKey, type: "rsa" });
         randomSigner = await plebbit.createSigner();
     });
@@ -80,7 +83,6 @@ describe("signer (node and browser)", async () => {
 
         before(async () => {
             authorSignature = await signPublication(fixtureComment, authorSigner, plebbit);
-            randomSignature = await signPublication(fixtureComment, randomSigner, plebbit);
             signedPublication = { ...fixtureComment, signature: authorSignature };
         });
 
@@ -99,13 +101,31 @@ describe("signer (node and browser)", async () => {
             expect(authorSignature.signedPropertyNames).to.deep.equal(expectedAuthorSignature.signedPropertyNames);
         });
 
+        it(`signPublication throws with invalid author`, async () => {
+            // Trying to sign a publication with author.address !== randomSigner.address
+            // should throw an error
+            try {
+                randomSignature = await signPublication(fixtureComment, randomSigner, plebbit);
+                expect.fail("Signing a publication with author.address !== randomSigner.address should throw an error");
+            } catch {}
+        });
+
         it("verifyPublication success with correct author signature", async () => {
             const verification = await verifyPublication(signedPublication);
             expect(verification).to.deep.equal([true]);
         });
 
         it("verifyPublication failure with wrong signature", async () => {
-            const wronglySignedPublication = { ...signedPublication, signature: randomSignature };
+            const invalidSignature = {
+                signature:
+                    "DdjseJWstPGtXZkKges4XaZ2pw4MqfVbWjqaZ4t4PzPNlbUsCQKp4H4SDNYNG1iDokKOvux4O6ng2k/0sU78W7XSR2RAcxSiyMV5TeK7JHsiwB8/uUZZa+4jObTO5CG2GyjwhG94lDNUzWh/xtEDKuxYQjYd0Zr9Q8vcGzLTXfbDVGof9qqfE1m6rM9o6UYdhag8QpJtpxpF5RFZOKP2xyqDXyiQTqvtv1FP8XFnwbKjCgT5/stv+WCVjEdzggaG2Ox7k8KJhXwGY6TSTZmB43kBEtSvoAwxCvp+o/xbyUiS9Qfr5ySe6YeCEgACnnMIuHeG2EbQyFKIAV4mTFxGSQ",
+                publicKey:
+                    "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxAGJeGuWd7CBbei6MfOl\nFvX5sPf7tzU3SIeQlTsc4GNjV+Jn/y5nqnVHPFK38NUJIuYjaTlH4OoZv/CI4ze5\nBz6ZIxijd6wIgweHvCCuhhRKaLRl+BoGDCVU5SjEEi3NdeNnNRbSKlBv4v8l2Vdt\ngkt9iUelRyd8UmkRt7nSND1dPTdPE4tfyO2eAg2dNQ1ItWWhgW17Z3lPV1VwNhjU\nqGa8wt7M2Mse3vu2dprRtGs/3UeSvf4i9i3NaF+M7NhplB8t0KlmqSpy7ChX5MvQ\nv4tJ1c7MlG3Dzryt2I9xSueINVlWPTqBAR4HePcURET5h/0b4pajM61QICCq3X1d\n5QIDAQAB\n-----END PUBLIC KEY-----",
+                type: "rsa",
+                signedPropertyNames: ["subplebbitAddress", "author", "timestamp", "parentCid", "content"]
+            };
+
+            const wronglySignedPublication = { ...signedPublication, signature: invalidSignature };
             const verification = await verifyPublication(wronglySignedPublication);
             expect(verification).to.deep.equal([
                 false,
