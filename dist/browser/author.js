@@ -4,9 +4,10 @@ var Author = /** @class */ (function () {
     function Author(props) {
         this.displayName = props["displayName"];
         this.address = props["address"];
+        this.avatar = props["avatar"];
     }
     Author.prototype.toJSON = function () {
-        return { address: this.address, displayName: this.displayName };
+        return { address: this.address, displayName: this.displayName, avatar: this.avatar };
     };
     Author.prototype.toJSONForDb = function () {
         return { address: this.address };

@@ -744,6 +744,42 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
+    DbHandler.prototype.changeDbFilename = function (newDbFileName) {
+        var _a, _b, _c;
+        return __awaiter(this, void 0, void 0, function () {
+            var oldPathString, newPath;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        oldPathString = (_c = (_b = (_a = this.subplebbit) === null || _a === void 0 ? void 0 : _a._dbConfig) === null || _b === void 0 ? void 0 : _b.connection) === null || _c === void 0 ? void 0 : _c.filename;
+                        assert_1.default.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
+                        if (oldPathString === ":memory:") {
+                            debugs.DEBUG("No need to change file name of db since it's in memory");
+                            return [2 /*return*/];
+                        }
+                        newPath = path_1.default.format({ dir: path_1.default.dirname(oldPathString), base: newDbFileName });
+                        return [4 /*yield*/, fs_1.default.promises.mkdir(path_1.default.dirname(newPath), { recursive: true })];
+                    case 1:
+                        _d.sent();
+                        return [4 /*yield*/, fs_1.default.promises.rename(oldPathString, newPath)];
+                    case 2:
+                        _d.sent();
+                        this.subplebbit._dbConfig = {
+                            client: "better-sqlite3",
+                            connection: {
+                                filename: newPath
+                            },
+                            useNullAsDefault: true,
+                            acquireConnectionTimeout: 120000
+                        };
+                        this.subplebbit.dbHandler = new DbHandler(this.subplebbit._dbConfig, this.subplebbit);
+                        this.subplebbit._keyv = new keyv_1.default("sqlite://".concat(this.subplebbit._dbConfig.connection.filename));
+                        debugs.INFO("Changed db path from (".concat(oldPathString, ") to (").concat(newPath, ")"));
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     return DbHandler;
 }());
 exports.DbHandler = DbHandler;

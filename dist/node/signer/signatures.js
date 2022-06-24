@@ -140,20 +140,31 @@ var verifyBufferRsa = function (bufferToSign, bufferSignature, publicKeyPem) { r
     });
 }); };
 exports.verifyBufferRsa = verifyBufferRsa;
-function signPublication(publication, signer) {
+function signPublication(publication, signer, plebbit) {
+    var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var fieldsToSign, publicationSignFields, commentEncoded, signatureData, _a;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var resolvedAddress, derivedAddress, fieldsToSign, publicationSignFields, commentEncoded, signatureData, _b;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
+                    if (!((_a = publication === null || publication === void 0 ? void 0 : publication.author) === null || _a === void 0 ? void 0 : _a.address)) return [3 /*break*/, 3];
+                    return [4 /*yield*/, plebbit.resolver.resolveAuthorAddressIfNeeded(publication.author.address)];
+                case 1:
+                    resolvedAddress = _c.sent();
+                    return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPrivateKeyPem)(signer.privateKey)];
+                case 2:
+                    derivedAddress = _c.sent();
+                    assert_1.default.equal(resolvedAddress, derivedAddress, "author.address (".concat(publication.author.address, ") does not equate its resolved address (").concat(resolvedAddress, ") is invalid. For this publication to be signed, user needs to ensure plebbit-author-address points to same key used by signer (").concat(derivedAddress, ")"));
+                    _c.label = 3;
+                case 3:
                     fieldsToSign = getFieldsToSign(publication);
                     publicationSignFields = (0, util_2.removeKeysWithUndefinedValues)((0, util_2.keepKeys)(publication, fieldsToSign));
                     debugs.TRACE("Fields to sign: ".concat(JSON.stringify(fieldsToSign), ". Publication object to sign:  ").concat(JSON.stringify(publicationSignFields)));
                     commentEncoded = (0, cborg_1.encode)(publicationSignFields);
-                    _a = to_string_1.toString;
+                    _b = to_string_1.toString;
                     return [4 /*yield*/, (0, exports.signBufferRsa)(commentEncoded, signer.privateKey)];
-                case 1:
-                    signatureData = _a.apply(void 0, [_b.sent(), "base64"]);
+                case 4:
+                    signatureData = _b.apply(void 0, [_c.sent(), "base64"]);
                     debugs.DEBUG("Publication been signed, signature data is (".concat(signatureData, ")"));
                     return [2 /*return*/, new Signature({
                             signature: signatureData,
@@ -167,22 +178,47 @@ function signPublication(publication, signer) {
 }
 exports.signPublication = signPublication;
 // Return [verification (boolean), reasonForFailing (string)]
-function verifyPublication(publication) {
+function verifyPublication(publication, plebbit, overrideAuthorAddressIfInvalid) {
+    if (overrideAuthorAddressIfInvalid === void 0) { overrideAuthorAddressIfInvalid = true; }
     return __awaiter(this, void 0, void 0, function () {
-        var verifyAuthor, verifyPublicationSignature, _a, publicationJson, originalSignatureObj, editedSignatureObj, _b, e_1;
+        var verifyAuthor, verifyPublicationSignature, publicationJson, originalSignatureObj, editedSignatureObj, _a, _b, e_1;
         var _this = this;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
                     verifyAuthor = function (signature, author) { return __awaiter(_this, void 0, void 0, function () {
-                        var peerId;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
+                        var signaturePeerId, authorPeerId, resolvedAddress, derivedAddress;
+                        var _a;
+                        return __generator(this, function (_b) {
+                            switch (_b.label) {
                                 case 0: return [4 /*yield*/, (0, util_1.getPeerIdFromPublicKeyPem)(signature.publicKey)];
                                 case 1:
-                                    peerId = _a.sent();
-                                    assert_1.default.equal(peerId.equals(peer_id_1.default.createFromB58String(author.address)), true, "comment.author.address doesn't match comment.signature.publicKey");
-                                    return [2 /*return*/];
+                                    signaturePeerId = _b.sent();
+                                    try {
+                                        // There are cases where author.address is a crypto domain so PeerId.createFromB58String crashes
+                                        authorPeerId = peer_id_1.default.createFromB58String(author.address);
+                                    }
+                                    catch (_c) { }
+                                    if (!authorPeerId) return [3 /*break*/, 2];
+                                    assert_1.default.equal(signaturePeerId.equals(authorPeerId), true, "comment.author.address doesn't match comment.signature.publicKey");
+                                    return [3 /*break*/, 5];
+                                case 2:
+                                    if (!(overrideAuthorAddressIfInvalid && ((_a = publication === null || publication === void 0 ? void 0 : publication.author) === null || _a === void 0 ? void 0 : _a.address))) return [3 /*break*/, 5];
+                                    return [4 /*yield*/, plebbit.resolver.resolveAuthorAddressIfNeeded(publication.author.address)];
+                                case 3:
+                                    resolvedAddress = _b.sent();
+                                    if (!(resolvedAddress !== publication.author.address)) return [3 /*break*/, 5];
+                                    return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPublicKeyPem)(publication.signature.publicKey)];
+                                case 4:
+                                    derivedAddress = _b.sent();
+                                    if (resolvedAddress !== derivedAddress) {
+                                        // Means plebbit-author-address text record is resolving to another comment (oudated?)
+                                        // Will always use address derived from publication.signature.publicKey as truth
+                                        debugs.INFO("domain (".concat(publication.author.address, ") resolved address (").concat(resolvedAddress, ") is invalid, changing publication.author.address to derived address ").concat(derivedAddress));
+                                        publication.author.address = derivedAddress;
+                                    }
+                                    _b.label = 5;
+                                case 5: return [2 /*return*/];
                             }
                         });
                     }); };
@@ -208,27 +244,32 @@ function verifyPublication(publication) {
                     if (!publication.originalContent) return [3 /*break*/, 7];
                     // This is a comment/post that has been edited, and we need to verify both signature and editSignature
                     debugs.TRACE("Attempting to verify a comment that has been edited. Will verify comment.author,  comment.signature and comment.editSignature");
-                    if (!publication.author) return [3 /*break*/, 3];
-                    return [4 /*yield*/, verifyAuthor(publication.signature, publication.author)];
-                case 2:
-                    _a = _c.sent();
-                    return [3 /*break*/, 4];
-                case 3:
-                    _a = undefined;
-                    _c.label = 4;
-                case 4:
-                    _a;
                     publicationJson = publication instanceof publication_1.default ? publication.toJSON() : publication;
                     originalSignatureObj = __assign(__assign({}, publicationJson), { content: publication.originalContent });
                     debugs.TRACE("Attempting to verify comment.signature");
                     return [4 /*yield*/, verifyPublicationSignature(publication.signature, originalSignatureObj)];
-                case 5:
+                case 2:
                     _c.sent();
                     debugs.TRACE("Attempting to verify comment.editSignature");
                     editedSignatureObj = __assign(__assign({}, publicationJson), { commentCid: publication.cid });
                     return [4 /*yield*/, verifyPublicationSignature(publication.editSignature, editedSignatureObj)];
-                case 6:
+                case 3:
                     _c.sent();
+                    if (!
+                    // Verify author at the end since we might change author.address which will fail signature verification
+                    publication.author) 
+                    // Verify author at the end since we might change author.address which will fail signature verification
+                    return [3 /*break*/, 5];
+                    return [4 /*yield*/, verifyAuthor(publication.signature, publication.author)];
+                case 4:
+                    _a = _c.sent();
+                    return [3 /*break*/, 6];
+                case 5:
+                    _a = undefined;
+                    _c.label = 6;
+                case 6:
+                    // Verify author at the end since we might change author.address which will fail signature verification
+                    _a;
                     return [3 /*break*/, 14];
                 case 7:
                     if (!(publication.commentCid && publication.content)) return [3 /*break*/, 9];
@@ -240,26 +281,26 @@ function verifyPublication(publication) {
                     return [3 /*break*/, 14];
                 case 9:
                     debugs.TRACE("Attempting to verify post/comment/vote");
-                    if (!publication.author) return [3 /*break*/, 11];
-                    return [4 /*yield*/, verifyAuthor(publication.signature, publication.author)];
-                case 10:
-                    _b = _c.sent();
-                    return [3 /*break*/, 12];
-                case 11:
-                    _b = undefined;
-                    _c.label = 12;
-                case 12:
-                    _b;
                     return [4 /*yield*/, verifyPublicationSignature(publication.signature, publication)];
-                case 13:
+                case 10:
                     _c.sent();
+                    if (!publication.author) return [3 /*break*/, 12];
+                    return [4 /*yield*/, verifyAuthor(publication.signature, publication.author)];
+                case 11:
+                    _b = _c.sent();
+                    return [3 /*break*/, 13];
+                case 12:
+                    _b = undefined;
+                    _c.label = 13;
+                case 13:
+                    _b;
                     _c.label = 14;
                 case 14:
                     debugs.TRACE("Publication has been verified");
                     return [2 /*return*/, [true]];
                 case 15:
                     e_1 = _c.sent();
-                    debugs.WARN("Failed to verify publication");
+                    debugs.WARN("Failed to verify publication due to error: ".concat(e_1));
                     return [2 /*return*/, [false, String(e_1)]];
                 case 16: return [2 /*return*/];
             }

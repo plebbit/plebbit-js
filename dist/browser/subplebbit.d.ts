@@ -2,37 +2,47 @@
 import EventEmitter from "events";
 import { Challenge } from "./challenge";
 import { DbHandler } from "./runtime/browser/db-handler";
-import { Signer } from "./signer";
+import { Signer, Signature } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
-import { SubplebbitEncryption } from "./types";
-export declare class Subplebbit extends EventEmitter {
-    address: string;
+import { ChallengeType, CreateSubplebbitOptions, Flair, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitMetrics, SubplebbitRole, SubplebbitSuggested, SubplebbitType } from "./types";
+import { CommentEdit } from "./comment";
+export declare class Subplebbit extends EventEmitter implements SubplebbitEditOptions, SubplebbitType {
     title?: string;
     description?: string;
-    moderatorsAddresses?: string[];
+    roles?: {
+        [authorAddress: string]: SubplebbitRole;
+    };
     latestPostCid?: string;
     posts?: Pages;
     pubsubTopic?: string;
-    challengeTypes?: string[];
+    challengeTypes?: ChallengeType[];
+    metrics?: SubplebbitMetrics;
+    features?: SubplebbitFeatures;
+    suggested?: SubplebbitSuggested;
+    flairs?: Flair[];
+    address: string;
+    moderatorsAddresses?: string[];
     metricsCid?: string;
     createdAt?: number;
     updatedAt?: number;
     signer?: Signer;
     encryption?: SubplebbitEncryption;
-    plebbit?: Plebbit;
+    protocolVersion: "1.0.0";
+    signature: Signature;
+    plebbit: Plebbit;
     dbHandler?: DbHandler;
-    _challengeToSolution: any;
-    _challengeToPublication: any;
-    provideCaptchaCallback?: Function;
-    validateCaptchaAnswerCallback?: Function;
-    _dbConfig?: any;
-    ipnsKeyName?: string;
-    sortHandler: any;
-    emittedAt?: number;
-    _updateInterval?: any;
     _keyv: any;
-    constructor(props: any, plebbit: any);
+    _dbConfig?: any;
+    private _challengeToSolution;
+    private _challengeToPublication;
+    private provideCaptchaCallback?;
+    private validateCaptchaAnswerCallback?;
+    private ipnsKeyName?;
+    private sortHandler;
+    private emittedAt?;
+    private _updateInterval?;
+    constructor(props: CreateSubplebbitOptions, plebbit: Plebbit);
     initSubplebbit(newProps: any): void;
     initSignerIfNeeded(): Promise<void>;
     initDbIfNeeded(): Promise<void>;
@@ -49,7 +59,7 @@ export declare class Subplebbit extends EventEmitter {
         pubsubTopic: string;
         address: string;
         posts: Pages;
-        challengeTypes: string[];
+        challengeTypes: ChallengeType[];
         metricsCid: string;
         createdAt: number;
         updatedAt: number;
@@ -63,29 +73,26 @@ export declare class Subplebbit extends EventEmitter {
         pubsubTopic: string;
         address: string;
         posts: Pages;
-        challengeTypes: string[];
+        challengeTypes: ChallengeType[];
         metricsCid: string;
         createdAt: number;
         updatedAt: number;
         encryption: any;
     };
     prePublish(): Promise<void>;
-    edit(newSubplebbitOptions: any): Promise<this>;
+    assertDomainResolvesCorrectlyIfNeeded(domain: string): Promise<void>;
+    edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit>;
     updateOnce(): Promise<this>;
     update(updateIntervalMs?: number): Promise<this>;
     stop(): Promise<void>;
-    updateSubplebbitIpns(): Promise<this>;
-    handleCommentEdit(commentEdit: any, challengeRequestId: any, trx: any): Promise<{
+    updateSubplebbitIpns(): Promise<Subplebbit>;
+    handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: any, trx: any): Promise<{
         reason: string;
     }>;
     handleVote(newVote: any, challengeRequestId: any, trx: any): Promise<{
         reason: string;
     }>;
-    publishPostAfterPassingChallenge(publication: any, challengeRequestId: any): Promise<{
-        reason: string;
-    } | {
-        publication: any;
-    }>;
+    publishPostAfterPassingChallenge(publication: any, challengeRequestId: any): Promise<any>;
     handleChallengeRequest(msgParsed: any): Promise<void>;
     handleChallengeAnswer(msgParsed: any): Promise<void>;
     processCaptchaPubsub(pubsubMsg: any): Promise<void>;

@@ -2,7 +2,7 @@
 import { ChallengeRequestMessage } from "./challenge";
 import EventEmitter from "events";
 import Author from "./author";
-import { Subplebbit } from "./types";
+import { Subplebbit } from "./subplebbit";
 import { Signature, Signer } from "./signer";
 declare class Publication extends EventEmitter {
     subplebbit: Subplebbit;

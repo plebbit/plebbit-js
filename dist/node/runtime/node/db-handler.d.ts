@@ -12,7 +12,7 @@ export declare const SIGNER_USAGES: {
 };
 export declare class DbHandler {
     _dbConfig: Object;
-    knex: any;
+    knex: Knex;
     subplebbit: Subplebbit;
     constructor(dbConfig: any, subplebbit: any);
     createTransaction(): Promise<Transaction>;
@@ -44,5 +44,6 @@ export declare class DbHandler {
     insertSigner(signer: any, trx: any): Promise<any>;
     querySubplebbitSigner(trx: any): Promise<Signer>;
     querySigner(ipnsKeyName: any, trx: any): Promise<Signer | undefined>;
+    changeDbFilename(newDbFileName: string): Promise<void>;
 }
-export declare const subplebbitInitDbIfNeeded: (subplebbit: any) => Promise<void>;
+export declare const subplebbitInitDbIfNeeded: (subplebbit: Subplebbit) => Promise<void>;

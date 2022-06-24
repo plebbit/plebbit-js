@@ -1,4 +1,5 @@
 import Debug from "debug";
+import { Plebbit } from "./plebbit";
 export declare const TIMEFRAMES_TO_SECONDS: Readonly<{
     HOUR: number;
     DAY: number;
@@ -7,10 +8,10 @@ export declare const TIMEFRAMES_TO_SECONDS: Readonly<{
     YEAR: number;
     ALL: number;
 }>;
-export declare function loadIpfsFileAsJson(cid: any, plebbit: any, defaultOptions?: {
+export declare function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultOptions?: {
     timeout: number;
 }): Promise<any>;
-export declare function loadIpnsAsJson(ipns: any, plebbit: any): Promise<any>;
+export declare function loadIpnsAsJson(ipns: string, plebbit: Plebbit): Promise<any>;
 export declare function sleep(ms: any): Promise<unknown>;
 export declare function chunks(arr: any, len: any): any[];
 export declare function round(number: any, decimalPlaces: any): number;

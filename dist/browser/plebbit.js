@@ -60,12 +60,13 @@ var vote_1 = __importDefault(require("./vote"));
 var ipfs_http_client_1 = require("ipfs-http-client");
 var assert_1 = __importDefault(require("assert"));
 var signer_1 = require("./signer");
+var resolver_1 = require("./resolver");
+var tinycache_1 = __importDefault(require("tinycache"));
 var debugs = (0, util_2.getDebugLevels)("plebbit");
 var Plebbit = /** @class */ (function () {
     function Plebbit(options) {
         if (options === void 0) { options = {}; }
         this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        this.ipfsGatewayUrl = this.ipfsHttpClientOptions ? undefined : options["ipfsGatewayUrl"] || "https://cloudflare-ipfs.com";
         this.ipfsClient = this.ipfsHttpClientOptions ? (0, ipfs_http_client_1.create)(this.ipfsHttpClientOptions) : undefined;
         this.pubsubHttpClientOptions = options["pubsubHttpClientOptions"] || "https://pubsubprovider.xyz/api/v0";
         this.pubsubIpfsClient = options["pubsubHttpClientOptions"]
@@ -74,19 +75,57 @@ var Plebbit = /** @class */ (function () {
                 ? this.ipfsClient
                 : (0, ipfs_http_client_1.create)(this.pubsubHttpClientOptions);
         this.dataPath = options["dataPath"] || util_1.default.getDefaultDataPath();
+        this.resolver = new resolver_1.Resolver({ plebbit: this, blockchainProviders: options["blockchainProviders"] });
+        this._memCache = new tinycache_1.default();
     }
+    Plebbit.prototype._init = function (options) {
+        if (options === void 0) { options = {}; }
+        return __awaiter(this, void 0, void 0, function () {
+            var gatewayFromNode, splits, e_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!options["ipfsGatewayUrl"]) return [3 /*break*/, 1];
+                        this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
+                        return [3 /*break*/, 4];
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, this.ipfsClient.config.get("Addresses.Gateway")];
+                    case 2:
+                        gatewayFromNode = _a.sent();
+                        debugs.TRACE("Gateway from node: ".concat(JSON.stringify(gatewayFromNode)));
+                        if (Array.isArray(gatewayFromNode))
+                            gatewayFromNode = gatewayFromNode[0];
+                        splits = gatewayFromNode.toString().split("/");
+                        this.ipfsGatewayUrl = "http://".concat(splits[2], ":").concat(splits[4]);
+                        debugs.DEBUG("plebbit.ipfsGatewayUrl retrieved from IPFS node: ".concat(this.ipfsGatewayUrl));
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_1 = _a.sent();
+                        this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
+                        debugs.ERROR("".concat(e_1.msg, ": Failed to retrieve gateway url from ipfs node, will default to ").concat(this.ipfsGatewayUrl));
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
     Plebbit.prototype.getSubplebbit = function (subplebbitAddress) {
         return __awaiter(this, void 0, void 0, function () {
-            var subplebbitJson;
+            var resolvedSubplebbitAddress, subplebbitJson;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         (0, assert_1.default)(typeof subplebbitAddress === "string");
                         (0, assert_1.default)(subplebbitAddress.length > 0);
-                        return [4 /*yield*/, (0, util_2.loadIpnsAsJson)(subplebbitAddress, this)];
+                        return [4 /*yield*/, this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
                     case 1:
+                        resolvedSubplebbitAddress = _a.sent();
+                        (0, assert_1.default)(typeof resolvedSubplebbitAddress === "string" && resolvedSubplebbitAddress.length > 0, "Resolved address of a subplebbit needs to be defined");
+                        return [4 /*yield*/, (0, util_2.loadIpnsAsJson)(resolvedSubplebbitAddress, this)];
+                    case 2:
                         subplebbitJson = _a.sent();
-                        return [2 /*return*/, new subplebbit_1.Subplebbit(subplebbitJson, this)];
+                        return [2 /*return*/, new subplebbit_1.Subplebbit(__assign(__assign({}, subplebbitJson), { address: subplebbitAddress }), this)];
                 }
             });
         });
@@ -105,7 +144,7 @@ var Plebbit = /** @class */ (function () {
                         publication = commentJson["title"]
                             ? new post_1.default(__assign(__assign({}, commentJson), { postCid: cid, cid: cid }), subplebbit)
                             : new comment_1.Comment(__assign(__assign({}, commentJson), { cid: cid }), subplebbit);
-                        return [4 /*yield*/, (0, signer_1.verifyPublication)(publication)];
+                        return [4 /*yield*/, (0, signer_1.verifyPublication)(publication, this)];
                     case 3:
                         _a = _b.sent(), signatureIsVerified = _a[0], failedVerificationReason = _a[1];
                         assert_1.default.equal(signatureIsVerified, true, "Signature of comment/post ".concat(cid, " is invalid due to reason=").concat(failedVerificationReason));
@@ -120,9 +159,11 @@ var Plebbit = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (createPublicationOptions.author && !createPublicationOptions.author.address)
+                        if (createPublicationOptions.author && !createPublicationOptions.author.address) {
                             createPublicationOptions.author.address = createPublicationOptions.signer.address;
-                        return [4 /*yield*/, (0, signer_1.signPublication)(createPublicationOptions, createPublicationOptions.signer)];
+                            debugs.DEBUG("createPublicationOptions did not provide author.address, will define it to signer.address (".concat(createPublicationOptions.signer.address, ")"));
+                        }
+                        return [4 /*yield*/, (0, signer_1.signPublication)(createPublicationOptions, createPublicationOptions.signer, this)];
                     case 1:
                         commentSignature = _a.sent();
                         return [2 /*return*/, __assign(__assign({}, createPublicationOptions), { signature: commentSignature })];
@@ -158,10 +199,10 @@ var Plebbit = /** @class */ (function () {
             });
         });
     };
-    Plebbit.prototype.createSubplebbit = function (createSubplebbitOptions) {
+    Plebbit.prototype.createSubplebbit = function (options) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, new subplebbit_1.Subplebbit(createSubplebbitOptions, this)];
+                return [2 /*return*/, new subplebbit_1.Subplebbit(options, this)];
             });
         });
     };
@@ -185,15 +226,14 @@ var Plebbit = /** @class */ (function () {
     };
     Plebbit.prototype.createCommentEdit = function (createCommentEditOptions) {
         return __awaiter(this, void 0, void 0, function () {
-            var commentSubplebbit, defaultTimestamp, commentEditProps, _a;
+            var defaultTimestamp, commentEditProps, _a;
             var _b;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
-                        commentSubplebbit = { plebbit: this };
                         if (!createCommentEditOptions.signer)
                             // User just wants to instantiate a CommentEdit object, not publish
-                            return [2 /*return*/, new comment_1.CommentEdit(createCommentEditOptions, commentSubplebbit)];
+                            return [2 /*return*/, new comment_1.CommentEdit(createCommentEditOptions, { plebbit: this })];
                         if (!createCommentEditOptions.editTimestamp) {
                             defaultTimestamp = (0, util_2.timestamp)();
                             debugs.DEBUG("User hasn't provided any editTimestamp for their CommentEdit, defaulted to (".concat(defaultTimestamp, ")"));
@@ -201,10 +241,10 @@ var Plebbit = /** @class */ (function () {
                         }
                         _a = [__assign({}, createCommentEditOptions)];
                         _b = {};
-                        return [4 /*yield*/, (0, signer_1.signPublication)(createCommentEditOptions, createCommentEditOptions.signer)];
+                        return [4 /*yield*/, (0, signer_1.signPublication)(createCommentEditOptions, createCommentEditOptions.signer, this)];
                     case 1:
                         commentEditProps = __assign.apply(void 0, _a.concat([(_b.editSignature = _c.sent(), _b)]));
-                        return [2 /*return*/, new comment_1.CommentEdit(commentEditProps, commentSubplebbit)];
+                        return [2 /*return*/, new comment_1.CommentEdit(commentEditProps, { plebbit: this })];
                 }
             });
         });

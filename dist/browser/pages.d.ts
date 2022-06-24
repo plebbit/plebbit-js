@@ -9,7 +9,7 @@ export declare class Pages {
     };
     subplebbit: Subplebbit;
     constructor(props: any);
-    getPage(pageCid: any): Promise<Page>;
+    getPage(pageCid: string): Promise<Page>;
     toJSON(): {
         pages: {
             [sortType: string]: Page;

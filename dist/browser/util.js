@@ -86,7 +86,7 @@ function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
             switch (_a.label) {
                 case 0:
                     assert_1.default.ok(cid, "Cid has to not be null to load");
-                    if (!plebbit.ipfsGatewayUrl) return [3 /*break*/, 5];
+                    if (!!plebbit.ipfsClient) return [3 /*break*/, 5];
                     url = "".concat(plebbit.ipfsGatewayUrl, "/ipfs/").concat(cid);
                     return [4 /*yield*/, (0, node_fetch_1.default)(url)];
                 case 1:
@@ -118,7 +118,7 @@ function loadIpnsAsJson(ipns, plebbit) {
             switch (_a.label) {
                 case 0:
                     assert_1.default.ok(ipns, "ipns has to be not null to load");
-                    if (!plebbit.ipfsGatewayUrl) return [3 /*break*/, 5];
+                    if (!!plebbit.ipfsClient) return [3 /*break*/, 5];
                     url = "".concat(plebbit.ipfsGatewayUrl, "/ipns/").concat(ipns);
                     return [4 /*yield*/, (0, node_fetch_1.default)(url)];
                 case 1:

@@ -41,8 +41,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.loadAllPages = exports.generateMockVote = exports.generateMockPostWithRandomTimestamp = exports.generateMockComment = exports.generateMockPost = void 0;
 var util_1 = require("./util");
-var debug_1 = __importDefault(require("debug")); // This import is to suppress a warning statement. Leave it
-var debug = (0, debug_1.default)("plebbit-js:test-util");
+var assert_1 = __importDefault(require("assert"));
+var debugs = (0, util_1.getDebugLevels)("test-util");
 function generateMockPost(subplebbitAddress, plebbit, signer) {
     return __awaiter(this, void 0, void 0, function () {
         var postStartTestTime, _a, post;
@@ -67,6 +67,7 @@ function generateMockPost(subplebbitAddress, plebbit, signer) {
                         })];
                 case 3:
                     post = _b.sent();
+                    assert_1.default.equal(post.constructor.name, "Post", "createComment should return Post if title is provided");
                     post.once("challenge", function (challengeMsg) {
                         post.publishChallengeAnswers(undefined);
                     });
@@ -211,7 +212,7 @@ function loadAllPages(pageCid, pagesInstance) {
                     return [2 /*return*/, sortedComments];
                 case 7:
                     e_1 = _a.sent();
-                    debug("Error while loading all pages under cid (".concat(pageCid, "): ").concat(e_1));
+                    debugs.ERROR("Error while loading all pages under cid (".concat(pageCid, "): ").concat(e_1));
                     return [3 /*break*/, 8];
                 case 8: return [2 /*return*/];
             }

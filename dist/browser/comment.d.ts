@@ -110,7 +110,7 @@ export declare class Comment extends Publication {
     publish(userOptions: any): Promise<void>;
 }
 export declare class CommentEdit extends Comment {
-    commentCid?: string;
+    commentCid: string;
     _initProps(props: any): void;
     toJSON(): {
         commentCid: string;

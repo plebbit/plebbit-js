@@ -182,7 +182,7 @@ var Publication = /** @class */ (function (_super) {
             var _c, isSignatureValid, failedVerificationReason, options, _d, encryptedPublication;
             return __generator(this, function (_e) {
                 switch (_e.label) {
-                    case 0: return [4 /*yield*/, (0, signer_1.verifyPublication)(this)];
+                    case 0: return [4 /*yield*/, (0, signer_1.verifyPublication)(this, this.subplebbit.plebbit, false)];
                     case 1:
                         _c = _e.sent(), isSignatureValid = _c[0], failedVerificationReason = _c[1];
                         assert_1.default.ok(isSignatureValid, "Failed to publish since signature is invalid, failed verification reason: ".concat(failedVerificationReason));

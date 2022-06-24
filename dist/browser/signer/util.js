@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPeerIdFromPublicKeyPem = exports.getKeyPairFromPrivateKeyPem = exports.getPublicKeyPemFromPrivateKeyPem = exports.getIpfsKeyFromPrivateKeyPem = exports.getPlebbitAddressFromPrivateKeyPem = exports.generatePrivateKeyPem = void 0;
+exports.getPeerIdFromPublicKeyPem = exports.getKeyPairFromPrivateKeyPem = exports.getPublicKeyPemFromPrivateKeyPem = exports.getIpfsKeyFromPrivateKeyPem = exports.getPlebbitAddressFromPublicKeyPem = exports.getPlebbitAddressFromPrivateKeyPem = exports.generatePrivateKeyPem = void 0;
 var libp2pCrypto = require("libp2p-crypto");
 var cborg = require("cborg");
 var PeerId = require("peer-id");
@@ -73,6 +73,20 @@ var getPlebbitAddressFromPrivateKeyPem = function (privateKeyPem) { return __awa
     });
 }); };
 exports.getPlebbitAddressFromPrivateKeyPem = getPlebbitAddressFromPrivateKeyPem;
+var getPlebbitAddressFromPublicKeyPem = function (publicKeyPem) { return __awaiter(void 0, void 0, void 0, function () {
+    var peerId;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                validatePublicKeyPem(publicKeyPem);
+                return [4 /*yield*/, (0, exports.getPeerIdFromPublicKeyPem)(publicKeyPem)];
+            case 1:
+                peerId = _a.sent();
+                return [2 /*return*/, peerId.toB58String().trim()];
+        }
+    });
+}); };
+exports.getPlebbitAddressFromPublicKeyPem = getPlebbitAddressFromPublicKeyPem;
 var getIpfsKeyFromPrivateKeyPem = function (privateKeyPem, password) {
     if (password === void 0) { password = ""; }
     return __awaiter(void 0, void 0, void 0, function () {
