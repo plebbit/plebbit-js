@@ -1,4 +1,4 @@
-import { CreateSignerOptions } from "./types";
+import { CreateSignerOptions, CreateSubplebbitOptions } from "./types";
 import plebbitUtil from "./runtime/node/util";
 import { Comment, CommentEdit } from "./comment";
 import Post from "./post";
@@ -65,7 +65,7 @@ export class Plebbit {
             "Resolved address of a subplebbit needs to be defined"
         );
         const subplebbitJson = await loadIpnsAsJson(resolvedSubplebbitAddress, this);
-        return new Subplebbit(subplebbitJson, this);
+        return new Subplebbit({ ...subplebbitJson, address: subplebbitAddress }, this);
     }
 
     async getComment(cid: string): Promise<Comment | Post> {
@@ -117,8 +117,8 @@ export class Plebbit {
         return commentProps.title ? new Post(commentProps, commentSubplebbit) : new Comment(commentProps, commentSubplebbit);
     }
 
-    async createSubplebbit(createSubplebbitOptions): Promise<Subplebbit> {
-        return new Subplebbit(createSubplebbitOptions, this);
+    async createSubplebbit(options: CreateSubplebbitOptions): Promise<Subplebbit> {
+        return new Subplebbit(options, this);
     }
 
     async createVote(createVoteOptions): Promise<Vote> {
