@@ -74,4 +74,9 @@ export class Resolver {
         }
         return subplebbitAddress;
     }
+
+    isDomain(address: string): boolean {
+        if (address?.endsWith(".eth")) return true;
+        return false;
+    }
 }

@@ -20,7 +20,18 @@ import { getDebugLevels, ipfsImportKey, loadIpnsAsJson, shallowEqual, timestamp 
 import { decrypt, encrypt, verifyPublication, Signer, Signature } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
-import { SubplebbitEncryption } from "./types";
+import {
+    ChallengeType,
+    CreateSubplebbitOptions,
+    Flair,
+    SubplebbitEditOptions,
+    SubplebbitEncryption,
+    SubplebbitFeatures,
+    SubplebbitMetrics,
+    SubplebbitRole,
+    SubplebbitSuggested,
+    SubplebbitType
+} from "./types";
 import { Comment, CommentEdit } from "./comment";
 import Vote from "./vote";
 import Post from "./post";
@@ -30,37 +41,47 @@ const debugs = getDebugLevels("subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 5 minutes
 
-export class Subplebbit extends EventEmitter {
+export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, SubplebbitType {
     // public
-    address: string;
     title?: string;
     description?: string;
-    moderatorsAddresses?: string[];
+    roles?: { [authorAddress: string]: SubplebbitRole };
     latestPostCid?: string;
     posts?: Pages;
     pubsubTopic?: string;
-    challengeTypes?: string[];
+    challengeTypes?: ChallengeType[];
+    metrics?: SubplebbitMetrics;
+    features?: SubplebbitFeatures;
+    suggested?: SubplebbitSuggested;
+    flairs?: Flair[];
+
+    address: string;
+    moderatorsAddresses?: string[];
     metricsCid?: string;
     createdAt?: number;
     updatedAt?: number;
     signer?: Signer;
     encryption?: SubplebbitEncryption;
+    protocolVersion: "1.0.0"; // semantic version of the protocol https://semver.org/
+    signature: Signature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
 
-    // private
     plebbit: Plebbit;
     dbHandler?: DbHandler;
-    _challengeToSolution: any;
-    _challengeToPublication: any;
-    provideCaptchaCallback?: Function;
-    validateCaptchaAnswerCallback?: Function;
+    _keyv: any; // Don't change any here to Keyv since it will crash for browsers
     _dbConfig?: any;
-    ipnsKeyName?: string;
-    sortHandler: any;
-    emittedAt?: number;
-    _updateInterval?: any;
-    _keyv: any;
 
-    constructor(props, plebbit) {
+    // private
+
+    private _challengeToSolution: any;
+    private _challengeToPublication: any;
+    private provideCaptchaCallback?: Function;
+    private validateCaptchaAnswerCallback?: Function;
+    private ipnsKeyName?: string;
+    private sortHandler: any;
+    private emittedAt?: number;
+    private _updateInterval?: any;
+
+    constructor(props: CreateSubplebbitOptions, plebbit: Plebbit) {
         super();
         this.plebbit = plebbit;
         this.initSubplebbit(props);
@@ -192,9 +213,9 @@ export class Subplebbit extends EventEmitter {
         assert(this.address && this.signer, "Both address and signer need to be defined at this point");
         if (!this.pubsubTopic) this.pubsubTopic = this.address;
         // import ipfs key into ipfs node
-        const subplebbitIpfsNodeKey = (await this.plebbit.ipfsClient.key.list()).filter((key) => key.name === this.address)[0];
+        const subplebbitIpfsNodeKey = (await this.plebbit.ipfsClient.key.list()).filter((key) => key.name === this.signer.address)[0];
         if (!subplebbitIpfsNodeKey) {
-            const ipfsKey = await ipfsImportKey({ ...this.signer, ipnsKeyName: this.address }, this.plebbit);
+            const ipfsKey = await ipfsImportKey({ ...this.signer, ipnsKeyName: this.signer.address }, this.plebbit);
             this.ipnsKeyName = ipfsKey["name"] || ipfsKey["Name"];
             debugs.INFO(`Imported subplebbit keys into ipfs node, ${JSON.stringify(ipfsKey)}`);
         } else {
@@ -207,12 +228,30 @@ export class Subplebbit extends EventEmitter {
         );
     }
 
-    async edit(newSubplebbitOptions) {
+    async assertDomainResolvesCorrectlyIfNeeded(domain: string) {
+        if (this.plebbit.resolver.isDomain(domain)) {
+            const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(domain);
+            assert.strictEqual(
+                resolvedAddress,
+                this.signer?.address,
+                `ENS (${this.address}) resolved address (${resolvedAddress}) should be equal to derived address from signer (${this.signer?.address})`
+            );
+        }
+    }
+
+    async edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit> {
+        assert(this.plebbit.ipfsClient && this.dbHandler, "subplebbit.ipfsClient and dbHandler is needed to edit");
+
+        if (newSubplebbitOptions.address) await this.assertDomainResolvesCorrectlyIfNeeded(newSubplebbitOptions.address);
         await this.prePublish();
         this.initSubplebbit({
             updatedAt: timestamp(),
             ...newSubplebbitOptions
         });
+        if (newSubplebbitOptions.address) {
+            debugs.DEBUG(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
+            await this.dbHandler.changeDbFilename(`${newSubplebbitOptions.address}`);
+        }
         const file = await this.plebbit.ipfsClient.add(JSON.stringify(this));
         await this.plebbit.ipfsClient.name.publish(file["cid"], {
             lifetime: "72h", // TODO decide on optimal time later
@@ -253,7 +292,7 @@ export class Subplebbit extends EventEmitter {
 
     async updateSubplebbitIpns() {
         const trx: any = await this.dbHandler.createTransaction();
-        const latestPost: any = await this.dbHandler.queryLatestPost(trx);
+        const latestPost = await this.dbHandler.queryLatestPost(trx);
         await trx.commit();
         const [metrics, [sortedPosts, sortedPostsCids]] = await Promise.all([
             this.dbHandler.querySubplebbitMetrics(undefined),
@@ -287,7 +326,7 @@ export class Subplebbit extends EventEmitter {
         } else debugs.TRACE(`No need to sync subplebbit IPNS`);
     }
 
-    async handleCommentEdit(commentEdit, challengeRequestId, trx) {
+    async handleCommentEdit(commentEdit: CommentEdit, challengeRequestId, trx) {
         const commentToBeEdited: Comment = await this.dbHandler.queryComment(commentEdit.commentCid, trx);
         if (!commentToBeEdited) {
             debugs.INFO(
@@ -296,7 +335,7 @@ export class Subplebbit extends EventEmitter {
             return {
                 reason: `commentCid (${commentEdit.commentCid}) does not exist`
             };
-        } else if (commentEdit.editSignature.publicKey !== commentToBeEdited.signature.publicKey) {
+        } else if (commentEdit?.editSignature?.publicKey !== commentToBeEdited.signature.publicKey) {
             // Original comment and CommentEdit need to have same key
             // TODO make exception for moderators
             debugs.INFO(`User attempted to edit a comment (${commentEdit.commentCid}) without having its signer's keys.`);

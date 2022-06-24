@@ -27,7 +27,7 @@ const TABLES = Object.freeze({
 
 export class DbHandler {
     _dbConfig: Object;
-    knex: any;
+    knex: Knex;
     subplebbit: Subplebbit;
 
     constructor(dbConfig, subplebbit) {
@@ -412,9 +412,32 @@ export class DbHandler {
     async querySigner(ipnsKeyName, trx): Promise<Signer | undefined> {
         return this.baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName: ipnsKeyName }).first();
     }
+
+    async changeDbFilename(newDbFileName: string) {
+        const oldPathString = this.subplebbit?._dbConfig?.connection?.filename;
+        assert.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
+        if (oldPathString === ":memory:") {
+            debugs.DEBUG(`No need to change file name of db since it's in memory`);
+            return;
+        }
+        const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbFileName });
+        await fs.promises.mkdir(path.dirname(newPath), { recursive: true });
+        await fs.promises.rename(oldPathString, newPath);
+        this.subplebbit._dbConfig = {
+            client: "better-sqlite3", // or 'better-sqlite3'
+            connection: {
+                filename: newPath
+            },
+            useNullAsDefault: true,
+            acquireConnectionTimeout: 120000
+        };
+        this.subplebbit.dbHandler = new DbHandler(this.subplebbit._dbConfig, this.subplebbit);
+        this.subplebbit._keyv = new Keyv(`sqlite://${this.subplebbit._dbConfig.connection.filename}`);
+        debugs.INFO(`Changed db path from (${oldPathString}) to (${newPath})`);
+    }
 }
 
-export const subplebbitInitDbIfNeeded = async (subplebbit) => {
+export const subplebbitInitDbIfNeeded = async (subplebbit: Subplebbit) => {
     if (subplebbit.dbHandler) return;
     if (!subplebbit._dbConfig) {
         assert(subplebbit.address, "Need subplebbit address to initialize a DB connection");
