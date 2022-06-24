@@ -16,7 +16,6 @@ describe("plebbit (node and browser)", () => {
         it("has default plebbit options", async () => {
             expect(plebbit.ipfsGatewayUrl).to.equal("https://cloudflare-ipfs.com");
             expect(plebbit.pubsubHttpClientOptions).to.equal("https://pubsubprovider.xyz/api/v0");
-
             // no dataPath in browser
             if (typeof window === "undefined") {
                 expect(plebbit.dataPath).to.match(/\.plebbit$/);
@@ -133,6 +132,16 @@ describe("plebbit (node and browser)", () => {
                     resolve();
                 }
             });
+        });
+
+        it("can load subplebbit with ENS domain via plebbit.getSubplebbit", async () => {
+            plebbit.resolver.resolveSubplebbitAddressIfNeeded = async (subplebbitAddress) => {
+                if (subplebbitAddress === "plebbit.eth") return subplebbitSigner.address;
+                return subplebbitAddress;
+            };
+            const subplebbit = await plebbit.getSubplebbit("plebbit.eth");
+            expect(subplebbit.address).to.equal("plebbit.eth");
+            // I'd add more tests for subplebbit.title and subplebbit.description here but the ipfs node is offline, and won't be able to retrieve plebwhales.eth IPNS record
         });
     });
 });
