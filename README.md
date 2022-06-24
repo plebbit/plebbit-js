@@ -376,7 +376,7 @@ An object which may have the following keys:
 | pubsubHttpClientOptions | `string` or `IpfsHttpClientOptions` or `undefined` | `'https://pubsubprovider.xyz'` | Optional URL or [IpfsHttpClientOptions](https://www.npmjs.com/package/ipfs-http-client#createoptions) used for pubsub publishing when `ipfsHttpClientOptions` isn't available, like in the browser |
 | dataPath | `string`  or `undefined` | .plebbit folder in the current working directory | (Node only) Optional folder path to create/resume the user and subplebbit databases |
 | blockchainProviders | `{[chainTicker: string]: BlockchainProvider}` or `undefined` | default providers for supported chains | Optional provider RPC URLs and chain IDs |
-| resolveAuthorAddresses | `boolean`  or `undefined` | `true` | Optionaly disable resolving blockchain domain author addresses, which can be done lazily later to save time |
+| resolveAuthorAddresses | `boolean`  or `undefined` | `true` | Optionally disable resolving blockchain domain author addresses, which can be done lazily later to save time |
 
 ##### BlockchainProvider
 
