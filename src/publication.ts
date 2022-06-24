@@ -3,10 +3,10 @@ import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { v4 as uuidv4 } from "uuid";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import EventEmitter from "events";
-import { getDebugLevels, parseJsonIfString, timestamp } from "./util";
+import { getDebugLevels, parseJsonIfString } from "./util";
 import Author from "./author";
 import assert from "assert";
-import { Subplebbit } from "./types";
+import { Subplebbit } from "./subplebbit";
 import { decrypt, encrypt, Signature, Signer, verifyPublication } from "./signer";
 
 const debugs = getDebugLevels("publication");
