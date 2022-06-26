@@ -376,6 +376,7 @@ An object which may have the following keys:
 | pubsubHttpClientOptions | `string` or `IpfsHttpClientOptions` or `undefined` | `'https://pubsubprovider.xyz'` | Optional URL or [IpfsHttpClientOptions](https://www.npmjs.com/package/ipfs-http-client#createoptions) used for pubsub publishing when `ipfsHttpClientOptions` isn't available, like in the browser |
 | dataPath | `string`  or `undefined` | .plebbit folder in the current working directory | (Node only) Optional folder path to create/resume the user and subplebbit databases |
 | blockchainProviders | `{[chainTicker: string]: BlockchainProvider}` or `undefined` | default providers for supported chains | Optional provider RPC URLs and chain IDs |
+| resolveAuthorAddresses | `boolean`  or `undefined` | `true` | Optionally disable resolving blockchain domain author addresses, which can be done lazily later to save time |
 
 ##### BlockchainProvider
 
@@ -781,6 +782,8 @@ An object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
+| address | `string` or `undefined` | Address of the subplebbit, used to add a blockchain domain |
+| signer | `Signer` or `undefined` | Signer of the subplebbit, useful to change the private if the owner gets hacked, but still has his blockchain domain
 | title | `string` or `undefined` | Title of the subplebbit |
 | description | `string` or `undefined` | Description of the subplebbit |
 | roles | `{[authorAddress: string]: SubplebbitRole}` or `undefined` | Author addresses of the moderators |
@@ -791,7 +794,7 @@ An object which may have the following keys:
 | metrics | `SubplebbitMetrics` or `undefined` | The self reported metrics of the subplebbit |
 | features | `SubplebbitFeatures` or `undefined` | The features of the subplebbit |
 | suggested | `SubplebbitSuggested` or `undefined` | The suggested client settings for the subplebbit |
-| flairs | `Flair[]` or `undefined` | The list of flairs (colored labels for comments) authors or mods can choose from |
+| flairs | `{[key: 'post' or 'author']: Flair[]}` or `undefined` | The list of flairs (colored labels for comments or authors) authors or mods can choose from |
 
 #### Example
 
