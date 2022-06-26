@@ -1,15 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -19,806 +8,472 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.subplebbitInitDbIfNeeded = exports.DbHandler = exports.SIGNER_USAGES = void 0;
-var challenge_1 = require("../../challenge");
-var util_1 = require("../../util");
-var vote_1 = __importDefault(require("../../vote"));
-var knex_1 = __importDefault(require("knex"));
-var path_1 = __importDefault(require("path"));
-var assert_1 = __importDefault(require("assert"));
-var fs_1 = __importDefault(require("fs"));
-var keyv_1 = __importDefault(require("keyv"));
-var debugs = (0, util_1.getDebugLevels)("db-handler");
+const challenge_1 = require("../../challenge");
+const post_1 = __importDefault(require("../../post"));
+const comment_1 = require("../../comment");
+const util_1 = require("../../util");
+const vote_1 = __importDefault(require("../../vote"));
+const knex_1 = __importDefault(require("knex"));
+const path_1 = __importDefault(require("path"));
+const assert_1 = __importDefault(require("assert"));
+const fs_1 = __importDefault(require("fs"));
+const keyv_1 = __importDefault(require("keyv"));
+const debugs = (0, util_1.getDebugLevels)("db-handler");
 exports.SIGNER_USAGES = { SUBPLEBBIT: "subplebbit", COMMENT: "comment" };
-var TABLES = Object.freeze({
+const TABLES = Object.freeze({
     COMMENTS: "comments",
     VOTES: "votes",
     AUTHORS: "authors",
     CHALLENGES: "challenges",
     SIGNERS: "signers" // To store private keys of subplebbit and comments' IPNS
 });
-var DbHandler = /** @class */ (function () {
-    function DbHandler(dbConfig, subplebbit) {
+class DbHandler {
+    constructor(dbConfig, subplebbit) {
         this._dbConfig = dbConfig;
         this.knex = (0, knex_1.default)(dbConfig);
         this.subplebbit = subplebbit;
     }
-    DbHandler.prototype.createTransaction = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.transaction()];
-                    case 1: return [2 /*return*/, _a.sent()];
-                }
-            });
+    createTransaction() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.knex.transaction();
         });
-    };
-    DbHandler.prototype.baseTransaction = function (trx) {
+    }
+    baseTransaction(trx) {
         return trx ? trx : this.knex;
-    };
-    DbHandler.prototype.createCommentsTable = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.COMMENTS, function (table) {
-                            table.text("cid").notNullable().primary().unique();
-                            table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
-                            table.json("author").notNullable();
-                            table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
-                            table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
-                            table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);
-                            table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
-                            table.text("subplebbitAddress").notNullable();
-                            table.text("content").nullable();
-                            table.text("originalContent").nullable();
-                            table.timestamp("timestamp").notNullable().checkPositive();
-                            table.text("signature").notNullable().unique(); // Will contain {signature, public key, type}
-                            table.text("ipnsName").notNullable().unique();
-                            table.text("ipnsKeyName").notNullable().unique().references("ipnsKeyName").inTable(TABLES.SIGNERS);
-                            table.text("title").nullable();
-                            table.integer("depth").notNullable();
-                            table.increments("id");
-                            // CommentUpdate and CommentEdit props
-                            table.timestamp("updatedAt").nullable().checkPositive();
-                            table.text("editSignature").nullable();
-                            table.timestamp("editTimestamp").nullable().checkPositive();
-                            table.text("editReason").nullable();
-                            table.boolean("deleted").nullable();
-                            table.boolean("spoiler").nullable();
-                            table.boolean("pinned").nullable();
-                            table.boolean("locked").nullable();
-                            table.boolean("removed").nullable();
-                            table.text("moderatorReason").nullable();
-                        })];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
+    }
+    createCommentsTable() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.knex.schema.createTable(TABLES.COMMENTS, (table) => {
+                table.text("cid").notNullable().primary().unique();
+                table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
+                table.json("author").notNullable();
+                table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
+                table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
+                table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);
+                table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
+                table.text("subplebbitAddress").notNullable();
+                table.text("content").nullable();
+                table.text("originalContent").nullable();
+                table.timestamp("timestamp").notNullable().checkPositive();
+                table.text("signature").notNullable().unique(); // Will contain {signature, public key, type}
+                table.text("ipnsName").notNullable().unique();
+                table.text("ipnsKeyName").notNullable().unique().references("ipnsKeyName").inTable(TABLES.SIGNERS);
+                table.text("title").nullable();
+                table.integer("depth").notNullable();
+                table.increments("id");
+                // CommentUpdate and CommentEdit props
+                table.timestamp("updatedAt").nullable().checkPositive();
+                table.text("editSignature").nullable();
+                table.timestamp("editTimestamp").nullable().checkPositive();
+                table.text("editReason").nullable();
+                table.boolean("deleted").nullable();
+                table.boolean("spoiler").nullable();
+                table.boolean("pinned").nullable();
+                table.boolean("locked").nullable();
+                table.boolean("removed").nullable();
+                table.text("moderatorReason").nullable();
             });
         });
-    };
-    DbHandler.prototype.createVotesTable = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.VOTES, function (table) {
-                            table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
-                            table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
-                            table.json("author").notNullable();
-                            table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
-                            table.timestamp("timestamp").checkPositive().notNullable();
-                            table.text("subplebbitAddress").notNullable();
-                            table.integer("vote").checkBetween([-1, 1]).notNullable();
-                            table.text("signature").notNullable().unique();
-                            table.primary(["commentCid", "authorAddress"]); // An author can't have multiple votes on a comment
-                        })];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
+    }
+    createVotesTable() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.knex.schema.createTable(TABLES.VOTES, (table) => {
+                table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
+                table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
+                table.json("author").notNullable();
+                table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
+                table.timestamp("timestamp").checkPositive().notNullable();
+                table.text("subplebbitAddress").notNullable();
+                table.integer("vote").checkBetween([-1, 1]).notNullable();
+                table.text("signature").notNullable().unique();
+                table.primary(["commentCid", "authorAddress"]); // An author can't have multiple votes on a comment
             });
         });
-    };
-    DbHandler.prototype.createAuthorsTable = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.AUTHORS, function (table) {
-                            table.text("address").notNullable().primary().unique();
-                        })];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
+    }
+    createAuthorsTable() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.knex.schema.createTable(TABLES.AUTHORS, (table) => {
+                table.text("address").notNullable().primary().unique();
             });
         });
-    };
-    DbHandler.prototype.createChallengesTable = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.CHALLENGES, function (table) {
-                            table.uuid("challengeRequestId").notNullable().primary().unique();
-                            table.enum("type", Object.values(challenge_1.PUBSUB_MESSAGE_TYPES)).notNullable();
-                            table.json("acceptedChallengeTypes").nullable().defaultTo(null);
-                            table.json("challenges").nullable();
-                            table.uuid("challengeAnswerId").nullable();
-                            table.json("challengeAnswers").nullable();
-                            table.boolean("challengeSuccess").nullable();
-                            table.json("challengeErrors").nullable();
-                            table.text("reason").nullable();
-                        })];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
+    }
+    createChallengesTable() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.knex.schema.createTable(TABLES.CHALLENGES, (table) => {
+                table.uuid("challengeRequestId").notNullable().primary().unique();
+                table.enum("type", Object.values(challenge_1.PUBSUB_MESSAGE_TYPES)).notNullable();
+                table.json("acceptedChallengeTypes").nullable().defaultTo(null);
+                table.json("challenges").nullable();
+                table.uuid("challengeAnswerId").nullable();
+                table.json("challengeAnswers").nullable();
+                table.boolean("challengeSuccess").nullable();
+                table.json("challengeErrors").nullable();
+                table.text("reason").nullable();
             });
         });
-    };
-    DbHandler.prototype.createSignersTable = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.SIGNERS, function (table) {
-                            table.text("ipnsKeyName").notNullable().unique().primary();
-                            table.text("privateKey").notNullable().unique();
-                            table.text("publicKey").notNullable().unique();
-                            table.text("address").nullable();
-                            table.text("type").notNullable(); // RSA or any other type
-                            table.enum("usage", Object.values(exports.SIGNER_USAGES)).notNullable();
-                            table.binary("ipfsKey").notNullable().unique();
-                        })];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
+    }
+    createSignersTable() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.knex.schema.createTable(TABLES.SIGNERS, (table) => {
+                table.text("ipnsKeyName").notNullable().unique().primary();
+                table.text("privateKey").notNullable().unique();
+                table.text("publicKey").notNullable().unique();
+                table.text("address").nullable();
+                table.text("type").notNullable(); // RSA or any other type
+                table.enum("usage", Object.values(exports.SIGNER_USAGES)).notNullable();
+                table.binary("ipfsKey").notNullable().unique();
             });
         });
-    };
-    DbHandler.prototype.createTablesIfNeeded = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var functions, tables, _i, tables_1, table, i, tableExists;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        functions = [
-                            this.createCommentsTable,
-                            this.createVotesTable,
-                            this.createAuthorsTable,
-                            this.createChallengesTable,
-                            this.createSignersTable
-                        ];
-                        tables = Object.values(TABLES);
-                        _i = 0, tables_1 = tables;
-                        _a.label = 1;
-                    case 1:
-                        if (!(_i < tables_1.length)) return [3 /*break*/, 5];
-                        table = tables_1[_i];
-                        i = tables.indexOf(table);
-                        return [4 /*yield*/, this.knex.schema.hasTable(table)];
-                    case 2:
-                        tableExists = _a.sent();
-                        if (!!tableExists) return [3 /*break*/, 4];
-                        return [4 /*yield*/, functions[i].bind(this)()];
-                    case 3:
-                        _a.sent();
-                        _a.label = 4;
-                    case 4:
-                        _i++;
-                        return [3 /*break*/, 1];
-                    case 5: return [2 /*return*/];
-                }
-            });
+    }
+    createTablesIfNeeded() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const functions = [
+                this.createCommentsTable,
+                this.createVotesTable,
+                this.createAuthorsTable,
+                this.createChallengesTable,
+                this.createSignersTable
+            ];
+            const tables = Object.values(TABLES);
+            for (const table of tables) {
+                const i = tables.indexOf(table);
+                const tableExists = yield this.knex.schema.hasTable(table);
+                if (!tableExists)
+                    yield functions[i].bind(this)();
+            }
         });
-    };
-    DbHandler.prototype.addAuthorToDbIfNeeded = function (author, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            var authorFromDb;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first()];
-                    case 1:
-                        authorFromDb = _a.sent();
-                        if (!!authorFromDb) return [3 /*break*/, 3];
-                        // Author is new. Add to database
-                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).insert(author.toJSONForDb())];
-                    case 2:
-                        // Author is new. Add to database
-                        _a.sent();
-                        return [2 /*return*/, author.toJSONForDb()];
-                    case 3: return [2 /*return*/, authorFromDb];
-                }
-            });
+    }
+    addAuthorToDbIfNeeded(author, trx) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const authorFromDb = yield this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first();
+            if (!authorFromDb) {
+                // Author is new. Add to database
+                yield this.baseTransaction(trx)(TABLES.AUTHORS).insert(author.toJSONForDb());
+                return author.toJSONForDb();
+            }
+            else
+                return authorFromDb;
         });
-    };
-    DbHandler.prototype.upsertVote = function (vote, challengeRequestId, trx) {
-        if (trx === void 0) { trx = undefined; }
-        return __awaiter(this, void 0, void 0, function () {
-            var dbObject;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.addAuthorToDbIfNeeded(vote.author, trx)];
-                    case 1:
-                        _a.sent();
-                        dbObject = vote.toJSONForDb(challengeRequestId);
-                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.VOTES).insert(dbObject).onConflict(["commentCid", "authorAddress"]).merge()];
-                    case 2:
-                        _a.sent();
-                        return [2 /*return*/, dbObject];
-                }
-            });
+    }
+    upsertVote(vote, challengeRequestId, trx = undefined) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.addAuthorToDbIfNeeded(vote.author, trx);
+            const dbObject = vote.toJSONForDb(challengeRequestId);
+            yield this.baseTransaction(trx)(TABLES.VOTES).insert(dbObject).onConflict(["commentCid", "authorAddress"]).merge();
+            return dbObject;
         });
-    };
-    DbHandler.prototype.upsertComment = function (postOrComment, challengeRequestId, trx) {
-        if (trx === void 0) { trx = undefined; }
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var originalComment, dbObject;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    if (!postOrComment.author) return [3 /*break*/, 2];
-                                    // Skip adding author (For CommentEdit)
-                                    return [4 /*yield*/, this.addAuthorToDbIfNeeded(postOrComment.author, trx)];
-                                case 1:
-                                    // Skip adding author (For CommentEdit)
-                                    _a.sent();
-                                    _a.label = 2;
-                                case 2:
-                                    if (!!challengeRequestId) return [3 /*break*/, 4];
-                                    return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS)
-                                            .where({
-                                            cid: postOrComment.cid || postOrComment.commentCid
-                                        })
-                                            .first()];
-                                case 3:
-                                    challengeRequestId = (_a.sent()).challengeRequestId;
-                                    _a.label = 4;
-                                case 4: return [4 /*yield*/, this.queryComment(postOrComment.cid || postOrComment.commentCid, trx)];
-                                case 5:
-                                    originalComment = _a.sent();
-                                    dbObject = originalComment
-                                        ? __assign(__assign({}, (0, util_1.removeKeysWithUndefinedValues)(originalComment.toJSONForDb(challengeRequestId))), (0, util_1.removeKeysWithUndefinedValues)(postOrComment.toJSONForDb(challengeRequestId))) : postOrComment.toJSONForDb(challengeRequestId);
-                                    this.baseTransaction(trx)(TABLES.COMMENTS)
-                                        .insert(dbObject)
-                                        .onConflict(["cid"])
-                                        .merge()
-                                        .then(function () { return resolve(dbObject); })
-                                        .catch(function (err) {
-                                        console.error(err);
-                                        reject(err);
-                                    });
-                                    return [2 /*return*/];
-                            }
-                        });
-                    }); })];
-            });
+    }
+    upsertComment(postOrComment, challengeRequestId, trx) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (postOrComment.author)
+                // Skip adding author (For CommentEdit)
+                yield this.addAuthorToDbIfNeeded(postOrComment.author, trx);
+            const cid = postOrComment instanceof comment_1.CommentEdit ? postOrComment.commentCid : postOrComment.cid;
+            if (!challengeRequestId)
+                challengeRequestId = (yield this.baseTransaction(trx)(TABLES.COMMENTS)
+                    .where({
+                    cid: cid
+                })
+                    .first()).challengeRequestId;
+            (0, assert_1.default)(cid, "Comment need to have a cid before upserting");
+            const originalComment = yield this.queryComment(cid, trx);
+            const dbObject = originalComment
+                ? Object.assign(Object.assign({}, (0, util_1.removeKeysWithUndefinedValues)(originalComment.toJSONForDb(challengeRequestId))), (0, util_1.removeKeysWithUndefinedValues)(postOrComment.toJSONForDb(challengeRequestId))) : postOrComment.toJSONForDb(challengeRequestId);
+            yield this.baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge();
         });
-    };
-    DbHandler.prototype.upsertChallenge = function (challenge, trx) {
-        if (trx === void 0) { trx = undefined; }
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var existingChallenge, dbObject;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.CHALLENGES)
-                                        .where({ challengeRequestId: challenge.challengeRequestId })
-                                        .first()];
-                                case 1:
-                                    existingChallenge = _a.sent();
-                                    dbObject = __assign(__assign({}, existingChallenge), challenge.toJSONForDb());
-                                    this.baseTransaction(trx)(TABLES.CHALLENGES)
-                                        .insert(dbObject)
-                                        .onConflict("challengeRequestId")
-                                        .merge()
-                                        .then(function () { return resolve(dbObject); })
-                                        .catch(function (err) {
-                                        console.error(err);
-                                        reject(err);
-                                    });
-                                    return [2 /*return*/];
-                            }
-                        });
-                    }); })];
-            });
+    }
+    upsertChallenge(challenge, trx = undefined) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                const existingChallenge = yield this.baseTransaction(trx)(TABLES.CHALLENGES)
+                    .where({ challengeRequestId: challenge.challengeRequestId })
+                    .first();
+                const dbObject = Object.assign(Object.assign({}, existingChallenge), challenge.toJSONForDb());
+                this.baseTransaction(trx)(TABLES.CHALLENGES)
+                    .insert(dbObject)
+                    .onConflict("challengeRequestId")
+                    .merge()
+                    .then(() => resolve(dbObject))
+                    .catch((err) => {
+                    console.error(err);
+                    reject(err);
+                });
+            }));
         });
-    };
-    DbHandler.prototype.getLastVoteOfAuthor = function (commentCid, authorAddress, trx) {
-        if (trx === void 0) { trx = undefined; }
-        return __awaiter(this, void 0, void 0, function () {
-            var voteObj;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.VOTES)
-                            .where({
-                            commentCid: commentCid,
-                            authorAddress: authorAddress
-                        })
-                            .first()];
-                    case 1:
-                        voteObj = _a.sent();
-                        return [4 /*yield*/, this.createVotesFromRows(voteObj, trx)];
-                    case 2: return [2 /*return*/, (_a.sent())[0]];
-                }
-            });
+    }
+    getLastVoteOfAuthor(commentCid, authorAddress, trx = undefined) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const voteObj = yield this.baseTransaction(trx)(TABLES.VOTES)
+                .where({
+                commentCid: commentCid,
+                authorAddress: authorAddress
+            })
+                .first();
+            return (yield this.createVotesFromRows(voteObj, trx))[0];
         });
-    };
-    DbHandler.prototype.baseCommentQuery = function (trx) {
-        var _a, _b;
-        var upvoteQuery = this.baseTransaction(trx)(TABLES.VOTES)
-            .count("".concat(TABLES.VOTES, ".vote"))
-            .where((_a = {},
-            _a["".concat(TABLES.COMMENTS, ".cid")] = this.knex.raw("".concat(TABLES.VOTES, ".commentCid")),
-            _a["".concat(TABLES.VOTES, ".vote")] = 1,
-            _a))
+    }
+    baseCommentQuery(trx) {
+        const upvoteQuery = this.baseTransaction(trx)(TABLES.VOTES)
+            .count(`${TABLES.VOTES}.vote`)
+            .where({
+            [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`),
+            [`${TABLES.VOTES}.vote`]: 1
+        })
             .as("upvoteCount");
-        var downvoteQuery = this.baseTransaction(trx)(TABLES.VOTES)
-            .count("".concat(TABLES.VOTES, ".vote"))
-            .where((_b = {},
-            _b["".concat(TABLES.COMMENTS, ".cid")] = this.knex.raw("".concat(TABLES.VOTES, ".commentCid")),
-            _b["".concat(TABLES.VOTES, ".vote")] = -1,
-            _b))
+        const downvoteQuery = this.baseTransaction(trx)(TABLES.VOTES)
+            .count(`${TABLES.VOTES}.vote`)
+            .where({
+            [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`),
+            [`${TABLES.VOTES}.vote`]: -1
+        })
             .as("downvoteCount");
-        var replyCountQuery = this.baseTransaction(trx)
-            .from("".concat(TABLES.COMMENTS, " AS comments2"))
+        const replyCountQuery = this.baseTransaction(trx)
+            .from(`${TABLES.COMMENTS} AS comments2`)
             .count("")
             .where({
-            "comments2.parentCid": this.knex.raw("".concat(TABLES.COMMENTS, ".cid"))
+            "comments2.parentCid": this.knex.raw(`${TABLES.COMMENTS}.cid`)
         })
             .as("replyCount");
-        return this.baseTransaction(trx)(TABLES.COMMENTS).select("".concat(TABLES.COMMENTS, ".*"), upvoteQuery, downvoteQuery, replyCountQuery);
-    };
-    DbHandler.prototype.createCommentsFromRows = function (commentsRows, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!commentsRows)
-                            return [2 /*return*/, [undefined]];
-                        if (!Array.isArray(commentsRows))
-                            commentsRows = [commentsRows];
-                        commentsRows = commentsRows.map(function (props) { return (0, util_1.replaceXWithY)(props, null, undefined); }); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
-                        return [4 /*yield*/, Promise.all(commentsRows.map(function (commentProps) {
-                                return _this.subplebbit.plebbit.createComment(commentProps);
-                            }))];
-                    case 1: // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
-                    return [2 /*return*/, _a.sent()];
+        return this.baseTransaction(trx)(TABLES.COMMENTS).select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery);
+    }
+    createCommentsFromRows(commentsRows) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!commentsRows)
+                return [undefined];
+            if (!Array.isArray(commentsRows))
+                commentsRows = [commentsRows];
+            return Promise.all(commentsRows.map((props) => {
+                const replacedProps = (0, util_1.replaceXWithY)(props, null, undefined); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
+                return this.subplebbit.plebbit.createComment(replacedProps);
+            }));
+        });
+    }
+    createVotesFromRows(voteRows, trx) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                if (!voteRows)
+                    resolve([undefined]);
+                else {
+                    if (!Array.isArray(voteRows))
+                        voteRows = [voteRows];
+                    voteRows = voteRows.map((props) => (0, util_1.replaceXWithY)(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
+                    const votes = voteRows.map((voteProps) => {
+                        return new vote_1.default(voteProps, this.subplebbit);
+                    });
+                    resolve(votes);
                 }
-            });
+            }));
         });
-    };
-    DbHandler.prototype.createVotesFromRows = function (voteRows, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var votes;
-                        var _this = this;
-                        return __generator(this, function (_a) {
-                            if (!voteRows)
-                                resolve([undefined]);
-                            else {
-                                if (!Array.isArray(voteRows))
-                                    voteRows = [voteRows];
-                                voteRows = voteRows.map(function (props) { return (0, util_1.replaceXWithY)(props, null, undefined); }); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
-                                votes = voteRows.map(function (voteProps) {
-                                    return new vote_1.default(voteProps, _this.subplebbit);
-                                });
-                                resolve(votes);
-                            }
-                            return [2 /*return*/];
-                        });
-                    }); })];
-            });
+    }
+    queryCommentsSortedByTimestamp(parentCid, order = "desc", trx = undefined) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                this.baseCommentQuery(trx)
+                    .where({ parentCid: parentCid })
+                    .orderBy("timestamp", order)
+                    .then((res) => __awaiter(this, void 0, void 0, function* () {
+                    resolve(yield this.createCommentsFromRows.bind(this)(res, trx));
+                }))
+                    .catch((err) => {
+                    console.error(err);
+                    reject(err);
+                });
+            }));
         });
-    };
-    DbHandler.prototype.queryCommentsSortedByTimestamp = function (parentCid, order, trx) {
-        if (order === void 0) { order = "desc"; }
-        if (trx === void 0) { trx = undefined; }
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var _this = this;
-                        return __generator(this, function (_a) {
-                            this.baseCommentQuery(trx)
-                                .where({ parentCid: parentCid })
-                                .orderBy("timestamp", order)
-                                .then(function (res) { return __awaiter(_this, void 0, void 0, function () {
-                                var _a;
-                                return __generator(this, function (_b) {
-                                    switch (_b.label) {
-                                        case 0:
-                                            _a = resolve;
-                                            return [4 /*yield*/, this.createCommentsFromRows.bind(this)(res, trx)];
-                                        case 1:
-                                            _a.apply(void 0, [_b.sent()]);
-                                            return [2 /*return*/];
-                                    }
-                                });
-                            }); })
-                                .catch(function (err) {
-                                console.error(err);
-                                reject(err);
-                            });
-                            return [2 /*return*/];
-                        });
-                    }); })];
-            });
+    }
+    queryCommentsBetweenTimestampRange(parentCid, timestamp1, timestamp2, trx = undefined) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                if (timestamp1 === Number.NEGATIVE_INFINITY)
+                    timestamp1 = 0;
+                this.baseCommentQuery(trx)
+                    .where({ parentCid: parentCid })
+                    .whereBetween("timestamp", [timestamp1, timestamp2])
+                    .then((res) => this.createCommentsFromRows.bind(this)(res, trx))
+                    .then(resolve)
+                    .catch((err) => {
+                    console.error(err);
+                    reject(err);
+                });
+            }));
         });
-    };
-    DbHandler.prototype.queryCommentsBetweenTimestampRange = function (parentCid, timestamp1, timestamp2, trx) {
-        if (trx === void 0) { trx = undefined; }
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var _this = this;
-                        return __generator(this, function (_a) {
-                            if (timestamp1 === Number.NEGATIVE_INFINITY)
-                                timestamp1 = 0;
-                            this.baseCommentQuery(trx)
-                                .where({ parentCid: parentCid })
-                                .whereBetween("timestamp", [timestamp1, timestamp2])
-                                .then(function (res) { return _this.createCommentsFromRows.bind(_this)(res, trx); })
-                                .then(resolve)
-                                .catch(function (err) {
-                                console.error(err);
-                                reject(err);
-                            });
-                            return [2 /*return*/];
-                        });
-                    }); })];
-            });
+    }
+    queryTopCommentsBetweenTimestampRange(parentCid, timestamp1, timestamp2, trx = undefined) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                if (timestamp1 === Number.NEGATIVE_INFINITY)
+                    timestamp1 = 0;
+                const topScoreQuery = this.baseTransaction(trx)(TABLES.VOTES)
+                    .select(this.knex.raw(`COALESCE(SUM(${TABLES.VOTES}.vote), 0)`)) // We're using raw expressions because there's no native method in Knexjs to return 0 if SUM is null
+                    .where({
+                    [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`)
+                })
+                    .as("topScore");
+                const query = this.baseCommentQuery(trx)
+                    .select(topScoreQuery)
+                    .groupBy(`${TABLES.COMMENTS}.cid`)
+                    .orderBy("topScore", "desc")
+                    .whereBetween(`${TABLES.COMMENTS}.timestamp`, [timestamp1, timestamp2])
+                    .where({ [`${TABLES.COMMENTS}.parentCid`]: parentCid });
+                query
+                    .then((res) => resolve(this.createCommentsFromRows.bind(this)(res, trx)))
+                    .catch((err) => {
+                    console.error(err);
+                    reject(err);
+                });
+            }));
         });
-    };
-    DbHandler.prototype.queryTopCommentsBetweenTimestampRange = function (parentCid, timestamp1, timestamp2, trx) {
-        if (trx === void 0) { trx = undefined; }
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var topScoreQuery, query;
-                        var _a, _b;
-                        var _this = this;
-                        return __generator(this, function (_c) {
-                            if (timestamp1 === Number.NEGATIVE_INFINITY)
-                                timestamp1 = 0;
-                            topScoreQuery = this.baseTransaction(trx)(TABLES.VOTES)
-                                .select(this.knex.raw("COALESCE(SUM(".concat(TABLES.VOTES, ".vote), 0)"))) // We're using raw expressions because there's no native method in Knexjs to return 0 if SUM is null
-                                .where((_a = {},
-                                _a["".concat(TABLES.COMMENTS, ".cid")] = this.knex.raw("".concat(TABLES.VOTES, ".commentCid")),
-                                _a))
-                                .as("topScore");
-                            query = this.baseCommentQuery(trx)
-                                .select(topScoreQuery)
-                                .groupBy("".concat(TABLES.COMMENTS, ".cid"))
-                                .orderBy("topScore", "desc")
-                                .whereBetween("".concat(TABLES.COMMENTS, ".timestamp"), [timestamp1, timestamp2])
-                                .where((_b = {}, _b["".concat(TABLES.COMMENTS, ".parentCid")] = parentCid, _b));
-                            query
-                                .then(function (res) { return resolve(_this.createCommentsFromRows.bind(_this)(res, trx)); })
-                                .catch(function (err) {
-                                console.error(err);
-                                reject(err);
-                            });
-                            return [2 /*return*/];
-                        });
-                    }); })];
-            });
+    }
+    queryCommentsUnderComment(parentCid, trx) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const commentsObjs = yield this.baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", "desc");
+            return yield this.createCommentsFromRows(commentsObjs);
         });
-    };
-    DbHandler.prototype.queryCommentsUnderComment = function (parentCid, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            var commentsObjs;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", "desc")];
-                    case 1:
-                        commentsObjs = _a.sent();
-                        return [4 /*yield*/, this.createCommentsFromRows(commentsObjs, trx)];
-                    case 2: return [2 /*return*/, _a.sent()];
-                }
-            });
+    }
+    queryComments(trx) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.createCommentsFromRows(yield this.baseCommentQuery(trx).orderBy("id", "desc"));
         });
-    };
-    DbHandler.prototype.queryComments = function (trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var _this = this;
-                        return __generator(this, function (_a) {
-                            this.baseCommentQuery(trx)
-                                .orderBy("id", "desc")
-                                .then(function (res) { return resolve(_this.createCommentsFromRows.bind(_this)(res, trx)); })
-                                .catch(reject);
-                            return [2 /*return*/];
-                        });
-                    }); })];
-            });
+    }
+    querySubplebbitActiveUserCount(timeframe, trx) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                let from = (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[timeframe];
+                if (from === Number.NEGATIVE_INFINITY)
+                    from = 0;
+                const to = (0, util_1.timestamp)();
+                // TODO this could be done in a single query
+                const commentsAuthors = yield this.baseTransaction(trx)(TABLES.COMMENTS)
+                    .distinct("authorAddress")
+                    .whereBetween("timestamp", [from, to]);
+                const voteAuthors = yield this.baseTransaction(trx)(TABLES.VOTES)
+                    .distinct("authorAddress")
+                    .whereBetween("timestamp", [from, to]);
+                let activeUserAccounts = [...commentsAuthors, ...voteAuthors].map((author) => author.authorAddress);
+                // @ts-ignore
+                activeUserAccounts = [...new Set(activeUserAccounts)];
+                resolve(activeUserAccounts.length);
+            }));
         });
-    };
-    DbHandler.prototype.querySubplebbitActiveUserCount = function (timeframe, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var from, to, commentsAuthors, voteAuthors, activeUserAccounts;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    from = (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[timeframe];
-                                    if (from === Number.NEGATIVE_INFINITY)
-                                        from = 0;
-                                    to = (0, util_1.timestamp)();
-                                    return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS)
-                                            .distinct("authorAddress")
-                                            .whereBetween("timestamp", [from, to])];
-                                case 1:
-                                    commentsAuthors = _a.sent();
-                                    return [4 /*yield*/, this.baseTransaction(trx)(TABLES.VOTES)
-                                            .distinct("authorAddress")
-                                            .whereBetween("timestamp", [from, to])];
-                                case 2:
-                                    voteAuthors = _a.sent();
-                                    activeUserAccounts = __spreadArray(__spreadArray([], commentsAuthors, true), voteAuthors, true).map(function (author) { return author.authorAddress; });
-                                    // @ts-ignore
-                                    activeUserAccounts = __spreadArray([], new Set(activeUserAccounts), true);
-                                    resolve(activeUserAccounts.length);
-                                    return [2 /*return*/];
-                            }
-                        });
-                    }); })];
-            });
+    }
+    querySubplebbitPostCount(timeframe, trx) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                let from = (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[timeframe];
+                if (from === Number.NEGATIVE_INFINITY)
+                    from = 0;
+                const to = (0, util_1.timestamp)();
+                this.baseTransaction(trx)(TABLES.COMMENTS)
+                    .count("cid")
+                    .whereBetween("timestamp", [from, to])
+                    .whereNotNull("title")
+                    .then((postCount) => resolve(postCount["0"]["count(`cid`)"]))
+                    .catch(reject);
+            }));
         });
-    };
-    DbHandler.prototype.querySubplebbitPostCount = function (timeframe, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var from, to;
-                        return __generator(this, function (_a) {
-                            from = (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[timeframe];
-                            if (from === Number.NEGATIVE_INFINITY)
-                                from = 0;
-                            to = (0, util_1.timestamp)();
-                            this.baseTransaction(trx)(TABLES.COMMENTS)
-                                .count("cid")
-                                .whereBetween("timestamp", [from, to])
-                                .whereNotNull("title")
-                                .then(function (postCount) { return resolve(postCount["0"]["count(`cid`)"]); })
-                                .catch(reject);
-                            return [2 /*return*/];
-                        });
-                    }); })];
-            });
+    }
+    querySubplebbitMetrics(trx) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                const metrics = {};
+                for (const metricType of ["ActiveUserCount", "PostCount"])
+                    for (const timeframe of Object.keys(util_1.TIMEFRAMES_TO_SECONDS)) {
+                        const propertyName = `${timeframe.toLowerCase()}${metricType}`;
+                        if (metricType === "ActiveUserCount")
+                            metrics[propertyName] = yield this.querySubplebbitActiveUserCount(timeframe, trx);
+                        else if (metricType === "PostCount")
+                            metrics[propertyName] = yield this.querySubplebbitPostCount(timeframe, trx);
+                    }
+                resolve(metrics);
+            }));
         });
-    };
-    DbHandler.prototype.querySubplebbitMetrics = function (trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var metrics, _i, _a, metricType, _b, _c, timeframe, propertyName, _d, _e, _f, _g;
-                        return __generator(this, function (_h) {
-                            switch (_h.label) {
-                                case 0:
-                                    metrics = {};
-                                    _i = 0, _a = ["ActiveUserCount", "PostCount"];
-                                    _h.label = 1;
-                                case 1:
-                                    if (!(_i < _a.length)) return [3 /*break*/, 8];
-                                    metricType = _a[_i];
-                                    _b = 0, _c = Object.keys(util_1.TIMEFRAMES_TO_SECONDS);
-                                    _h.label = 2;
-                                case 2:
-                                    if (!(_b < _c.length)) return [3 /*break*/, 7];
-                                    timeframe = _c[_b];
-                                    propertyName = "".concat(timeframe.toLowerCase()).concat(metricType);
-                                    if (!(metricType === "ActiveUserCount")) return [3 /*break*/, 4];
-                                    _d = metrics;
-                                    _e = propertyName;
-                                    return [4 /*yield*/, this.querySubplebbitActiveUserCount(timeframe, trx)];
-                                case 3:
-                                    _d[_e] = _h.sent();
-                                    return [3 /*break*/, 6];
-                                case 4:
-                                    if (!(metricType === "PostCount")) return [3 /*break*/, 6];
-                                    _f = metrics;
-                                    _g = propertyName;
-                                    return [4 /*yield*/, this.querySubplebbitPostCount(timeframe, trx)];
-                                case 5:
-                                    _f[_g] = _h.sent();
-                                    _h.label = 6;
-                                case 6:
-                                    _b++;
-                                    return [3 /*break*/, 2];
-                                case 7:
-                                    _i++;
-                                    return [3 /*break*/, 1];
-                                case 8:
-                                    resolve(metrics);
-                                    return [2 /*return*/];
-                            }
-                        });
-                    }); })];
-            });
+    }
+    queryComment(cid, trx) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const commentObj = yield this.baseCommentQuery(trx).where("cid", cid).first();
+            return (yield this.createCommentsFromRows(commentObj))[0];
         });
-    };
-    DbHandler.prototype.queryComment = function (cid, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            var commentObj;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.baseCommentQuery(trx).where({ cid: cid }).first()];
-                    case 1:
-                        commentObj = _a.sent();
-                        return [4 /*yield*/, this.createCommentsFromRows(commentObj, trx)];
-                    case 2: return [2 /*return*/, (_a.sent())[0]];
-                }
-            });
+    }
+    queryLatestPost(trx) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const commentObj = yield this.baseCommentQuery(trx).whereNotNull("title").orderBy("id", "desc").first();
+            const post = (yield this.createCommentsFromRows(commentObj))[0];
+            if (!post)
+                return undefined;
+            (0, assert_1.default)(post instanceof post_1.default);
+            return post;
         });
-    };
-    DbHandler.prototype.queryLatestPost = function (trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            var commentObj;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.baseCommentQuery(trx).whereNotNull("title").orderBy("id", "desc").first()];
-                    case 1:
-                        commentObj = _a.sent();
-                        return [4 /*yield*/, this.createCommentsFromRows(commentObj, trx)];
-                    case 2: 
-                    // @ts-ignore
-                    return [2 /*return*/, (_a.sent())[0]];
-                }
-            });
+    }
+    insertSigner(signer, trx) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.baseTransaction(trx)(TABLES.SIGNERS).insert(signer);
         });
-    };
-    DbHandler.prototype.insertSigner = function (signer, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, this.baseTransaction(trx)(TABLES.SIGNERS).insert(signer)];
-            });
+    }
+    querySubplebbitSigner(trx) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.baseTransaction(trx)(TABLES.SIGNERS).where({ usage: exports.SIGNER_USAGES.SUBPLEBBIT }).first();
         });
-    };
-    DbHandler.prototype.querySubplebbitSigner = function (trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, this.baseTransaction(trx)(TABLES.SIGNERS).where({ usage: exports.SIGNER_USAGES.SUBPLEBBIT }).first()];
-            });
+    }
+    querySigner(ipnsKeyName, trx) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName: ipnsKeyName }).first();
         });
-    };
-    DbHandler.prototype.querySigner = function (ipnsKeyName, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, this.baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName: ipnsKeyName }).first()];
-            });
-        });
-    };
-    DbHandler.prototype.changeDbFilename = function (newDbFileName) {
+    }
+    changeDbFilename(newDbFileName) {
         var _a, _b, _c;
-        return __awaiter(this, void 0, void 0, function () {
-            var oldPathString, newPath;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
-                    case 0:
-                        oldPathString = (_c = (_b = (_a = this.subplebbit) === null || _a === void 0 ? void 0 : _a._dbConfig) === null || _b === void 0 ? void 0 : _b.connection) === null || _c === void 0 ? void 0 : _c.filename;
-                        assert_1.default.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
-                        if (oldPathString === ":memory:") {
-                            debugs.DEBUG("No need to change file name of db since it's in memory");
-                            return [2 /*return*/];
-                        }
-                        newPath = path_1.default.format({ dir: path_1.default.dirname(oldPathString), base: newDbFileName });
-                        return [4 /*yield*/, fs_1.default.promises.mkdir(path_1.default.dirname(newPath), { recursive: true })];
-                    case 1:
-                        _d.sent();
-                        return [4 /*yield*/, fs_1.default.promises.rename(oldPathString, newPath)];
-                    case 2:
-                        _d.sent();
-                        this.subplebbit._dbConfig = {
-                            client: "better-sqlite3",
-                            connection: {
-                                filename: newPath
-                            },
-                            useNullAsDefault: true,
-                            acquireConnectionTimeout: 120000
-                        };
-                        this.subplebbit.dbHandler = new DbHandler(this.subplebbit._dbConfig, this.subplebbit);
-                        this.subplebbit._keyv = new keyv_1.default("sqlite://".concat(this.subplebbit._dbConfig.connection.filename));
-                        debugs.INFO("Changed db path from (".concat(oldPathString, ") to (").concat(newPath, ")"));
-                        return [2 /*return*/];
-                }
-            });
+        return __awaiter(this, void 0, void 0, function* () {
+            const oldPathString = (_c = (_b = (_a = this.subplebbit) === null || _a === void 0 ? void 0 : _a._dbConfig) === null || _b === void 0 ? void 0 : _b.connection) === null || _c === void 0 ? void 0 : _c.filename;
+            assert_1.default.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
+            if (oldPathString === ":memory:") {
+                debugs.DEBUG(`No need to change file name of db since it's in memory`);
+                return;
+            }
+            const newPath = path_1.default.format({ dir: path_1.default.dirname(oldPathString), base: newDbFileName });
+            yield fs_1.default.promises.mkdir(path_1.default.dirname(newPath), { recursive: true });
+            yield fs_1.default.promises.rename(oldPathString, newPath);
+            this.subplebbit._dbConfig = {
+                client: "better-sqlite3",
+                connection: {
+                    filename: newPath
+                },
+                useNullAsDefault: true,
+                acquireConnectionTimeout: 120000
+            };
+            this.subplebbit.dbHandler = new DbHandler(this.subplebbit._dbConfig, this.subplebbit);
+            this.subplebbit._keyv = new keyv_1.default(`sqlite://${this.subplebbit._dbConfig.connection.filename}`);
+            debugs.INFO(`Changed db path from (${oldPathString}) to (${newPath})`);
         });
-    };
-    return DbHandler;
-}());
+    }
+}
 exports.DbHandler = DbHandler;
-var subplebbitInitDbIfNeeded = function (subplebbit) { return __awaiter(void 0, void 0, void 0, function () {
-    var dbPath, dir;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                if (subplebbit.dbHandler)
-                    return [2 /*return*/];
-                if (!subplebbit._dbConfig) {
-                    (0, assert_1.default)(subplebbit.address, "Need subplebbit address to initialize a DB connection");
-                    dbPath = path_1.default.join(subplebbit.plebbit.dataPath, subplebbit.address);
-                    debugs.INFO("User has not provided a DB config. Will initialize DB in ".concat(dbPath));
-                    subplebbit._dbConfig = {
-                        client: "better-sqlite3",
-                        connection: {
-                            filename: dbPath
-                        },
-                        useNullAsDefault: true,
-                        acquireConnectionTimeout: 120000
-                    };
-                }
-                else
-                    debugs.DEBUG("User provided a DB config of ".concat(JSON.stringify(subplebbit._dbConfig)));
-                dir = path_1.default.dirname(subplebbit._dbConfig.connection.filename);
-                return [4 /*yield*/, fs_1.default.promises.mkdir(dir, { recursive: true })];
-            case 1:
-                _a.sent();
-                subplebbit.dbHandler = new DbHandler(subplebbit._dbConfig, subplebbit);
-                return [4 /*yield*/, subplebbit.dbHandler.createTablesIfNeeded()];
-            case 2:
-                _a.sent();
-                return [4 /*yield*/, subplebbit.initSignerIfNeeded()];
-            case 3:
-                _a.sent();
-                subplebbit._keyv = new keyv_1.default("sqlite://".concat(subplebbit._dbConfig.connection.filename)); // TODO make this work with DBs other than sqlite
-                return [2 /*return*/];
-        }
-    });
-}); };
+const subplebbitInitDbIfNeeded = (subplebbit) => __awaiter(void 0, void 0, void 0, function* () {
+    if (subplebbit.dbHandler)
+        return;
+    if (!subplebbit._dbConfig) {
+        (0, assert_1.default)(subplebbit.address, "Need subplebbit address to initialize a DB connection");
+        const dbPath = path_1.default.join(subplebbit.plebbit.dataPath, subplebbit.address);
+        debugs.INFO(`User has not provided a DB config. Will initialize DB in ${dbPath}`);
+        subplebbit._dbConfig = {
+            client: "better-sqlite3",
+            connection: {
+                filename: dbPath
+            },
+            useNullAsDefault: true,
+            acquireConnectionTimeout: 120000
+        };
+    }
+    else
+        debugs.DEBUG(`User provided a DB config of ${JSON.stringify(subplebbit._dbConfig)}`);
+    const dir = path_1.default.dirname(subplebbit._dbConfig.connection.filename);
+    yield fs_1.default.promises.mkdir(dir, { recursive: true });
+    subplebbit.dbHandler = new DbHandler(subplebbit._dbConfig, subplebbit);
+    yield subplebbit.dbHandler.createTablesIfNeeded();
+    yield subplebbit.initSignerIfNeeded();
+    subplebbit._keyv = new keyv_1.default(`sqlite://${subplebbit._dbConfig.connection.filename}`); // TODO make this work with DBs other than sqlite
+});
 exports.subplebbitInitDbIfNeeded = subplebbitInitDbIfNeeded;

@@ -1,16 +1,16 @@
 import { Encrypted } from "./types";
 export declare const PUBSUB_MESSAGE_TYPES: Readonly<{
-    CHALLENGEREQUEST: string;
-    CHALLENGE: string;
-    CHALLENGEANSWER: string;
-    CHALLENGEVERIFICATION: string;
+    CHALLENGEREQUEST: "CHALLENGEREQUEST";
+    CHALLENGE: "CHALLENGE";
+    CHALLENGEANSWER: "CHALLENGEANSWER";
+    CHALLENGEVERIFICATION: "CHALLENGEVERIFICATION";
 }>;
 export declare const CHALLENGE_TYPES: Readonly<{
-    IMAGE: string;
-    TEXT: string;
-    VIDEO: string;
-    AUDIO: string;
-    HTML: string;
+    IMAGE: "image";
+    TEXT: "text";
+    VIDEO: "video";
+    AUDIO: "audio";
+    HTML: "html";
 }>;
 export declare class Challenge {
     challenge: any[];
