@@ -326,8 +326,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         } else debugs.TRACE(`No need to sync subplebbit IPNS`);
     }
 
-    async handleCommentEdit(commentEdit: CommentEdit, challengeRequestId, trx) {
-        const commentToBeEdited: Comment = await this.dbHandler.queryComment(commentEdit.commentCid, trx);
+    async handleCommentEdit(commentEdit: CommentEdit, trx?) {
+        assert(this.dbHandler, "Need db handler to handleCommentEdit");
+        const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, trx);
         if (!commentToBeEdited) {
             debugs.INFO(
                 `Unable to edit comment (${commentEdit.commentCid}) since it's not in local DB. Rejecting user's request to edit comment`
@@ -336,16 +337,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
                 reason: `commentCid (${commentEdit.commentCid}) does not exist`
             };
         } else if (commentEdit?.editSignature?.publicKey !== commentToBeEdited.signature.publicKey) {
-            // Original comment and CommentEdit need to have same key
+            // Original comment and CommentEdit need to have same signer key
             // TODO make exception for moderators
             debugs.INFO(`User attempted to edit a comment (${commentEdit.commentCid}) without having its signer's keys.`);
             return {
                 reason: `Comment edit of ${commentEdit.commentCid} due to having different author keys than original comment`
-            };
-        } else if (shallowEqual(commentToBeEdited.signature, commentEdit.editSignature)) {
-            debugs.INFO(`Signature of CommentEdit is identical to original comment (${commentEdit.cid})`);
-            return {
-                reason: `Signature of CommentEdit is identical to original comment (${commentEdit.cid})`
             };
         } else {
             commentEdit.setOriginalContent(commentToBeEdited.originalContent || commentToBeEdited.content);
@@ -355,7 +351,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
     }
 
     async handleVote(newVote, challengeRequestId, trx) {
-        const [lastVote, parentComment]: [Vote | undefined, Comment] = await Promise.all([
+        const [lastVote, parentComment] = await Promise.all([
             this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address, trx),
             this.dbHandler.queryComment(newVote.commentCid, trx)
         ]);
@@ -402,7 +398,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
 
         debugs.TRACE(`Attempting to insert new publication into DB: ${JSON.stringify(postOrCommentOrVote)}`);
         const derivedAddress = await getPlebbitAddressFromPublicKeyPem(
-            (postOrCommentOrVote instanceof CommentEdit ? postOrCommentOrVote.editSignature : postOrCommentOrVote.signature).publicKey
+            (postOrCommentOrVote instanceof CommentEdit && postOrCommentOrVote.editSignature
+                ? postOrCommentOrVote.editSignature
+                : postOrCommentOrVote.signature
+            ).publicKey
         );
         const resolvedAddress = await this.plebbit.resolver.resolveAuthorAddressIfNeeded(publication?.author?.address);
 
@@ -410,7 +409,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             // Means author.address is a crypto domain
             if (resolvedAddress !== derivedAddress) {
                 // Means ENS's plebbit-author-address is resolving to another address, which shouldn't happen
-                const msg = `domain (${postOrCommentOrVote.author.address})'s plebbit-author-address (${resolvedAddress}) resolve`;
+                const msg = `domain (${postOrCommentOrVote.author.address}) plebbit-author-address (${resolvedAddress}) does not have the same signer address (${this.signer?.address})`;
                 debugs.INFO(msg);
                 return { reason: msg };
             }
@@ -427,7 +426,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             const res = await this.handleVote(postOrCommentOrVote, challengeRequestId, undefined);
             if (res) return res;
         } else if (postOrCommentOrVote instanceof CommentEdit) {
-            const res = await this.handleCommentEdit(postOrCommentOrVote, challengeRequestId, undefined);
+            const res = await this.handleCommentEdit(postOrCommentOrVote, undefined);
             if (res) return res;
         } else if (postOrCommentOrVote instanceof Comment) {
             // Comment and Post need to add file to ipfs
@@ -620,7 +619,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         return [answerIsCorrect, challengeErrors];
     }
 
-    async syncComment(dbComment) {
+    async syncComment(dbComment: Comment) {
         assert(dbComment instanceof Comment);
         let commentIpns;
         try {
@@ -631,6 +630,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             );
         }
         if (!commentIpns || !shallowEqual(commentIpns, dbComment.toJSONCommentUpdate(), ["replies"])) {
+            debugs.DEBUG(`Attempting to update Comment (${dbComment.cid})`);
             await this._keyv.delete(dbComment.cid);
             if (dbComment.parentCid) await this._keyv.delete(dbComment.parentCid);
             debugs.DEBUG(`Comment (${dbComment.cid}) IPNS is outdated`);
@@ -643,11 +643,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         debugs.TRACE(`Comment (${dbComment.cid}) is up-to-date and does not need syncing`);
     }
 
-    async syncIpnsWithDb(syncIntervalMs) {
+    async syncIpnsWithDb(syncIntervalMs: number) {
         debugs.TRACE("Starting to sync IPNS with DB");
         try {
             const dbComments: any = await this.dbHandler.queryComments(undefined);
-            // const dbComments = [];
             await Promise.all([...dbComments.map(async (comment) => this.syncComment(comment)), this.updateSubplebbitIpns()]);
         } catch (e) {
             debugs.WARN(`Failed to sync due to error: ${e}`);
@@ -669,7 +668,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             try {
                 await this.processCaptchaPubsub(pubsubMessage);
             } catch (e) {
-                e.message = `failed process captcha: ${e.message}\nPubsub Message: ${pubsubMessage}`;
+                e.message = `failed process captcha: ${e.message}`;
                 debugs.ERROR(e);
             }
         });

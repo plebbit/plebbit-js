@@ -20,13 +20,6 @@ describe("subplebbit", async () => {
     });
 
     it("create new subplebbit", async function () {
-        const databaseConfig = {
-            client: "better-sqlite3", // or 'better-sqlite3'
-            connection: {
-                filename: ":memory:"
-            },
-            useNullAsDefault: true
-        };
         const signer = await plebbit.createSigner();
         subplebbit = await plebbit.createSubplebbit({
             signer: signer,

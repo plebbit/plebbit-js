@@ -73,16 +73,12 @@ describe("comment (node and browser)", async () => {
 
     describe("publishing", async () => {
         it("Publishing a comment with invalid signature fails", async () => {
-            return new Promise(async (resolve, reject) => {
-                const mockComment = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
-                mockComment.signature.signature = mockComment.signature.signature.slice(1); // Corrupts signature by deleting one key
-                try {
-                    await mockComment.publish();
-                    expect.fail("comment.publish should throw an error");
-                } catch {
-                    resolve();
-                }
-            });
+            const mockComment = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
+            mockComment.signature.signature = mockComment.signature.signature.slice(1); // Corrupts signature by deleting one key
+            try {
+                await mockComment.publish();
+                expect.fail("comment.publish should throw an error");
+            } catch {}
         });
 
         it("Can publish a post", async function () {
@@ -95,7 +91,7 @@ describe("comment (node and browser)", async () => {
                 mockPost.once("challengeverification", (challengeVerificationMessage, updatedComment) => {
                     expect(updatedComment.previousCid).to.equal(originalLatestPostCid);
                     subplebbit.once("update", async (updatedSubplebbit) => {
-                        expect(mockPost.cid).to.equal(updatedSubplebbit.latestPostCid);
+                        expect(mockPost.cid).to.equal(updatedSubplebbit.latestPostCid, "Subplebbit did not update latestPostCid");
                         mockComments.push(mockPost);
                         await subplebbit.stop();
                         resolve();
@@ -202,8 +198,6 @@ describe("comment (node and browser)", async () => {
                 const commentToBeEdited = mockComments[0];
                 await commentToBeEdited.update(updateInterval);
 
-                const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-                await subplebbit.update(updateInterval);
                 const originalContent = commentToBeEdited.content;
                 const commentEdit = await plebbit.createCommentEdit({
                     subplebbitAddress: commentToBeEdited.subplebbitAddress,
@@ -213,12 +207,10 @@ describe("comment (node and browser)", async () => {
                     signer: commentToBeEdited.signer
                 });
                 await commentEdit.publish();
-                commentToBeEdited.on("update", async (updatedCommentToBeEdited) => {
-                    if (!updatedCommentToBeEdited.originalContent) return; // Wait until comment is updated with new content
+                commentToBeEdited.once("update", async (updatedCommentToBeEdited) => {
                     expect(updatedCommentToBeEdited.content).to.equal(editedText, "Comment has not been edited");
                     expect(updatedCommentToBeEdited.originalContent).to.equal(originalContent, "Original content should be preserved");
                     expect(updatedCommentToBeEdited.editReason).to.equal(editReason, "Edit reason has not been updated");
-                    await subplebbit.stop();
                     await commentToBeEdited.stop();
                     resolve();
                 });

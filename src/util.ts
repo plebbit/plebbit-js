@@ -22,7 +22,7 @@ export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultO
     assert.ok(cid, "Cid has to not be null to load");
     if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
-        const res = await fetch(url);
+        const res = await fetch(url, {});
         if (res.status === 200) return await res.json();
         else throw `Failed to load IPFS via url (${url}). Status code ${res.status} and status text ${res.statusText}`;
     } else {
@@ -37,12 +37,13 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
     assert.ok(ipns, "ipns has to be not null to load");
     if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
-        const res = await fetch(url);
+        const res = await fetch(url, {});
         if (res.status === 200) return await res.json();
         else throw `Failed to load IPNS via url (${url}). Status code ${res.status} and status text ${res.statusText}`;
     } else {
         const cid = await last(plebbit.ipfsClient.name.resolve(ipns));
         if (!cid) throw new Error(`IPNS (${ipns}) resolves to undefined`);
+        assert(typeof cid === "string", "CID has to be a string");
         debugs.TRACE(`IPNS (${ipns}) resolved to ${cid}`);
         return loadIpfsFileAsJson(cid, plebbit);
     }

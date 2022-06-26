@@ -185,23 +185,23 @@ export class Comment extends Publication {
 
     async updateOnce() {
         let res;
+
         try {
+            assert(this.ipnsName, "Comment needs to have ipnsName before updating");
             res = await loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit);
         } catch (e) {
             debugs.WARN(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error = ${e.message}`);
+            return;
         }
-        if (!res) return;
-        else {
-            if (!shallowEqual(this.toJSONCommentUpdate(), res)) {
-                debugs.DEBUG(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Emitting an update event...`);
-                this._initCommentUpdate(res);
-                this.emit("update", this);
-            } else {
-                debugs.TRACE(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
-                this._initCommentUpdate(res);
-            }
-            return this;
+        if (!shallowEqual(this.toJSONCommentUpdate(), res)) {
+            debugs.DEBUG(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Emitting an update event...`);
+            this._initCommentUpdate(res);
+            this.emit("update", this);
+        } else {
+            debugs.TRACE(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
+            this._initCommentUpdate(res);
         }
+        return this;
     }
 
     update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {

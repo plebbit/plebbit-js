@@ -1,7 +1,7 @@
 import { PUBSUB_MESSAGE_TYPES } from "../../challenge";
 import Post from "../../post";
 import Author from "../../author";
-import { Comment } from "../../comment";
+import { Comment, CommentEdit } from "../../comment";
 import { getDebugLevels, removeKeysWithUndefinedValues, replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
 import Vote from "../../vote";
 import knex, { Knex } from "knex";
@@ -26,7 +26,7 @@ const TABLES = Object.freeze({
 });
 
 export class DbHandler {
-    _dbConfig: Object;
+    _dbConfig: Knex.Config;
     knex: Knex;
     subplebbit: Subplebbit;
 
@@ -40,7 +40,7 @@ export class DbHandler {
         return await this.knex.transaction();
     }
 
-    baseTransaction(trx) {
+    baseTransaction(trx?: Transaction): Transaction | Knex {
         return trx ? trx : this.knex;
     }
 
@@ -159,37 +159,29 @@ export class DbHandler {
         return dbObject;
     }
 
-    async upsertComment(postOrComment: any, challengeRequestId, trx = undefined) {
-        return new Promise(async (resolve, reject) => {
-            if (postOrComment.author)
-                // Skip adding author (For CommentEdit)
-                await this.addAuthorToDbIfNeeded(postOrComment.author, trx);
-            if (!challengeRequestId)
-                challengeRequestId = (
-                    await this.baseTransaction(trx)(TABLES.COMMENTS)
-                        .where({
-                            cid: postOrComment.cid || postOrComment.commentCid
-                        })
-                        .first()
-                ).challengeRequestId;
-            const originalComment: any = await this.queryComment(postOrComment.cid || postOrComment.commentCid, trx);
-            // @ts-ignore
-            const dbObject = originalComment
-                ? {
-                      ...removeKeysWithUndefinedValues(originalComment.toJSONForDb(challengeRequestId)),
-                      ...removeKeysWithUndefinedValues(postOrComment.toJSONForDb(challengeRequestId))
-                  }
-                : postOrComment.toJSONForDb(challengeRequestId);
-            this.baseTransaction(trx)(TABLES.COMMENTS)
-                .insert(dbObject)
-                .onConflict(["cid"])
-                .merge()
-                .then(() => resolve(dbObject))
-                .catch((err) => {
-                    console.error(err);
-                    reject(err);
-                });
-        });
+    async upsertComment(postOrComment: Post | Comment | CommentEdit, challengeRequestId?: string, trx?: Transaction) {
+        if (postOrComment.author)
+            // Skip adding author (For CommentEdit)
+            await this.addAuthorToDbIfNeeded(postOrComment.author, trx);
+
+        const cid = postOrComment instanceof CommentEdit ? postOrComment.commentCid : postOrComment.cid;
+        if (!challengeRequestId)
+            challengeRequestId = (
+                await this.baseTransaction(trx)(TABLES.COMMENTS)
+                    .where({
+                        cid: cid
+                    })
+                    .first()
+            ).challengeRequestId;
+        assert(cid, "Comment need to have a cid before upserting");
+        const originalComment = await this.queryComment(cid, trx);
+        const dbObject = originalComment
+            ? {
+                  ...removeKeysWithUndefinedValues(originalComment.toJSONForDb(challengeRequestId)),
+                  ...removeKeysWithUndefinedValues(postOrComment.toJSONForDb(challengeRequestId))
+              }
+            : postOrComment.toJSONForDb(challengeRequestId);
+        await this.baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge();
     }
 
     async upsertChallenge(challenge, trx = undefined) {
@@ -223,7 +215,7 @@ export class DbHandler {
         return (await this.createVotesFromRows(voteObj, trx))[0];
     }
 
-    baseCommentQuery(trx) {
+    baseCommentQuery(trx?: Transaction) {
         const upvoteQuery = this.baseTransaction(trx)(TABLES.VOTES)
             .count(`${TABLES.VOTES}.vote`)
             .where({
@@ -249,14 +241,13 @@ export class DbHandler {
         return this.baseTransaction(trx)(TABLES.COMMENTS).select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery);
     }
 
-    async createCommentsFromRows(commentsRows, trx: Transaction | undefined): Promise<Comment[] | Post[]> {
+    async createCommentsFromRows(commentsRows?: Comment[] | Post[]): Promise<Comment[] | Post[] | undefined[]> {
         if (!commentsRows) return [undefined];
-
         if (!Array.isArray(commentsRows)) commentsRows = [commentsRows];
-        commentsRows = commentsRows.map((props) => replaceXWithY(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
-        return await Promise.all(
-            commentsRows.map((commentProps) => {
-                return this.subplebbit.plebbit.createComment(commentProps);
+        return Promise.all(
+            commentsRows.map((props) => {
+                const replacedProps = replaceXWithY(props, null, undefined); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
+                return this.subplebbit.plebbit.createComment(replacedProps);
             })
         );
     }
@@ -330,18 +321,13 @@ export class DbHandler {
         });
     }
 
-    async queryCommentsUnderComment(parentCid: string, trx: Transaction | undefined): Promise<Comment[] | Post[]> {
+    async queryCommentsUnderComment(parentCid: string, trx?: Transaction): Promise<Comment[] | Post[] | undefined[]> {
         const commentsObjs = await this.baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", "desc");
-        return await this.createCommentsFromRows(commentsObjs, trx);
+        return await this.createCommentsFromRows(commentsObjs);
     }
 
-    async queryComments(trx): Promise<Comment[]> {
-        return new Promise(async (resolve, reject) => {
-            this.baseCommentQuery(trx)
-                .orderBy("id", "desc")
-                .then((res) => resolve(this.createCommentsFromRows.bind(this)(res, trx)))
-                .catch(reject);
-        });
+    async queryComments(trx?: Transaction): Promise<Comment[] | Post[] | undefined[]> {
+        return this.createCommentsFromRows(await this.baseCommentQuery(trx).orderBy("id", "desc"));
     }
 
     async querySubplebbitActiveUserCount(timeframe, trx) {
@@ -390,18 +376,20 @@ export class DbHandler {
         });
     }
 
-    async queryComment(cid: string, trx: Transaction | undefined): Promise<Comment | Post> {
-        const commentObj = await this.baseCommentQuery(trx).where({ cid: cid }).first();
-        return (await this.createCommentsFromRows(commentObj, trx))[0];
+    async queryComment(cid: string, trx?: Transaction): Promise<Comment | Post | undefined> {
+        const commentObj = await this.baseCommentQuery(trx).where("cid", cid).first();
+        return (await this.createCommentsFromRows(commentObj))[0];
     }
 
-    async queryLatestPost(trx: Transaction | undefined): Promise<Post | undefined> {
+    async queryLatestPost(trx?: Transaction): Promise<Post | undefined> {
         const commentObj = await this.baseCommentQuery(trx).whereNotNull("title").orderBy("id", "desc").first();
-        // @ts-ignore
-        return (await this.createCommentsFromRows(commentObj, trx))[0];
+        const post = (await this.createCommentsFromRows(commentObj))[0];
+        if (!post) return undefined;
+        assert(post instanceof Post);
+        return post;
     }
 
-    async insertSigner(signer, trx) {
+    async insertSigner(signer, trx?: Transaction) {
         return this.baseTransaction(trx)(TABLES.SIGNERS).insert(signer);
     }
 
