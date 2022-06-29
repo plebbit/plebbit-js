@@ -24,7 +24,6 @@ describe("subplebbit", async () => {
         subplebbit = await plebbit.createSubplebbit({
             signer: signer,
             title: `Test subplebbit - ${Date.now() / 1000}`
-            // database: databaseConfig
         });
 
         await subplebbit.start();

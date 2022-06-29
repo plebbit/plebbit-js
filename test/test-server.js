@@ -89,7 +89,7 @@ const startIpfsNodes = async () => {
 
 const syncInterval = 100;
 const databaseConfig = {
-    client: "better-sqlite3", // or 'better-sqlite3'
+    client: "sqlite3",
     connection: {
         filename: ":memory:"
     },

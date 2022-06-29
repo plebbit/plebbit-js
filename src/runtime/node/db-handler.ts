@@ -410,12 +410,10 @@ export class DbHandler {
         await fs.promises.mkdir(path.dirname(newPath), { recursive: true });
         await fs.promises.rename(oldPathString, newPath);
         this.subplebbit._dbConfig = {
-            client: "better-sqlite3", // or 'better-sqlite3'
+            ...this.subplebbit._dbConfig,
             connection: {
                 filename: newPath
-            },
-            useNullAsDefault: true,
-            acquireConnectionTimeout: 120000
+            }
         };
         this.subplebbit.dbHandler = new DbHandler(this.subplebbit._dbConfig, this.subplebbit);
         this.subplebbit._keyv = new Keyv(`sqlite://${this.subplebbit._dbConfig.connection.filename}`);
@@ -430,7 +428,7 @@ export const subplebbitInitDbIfNeeded = async (subplebbit: Subplebbit) => {
         const dbPath = path.join(subplebbit.plebbit.dataPath, subplebbit.address);
         debugs.INFO(`User has not provided a DB config. Will initialize DB in ${dbPath}`);
         subplebbit._dbConfig = {
-            client: "better-sqlite3", // or 'better-sqlite3'
+            client: "sqlite3",
             connection: {
                 filename: dbPath
             },
