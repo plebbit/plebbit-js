@@ -93,7 +93,7 @@ export async function signPublication(publication: Publication, signer: Signer, 
     debugs.TRACE(`Fields to sign: ${JSON.stringify(fieldsToSign)}. Publication object to sign:  ${JSON.stringify(publicationSignFields)}`);
     const commentEncoded = encode(publicationSignFields); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
     const signatureData = uint8ArrayToString(await signBufferRsa(commentEncoded, signer.privateKey), "base64");
-    debugs.DEBUG(`Publication been signed, signature data is (${signatureData})`);
+    debugs.TRACE(`Publication been signed, signature data is (${signatureData})`);
     return new Signature({
         signature: signatureData,
         publicKey: signer.publicKey,
@@ -132,7 +132,7 @@ export async function verifyPublication(publication, plebbit: Plebbit, overrideA
     };
     const verifyPublicationSignature = async (signature, publicationToBeVerified) => {
         const commentWithFieldsToSign = keepKeys(publicationToBeVerified, signature.signedPropertyNames);
-        debugs.DEBUG(
+        debugs.TRACE(
             `signature.signedPropertyNames: [${signature.signedPropertyNames}], Attempt to verify a publication: ${JSON.stringify(
                 commentWithFieldsToSign
             )}`

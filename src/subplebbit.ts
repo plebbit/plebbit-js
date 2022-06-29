@@ -35,6 +35,8 @@ import { Comment, CommentEdit } from "./comment";
 import Vote from "./vote";
 import Post from "./post";
 import { getPlebbitAddressFromPublicKeyPem } from "./signer/util";
+import Publication from "./publication";
+import { v4 as uuidv4 } from "uuid";
 
 const debugs = getDebugLevels("subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
@@ -106,13 +108,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         this.moderatorsAddresses = mergedProps["moderatorsAddresses"];
         this.latestPostCid = mergedProps["latestPostCid"];
         this._dbConfig = mergedProps["database"];
-        this.posts =
-            mergedProps["posts"] instanceof Object
-                ? new Pages({
-                      ...mergedProps["posts"],
-                      subplebbit: this
-                  })
-                : mergedProps["posts"];
         this.address = mergedProps["address"];
         this.ipnsKeyName = mergedProps["ipnsKeyName"];
         this.pubsubTopic = mergedProps["pubsubTopic"] || this.address;
@@ -123,6 +118,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         this.updatedAt = mergedProps["updatedAt"];
         this.signer = mergedProps["signer"];
         this.encryption = mergedProps["encryption"];
+        this.posts =
+            mergedProps["posts"] instanceof Object
+                ? new Pages({
+                      ...mergedProps["posts"],
+                      subplebbit: this
+                  })
+                : mergedProps["posts"];
     }
 
     async initSignerIfNeeded() {
@@ -265,6 +267,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
 
     async updateOnce() {
         assert(this.address, "Can't update subplebbit without address");
+        // TODO update this to accomodate ENS resolving
         try {
             const subplebbitIpns = await loadIpnsAsJson(this.address, this.plebbit);
             if (this.emittedAt !== subplebbitIpns.updatedAt) {
@@ -352,10 +355,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         }
     }
 
-    async handleVote(newVote, challengeRequestId, trx) {
+    async handleVote(newVote, challengeRequestId) {
         const [lastVote, parentComment] = await Promise.all([
-            this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address, trx),
-            this.dbHandler.queryComment(newVote.commentCid, trx)
+            this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address),
+            this.dbHandler.queryComment(newVote.commentCid)
         ]);
 
         if (!parentComment) {
@@ -383,7 +386,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             );
             return { reason: "User duplicated their vote" };
         } else {
+            const trx = await this.dbHandler?.createTransaction();
             await this.dbHandler.upsertVote(newVote, challengeRequestId, trx);
+            await trx?.commit();
             debugs.INFO(`Upserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
         }
     }
@@ -426,7 +431,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             return { reason: msg };
         }
         if (postOrCommentOrVote instanceof Vote) {
-            const res = await this.handleVote(postOrCommentOrVote, challengeRequestId, undefined);
+            const res = await this.handleVote(postOrCommentOrVote, challengeRequestId);
             if (res) return res;
         } else if (postOrCommentOrVote instanceof CommentEdit) {
             const res = await this.handleCommentEdit(postOrCommentOrVote, undefined);
@@ -454,12 +459,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
                 if (postOrCommentOrVote instanceof Post) {
                     const trx = await this.dbHandler.createTransaction();
                     postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPost(trx))?.cid);
-                    await trx.commit();
                     postOrCommentOrVote.setDepth(0);
                     const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
                     postOrCommentOrVote.setPostCid(file.path);
                     postOrCommentOrVote.setCid(file.path);
-                    await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, undefined);
+                    await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
+                    await trx.commit();
+
                     debugs.INFO(`New post with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
                 } else if (postOrCommentOrVote instanceof Comment) {
                     // Comment
@@ -468,17 +474,20 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
                         this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx),
                         this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)
                     ]);
-                    await trx.commit();
                     if (!parent) {
+                        await trx.commit();
                         const msg = `User is trying to publish a comment with content (${postOrCommentOrVote.content}) with incorrect parentCid`;
                         debugs.INFO(msg);
+
                         return { reason: msg };
                     }
                     postOrCommentOrVote.setPreviousCid(commentsUnderParent[0]?.cid);
                     postOrCommentOrVote.setDepth(parent.depth + 1);
                     const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
                     postOrCommentOrVote.setCid(file.path);
-                    await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, undefined);
+                    await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
+                    await trx.commit();
+
                     debugs.INFO(`New comment with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
                 }
             }
@@ -628,7 +637,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         try {
             commentIpns = await loadIpnsAsJson(dbComment.ipnsName, this.plebbit);
         } catch (e) {
-            debugs.DEBUG(
+            debugs.TRACE(
                 `Failed to load Comment (${dbComment.cid}) IPNS (${dbComment.ipnsName}) while syncing. Will attempt to publish a new IPNS record`
             );
         }
@@ -683,6 +692,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             } catch (e) {
                 e.message = `failed process captcha: ${e.message}`;
                 debugs.ERROR(e);
+                await this.dbHandler.rollbackAllTrxs();
             }
         });
         debugs.INFO(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
@@ -697,5 +707,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         this.dbHandler = undefined;
 
         this._sync = false;
+    }
+
+    async _addPublicationToDb(publication: Publication) {
+        debugs.INFO(`Adding ${publication.getType()} with author (${JSON.stringify(publication.author)}) to DB directly`);
+        const randomUUID = uuidv4();
+        await this.dbHandler.upsertChallenge(new ChallengeRequestMessage({ challengeRequestId: randomUUID }));
+        return (await this.publishPostAfterPassingChallenge(publication, randomUUID)).publication;
     }
 }

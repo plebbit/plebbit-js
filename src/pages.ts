@@ -15,6 +15,7 @@ export class Pages {
 
     constructor(props: Pages) {
         Object.assign(this, props);
+        assert(this.subplebbit.address, "Address of subplebbit is needed to verify pages");
     }
 
     async getPage?(pageCid: string): Promise<Page> {

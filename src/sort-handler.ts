@@ -196,7 +196,7 @@ export class SortHandler {
         if (comment?.replyCount === 0) return undefined;
         const key = comment?.cid || "subplebbit"; // If comment is undefined then we're generating page for subplebbit
         if (await this.subplebbit._keyv.has(key)) {
-            const cachedPage = new Pages(await this.subplebbit._keyv.get(key));
+            const cachedPage = new Pages({ ...(await this.subplebbit._keyv.get(key)), subplebbit: this.subplebbit });
             return cachedPage;
         }
 

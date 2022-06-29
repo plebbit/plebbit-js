@@ -48,7 +48,7 @@ export class Plebbit {
 
                 const splits = gatewayFromNode.toString().split("/");
                 this.ipfsGatewayUrl = `http://${splits[2]}:${splits[4]}`;
-                debugs.DEBUG(`plebbit.ipfsGatewayUrl retrieved from IPFS node: ${this.ipfsGatewayUrl}`);
+                debugs.TRACE(`plebbit.ipfsGatewayUrl retrieved from IPFS node: ${this.ipfsGatewayUrl}`);
             } catch (e) {
                 this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
                 debugs.ERROR(`${e.msg}: Failed to retrieve gateway url from ipfs node, will default to ${this.ipfsGatewayUrl}`);
@@ -89,7 +89,7 @@ export class Plebbit {
     async signPublication(createPublicationOptions) {
         if (createPublicationOptions.author && !createPublicationOptions.author.address) {
             createPublicationOptions.author.address = createPublicationOptions.signer.address;
-            debugs.DEBUG(
+            debugs.TRACE(
                 `createPublicationOptions did not provide author.address, will define it to signer.address (${createPublicationOptions.signer.address})`
             );
         }
@@ -100,14 +100,14 @@ export class Plebbit {
     defaultTimestampIfNeeded(createPublicationOptions) {
         if (!createPublicationOptions.timestamp) {
             const defaultTimestamp = timestamp();
-            debugs.DEBUG(`User hasn't provided a timestamp in options, defaulting to (${defaultTimestamp})`);
+            debugs.TRACE(`User hasn't provided a timestamp in options, defaulting to (${defaultTimestamp})`);
             createPublicationOptions.timestamp = defaultTimestamp;
         }
         return createPublicationOptions;
     }
 
     async createComment(createCommentOptions): Promise<Comment | Post> {
-        const commentSubplebbit = { plebbit: this };
+        const commentSubplebbit = { plebbit: this, address: createCommentOptions.subplebbitAddress };
         if (!createCommentOptions.signer)
             return createCommentOptions.title
                 ? new Post(createCommentOptions, commentSubplebbit)
@@ -122,7 +122,7 @@ export class Plebbit {
     }
 
     async createVote(createVoteOptions): Promise<Vote> {
-        const subplebbit = { plebbit: this };
+        const subplebbit = { plebbit: this, address: createVoteOptions.subplebbitAddress };
         if (!createVoteOptions.signer) return new Vote(createVoteOptions, subplebbit);
         createVoteOptions = this.defaultTimestampIfNeeded(createVoteOptions);
         const voteProps = await this.signPublication(createVoteOptions);
@@ -130,9 +130,10 @@ export class Plebbit {
     }
 
     async createCommentEdit(createCommentEditOptions): Promise<CommentEdit> {
+        const subplebbitObj = { plebbit: this, address: createCommentEditOptions.subplebbitAddress };
         if (!createCommentEditOptions.signer)
             // User just wants to instantiate a CommentEdit object, not publish
-            return new CommentEdit(createCommentEditOptions, { plebbit: this });
+            return new CommentEdit(createCommentEditOptions, subplebbitObj);
         if (!createCommentEditOptions.editTimestamp) {
             const defaultTimestamp = timestamp();
             debugs.DEBUG(`User hasn't provided any editTimestamp for their CommentEdit, defaulted to (${defaultTimestamp})`);
@@ -143,7 +144,7 @@ export class Plebbit {
             ...createCommentEditOptions,
             editSignature: await signPublication(createCommentEditOptions, createCommentEditOptions.signer, this)
         };
-        return new CommentEdit(commentEditProps, { plebbit: this });
+        return new CommentEdit(commentEditProps, subplebbitObj);
     }
 
     createSigner(createSignerOptions: CreateSignerOptions = {}): Promise<Signer> {

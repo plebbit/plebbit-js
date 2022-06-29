@@ -34,15 +34,19 @@ export class DbHandler {
     _dbConfig: Knex.Config;
     knex: Knex;
     subplebbit: Subplebbit;
+    private _currentTrxs: Transaction[];
 
     constructor(dbConfig: Knex.Config, subplebbit: Subplebbit) {
         this._dbConfig = dbConfig;
         this.knex = knex(dbConfig);
         this.subplebbit = subplebbit;
+        this._currentTrxs = [];
     }
 
     async createTransaction(): Promise<Transaction> {
-        return await this.knex.transaction();
+        const trx = await this.knex.transaction();
+        this._currentTrxs.push(trx);
+        return trx;
     }
 
     baseTransaction(trx?: Transaction): Transaction | Knex {
@@ -418,6 +422,11 @@ export class DbHandler {
         this.subplebbit.dbHandler = new DbHandler(this.subplebbit._dbConfig, this.subplebbit);
         this.subplebbit._keyv = new Keyv(`sqlite://${this.subplebbit._dbConfig.connection.filename}`);
         debugs.INFO(`Changed db path from (${oldPathString}) to (${newPath})`);
+    }
+
+    async rollbackAllTrxs() {
+        await Promise.all(this._currentTrxs.map((trx) => trx.rollback()));
+        this._currentTrxs = [];
     }
 }
 
