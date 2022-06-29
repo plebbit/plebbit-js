@@ -1,4 +1,3 @@
-import last from "it-last";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import EventEmitter from "events";
 import { sha256 } from "js-sha256";
@@ -13,9 +12,9 @@ import {
     PUBSUB_MESSAGE_TYPES
 } from "./challenge";
 import assert from "assert";
-import { DbHandler, SIGNER_USAGES, subplebbitInitDbIfNeeded } from "./runtime/node/db-handler";
+import { DbHandler, subplebbitInitDbIfNeeded } from "./runtime/node/db-handler";
 import { createCaptcha } from "./runtime/node/captcha";
-import { POSTS_SORT_TYPES, SortHandler } from "./sort-handler";
+import { SortHandler } from "./sort-handler";
 import { getDebugLevels, ipfsImportKey, loadIpnsAsJson, shallowEqual, timestamp } from "./util";
 import { decrypt, encrypt, verifyPublication, Signer, Signature } from "./signer";
 import { Pages } from "./pages";
@@ -77,9 +76,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
     private provideCaptchaCallback?: Function;
     private validateCaptchaAnswerCallback?: Function;
     private ipnsKeyName?: string;
-    private sortHandler: any;
+    private sortHandler: SortHandler;
     private emittedAt?: number;
     private _updateInterval?: any;
+    private _sync: boolean;
 
     constructor(props: CreateSubplebbitOptions, plebbit: Plebbit) {
         super();
@@ -87,6 +87,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         this.initSubplebbit(props);
         this._challengeToSolution = {}; // Map challenge ID to its solution
         this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
+        this._sync = false;
         this.provideCaptchaCallback = undefined;
         this.validateCaptchaAnswerCallback = undefined;
 
@@ -134,7 +135,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
                     {
                         ...this.signer,
                         ipnsKeyName: this.signer.address,
-                        usage: SIGNER_USAGES.SUBPLEBBIT
+                        usage: "subplebbit"
                     },
                     undefined
                 );
@@ -291,10 +292,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
     }
 
     async updateSubplebbitIpns() {
+        assert(this.dbHandler);
         const trx: any = await this.dbHandler.createTransaction();
         const latestPost = await this.dbHandler.queryLatestPost(trx);
         await trx.commit();
-        const [metrics, [sortedPosts, sortedPostsCids]] = await Promise.all([
+        const [metrics, subplebbitPosts] = await Promise.all([
             this.dbHandler.querySubplebbitMetrics(undefined),
             this.sortHandler.generatePagesUnderComment(undefined, undefined)
         ]);
@@ -304,13 +306,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         } catch (e) {
             debugs.ERROR(`Subplebbit IPNS (${this.address}) is not defined, will publish a new record`);
         }
-        let posts;
-        if (sortedPosts)
+        let posts: Pages | undefined;
+        if (subplebbitPosts)
             posts = new Pages({
                 pages: {
-                    [POSTS_SORT_TYPES.HOT.type]: sortedPosts[POSTS_SORT_TYPES.HOT.type]
+                    hot: subplebbitPosts.pages.hot
                 },
-                pageCids: sortedPostsCids,
+                pageCids: subplebbitPosts.pageCids,
                 subplebbit: this
             });
         const metricsCid = (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path;
@@ -389,6 +391,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
     async publishPostAfterPassingChallenge(publication, challengeRequestId): Promise<any> {
         delete this._challengeToSolution[challengeRequestId];
         delete this._challengeToPublication[challengeRequestId];
+        assert(this.dbHandler);
 
         const postOrCommentOrVote: Vote | CommentEdit | Post | Comment = publication.hasOwnProperty("vote")
             ? await this.plebbit.createVote(publication)
@@ -437,11 +440,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
                 debugs.INFO(msg);
                 return { reason: msg };
             } else {
-                const ipfsSigner = {
+                const ipfsSigner = new Signer({
                     ...(await this.plebbit.createSigner()),
                     ipnsKeyName: ipnsKeyName,
-                    usage: SIGNER_USAGES.COMMENT
-                };
+                    usage: "comment"
+                });
                 const [ipfsKey] = await Promise.all([
                     ipfsImportKey(ipfsSigner, this.plebbit),
                     this.dbHandler.insertSigner(ipfsSigner, undefined)
@@ -620,7 +623,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
     }
 
     async syncComment(dbComment: Comment) {
-        assert(dbComment instanceof Comment);
+        assert(this.dbHandler);
         let commentIpns;
         try {
             commentIpns = await loadIpnsAsJson(dbComment.ipnsName, this.plebbit);
@@ -631,11 +634,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         }
         if (!commentIpns || !shallowEqual(commentIpns, dbComment.toJSONCommentUpdate(), ["replies"])) {
             debugs.DEBUG(`Attempting to update Comment (${dbComment.cid})`);
-            await this._keyv.delete(dbComment.cid);
-            if (dbComment.parentCid) await this._keyv.delete(dbComment.parentCid);
-            debugs.DEBUG(`Comment (${dbComment.cid}) IPNS is outdated`);
-            const [sortedReplies, sortedRepliesCids] = await this.sortHandler.generatePagesUnderComment(dbComment, undefined);
-            dbComment.setReplies(sortedReplies, sortedRepliesCids);
+            await this.sortHandler.deleteCommentPageCache(dbComment);
+            const commentReplies = await this.sortHandler.generatePagesUnderComment(dbComment, undefined);
+            dbComment.setReplies(commentReplies);
             dbComment.setUpdatedAt(timestamp());
             await this.dbHandler.upsertComment(dbComment, undefined);
             return dbComment.edit(dbComment.toJSONCommentUpdate());
@@ -643,19 +644,31 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         debugs.TRACE(`Comment (${dbComment.cid}) is up-to-date and does not need syncing`);
     }
 
-    async syncIpnsWithDb(syncIntervalMs: number) {
+    async syncIpnsWithDb() {
         debugs.TRACE("Starting to sync IPNS with DB");
         try {
-            const dbComments: any = await this.dbHandler.queryComments(undefined);
-            await Promise.all([...dbComments.map(async (comment) => this.syncComment(comment)), this.updateSubplebbitIpns()]);
+            await this.sortHandler.cacheCommentsPages();
+            const dbComments: Comment[] = await this.dbHandler.queryComments();
+            await Promise.all([...dbComments.map(async (comment: Comment) => this.syncComment(comment)), this.updateSubplebbitIpns()]);
         } catch (e) {
             debugs.WARN(`Failed to sync due to error: ${e}`);
         }
+    }
 
-        setTimeout(this.syncIpnsWithDb.bind(this, syncIntervalMs), syncIntervalMs);
+    async #syncLoop(syncIntervalMs: number) {
+        const loop = async () => {
+            if (this._sync) {
+                await this.syncIpnsWithDb();
+                await this.#syncLoop(syncIntervalMs);
+            }
+        };
+        await this.syncIpnsWithDb();
+        setTimeout(loop.bind(this), syncIntervalMs);
     }
 
     async start(syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS) {
+        assert(!this._sync, "Subplebbit is already started");
+        this._sync = true;
         await this.prePublish();
         if (!this.provideCaptchaCallback) {
             debugs.INFO("Subplebbit owner has not provided any captcha. Will go with default image captcha");
@@ -673,7 +686,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             }
         });
         debugs.INFO(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
-        await this.syncIpnsWithDb(syncIntervalMs);
+        await this.#syncLoop(syncIntervalMs);
     }
 
     async stopPublishing() {
@@ -682,15 +695,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic);
         this.dbHandler?.knex?.destroy();
         this.dbHandler = undefined;
-    }
 
-    async destroy() {
-        // For development purposes ONLY
-        // Call this only if you know what you're doing
-        // rm ipns and ipfs
-        await this.stopPublishing();
-        const ipfsPath = await last(this.plebbit.ipfsClient.name.resolve(this.address));
-        await this.plebbit.ipfsClient.pin.rm(ipfsPath);
-        await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
+        this._sync = false;
     }
 }

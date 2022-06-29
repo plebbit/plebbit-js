@@ -15,23 +15,17 @@ export class Signer {
     publicKey?: string;
     address?: string;
     ipfsKey?: Uint8Array;
+    usage?: "comment" | "subplebbit";
+    ipnsKeyName?: string;
 
-    constructor(props) {
+    constructor(props: Signer) {
         this.type = props.type;
         this.privateKey = props.privateKey;
         this.publicKey = props.publicKey;
         this.address = props.address;
-        this.ipfsKey = new Uint8Array(props.ipfsKey);
-    }
-
-    toJSON() {
-        return {
-            type: this.type,
-            privateKey: this.privateKey,
-            publicKey: this.publicKey,
-            address: this.address,
-            ipfsKey: this.ipfsKey
-        };
+        this.ipfsKey = props.ipfsKey ? new Uint8Array(props.ipfsKey) : undefined;
+        this.usage = props.usage;
+        this.ipnsKeyName = props.ipnsKeyName;
     }
 }
 

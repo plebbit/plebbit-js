@@ -1,5 +1,6 @@
 import { Options } from "ipfs-http-client";
 import { Knex } from "knex";
+import { Comment } from "./comment";
 import { Pages } from "./pages";
 import { Signature, Signer } from "./signer";
 
@@ -116,3 +117,28 @@ export interface SubplebbitEditOptions {
     // flairs?: Flair[];
     address?: string;
 }
+
+export type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
+
+export type PostSortName =
+    | "hot"
+    | "new"
+    | "topHour"
+    | "topDay"
+    | "topWeek"
+    | "topMonth"
+    | "topYear"
+    | "topAll"
+    | "controversialHour"
+    | "controversialDay"
+    | "controversialWeek"
+    | "controversialMonth"
+    | "controversialYear"
+    | "controversialAll";
+export type ReplySortName = "topAll" | "new" | "old" | "controversialAll";
+
+export type SortProps = { score?: (comment: Comment) => number; timeframe?: Timeframe };
+
+export type PostSort = Record<PostSortName, SortProps>; // If score is undefined means it's sorted from db, no need to sort in code
+
+export type ReplySort = Record<ReplySortName, SortProps>;

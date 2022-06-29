@@ -2,7 +2,6 @@ import assert from "assert";
 import { getDebugLevels, loadIpnsAsJson, parseJsonIfString, removeKeysWithUndefinedValues, shallowEqual } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
-import { REPLIES_SORT_TYPES } from "./sort-handler";
 import { Signature } from "./signer";
 
 const debugs = getDebugLevels("comment");
@@ -149,36 +148,35 @@ export class Comment extends Publication {
         this.ipnsKeyName = ipnsKey["name"] || ipnsKey["Name"];
     }
 
-    setPostCid(newPostCid) {
+    setPostCid(newPostCid: string) {
         this.postCid = newPostCid;
     }
 
-    setCid(newCid) {
+    setCid(newCid: string) {
         this.cid = newCid;
     }
 
-    setPreviousCid(newPreviousCid) {
+    setPreviousCid(newPreviousCid: string) {
         this.previousCid = newPreviousCid;
     }
 
-    setDepth(newDepth) {
+    setDepth(newDepth: number) {
         this.depth = newDepth;
     }
 
-    setUpdatedAt(newUpdatedAt) {
+    setUpdatedAt(newUpdatedAt: number) {
         this.updatedAt = newUpdatedAt;
     }
 
-    setOriginalContent(newOriginalContent) {
+    setOriginalContent(newOriginalContent: string) {
         this.originalContent = newOriginalContent;
     }
 
-    setReplies(sortedReplies, sortedRepliesCids) {
-        if (sortedReplies)
+    setReplies(replies?: Pages) {
+        if (replies)
             this.replies = new Pages({
-                // @ts-ignore
-                pages: { [REPLIES_SORT_TYPES.TOP_ALL.type]: sortedReplies[REPLIES_SORT_TYPES.TOP_ALL.type] },
-                pageCids: sortedRepliesCids,
+                pages: { topAll: replies.pages.topAll },
+                pageCids: replies.pageCids,
                 subplebbit: this.subplebbit
             });
     }
@@ -225,7 +223,7 @@ export class Comment extends Publication {
             key: this.ipnsKeyName,
             allowOffline: true
         });
-        debugs.DEBUG(`Linked comment (${this.cid}) ipns name(${this.ipnsName}) to ipfs file (${file.path})`);
+        debugs.TRACE(`Linked comment (${this.cid}) ipns name(${this.ipnsName}) to ipfs file (${file.path})`);
     }
 
     async publish(userOptions): Promise<void> {

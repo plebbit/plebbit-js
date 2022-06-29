@@ -7,8 +7,9 @@ import fetch from "node-fetch";
 import FormData from "form-data";
 import assert from "assert";
 import { Plebbit } from "./plebbit";
+import { Timeframe } from "./types";
 //This is temp. TODO replace this with accurate mapping
-export const TIMEFRAMES_TO_SECONDS = Object.freeze({
+export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
     HOUR: 60 * 60,
     DAY: 60 * 60 * 24,
     WEEK: 60 * 60 * 24 * 7,
@@ -53,9 +54,9 @@ export async function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function chunks(arr, len) {
-    let chunks = [],
-        i = 0;
+export function chunks<T>(arr: Array<T>, len: number): Array<Array<T>> {
+    let chunks: T[][] = [];
+    let i = 0;
     while (i < arr.length) chunks.push(arr.slice(i, (i += len)));
     return chunks;
 }

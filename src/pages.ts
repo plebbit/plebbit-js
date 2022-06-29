@@ -4,24 +4,20 @@ import assert from "assert";
 import { Subplebbit } from "./subplebbit";
 import { Comment } from "./comment";
 import Post from "./post";
+import { PostSortName, ReplySortName } from "./types";
 
 const debugs = getDebugLevels("pages");
 
 export class Pages {
-    pages: { [sortType: string]: Page };
-    pageCids: { [sortType: string]: string };
+    pages: Partial<Record<PostSortName | ReplySortName, Page>>;
+    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
     subplebbit: Subplebbit;
 
-    constructor(props) {
-        this.pages = props["pages"];
-        this.pageCids = props["pageCids"];
-        this.subplebbit = props["subplebbit"];
-
-        // these functions might get separated from their `this` when used
-        this.getPage = this.getPage.bind(this);
+    constructor(props: Pages) {
+        Object.assign(this, props);
     }
 
-    async getPage(pageCid: string) {
+    async getPage?(pageCid: string): Promise<Page> {
         const page = new Page(await loadIpfsFileAsJson(pageCid, this.subplebbit.plebbit));
         const verifyComment = async (comment: Comment | Post, parentComment?: Comment | Post) => {
             assert.equal(comment.subplebbitAddress, this.subplebbit.address, "Comment in page should be under the same subplebbit");
@@ -58,17 +54,16 @@ export class Pages {
         return page;
     }
 
-    toJSON() {
+    toJSON?() {
         return { pages: this.pages, pageCids: this.pageCids };
     }
 }
 
 export class Page {
     comments: Comment[];
-    nextCid: string;
+    nextCid?: string;
 
-    constructor(props) {
-        this.comments = props["comments"];
-        this.nextCid = props["nextCid"];
+    constructor(props: Page) {
+        Object.assign(this, props);
     }
 }

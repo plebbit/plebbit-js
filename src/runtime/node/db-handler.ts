@@ -1,4 +1,10 @@
-import { PUBSUB_MESSAGE_TYPES } from "../../challenge";
+import {
+    ChallengeMessage,
+    ChallengeRequestMessage,
+    ChallengeAnswerMessage,
+    ChallengeVerificationMessage,
+    PUBSUB_MESSAGE_TYPES
+} from "../../challenge";
 import Post from "../../post";
 import Author from "../../author";
 import { Comment, CommentEdit } from "../../comment";
@@ -12,10 +18,9 @@ import fs from "fs";
 import Keyv from "keyv";
 import { Signer } from "../../signer";
 import Transaction = Knex.Transaction;
+import { SubplebbitMetrics } from "../../types";
 
 const debugs = getDebugLevels("db-handler");
-
-export const SIGNER_USAGES = { SUBPLEBBIT: "subplebbit", COMMENT: "comment" };
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -30,7 +35,7 @@ export class DbHandler {
     knex: Knex;
     subplebbit: Subplebbit;
 
-    constructor(dbConfig, subplebbit) {
+    constructor(dbConfig: Knex.Config, subplebbit: Subplebbit) {
         this._dbConfig = dbConfig;
         this.knex = knex(dbConfig);
         this.subplebbit = subplebbit;
@@ -122,7 +127,7 @@ export class DbHandler {
             table.text("publicKey").notNullable().unique();
             table.text("address").nullable();
             table.text("type").notNullable(); // RSA or any other type
-            table.enum("usage", Object.values(SIGNER_USAGES)).notNullable();
+            table.enum("usage", Object.values(["comment", "subplebbit"])).notNullable();
             table.binary("ipfsKey").notNullable().unique();
         });
     }
@@ -143,20 +148,17 @@ export class DbHandler {
         }
     }
 
-    async addAuthorToDbIfNeeded(author: Author, trx: Transaction | undefined) {
+    async addAuthorToDbIfNeeded(author: Author, trx?: Transaction) {
         const authorFromDb = await this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first();
-        if (!authorFromDb) {
+        if (!authorFromDb)
             // Author is new. Add to database
             await this.baseTransaction(trx)(TABLES.AUTHORS).insert(author.toJSONForDb());
-            return author.toJSONForDb();
-        } else return authorFromDb;
     }
 
-    async upsertVote(vote, challengeRequestId, trx = undefined) {
+    async upsertVote(vote: Vote, challengeRequestId: string, trx?: Transaction) {
         await this.addAuthorToDbIfNeeded(vote.author, trx);
         const dbObject = vote.toJSONForDb(challengeRequestId);
         await this.baseTransaction(trx)(TABLES.VOTES).insert(dbObject).onConflict(["commentCid", "authorAddress"]).merge();
-        return dbObject;
     }
 
     async upsertComment(postOrComment: Post | Comment | CommentEdit, challengeRequestId?: string, trx?: Transaction) {
@@ -184,35 +186,28 @@ export class DbHandler {
         await this.baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge();
     }
 
-    async upsertChallenge(challenge, trx = undefined) {
-        return new Promise(async (resolve, reject) => {
-            const existingChallenge = await this.baseTransaction(trx)(TABLES.CHALLENGES)
-                .where({ challengeRequestId: challenge.challengeRequestId })
-                .first();
-            const dbObject = {
-                ...existingChallenge,
-                ...challenge.toJSONForDb()
-            };
-            this.baseTransaction(trx)(TABLES.CHALLENGES)
-                .insert(dbObject)
-                .onConflict("challengeRequestId")
-                .merge()
-                .then(() => resolve(dbObject))
-                .catch((err) => {
-                    console.error(err);
-                    reject(err);
-                });
-        });
+    async upsertChallenge(
+        challenge: ChallengeRequestMessage | ChallengeMessage | ChallengeAnswerMessage | ChallengeVerificationMessage,
+        trx?: Transaction
+    ) {
+        const existingChallenge = await this.baseTransaction(trx)(TABLES.CHALLENGES)
+            .where({ challengeRequestId: challenge.challengeRequestId })
+            .first();
+        const dbObject = {
+            ...existingChallenge,
+            ...challenge.toJSONForDb()
+        };
+        await this.baseTransaction(trx)(TABLES.CHALLENGES).insert(dbObject).onConflict("challengeRequestId").merge();
     }
 
-    async getLastVoteOfAuthor(commentCid, authorAddress, trx = undefined): Promise<Vote> {
+    async getLastVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<Vote | undefined> {
         const voteObj = await this.baseTransaction(trx)(TABLES.VOTES)
             .where({
                 commentCid: commentCid,
                 authorAddress: authorAddress
             })
             .first();
-        return (await this.createVotesFromRows(voteObj, trx))[0];
+        return (await this.createVotesFromRows(voteObj))[0];
     }
 
     baseCommentQuery(trx?: Transaction) {
@@ -241,8 +236,8 @@ export class DbHandler {
         return this.baseTransaction(trx)(TABLES.COMMENTS).select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery);
     }
 
-    async createCommentsFromRows(commentsRows?: Comment[] | Post[]): Promise<Comment[] | Post[] | undefined[]> {
-        if (!commentsRows) return [undefined];
+    async createCommentsFromRows(commentsRows: Comment[]): Promise<Comment[] | Post[]> {
+        if (!commentsRows || commentsRows?.length === 0) return [];
         if (!Array.isArray(commentsRows)) commentsRows = [commentsRows];
         return Promise.all(
             commentsRows.map((props) => {
@@ -252,128 +247,117 @@ export class DbHandler {
         );
     }
 
-    async createVotesFromRows(voteRows, trx) {
-        return new Promise(async (resolve, reject) => {
-            if (!voteRows) resolve([undefined]);
-            else {
-                if (!Array.isArray(voteRows)) voteRows = [voteRows];
-                voteRows = voteRows.map((props) => replaceXWithY(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
-                const votes = voteRows.map((voteProps) => {
-                    return new Vote(voteProps, this.subplebbit);
-                });
-                resolve(votes);
-            }
-        });
+    async createVotesFromRows(voteRows: Vote[] | Vote): Promise<Vote[]> {
+        if (!voteRows || (Array.isArray(voteRows) && voteRows.length === 0)) return [];
+        if (!Array.isArray(voteRows)) voteRows = [voteRows];
+        return Promise.all(
+            voteRows.map((props) => {
+                const replacedProps = replaceXWithY(props, null, undefined);
+                return this.subplebbit.plebbit.createVote(replacedProps);
+            })
+        );
     }
 
-    async queryCommentsSortedByTimestamp(parentCid, order = "desc", trx = undefined) {
-        return new Promise(async (resolve, reject) => {
-            this.baseCommentQuery(trx)
-                .where({ parentCid: parentCid })
-                .orderBy("timestamp", order)
-                .then(async (res) => {
-                    resolve(await this.createCommentsFromRows.bind(this)(res, trx));
-                })
-                .catch((err) => {
-                    console.error(err);
-                    reject(err);
-                });
-        });
+    async queryCommentsSortedByTimestamp(parentCid: string | undefined | null, order = "desc", trx?: Transaction) {
+        parentCid = parentCid || null;
+
+        const commentObj = await this.baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", order);
+        return this.createCommentsFromRows(commentObj);
     }
 
-    async queryCommentsBetweenTimestampRange(parentCid, timestamp1, timestamp2, trx = undefined) {
-        return new Promise(async (resolve, reject) => {
-            if (timestamp1 === Number.NEGATIVE_INFINITY) timestamp1 = 0;
-            this.baseCommentQuery(trx)
-                .where({ parentCid: parentCid })
-                .whereBetween("timestamp", [timestamp1, timestamp2])
-                .then((res) => this.createCommentsFromRows.bind(this)(res, trx))
-                .then(resolve)
-                .catch((err) => {
-                    console.error(err);
-                    reject(err);
-                });
-        });
+    async queryCommentsBetweenTimestampRange(
+        parentCid: string | undefined | null,
+        timestamp1: number,
+        timestamp2: number,
+        trx?: Transaction
+    ): Promise<Comment[] | Post[]> {
+        parentCid = parentCid || null;
+
+        if (timestamp1 === Number.NEGATIVE_INFINITY) timestamp1 = 0;
+        const rawCommentObjs = await this.baseCommentQuery(trx)
+            .where({ parentCid: parentCid })
+            .whereBetween("timestamp", [timestamp1, timestamp2]);
+        return this.createCommentsFromRows(rawCommentObjs);
     }
 
-    async queryTopCommentsBetweenTimestampRange(parentCid, timestamp1, timestamp2, trx = undefined) {
-        return new Promise(async (resolve, reject) => {
-            if (timestamp1 === Number.NEGATIVE_INFINITY) timestamp1 = 0;
-            const topScoreQuery = this.baseTransaction(trx)(TABLES.VOTES)
-                .select(this.knex.raw(`COALESCE(SUM(${TABLES.VOTES}.vote), 0)`)) // We're using raw expressions because there's no native method in Knexjs to return 0 if SUM is null
-                .where({
-                    [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`)
-                })
-                .as("topScore");
-            const query = this.baseCommentQuery(trx)
-                .select(topScoreQuery)
-                .groupBy(`${TABLES.COMMENTS}.cid`)
-                .orderBy("topScore", "desc")
-                .whereBetween(`${TABLES.COMMENTS}.timestamp`, [timestamp1, timestamp2])
-                .where({ [`${TABLES.COMMENTS}.parentCid`]: parentCid });
+    async queryTopCommentsBetweenTimestampRange(
+        parentCid: string | undefined | null,
+        timestamp1: number,
+        timestamp2: number,
+        trx?: Transaction
+    ): Promise<Comment[] | Post[]> {
+        if (timestamp1 === Number.NEGATIVE_INFINITY) timestamp1 = 0;
+        parentCid = parentCid || null;
+        const topScoreQuery = this.baseTransaction(trx)(TABLES.VOTES)
+            .select(this.knex.raw(`COALESCE(SUM(${TABLES.VOTES}.vote), 0)`)) // We're using raw expressions because there's no native method in Knexjs to return 0 if SUM is null
+            .where({
+                [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`)
+            })
+            .as("topScore");
+        const rawCommentsObjs = await this.baseCommentQuery(trx)
+            .select(topScoreQuery)
+            .groupBy(`${TABLES.COMMENTS}.cid`)
+            .orderBy("topScore", "desc")
+            .whereBetween(`${TABLES.COMMENTS}.timestamp`, [timestamp1, timestamp2])
+            .where({ [`${TABLES.COMMENTS}.parentCid`]: parentCid });
 
-            query
-                .then((res) => resolve(this.createCommentsFromRows.bind(this)(res, trx)))
-                .catch((err) => {
-                    console.error(err);
-                    reject(err);
-                });
-        });
+        return this.createCommentsFromRows(rawCommentsObjs);
     }
 
-    async queryCommentsUnderComment(parentCid: string, trx?: Transaction): Promise<Comment[] | Post[] | undefined[]> {
+    async queryCommentsUnderComment(parentCid: string | undefined | null, trx?: Transaction): Promise<Comment[] | Post[]> {
+        parentCid = parentCid || null;
+
         const commentsObjs = await this.baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", "desc");
         return await this.createCommentsFromRows(commentsObjs);
     }
 
-    async queryComments(trx?: Transaction): Promise<Comment[] | Post[] | undefined[]> {
+    async queryParentsOfComment(comment: Comment, trx?: Transaction): Promise<Comment[]> {
+        const parents: Comment[] = [];
+        let curParentCid = comment.parentCid;
+        while (curParentCid) {
+            const parent = await this.queryComment(curParentCid, trx);
+            if (parent) parents.push(parent);
+            curParentCid = parent?.parentCid;
+        }
+        assert.equal(comment.depth, parents.length, "Depth should equal to parents length");
+        return parents;
+    }
+
+    async queryComments(trx?: Transaction): Promise<Comment[] | Post[]> {
         return this.createCommentsFromRows(await this.baseCommentQuery(trx).orderBy("id", "desc"));
     }
 
-    async querySubplebbitActiveUserCount(timeframe, trx) {
-        return new Promise(async (resolve, reject) => {
-            let from = timestamp() - TIMEFRAMES_TO_SECONDS[timeframe];
-            if (from === Number.NEGATIVE_INFINITY) from = 0;
-            const to = timestamp();
-            // TODO this could be done in a single query
-            const commentsAuthors = await this.baseTransaction(trx)(TABLES.COMMENTS)
-                .distinct("authorAddress")
-                .whereBetween("timestamp", [from, to]);
-            const voteAuthors = await this.baseTransaction(trx)(TABLES.VOTES)
-                .distinct("authorAddress")
-                .whereBetween("timestamp", [from, to]);
-            let activeUserAccounts = [...commentsAuthors, ...voteAuthors].map((author) => author.authorAddress);
-            // @ts-ignore
-            activeUserAccounts = [...new Set(activeUserAccounts)];
-            resolve(activeUserAccounts.length);
-        });
-    }
+    async querySubplebbitMetrics(trx?: Transaction): Promise<SubplebbitMetrics> {
+        const metrics = await Promise.all(
+            ["PostCount", "ActiveUserCount"].map(
+                async (metricType) =>
+                    await Promise.all(
+                        Object.keys(TIMEFRAMES_TO_SECONDS).map(async (timeframe) => {
+                            const propertyName = `${timeframe.toLowerCase()}${metricType}`;
+                            const [from, to] = [Math.max(0, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe]), timestamp()];
+                            if (metricType === "ActiveUserCount") {
+                                const res = (
+                                    await this.baseTransaction(trx)(TABLES.COMMENTS)
+                                        .countDistinct("comments.authorAddress")
+                                        .join(TABLES.VOTES, `${TABLES.COMMENTS}.authorAddress`, `=`, `${TABLES.VOTES}.authorAddress`)
+                                        .whereBetween("comments.timestamp", [from, to])
+                                )[0]["count(distinct `comments`.`authorAddress`)"];
+                                return { [propertyName]: res };
+                            } else if (metricType === "PostCount") {
+                                const query = this.baseTransaction(trx)(TABLES.COMMENTS)
+                                    .count()
+                                    .whereBetween("timestamp", [from, to])
+                                    .whereNotNull("title");
+                                const res = await query;
+                                return { [propertyName]: res[0]["count(*)"] };
+                            }
+                        })
+                    )
+            )
+        );
 
-    async querySubplebbitPostCount(timeframe, trx) {
-        return new Promise(async (resolve, reject) => {
-            let from = timestamp() - TIMEFRAMES_TO_SECONDS[timeframe];
-            if (from === Number.NEGATIVE_INFINITY) from = 0;
-            const to = timestamp();
-            this.baseTransaction(trx)(TABLES.COMMENTS)
-                .count("cid")
-                .whereBetween("timestamp", [from, to])
-                .whereNotNull("title")
-                .then((postCount) => resolve(postCount["0"]["count(`cid`)"]))
-                .catch(reject);
-        });
-    }
-
-    async querySubplebbitMetrics(trx) {
-        return new Promise(async (resolve, reject) => {
-            const metrics = {};
-            for (const metricType of ["ActiveUserCount", "PostCount"])
-                for (const timeframe of Object.keys(TIMEFRAMES_TO_SECONDS)) {
-                    const propertyName = `${timeframe.toLowerCase()}${metricType}`;
-                    if (metricType === "ActiveUserCount") metrics[propertyName] = await this.querySubplebbitActiveUserCount(timeframe, trx);
-                    else if (metricType === "PostCount") metrics[propertyName] = await this.querySubplebbitPostCount(timeframe, trx);
-                }
-            resolve(metrics);
-        });
+        const combinedMetrics: SubplebbitMetrics = Object.assign({}, ...metrics.flat());
+        return combinedMetrics;
     }
 
     async queryComment(cid: string, trx?: Transaction): Promise<Comment | Post | undefined> {
@@ -389,16 +373,30 @@ export class DbHandler {
         return post;
     }
 
-    async insertSigner(signer, trx?: Transaction) {
-        return this.baseTransaction(trx)(TABLES.SIGNERS).insert(signer);
+    async insertSigner(signer: Signer, trx?: Transaction) {
+        await this.baseTransaction(trx)(TABLES.SIGNERS).insert(signer);
     }
 
-    async querySubplebbitSigner(trx): Promise<Signer> {
-        return this.baseTransaction(trx)(TABLES.SIGNERS).where({ usage: SIGNER_USAGES.SUBPLEBBIT }).first();
+    async querySubplebbitSigner(trx?: Transaction): Promise<Signer> {
+        return this.baseTransaction(trx)(TABLES.SIGNERS).where({ usage: "subplebbit" }).first();
     }
 
-    async querySigner(ipnsKeyName, trx): Promise<Signer | undefined> {
+    async querySigner(ipnsKeyName: string, trx?: Transaction): Promise<Signer | undefined> {
         return this.baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName: ipnsKeyName }).first();
+    }
+
+    async queryCommentsGroupByDepth(trx?: Knex.Transaction): Promise<Comment[][]> {
+        const maxDepth = (await this.baseTransaction(trx)(TABLES.COMMENTS).max("depth"))[0]["max(`depth`)"];
+        if (typeof maxDepth !== "number") return [[]];
+
+        const depths = new Array(maxDepth + 1).fill(null).map((value, i) => i);
+        const comments: Comment[][] = await Promise.all(
+            depths.map(async (depth) => {
+                const commentsWithDepth = await this.baseTransaction(trx)(TABLES.COMMENTS).where({ depth: depth });
+                return await Promise.all(commentsWithDepth.map((commentProps) => this.subplebbit.plebbit.createComment(commentProps)));
+            })
+        );
+        return comments;
     }
 
     async changeDbFilename(newDbFileName: string) {

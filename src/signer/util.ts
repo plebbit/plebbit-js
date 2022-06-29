@@ -6,7 +6,7 @@ const assert = require("assert");
 const { fromString: uint8ArrayFromString } = require("uint8arrays/from-string");
 const { toString: uint8ArrayToString } = require("uint8arrays/to-string");
 
-export const generatePrivateKeyPem = async () => {
+export const generatePrivateKeyPem = async (): Promise<string> => {
     const keyPair = await generateKeyPair();
     const privateKeyPem = await getPrivateKeyPemFromKeyPair(keyPair);
     return privateKeyPem.trim();
@@ -32,7 +32,7 @@ export const getIpfsKeyFromPrivateKeyPem = async (privateKeyPem, password = "") 
     return keyPair.bytes;
 };
 
-export const getPublicKeyPemFromPrivateKeyPem = async (privateKeyPem, password = "") => {
+export const getPublicKeyPemFromPrivateKeyPem = async (privateKeyPem, password = ""): Promise<string> => {
     validatePrivateKeyPem(privateKeyPem);
     // you can optionally encrypt the PEM by providing a password
     // https://en.wikipedia.org/wiki/PKCS_8

@@ -22,14 +22,11 @@ export class Signature {
     type: "rsa";
     signedPropertyNames: string[];
 
-    constructor(props) {
-        this.signature = props["signature"];
-        this.publicKey = props["publicKey"];
-        this.type = props["type"];
-        this.signedPropertyNames = props["signedPropertyNames"];
+    constructor(props: Signature) {
+        Object.assign(this, props);
     }
 
-    toJSON() {
+    toJSON?() {
         return {
             signature: this.signature,
             publicKey: this.publicKey,

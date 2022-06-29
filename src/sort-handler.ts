@@ -3,78 +3,71 @@ import {
     controversialScore,
     getDebugLevels,
     hotScore,
-    keepKeys,
     removeKeysWithUndefinedValues,
     TIMEFRAMES_TO_SECONDS,
     timestamp
 } from "./util";
-import { Page } from "./pages";
+import { Page, Pages } from "./pages";
 import { Subplebbit } from "./subplebbit";
-import { DbHandler } from "./runtime/node/db-handler";
 import assert from "assert";
 import { Knex } from "knex";
 import { Comment } from "./comment";
 import Transaction = Knex.Transaction;
+import { PostSort, PostSortName, ReplySort, ReplySortName, SortProps, Timeframe } from "./types";
 
 const debugs = getDebugLevels("sort-handler");
 
-export const POSTS_SORT_TYPES = Object.freeze({
-    HOT: { type: "hot", score: hotScore },
-    NEW: { type: "new" },
-    TOP_HOUR: { type: "topHour" },
-    TOP_DAY: { type: "topDay" },
-    TOP_WEEK: { type: "topWeek" },
-    TOP_MONTH: { type: "topMonth" },
-    TOP_YEAR: { type: "topYear" },
-    TOP_ALL: { type: "topAll" },
-    CONTROVERSIAL_HOUR: { type: "controversialHour", score: controversialScore },
-    CONTROVERSIAL_DAY: { type: "controversialDay", score: controversialScore },
-    CONTROVERSIAL_WEEK: { type: "controversialWeek", score: controversialScore },
-    CONTROVERSIAL_MONTH: { type: "controversialMonth", score: controversialScore },
-    CONTROVERSIAL_YEAR: { type: "controversialYear", score: controversialScore },
-    CONTROVERSIAL_ALL: { type: "controversialAll", score: controversialScore }
-});
+export const POSTS_SORT_TYPES: PostSort = {
+    hot: { score: hotScore },
+    new: {},
+    topHour: { timeframe: "HOUR" },
+    topDay: { timeframe: "DAY" },
+    topWeek: { timeframe: "WEEK" },
+    topMonth: { timeframe: "MONTH" },
+    topYear: { timeframe: "YEAR" },
+    topAll: { timeframe: "ALL" },
+    controversialHour: { score: controversialScore, timeframe: "HOUR" },
+    controversialDay: { timeframe: "DAY", score: controversialScore },
+    controversialWeek: { timeframe: "WEEK", score: controversialScore },
+    controversialMonth: { timeframe: "MONTH", score: controversialScore },
+    controversialYear: { timeframe: "YEAR", score: controversialScore },
+    controversialAll: { timeframe: "ALL", score: controversialScore }
+};
 
-export const REPLIES_SORT_TYPES = {
-    ...keepKeys(POSTS_SORT_TYPES, ["TOP_ALL", "NEW", "CONTROVERSIAL_ALL"]),
-    OLD: { type: "old" }
+export const REPLIES_SORT_TYPES: ReplySort = {
+    topAll: { timeframe: "ALL" },
+    new: {},
+    controversialAll: { timeframe: "ALL", score: controversialScore },
+    old: {}
 };
 
 export const SORTED_POSTS_PAGE_SIZE = 50;
 
 export class SortHandler {
     subplebbit: Subplebbit;
-    dbHandler: DbHandler;
 
-    constructor(subplebbit) {
+    constructor(subplebbit: Subplebbit) {
         this.subplebbit = subplebbit;
     }
 
-    async chunksToListOfPage(chunks) {
-        if (chunks.length === 0) return [[undefined], [undefined]];
+    async chunksToListOfPage(chunks: Comment[][]): Promise<[Page[], string[]]> {
+        assert(chunks.length > 0);
 
         const listOfPage = new Array(chunks.length);
         const cids = new Array(chunks.length);
         const chunksWithReplies = await Promise.all(
             chunks.map(async (chunk) => {
                 return await Promise.all(
-                    chunk.map(async (comment) => {
-                        if (comment.replyCount === 0) return comment;
+                    chunk.map(async (comment: Comment) => {
+                        const pages = await this.generatePagesUnderComment(comment, undefined);
+                        comment.setReplies(pages);
 
-                        if (await this.subplebbit._keyv.has(comment.cid)) {
-                            const cachedComment = await this.subplebbit._keyv.get(comment.cid);
-                            comment.setReplies(cachedComment.sortedReplies, cachedComment.sortedRepliesCids);
-                        } else {
-                            const [sortedReplies, sortedRepliesCids] = await this.generatePagesUnderComment(comment, undefined);
-                            assert.ok(sortedReplies);
-                            await this.subplebbit._keyv.set(comment.cid, { sortedReplies, sortedRepliesCids });
-                            comment.setReplies(sortedReplies, sortedRepliesCids);
-                        }
                         return comment;
                     })
                 );
             })
         );
+        assert(this.subplebbit.plebbit.ipfsClient);
         for (let i = chunksWithReplies.length - 1; i >= 0; i--) {
             const page = new Page({
                 nextCid: cids[i + 1],
@@ -87,94 +80,151 @@ export class SortHandler {
     }
 
     // Resolves to sortedComments
-    async sortComments(comments, sortType, limit = SORTED_POSTS_PAGE_SIZE) {
-        let commentsSorted;
-        if (!sortType.score) commentsSorted = comments;
+    async sortComments(
+        comments: Comment[],
+        sortName: PostSortName | ReplySortName,
+        limit = SORTED_POSTS_PAGE_SIZE
+    ): Promise<[Partial<Record<PostSortName | ReplySortName, Page>>, string]> {
+        assert(comments.length > 0);
+        let commentsSorted: Comment[];
+        const sortProps: SortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
+        assert(sortProps);
+
+        if (!sortProps.score) commentsSorted = comments;
         // If sort type has no score function, that means it already has been sorted by DB
         else
             commentsSorted = comments
-                .map((comment) => ({
+                .map((comment: Comment) => ({
                     comment: comment,
-                    score: sortType.score(comment)
+                    score: sortProps.score(comment)
                 }))
-                .sort((postA, postB) => {
-                    return postB.score - postA.score;
-                })
+                .sort((postA, postB) => postB.score - postA.score)
                 .map((comment) => comment.comment);
 
         const commentsChunks = chunks(commentsSorted, limit);
-        // @ts-ignore
-        const [listOfPage, cids] = await this.chunksToListOfPage(commentsChunks, sortType);
-        return [{ [sortType.type]: listOfPage[0] }, cids[0]];
+
+        const [listOfPage, cids] = await this.chunksToListOfPage(commentsChunks);
+
+        const expectedNumOfPages = Math.ceil(comments.length / parseFloat(String(limit)));
+        assert.equal(
+            listOfPage.length,
+            expectedNumOfPages,
+            `Should generate ${expectedNumOfPages} pages for sort ${sortName} while it generated ${listOfPage.length}`
+        );
+
+        return [{ [sortName]: listOfPage[0] }, cids[0]];
     }
 
-    async sortCommentsByHot(parentCid, trx) {
+    async sortCommentsByHot(parentCid?: string, trx?: Transaction) {
         const comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(parentCid, trx);
-        return await this.sortComments(comments, POSTS_SORT_TYPES.HOT);
+        if (comments.length === 0) return [undefined, undefined];
+        return this.sortComments(comments, "hot");
     }
 
-    async sortCommentsByTop(parentCid, timeframe, trx) {
-        // Timeframe is "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL"
-        const sortType = POSTS_SORT_TYPES[`TOP_${timeframe}`];
+    async sortCommentsByTop(parentCid: string | undefined, sortName: PostSortName | ReplySortName, trx?: Transaction) {
+        const sortProps: SortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
+        assert(sortProps.timeframe, "Need timeframe to sort top");
         const comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(
             parentCid,
-            timestamp() - TIMEFRAMES_TO_SECONDS[timeframe],
+            timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe],
             timestamp(),
             trx
         );
-        return await this.sortComments(comments, sortType);
+        if (comments.length === 0) return [undefined, undefined];
+        return this.sortComments(comments, sortName);
     }
 
-    async sortCommentsByControversial(parentCid, timeframe, trx) {
-        const sortType = POSTS_SORT_TYPES[`CONTROVERSIAL_${timeframe}`];
+    async sortCommentsByControversial(parentCid: string | undefined, sortName: PostSortName | ReplySortName, trx?: Transaction) {
+        const sortProps: SortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
+        assert(sortProps.timeframe, "Need timeframe to sort controversial");
         const comments = await this.subplebbit.dbHandler.queryCommentsBetweenTimestampRange(
             parentCid,
-            timestamp() - TIMEFRAMES_TO_SECONDS[timeframe],
+            timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe],
             timestamp(),
             trx
         );
-        return await this.sortComments(comments, sortType);
+        if (comments.length === 0) return [undefined, undefined];
+        return this.sortComments(comments, sortName);
     }
 
-    async sortCommentsByNew(parentCid, trx) {
+    async sortCommentsByNew(parentCid?: string, trx?: Transaction) {
         const comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, "desc", trx);
-        return await this.sortComments(comments, POSTS_SORT_TYPES.NEW);
+        if (comments.length === 0) return [undefined, undefined];
+        return this.sortComments(comments, "new");
     }
 
-    getSortPromises(comment, trx) {
+    getSortPromises(comment?: Comment, trx?: Transaction) {
         if (!comment) {
             // Sorting posts on a subplebbit level
-            const sortPromises = [this.sortCommentsByHot.bind(this)(null, trx), this.sortCommentsByNew.bind(this)(null, trx)];
-            for (const timeframe of Object.keys(TIMEFRAMES_TO_SECONDS)) {
-                sortPromises.push(this.sortCommentsByTop.bind(this)(null, timeframe, trx));
-                sortPromises.push(this.sortCommentsByControversial.bind(this)(null, timeframe, trx));
-            }
+            const sortPromises = [this.sortCommentsByHot(undefined, trx), this.sortCommentsByNew(undefined, trx)];
+
+            (Object.keys(POSTS_SORT_TYPES) as Array<keyof typeof POSTS_SORT_TYPES>)
+                .filter((postSort) => postSort !== "hot" && postSort !== "new")
+                .forEach((postSortName) => {
+                    if (postSortName.includes("controversial"))
+                        sortPromises.push(this.sortCommentsByControversial.bind(this)(undefined, postSortName, trx));
+                    else if (postSortName.includes("top"))
+                        sortPromises.push(this.sortCommentsByTop.bind(this)(undefined, postSortName, trx));
+                });
+
             return sortPromises;
         } else {
-            return Object.values(REPLIES_SORT_TYPES).map(async (sortType) => {
-                let comments;
-                // @ts-ignore
-                if (sortType.type === REPLIES_SORT_TYPES.TOP_ALL.type)
+            return (Object.keys(REPLIES_SORT_TYPES) as Array<keyof typeof REPLIES_SORT_TYPES>).map(async (sortName: ReplySortName) => {
+                let comments: Comment[];
+                assert(this.subplebbit?.dbHandler);
+
+                if (sortName === "topAll")
                     comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(comment.cid, 0, timestamp(), trx);
-                else if (sortType.type === REPLIES_SORT_TYPES.OLD.type)
+                else if (sortName === "old")
                     comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", trx);
-                else comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx);
-                return this.sortComments(comments, sortType);
+                else comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(comment?.cid, trx);
+                if (comments.length === 0) return [undefined, undefined];
+                return this.sortComments(comments, sortName);
             });
         }
     }
 
-    async generatePagesUnderComment(comment: Comment | undefined, trx: Transaction): Promise<[Object | undefined, Object | undefined]> {
-        // Create "pages" and "pageCids"
-        if (comment?.replyCount === 0) return [undefined, undefined];
-        const res = await Promise.all(this.getSortPromises(comment, trx));
-        let [pages, pageCids] = [{}, {}];
-        for (const [page, pageCid] of res) {
-            pages = { ...pages, ...page };
-            pageCids[Object.keys(page)[0]] = pageCid;
+    async cacheCommentsPages(trx?: Transaction) {
+        const commentLevels: Comment[][] = await this.subplebbit.dbHandler.queryCommentsGroupByDepth(trx);
+        for (let i = commentLevels.length - 1; i >= 0; i--)
+            await Promise.all(commentLevels[i].map((comment) => this.generatePagesUnderComment(comment, trx)));
+
+        await this.generatePagesUnderComment(undefined, trx);
+    }
+
+    async generatePagesUnderComment(comment?: Comment, trx?: Transaction): Promise<Pages | undefined> {
+        if (comment?.replyCount === 0) return undefined;
+        const key = comment?.cid || "subplebbit"; // If comment is undefined then we're generating page for subplebbit
+        if (await this.subplebbit._keyv.has(key)) {
+            const cachedPage = new Pages(await this.subplebbit._keyv.get(key));
+            return cachedPage;
         }
-        [pages, pageCids] = [removeKeysWithUndefinedValues(pages), removeKeysWithUndefinedValues(pageCids)];
-        if (JSON.stringify(pages) === "{}") [pages, pageCids] = [undefined, undefined];
-        return [pages, pageCids];
+
+        const res = await Promise.all(this.getSortPromises(comment, trx));
+        let [pagesRaw, pageCids] = [{}, {}];
+        for (const [page, pageCid] of res) {
+            pagesRaw = { ...pagesRaw, ...page };
+            if (page) pageCids[Object.keys(page)[0]] = pageCid;
+        }
+        [pagesRaw, pageCids] = [removeKeysWithUndefinedValues(pagesRaw), removeKeysWithUndefinedValues(pageCids)];
+
+        if (JSON.stringify(pagesRaw) === "{}") return undefined;
+
+        const pages = new Pages({ pages: pagesRaw, pageCids: pageCids, subplebbit: this.subplebbit });
+
+        await this.subplebbit._keyv.set(key, pages);
+
+        return pages;
+    }
+
+    async deleteCommentPageCache(dbComment: Comment) {
+        assert(this.subplebbit.dbHandler);
+        const cachesToDelete = [
+            dbComment.cid,
+            ...(await this.subplebbit.dbHandler.queryParentsOfComment(dbComment, undefined)).map((comment) => comment.cid),
+            "subplebbit"
+        ];
+        debugs.DEBUG(`Caches to delete: ${cachesToDelete}`);
+        await Promise.all(cachesToDelete.map(async (cacheKey) => this.subplebbit._keyv.delete(cacheKey)));
     }
 }
