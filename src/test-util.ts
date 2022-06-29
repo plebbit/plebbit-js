@@ -6,7 +6,14 @@ import assert from "assert";
 import { Plebbit } from "./plebbit";
 const debugs = getDebugLevels("test-util");
 
-export async function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, signer?: Signer) {
+export async function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, signer?: Signer, randomTimestamp = false) {
+    let postTimestamp: number | undefined;
+    if (randomTimestamp) {
+        const randomTimeframeIndex = (Object.keys(TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
+        postTimestamp = timestamp() - Object.values(TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
+        if (postTimestamp === Number.NEGATIVE_INFINITY) postTimestamp = 0;
+    }
+
     const postStartTestTime = Date.now() / 1000;
     signer = signer || (await plebbit.createSigner());
     const post = await plebbit.createComment({
@@ -14,6 +21,7 @@ export async function generateMockPost(subplebbitAddress: string, plebbit: Plebb
         signer: signer,
         title: `Mock Post - ${postStartTestTime}`,
         content: `Mock content - ${postStartTestTime}`,
+        timestamp: postTimestamp,
         subplebbitAddress: subplebbitAddress
     });
     assert.equal(post.constructor.name, "Post", "createComment should return Post if title is provided");
@@ -23,7 +31,18 @@ export async function generateMockPost(subplebbitAddress: string, plebbit: Plebb
     return post;
 }
 
-export async function generateMockComment(parentPostOrComment: Post | Comment, plebbit: Plebbit, signer?: Signer): Promise<Comment> {
+export async function generateMockComment(
+    parentPostOrComment: Post | Comment,
+    plebbit: Plebbit,
+    signer?: Signer,
+    randomTimestamp = false
+): Promise<Comment> {
+    let commentTimestamp: number | undefined;
+    if (randomTimestamp) {
+        const randomTimeframeIndex = (Object.keys(TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
+        commentTimestamp = timestamp() - Object.values(TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
+        if (commentTimestamp === Number.NEGATIVE_INFINITY) commentTimestamp = 0;
+    }
     const commentTime = Date.now() / 1000;
     signer = signer || (await plebbit.createSigner());
     const comment = await plebbit.createComment({
@@ -32,32 +51,13 @@ export async function generateMockComment(parentPostOrComment: Post | Comment, p
         content: `Mock comment - ${commentTime}`,
         postCid: parentPostOrComment.postCid || parentPostOrComment.cid,
         parentCid: parentPostOrComment.cid,
-        subplebbitAddress: parentPostOrComment.subplebbitAddress
+        subplebbitAddress: parentPostOrComment.subplebbitAddress,
+        timestamp: commentTimestamp
     });
     comment.once("challenge", (challengeMsg) => {
         comment.publishChallengeAnswers(undefined);
     });
     return comment;
-}
-
-export async function generateMockPostWithRandomTimestamp(subplebbitAddress, plebbit, signer) {
-    const randomTimeframeIndex = Math.floor(Math.random() * (Object.keys(TIMEFRAMES_TO_SECONDS).length - 1));
-    const postTimestamp = timestamp() - (Math.random() > 0.5 ? TIMEFRAMES_TO_SECONDS[randomTimeframeIndex] : 0);
-    const postTime = Date.now();
-    signer = signer || (await plebbit.createSigner());
-    const post = await plebbit.createComment({
-        author: { displayName: `Mock Author - ${postTime}` },
-        signer: signer,
-        title: `Mock Post - ${postTime}`,
-        content: `Mock content - ${postTime}`,
-        subplebbitAddress: subplebbitAddress,
-        timestamp: postTimestamp
-    });
-
-    post.once("challenge", (challengeMsg) => {
-        post.publishChallengeAnswers(undefined);
-    });
-    return post;
 }
 
 export async function generateMockVote(parentPostOrComment, vote, plebbit, signer) {
