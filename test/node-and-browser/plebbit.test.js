@@ -74,6 +74,11 @@ describe("plebbit (node and browser)", () => {
     describe("plebbit.getComment", async () => {
         before(async () => {
             plebbit = await Plebbit({ ipfsHttpClientOptions: "http://localhost:5001/api/v0" });
+            plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
+                if (authorAddress === "plebbit.eth") return signers[6].address;
+                else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
+                return authorAddress;
+            };
         });
         it("loads post correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
