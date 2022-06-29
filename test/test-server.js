@@ -9,6 +9,10 @@ const ipfsPath = getIpfsPath();
 // in order to test the repo like a real user would
 const Plebbit = require("../dist/node");
 const signers = require("./fixtures/signers");
+
+const { getDebugLevels } = require("../dist/node/util");
+const { generateMockComment, generateMockVote, generateMockPost } = require("../dist/node/test-util");
+
 const path = require("path");
 const http = require("http");
 const { Challenge, CHALLENGE_TYPES } = require("../dist/node/challenge");
@@ -35,6 +39,22 @@ const clientNodeArgs = {
     daemonArgs: "--enable-pubsub-experiment",
     extraCommands: ["bootstrap rm --all"]
 };
+
+const debugs = getDebugLevels("test-server");
+
+const numOfCommentsToPublish = 5;
+const votesPerCommentToPublish = 5;
+
+const syncInterval = 100;
+const databaseConfig = {
+    client: "sqlite3",
+    connection: {
+        filename: ":memory:"
+    },
+    useNullAsDefault: true
+};
+
+const randomSigner = () => signers[Math.floor(Math.random() * signers.length)];
 
 const startIpfsNodes = async () => {
     await Promise.all(
@@ -87,23 +107,22 @@ const startIpfsNodes = async () => {
     );
 };
 
-const syncInterval = 100;
-const databaseConfig = {
-    client: "sqlite3",
-    connection: {
-        filename: ":memory:"
-    },
-    useNullAsDefault: true
+const mockPlebbit = async () => {
+    const plebbit = await Plebbit({
+        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
+        pubsubHttpClientOptions: `http://localhost:5002/api/v0`
+    });
+    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
+        if (authorAddress === "plebbit.eth") return signers[6].address;
+        else if (authorAddress === "testgibbreish.eth") return undefined;
+        return authorAddress;
+    };
+    return plebbit;
 };
 
 const startMathCliSubplebbit = async () => {
-    const plebbit = await Plebbit({
-        ipfsHttpClientOptions: `http://localhost:${offlineNodeArgs.apiPort}/api/v0`,
-        pubsubHttpClientOptions: {
-            url: `http://localhost:${ipfsNodeArgs.apiPort}/api/v0`,
-            agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
-        }
-    });
+    const plebbit = await mockPlebbit();
+
     const signer = await plebbit.createSigner(signers[1]);
     const subplebbit = await plebbit.createSubplebbit({ signer: signer, database: databaseConfig });
     await subplebbit.setProvideCaptchaCallback((challengeRequestMessage) => {
@@ -122,13 +141,8 @@ const startMathCliSubplebbit = async () => {
 };
 
 const startImageCaptchaSubplebbit = async () => {
-    const plebbit = await Plebbit({
-        ipfsHttpClientOptions: `http://localhost:${offlineNodeArgs.apiPort}/api/v0`,
-        pubsubHttpClientOptions: {
-            url: `http://localhost:${ipfsNodeArgs.apiPort}/api/v0`,
-            agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
-        }
-    });
+    const plebbit = await mockPlebbit();
+
     const signer = await plebbit.createSigner(signers[2]);
     const subplebbit = await plebbit.createSubplebbit({ signer: signer, database: databaseConfig });
 
@@ -142,28 +156,70 @@ const startImageCaptchaSubplebbit = async () => {
     return subplebbit;
 };
 
+const publishComments = async (parentComments, subplebbit) => {
+    let toPublishComments;
+    if (!parentComments)
+        toPublishComments = await Promise.all(
+            new Array(numOfCommentsToPublish).fill(null).map(
+                async () => generateMockPost(subplebbit.address, await mockPlebbit(), randomSigner(), true) // Should use a custom signer herre
+            )
+        );
+    else
+        toPublishComments = await Promise.all(
+            parentComments.map(
+                async (parentComment) =>
+                    await Promise.all(
+                        new Array(numOfCommentsToPublish)
+                            .fill(null)
+                            .map(async () => generateMockComment(parentComment, await mockPlebbit(), randomSigner(), true))
+                    )
+            )
+        );
+    toPublishComments = toPublishComments.flat();
+
+    return await Promise.all(toPublishComments.map((comment) => subplebbit._addPublicationToDb(comment)));
+};
+
+const publishVotes = async (comments, subplebbit) => {
+    const votes = (
+        await Promise.all(
+            comments.map(async (comment) => {
+                return await Promise.all(
+                    new Array(votesPerCommentToPublish)
+                        .fill(null)
+                        .map(async () => generateMockVote(comment, Math.random() > 0.5 ? 1 : -1, await mockPlebbit(), randomSigner()))
+                );
+            })
+        )
+    ).flat();
+    await Promise.all(votes.map((vote) => subplebbit._addPublicationToDb(vote)));
+    debugs.DEBUG(`${votes.length} votes for ${comments.length} ${comments[0].depth === 0 ? "posts" : "replies"} have been published`);
+    return votes;
+};
+
+const populateSubplebbit = async (subplebbit) => {
+    posts = await publishComments(undefined, subplebbit); // If no comment[] is provided, we publish posts
+    debugs.DEBUG(`Have successfully published ${posts.length} posts`);
+    [replies] = await Promise.all([publishComments([posts[0]], subplebbit), publishVotes(posts, subplebbit)]);
+    debugs.DEBUG(`Have sucessfully published ${replies.length} replies`);
+    await publishVotes(replies, subplebbit);
+};
+
 (async () => {
     // do more stuff here, like start some subplebbits
     await startIpfsNodes();
-    const plebbit = await Plebbit({
-        ipfsHttpClientOptions: `http://localhost:${offlineNodeArgs.apiPort}/api/v0`,
-        pubsubHttpClientOptions: {
-            url: `http://localhost:${ipfsNodeArgs.apiPort}/api/v0`,
-            agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
-        }
-    });
-    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-        if (authorAddress === "plebbit.eth") return signers[6].address;
-        else if (authorAddress === "testgibbreish.eth") return undefined;
-        return authorAddress;
-    };
+    const plebbit = await mockPlebbit();
+
     const signer = await plebbit.createSigner(signers[0]);
     const subplebbit = await plebbit.createSubplebbit({ signer: signer, database: databaseConfig });
-    await subplebbit.setProvideCaptchaCallback(() => [null, null]);
+    subplebbit.setProvideCaptchaCallback(() => [null, null]);
 
-    subplebbit.start(syncInterval);
-    const imageSubplebbit = await startImageCaptchaSubplebbit();
-    const mathSubplebbit = await startMathCliSubplebbit();
+    await subplebbit.start(syncInterval);
+    const [imageSubplebbit, mathSubplebbit] = await Promise.all([
+        startImageCaptchaSubplebbit(),
+        startMathCliSubplebbit(),
+        populateSubplebbit(subplebbit)
+    ]);
 
-    console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
+    debugs.INFO("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 })();
