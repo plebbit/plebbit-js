@@ -147,9 +147,9 @@ describe("comment (node and browser)", async () => {
                         expect(mockComment.depth).to.be.equal(depth);
                         expect(updatedParentComment.replyCount).to.equal(originalReplyCount + 1);
                         const parentLatestCommentCid = (
-                            await updatedParentComment.replies.getPage(updatedParentComment.replies.pageCids[REPLIES_SORT_TYPES.NEW.type])
-                        ).comments[0].cid;
-                        expect(parentLatestCommentCid).to.equal(mockComment.cid);
+                            await updatedParentComment.replies.getPage(updatedParentComment.replies.pageCids.new)
+                        ).comments[0]?.cid;
+                        expect(parentLatestCommentCid).to.equal(mockComment.cid, "parentComment.replies.new should include new comment");
                         mockComments.push(mockComment);
                         await parentComment.stop();
                         resolve();
