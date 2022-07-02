@@ -150,4 +150,8 @@ export class Plebbit {
     createSigner(createSignerOptions: CreateSignerOptions = {}): Promise<Signer> {
         return createSigner(createSignerOptions);
     }
+
+    listSubplebbits(): Promise<string[]> {
+        return plebbitUtil.listSubplebbits(this);
+    }
 }
