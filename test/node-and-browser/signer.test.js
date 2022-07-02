@@ -6,9 +6,9 @@ const { signPublication, verifyPublication, encrypt, decrypt } = require("../../
 const {
     encryptBufferRsa,
     decryptBufferRsa,
-    generateKeyAesEcb,
-    encryptStringAesEcb,
-    decryptStringAesEcb
+    generateKeyAesCbc,
+    encryptStringAesCbc,
+    decryptStringAesCbc
 } = require("../../dist/node/signer/encryption");
 const { signBufferRsa, verifyBufferRsa } = require("../../dist/node/signer/signatures");
 const chai = require("chai");
@@ -150,7 +150,7 @@ describe("signer (node and browser)", async () => {
     });
 
     describe("encryption", () => {
-        describe("encrypt and decrypt aes-ecb key buffer with rsa", () => {
+        describe("encrypt and decrypt aes-cbc key buffer with rsa", () => {
             // key must be 16 bytes
             const key = fromString("1111111111111111");
             let encryptedKey;
@@ -170,11 +170,11 @@ describe("signer (node and browser)", async () => {
             });
         });
 
-        describe("generate, encrypt and decrypt aes-ecb key buffer with rsa", () => {
+        describe("generate, encrypt and decrypt aes-cbc key buffer with rsa", () => {
             let key, encryptedKey;
 
             before(async () => {
-                key = await generateKeyAesEcb();
+                key = await generateKeyAesCbc();
                 encryptedKey = await encryptBufferRsa(key, authorSignerFixture.publicKey);
             });
 
@@ -194,12 +194,12 @@ describe("signer (node and browser)", async () => {
             });
         });
 
-        describe("encrypt and decrypt string with aes-ecb", async () => {
+        describe("encrypt and decrypt string with aes-cbc", async () => {
             describe("generated key", () => {
                 let key, encryptedString;
                 before(async () => {
-                    key = await generateKeyAesEcb();
-                    encryptedString = await encryptStringAesEcb(JSON.stringify(fixtureComment), key);
+                    key = await generateKeyAesCbc();
+                    encryptedString = await encryptStringAesCbc(JSON.stringify(fixtureComment), key);
                 });
 
                 it("encrypted string is not empty", async () => {
@@ -208,7 +208,7 @@ describe("signer (node and browser)", async () => {
                 });
 
                 it("encrypted string can be decrypted", async () => {
-                    const decryptedString = await decryptStringAesEcb(encryptedString, key);
+                    const decryptedString = await decryptStringAesCbc(encryptedString, key);
                     expect(decryptedString).to.be.a("string");
                     expect(decryptedString).to.not.be.empty;
                     expect(JSON.stringify(fixtureComment)).to.equal(decryptedString);
@@ -216,28 +216,28 @@ describe("signer (node and browser)", async () => {
             });
 
             describe("fixed key", () => {
-                // key must be 16 bytes for aes-ecb 128
+                // key must be 16 bytes for aes-cbc 128
                 const key = fromString("1111111111111111");
 
                 describe("encrypt the word 'string'", () => {
                     const string = "string";
                     let encryptedString;
                     before(async () => {
-                        encryptedString = await encryptStringAesEcb(string, key);
+                        encryptedString = await encryptStringAesCbc(string, key);
                     });
 
                     it("encrypted string is not empty", async () => {
-                        const encryptedString = await encryptStringAesEcb(string, key);
+                        const encryptedString = await encryptStringAesCbc(string, key);
                         expect(encryptedString).to.be.a("string");
                         expect(encryptedString).to.not.be.empty;
 
-                        // base 64 aes-ecb 128 encrypted "string" with key "1111111111111111"
+                        // base 64 aes-cbc 128 encrypted "string" with key "1111111111111111"
                         // should always return this value
-                        expect(encryptedString).to.equal("ZaK4u0c9tJOhuKn5hlDeiA");
+                        expect(encryptedString).to.equal("1OXdTy9YFztlOz3lo4NXxw");
                     });
 
                     it("encrypted string can be decrypted", async () => {
-                        const decryptedString = await decryptStringAesEcb(encryptedString, key);
+                        const decryptedString = await decryptStringAesCbc(encryptedString, key);
                         expect(decryptedString).to.be.a("string");
                         expect(decryptedString).to.not.be.empty;
                         expect(string).to.equal(decryptedString);
@@ -248,21 +248,21 @@ describe("signer (node and browser)", async () => {
                     const emoji = "🤡";
                     let encryptedEmoji;
                     before(async () => {
-                        encryptedEmoji = await encryptStringAesEcb(emoji, key);
+                        encryptedEmoji = await encryptStringAesCbc(emoji, key);
                     });
 
                     it("encrypted emoji is not empty", async () => {
-                        const encryptedEmoji = await encryptStringAesEcb(emoji, key);
+                        const encryptedEmoji = await encryptStringAesCbc(emoji, key);
                         expect(encryptedEmoji).to.be.a("string");
                         expect(encryptedEmoji).to.not.be.empty;
 
-                        // base 64 aes-ecb 128 encrypted "🤡" with key "1111111111111111"
+                        // base 64 aes-cbc 128 encrypted "🤡" with key "1111111111111111"
                         // should always return this value
-                        expect(encryptedEmoji).to.equal("Z2FhQoSm8IINBBpxl9OdfA");
+                        expect(encryptedEmoji).to.equal("ornXmW+KABncGYANn74jjQ");
                     });
 
                     it("encrypted emoji can be decrypted", async () => {
-                        const decryptedEmoji = await decryptStringAesEcb(encryptedEmoji, key);
+                        const decryptedEmoji = await decryptStringAesCbc(encryptedEmoji, key);
                         expect(decryptedEmoji).to.be.a("string");
                         expect(decryptedEmoji).to.not.be.empty;
                         expect(emoji).to.equal(decryptedEmoji);
@@ -271,7 +271,7 @@ describe("signer (node and browser)", async () => {
             });
         });
 
-        describe("encrypt and decrypt publication with rsa + aes-ecb", () => {
+        describe("encrypt and decrypt publication with rsa + aes-cbc", () => {
             let encryptedPublication;
 
             before(async () => {
@@ -284,7 +284,7 @@ describe("signer (node and browser)", async () => {
                 expect(encryptedPublication.encrypted).to.not.be.empty;
                 expect(encryptedPublication.encryptedKey).to.be.a("string");
                 expect(encryptedPublication.encryptedKey).to.not.be.empty;
-                expect(encryptedPublication.type).to.equal("aes-ecb");
+                expect(encryptedPublication.type).to.equal("aes-cbc");
             });
 
             it("encrypted publication can be decrypted", async () => {

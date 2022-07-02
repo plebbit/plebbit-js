@@ -155,7 +155,7 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   markdownVideoReplies?: boolean
 }
 SubplebbitEncryption {
-  type: 'aes-ecb' // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
+  type: 'aes-cbc' // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
   publicKey: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
 }
 SubplebbitRole {
@@ -261,9 +261,9 @@ Challenge {
 }
 Encrypted {
   // examples available at https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
-  encrypted: string // base64 encrypted string with AES ECB 128 // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)
-  encryptedKey: string // base64 encrypted key for the AES ECB 128 encrypted content, encrypted using subplebbit.encryption settings, always generate a new key with AES ECB or it's insecure
-  type: 'aes-ecb'
+  encrypted: string // base64 encrypted string with AES CBC 128 // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_block_chaining_(CBC)
+  encryptedKey: string // base64 encrypted key for the AES CBC 128 encrypted content, encrypted using subplebbit.encryption settings, always generate a new key with AES CBC or it's insecure
+  type: 'aes-cbc'
 }
 ```
 
