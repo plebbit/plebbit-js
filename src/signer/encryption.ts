@@ -64,10 +64,19 @@ export const decryptBufferRsa = async (encryptedStringBase64, privateKeyPem, pri
 export const encrypt = async (stringToEncrypt, publicKeyPem) => {
     validateArgumentNotEmptyString(stringToEncrypt, "stringToEncrypt", "encrypt");
     validateArgumentNotEmptyString(publicKeyPem, "publicKeyPem", "encrypt");
+
+    // add random padding to prevent linking encrypted publications by sizes
+    // TODO: eventually use an algorithm to find the most anonymous padding length
+    const randomPaddingLength = Math.round(Math.random() * 5000);
+    let padding = "";
+    while (padding.length < randomPaddingLength) {
+        padding += " ";
+    }
+
     // generate key of the cipher and encrypt the string using AES CBC 128
     // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_block_chaining_(CBC)
     const key = await generateKeyAesCbc(); // not secure to reuse keys because we don't use iv
-    const encryptedBase64 = await encryptStringAesCbc(stringToEncrypt, key);
+    const encryptedBase64 = await encryptStringAesCbc(stringToEncrypt + padding, key);
 
     // encrypt the AES CBC key with public key
     const encryptedKeyBase64 = await encryptBufferRsa(key, publicKeyPem);
@@ -85,6 +94,10 @@ export const decrypt = async (encryptedString, encryptedKey, privateKeyPem, priv
 
     // decrypt string using AES CBC 128
     // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_block_chaining_(CBC)
-    const decrypted = await decryptStringAesCbc(encryptedString, key);
+    let decrypted = await decryptStringAesCbc(encryptedString, key);
+
+    // remove padding
+    decrypted = decrypted.replace(/ *$/, "");
+
     return decrypted;
 };
