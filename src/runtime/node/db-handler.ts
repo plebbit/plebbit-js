@@ -434,7 +434,7 @@ export const subplebbitInitDbIfNeeded = async (subplebbit: Subplebbit) => {
     if (subplebbit.dbHandler) return;
     if (!subplebbit._dbConfig) {
         assert(subplebbit.address, "Need subplebbit address to initialize a DB connection");
-        const dbPath = path.join(subplebbit.plebbit.dataPath, subplebbit.address);
+        const dbPath = path.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
         debugs.INFO(`User has not provided a DB config. Will initialize DB in ${dbPath}`);
         subplebbit._dbConfig = {
             client: "sqlite3",
