@@ -133,9 +133,6 @@ const decryptBufferRsa = async (encryptedStringBase64, privateKeyPem, privateKey
 };
 
 export const encrypt = async (stringToEncrypt, publicKeyPem) => {
-    validateArgumentNotEmptyString(stringToEncrypt, "stringToEncrypt", "encrypt");
-    validateArgumentNotEmptyString(publicKeyPem, "publicKeyPem", "encrypt");
-
     // add random padding to prevent linking encrypted publications by sizes
     // TODO: eventually use an algorithm to find the most anonymous padding length
     const randomPaddingLength = Math.round(Math.random() * 5000)
@@ -155,9 +152,6 @@ export const encrypt = async (stringToEncrypt, publicKeyPem) => {
 };
 
 export const decrypt = async (encryptedString, encryptedKey, privateKeyPem, privateKeyPemPassword = "") => {
-    validateArgumentNotEmptyString(encryptedString, "encryptedString", "decrypt");
-    validateArgumentNotEmptyString(encryptedKey, "encryptedKey", "decrypt");
-    validateArgumentNotEmptyString(privateKeyPem, "privateKeyPem", "decrypt");
     // decrypt key
     // you can optionally encrypt the PEM by providing a password
     // https://en.wikipedia.org/wiki/PKCS_8
