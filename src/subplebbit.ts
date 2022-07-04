@@ -664,11 +664,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         }
     }
 
-    async #syncLoop(syncIntervalMs: number) {
+    async _syncLoop(syncIntervalMs: number) {
         const loop = async () => {
             if (this._sync) {
                 await this.syncIpnsWithDb();
-                await this.#syncLoop(syncIntervalMs);
+                await this._syncLoop(syncIntervalMs);
             }
         };
         await this.syncIpnsWithDb();
@@ -696,7 +696,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             }
         });
         debugs.INFO(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
-        await this.#syncLoop(syncIntervalMs);
+        await this._syncLoop(syncIntervalMs);
     }
 
     async stopPublishing() {
