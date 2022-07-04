@@ -42,8 +42,8 @@ const clientNodeArgs = {
 
 const debugs = getDebugLevels("test-server");
 
-const numOfCommentsToPublish = 5;
-const votesPerCommentToPublish = 5;
+const numOfCommentsToPublish = 6;
+const votesPerCommentToPublish = 6;
 
 const syncInterval = 100;
 const databaseConfig = {
@@ -157,42 +157,43 @@ const startImageCaptchaSubplebbit = async () => {
 };
 
 const publishComments = async (parentComments, subplebbit) => {
-    let toPublishComments;
+    const comments = [];
     if (!parentComments)
-        toPublishComments = await Promise.all(
-            new Array(numOfCommentsToPublish).fill(null).map(
-                async () => generateMockPost(subplebbit.address, await mockPlebbit(), randomSigner(), true) // Should use a custom signer herre
-            )
+        await Promise.all(
+            new Array(numOfCommentsToPublish).fill(null).map(async () => {
+                const post = await generateMockPost(subplebbit.address, subplebbit.plebbit, randomSigner(), true);
+                comments.push(await subplebbit._addPublicationToDb(post));
+            })
         );
     else
-        toPublishComments = await Promise.all(
+        await Promise.all(
             parentComments.map(
                 async (parentComment) =>
                     await Promise.all(
-                        new Array(numOfCommentsToPublish)
-                            .fill(null)
-                            .map(async () => generateMockComment(parentComment, await mockPlebbit(), randomSigner(), true))
+                        new Array(numOfCommentsToPublish).fill(null).map(async () => {
+                            const comment = await generateMockComment(parentComment, subplebbit.plebbit, randomSigner(), true);
+                            comments.push(await subplebbit._addPublicationToDb(comment));
+                        })
                     )
             )
         );
-    toPublishComments = toPublishComments.flat();
-
-    return await Promise.all(toPublishComments.map((comment) => subplebbit._addPublicationToDb(comment)));
+    return comments;
 };
 
 const publishVotes = async (comments, subplebbit) => {
-    const votes = (
-        await Promise.all(
-            comments.map(async (comment) => {
-                return await Promise.all(
-                    new Array(votesPerCommentToPublish)
-                        .fill(null)
-                        .map(async () => generateMockVote(comment, Math.random() > 0.5 ? 1 : -1, await mockPlebbit(), randomSigner()))
-                );
-            })
-        )
-    ).flat();
-    await Promise.all(votes.map((vote) => subplebbit._addPublicationToDb(vote)));
+    const votes = [];
+    await Promise.all(
+        comments.map(async (comment) => {
+            return await Promise.all(
+                new Array(votesPerCommentToPublish).fill(null).map(async () => {
+                    let vote = await generateMockVote(comment, Math.random() > 0.5 ? 1 : -1, subplebbit.plebbit, randomSigner());
+                    vote = await subplebbit._addPublicationToDb(vote);
+                    votes.push(vote);
+                })
+            );
+        })
+    );
+
     debugs.DEBUG(`${votes.length} votes for ${comments.length} ${comments[0].depth === 0 ? "posts" : "replies"} have been published`);
     return votes;
 };
@@ -215,11 +216,13 @@ const populateSubplebbit = async (subplebbit) => {
     subplebbit.setProvideCaptchaCallback(() => [null, null]);
 
     await subplebbit.start(syncInterval);
+    console.time("populate");
     const [imageSubplebbit, mathSubplebbit] = await Promise.all([
         startImageCaptchaSubplebbit(),
         startMathCliSubplebbit(),
         populateSubplebbit(subplebbit)
     ]);
+    console.timeEnd("populate");
 
     debugs.INFO("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 })();
