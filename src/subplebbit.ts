@@ -266,10 +266,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
     }
 
     async updateOnce() {
-        assert(this.address, "Can't update subplebbit without address");
-        // TODO update this to accomodate ENS resolving
+        const ipnsAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
+        assert(ipnsAddress, "Can't update subplebbit without address");
         try {
-            const subplebbitIpns = await loadIpnsAsJson(this.address, this.plebbit);
+            const subplebbitIpns = await loadIpnsAsJson(ipnsAddress, this.plebbit);
             if (this.emittedAt !== subplebbitIpns.updatedAt) {
                 this.emittedAt = subplebbitIpns.updatedAt;
                 this.initSubplebbit(subplebbitIpns);
@@ -284,7 +284,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
     }
 
     update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
-        debugs.DEBUG(`Starting to poll updates for subplebbit (${this.address}) every ${updateIntervalMs} milliseconds`);
         if (this._updateInterval) clearInterval(this._updateInterval);
         this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs); // One minute
         return this.updateOnce();
@@ -303,11 +302,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             this.dbHandler.querySubplebbitMetrics(undefined),
             this.sortHandler.generatePagesUnderComment(undefined, undefined)
         ]);
+        const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
         let currentIpns;
         try {
-            currentIpns = await loadIpnsAsJson(this.address, this.plebbit);
+            currentIpns = await loadIpnsAsJson(resolvedAddress, this.plebbit);
         } catch (e) {
-            debugs.ERROR(`Subplebbit IPNS (${this.address}) is not defined, will publish a new record`);
+            debugs.ERROR(`Subplebbit IPNS (${resolvedAddress}) is not defined, will publish a new record`);
         }
         let posts: Pages | undefined;
         if (subplebbitPosts)
