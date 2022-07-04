@@ -3,7 +3,9 @@ const { expect } = require("chai");
 const signers = require("../fixtures/signers");
 const { rm } = require("fs");
 const path = require("path");
+const { generateMockPost } = require("../../dist/node/test-util");
 
+const syncInterval = 100;
 let plebbit;
 let subplebbit;
 
@@ -13,6 +15,11 @@ describe("subplebbit", async () => {
             ipfsHttpClientOptions: "http://localhost:5001/api/v0",
             pubsubHttpClientOptions: `http://localhost:5002/api/v0`
         });
+        plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
+            if (authorAddress === "plebbit.eth") return signers[6].address;
+            else if (authorAddress === "testgibbreish.eth") return undefined;
+            return authorAddress;
+        };
     });
     after(async () => {
         // Delete DB
@@ -26,7 +33,7 @@ describe("subplebbit", async () => {
             title: `Test subplebbit - ${Date.now() / 1000}`
         });
 
-        await subplebbit.start();
+        await subplebbit.start(syncInterval);
         expect(subplebbit.address).to.be.a("string");
         // Should have address now
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
@@ -74,4 +81,17 @@ describe("subplebbit", async () => {
             } catch {}
         }
     });
+
+    it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () =>
+        new Promise(async (resolve) => {
+            const post = await generateMockPost(subplebbit.address, plebbit);
+            subplebbit.on("update", async (updatedSubplebbit) => {
+                if (updatedSubplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.content === post.content)) {
+                    resolve();
+                    await subplebbit.stopPublishing();
+                }
+            });
+            await subplebbit.update(syncInterval);
+            await subplebbit._addPublicationToDb(post);
+        }));
 });
