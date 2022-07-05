@@ -111,7 +111,7 @@ export class Comment extends Publication {
         };
     }
 
-    toJSONForDb(challengeRequestId) {
+    toJSONForDb(challengeRequestId: string) {
         const json = this.toJSON();
         ["replyCount", "upvoteCount", "downvoteCount", "replies"].forEach((key) => delete json[key]);
         json["authorAddress"] = this?.author?.address;
@@ -215,7 +215,7 @@ export class Comment extends Publication {
     }
 
     async edit(commentUpdateOptions) {
-        assert(this.ipnsKeyName, "You need to have commentUpdate");
+        assert(this.ipnsKeyName && this.subplebbit.plebbit.ipfsClient, "You need to have commentUpdate and ipfs client defined");
         this._initCommentUpdate(commentUpdateOptions);
         const file = await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate()));
         await this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
@@ -249,7 +249,7 @@ export class CommentEdit extends Comment {
         return { ...super.toJSON(), commentCid: this.commentCid };
     }
 
-    toJSONForDb(challengeRequestId) {
+    toJSONForDb(challengeRequestId: string) {
         const json = super.toJSONForDb(challengeRequestId);
         ["challengeRequestId", "ipnsKeyName", "signature", "commentCid"].forEach((key) => delete json[key]);
         json["cid"] = this.commentCid;

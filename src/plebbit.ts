@@ -65,7 +65,7 @@ export class Plebbit {
             "Resolved address of a subplebbit needs to be defined"
         );
         const subplebbitJson = await loadIpnsAsJson(resolvedSubplebbitAddress, this);
-        return new Subplebbit({ ...subplebbitJson, address: subplebbitAddress }, this);
+        return new Subplebbit(subplebbitJson, this);
     }
 
     async getComment(cid: string): Promise<Comment | Post> {

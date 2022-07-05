@@ -307,7 +307,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         try {
             currentIpns = await loadIpnsAsJson(resolvedAddress, this.plebbit);
         } catch (e) {
-            debugs.ERROR(`Subplebbit IPNS (${resolvedAddress}) is not defined, will publish a new record`);
+            debugs.WARN(`Subplebbit IPNS (${resolvedAddress}) is not defined, will publish a new record`);
         }
         let posts: Pages | undefined;
         if (subplebbitPosts)
