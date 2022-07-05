@@ -4,7 +4,6 @@ const signers = require("../fixtures/signers");
 const { timestamp, waitTillCommentsUpdate } = require("../../dist/node/util");
 const { signPublication, verifyPublication } = require("../../dist/node/signer");
 const { generateMockPost, generateMockComment } = require("../../dist/node/test-util");
-const { REPLIES_SORT_TYPES } = require("../../dist/node/sort-handler");
 
 let plebbit;
 const subplebbitAddress = signers[0].address;
@@ -84,18 +83,10 @@ describe("comment (node and browser)", async () => {
         it("Can publish a post", async function () {
             return new Promise(async (resolve, reject) => {
                 const mockPost = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
-                const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-                await subplebbit.update(updateInterval);
-                const originalLatestPostCid = subplebbit.latestPostCid;
                 await mockPost.publish();
                 mockPost.once("challengeverification", (challengeVerificationMessage, updatedComment) => {
-                    expect(updatedComment.previousCid).to.equal(originalLatestPostCid);
-                    subplebbit.once("update", async (updatedSubplebbit) => {
-                        expect(mockPost.cid).to.equal(updatedSubplebbit.latestPostCid, "Subplebbit did not update latestPostCid");
-                        mockComments.push(mockPost);
-                        await subplebbit.stop();
-                        resolve();
-                    });
+                    mockComments.push(mockPost);
+                    resolve();
                 });
             });
         });

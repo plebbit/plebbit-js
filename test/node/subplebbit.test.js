@@ -24,6 +24,7 @@ describe("subplebbit", async () => {
     after(async () => {
         // Delete DB
         rm(path.join(plebbit.dataPath, subplebbit.address), () => console.log(`Deleted generated DB`));
+        await subplebbit.stopPublishing();
     });
 
     it("create new subplebbit", async function () {
@@ -88,10 +89,19 @@ describe("subplebbit", async () => {
             subplebbit.on("update", async (updatedSubplebbit) => {
                 if (updatedSubplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.content === post.content)) {
                     resolve();
-                    await subplebbit.stopPublishing();
+                    subplebbit.removeAllListeners();
                 }
             });
             await subplebbit.update(syncInterval);
             await subplebbit._addPublicationToDb(post);
+        }));
+
+    it(`subplebbit.latestPostCid matches latest inserted post`, async () =>
+        new Promise(async (resolve) => {
+            const post = await subplebbit._addPublicationToDb(await generateMockPost(subplebbit.address, plebbit));
+            subplebbit.once("update", async (updatedSubplebbit) => {
+                expect(updatedSubplebbit.latestPostCid).to.equal(post.cid);
+                resolve();
+            });
         }));
 });
