@@ -27,6 +27,25 @@ describe("Test util functions", async () => {
             const jsonFileLoaded = await loadIpfsFileAsJson(jsonFileAsIpfs.cid, plebbit);
             expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
         });
+
+        it("Throws an error when file to download is over 1mb for both loading via IPFS and gateway", async () => {
+            const twoMbString = "x".repeat(2 * 1024 * 1024);
+
+            const cid = (await plebbit.ipfsClient.add(twoMbString)).path; // Cid of a file with over 1mb size
+
+            try {
+                await loadIpfsFileAsJson(cid, plebbit);
+                expect.fail("Should not be able to load a file over ipfs that's over 1mb");
+            } catch {
+                const gatewayPlebbit = await Plebbit({
+                    ipfsGatewayUrl: "http://localhost:8080"
+                });
+                try {
+                    await loadIpfsFileAsJson(cid, gatewayPlebbit);
+                    expect.fail("Should not be able to load a file over ipfs that's over 1mb");
+                } catch {}
+            }
+        });
     });
 
     describe("loadIpnsAsJson", async () => {
@@ -47,5 +66,7 @@ describe("Test util functions", async () => {
             const jsonFileLoaded = await loadIpnsAsJson(jsonFileAsIpns.name, plebbit);
             expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
         });
+
+        it(`Throws an error when file to download is over 1mb and we're loading it via gateway`, async () => {});
     });
 });

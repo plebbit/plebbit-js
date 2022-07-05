@@ -17,17 +17,18 @@ export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
     YEAR: 60 * 60 * 24 * 7 * 4 * 12,
     ALL: Infinity
 });
+const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 const debugs = getDebugLevels("util");
 
 export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultOptions = { timeout: 60000 }) {
     assert.ok(cid, "Cid has to not be null to load");
     if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
-        const res = await fetch(url, { cache: "force-cache" });
+        const res = await fetch(url, { cache: "force-cache", size: DOWNLOAD_LIMIT_BYTES });
         if (res.status === 200) return await res.json();
         else throw new Error(`Failed to load IPFS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
     } else {
-        const rawData: any = await all(plebbit.ipfsClient.cat(cid, defaultOptions));
+        const rawData: any = await all(plebbit.ipfsClient.cat(cid, { ...defaultOptions, length: DOWNLOAD_LIMIT_BYTES })); // Limit is 1mb files
         const data = uint8ArrayConcat(rawData);
         if (!data) throw new Error(`IPFS file (${cid}) is empty or does not exist`);
         else return JSON.parse(uint8ArrayToString(data));
@@ -38,7 +39,7 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
     assert.ok(ipns, "ipns has to be not null to load");
     if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
-        const res = await fetch(url, { cache: "no-store" });
+        const res = await fetch(url, { cache: "no-store", size: DOWNLOAD_LIMIT_BYTES });
         if (res.status === 200) return await res.json();
         else throw new Error(`Failed to load IPNS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
     } else {
@@ -61,7 +62,7 @@ export function chunks<T>(arr: Array<T>, len: number): Array<Array<T>> {
     return chunks;
 }
 
-export function round(number, decimalPlaces) {
+export function round(number: number, decimalPlaces: number): number {
     const factorOfTen = Math.pow(10, decimalPlaces);
     return Math.round(number * factorOfTen) / factorOfTen;
 }
