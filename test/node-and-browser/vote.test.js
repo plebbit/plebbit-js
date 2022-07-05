@@ -155,6 +155,7 @@ describe("Test Vote", async () => {
             postToVote.once("update", async (updatedPost) => {
                 expect(updatedPost.upvoteCount).to.equal(originalUpvote - 1);
                 resolve();
+                await postToVote.stop();
             });
         });
     });
