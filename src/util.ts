@@ -25,7 +25,7 @@ export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultO
         const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
         const res = await fetch(url, { cache: "force-cache" });
         if (res.status === 200) return await res.json();
-        else throw `Failed to load IPFS via url (${url}). Status code ${res.status} and status text ${res.statusText}`;
+        else throw new Error(`Failed to load IPFS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
     } else {
         const rawData: any = await all(plebbit.ipfsClient.cat(cid, defaultOptions));
         const data = uint8ArrayConcat(rawData);
@@ -40,7 +40,7 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
         const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
         const res = await fetch(url, { cache: "no-store" });
         if (res.status === 200) return await res.json();
-        else throw `Failed to load IPNS via url (${url}). Status code ${res.status} and status text ${res.statusText}`;
+        else throw new Error(`Failed to load IPNS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
     } else {
         const cid = await last(plebbit.ipfsClient.name.resolve(ipns));
         if (!cid) throw new Error(`IPNS (${ipns}) resolves to undefined`);
