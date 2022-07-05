@@ -6,6 +6,7 @@ const { expect } = require("chai");
 const signers = require("../fixtures/signers");
 const { loadIpfsFileAsJson, loadIpnsAsJson } = require("../../dist/node/util");
 
+const [ensSubplebbitSigner, ensSubplebbitAddress] = [signers[3], "plebbit.eth"];
 describe("plebbit (node and browser)", () => {
     let plebbit, signer, subplebbitSigner;
 
@@ -120,7 +121,7 @@ describe("plebbit (node and browser)", () => {
     });
 
     describe("plebbit.getSubplebbit", async () => {
-        it("loads subplebbit correctly", async () => {
+        it("loads subplebbit via IPNS address", async () => {
             const _subplebbitIpns = await loadIpnsAsJson(subplebbitSigner.address, plebbit);
             const expectedSubplebbit = await plebbit.createSubplebbit(_subplebbitIpns);
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
@@ -141,12 +142,17 @@ describe("plebbit (node and browser)", () => {
 
         it("can load subplebbit with ENS domain via plebbit.getSubplebbit", async () => {
             plebbit.resolver.resolveSubplebbitAddressIfNeeded = async (subplebbitAddress) => {
-                if (subplebbitAddress === "plebbit.eth") return subplebbitSigner.address;
+                if (subplebbitAddress === ensSubplebbitAddress) return ensSubplebbitSigner.address;
                 return subplebbitAddress;
             };
-            const subplebbit = await plebbit.getSubplebbit("plebbit.eth");
-            expect(subplebbit.address).to.equal("plebbit.eth");
+            const subplebbit = await plebbit.getSubplebbit(ensSubplebbitAddress);
+            expect(subplebbit.address).to.equal(ensSubplebbitAddress);
             // I'd add more tests for subplebbit.title and subplebbit.description here but the ipfs node is offline, and won't be able to retrieve plebwhales.eth IPNS record
+        });
+
+        it(`A subplebbit with ENS domain for address can also be loaded from its IPNS`, async () => {
+            const loadedSubplebbit = await plebbit.getSubplebbit(ensSubplebbitSigner.address);
+            expect(loadedSubplebbit.address).to.equal(ensSubplebbitAddress);
         });
     });
 });

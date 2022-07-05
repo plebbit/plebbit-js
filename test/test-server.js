@@ -117,6 +117,11 @@ const mockPlebbit = async () => {
         else if (authorAddress === "testgibbreish.eth") return undefined;
         return authorAddress;
     };
+    plebbit.resolver.resolveSubplebbitAddressIfNeeded = async (subplebbitAddress) => {
+        if (subplebbitAddress === "plebbit.eth") return signers[3].address;
+        else if (plebbit.resolver.isDomain(subplebbitAddress)) throw new Error(`${subplebbitAddress} has no subplebbit-address`);
+        return subplebbitAddress;
+    };
     return plebbit;
 };
 
@@ -154,6 +159,14 @@ const startImageCaptchaSubplebbit = async () => {
         return [challengeSuccess, challengeErrors];
     });
     return subplebbit;
+};
+
+const startEnsSubplebbit = async () => {
+    const plebbit = await mockPlebbit();
+    const signer = await plebbit.createSigner(signers[3]);
+    const subplebbit = await plebbit.createSubplebbit({ signer: signer, database: databaseConfig });
+    await subplebbit.start(syncInterval);
+    await subplebbit.edit({ address: "plebbit.eth" });
 };
 
 const publishComments = async (parentComments, subplebbit) => {
@@ -220,6 +233,7 @@ const populateSubplebbit = async (subplebbit) => {
     const [imageSubplebbit, mathSubplebbit] = await Promise.all([
         startImageCaptchaSubplebbit(),
         startMathCliSubplebbit(),
+        startEnsSubplebbit(),
         populateSubplebbit(subplebbit)
     ]);
     console.timeEnd("populate");
