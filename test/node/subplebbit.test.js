@@ -1,9 +1,12 @@
 const Plebbit = require("../../dist/node");
-const { expect } = require("chai");
 const signers = require("../fixtures/signers");
 const { rm } = require("fs");
 const path = require("path");
 const { generateMockPost } = require("../../dist/node/test-util");
+const chai = require("chai");
+const chaiAsPromised = require("chai-as-promised");
+chai.use(chaiAsPromised);
+const { expect, assert } = chai;
 
 const syncInterval = 100;
 let plebbit;
@@ -72,15 +75,8 @@ describe("subplebbit", async () => {
         expect(JSON.stringify(loadedSubplebbit)).to.equal(JSON.stringify(subplebbit));
     });
     it(`Fails to edit subplebbit.address to a new domain if subplebbit-address record does not exist or does not match signer.address`, async () => {
-        try {
-            await subplebbit.edit({ address: "testgibbreish.eth" });
-            expect.fail("Should throw an error if domain has no subplebbit-address record");
-        } catch {
-            try {
-                await subplebbit.edit({ address: "plebbit2.eth" });
-                expect.fail("Should throw an error if domain's subplebbit-address points to another signer's address");
-            } catch {}
-        }
+        await assert.isRejected(subplebbit.edit({ address: "testgibbreish.eth" }));
+        await assert.isRejected(subplebbit.edit({ address: "plebbit2.eth" }));
     });
 
     it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () =>

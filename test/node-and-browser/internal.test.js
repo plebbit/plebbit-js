@@ -1,6 +1,9 @@
 const Plebbit = require("../../dist/node");
 const { loadIpfsFileAsJson, loadIpnsAsJson } = require("../../dist/node/util");
-const { expect } = require("chai");
+const chai = require("chai");
+const chaiAsPromised = require("chai-as-promised");
+chai.use(chaiAsPromised);
+const { expect, assert } = chai;
 
 describe("Test util functions", async () => {
     let plebbit;
@@ -33,18 +36,15 @@ describe("Test util functions", async () => {
 
             const cid = (await plebbit.ipfsClient.add(twoMbString)).path; // Cid of a file with over 1mb size
 
-            try {
-                await loadIpfsFileAsJson(cid, plebbit);
-                expect.fail("Should not be able to load a file over ipfs that's over 1mb");
-            } catch {
-                const gatewayPlebbit = await Plebbit({
-                    ipfsGatewayUrl: "http://localhost:8080"
-                });
-                try {
-                    await loadIpfsFileAsJson(cid, gatewayPlebbit);
-                    expect.fail("Should not be able to load a file over ipfs that's over 1mb");
-                } catch {}
-            }
+            await assert.isRejected(loadIpfsFileAsJson(cid, plebbit));
+            await assert.isRejected(
+                loadIpfsFileAsJson(
+                    cid,
+                    await Plebbit({
+                        ipfsGatewayUrl: "http://localhost:8080"
+                    })
+                )
+            );
         });
     });
 
@@ -83,10 +83,7 @@ describe("Test util functions", async () => {
                 ipfsGatewayUrl: "http://localhost:8080"
             });
 
-            try {
-                await loadIpnsAsJson(ipns, gatewayPlebbit);
-                expect.fail("Should not be able to load a file over ipns that's over 1mb");
-            } catch {}
+            await assert.isRejected(loadIpnsAsJson(ipns, gatewayPlebbit));
         });
     });
 });

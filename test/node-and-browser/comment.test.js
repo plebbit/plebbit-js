@@ -1,9 +1,12 @@
 const Plebbit = require("../../dist/node");
-const { expect } = require("chai");
 const signers = require("../fixtures/signers");
 const { timestamp, waitTillCommentsUpdate } = require("../../dist/node/util");
 const { signPublication, verifyPublication } = require("../../dist/node/signer");
 const { generateMockPost, generateMockComment } = require("../../dist/node/test-util");
+const chai = require("chai");
+const chaiAsPromised = require("chai-as-promised");
+chai.use(chaiAsPromised);
+const { expect, assert } = chai;
 
 let plebbit;
 const subplebbitAddress = signers[0].address;
@@ -74,10 +77,7 @@ describe("comment (node and browser)", async () => {
         it("Publishing a comment with invalid signature fails", async () => {
             const mockComment = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
             mockComment.signature.signature = mockComment.signature.signature.slice(1); // Corrupts signature by deleting one key
-            try {
-                await mockComment.publish();
-                expect.fail("comment.publish should throw an error");
-            } catch {}
+            await assert.isRejected(mockComment.publish());
         });
 
         it("Can publish a post", async function () {
@@ -261,16 +261,15 @@ describe("comment (node and browser)", async () => {
         });
 
         it(`.publish() throws error when signer points to a different address than plebbit-author-address`, async () => {
-            try {
-                await plebbit.createComment({
+            await assert.isRejected(
+                plebbit.createComment({
                     author: { displayName: `Mock Author - ${Date.now()}`, address: "plebbit.eth" },
                     signer: signers[7], // plebbit.eth resolves to signers[6], this should give us an error
                     content: `Mock post - ${Date.now()}`,
                     title: "Mock post title",
                     subplebbitAddress: subplebbitAddress
-                });
-                expect.fail("publish() should throw if domain resolves to a different address than signer");
-            } catch {}
+                })
+            );
         });
 
         it(`challengeverification fails to pass if plebbit-author-address points to a different address than signer`, async () => {

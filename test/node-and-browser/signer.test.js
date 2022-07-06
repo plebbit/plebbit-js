@@ -104,10 +104,7 @@ describe("signer (node and browser)", async () => {
         it(`signPublication throws with invalid author`, async () => {
             // Trying to sign a publication with author.address !== randomSigner.address
             // should throw an error
-            try {
-                randomSignature = await signPublication(fixtureComment, randomSigner, plebbit);
-                expect.fail("Signing a publication with author.address !== randomSigner.address should throw an error");
-            } catch {}
+            await assert.isRejected(signPublication(fixtureComment, randomSigner, plebbit));
         });
 
         it("verifyPublication success with correct author signature", async () => {
