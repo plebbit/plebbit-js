@@ -20,11 +20,31 @@ export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 const debugs = getDebugLevels("util");
 
+async function fetchWithLimit(url: string, options?) {
+    // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
+    const res = await fetch(url, options);
+    if (typeof window === "undefined") return res; // No need to process stream for Node
+    // @ts-ignore
+    const reader = res.body.getReader();
+    let currentChunk: any = undefined,
+        totalBytesRead = 0;
+
+    while (true) {
+        currentChunk = await reader.read();
+        const { done, value } = currentChunk;
+        if (value.length + totalBytesRead > options.size) throw new Error(`content size at ${url} over limit: ${options.size}`);
+        totalBytesRead += value.length;
+        debugs.DEBUG(`Total bytes read from ${url}: ${totalBytesRead}`);
+        if (done) break;
+    }
+    return res;
+}
+
 export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultOptions = { timeout: 60000 }) {
     assert.ok(cid, "Cid has to not be null to load");
     if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
-        const res = await fetch(url, { cache: "force-cache", size: DOWNLOAD_LIMIT_BYTES });
+        const res = await fetchWithLimit(url, { cache: "force-cache", size: DOWNLOAD_LIMIT_BYTES });
         if (res.status === 200) return await res.json();
         else throw new Error(`Failed to load IPFS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
     } else {
@@ -39,7 +59,7 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
     assert.ok(ipns, "ipns has to be not null to load");
     if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
-        const res = await fetch(url, { cache: "no-store", size: DOWNLOAD_LIMIT_BYTES });
+        const res = await fetchWithLimit(url, { cache: "no-store", size: DOWNLOAD_LIMIT_BYTES });
         if (res.status === 200) return await res.json();
         else throw new Error(`Failed to load IPNS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
     } else {
@@ -76,20 +96,20 @@ export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
 
-export function keepKeys(obj, keys) {
+export function keepKeys(obj: Object, keys: any[]): Object {
     const newObj = {};
     keys.forEach((key) => (newObj[key] = undefined));
     for (const key of Object.keys(obj)) if (keys.includes(key)) newObj[key] = obj[key];
     return newObj;
 }
 
-export function removeKeys(object1, keys) {
+export function removeKeys(object1: Object, keys: any[]): Object {
     const newObject = { ...object1 };
     keys.forEach((key) => delete newObject[key]);
     return newObject;
 }
 
-export function replaceXWithY(obj, x, y) {
+export function replaceXWithY(obj: Object, x: any, y: any): Object {
     // obj is a JS object
     const newObj = {};
     Object.entries(obj).forEach(([key, value]) => {
