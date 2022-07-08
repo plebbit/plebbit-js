@@ -130,7 +130,7 @@ const startMathCliSubplebbit = async () => {
 
     const signer = await plebbit.createSigner(signers[1]);
     const subplebbit = await plebbit.createSubplebbit({ signer: signer, database: databaseConfig });
-    await subplebbit.setProvideCaptchaCallback((challengeRequestMessage) => {
+    subplebbit.setProvideCaptchaCallback((challengeRequestMessage) => {
         // Expected return is:
         // Challenge[], reason for skipping captcha (if it's skipped by nullifying Challenge[])
         return [[new Challenge({ challenge: "1+1=?", type: CHALLENGE_TYPES.TEXT })]];
@@ -171,11 +171,15 @@ const startEnsSubplebbit = async () => {
 
 const publishComments = async (parentComments, subplebbit) => {
     const comments = [];
+    // Publish comments for specific use in tests, whether for upvoting, downvoting or editing
+    // Use comment.content as a flag
     if (!parentComments)
         await Promise.all(
-            new Array(numOfCommentsToPublish).fill(null).map(async () => {
-                const post = await generateMockPost(subplebbit.address, subplebbit.plebbit, randomSigner(), true);
-                comments.push(await subplebbit._addPublicationToDb(post));
+            new Array(numOfCommentsToPublish).fill(null).map(async (_, i) => {
+                const post = await subplebbit._addPublicationToDb(
+                    await generateMockPost(subplebbit.address, subplebbit.plebbit, signers[0], true)
+                );
+                if (post) comments.push(post); // There are cases where posts fail to get published
             })
         );
     else
@@ -183,9 +187,11 @@ const publishComments = async (parentComments, subplebbit) => {
             parentComments.map(
                 async (parentComment) =>
                     await Promise.all(
-                        new Array(numOfCommentsToPublish).fill(null).map(async () => {
-                            const comment = await generateMockComment(parentComment, subplebbit.plebbit, randomSigner(), true);
-                            comments.push(await subplebbit._addPublicationToDb(comment));
+                        new Array(numOfCommentsToPublish).fill(null).map(async (_, i) => {
+                            const comment = await subplebbit._addPublicationToDb(
+                                await generateMockComment(parentComment, subplebbit.plebbit, signers[0], true)
+                            );
+                            if (comment) comments.push(comment);
                         })
                     )
             )
