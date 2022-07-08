@@ -11,6 +11,50 @@
                 "--colors",
                 "--config",
                 "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node-and-browser/signer.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "signer.test.js (node and browser)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
+
+        },
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node-and-browser/encryption.signer.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "encryption.signer.test.js (node and browser)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
+
+        },
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
                 "${workspaceFolder}/test/node-and-browser/edit.comment.test.js"
             ],
             "internalConsoleOptions": "openOnSessionStart",
