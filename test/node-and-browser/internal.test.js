@@ -32,9 +32,9 @@ describe("Test util functions", async () => {
         });
 
         it("Throws an error when file to download is over 1mb for both loading via IPFS and gateway", async () => {
-            const twoMbString = "x".repeat(2 * 1024 * 1024);
+            const twoMbObject = { testString: "x".repeat(2 * 1024 * 1024) };
 
-            const cid = (await plebbit.ipfsClient.add(twoMbString)).path; // Cid of a file with over 1mb size
+            const cid = (await plebbit.ipfsClient.add(JSON.stringify(twoMbObject))).path; // Cid of a file with over 1mb size
 
             await assert.isRejected(loadIpfsFileAsJson(cid, plebbit));
             await assert.isRejected(
@@ -68,9 +68,9 @@ describe("Test util functions", async () => {
         });
 
         it(`Throws an error when file to download is over 1mb and we're loading it via gateway`, async () => {
-            const twoMbString = "x".repeat(2 * 1024 * 1024);
+            const twoMbObject = { testString: "x".repeat(2 * 1024 * 1024) };
 
-            const cid = (await plebbit.ipfsClient.add(twoMbString)).path; // Cid of a file with over 1mb size
+            const cid = (await plebbit.ipfsClient.add(JSON.stringify(twoMbObject))).path; // Cid of a file with over 1mb size
 
             const ipns = (
                 await plebbit.ipfsClient.name.publish(cid, {
