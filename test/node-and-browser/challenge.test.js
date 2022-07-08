@@ -16,6 +16,12 @@ describe("Test challenges", async () => {
     });
 
     describe("math-cli", async () => {
+        before(async () => {
+            plebbit = await Plebbit({
+                ipfsHttpClientOptions: "http://localhost:5001/api/v0",
+                pubsubHttpClientOptions: `http://localhost:5002/api/v0`
+            });
+        });
         it("can post after answering correctly", async function () {
             return new Promise(async (resolve, reject) => {
                 const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[0]);
@@ -48,6 +54,12 @@ describe("Test challenges", async () => {
 });
 
 describe("image captcha", async () => {
+    before(async () => {
+        plebbit = await Plebbit({
+            ipfsHttpClientOptions: "http://localhost:5001/api/v0",
+            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
+        });
+    });
     it("can post after answering correctly", async function () {
         return new Promise(async (resolve, reject) => {
             const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit, signers[0]);

@@ -71,10 +71,6 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
     }
 }
 
-export async function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 export function chunks<T>(arr: Array<T>, len: number): Array<Array<T>> {
     let chunks: T[][] = [];
     let i = 0;
@@ -219,4 +215,8 @@ export function getDebugLevels(baseName: string): { FATAL: Debug; ERROR: Debug; 
         [debugLevel]: Debug(`plebbit-js:${baseName}:${debugLevel}`)
     }));
     return Object.assign({}, ...debugsObj);
+}
+
+export function randomElement<T>(array: Array<T>): T {
+    return array[Math.floor(Math.random() * array.length)];
 }
