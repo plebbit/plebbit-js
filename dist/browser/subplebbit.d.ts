@@ -7,6 +7,7 @@ import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
 import { ChallengeType, CreateSubplebbitOptions, Flair, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitMetrics, SubplebbitRole, SubplebbitSuggested, SubplebbitType } from "./types";
 import { Comment, CommentEdit } from "./comment";
+import Publication from "./publication";
 export declare class Subplebbit extends EventEmitter implements SubplebbitEditOptions, SubplebbitType {
     title?: string;
     description?: string;
@@ -42,6 +43,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitEditOp
     private sortHandler;
     private emittedAt?;
     private _updateInterval?;
+    private _sync;
     constructor(props: CreateSubplebbitOptions, plebbit: Plebbit);
     initSubplebbit(newProps: any): void;
     initSignerIfNeeded(): Promise<void>;
@@ -89,7 +91,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitEditOp
     handleCommentEdit(commentEdit: CommentEdit, trx?: any): Promise<{
         reason: string;
     }>;
-    handleVote(newVote: any, challengeRequestId: any, trx: any): Promise<{
+    handleVote(newVote: any, challengeRequestId: any): Promise<{
         reason: string;
     }>;
     publishPostAfterPassingChallenge(publication: any, challengeRequestId: any): Promise<any>;
@@ -99,8 +101,9 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitEditOp
     defaultProvideCaptcha(challengeRequestMessage: any): Promise<Challenge[][]>;
     defaultValidateCaptcha(challengeAnswerMessage: any): Promise<(boolean | string[])[]>;
     syncComment(dbComment: Comment): Promise<void>;
-    syncIpnsWithDb(syncIntervalMs: number): Promise<void>;
+    syncIpnsWithDb(): Promise<void>;
+    _syncLoop(syncIntervalMs: number): Promise<void>;
     start(syncIntervalMs?: number): Promise<void>;
     stopPublishing(): Promise<void>;
-    destroy(): Promise<void>;
+    _addPublicationToDb(publication: Publication): Promise<any>;
 }

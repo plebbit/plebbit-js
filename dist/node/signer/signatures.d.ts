@@ -6,8 +6,8 @@ export declare class Signature {
     publicKey: string;
     type: "rsa";
     signedPropertyNames: string[];
-    constructor(props: any);
-    toJSON(): {
+    constructor(props: Signature);
+    toJSON?(): {
         signature: string;
         publicKey: string;
         type: "rsa";

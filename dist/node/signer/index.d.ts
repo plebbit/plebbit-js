@@ -7,13 +7,8 @@ export declare class Signer {
     publicKey?: string;
     address?: string;
     ipfsKey?: Uint8Array;
-    constructor(props: any);
-    toJSON(): {
-        type: "rsa";
-        privateKey: string;
-        publicKey: string;
-        address: string;
-        ipfsKey: Uint8Array;
-    };
+    usage?: "comment" | "subplebbit";
+    ipnsKeyName?: string;
+    constructor(props: Signer);
 }
 export declare const createSigner: (createSignerOptions?: CreateSignerOptions) => Promise<Signer>;

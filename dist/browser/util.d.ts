@@ -1,25 +1,18 @@
 import Debug from "debug";
 import { Plebbit } from "./plebbit";
-export declare const TIMEFRAMES_TO_SECONDS: Readonly<{
-    HOUR: number;
-    DAY: number;
-    WEEK: number;
-    MONTH: number;
-    YEAR: number;
-    ALL: number;
-}>;
+import { Timeframe } from "./types";
+export declare const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number>;
 export declare function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultOptions?: {
     timeout: number;
 }): Promise<any>;
 export declare function loadIpnsAsJson(ipns: string, plebbit: Plebbit): Promise<any>;
-export declare function sleep(ms: any): Promise<unknown>;
-export declare function chunks(arr: any, len: any): any[];
-export declare function round(number: any, decimalPlaces: any): number;
+export declare function chunks<T>(arr: Array<T>, len: number): Array<Array<T>>;
+export declare function round(number: number, decimalPlaces: number): number;
 export declare function parseJsonIfString(x: any): any;
 export declare function timestamp(): number;
-export declare function keepKeys(obj: any, keys: any): {};
-export declare function removeKeys(object1: any, keys: any): any;
-export declare function replaceXWithY(obj: any, x: any, y: any): {};
+export declare function keepKeys(obj: Object, keys: any[]): Object;
+export declare function removeKeys(object1: Object, keys: any[]): Object;
+export declare function replaceXWithY(obj: Object, x: any, y: any): Object;
 export declare function shallowEqual(object1: any, object2: any, excludeKeys?: any[]): boolean;
 export declare function waitTillPublicationsArePublished(publications: any): Promise<any[]>;
 export declare function waitTillCommentsUpdate(comments: any, updateInterval: any): Promise<unknown>;
@@ -38,3 +31,4 @@ export declare function getDebugLevels(baseName: string): {
     DEBUG: Debug;
     TRACE: Debug;
 };
+export declare function randomElement<T>(array: Array<T>): T;

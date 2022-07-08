@@ -27,4 +27,5 @@ export declare class Plebbit {
     createVote(createVoteOptions: any): Promise<Vote>;
     createCommentEdit(createCommentEditOptions: any): Promise<CommentEdit>;
     createSigner(createSignerOptions?: CreateSignerOptions): Promise<Signer>;
+    listSubplebbits(): Promise<string[]>;
 }

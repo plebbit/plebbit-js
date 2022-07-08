@@ -77,7 +77,7 @@ export declare class Comment extends Publication {
         signature: Signature;
         author: import("./author").default;
     };
-    toJSONForDb(challengeRequestId: any): any;
+    toJSONForDb(challengeRequestId: string): any;
     toJSONCommentUpdate(): {
         updatedAt: number;
         editSignature: Signature;
@@ -96,13 +96,13 @@ export declare class Comment extends Publication {
         replies: Pages;
     };
     setCommentIpnsKey(ipnsKey: any): void;
-    setPostCid(newPostCid: any): void;
-    setCid(newCid: any): void;
-    setPreviousCid(newPreviousCid: any): void;
-    setDepth(newDepth: any): void;
-    setUpdatedAt(newUpdatedAt: any): void;
-    setOriginalContent(newOriginalContent: any): void;
-    setReplies(sortedReplies: any, sortedRepliesCids: any): void;
+    setPostCid(newPostCid: string): void;
+    setCid(newCid: string): void;
+    setPreviousCid(newPreviousCid: string): void;
+    setDepth(newDepth: number): void;
+    setUpdatedAt(newUpdatedAt: number): void;
+    setOriginalContent(newOriginalContent: string): void;
+    setReplies(replies?: Pages): void;
     updateOnce(): Promise<this>;
     update(updateIntervalMs?: number): Promise<this>;
     stop(): void;
@@ -141,6 +141,6 @@ export declare class CommentEdit extends Comment {
         signature: Signature;
         author: import("./author").default;
     };
-    toJSONForDb(challengeRequestId: any): any;
+    toJSONForDb(challengeRequestId: string): any;
     publish(userOptions: any): Promise<void>;
 }

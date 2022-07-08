@@ -1,5 +1,6 @@
 import { Options } from "ipfs-http-client";
 import { Knex } from "knex";
+import { Comment } from "./comment";
 import { Pages } from "./pages";
 import { Signature, Signer } from "./signer";
 export declare type PlebbitOptions = {
@@ -115,4 +116,34 @@ export interface SubplebbitEditOptions {
     features?: SubplebbitFeatures;
     suggested?: SubplebbitSuggested;
     address?: string;
+}
+export declare type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
+export declare type PostSortName = "hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll";
+export declare type ReplySortName = "topAll" | "new" | "old" | "controversialAll";
+export declare type SortProps = {
+    score?: (comment: Comment) => number;
+    timeframe?: Timeframe;
+};
+export declare type PostSort = Record<PostSortName, SortProps>;
+export declare type ReplySort = Record<ReplySortName, SortProps>;
+export interface CommentUpdate {
+    content?: string;
+    editSignature?: Signature;
+    editTimestamp?: number;
+    editReason?: string;
+    deleted?: boolean;
+    upvoteCount?: number;
+    downvoteCount?: number;
+    replies?: Pages;
+    flair?: Flair;
+    spoiler?: boolean;
+    pinned?: boolean;
+    locked?: boolean;
+    removed?: boolean;
+    authorBanExpiresAt?: number;
+    moderatorReason?: string;
+    updatedAt?: number;
+    authorFlair?: Flair;
+    protocolVersion: "1.0.0";
+    signature: Signature;
 }

@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,19 +19,55 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDebugLevels = exports.ipfsImportKey = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.waitTillCommentsUpdate = exports.waitTillPublicationsArePublished = exports.shallowEqual = exports.replaceXWithY = exports.removeKeys = exports.keepKeys = exports.timestamp = exports.parseJsonIfString = exports.round = exports.chunks = exports.sleep = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.TIMEFRAMES_TO_SECONDS = void 0;
-const concat_1 = require("uint8arrays/concat");
-const to_string_1 = require("uint8arrays/to-string");
-const it_all_1 = __importDefault(require("it-all"));
-const it_last_1 = __importDefault(require("it-last"));
-const debug_1 = __importDefault(require("debug"));
-const node_fetch_1 = __importDefault(require("node-fetch"));
-const form_data_1 = __importDefault(require("form-data"));
-const assert_1 = __importDefault(require("assert"));
+exports.randomElement = exports.getDebugLevels = exports.ipfsImportKey = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.waitTillCommentsUpdate = exports.waitTillPublicationsArePublished = exports.shallowEqual = exports.replaceXWithY = exports.removeKeys = exports.keepKeys = exports.timestamp = exports.parseJsonIfString = exports.round = exports.chunks = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.TIMEFRAMES_TO_SECONDS = void 0;
+var concat_1 = require("uint8arrays/concat");
+var to_string_1 = require("uint8arrays/to-string");
+var it_all_1 = __importDefault(require("it-all"));
+var it_last_1 = __importDefault(require("it-last"));
+var debug_1 = __importDefault(require("debug"));
+var node_fetch_1 = __importDefault(require("node-fetch"));
+var form_data_1 = __importDefault(require("form-data"));
+var assert_1 = __importDefault(require("assert"));
 //This is temp. TODO replace this with accurate mapping
 exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -30,66 +77,113 @@ exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     YEAR: 60 * 60 * 24 * 7 * 4 * 12,
     ALL: Infinity
 });
-const debugs = getDebugLevels("util");
-function loadIpfsFileAsJson(cid, plebbit, defaultOptions = { timeout: 60000 }) {
-    return __awaiter(this, void 0, void 0, function* () {
-        assert_1.default.ok(cid, "Cid has to not be null to load");
-        if (!plebbit.ipfsClient) {
-            const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
-            const res = yield (0, node_fetch_1.default)(url, {});
-            if (res.status === 200)
-                return yield res.json();
-            else
-                throw `Failed to load IPFS via url (${url}). Status code ${res.status} and status text ${res.statusText}`;
-        }
-        else {
-            const rawData = yield (0, it_all_1.default)(plebbit.ipfsClient.cat(cid, defaultOptions));
-            const data = (0, concat_1.concat)(rawData);
-            if (!data)
-                throw new Error(`IPFS file (${cid}) is empty or does not exist`);
-            else
-                return JSON.parse((0, to_string_1.toString)(data));
-        }
+var DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
+var debugs = getDebugLevels("util");
+function fetchWithLimit(url, options) {
+    return __awaiter(this, void 0, void 0, function () {
+        var res, reader, currentChunk, totalBytesRead, done, value;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, (0, node_fetch_1.default)(url, options)];
+                case 1:
+                    res = _a.sent();
+                    if (typeof window === "undefined")
+                        return [2 /*return*/, res]; // No need to process stream for Node
+                    reader = res.body.getReader();
+                    currentChunk = undefined, totalBytesRead = 0;
+                    _a.label = 2;
+                case 2:
+                    if (!true) return [3 /*break*/, 4];
+                    return [4 /*yield*/, reader.read()];
+                case 3:
+                    currentChunk = _a.sent();
+                    done = currentChunk.done, value = currentChunk.value;
+                    if (value.length + totalBytesRead > options.size)
+                        throw new Error("content size at ".concat(url, " over limit: ").concat(options.size));
+                    totalBytesRead += value.length;
+                    debugs.DEBUG("Total bytes read from ".concat(url, ": ").concat(totalBytesRead));
+                    if (done)
+                        return [3 /*break*/, 4];
+                    return [3 /*break*/, 2];
+                case 4: return [2 /*return*/, res];
+            }
+        });
+    });
+}
+function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
+    if (defaultOptions === void 0) { defaultOptions = { timeout: 60000 }; }
+    return __awaiter(this, void 0, void 0, function () {
+        var url, res, rawData, data;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    assert_1.default.ok(cid, "Cid has to not be null to load");
+                    if (!!plebbit.ipfsClient) return [3 /*break*/, 5];
+                    url = "".concat(plebbit.ipfsGatewayUrl, "/ipfs/").concat(cid);
+                    return [4 /*yield*/, fetchWithLimit(url, { cache: "force-cache", size: DOWNLOAD_LIMIT_BYTES })];
+                case 1:
+                    res = _a.sent();
+                    if (!(res.status === 200)) return [3 /*break*/, 3];
+                    return [4 /*yield*/, res.json()];
+                case 2: return [2 /*return*/, _a.sent()];
+                case 3: throw new Error("Failed to load IPFS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText));
+                case 4: return [3 /*break*/, 7];
+                case 5: return [4 /*yield*/, (0, it_all_1.default)(plebbit.ipfsClient.cat(cid, __assign(__assign({}, defaultOptions), { length: DOWNLOAD_LIMIT_BYTES })))];
+                case 6:
+                    rawData = _a.sent();
+                    data = (0, concat_1.concat)(rawData);
+                    if (!data)
+                        throw new Error("IPFS file (".concat(cid, ") is empty or does not exist"));
+                    else
+                        return [2 /*return*/, JSON.parse((0, to_string_1.toString)(data))];
+                    _a.label = 7;
+                case 7: return [2 /*return*/];
+            }
+        });
     });
 }
 exports.loadIpfsFileAsJson = loadIpfsFileAsJson;
 function loadIpnsAsJson(ipns, plebbit) {
-    return __awaiter(this, void 0, void 0, function* () {
-        assert_1.default.ok(ipns, "ipns has to be not null to load");
-        if (!plebbit.ipfsClient) {
-            const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
-            const res = yield (0, node_fetch_1.default)(url, {});
-            if (res.status === 200)
-                return yield res.json();
-            else
-                throw `Failed to load IPNS via url (${url}). Status code ${res.status} and status text ${res.statusText}`;
-        }
-        else {
-            const cid = yield (0, it_last_1.default)(plebbit.ipfsClient.name.resolve(ipns));
-            if (!cid)
-                throw new Error(`IPNS (${ipns}) resolves to undefined`);
-            (0, assert_1.default)(typeof cid === "string", "CID has to be a string");
-            debugs.TRACE(`IPNS (${ipns}) resolved to ${cid}`);
-            return loadIpfsFileAsJson(cid, plebbit);
-        }
+    return __awaiter(this, void 0, void 0, function () {
+        var url, res, cid;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    assert_1.default.ok(ipns, "ipns has to be not null to load");
+                    if (!!plebbit.ipfsClient) return [3 /*break*/, 5];
+                    url = "".concat(plebbit.ipfsGatewayUrl, "/ipns/").concat(ipns);
+                    return [4 /*yield*/, fetchWithLimit(url, { cache: "no-store", size: DOWNLOAD_LIMIT_BYTES })];
+                case 1:
+                    res = _a.sent();
+                    if (!(res.status === 200)) return [3 /*break*/, 3];
+                    return [4 /*yield*/, res.json()];
+                case 2: return [2 /*return*/, _a.sent()];
+                case 3: throw new Error("Failed to load IPNS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText));
+                case 4: return [3 /*break*/, 7];
+                case 5: return [4 /*yield*/, (0, it_last_1.default)(plebbit.ipfsClient.name.resolve(ipns))];
+                case 6:
+                    cid = _a.sent();
+                    if (!cid)
+                        throw new Error("IPNS (".concat(ipns, ") resolves to undefined"));
+                    (0, assert_1.default)(typeof cid === "string", "CID has to be a string");
+                    debugs.TRACE("IPNS (".concat(ipns, ") resolved to ").concat(cid));
+                    return [2 /*return*/, loadIpfsFileAsJson(cid, plebbit)];
+                case 7: return [2 /*return*/];
+            }
+        });
     });
 }
 exports.loadIpnsAsJson = loadIpnsAsJson;
-function sleep(ms) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return new Promise((resolve) => setTimeout(resolve, ms));
-    });
-}
-exports.sleep = sleep;
 function chunks(arr, len) {
-    let chunks = [], i = 0;
+    var chunks = [];
+    var i = 0;
     while (i < arr.length)
         chunks.push(arr.slice(i, (i += len)));
     return chunks;
 }
 exports.chunks = chunks;
 function round(number, decimalPlaces) {
-    const factorOfTen = Math.pow(10, decimalPlaces);
+    var factorOfTen = Math.pow(10, decimalPlaces);
     return Math.round(number * factorOfTen) / factorOfTen;
 }
 exports.round = round;
@@ -103,24 +197,27 @@ function timestamp() {
 }
 exports.timestamp = timestamp;
 function keepKeys(obj, keys) {
-    const newObj = {};
-    keys.forEach((key) => (newObj[key] = undefined));
-    for (const key of Object.keys(obj))
+    var newObj = {};
+    keys.forEach(function (key) { return (newObj[key] = undefined); });
+    for (var _i = 0, _a = Object.keys(obj); _i < _a.length; _i++) {
+        var key = _a[_i];
         if (keys.includes(key))
             newObj[key] = obj[key];
+    }
     return newObj;
 }
 exports.keepKeys = keepKeys;
 function removeKeys(object1, keys) {
-    const newObject = Object.assign({}, object1);
-    keys.forEach((key) => delete newObject[key]);
+    var newObject = __assign({}, object1);
+    keys.forEach(function (key) { return delete newObject[key]; });
     return newObject;
 }
 exports.removeKeys = removeKeys;
 function replaceXWithY(obj, x, y) {
     // obj is a JS object
-    const newObj = {};
-    Object.entries(obj).forEach(([key, value]) => {
+    var newObj = {};
+    Object.entries(obj).forEach(function (_a) {
+        var key = _a[0], value = _a[1];
         if (obj[key] === x)
             newObj[key] = y;
         // `typeof`` gives browser transpiling error "Uncaught ReferenceError: exports is not defined"
@@ -134,65 +231,95 @@ function replaceXWithY(obj, x, y) {
     return newObj;
 }
 exports.replaceXWithY = replaceXWithY;
-function shallowEqual(object1, object2, excludeKeys = []) {
+function shallowEqual(object1, object2, excludeKeys) {
+    if (excludeKeys === void 0) { excludeKeys = []; }
     object1 = removeKeys(object1 || {}, excludeKeys);
     object1 = removeKeysWithUndefinedValues(object1); // To get rid of keys with undefined value
     object2 = removeKeys(object2 || {}, excludeKeys);
     object2 = removeKeysWithUndefinedValues(object2); // To get rid of keys with undefined value
-    const keys1 = Object.keys(object1);
-    const keys2 = Object.keys(object2);
+    var keys1 = Object.keys(object1);
+    var keys2 = Object.keys(object2);
     if (keys1.length !== keys2.length)
         return false;
-    for (const key of keys1)
+    for (var _i = 0, keys1_1 = keys1; _i < keys1_1.length; _i++) {
+        var key = keys1_1[_i];
         if (JSON.stringify(object1[key]) !== JSON.stringify(object2[key]))
             return false;
+    }
     return true;
 }
 exports.shallowEqual = shallowEqual;
 function waitTillPublicationsArePublished(publications) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const promises = publications.map((publication) => {
-            return new Promise((publicationResolve, publicationReject) => __awaiter(this, void 0, void 0, function* () {
-                publication.once("challengeverification", (challengeVerificationMessage, newComment) => {
-                    publicationResolve(challengeVerificationMessage);
-                });
-            }));
+    return __awaiter(this, void 0, void 0, function () {
+        var promises;
+        var _this = this;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    promises = publications.map(function (publication) {
+                        return new Promise(function (publicationResolve, publicationReject) { return __awaiter(_this, void 0, void 0, function () {
+                            return __generator(this, function (_a) {
+                                publication.once("challengeverification", function (challengeVerificationMessage, newComment) {
+                                    publicationResolve(challengeVerificationMessage);
+                                });
+                                return [2 /*return*/];
+                            });
+                        }); });
+                    });
+                    return [4 /*yield*/, Promise.all(promises)];
+                case 1: return [2 /*return*/, _a.sent()];
+            }
         });
-        return yield Promise.all(promises);
     });
 }
 exports.waitTillPublicationsArePublished = waitTillPublicationsArePublished;
 // Takes a list of Comments, run .update on them and make sure at least one update has been polled
 function waitTillCommentsUpdate(comments, updateInterval) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
-            const promises = comments.map((comment) => {
-                return new Promise((commentResolve, commentReject) => __awaiter(this, void 0, void 0, function* () {
-                    comment.once("update", (newComment) => {
-                        comment.stop();
-                        commentResolve(newComment);
+    return __awaiter(this, void 0, void 0, function () {
+        var _this = this;
+        return __generator(this, function (_a) {
+            return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
+                    var promises;
+                    var _this = this;
+                    return __generator(this, function (_a) {
+                        promises = comments.map(function (comment) {
+                            return new Promise(function (commentResolve, commentReject) { return __awaiter(_this, void 0, void 0, function () {
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            comment.once("update", function (newComment) {
+                                                comment.stop();
+                                                commentResolve(newComment);
+                                            });
+                                            return [4 /*yield*/, comment.update(updateInterval)];
+                                        case 1:
+                                            _a.sent();
+                                            return [2 /*return*/];
+                                    }
+                                });
+                            }); });
+                        });
+                        Promise.all(promises).then(resolve).catch(reject);
+                        return [2 /*return*/];
                     });
-                    yield comment.update(updateInterval);
-                }));
-            });
-            Promise.all(promises).then(resolve).catch(reject);
-        }));
+                }); })];
+        });
     });
 }
 exports.waitTillCommentsUpdate = waitTillCommentsUpdate;
 function hotScore(comment) {
-    const score = comment.upvoteCount - comment.downvoteCount;
-    const order = Math.log10(Math.max(score, 1));
-    const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
-    const seconds = comment.timestamp - 1134028003;
+    var score = comment.upvoteCount - comment.downvoteCount;
+    var order = Math.log10(Math.max(score, 1));
+    var sign = score > 0 ? 1 : score < 0 ? -1 : 0;
+    var seconds = comment.timestamp - 1134028003;
     return round(sign * order + seconds / 45000, 7);
 }
 exports.hotScore = hotScore;
 function controversialScore(comment) {
     if (comment.downvoteCount <= 0 || comment.upvoteCount <= 0)
         return 0;
-    const magnitude = comment.upvoteCount + comment.downvoteCount;
-    const balance = comment.upvoteCount > comment.downvoteCount
+    var magnitude = comment.upvoteCount + comment.downvoteCount;
+    var balance = comment.upvoteCount > comment.downvoteCount
         ? parseFloat(comment.downvoteCount) / comment.upvoteCount
         : parseFloat(comment.upvoteCount) / comment.downvoteCount;
     return Math.pow(magnitude, balance);
@@ -215,30 +342,47 @@ function removeKeysWithUndefinedValues(object) {
 }
 exports.removeKeysWithUndefinedValues = removeKeysWithUndefinedValues;
 // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
-function ipfsImportKey(signer, plebbit, password = "") {
+function ipfsImportKey(signer, plebbit, password) {
     var _a;
-    return __awaiter(this, void 0, void 0, function* () {
-        const data = new form_data_1.default();
-        data.append("file", Buffer.from(signer.ipfsKey));
-        const nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
-        if (!nodeUrl)
-            throw new Error("Can't figure out ipfs node URL");
-        const url = `${nodeUrl}/key/import?arg=${signer.ipnsKeyName}`;
-        const res = yield (0, node_fetch_1.default)(url, {
-            method: "POST",
-            body: data,
-            headers: (_a = plebbit.ipfsHttpClientOptions) === null || _a === void 0 ? void 0 : _a.headers
+    if (password === void 0) { password = ""; }
+    return __awaiter(this, void 0, void 0, function () {
+        var data, nodeUrl, url, res;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    data = new form_data_1.default();
+                    data.append("file", Buffer.from(signer.ipfsKey));
+                    nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
+                    if (!nodeUrl)
+                        throw new Error("Can't figure out ipfs node URL");
+                    url = "".concat(nodeUrl, "/key/import?arg=").concat(signer.ipnsKeyName);
+                    return [4 /*yield*/, (0, node_fetch_1.default)(url, {
+                            method: "POST",
+                            body: data,
+                            headers: (_a = plebbit.ipfsHttpClientOptions) === null || _a === void 0 ? void 0 : _a.headers
+                        })];
+                case 1:
+                    res = _b.sent();
+                    if (res.status !== 200)
+                        throw new Error("failed ipfs import key: '".concat(url, "' '").concat(res.status, "' '").concat(res.statusText, "'"));
+                    return [4 /*yield*/, res.json()];
+                case 2: return [2 /*return*/, _b.sent()];
+            }
         });
-        if (res.status !== 200)
-            throw new Error(`failed ipfs import key: '${url}' '${res.status}' '${res.statusText}'`);
-        return yield res.json();
     });
 }
 exports.ipfsImportKey = ipfsImportKey;
 function getDebugLevels(baseName) {
-    const debugsObj = ["FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE"].map((debugLevel) => ({
-        [debugLevel]: (0, debug_1.default)(`plebbit-js:${baseName}:${debugLevel}`)
-    }));
-    return Object.assign({}, ...debugsObj);
+    var debugsObj = ["FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE"].map(function (debugLevel) {
+        var _a;
+        return (_a = {},
+            _a[debugLevel] = (0, debug_1.default)("plebbit-js:".concat(baseName, ":").concat(debugLevel)),
+            _a);
+    });
+    return Object.assign.apply(Object, __spreadArray([{}], debugsObj, false));
 }
 exports.getDebugLevels = getDebugLevels;
+function randomElement(array) {
+    return array[Math.floor(Math.random() * array.length)];
+}
+exports.randomElement = randomElement;

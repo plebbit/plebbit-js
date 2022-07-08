@@ -1,76 +1,23 @@
-import { controversialScore, hotScore } from "./util";
+import { Page, Pages } from "./pages";
 import { Subplebbit } from "./subplebbit";
-import { DbHandler } from "./runtime/node/db-handler";
 import { Knex } from "knex";
 import { Comment } from "./comment";
 import Transaction = Knex.Transaction;
-export declare const POSTS_SORT_TYPES: Readonly<{
-    HOT: {
-        type: string;
-        score: typeof hotScore;
-    };
-    NEW: {
-        type: string;
-    };
-    TOP_HOUR: {
-        type: string;
-    };
-    TOP_DAY: {
-        type: string;
-    };
-    TOP_WEEK: {
-        type: string;
-    };
-    TOP_MONTH: {
-        type: string;
-    };
-    TOP_YEAR: {
-        type: string;
-    };
-    TOP_ALL: {
-        type: string;
-    };
-    CONTROVERSIAL_HOUR: {
-        type: string;
-        score: typeof controversialScore;
-    };
-    CONTROVERSIAL_DAY: {
-        type: string;
-        score: typeof controversialScore;
-    };
-    CONTROVERSIAL_WEEK: {
-        type: string;
-        score: typeof controversialScore;
-    };
-    CONTROVERSIAL_MONTH: {
-        type: string;
-        score: typeof controversialScore;
-    };
-    CONTROVERSIAL_YEAR: {
-        type: string;
-        score: typeof controversialScore;
-    };
-    CONTROVERSIAL_ALL: {
-        type: string;
-        score: typeof controversialScore;
-    };
-}>;
-export declare const REPLIES_SORT_TYPES: {
-    OLD: {
-        type: string;
-    };
-};
+import { PostSort, PostSortName, ReplySort, ReplySortName } from "./types";
+export declare const POSTS_SORT_TYPES: PostSort;
+export declare const REPLIES_SORT_TYPES: ReplySort;
 export declare const SORTED_POSTS_PAGE_SIZE = 50;
 export declare class SortHandler {
     subplebbit: Subplebbit;
-    dbHandler: DbHandler;
-    constructor(subplebbit: any);
-    chunksToListOfPage(chunks: any): Promise<any[][]>;
-    sortComments(comments: any, sortType: any, limit?: number): Promise<any[]>;
-    sortCommentsByHot(parentCid: any, trx: any): Promise<any[]>;
-    sortCommentsByTop(parentCid: any, timeframe: any, trx: any): Promise<any[]>;
-    sortCommentsByControversial(parentCid: any, timeframe: any, trx: any): Promise<any[]>;
-    sortCommentsByNew(parentCid: any, trx: any): Promise<any[]>;
-    getSortPromises(comment: any, trx: any): any[];
-    generatePagesUnderComment(comment: Comment | undefined, trx: Transaction): Promise<[Object | undefined, Object | undefined]>;
+    constructor(subplebbit: Subplebbit);
+    chunksToListOfPage(chunks: Comment[][]): Promise<[Page[], string[]]>;
+    sortComments(comments: Comment[], sortName: PostSortName | ReplySortName, limit?: number): Promise<[Partial<Record<PostSortName | ReplySortName, Page>>, string]>;
+    sortCommentsByHot(parentCid?: string, trx?: Transaction): Promise<any[] | [Partial<Record<"hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "old", Page>>, string]>;
+    sortCommentsByTop(parentCid: string | undefined, sortName: PostSortName | ReplySortName, trx?: Transaction): Promise<any[] | [Partial<Record<"hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "old", Page>>, string]>;
+    sortCommentsByControversial(parentCid: string | undefined, sortName: PostSortName | ReplySortName, trx?: Transaction): Promise<any[] | [Partial<Record<"hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "old", Page>>, string]>;
+    sortCommentsByNew(parentCid?: string, trx?: Transaction): Promise<any[] | [Partial<Record<"hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "old", Page>>, string]>;
+    getSortPromises(comment?: Comment, trx?: Transaction): Promise<any[] | [Partial<Record<"hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "old", Page>>, string]>[];
+    cacheCommentsPages(trx?: Transaction): Promise<void>;
+    generatePagesUnderComment(comment?: Comment, trx?: Transaction): Promise<Pages | undefined>;
+    deleteCommentPageCache(dbComment: Comment): Promise<void>;
 }
