@@ -4,9 +4,18 @@ import { Comment } from "./comment";
 import Post from "./post";
 import assert from "assert";
 import { Plebbit } from "./plebbit";
+import Vote from "./vote";
+import { Pages } from "./pages";
+import { Subplebbit } from "./subplebbit";
 const debugs = getDebugLevels("test-util");
 
-export async function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, signer?: Signer, randomTimestamp = false) {
+export async function generateMockPost(
+    subplebbitAddress: string,
+    plebbit: Plebbit,
+    signer?: Signer,
+    randomTimestamp = false,
+    postProps = {}
+) {
     let postTimestamp: number | undefined;
     if (randomTimestamp) {
         const randomTimeframeIndex = (Object.keys(TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
@@ -22,7 +31,8 @@ export async function generateMockPost(subplebbitAddress: string, plebbit: Plebb
         title: `Mock Post - ${postStartTestTime}`,
         content: `Mock content - ${postStartTestTime}`,
         timestamp: postTimestamp,
-        subplebbitAddress: subplebbitAddress
+        subplebbitAddress: subplebbitAddress,
+        ...postProps
     });
     assert.equal(post.constructor.name, "Post", "createComment should return Post if title is provided");
     post.once("challenge", (challengeMsg) => {
@@ -60,7 +70,12 @@ export async function generateMockComment(
     return comment;
 }
 
-export async function generateMockVote(parentPostOrComment, vote, plebbit, signer) {
+export async function generateMockVote(
+    parentPostOrComment: Comment | Post,
+    vote: -1 | 0 | 1,
+    plebbit: Plebbit,
+    signer?: Signer
+): Promise<Vote> {
     const voteTime = Date.now() / 1000;
     signer = signer || (await plebbit.createSigner());
     const voteObj = await plebbit.createVote({
@@ -76,20 +91,28 @@ export async function generateMockVote(parentPostOrComment, vote, plebbit, signe
     return voteObj;
 }
 
-export async function loadAllPages(pageCid, pagesInstance) {
+export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promise<Comment[]> {
     if (!pageCid) return [];
-    try {
-        let sortedCommentsPage = await pagesInstance.getPage(pageCid);
-        let sortedComments = sortedCommentsPage.comments;
-        while (sortedCommentsPage.nextCid) {
-            sortedCommentsPage = await pagesInstance.getPage(sortedCommentsPage.nextCid);
-            sortedComments = sortedComments.concat(sortedCommentsPage.comments);
-        }
-        sortedComments = await Promise.all(
-            sortedComments.map(async (commentProps) => pagesInstance.subplebbit.plebbit.createComment(commentProps))
-        );
-        return sortedComments;
-    } catch (e) {
-        debugs.ERROR(`Error while loading all pages under cid (${pageCid}): ${e}`);
+    assert(pagesInstance.getPage);
+    let sortedCommentsPage = await pagesInstance.getPage(pageCid);
+    let sortedComments = sortedCommentsPage.comments;
+    while (sortedCommentsPage.nextCid) {
+        sortedCommentsPage = await pagesInstance.getPage(sortedCommentsPage.nextCid);
+        sortedComments = sortedComments.concat(sortedCommentsPage.comments);
     }
+    sortedComments = await Promise.all(
+        sortedComments.map(async (commentProps) => pagesInstance.subplebbit.plebbit.createComment(commentProps))
+    );
+    return sortedComments;
+}
+
+export async function getAllCommentsUnderSubplebbit(subplebbit: Subplebbit): Promise<Comment[]> {
+    const getChildrenComments = async (comment: Comment): Promise<Comment[]> => {
+        return [
+            await subplebbit.plebbit.createComment(comment),
+            ...(await Promise.all(comment.replies?.pages?.topAll?.comments?.map(getChildrenComments) || [])).flat()
+        ];
+    };
+
+    return (await Promise.all(subplebbit.posts?.pages.hot?.comments.map(getChildrenComments) || [])).flat();
 }
