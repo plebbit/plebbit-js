@@ -1,0 +1,308 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node-and-browser/edit.comment.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "edit.comment.test.js (node and browser)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
+
+        },
+
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node-and-browser/resolver.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "resolver.test.js (node and browser)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {"DEBUG": "plebbit-js:*"}
+
+        },
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node-and-browser/internal.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "internal.test.js (node and browser)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {"DEBUG": "plebbit-js:*"}
+
+        },
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node-and-browser/upvote.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "upvote.test.js (node and browser)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
+
+        },
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node-and-browser/downvote.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "downvote.test.js (node and browser)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
+
+        },
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node/plebbit.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "plebbit.test.js (node)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {"DEBUG": "plebbit-js:*"}
+
+        },
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node-and-browser/pages.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "pages.test.js (browser and node)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {"DEBUG": "plebbit-js:pages.test.js:*"}
+
+        },
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node/subplebbit.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "subplebbit.test.js (node)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
+
+        },
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node-and-browser/signer.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "signer.test.js (node-and-browser)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {"DEBUG": "plebbit-js:*"}
+
+        },
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node-and-browser/comment.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "comment.test.js (node-and-browser)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
+
+        },
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node-and-browser/plebbit.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "plebbit.test.js (node-and-browser)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
+
+        },
+        {
+            // --config config/.mocharc.js test/{node,node-and-browser}/**/*.test.js
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/{node,node-and-browser}/**/*.test.js"
+            ],
+            "internalConsoleOptions": "openOnFirstSessionStart",
+            "console": "integratedTerminal",
+            "name": "Node tests",
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
+        },
+        {
+            // --config config/.mocharc.js test/{node,node-and-browser}/**/*.test.js
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--parallel",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/{node,node-and-browser}/**/*.test.js"
+            ],
+            "internalConsoleOptions": "openOnFirstSessionStart",
+            "console": "integratedTerminal",
+            "name": "Node tests (Parallel)",
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
+        },
+        {
+            "type": "pwa-node",
+            "request": "launch",
+            "name": "Launch Test Server",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/test/test-server.js",
+            "console": "integratedTerminal",
+
+            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
+
+        },
+       
+    ]
+}
