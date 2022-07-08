@@ -98,6 +98,8 @@ describe("plebbit (node and browser)", () => {
             await loadedPost.update();
 
             expect(JSON.stringify(loadedPost)).to.equal(JSON.stringify(expectedPost));
+            await expectedPost.stop();
+            await loadedPost.stop();
         });
 
         it("loads comment correctly", async () => {
