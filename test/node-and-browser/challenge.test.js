@@ -7,47 +7,38 @@ let plebbit;
 const mathCliSubplebbitAddress = signers[1].address;
 const imageCaptchaSubplebbitAddress = signers[2].address;
 
-describe("Test challenges", async () => {
+describe("math-cli", async () => {
     before(async () => {
         plebbit = await Plebbit({
             ipfsHttpClientOptions: "http://localhost:5001/api/v0",
             pubsubHttpClientOptions: `http://localhost:5002/api/v0`
         });
     });
-
-    describe("math-cli", async () => {
-        before(async () => {
-            plebbit = await Plebbit({
-                ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-                pubsubHttpClientOptions: `http://localhost:5002/api/v0`
+    it("can post after answering correctly", async function () {
+        return new Promise(async (resolve, reject) => {
+            const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[0]);
+            mockPost.removeAllListeners();
+            await mockPost.publish();
+            mockPost.once("challenge", (challengeMessage) => {
+                mockPost.publishChallengeAnswers(["2"]);
+            });
+            mockPost.once("challengeverification", async (challengeVerificationMessage, newComment) => {
+                expect(challengeVerificationMessage.challengeSuccess).to.be.true;
+                resolve();
             });
         });
-        it("can post after answering correctly", async function () {
-            return new Promise(async (resolve, reject) => {
-                const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[0]);
-                mockPost.removeAllListeners();
-                await mockPost.publish();
-                mockPost.once("challenge", (challengeMessage) => {
-                    mockPost.publishChallengeAnswers(["2"]);
-                });
-                mockPost.once("challengeverification", async (challengeVerificationMessage, newComment) => {
-                    expect(challengeVerificationMessage.challengeSuccess).to.be.true;
-                    resolve();
-                });
+    });
+    it("Throws an error when user fails to solve mathcli captcha", async function () {
+        return new Promise(async (resolve, reject) => {
+            const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[0]);
+            mockPost.removeAllListeners();
+            mockPost.once("challenge", (challengeMessage) => {
+                mockPost.publishChallengeAnswers(["3"]);
             });
-        });
-        it("Throws an error when user fails to solve mathcli captcha", async function () {
-            return new Promise(async (resolve, reject) => {
-                const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[0]);
-                mockPost.removeAllListeners();
-                mockPost.once("challenge", (challengeMessage) => {
-                    mockPost.publishChallengeAnswers(["3"]);
-                });
-                await mockPost.publish();
-                mockPost.once("challengeverification", (challengeVerificationMessage, newComment) => {
-                    expect(challengeVerificationMessage.challengeSuccess).to.be.false;
-                    resolve();
-                });
+            await mockPost.publish();
+            mockPost.once("challengeverification", (challengeVerificationMessage, newComment) => {
+                expect(challengeVerificationMessage.challengeSuccess).to.be.false;
+                resolve();
             });
         });
     });

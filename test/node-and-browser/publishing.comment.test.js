@@ -47,7 +47,7 @@ describe("publishing", async () => {
         });
     });
 
-    [1, 2, 3, 4].map((depth) =>
+    [1, 2].map((depth) =>
         it(`Can publish comment with depth = ${depth}`, async () => {
             return new Promise(async (resolve, reject) => {
                 const parentComment = mockComments[depth - 1];
