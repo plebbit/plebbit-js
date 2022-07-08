@@ -710,9 +710,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
     }
 
     async _addPublicationToDb(publication: Publication) {
-        debugs.INFO(`Adding ${publication.getType()} with author (${JSON.stringify(publication.author)}) to DB directly`);
-        const randomUUID = uuidv4();
-        await this.dbHandler.upsertChallenge(new ChallengeRequestMessage({ challengeRequestId: randomUUID }));
-        return (await this.publishPostAfterPassingChallenge(publication, randomUUID)).publication;
+        try {
+            debugs.INFO(`Adding ${publication.getType()} with author (${JSON.stringify(publication.author)}) to DB directly`);
+            const randomUUID = uuidv4();
+            await this.dbHandler.upsertChallenge(new ChallengeRequestMessage({ challengeRequestId: randomUUID }));
+            return (await this.publishPostAfterPassingChallenge(publication, randomUUID)).publication;
+        } catch (e) {
+            debugs.ERROR(`Failed to add publication to db directly: ${e}`);
+        }
     }
 }
