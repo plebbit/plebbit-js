@@ -10,8 +10,6 @@ const { expect, assert } = chai;
 
 let plebbit;
 const subplebbitAddress = signers[0].address;
-const mockComments = [];
-const updateInterval = 100;
 
 describe("comment (node and browser)", async () => {
     describe("createComment", async () => {
@@ -38,21 +36,6 @@ describe("comment (node and browser)", async () => {
             const signedComment = { signature: signature.toJSON(), ...comment };
             const [isVerified, failedVerificationReason] = await verifyPublication(signedComment, plebbit);
             expect(isVerified).to.be.true;
-        });
-
-        it("Verification fails when signature is corrupted", async () => {
-            const comment = {
-                subplebbitAddress: subplebbitAddress,
-                author: { address: signers[0].address },
-                timestamp: timestamp(),
-                title: "Test post signature",
-                content: "some content..."
-            };
-            const signature = await signPublication(comment, signers[0], plebbit);
-            signature.signature = signature.signature.slice(1); // Corrupt signature by deleting one character
-            const signedComment = { signature: signature.toJSON(), ...comment };
-            const [isVerified, failedVerificationReason] = await verifyPublication(signedComment, plebbit);
-            expect(isVerified).to.be.false;
         });
 
         it("Can sign and verify a comment with an imported key", async () => {
