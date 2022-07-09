@@ -580,9 +580,10 @@ An object which may have the following keys:
 const createSubplebbitEditOptions = {address: 'news.eth', title: 'New title'}
 const subplebbitEdit = await plebbit.createSubplebbitEdit(createSubplebbitEditOptions)
 subplebbitEdit.on('challenge', async (challengeMessage, _subplebbitEdit) => {
-  const challengeAnswers = await askUserForChallengeAnswer(challengeMessage.challenges)
+  const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
   _subplebbitEdit.publishChallengeAnswers(challengeAnswers)
 })
+subplebbitEdit.on('challengeverification', console.log)
 await subplebbitEdit.publish()
 ```
 
@@ -630,6 +631,7 @@ comment.on('challenge', async (challengeMessage) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
   comment.publishChallengeAnswers(challengeAnswers)
 })
+comment.on('challengeverification', console.log)
 await comment.publish()
 
 // or if you already fetched a comment but want to get updates
@@ -703,9 +705,10 @@ An object which may have the following keys:
 ```js
 const commentEdit = await plebbit.createCommentEdit(createCommentEditOptions)
 commentEdit.on('challenge', async (challengeMessage, _commentEdit) => {
-  const challengeAnswers = await askUserForChallengeAnswer(challengeMessage.challenges)
+  const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
   _commentEdit.publishChallengeAnswers(challengeAnswers)
 })
+commentEdit.on('challengeverification', console.log)
 await commentEdit.publish()
 ```
 
@@ -746,6 +749,7 @@ vote.on('challenge', async (challengeMessage, _vote) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
   _vote.publishChallengeAnswers(challengeAnswers)
 })
+vote.on('challengeverification', console.log)
 await vote.publish()
 ```
 
@@ -971,6 +975,7 @@ comment.on('challenge', async (challengeMessage) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
   comment.publishChallengeAnswers(challengeAnswers)
 })
+comment.on('challengeverification', console.log)
 await comment.publish()
 ```
 
@@ -992,6 +997,7 @@ comment.on('challenge', async (challengeMessage) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
   comment.publishChallengeAnswers(challengeAnswers)
 })
+comment.on('challengeverification', console.log)
 await comment.publish()
 ```
 
@@ -1081,6 +1087,7 @@ comment.on('challenge', async (challengeMessage) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
   comment.publishChallengeAnswers(challengeAnswers)
 })
+comment.on('challengeverification', console.log)
 await comment.publish()
 ```
 
