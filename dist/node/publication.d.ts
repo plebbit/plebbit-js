@@ -14,7 +14,7 @@ declare class Publication extends EventEmitter {
     challenge: ChallengeRequestMessage;
     constructor(props: any, subplebbit: any);
     _initProps(props: any): void;
-    getType(): "vote" | "comment" | "post";
+    getType(): "comment" | "vote" | "post";
     toJSON(): {
         subplebbitAddress: string;
         timestamp: number;

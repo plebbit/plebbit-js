@@ -125,6 +125,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
                       subplebbit: this
                   })
                 : mergedProps["posts"];
+        this.roles = mergedProps["roles"];
     }
 
     async initSignerIfNeeded() {
@@ -199,7 +200,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             metricsCid: this.metricsCid,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
-            encryption: this.encryption
+            encryption: this.encryption,
+            roles: this.roles
         };
     }
 
@@ -334,6 +336,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
     async handleCommentEdit(commentEdit: CommentEdit, trx?) {
         assert(this.dbHandler, "Need db handler to handleCommentEdit");
         const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, trx);
+        const editorAddress = await getPlebbitAddressFromPublicKeyPem(commentEdit.editSignature?.publicKey);
+        const editorRole = this.roles && this.roles[editorAddress];
+        if (editorRole) debugs.INFO(`${editorRole.role} (${editorAddress}) is attempting to CommentEdit ${commentToBeEdited?.cid}`);
+
         if (!commentToBeEdited) {
             debugs.INFO(
                 `Unable to edit comment (${commentEdit.commentCid}) since it's not in local DB. Rejecting user's request to edit comment`
@@ -341,9 +347,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             return {
                 reason: `commentCid (${commentEdit.commentCid}) does not exist`
             };
-        } else if (commentEdit?.editSignature?.publicKey !== commentToBeEdited.signature.publicKey) {
+        } else if (!editorRole && commentEdit?.editSignature?.publicKey !== commentToBeEdited.signature.publicKey) {
+            // Editor has no subplebbit role like owner, moderator or admin, and their signer is not the signer used in the original comment
             // Original comment and CommentEdit need to have same signer key
-            // TODO make exception for moderators
             debugs.INFO(`User attempted to edit a comment (${commentEdit.commentCid}) without having its signer's keys.`);
             return {
                 reason: `Comment edit of ${commentEdit.commentCid} due to having different author keys than original comment`
@@ -351,7 +357,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         } else {
             commentEdit.setOriginalContent(commentToBeEdited.originalContent || commentToBeEdited.content);
             await this.dbHandler.upsertComment(commentEdit, undefined, trx);
-            debugs.INFO(`Updated content for comment ${commentEdit.commentCid}`);
+            debugs.INFO(
+                `New content (${commentEdit.content}) for comment ${commentEdit.commentCid}. Original content: ${commentEdit.originalContent}`
+            );
         }
     }
 
