@@ -1,8 +1,7 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { timestamp, waitTillCommentsUpdate, randomElement, waitTillPublicationsArePublished } = require("../../dist/node/util");
-const { signPublication, verifyPublication } = require("../../dist/node/signer");
-const { generateMockPost, generateMockComment, getAllCommentsUnderSubplebbit } = require("../../dist/node/test-util");
+const { waitTillCommentsUpdate, waitTillPublicationsArePublished } = require("../../dist/node/util");
+const { generateMockPost } = require("../../dist/node/test-util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
@@ -25,9 +24,8 @@ describe("Editing", async () => {
         };
         subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         await subplebbit.update(updateInterval);
-        await subplebbit.stop();
 
-        commentToBeEdited = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
+        commentToBeEdited = await generateMockPost(subplebbit.address, plebbit, signers[0]);
         await commentToBeEdited.publish();
         await waitTillPublicationsArePublished([commentToBeEdited]);
         expect(commentToBeEdited?.cid).to.be.a("string");
@@ -37,6 +35,7 @@ describe("Editing", async () => {
 
     after(async () => {
         await commentToBeEdited.stop();
+        await subplebbit.stop();
     });
 
     it("Fails to edit a comment if not authorized", async function () {
@@ -103,9 +102,34 @@ describe("Editing", async () => {
                 expect(updatedCommentToBeEdited.content).to.equal(editedText, "Comment has not been edited");
                 expect(updatedCommentToBeEdited.originalContent).to.equal(originalContent, "Original content should be preserved");
                 expect(updatedCommentToBeEdited.editReason).to.equal(editReason, "Edit reason has not been updated");
-                await commentToBeEdited.stop();
                 resolve();
             });
         });
     });
+
+    [
+        { role: "owner", signer: signers[1] },
+        { role: "admin", signer: signers[2] },
+        { role: "mod", signer: signers[3] }
+    ].map((roleTest) =>
+        it(`${roleTest.role} can edit comment`, async () => {
+            const editedText = `${roleTest.role} role testing CommentEdit`;
+            const editReason = `For ${roleTest.role} role to test editing a comment`;
+            const originalContent = commentToBeEdited.originalContent;
+            const commentEdit = await plebbit.createCommentEdit({
+                subplebbitAddress: commentToBeEdited.subplebbitAddress,
+                commentCid: commentToBeEdited.cid,
+                editReason: editReason,
+                content: editedText,
+                signer: roleTest.signer
+            });
+            await commentEdit.publish();
+            commentToBeEdited.once("update", async (updatedCommentToBeEdited) => {
+                expect(updatedCommentToBeEdited.content).to.equal(editedText, "Comment has not been edited");
+                expect(updatedCommentToBeEdited.originalContent).to.equal(originalContent, "Original content should be preserved");
+                expect(updatedCommentToBeEdited.editReason).to.equal(editReason, "Edit reason has not been updated");
+                resolve();
+            });
+        })
+    );
 });

@@ -218,6 +218,9 @@ const publishVotes = async (comments, subplebbit) => {
 };
 
 const populateSubplebbit = async (subplebbit) => {
+    await subplebbit.edit({
+        roles: { [signers[1].address]: { role: "owner" }, [signers[2].address]: { role: "admin" }, [signers[3].address]: { role: "mod" } }
+    });
     posts = await publishComments(undefined, subplebbit); // If no comment[] is provided, we publish posts
     debugs.DEBUG(`Have successfully published ${posts.length} posts`);
     [replies] = await Promise.all([publishComments([posts[0]], subplebbit), publishVotes(posts, subplebbit)]);
