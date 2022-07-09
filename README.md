@@ -283,7 +283,6 @@ Encrypted {
   - `plebbit.getDefaults()`
   - [`plebbit.createSigner(createSignerOptions)`](#plebbitcreatesignercreatesigneroptions)
   - [`plebbit.listSubplebbits()`](#plebbitlistsubplebbits)
-  - `plebbit.ipfsGatewayUrl`
 - [Subplebbit API](#subplebbit-api)
   - [`subplebbit.edit(subplebbitEditOptions)`](#subplebbiteditsubplebbiteditoptions)
   - [`subplebbit.start()`](#subplebbitstart)
