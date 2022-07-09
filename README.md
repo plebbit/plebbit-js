@@ -1,6 +1,6 @@
 *Telegram group for this repo https://t.me/plebbitjs*
 
-`plebbit-js` will be an NPM module to wrap around the IPFS APIs used by Plebbit. It will be used in all clients: CLI, Electron (Desktop GUI) and Web.
+`plebbit-js` is an NPM module to wrap around the IPFS APIs used by plebbit. It is used in all clients: CLI, Electron (desktop GUI) and web.
 
 ### Glossary:
 
@@ -276,7 +276,7 @@ Encrypted {
   - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
   - `plebbit.createMultisub(createMultisubOptions)`
   - [`plebbit.createSubplebbit(createSubplebbitOptions)`](#plebbitcreatesubplebbitcreatesubplebbitoptions)
-  - `plebbit.createSubplebbitEdit(createSubplebbitEditOptions)`
+  - [`plebbit.createSubplebbitEdit(createSubplebbitEditOptions)`](#plebbitcreatesubplebbiteditcreatesubplebbiteditoptions)
   - [`plebbit.createComment(createCommentOptions)`](#plebbitcreatecommentcreatecommentoptions)
   - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
   - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
@@ -406,7 +406,7 @@ const plebbit = await Plebbit(options) // should be independent instance, not si
 
 ### `plebbit.getSubplebbit(subplebbitAddress)`
 
-> Get a subplebbit comment by its `Address`.
+> Get a subplebbit by its `Address`.
 
 #### Parameters
 
@@ -546,6 +546,46 @@ console.log(subplebbit.title) // prints 'Memes'
 console.log(subplebbit.posts.pages.hot.comments[0].content) // prints 'My first post'
 ```
 
+### `plebbit.createSubplebbitEdit(createSubplebbitEditOptions)`
+
+> Create a `SubplebbitEdit` instance, which can be used by admins to edit a subplebbit remotely over pubsub. A `SubplebbitEdit` is a regular `Publication` and must still be published and go through a challenge handshake.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| createSubplebbitEditOptions | `CreateSubplebbitEditOptions` | The subplebbit edit to create, extends [`SubplebbitEditOptions`](#subplebbiteditoptions) |
+
+##### CreateSubplebbitEditOptions
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| address | `string` | `Address` of the subplebbit to edit |
+| timestamp | `number` or `undefined` | Time of publishing in seconds, `Math.round(Date.now() / 1000)` if undefined |
+| author | `Author` | `author.address` of the subplebbit edit must have `subplebbit.roles` `'admin'` |
+| signer | `Signer` | Signer of the subplebbit edit |
+| ...subplebbitEditOptions | `any` | `CreateSubplebbitEditOptions` extends [`SubplebbitEditOptions`](#subplebbiteditoptions) |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<SubplebbitEdit>` | A `SubplebbitEdit` instance |
+
+#### Example
+
+```js
+const createSubplebbitEditOptions = {address: 'news.eth', title: 'New title'}
+const subplebbitEdit = await plebbit.createSubplebbitEdit(createSubplebbitEditOptions)
+subplebbitEdit.on('challenge', async (challengeMessage, _subplebbitEdit) => {
+  const challengeAnswers = await askUserForChallengeAnswer(challengeMessage.challenges)
+  _subplebbitEdit.publishChallengeAnswers(challengeAnswers)
+})
+await subplebbitEdit.publish()
+```
+
 ### `plebbit.createComment(createCommentOptions)`
 
 > Create a `Comment` instance. Posts/Replies are also comments. Should update itself on update events after `Comment.update()` is called if `CreateCommentOptions.cid` or `CreateCommentOptions.ipnsName` exists.
@@ -563,16 +603,15 @@ An object which may have the following keys:
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | subplebbitAddress | `string` | `Address` of the subplebbit |
+| timestamp | `number` or `undefined` | Time of publishing in seconds, `Math.round(Date.now() / 1000)` if undefined |
+| author | `Author` | Author of the comment |
+| signer | `Signer` | Signer of the comment |
 | parentCid | `string` or `undefined` | The parent comment CID, undefined if comment is a post, same as postCid if comment is top level |
 | content | `string` or `undefined` | Content of the comment, link posts have no content |
 | title | `string` or `undefined` | If comment is a post, it needs a title |
 | link | `string` or `undefined` | If comment is a post, it might be a link post |
-| timestamp | `number` or `undefined` | Time of publishing in seconds, `Math.round(Date.now() / 1000)` if undefined |
-| author | `Author` | Author of the comment |
 | spoiler | `boolean` or `undefined` | Hide the comment thumbnail behind spoiler warning |
 | flair | `Flair` or `undefined` | Author or mod chosen colored label for the comment |
-| author | `Author` | Author of the comment |
-| signer | `Signer` | Signer of the comment |
 | cid | `string` or `undefined` | (Not for publishing) Gives access to `Comment.on('update')` for a comment already fetched |
 | ipnsName | `string` or `undefined` | (Not for publishing) Gives access to `Comment.on('update')` for a comment already fetched |
 | ...comment | `any` | `CreateCommentOptions` can also initialize any property on the `Comment` instance |
@@ -591,7 +630,7 @@ comment.on('challenge', async (challengeMessage) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
   comment.publishChallengeAnswers(challengeAnswers)
 })
-comment.publish()
+await comment.publish()
 
 // or if you already fetched a comment but want to get updates
 const comment = await plebbit.createComment({ipnsName: 'Qm...'})
@@ -667,7 +706,7 @@ commentEdit.on('challenge', async (challengeMessage, _commentEdit) => {
   const challengeAnswers = await askUserForChallengeAnswer(challengeMessage.challenges)
   _commentEdit.publishChallengeAnswers(challengeAnswers)
 })
-commentEdit.publish()
+await commentEdit.publish()
 ```
 
 ### `plebbit.createVote(createVoteOptions)`
@@ -707,7 +746,7 @@ vote.on('challenge', async (challengeMessage, _vote) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
   _vote.publishChallengeAnswers(challengeAnswers)
 })
-vote.publish()
+await vote.publish()
 ```
 
 ### `plebbit.createSigner(createSignerOptions)`
