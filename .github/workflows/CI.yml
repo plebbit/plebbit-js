@@ -5,20 +5,20 @@ on:
     branches:
       - master
     paths:
-      - 'test'
-      - 'src'
-      - 'config'
-      - '.github'
+      - 'test/**/*'
+      - 'src/**/*'
+      - 'config/**/*'
+      - '.github/**/*'
       - 'package.json'
       - 'package-lock.json'
   push:
     branches:
       - master
     paths:
-      - 'test'
-      - 'src'
-      - 'config'
-      - '.github'
+      - 'test/**/*'
+      - 'src/**/*'
+      - 'config/**/*'
+      - '.github/**/*'
       - 'package.json'
       - 'package-lock.json'
 
