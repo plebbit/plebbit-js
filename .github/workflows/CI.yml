@@ -4,9 +4,23 @@ on:
   pull_request:
     branches:
       - master
+    paths:
+      - 'test'
+      - 'src'
+      - 'config'
+      - '.github'
+      - 'package.json'
+      - 'package-lock.json'
   push:
     branches:
       - master
+    paths:
+      - 'test'
+      - 'src'
+      - 'config'
+      - '.github'
+      - 'package.json'
+      - 'package-lock.json'
 
 jobs:
   test:
