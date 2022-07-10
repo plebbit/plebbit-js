@@ -201,6 +201,9 @@ Multisub /* (IPNS record Multisub.address) */ {
   title?: string
   description?: string
   subplebbits: MultisubSubplebbit[]
+  createdAt: number
+  updatedAt: number
+  signature: Signature // signature of the Multisub update by the multisub owner to protect against malicious gateway
 }
 MultisubSubplebbit { // this metadata is set by the owner of the Multisub, not the owner of the subplebbit
   address: Address
@@ -406,7 +409,7 @@ const plebbit = await Plebbit(options) // should be independent instance, not si
 
 ### `plebbit.getMultisub(multisubAddress)`
 
-> Get a multisub by its `Address`. A multisub is a list of subplebbits curated by the creator of the multisub. E.g. `'plebbit.eth/#/m/john.eth'` would display a feed of the multisub subplebbits curated by `'john.eth'` (multisub `Address` `'john.eth'`.
+> Get a multisub by its `Address`. A multisub is a list of subplebbits curated by the creator of the multisub. E.g. `'plebbit.eth/#/m/john.eth'` would display a feed of the multisub subplebbits curated by `'john.eth'` (multisub `Address` `'john.eth'`).
 
 #### Parameters
 
@@ -500,6 +503,62 @@ plebbit.getComment(comment.previousCid).then(previousComment => console.log('pre
 Prints:
 { ...TODO }
 */
+```
+
+### `plebbit.createMultisub(createMultisubOptions)`
+
+> Create a multisub instance. A multisub is a list of subplebbits curated by the creator of the multisub. E.g. `'plebbit.eth/#/m/john.eth'` would display a feed of the multisub subplebbits curated by `'john.eth'` (multisub `Address` `'john.eth'`).
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| createMultisubOptions | `CreateMultisubOptions` | Options for the `Multisub` instance |
+
+##### CreateMultisubOptions
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| address | `string` or `undefined` | `Address` of the multisub |
+| signer | `Signer` or `undefined` | (Multisub owners only) Optional `Signer` of the subplebbit to create a multisub with a specific private key |
+| title | `string` or `undefined` | Title of the multisub |
+| description | `string` or `undefined` | Description of the multisub |
+| subplebbits | `MultisubSubplebbit[]` or `undefined` | List of `MultisubSubplebbit` of the multisub |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<Multisub>` | A `Multisub` instance |
+
+#### Example
+
+```js
+const multisubOptions = {signer}
+const multisub = await plebbit.createMultisub(multisubOptions)
+
+// edit the multisub info in the database (only in Node and if multisub.signer is defined)
+await multisub.edit({
+  address: 'funny-subs.eth',
+  title: 'Funny subplebbits',
+  description: 'The funniest subplebbits',
+})
+
+// add a list of subplebbits to the multisub in the database (only in Node and if multisub.signer is defined)
+const multisubSubplebbitToAdd = {
+  address: 'funny.eth',
+  title: 'Funny things',
+  tags: 'funny'
+}
+await multisub.edit({subplebbits: [multisubSubplebbitToAdd]})
+
+// start publishing updates to your multisub (only in Node and if multisub.signer is defined)
+await multisub.start()
+
+// stop publishing updates to your multisub
+await multisub.stop()
 ```
 
 ### `plebbit.createSubplebbit(createSubplebbitOptions)`
