@@ -45,7 +45,8 @@ export async function generateMockComment(
     parentPostOrComment: Post | Comment,
     plebbit: Plebbit,
     signer?: Signer,
-    randomTimestamp = false
+    randomTimestamp = false,
+    commentProps = {}
 ): Promise<Comment> {
     let commentTimestamp: number | undefined;
     if (randomTimestamp) {
@@ -62,7 +63,8 @@ export async function generateMockComment(
         postCid: parentPostOrComment.postCid || parentPostOrComment.cid,
         parentCid: parentPostOrComment.cid,
         subplebbitAddress: parentPostOrComment.subplebbitAddress,
-        timestamp: commentTimestamp
+        timestamp: commentTimestamp,
+        ...commentProps
     });
     comment.once("challenge", (challengeMsg) => {
         comment.publishChallengeAnswers(undefined);

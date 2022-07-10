@@ -1,6 +1,6 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { timestamp, waitTillCommentsUpdate } = require("../../dist/node/util");
+const { timestamp } = require("../../dist/node/util");
 const { signPublication, verifyPublication } = require("../../dist/node/signer");
 const { generateMockPost, generateMockComment } = require("../../dist/node/test-util");
 const chai = require("chai");
@@ -76,6 +76,22 @@ describe("comment (node and browser)", async () => {
             const mockComment = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
             mockComment.signature.signature = mockComment.signature.signature.slice(1); // Corrupts signature by deleting one key
             await assert.isRejected(mockComment.publish());
+        });
+
+        it(`Fail to publish a reply with a timestamp earlier than parent`, async () => {
+            return new Promise(async (resolve) => {
+                const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+                await subplebbit.update();
+                await subplebbit.stop();
+                const parentPost = await plebbit.getComment(subplebbit.latestPostCid);
+                const reply = await generateMockComment(parentPost, plebbit, signers[0], false, { timestamp: parentPost.timestamp - 1 });
+                await reply.publish();
+                reply.once("challengeverification", async (challengeVerificationMessage, updatedComment) => {
+                    expect(challengeVerificationMessage.challengeSuccess).to.be.false;
+                    expect(challengeVerificationMessage.reason).to.be.a("string");
+                    resolve();
+                });
+            });
         });
     });
 });
