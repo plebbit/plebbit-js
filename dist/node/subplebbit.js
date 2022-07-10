@@ -135,6 +135,7 @@ var Subplebbit = /** @class */ (function (_super) {
             mergedProps["posts"] instanceof Object
                 ? new pages_1.Pages(__assign(__assign({}, mergedProps["posts"]), { subplebbit: this }))
                 : mergedProps["posts"];
+        this.roles = mergedProps["roles"];
     };
     Subplebbit.prototype.initSignerIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -209,7 +210,8 @@ var Subplebbit = /** @class */ (function (_super) {
             metricsCid: this.metricsCid,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
-            encryption: this.encryption
+            encryption: this.encryption,
+            roles: this.roles
         };
     };
     Subplebbit.prototype.prePublish = function () {
@@ -421,37 +423,43 @@ var Subplebbit = /** @class */ (function (_super) {
         });
     };
     Subplebbit.prototype.handleCommentEdit = function (commentEdit, trx) {
-        var _a;
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
-            var commentToBeEdited;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var commentToBeEdited, editorAddress, editorRole;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         (0, assert_1.default)(this.dbHandler, "Need db handler to handleCommentEdit");
                         return [4 /*yield*/, this.dbHandler.queryComment(commentEdit.commentCid, trx)];
                     case 1:
-                        commentToBeEdited = _b.sent();
-                        if (!!commentToBeEdited) return [3 /*break*/, 2];
+                        commentToBeEdited = _c.sent();
+                        return [4 /*yield*/, (0, util_2.getPlebbitAddressFromPublicKeyPem)((_a = commentEdit.editSignature) === null || _a === void 0 ? void 0 : _a.publicKey)];
+                    case 2:
+                        editorAddress = _c.sent();
+                        editorRole = this.roles && this.roles[editorAddress];
+                        if (editorRole)
+                            debugs.INFO("".concat(editorRole.role, " (").concat(editorAddress, ") is attempting to CommentEdit ").concat(commentToBeEdited === null || commentToBeEdited === void 0 ? void 0 : commentToBeEdited.cid));
+                        if (!!commentToBeEdited) return [3 /*break*/, 3];
                         debugs.INFO("Unable to edit comment (".concat(commentEdit.commentCid, ") since it's not in local DB. Rejecting user's request to edit comment"));
                         return [2 /*return*/, {
                                 reason: "commentCid (".concat(commentEdit.commentCid, ") does not exist")
                             }];
-                    case 2:
-                        if (!(((_a = commentEdit === null || commentEdit === void 0 ? void 0 : commentEdit.editSignature) === null || _a === void 0 ? void 0 : _a.publicKey) !== commentToBeEdited.signature.publicKey)) return [3 /*break*/, 3];
+                    case 3:
+                        if (!(!editorRole && ((_b = commentEdit === null || commentEdit === void 0 ? void 0 : commentEdit.editSignature) === null || _b === void 0 ? void 0 : _b.publicKey) !== commentToBeEdited.signature.publicKey)) return [3 /*break*/, 4];
+                        // Editor has no subplebbit role like owner, moderator or admin, and their signer is not the signer used in the original comment
                         // Original comment and CommentEdit need to have same signer key
-                        // TODO make exception for moderators
                         debugs.INFO("User attempted to edit a comment (".concat(commentEdit.commentCid, ") without having its signer's keys."));
                         return [2 /*return*/, {
                                 reason: "Comment edit of ".concat(commentEdit.commentCid, " due to having different author keys than original comment")
                             }];
-                    case 3:
+                    case 4:
                         commentEdit.setOriginalContent(commentToBeEdited.originalContent || commentToBeEdited.content);
                         return [4 /*yield*/, this.dbHandler.upsertComment(commentEdit, undefined, trx)];
-                    case 4:
-                        _b.sent();
-                        debugs.INFO("Updated content for comment ".concat(commentEdit.commentCid));
-                        _b.label = 5;
-                    case 5: return [2 /*return*/];
+                    case 5:
+                        _c.sent();
+                        debugs.INFO("New content (".concat(commentEdit.content, ") for comment ").concat(commentEdit.commentCid, ". Original content: ").concat(commentEdit.originalContent));
+                        _c.label = 6;
+                    case 6: return [2 /*return*/];
                 }
             });
         });

@@ -126,24 +126,3 @@ export declare type SortProps = {
 };
 export declare type PostSort = Record<PostSortName, SortProps>;
 export declare type ReplySort = Record<ReplySortName, SortProps>;
-export interface CommentUpdate {
-    content?: string;
-    editSignature?: Signature;
-    editTimestamp?: number;
-    editReason?: string;
-    deleted?: boolean;
-    upvoteCount?: number;
-    downvoteCount?: number;
-    replies?: Pages;
-    flair?: Flair;
-    spoiler?: boolean;
-    pinned?: boolean;
-    locked?: boolean;
-    removed?: boolean;
-    authorBanExpiresAt?: number;
-    moderatorReason?: string;
-    updatedAt?: number;
-    authorFlair?: Flair;
-    protocolVersion: "1.0.0";
-    signature: Signature;
-}

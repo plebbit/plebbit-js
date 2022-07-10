@@ -66,6 +66,9 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitEditOp
         createdAt: number;
         updatedAt: number;
         encryption: any;
+        roles: {
+            [authorAddress: string]: SubplebbitRole;
+        };
     };
     toJSON(): {
         title: string;
@@ -80,6 +83,9 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitEditOp
         createdAt: number;
         updatedAt: number;
         encryption: any;
+        roles: {
+            [authorAddress: string]: SubplebbitRole;
+        };
     };
     prePublish(): Promise<void>;
     assertDomainResolvesCorrectlyIfNeeded(domain: string): Promise<void>;
