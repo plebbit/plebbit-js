@@ -404,6 +404,31 @@ const options = {
 const plebbit = await Plebbit(options) // should be independent instance, not singleton
 ```
 
+### `plebbit.getMultisub(multisubAddress)`
+
+> Get a multisub by its `Address`. A multisub is a list of subplebbits curated by the creator of the multisub. E.g. `'plebbit.eth/#/m/john.eth'` would display a feed of the multisub subplebbits curated by `'john.eth'` (multisub `Address` `'john.eth'`.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| multisubAddress | `string` | The `Address` of the multisub |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<Multisub>` | A `Multisub` instance. |
+
+#### Example
+
+```js
+const multisubAddress = 'QmbWqx...' // or 'john.eth'
+const multisub = await plebbit.getSubplebbit(multisubAddress)
+const multisubSubplebbitAddresses = multisub.map(subplebbit => subplebbit.address)
+console.log(multisubSubplebbitAddresses)
+```
+
 ### `plebbit.getSubplebbit(subplebbitAddress)`
 
 > Get a subplebbit by its `Address`.
