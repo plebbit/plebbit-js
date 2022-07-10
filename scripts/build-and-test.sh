@@ -10,7 +10,7 @@ npm run test:server & npm run test:server:wait-on
 
 # tests
 npm run test:node:parallel
-CHROME_BIN=$(which chromium) FIREFOX_BIN=$(which firefox) npm run test:browser
+CHROME_BIN=$(which chrome || which chromium) FIREFOX_BIN=$(which firefox) npm run test:browser
 
 # close test server
 kill `pgrep --full  'node test/test-server'`
