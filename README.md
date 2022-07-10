@@ -547,12 +547,9 @@ await multisub.edit({
 })
 
 // add a list of subplebbits to the multisub in the database (only in Node and if multisub.signer is defined)
-const multisubSubplebbitToAdd = {
-  address: 'funny.eth',
-  title: 'Funny things',
-  tags: 'funny'
-}
-await multisub.edit({subplebbits: [multisubSubplebbitToAdd]})
+const multisubSubplebbit1 = {address: 'funny.eth', title: 'Funny things', tags: ['funny']}
+const multisubSubplebbit2 = {address: 'even-more-funny.eth'}
+await multisub.edit({subplebbits: [multisubSubplebbit1, multisubSubplebbit2]})
 
 // start publishing updates to your multisub (only in Node and if multisub.signer is defined)
 await multisub.start()
