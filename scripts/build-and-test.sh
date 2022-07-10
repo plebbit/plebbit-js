@@ -9,7 +9,7 @@ npm run webpack
 npm run test:server & npm run test:server:wait-on
 
 # tests
-# npm run test:node:parallel
+npm run test:node:parallel
 CHROME_BIN=$(which chromium) FIREFOX_BIN=$(which firefox) npm run test:browser
 
 # close test server
