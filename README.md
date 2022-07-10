@@ -271,18 +271,18 @@ Encrypted {
 
 - [Plebbit API](#plebbit-api)
   - [`Plebbit(plebbitOptions)`](#plebbitplebbitoptions)
-  - `plebbit.getMultisub(multisubAddress)`
+  - [`plebbit.getMultisub(multisubAddress)`](#plebbitgetmultisubmultisubaddress)
   - [`plebbit.getSubplebbit(subplebbitAddress)`](#plebbitgetsubplebbitsubplebbitaddress)
   - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
-  - `plebbit.createMultisub(createMultisubOptions)`
+  - [`plebbit.createMultisub(createMultisubOptions)`](#plebbitcreatemultisubcreatemultisuboptions)
   - [`plebbit.createSubplebbit(createSubplebbitOptions)`](#plebbitcreatesubplebbitcreatesubplebbitoptions)
   - [`plebbit.createSubplebbitEdit(createSubplebbitEditOptions)`](#plebbitcreatesubplebbiteditcreatesubplebbiteditoptions)
   - [`plebbit.createComment(createCommentOptions)`](#plebbitcreatecommentcreatecommentoptions)
   - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
   - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
-  - `plebbit.getDefaults()`
   - [`plebbit.createSigner(createSignerOptions)`](#plebbitcreatesignercreatesigneroptions)
   - [`plebbit.listSubplebbits()`](#plebbitlistsubplebbits)
+  - [`plebbit.getDefaults()`](#plebbitgetdefaults)
 - [Subplebbit API](#subplebbit-api)
   - [`subplebbit.edit(subplebbitEditOptions)`](#subplebbiteditsubplebbiteditoptions)
   - [`subplebbit.start()`](#subplebbitstart)
@@ -803,6 +803,25 @@ for (const address of subplebbitAddresses) {
   const subplebbit = await plebbit.createSubplebbit({address})
   await subplebbit.start()
 }
+```
+
+### `plebbit.getDefaults()`
+
+> Get the default global plebbit settings, e.g. the default multisubs like p/all, p/dao, etc.
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<PlebbitDefaults>` | A `PlebbitDefaults` instance. |
+
+#### Example
+
+```js
+const plebbitDefaults = await plebbit.getDefaults()
+const pAllMultisub = await plebbit.getMultisub(plebbitDefaults.multisubAddresses.all)
+const pAllSubplebbitAddresses = pAllMultisub.map(subplebbit => subplebbit.address)
+console.log(pAllSubplebbitAddresses)
 ```
 
 ## Subplebbit API
