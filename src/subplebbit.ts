@@ -340,14 +340,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         const editorRole = this.roles && this.roles[editorAddress];
         if (editorRole) debugs.INFO(`${editorRole.role} (${editorAddress}) is attempting to CommentEdit ${commentToBeEdited?.cid}`);
 
-        if (!commentToBeEdited) {
-            debugs.INFO(
-                `Unable to edit comment (${commentEdit.commentCid}) since it's not in local DB. Rejecting user's request to edit comment`
-            );
-            return {
-                reason: `commentCid (${commentEdit.commentCid}) does not exist`
-            };
-        } else if (!editorRole && commentEdit?.editSignature?.publicKey !== commentToBeEdited.signature.publicKey) {
+        if (!editorRole && commentEdit?.editSignature?.publicKey !== commentToBeEdited.signature.publicKey) {
             // Editor has no subplebbit role like owner, moderator or admin, and their signer is not the signer used in the original comment
             // Original comment and CommentEdit need to have same signer key
             debugs.INFO(`User attempted to edit a comment (${commentEdit.commentCid}) without having its signer's keys.`);
@@ -363,20 +356,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         }
     }
 
-    async handleVote(newVote, challengeRequestId) {
-        const [lastVote, parentComment] = await Promise.all([
-            this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address),
-            this.dbHandler.queryComment(newVote.commentCid)
-        ]);
+    async handleVote(newVote: Vote, challengeRequestId: string) {
+        const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address);
 
-        if (!parentComment) {
-            const msg = `User is trying to publish a vote under a comment (${newVote.commentCid}) that does not exist`;
-            debugs.INFO(msg);
-            return { reason: msg };
-        }
         if (lastVote && newVote.signature.publicKey !== lastVote.signature.publicKey) {
-            // Original comment and CommentEdit need to have same key
-            // TODO make exception for moderators
             debugs.INFO(
                 `Author (${newVote.author.address}) attempted to edit a comment vote (${newVote.commentCid}) without having correct credentials`
             );
@@ -413,6 +396,38 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             : await this.plebbit.createComment(publication);
 
         debugs.TRACE(`Attempting to insert new publication into DB: ${JSON.stringify(postOrCommentOrVote)}`);
+        if (!(postOrCommentOrVote instanceof Post)) {
+            const parentCid: string | undefined =
+                postOrCommentOrVote instanceof Comment && postOrCommentOrVote.parentCid
+                    ? postOrCommentOrVote.parentCid
+                    : postOrCommentOrVote instanceof Vote || postOrCommentOrVote instanceof CommentEdit
+                    ? postOrCommentOrVote.commentCid
+                    : undefined;
+
+            const errResponse = {
+                reason: `Rejecting ${postOrCommentOrVote.constructor.name} because its parentCid or commentCid is not defined`
+            };
+            if (!parentCid) {
+                debugs.INFO(errResponse.reason);
+                return errResponse;
+            }
+
+            const parent = await this.dbHandler.queryComment(parentCid);
+            if (!parent) {
+                debugs.INFO(errResponse.reason);
+                return errResponse;
+            }
+            const timestamp =
+                (postOrCommentOrVote instanceof CommentEdit && postOrCommentOrVote.editTimestamp) || postOrCommentOrVote.timestamp;
+
+            if (parent.timestamp > timestamp) {
+                const err = {
+                    reason: `Rejecting ${postOrCommentOrVote.constructor.name} because its timestamp (${timestamp}) is earlier than its parent (${parent.timestamp})`
+                };
+                debugs.INFO(err.reason);
+                return err;
+            }
+        }
         const derivedAddress = await getPlebbitAddressFromPublicKeyPem(
             (postOrCommentOrVote instanceof CommentEdit && postOrCommentOrVote.editSignature
                 ? postOrCommentOrVote.editSignature
@@ -482,13 +497,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
                         this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx),
                         this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)
                     ]);
-                    if (!parent) {
-                        await trx.commit();
-                        const msg = `User is trying to publish a comment with content (${postOrCommentOrVote.content}) with incorrect parentCid`;
-                        debugs.INFO(msg);
 
-                        return { reason: msg };
-                    }
                     postOrCommentOrVote.setPreviousCid(commentsUnderParent[0]?.cid);
                     postOrCommentOrVote.setDepth(parent.depth + 1);
                     const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
