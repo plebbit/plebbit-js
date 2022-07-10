@@ -7,4 +7,5 @@
 
 xterm -geometry "-0+0" -e "npm run build:node:watch" &
 xterm -geometry "+0+0" -e "npm run build:browser:watch" &
-xterm -geometry "-0-0" -e "npm run webpack:watch"
+xterm -geometry "-0-0" -e "npm run webpack:watch" &
+xterm -geometry "+0-0" -e "npm run test:server"

@@ -248,4 +248,11 @@ const populateSubplebbit = async (subplebbit) => {
     console.timeEnd("populate");
 
     debugs.INFO("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
+
+    // create a test server to be able to use npm module 'wait-on'
+    // to know when the test server is finished getting ready
+    // and able to start the automated tests
+    require("http")
+        .createServer((req, res) => res.end("test server ready"))
+        .listen(14952);
 })();

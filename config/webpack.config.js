@@ -4,6 +4,7 @@ const glob = require("glob");
 const chokidar = require("chokidar");
 const WatchExternalFilesPlugin = require("webpack-watch-files-plugin").default;
 
+const webpackIsWatchMode = process.argv.includes("watch");
 const rootFolder = path.resolve(__dirname, "..");
 const outputFolder = path.resolve(rootFolder, "test-karma-webpack");
 const testFolder = path.resolve(rootFolder, "test");
@@ -21,7 +22,7 @@ const testEntries = testFiles.reduce((acc, file) => {
 
 // debug build paths if needed
 // console.log({rootFolder, testFiles, testEntries, outputFolder, testFolder, lockFile})
-console.log("watching karma test files:");
+console.log("karma test files:");
 console.log(Object.keys(testEntries));
 
 module.exports = {
@@ -99,22 +100,24 @@ module.exports = {
 // reset the webpack folder
 fs.removeSync(outputFolder);
 
-// if a new test file is found, restart webpack watcher
-// this is needed because the webpack entries cannot be
-// modified dynamically while watching, a new file is a new entry
-chokidar.watch(testFolder).on("all", async (event, path) => {
-    glob(testGlob, (err, files) => {
-        if (JSON.stringify(files.sort()) !== JSON.stringify(testFiles)) {
-            console.log("karma test files changed, restarting webpack watcher");
+if (webpackIsWatchMode) {
+    // if a new test file is found, restart webpack watcher
+    // this is needed because the webpack entries cannot be
+    // modified dynamically while watching, a new file is a new entry
+    chokidar.watch(testFolder).on("all", async (event, path) => {
+        glob(testGlob, (err, files) => {
+            if (JSON.stringify(files.sort()) !== JSON.stringify(testFiles)) {
+                console.log("karma test files changed, restarting webpack watcher");
+                process.exit();
+            }
+        });
+    });
+
+    // restart when a node package is installed otherwise bugs out
+    chokidar.watch(lockFile).on("all", async (event, path) => {
+        if (event === "change" || event === "unlink") {
+            console.log("lock file changed, restarting webpack watcher");
             process.exit();
         }
     });
-});
-
-// restart when a node package is installed otherwise bugs out
-chokidar.watch(lockFile).on("all", async (event, path) => {
-    if (event === "change" || event === "unlink") {
-        console.log("lock file changed, restarting webpack watcher");
-        process.exit();
-    }
-});
+}

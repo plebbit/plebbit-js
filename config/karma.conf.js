@@ -12,10 +12,16 @@ const CustomChrome = {
 };
 
 // choose which browser you prefer
-const browsers = [
+let browsers = [
     // "FirefoxHeadless",
     "CustomChrome"
 ];
+
+// add firefox during CI
+// make sure non-headless DebugChrome is not included as it breaks the CI
+if (process.env.CI) {
+    browsers = ["CustomChrome", "FirefoxHeadless"];
+}
 
 // inject browser code before each test file
 let codeToInjectBefore = "";
