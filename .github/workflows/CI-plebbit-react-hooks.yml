@@ -20,15 +20,15 @@ jobs:
         with:
           node-version: ${{ matrix.node_version }}
 
-      # move plebbit-js to sub folder
+      # move plebbit-js (working dir) to temp folder
       - run: cp -r . ../plebbit-js-tmp && rm -fr `ls -A1`
-      # download plebbit-react-hooks
+      # clone plebbit-react-hooks repo to working dir
       - run: git clone https://github.com/plebbit/plebbit-react-hooks.git .
-      # move plebbit-js to working dir
+      # move plebbit-js back to working dir in a sub folder
       - run: mv ../plebbit-js-tmp plebbit-js
       # install plebbit-react-hooks
       - run: yarn
-      # install latest plebbit-js
+      # install latest plebbit-js using add ./plebbit-js (local folder module)
       - run: yarn remove @plebbit/plebbit-js
       - run: yarn add ./plebbit-js
       # build
