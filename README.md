@@ -387,7 +387,7 @@ An object which may have the following keys:
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | url | `string` | URL of the provider RPC |
-| chainId | `string` | ID of the EVM chain if any |
+| chainId | `number` | ID of the EVM chain if any |
 
 #### Returns
 
