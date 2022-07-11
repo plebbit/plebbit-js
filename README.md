@@ -763,7 +763,7 @@ An object which may have the following keys:
 | commentCid | `string` | The comment CID to be edited (don't use 'cid' because eventually CommentEdit.cid will exist) |
 | signer | `Signer` | Signer of the edit, either original author or mod |
 | content | `string` or `undefined` | (Only author) Edited content of the comment |
-| editTimestamp | `number` or `undefined` | (Only author) Time of content edit in ms, `Date.now()` if undefined |
+| editTimestamp | `number` or `undefined` | (Only author) Time of content edit in ms, `Math.round(Date.now() / 1000)` if undefined |
 | editReason | `string` or `undefined` | (Only author) Reason of the edit |
 | deleted | `boolean` or `undefined` | (Only author) Edited deleted status of the comment |
 | flair | `Flair` or `undefined` | (Author or mod) Edited flair of the comment |
@@ -811,7 +811,7 @@ An object which may have the following keys:
 | ---- | ---- | ----------- |
 | subplebbitAddress | `string` | `Address` of the subplebbit |
 | commentCid | `string` | The comment or post to vote on |
-| timestamp | `number` or `undefined` | Time of publishing in ms, `Date.now()` if undefined |
+| timestamp | `number` or `undefined` | Time of publishing in ms, `Math.round(Date.now() / 1000)` if undefined |
 | author | `Author` | Author of the comment, will be needed for voting with NFTs or tokens |
 | vote | `1` or `0` or `-1` | 0 is for resetting a vote |
 | signer | `Signer` | Signer of the vote |
