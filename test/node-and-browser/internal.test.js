@@ -24,10 +24,15 @@ describe("Test util functions", async () => {
                     resolve();
                 }
             }));
-        it("Loads an ipfs file as JSON correctly", async () => {
+        it("Loads an ipfs file under 1mb as JSON correctly", async () => {
             const jsonFileTest = { 123: "123" };
-            const jsonFileAsIpfs = await plebbit.ipfsClient.add(JSON.stringify(jsonFileTest));
-            const jsonFileLoaded = await loadIpfsFileAsJson(jsonFileAsIpfs.cid, plebbit);
+            const cid = (await plebbit.ipfsClient.add(JSON.stringify(jsonFileTest))).path;
+            let jsonFileLoaded = await loadIpfsFileAsJson(cid, plebbit);
+            expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
+            const gatewayPlebbit = await Plebbit({
+                ipfsGatewayUrl: "http://localhost:8080"
+            });
+            jsonFileLoaded = await loadIpfsFileAsJson(cid, gatewayPlebbit);
             expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
         });
 
@@ -60,10 +65,15 @@ describe("Test util functions", async () => {
                 }
             }));
         it("Loads an IPNS file as JSON correctly", async () => {
-            const jsonFileTest = { 123: "123" };
-            const jsonFileAsIpfs = await plebbit.ipfsClient.add(JSON.stringify(jsonFileTest));
-            const jsonFileAsIpns = await plebbit.ipfsClient.name.publish(jsonFileAsIpfs.cid, { allowOffline: true });
-            const jsonFileLoaded = await loadIpnsAsJson(jsonFileAsIpns.name, plebbit);
+            const jsonFileTest = { 1234: "1234" };
+            const cid = (await plebbit.ipfsClient.add(JSON.stringify(jsonFileTest))).path;
+            const jsonFileAsIpns = await plebbit.ipfsClient.name.publish(cid, { allowOffline: true });
+            let jsonFileLoaded = await loadIpnsAsJson(jsonFileAsIpns.name, plebbit);
+            expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
+            const gatewayPlebbit = await Plebbit({
+                ipfsGatewayUrl: "http://localhost:8080"
+            });
+            jsonFileLoaded = await loadIpnsAsJson(jsonFileAsIpns.name, gatewayPlebbit);
             expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
         });
 
