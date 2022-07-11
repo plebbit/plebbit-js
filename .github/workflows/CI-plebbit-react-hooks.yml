@@ -1,0 +1,39 @@
+name: CI plebbit-react-hooks
+
+on:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        node_version:
+          - 16
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node_version }}
+
+      # move plebbit-js to sub folder
+      - run: cp -r . ../plebbit-js && rm -fr `ls -a` || exit 0
+      # download plebbit-react-hooks
+      - run: git clone https://github.com/plebbit/plebbit-react-hooks.git .
+      # move plebbit-js to working dir
+      - run: mv ../plebbit-js plebbit-js
+      # install plebbit-react-hooks
+      - run: yarn
+      # install latest plebbit-js
+      - run: yarn remove @plebbit/plebbit-js
+      - run: yarn add ./plebbit-js
+      # build
+      - run: yarn build
+      - run: yarn webpack
+      # test
+      - run: yarn test:server & yarn test:server:wait-on
+      - run: CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) yarn test:e2e

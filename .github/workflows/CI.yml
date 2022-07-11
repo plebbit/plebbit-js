@@ -23,7 +23,7 @@ on:
       - 'package-lock.json'
 
 jobs:
-  test:
+  test-plebbit-js:
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -48,3 +48,7 @@ jobs:
       - run: npm run test:server & npm run test:server:wait-on
       - run: npm run test:node:parallel
       - run: CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) npm run test:browser
+
+  test-plebbit-react-hooks:
+    uses: ./.github/workflows/CI-plebbit-react-hooks.yml
+    secrets: inherit
