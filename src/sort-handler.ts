@@ -127,7 +127,7 @@ export class SortHandler {
         const comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(
             parentCid,
             timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe],
-            timestamp(),
+            Number.MAX_SAFE_INTEGER,
             trx
         );
         if (comments.length === 0) return [undefined, undefined];
@@ -140,7 +140,7 @@ export class SortHandler {
         const comments = await this.subplebbit.dbHandler.queryCommentsBetweenTimestampRange(
             parentCid,
             timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe],
-            timestamp(),
+            Number.MAX_SAFE_INTEGER,
             trx
         );
         if (comments.length === 0) return [undefined, undefined];
@@ -174,7 +174,12 @@ export class SortHandler {
                 assert(this.subplebbit?.dbHandler);
 
                 if (sortName === "topAll")
-                    comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(comment.cid, 0, timestamp(), trx);
+                    comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(
+                        comment.cid,
+                        0,
+                        Number.MAX_SAFE_INTEGER,
+                        trx
+                    );
                 else if (sortName === "old")
                     comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", trx);
                 else comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(comment?.cid, trx);
