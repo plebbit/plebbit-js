@@ -199,25 +199,46 @@ export class SortHandler {
 
     async generatePagesUnderComment(comment?: Comment, trx?: Transaction): Promise<Pages | undefined> {
         if (comment?.replyCount === 0) return undefined;
+        if (comment && (comment.replyCount === undefined || comment.replyCount === null))
+            throw new Error(`Comment has not defined replyCount (${comment.replyCount}): ${JSON.stringify(comment)}`);
         const key = comment?.cid || "subplebbit"; // If comment is undefined then we're generating page for subplebbit
         if (await this.subplebbit._keyv.has(key)) {
             const cachedPage = new Pages({ ...(await this.subplebbit._keyv.get(key)), subplebbit: this.subplebbit });
+            assert(JSON.stringify(cachedPage.toJSON()) !== "{}", "Cache returns empty pages");
             return cachedPage;
         }
 
+        if (key === "subp-lebbit" && (await this.subplebbit.dbHandler?.queryCountOfPosts(trx)) === 0)
+            // If subplebbit and has no posts, then return undefined
+            return undefined;
+
         const res = await Promise.all(this.getSortPromises(comment, trx));
+
         let [pagesRaw, pageCids] = [{}, {}];
         for (const [page, pageCid] of res) {
             pagesRaw = { ...pagesRaw, ...page };
             if (page) pageCids[Object.keys(page)[0]] = pageCid;
         }
         [pagesRaw, pageCids] = [removeKeysWithUndefinedValues(pagesRaw), removeKeysWithUndefinedValues(pageCids)];
-
-        if (JSON.stringify(pagesRaw) === "{}") return undefined;
+        if (!pagesRaw || !pageCids || JSON.stringify(pagesRaw) === "{}" || JSON.stringify(pageCids) === "{}")
+            throw new Error(`Failed to generate pages`);
 
         const pages = new Pages({ pages: pagesRaw, pageCids: pageCids, subplebbit: this.subplebbit });
 
-        await this.subplebbit._keyv.set(key, pages);
+        if (!comment && this.subplebbit.latestPostCid) {
+            // If there is at least one comment in subplebbit, then assert the following
+            const postCount = await this.subplebbit.dbHandler.queryCountOfPosts(trx);
+            [pages?.pages?.controversialAll, pages?.pages?.hot, pages?.pages?.new, pages?.pages?.topAll].forEach((sortPage) => {
+                assert(sortPage?.comments?.length === Math.min(postCount, SORTED_POSTS_PAGE_SIZE));
+            });
+        } else if (comment) {
+            [pages?.pages?.controversialAll, pages?.pages?.new, pages?.pages?.topAll, pages?.pages?.old].forEach((sortPage, i) => {
+                if (sortPage?.comments?.length !== Math.min(SORTED_POSTS_PAGE_SIZE, comment.replyCount))
+                    throw new Error(`Problem with sort`);
+            });
+        }
+
+        await this.subplebbit._keyv.set(key, pages.toJSON());
 
         return pages;
     }
