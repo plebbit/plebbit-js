@@ -3,6 +3,8 @@ const signers = require("../fixtures/signers");
 const { timestamp } = require("../../dist/node/util");
 const { signPublication, verifyPublication } = require("../../dist/node/signer");
 const { generateMockPost, generateMockComment } = require("../../dist/node/test-util");
+const { SIGNED_PROPERTY_NAMES } = require("../../dist/node/signer/signatures");
+
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
@@ -32,7 +34,7 @@ describe("comment (node and browser)", async () => {
                 title: "Test post signature",
                 content: "some content..."
             };
-            const signature = await signPublication(comment, signers[0], plebbit);
+            const signature = await signPublication(comment, signers[0], plebbit, SIGNED_PROPERTY_NAMES.COMMENT);
             const signedComment = { signature: signature.toJSON(), ...comment };
             const [isVerified, failedVerificationReason] = await verifyPublication(signedComment, plebbit);
             expect(isVerified).to.be.true;
@@ -47,7 +49,7 @@ describe("comment (node and browser)", async () => {
                 title: "Test post signature",
                 content: "some content..."
             };
-            const signature = await signPublication(comment, signer, plebbit);
+            const signature = await signPublication(comment, signer, plebbit, SIGNED_PROPERTY_NAMES.COMMENT);
             const signedComment = { signature: signature.toJSON(), ...comment };
             const [isVerified, failedVerificationReason] = await verifyPublication(signedComment, plebbit);
             expect(isVerified).to.be.true;
