@@ -175,7 +175,7 @@ const publishComments = async (parentComments, subplebbit) => {
     // Use comment.content as a flag
     if (!parentComments)
         await Promise.all(
-            new Array(numOfCommentsToPublish).fill(null).map(async (_, i) => {
+            new Array(numOfCommentsToPublish).fill(null).map(async () => {
                 const post = await subplebbit._addPublicationToDb(
                     await generateMockPost(subplebbit.address, subplebbit.plebbit, signers[0], true)
                 );
@@ -187,7 +187,7 @@ const publishComments = async (parentComments, subplebbit) => {
             parentComments.map(
                 async (parentComment) =>
                     await Promise.all(
-                        new Array(numOfCommentsToPublish).fill(null).map(async (_, i) => {
+                        new Array(numOfCommentsToPublish).fill(null).map(async () => {
                             const comment = await subplebbit._addPublicationToDb(
                                 await generateMockComment(parentComment, subplebbit.plebbit, signers[0], true)
                             );
@@ -204,10 +204,15 @@ const publishVotes = async (comments, subplebbit) => {
     await Promise.all(
         comments.map(async (comment) => {
             return await Promise.all(
-                new Array(votesPerCommentToPublish).fill(null).map(async () => {
-                    let vote = await generateMockVote(comment, Math.random() > 0.5 ? 1 : -1, subplebbit.plebbit, randomSigner());
+                new Array(votesPerCommentToPublish).fill(null).map(async (_, i) => {
+                    let vote = await generateMockVote(
+                        comment,
+                        Math.random() > 0.5 ? 1 : -1,
+                        subplebbit.plebbit,
+                        signers[i % signers.length]
+                    );
                     vote = await subplebbit._addPublicationToDb(vote);
-                    votes.push(vote);
+                    if (vote) votes.push(vote);
                 })
             );
         })
