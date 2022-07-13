@@ -55,6 +55,7 @@ export class Resolver {
     }
 
     async resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string> {
+        if (!this.plebbit.resolveAuthorAddresses) return authorAddress;
         if (authorAddress?.endsWith(".eth")) {
             debugs.DEBUG(`Will attempt to resolve plebbit-author-address of ${authorAddress}`);
             return this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address");
