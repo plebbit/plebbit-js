@@ -9,6 +9,20 @@ import { Pages } from "./pages";
 import { Subplebbit } from "./subplebbit";
 const debugs = getDebugLevels("test-util");
 
+function generateRandomTimestamp(parentTimestamp?: number): number {
+    const [lowerLimit, upperLimit] = [parentTimestamp || 0, timestamp()];
+
+    let randomTimestamp;
+    while (!randomTimestamp) {
+        const randomTimeframeIndex = (Object.keys(TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
+        const tempTimestamp = lowerLimit + Object.values(TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
+        if (tempTimestamp >= lowerLimit && tempTimestamp <= upperLimit) randomTimestamp = tempTimestamp;
+    }
+    debugs.TRACE(`generateRandomTimestamp: randomTimestamp: ${randomTimestamp}`);
+
+    return randomTimestamp;
+}
+
 export async function generateMockPost(
     subplebbitAddress: string,
     plebbit: Plebbit,
@@ -16,14 +30,8 @@ export async function generateMockPost(
     randomTimestamp = false,
     postProps = {}
 ) {
-    let postTimestamp: number | undefined;
-    if (randomTimestamp) {
-        const randomTimeframeIndex = (Object.keys(TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
-        postTimestamp = timestamp() - Object.values(TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
-        if (postTimestamp === Number.NEGATIVE_INFINITY) postTimestamp = 0;
-    }
-
-    const postStartTestTime = Date.now() / 1000;
+    const postTimestamp = (randomTimestamp && generateRandomTimestamp()) || timestamp();
+    const postStartTestTime = Date.now() / 1000 + Math.random();
     signer = signer || (await plebbit.createSigner());
     const post = await plebbit.createComment({
         author: { displayName: `Mock Author - ${postStartTestTime}` },
@@ -48,19 +56,13 @@ export async function generateMockComment(
     randomTimestamp = false,
     commentProps = {}
 ): Promise<Comment> {
-    let commentTimestamp: number | undefined;
-    if (randomTimestamp) {
-        const randomTimeframeIndex = (Object.keys(TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
-        commentTimestamp = timestamp() - Object.values(TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
-        if (commentTimestamp === Number.NEGATIVE_INFINITY) commentTimestamp = 0;
-    }
-    const commentTime = Date.now() / 1000;
+    const commentTimestamp = (randomTimestamp && generateRandomTimestamp(parentPostOrComment.timestamp)) || timestamp();
+    const commentTime = Date.now() / 1000 + Math.random();
     signer = signer || (await plebbit.createSigner());
     const comment = await plebbit.createComment({
         author: { displayName: `Mock Author - ${commentTime}` },
         signer: signer,
         content: `Mock comment - ${commentTime}`,
-        postCid: parentPostOrComment.postCid || parentPostOrComment.cid,
         parentCid: parentPostOrComment.cid,
         subplebbitAddress: parentPostOrComment.subplebbitAddress,
         timestamp: commentTimestamp,
