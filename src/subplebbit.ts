@@ -314,7 +314,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             debugs.WARN(`Subplebbit IPNS (${resolvedAddress}) is not defined, will publish a new record`);
         }
         let posts: Pages | undefined;
-        if (subplebbitPosts)
+        if (subplebbitPosts) {
+            if (!subplebbitPosts?.pages?.hot) throw new Error("Generated pages for subplebbit.posts is missing pages");
             posts = new Pages({
                 pages: {
                     hot: subplebbitPosts.pages.hot
@@ -322,6 +323,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
                 pageCids: subplebbitPosts.pageCids,
                 subplebbit: this
             });
+        }
+
         const metricsCid = (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path;
         const newSubplebbitOptions = {
             ...(!currentIpns && !posts && !this.createdAt ? { createdAt: timestamp() } : {}),
@@ -465,51 +468,50 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             // Comment and Post need to add file to ipfs
             const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote.toJSONSkeleton()));
 
-            if (await this.dbHandler.querySigner(ipnsKeyName, undefined)) {
-                const msg = `Failed to insert ${postOrCommentOrVote.getType()} due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`;
-                debugs.INFO(msg);
-                return { reason: msg };
-            } else {
+            try {
                 const ipfsSigner = new Signer({
                     ...(await this.plebbit.createSigner()),
                     ipnsKeyName: ipnsKeyName,
                     usage: "comment"
                 });
-                const [ipfsKey] = await Promise.all([
-                    ipfsImportKey(ipfsSigner, this.plebbit),
-                    this.dbHandler.insertSigner(ipfsSigner, undefined)
+                await this.dbHandler.insertSigner(ipfsSigner, undefined);
+                const ipfsKey = await ipfsImportKey(ipfsSigner, this.plebbit);
+                postOrCommentOrVote.setCommentIpnsKey(ipfsKey);
+            } catch (e) {
+                const msg = `Failed to insert ${
+                    postOrCommentOrVote.constructor.name
+                } due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?): ${e}`;
+                debugs.DEBUG(msg);
+                return { reason: msg };
+            }
+            if (postOrCommentOrVote instanceof Post) {
+                const trx = await this.dbHandler.createTransaction();
+                postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPost(trx))?.cid);
+                postOrCommentOrVote.setDepth(0);
+                const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
+                postOrCommentOrVote.setPostCid(file.path);
+                postOrCommentOrVote.setCid(file.path);
+                await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
+                await trx.commit();
+
+                debugs.INFO(`New post with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
+            } else if (postOrCommentOrVote instanceof Comment) {
+                // Comment
+                const trx = await this.dbHandler.createTransaction();
+                const [commentsUnderParent, parent] = await Promise.all([
+                    this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx),
+                    this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)
                 ]);
 
-                postOrCommentOrVote.setCommentIpnsKey(ipfsKey);
-                if (postOrCommentOrVote instanceof Post) {
-                    const trx = await this.dbHandler.createTransaction();
-                    postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPost(trx))?.cid);
-                    postOrCommentOrVote.setDepth(0);
-                    const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
-                    postOrCommentOrVote.setPostCid(file.path);
-                    postOrCommentOrVote.setCid(file.path);
-                    await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
-                    await trx.commit();
+                postOrCommentOrVote.setPreviousCid(commentsUnderParent[0]?.cid);
+                postOrCommentOrVote.setDepth(parent.depth + 1);
+                const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
+                postOrCommentOrVote.setCid(file.path);
+                postOrCommentOrVote.setPostCid(parent.postCid);
+                await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
+                await trx.commit();
 
-                    debugs.INFO(`New post with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
-                } else if (postOrCommentOrVote instanceof Comment) {
-                    // Comment
-                    const trx = await this.dbHandler.createTransaction();
-                    const [commentsUnderParent, parent] = await Promise.all([
-                        this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx),
-                        this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)
-                    ]);
-
-                    postOrCommentOrVote.setPreviousCid(commentsUnderParent[0]?.cid);
-                    postOrCommentOrVote.setDepth(parent.depth + 1);
-                    const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
-                    postOrCommentOrVote.setCid(file.path);
-                    postOrCommentOrVote.setPostCid(parent.postCid);
-                    await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
-                    await trx.commit();
-
-                    debugs.INFO(`New comment with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
-                }
+                debugs.INFO(`New comment with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
             }
         }
 
@@ -668,20 +670,28 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             dbComment.setReplies(commentReplies);
             dbComment.setUpdatedAt(timestamp());
             await this.dbHandler.upsertComment(dbComment, undefined);
-            return dbComment.edit(dbComment.toJSONCommentUpdate());
+            assert(this.signer);
+            const subplebbitSignature = await signPublication(
+                { ...dbComment.toJSONCommentUpdate(), replies: dbComment?.replies?.toJSON() },
+                this.signer,
+                this.plebbit,
+                SIGNED_PROPERTY_NAMES.COMMENT_UPDATE
+            );
+
+            return dbComment.edit({ ...dbComment.toJSONCommentUpdate(), signature: subplebbitSignature });
         }
         debugs.TRACE(`Comment (${dbComment.cid}) is up-to-date and does not need syncing`);
     }
 
     async syncIpnsWithDb() {
         debugs.TRACE("Starting to sync IPNS with DB");
-        try {
-            await this.sortHandler.cacheCommentsPages();
-            const dbComments: Comment[] = await this.dbHandler.queryComments();
-            await Promise.all([...dbComments.map(async (comment: Comment) => this.syncComment(comment)), this.updateSubplebbitIpns()]);
-        } catch (e) {
-            debugs.WARN(`Failed to sync due to error: ${e}`);
-        }
+        // try {
+        await this.sortHandler.cacheCommentsPages();
+        const dbComments: Comment[] = await this.dbHandler.queryComments();
+        await Promise.all([...dbComments.map(async (comment: Comment) => this.syncComment(comment)), this.updateSubplebbitIpns()]);
+        // } catch (e) {
+        //     debugs.WARN(`Failed to sync due to error: ${e}`);
+        // }
     }
 
     async _syncLoop(syncIntervalMs: number) {
@@ -730,13 +740,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
     }
 
     async _addPublicationToDb(publication: Publication) {
-        try {
-            debugs.INFO(`Adding ${publication.getType()} with author (${JSON.stringify(publication.author)}) to DB directly`);
-            const randomUUID = uuidv4();
-            await this.dbHandler.upsertChallenge(new ChallengeRequestMessage({ challengeRequestId: randomUUID }));
-            return (await this.publishPostAfterPassingChallenge(publication, randomUUID)).publication;
-        } catch (e) {
-            debugs.ERROR(`Failed to add publication to db directly: ${e}`);
-        }
+        debugs.INFO(`Adding ${publication.getType()} with author (${JSON.stringify(publication.author)}) to DB directly`);
+        const randomUUID = uuidv4();
+        await this.dbHandler.upsertChallenge(new ChallengeRequestMessage({ challengeRequestId: randomUUID }));
+        return (await this.publishPostAfterPassingChallenge(publication, randomUUID)).publication;
     }
 }
