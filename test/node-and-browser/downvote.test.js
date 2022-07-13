@@ -6,7 +6,7 @@ const { waitTillCommentsUpdate, waitTillPublicationsArePublished, randomElement 
 
 const subplebbitAddress = signers[0].address;
 
-let plebbit, subplebbit, postToVote;
+let plebbit, postToVote;
 
 const previousVotes = [];
 const updateInterval = 100;
@@ -16,17 +16,12 @@ describe(`Test Downvote`, async () => {
             ipfsHttpClientOptions: "http://localhost:5001/api/v0",
             pubsubHttpClientOptions: `http://localhost:5002/api/v0`
         });
-        subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-        await subplebbit.update(updateInterval);
-
         postToVote = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
         await postToVote.publish();
         await waitTillPublicationsArePublished([postToVote]);
         expect(postToVote.cid).to.be.a("string");
         await waitTillCommentsUpdate([postToVote], updateInterval);
         await postToVote.update(updateInterval);
-
-        await subplebbit.stop();
     });
     after(async () => {
         await postToVote.stop();

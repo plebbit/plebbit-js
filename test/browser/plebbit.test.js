@@ -12,7 +12,7 @@ describe("plebbit", () => {
 
     it("has default plebbit options", async () => {
         expect(plebbit.ipfsGatewayUrl).to.equal("https://cloudflare-ipfs.com");
-        expect(plebbit.pubsubHttpClientOptions).to.equal("https://pubsubprovider.xyz/api/v0");
+        expect(plebbit.pubsubHttpClientOptions.url).to.equal("https://pubsubprovider.xyz/api/v0");
 
         // no dataPath in brower
         expect(plebbit.dataPath).to.equal(undefined);

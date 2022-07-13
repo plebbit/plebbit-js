@@ -8,7 +8,7 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 describe("Editing", async () => {
-    let plebbit, commentToBeEdited, subplebbit;
+    let plebbit, commentToBeEdited;
     const subplebbitAddress = signers[0].address;
     const updateInterval = 100;
 
@@ -22,10 +22,8 @@ describe("Editing", async () => {
             else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
             return authorAddress;
         };
-        subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-        await subplebbit.update(updateInterval);
 
-        commentToBeEdited = await generateMockPost(subplebbit.address, plebbit, signers[0]);
+        commentToBeEdited = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
         await commentToBeEdited.publish();
         await waitTillPublicationsArePublished([commentToBeEdited]);
         expect(commentToBeEdited?.cid).to.be.a("string");
@@ -35,7 +33,6 @@ describe("Editing", async () => {
 
     after(async () => {
         await commentToBeEdited.stop();
-        await subplebbit.stop();
     });
 
     it("Fails to edit a comment if not authorized", async function () {

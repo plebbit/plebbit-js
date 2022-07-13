@@ -16,7 +16,7 @@ describe("plebbit (node and browser)", () => {
     describe("plebbit with default options (cloudflare and pubsubprovider)", async () => {
         it("has default plebbit options", async () => {
             expect(plebbit.ipfsGatewayUrl).to.equal("https://cloudflare-ipfs.com");
-            expect(plebbit.pubsubHttpClientOptions).to.equal("https://pubsubprovider.xyz/api/v0");
+            expect(plebbit.pubsubHttpClientOptions.url).to.equal("https://pubsubprovider.xyz/api/v0");
             // no dataPath in browser
             if (typeof window === "undefined") {
                 expect(plebbit.dataPath).to.match(/\.plebbit$/);
@@ -34,7 +34,7 @@ describe("plebbit (node and browser)", () => {
             expect(testPlebbit.pubsubIpfsClient).to.exist;
             expect(testPlebbit.ipfsClient).to.equal(testPlebbit.ipfsClient);
             expect(testPlebbit.ipfsGatewayUrl).to.equal("http://127.0.0.1:8080");
-            expect(testPlebbit.pubsubHttpClientOptions).to.equal("https://pubsubprovider.xyz/api/v0");
+            expect(testPlebbit.pubsubHttpClientOptions.url).to.equal("https://pubsubprovider.xyz/api/v0");
         });
     });
 
