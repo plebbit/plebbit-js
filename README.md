@@ -574,7 +574,7 @@ An object which may have the following keys:
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| address | `string` | `undefined` | `Address` of the subplebbit |
+| address | `string` or `undefined` | `undefined` | `Address` of the subplebbit |
 | signer | `Signer` or `undefined` | `undefined` | (Subplebbit owners only) Optional `Signer` of the subplebbit to create a subplebbit with a specific private key |
 | database | `KnexConfig` or `undefined` | SQLite database at `${plebbit.dataPath}/subplebbits/${subplebbit.address}` | (Subplebbit owners only) Optional [KnexConfig](https://www.npmjs.com/package/knex#examples) |
 | ...subplebbit | `any` | `undefined` | `CreateSubplebbitOptions` can also initialize any property on the `Subplebbit` instance |
@@ -625,6 +625,19 @@ const subplebbit = await plebbit.createSubplebbit({
 })
 console.log(subplebbit.title) // prints 'Memes'
 console.log(subplebbit.posts.pages.hot.comments[0].content) // prints 'My first post'
+
+// create a new local subplebbit as the owner
+const subplebbit = await plebbit.createSubplebbit()
+// created subplebbit owner private key: subplebbit.signer.privateKey
+// created subplebbit address: subplebbit.address
+
+// create a new local subplebbit as the owner already with settings
+const subplebbit = await plebbit.createSubplebbit({title: 'Memes', description: 'Post memes here'})
+
+// create a new local subplebbit as the owner with a premade signer
+const signer = await plebbit.createSigner()
+const subplebbit = await plebbit.createSubplebbit({signer})
+// signer.address === subplebbit.address
 ```
 
 ### `plebbit.createSubplebbitEdit(createSubplebbitEditOptions)`
