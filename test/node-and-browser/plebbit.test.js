@@ -2,9 +2,12 @@
 // Debug.enable('plebbit-js:*')
 const Plebbit = require("../../dist/node");
 const fixtureSigner = require("../fixtures/signers")[0];
-const { expect } = require("chai");
 const signers = require("../fixtures/signers");
 const { loadIpfsFileAsJson, loadIpnsAsJson } = require("../../dist/node/util");
+const chai = require("chai");
+const chaiAsPromised = require("chai-as-promised");
+chai.use(chaiAsPromised);
+const { expect, assert } = chai;
 
 const [ensSubplebbitSigner, ensSubplebbitAddress] = [signers[3], "plebbit.eth"];
 describe("plebbit (node and browser)", () => {
@@ -84,6 +87,7 @@ describe("plebbit (node and browser)", () => {
         it("loads post correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             await subplebbit.update();
+            await subplebbit.stop();
             expect(subplebbit.latestPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
             const expectedPostProps = await loadIpfsFileAsJson(subplebbit.latestPostCid, plebbit);
             const expectedPost = await plebbit.createComment({
@@ -91,10 +95,10 @@ describe("plebbit (node and browser)", () => {
                 postCid: subplebbit.latestPostCid,
                 ...expectedPostProps
             });
-            expect(expectedPost.getType()).to.equal("post");
+            expect(expectedPost.constructor.name).to.equal("Post");
             await expectedPost.update();
             const loadedPost = await plebbit.getComment(subplebbit.latestPostCid);
-            expect(loadedPost.getType()).to.equal("post");
+            expect(loadedPost.constructor.name).to.equal("Post");
             await loadedPost.update();
 
             expect(JSON.stringify(loadedPost)).to.equal(JSON.stringify(expectedPost));
@@ -105,16 +109,17 @@ describe("plebbit (node and browser)", () => {
         it("loads comment correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             await subplebbit.update();
+            await subplebbit.stop();
             const comment = subplebbit?.posts?.pages?.hot?.comments.filter((comment) => comment.replies)[0]?.replies?.pages?.topAll
                 ?.comments[0];
             expect(comment).to.exist;
             const expectedCommentProps = await loadIpfsFileAsJson(comment.cid, plebbit);
             const expectedComment = await plebbit.createComment({ cid: comment.cid, ...expectedCommentProps });
-            expect(expectedComment.getType()).to.equal("comment");
+            expect(expectedComment.constructor.name).to.equal("Comment");
             await expectedComment.update();
             await expectedComment.stop();
             const loadedComment = await plebbit.getComment(comment.cid);
-            expect(loadedComment.getType()).to.equal("comment");
+            expect(loadedComment.constructor.name).to.equal("Comment");
             await loadedComment.update();
             await loadedComment.stop();
 
@@ -131,15 +136,8 @@ describe("plebbit (node and browser)", () => {
         });
 
         it("Throws an error when subplebbit address is incorrect", async () => {
-            return new Promise(async (resolve, reject) => {
-                const address = "0xdeadbeef";
-                try {
-                    await plebbit.getSubplebbit(address);
-                    reject();
-                } catch (e) {
-                    resolve();
-                }
-            });
+            const gibbreishAddress = "0xdeadbeef";
+            await assert.isRejected(plebbit.getSubplebbit(gibbreishAddress), "could not resolve name");
         });
 
         it("can load subplebbit with ENS domain via plebbit.getSubplebbit", async () => {

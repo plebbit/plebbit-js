@@ -3,7 +3,7 @@ const fixtureSigners = require("../fixtures/signers");
 const authorSignerFixture = fixtureSigners[1];
 const fixtureComment = require("../fixtures/publications").comment;
 const { signPublication, verifyPublication } = require("../../dist/node/signer");
-const { signBufferRsa, verifyBufferRsa } = require("../../dist/node/signer/signatures");
+const { signBufferRsa, verifyBufferRsa, SIGNED_PROPERTY_NAMES } = require("../../dist/node/signer/signatures");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
@@ -75,17 +75,17 @@ describe("signer (node and browser)", async () => {
         let authorSignature, signedPublication;
 
         before(async () => {
-            authorSignature = await signPublication(fixtureComment, authorSigner, plebbit);
+            authorSignature = await signPublication(fixtureComment, authorSigner, plebbit, SIGNED_PROPERTY_NAMES.COMMENT);
             signedPublication = { ...fixtureComment, signature: authorSignature };
         });
 
         it("signPublication author signature is correct", async () => {
             const expectedAuthorSignature = {
                 signature:
-                    "CLHDdRwTWbRL8VgYBAN5ll1ZvhDEnq+WCm8hhlAOqQ/8dgE3r7qfqhFn3tlDCavPW1dYFJ2OkrSgENR/ubXfgeLFwkQYyBOg5P8ReNyEExgN2MrHjbbFcC22GIY48rpl1/9ZPBvm7I7jImMGgL7/ZSnESYsn9nvFYVeYMUB/xRaRYHF6VJe6Kh7r1P5O7qa16h82ud3HlhvGsYd3o5saFdy2rSsoq6+ILwEnjauahTKLLYECVN5RTGUw/6wwBVWH+5qlE66+libD2/UKQe4cP+mgdv9qrIMVx1FT48hJtdSNxowIR1tXPsaWBf8I9YRN/hr5WLH6fSh7XT+qG3NOhA",
+                    "IMff4G8CPJPS3O3zRYkqh160BU3dLCd9Is6F348yNkUBzMEstH2u6+PMfyULQeJQzspz+bEU6iq/b7QwRAvQKClV6kHXK0R5Yzfop7cDHD3v0uqTVwxbtbINOm6dbjO1iThOeP7ULSXzLEP0obVyy51v3xBqKfrdG8NMQd/VuU6rtxmRJQwJdPHEhjDFQ3QxtoOUnrGTUVED0eX22gORjxb1uW5vJ+T/63frIJ9gBgCYRA8luCmTt59hZRusmh0n21zIQmxIdRebmdwR15wI7hmrppqcH1e5Fm+MCVRu7JLySsP4r5DJ2PECw9gobq1am6F4SuUXZBbQaxq36QZk9Q",
                 publicKey: authorSignerFixture.publicKey,
                 type: "rsa",
-                signedPropertyNames: ["subplebbitAddress", "author", "timestamp", "parentCid", "content"]
+                signedPropertyNames: SIGNED_PROPERTY_NAMES.COMMENT
             };
             expect(authorSignature).not.to.equal(undefined);
             expect(authorSignature.signature).to.equal(expectedAuthorSignature.signature);
@@ -97,7 +97,7 @@ describe("signer (node and browser)", async () => {
         it(`signPublication throws with invalid author`, async () => {
             // Trying to sign a publication with author.address !== randomSigner.address
             // should throw an error
-            await assert.isRejected(signPublication(fixtureComment, randomSigner, plebbit));
+            await assert.isRejected(signPublication(fixtureComment, randomSigner, plebbit, SIGNED_PROPERTY_NAMES.COMMENT));
         });
 
         it("verifyPublication success with correct author signature", async () => {
