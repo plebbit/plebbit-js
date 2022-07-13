@@ -54,7 +54,7 @@ export declare class DbHandler {
         _intersectProps: {};
         _unionProps: never;
     }[]>;
-    createCommentsFromRows(commentsRows: Comment[]): Promise<Comment[] | Post[]>;
+    createCommentsFromRows(commentsRows: Comment[] | Comment): Promise<Comment[] | Post[]>;
     createVotesFromRows(voteRows: Vote[] | Vote): Promise<Vote[]>;
     queryCommentsSortedByTimestamp(parentCid: string | undefined | null, order?: string, trx?: Transaction): Promise<Comment[] | Post[]>;
     queryCommentsBetweenTimestampRange(parentCid: string | undefined | null, timestamp1: number, timestamp2: number, trx?: Transaction): Promise<Comment[] | Post[]>;
@@ -69,6 +69,7 @@ export declare class DbHandler {
     querySubplebbitSigner(trx?: Transaction): Promise<Signer>;
     querySigner(ipnsKeyName: string, trx?: Transaction): Promise<Signer | undefined>;
     queryCommentsGroupByDepth(trx?: Knex.Transaction): Promise<Comment[][]>;
+    queryCountOfPosts(trx?: Knex.Transaction): Promise<number>;
     changeDbFilename(newDbFileName: string): Promise<void>;
     rollbackAllTrxs(): Promise<void>;
 }

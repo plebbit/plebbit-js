@@ -399,12 +399,13 @@ var DbHandler = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_a) {
-                if (!commentsRows || (commentsRows === null || commentsRows === void 0 ? void 0 : commentsRows.length) === 0)
+                if (!commentsRows || (Array.isArray(commentsRows) && (commentsRows === null || commentsRows === void 0 ? void 0 : commentsRows.length) === 0))
                     return [2 /*return*/, []];
                 if (!Array.isArray(commentsRows))
                     commentsRows = [commentsRows];
                 return [2 /*return*/, Promise.all(commentsRows.map(function (props) {
                         var replacedProps = (0, util_1.replaceXWithY)(props, null, undefined); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
+                        // @ts-ignore
                         return _this.subplebbit.plebbit.createComment(replacedProps);
                     }))];
             });
@@ -420,6 +421,7 @@ var DbHandler = /** @class */ (function () {
                     voteRows = [voteRows];
                 return [2 /*return*/, Promise.all(voteRows.map(function (props) {
                         var replacedProps = (0, util_1.replaceXWithY)(props, null, undefined);
+                        // @ts-ignore
                         return _this.subplebbit.plebbit.createVote(replacedProps);
                     }))];
             });
@@ -682,6 +684,21 @@ var DbHandler = /** @class */ (function () {
                     case 2:
                         comments = _a.sent();
                         return [2 /*return*/, comments];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.queryCountOfPosts = function (trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            var obj;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS).count().where({ depth: 0 }).first()];
+                    case 1:
+                        obj = _a.sent();
+                        if (!obj)
+                            return [2 /*return*/, 0];
+                        return [2 /*return*/, Number(obj["count(*)"])];
                 }
             });
         });

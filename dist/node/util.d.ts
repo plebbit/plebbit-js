@@ -10,7 +10,7 @@ export declare function chunks<T>(arr: Array<T>, len: number): Array<Array<T>>;
 export declare function round(number: number, decimalPlaces: number): number;
 export declare function parseJsonIfString(x: any): any;
 export declare function timestamp(): number;
-export declare function keepKeys(obj: Object, keys: any[]): Object;
+export declare function keepKeys(obj: Object, keys: any[]): {};
 export declare function removeKeys(object1: Object, keys: any[]): Object;
 export declare function replaceXWithY(obj: Object, x: any, y: any): Object;
 export declare function shallowEqual(object1: any, object2: any, excludeKeys?: any[]): boolean;

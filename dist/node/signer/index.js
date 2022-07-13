@@ -78,7 +78,9 @@ var createSigner = function (createSignerOptions) {
                     privateKey = _a.sent();
                     signerType = "rsa";
                     _a.label = 3;
-                case 3: return [4 /*yield*/, (0, util_1.getPublicKeyPemFromPrivateKeyPem)(privateKey)];
+                case 3:
+                    (0, assert_1.default)(typeof signerType === "string");
+                    return [4 /*yield*/, (0, util_1.getPublicKeyPemFromPrivateKeyPem)(privateKey)];
                 case 4:
                     publicKeyPem = _a.sent();
                     return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPrivateKeyPem)(privateKey)];

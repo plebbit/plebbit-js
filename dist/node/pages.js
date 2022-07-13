@@ -117,6 +117,12 @@ var Page = /** @class */ (function () {
     function Page(props) {
         Object.assign(this, props);
     }
+    Page.prototype.toJSON = function () {
+        return {
+            comments: this.comments.map(function (c) { return c.toJSON(); }),
+            nextCid: this.nextCid
+        };
+    };
     return Page;
 }());
 exports.Page = Page;

@@ -62,24 +62,34 @@ var assert_1 = __importDefault(require("assert"));
 var signer_1 = require("./signer");
 var resolver_1 = require("./resolver");
 var tinycache_1 = __importDefault(require("tinycache"));
+var signatures_1 = require("./signer/signatures");
 var debugs = (0, util_2.getDebugLevels)("plebbit");
 var Plebbit = /** @class */ (function () {
     function Plebbit(options) {
-        if (options === void 0) { options = {}; }
         this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
         this.ipfsClient = this.ipfsHttpClientOptions ? (0, ipfs_http_client_1.create)(this.ipfsHttpClientOptions) : undefined;
-        this.pubsubHttpClientOptions = options["pubsubHttpClientOptions"] || "https://pubsubprovider.xyz/api/v0";
+        this.pubsubHttpClientOptions = options["pubsubHttpClientOptions"] || { url: "https://pubsubprovider.xyz/api/v0" };
         this.pubsubIpfsClient = options["pubsubHttpClientOptions"]
             ? (0, ipfs_http_client_1.create)(options["pubsubHttpClientOptions"])
             : this.ipfsClient
                 ? this.ipfsClient
                 : (0, ipfs_http_client_1.create)(this.pubsubHttpClientOptions);
         this.dataPath = options["dataPath"] || util_1.default.getDefaultDataPath();
-        this.resolver = new resolver_1.Resolver({ plebbit: this, blockchainProviders: options["blockchainProviders"] });
+        this.blockchainProviders = options.blockchainProviders || {
+            avax: {
+                url: "https://api.avax.network/ext/bc/C/rpc",
+                chainId: 43114
+            },
+            matic: {
+                url: "https://polygon-rpc.com",
+                chainId: 137
+            }
+        };
+        this.resolver = new resolver_1.Resolver({ plebbit: this, blockchainProviders: this.blockchainProviders });
+        this.resolveAuthorAddresses = options["resolveAuthorAddresses"] || true;
         this._memCache = new tinycache_1.default();
     }
     Plebbit.prototype._init = function (options) {
-        if (options === void 0) { options = {}; }
         return __awaiter(this, void 0, void 0, function () {
             var gatewayFromNode, splits, e_1;
             return __generator(this, function (_a) {
@@ -153,47 +163,27 @@ var Plebbit = /** @class */ (function () {
             });
         });
     };
-    Plebbit.prototype.signPublication = function (createPublicationOptions) {
+    Plebbit.prototype.createComment = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var commentSignature;
+            var commentSubplebbit, commentSignature, commentProps;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (createPublicationOptions.author && !createPublicationOptions.author.address) {
-                            createPublicationOptions.author.address = createPublicationOptions.signer.address;
-                            debugs.TRACE("createPublicationOptions did not provide author.address, will define it to signer.address (".concat(createPublicationOptions.signer.address, ")"));
+                        commentSubplebbit = { plebbit: this, address: options.subplebbitAddress };
+                        if (!options.signer)
+                            return [2 /*return*/, options.title ? new post_1.default(options, commentSubplebbit) : new comment_1.Comment(options, commentSubplebbit)];
+                        if (!options.timestamp) {
+                            options.timestamp = (0, util_2.timestamp)();
+                            debugs.TRACE("User hasn't provided a timestamp in createCommentOptions, defaulting to (".concat(options.timestamp, ")"));
                         }
-                        return [4 /*yield*/, (0, signer_1.signPublication)(createPublicationOptions, createPublicationOptions.signer, this)];
+                        if (options.author && !options.author.address) {
+                            options.author.address = options.signer.address;
+                            debugs.TRACE("createCommentOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
+                        }
+                        return [4 /*yield*/, (0, signer_1.signPublication)(options, options.signer, this, signatures_1.SIGNED_PROPERTY_NAMES.COMMENT)];
                     case 1:
                         commentSignature = _a.sent();
-                        return [2 /*return*/, __assign(__assign({}, createPublicationOptions), { signature: commentSignature })];
-                }
-            });
-        });
-    };
-    Plebbit.prototype.defaultTimestampIfNeeded = function (createPublicationOptions) {
-        if (!createPublicationOptions.timestamp) {
-            var defaultTimestamp = (0, util_2.timestamp)();
-            debugs.TRACE("User hasn't provided a timestamp in options, defaulting to (".concat(defaultTimestamp, ")"));
-            createPublicationOptions.timestamp = defaultTimestamp;
-        }
-        return createPublicationOptions;
-    };
-    Plebbit.prototype.createComment = function (createCommentOptions) {
-        return __awaiter(this, void 0, void 0, function () {
-            var commentSubplebbit, commentProps;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        commentSubplebbit = { plebbit: this, address: createCommentOptions.subplebbitAddress };
-                        if (!createCommentOptions.signer)
-                            return [2 /*return*/, createCommentOptions.title
-                                    ? new post_1.default(createCommentOptions, commentSubplebbit)
-                                    : new comment_1.Comment(createCommentOptions, commentSubplebbit)];
-                        createCommentOptions = this.defaultTimestampIfNeeded(createCommentOptions);
-                        return [4 /*yield*/, this.signPublication(createCommentOptions)];
-                    case 1:
-                        commentProps = _a.sent();
+                        commentProps = __assign(__assign({}, options), { signature: commentSignature });
                         return [2 /*return*/, commentProps.title ? new post_1.default(commentProps, commentSubplebbit) : new comment_1.Comment(commentProps, commentSubplebbit)];
                 }
             });
@@ -206,52 +196,55 @@ var Plebbit = /** @class */ (function () {
             });
         });
     };
-    Plebbit.prototype.createVote = function (createVoteOptions) {
+    Plebbit.prototype.createVote = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var subplebbit, voteProps;
+            var subplebbit, voteSignature, voteProps;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        subplebbit = { plebbit: this, address: createVoteOptions.subplebbitAddress };
-                        if (!createVoteOptions.signer)
-                            return [2 /*return*/, new vote_1.default(createVoteOptions, subplebbit)];
-                        createVoteOptions = this.defaultTimestampIfNeeded(createVoteOptions);
-                        return [4 /*yield*/, this.signPublication(createVoteOptions)];
+                        subplebbit = { plebbit: this, address: options.subplebbitAddress };
+                        if (!options.signer)
+                            return [2 /*return*/, new vote_1.default(options, subplebbit)];
+                        if (!options.timestamp) {
+                            options.timestamp = (0, util_2.timestamp)();
+                            debugs.TRACE("User hasn't provided a timestamp in createVote, defaulting to (".concat(options.timestamp, ")"));
+                        }
+                        if (options.author && !options.author.address) {
+                            options.author.address = options.signer.address;
+                            debugs.TRACE("CreateVoteOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
+                        }
+                        return [4 /*yield*/, (0, signer_1.signPublication)(options, options.signer, this, signatures_1.SIGNED_PROPERTY_NAMES.VOTE)];
                     case 1:
-                        voteProps = _a.sent();
+                        voteSignature = _a.sent();
+                        voteProps = __assign(__assign({}, options), { signature: voteSignature });
                         return [2 /*return*/, new vote_1.default(voteProps, subplebbit)];
                 }
             });
         });
     };
-    Plebbit.prototype.createCommentEdit = function (createCommentEditOptions) {
+    Plebbit.prototype.createCommentEdit = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var subplebbitObj, defaultTimestamp, commentEditProps, _a;
-            var _b;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var subplebbitObj, editSignature, commentEditProps;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
-                        subplebbitObj = { plebbit: this, address: createCommentEditOptions.subplebbitAddress };
-                        if (!createCommentEditOptions.signer)
-                            // User just wants to instantiate a CommentEdit object, not publish
-                            return [2 /*return*/, new comment_1.CommentEdit(createCommentEditOptions, subplebbitObj)];
-                        if (!createCommentEditOptions.editTimestamp) {
-                            defaultTimestamp = (0, util_2.timestamp)();
-                            debugs.DEBUG("User hasn't provided any editTimestamp for their CommentEdit, defaulted to (".concat(defaultTimestamp, ")"));
-                            createCommentEditOptions.editTimestamp = defaultTimestamp;
+                        subplebbitObj = { plebbit: this, address: options.subplebbitAddress };
+                        if (!options.signer)
+                            return [2 /*return*/, new comment_1.CommentEdit(options, subplebbitObj)]; // User just wants to instantiate a CommentEdit object, not publish
+                        if (!options.editTimestamp) {
+                            options.editTimestamp = (0, util_2.timestamp)();
+                            debugs.DEBUG("User hasn't provided editTimestamp in createCommentEdit, defaulted to (".concat(options.editTimestamp, ")"));
                         }
-                        _a = [__assign({}, createCommentEditOptions)];
-                        _b = {};
-                        return [4 /*yield*/, (0, signer_1.signPublication)(createCommentEditOptions, createCommentEditOptions.signer, this)];
+                        return [4 /*yield*/, (0, signer_1.signPublication)(options, options.signer, this, signatures_1.SIGNED_PROPERTY_NAMES.COMMENT_EDIT)];
                     case 1:
-                        commentEditProps = __assign.apply(void 0, _a.concat([(_b.editSignature = _c.sent(), _b)]));
+                        editSignature = _a.sent();
+                        commentEditProps = __assign(__assign({}, options), { editSignature: editSignature });
                         return [2 /*return*/, new comment_1.CommentEdit(commentEditProps, subplebbitObj)];
                 }
             });
         });
     };
     Plebbit.prototype.createSigner = function (createSignerOptions) {
-        if (createSignerOptions === void 0) { createSignerOptions = {}; }
         return (0, signer_1.createSigner)(createSignerOptions);
     };
     Plebbit.prototype.listSubplebbits = function () {

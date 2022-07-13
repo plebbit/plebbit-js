@@ -63,21 +63,28 @@ exports.getAllCommentsUnderSubplebbit = exports.loadAllPages = exports.generateM
 var util_1 = require("./util");
 var assert_1 = __importDefault(require("assert"));
 var debugs = (0, util_1.getDebugLevels)("test-util");
+function generateRandomTimestamp(parentTimestamp) {
+    var _a = [parentTimestamp || 0, (0, util_1.timestamp)()], lowerLimit = _a[0], upperLimit = _a[1];
+    var randomTimestamp;
+    while (!randomTimestamp) {
+        var randomTimeframeIndex = (Object.keys(util_1.TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
+        var tempTimestamp = lowerLimit + Object.values(util_1.TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
+        if (tempTimestamp >= lowerLimit && tempTimestamp <= upperLimit)
+            randomTimestamp = tempTimestamp;
+    }
+    debugs.TRACE("generateRandomTimestamp: randomTimestamp: ".concat(randomTimestamp));
+    return randomTimestamp;
+}
 function generateMockPost(subplebbitAddress, plebbit, signer, randomTimestamp, postProps) {
     if (randomTimestamp === void 0) { randomTimestamp = false; }
     if (postProps === void 0) { postProps = {}; }
     return __awaiter(this, void 0, void 0, function () {
-        var postTimestamp, randomTimeframeIndex, postStartTestTime, _a, post;
+        var postTimestamp, postStartTestTime, _a, post;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    if (randomTimestamp) {
-                        randomTimeframeIndex = (Object.keys(util_1.TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
-                        postTimestamp = (0, util_1.timestamp)() - Object.values(util_1.TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
-                        if (postTimestamp === Number.NEGATIVE_INFINITY)
-                            postTimestamp = 0;
-                    }
-                    postStartTestTime = Date.now() / 1000;
+                    postTimestamp = (randomTimestamp && generateRandomTimestamp()) || (0, util_1.timestamp)();
+                    postStartTestTime = Date.now() / 1000 + Math.random();
                     _a = signer;
                     if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, plebbit.createSigner()];
@@ -99,20 +106,16 @@ function generateMockPost(subplebbitAddress, plebbit, signer, randomTimestamp, p
     });
 }
 exports.generateMockPost = generateMockPost;
-function generateMockComment(parentPostOrComment, plebbit, signer, randomTimestamp) {
+function generateMockComment(parentPostOrComment, plebbit, signer, randomTimestamp, commentProps) {
     if (randomTimestamp === void 0) { randomTimestamp = false; }
+    if (commentProps === void 0) { commentProps = {}; }
     return __awaiter(this, void 0, void 0, function () {
-        var commentTimestamp, randomTimeframeIndex, commentTime, _a, comment;
+        var commentTimestamp, commentTime, _a, comment;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    if (randomTimestamp) {
-                        randomTimeframeIndex = (Object.keys(util_1.TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
-                        commentTimestamp = (0, util_1.timestamp)() - Object.values(util_1.TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
-                        if (commentTimestamp === Number.NEGATIVE_INFINITY)
-                            commentTimestamp = 0;
-                    }
-                    commentTime = Date.now() / 1000;
+                    commentTimestamp = (randomTimestamp && generateRandomTimestamp(parentPostOrComment.timestamp)) || (0, util_1.timestamp)();
+                    commentTime = Date.now() / 1000 + Math.random();
                     _a = signer;
                     if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, plebbit.createSigner()];
@@ -121,15 +124,7 @@ function generateMockComment(parentPostOrComment, plebbit, signer, randomTimesta
                     _b.label = 2;
                 case 2:
                     signer = _a;
-                    return [4 /*yield*/, plebbit.createComment({
-                            author: { displayName: "Mock Author - ".concat(commentTime) },
-                            signer: signer,
-                            content: "Mock comment - ".concat(commentTime),
-                            postCid: parentPostOrComment.postCid || parentPostOrComment.cid,
-                            parentCid: parentPostOrComment.cid,
-                            subplebbitAddress: parentPostOrComment.subplebbitAddress,
-                            timestamp: commentTimestamp
-                        })];
+                    return [4 /*yield*/, plebbit.createComment(__assign({ author: { displayName: "Mock Author - ".concat(commentTime) }, signer: signer, content: "Mock comment - ".concat(commentTime), parentCid: parentPostOrComment.cid, subplebbitAddress: parentPostOrComment.subplebbitAddress, timestamp: commentTimestamp }, commentProps))];
                 case 3:
                     comment = _b.sent();
                     comment.once("challenge", function (challengeMsg) {
@@ -143,11 +138,13 @@ function generateMockComment(parentPostOrComment, plebbit, signer, randomTimesta
 exports.generateMockComment = generateMockComment;
 function generateMockVote(parentPostOrComment, vote, plebbit, signer) {
     return __awaiter(this, void 0, void 0, function () {
-        var voteTime, _a, voteObj;
+        var voteTime, commentCid, _a, voteObj;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
                     voteTime = Date.now() / 1000;
+                    commentCid = parentPostOrComment.cid || parentPostOrComment.postCid;
+                    (0, assert_1.default)(typeof commentCid === "string");
                     _a = signer;
                     if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, plebbit.createSigner()];
@@ -159,7 +156,7 @@ function generateMockVote(parentPostOrComment, vote, plebbit, signer) {
                     return [4 /*yield*/, plebbit.createVote({
                             author: { displayName: "Mock Author - ".concat(voteTime) },
                             signer: signer,
-                            commentCid: parentPostOrComment.cid || parentPostOrComment.postCid,
+                            commentCid: commentCid,
                             vote: vote,
                             subplebbitAddress: parentPostOrComment.subplebbitAddress
                         })];

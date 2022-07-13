@@ -116,6 +116,8 @@ var Comment = /** @class */ (function (_super) {
         this.locked = props["locked"];
         this.removed = props["removed"];
         this.moderatorReason = props["moderatorReason"];
+        this.authorBanExpiresAt = props["authorBanExpiresAt"];
+        this.protocolVersion = props["protocolVersion"];
     };
     Comment.prototype.toJSON = function () {
         return __assign(__assign(__assign({}, this.toJSONIpfs()), this.toJSONCommentUpdate()), { cid: this.cid, originalContent: this.originalContent });
@@ -138,7 +140,7 @@ var Comment = /** @class */ (function (_super) {
         return (0, util_1.removeKeysWithUndefinedValues)(json);
     };
     Comment.prototype.toJSONCommentUpdate = function () {
-        return __assign(__assign({ replyCount: this.replyCount, upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replies: this.replies }, (this.originalContent ? { content: this.content } : undefined)), { updatedAt: this.updatedAt, editSignature: this.editSignature, editTimestamp: this.editTimestamp, editReason: this.editReason, deleted: this.deleted, spoiler: this.spoiler, pinned: this.pinned, locked: this.locked, removed: this.removed, moderatorReason: this.moderatorReason });
+        return __assign(__assign({ replyCount: this.replyCount, upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replies: this.replies }, (this.originalContent ? { content: this.content } : undefined)), { updatedAt: this.updatedAt, editSignature: this.editSignature, editTimestamp: this.editTimestamp, editReason: this.editReason, deleted: this.deleted, spoiler: this.spoiler, pinned: this.pinned, locked: this.locked, removed: this.removed, moderatorReason: this.moderatorReason, authorBansExpiresAt: this.authorBanExpiresAt, protocolVersion: this.protocolVersion });
     };
     Comment.prototype.setCommentIpnsKey = function (ipnsKey) {
         // Contains name and id
@@ -177,17 +179,19 @@ var Comment = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
                         (0, assert_1.default)(this.ipnsName, "Comment needs to have ipnsName before updating");
-                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.subplebbit.plebbit)];
+                        _a.label = 1;
                     case 1:
-                        res = _a.sent();
-                        return [3 /*break*/, 3];
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.subplebbit.plebbit)];
                     case 2:
+                        res = _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
                         e_1 = _a.sent();
                         debugs.WARN("Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error = ").concat(e_1.message));
                         return [2 /*return*/];
-                    case 3:
+                    case 4:
                         if (!(0, util_1.shallowEqual)(this.toJSONCommentUpdate(), res)) {
                             debugs.DEBUG("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Emitting an update event..."));
                             this._initCommentUpdate(res);

@@ -1,15 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -53,16 +42,13 @@ var util_1 = require("./util");
 var debugs = (0, util_1.getDebugLevels)("resolver");
 var Resolver = /** @class */ (function () {
     function Resolver(options) {
-        this.blockchainProviders = __assign(__assign({}, options["blockchainProviders"]), { avax: {
-                url: "https://api.avax.network/ext/bc/C/rpc",
-                chainId: 43114
-            }, matic: {
-                url: "https://polygon-rpc.com",
-                chainId: 137
-            } });
+        this.blockchainProviders = options.blockchainProviders;
         this.cachedBlockchainProviders = {};
         this.plebbit = options.plebbit;
     }
+    Resolver.prototype.toJSON = function () {
+        return { blockchainProviders: this.blockchainProviders };
+    };
     Resolver.prototype._getBlockchainProvider = function (chainTicker) {
         if (this.cachedBlockchainProviders[chainTicker])
             return this.cachedBlockchainProviders[chainTicker];
@@ -107,6 +93,8 @@ var Resolver = /** @class */ (function () {
     Resolver.prototype.resolveAuthorAddressIfNeeded = function (authorAddress) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
+                if (!this.plebbit.resolveAuthorAddresses)
+                    return [2 /*return*/, authorAddress];
                 if (authorAddress === null || authorAddress === void 0 ? void 0 : authorAddress.endsWith(".eth")) {
                     debugs.DEBUG("Will attempt to resolve plebbit-author-address of ".concat(authorAddress));
                     return [2 /*return*/, this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address")];

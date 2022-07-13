@@ -5,8 +5,9 @@ import { DbHandler } from "./runtime/node/db-handler";
 import { Signer, Signature } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
-import { ChallengeType, CreateSubplebbitOptions, Flair, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitMetrics, SubplebbitRole, SubplebbitSuggested, SubplebbitType } from "./types";
+import { ChallengeType, CreateSubplebbitOptions, Flair, FlairOwner, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitMetrics, SubplebbitRole, SubplebbitSuggested, SubplebbitType } from "./types";
 import { Comment, CommentEdit } from "./comment";
+import Vote from "./vote";
 import Publication from "./publication";
 export declare class Subplebbit extends EventEmitter implements SubplebbitEditOptions, SubplebbitType {
     title?: string;
@@ -21,7 +22,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitEditOp
     metrics?: SubplebbitMetrics;
     features?: SubplebbitFeatures;
     suggested?: SubplebbitSuggested;
-    flairs?: Flair[];
+    flairs: Record<FlairOwner, Flair[]>;
     address: string;
     moderatorsAddresses?: string[];
     metricsCid?: string;
@@ -65,7 +66,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitEditOp
         metricsCid: string;
         createdAt: number;
         updatedAt: number;
-        encryption: any;
+        encryption: SubplebbitEncryption;
         roles: {
             [authorAddress: string]: SubplebbitRole;
         };
@@ -82,7 +83,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitEditOp
         metricsCid: string;
         createdAt: number;
         updatedAt: number;
-        encryption: any;
+        encryption: SubplebbitEncryption;
         roles: {
             [authorAddress: string]: SubplebbitRole;
         };
@@ -97,7 +98,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitEditOp
     handleCommentEdit(commentEdit: CommentEdit, trx?: any): Promise<{
         reason: string;
     }>;
-    handleVote(newVote: any, challengeRequestId: any): Promise<{
+    handleVote(newVote: Vote, challengeRequestId: string): Promise<{
         reason: string;
     }>;
     publishPostAfterPassingChallenge(publication: any, challengeRequestId: any): Promise<any>;

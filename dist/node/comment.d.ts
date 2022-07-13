@@ -1,7 +1,12 @@
 import Publication from "./publication";
 import { Pages } from "./pages";
 import { Signature } from "./signer";
-export declare class Comment extends Publication {
+import { CommentUpdate, CreateCommentOptions, Flair } from "./types";
+export declare class Comment extends Publication implements CommentUpdate, CreateCommentOptions {
+    flair?: Flair | undefined;
+    authorBanExpiresAt?: number | undefined;
+    authorFlair?: Flair | undefined;
+    protocolVersion: "1.0.0";
     postCid?: string;
     cid?: string;
     parentCid?: string;
@@ -25,10 +30,9 @@ export declare class Comment extends Publication {
     removed?: boolean;
     moderatorReason?: string;
     previousCid?: string;
-    emittedAt?: number;
-    _updateInterval?: any;
+    private _updateInterval?;
     _initProps(props: any): void;
-    _initCommentUpdate(props: any): void;
+    _initCommentUpdate(props: CommentUpdate): void;
     toJSON(): {
         cid: string;
         originalContent: string;
@@ -42,6 +46,8 @@ export declare class Comment extends Publication {
         locked: boolean;
         removed: boolean;
         moderatorReason: string;
+        authorBansExpiresAt: number;
+        protocolVersion: "1.0.0";
         content: string;
         replyCount: number;
         upvoteCount: number;
@@ -89,6 +95,8 @@ export declare class Comment extends Publication {
         locked: boolean;
         removed: boolean;
         moderatorReason: string;
+        authorBansExpiresAt: number;
+        protocolVersion: "1.0.0";
         content: string;
         replyCount: number;
         upvoteCount: number;
@@ -98,7 +106,7 @@ export declare class Comment extends Publication {
     setCommentIpnsKey(ipnsKey: any): void;
     setPostCid(newPostCid: string): void;
     setCid(newCid: string): void;
-    setPreviousCid(newPreviousCid: string): void;
+    setPreviousCid(newPreviousCid?: string): void;
     setDepth(newDepth: number): void;
     setUpdatedAt(newUpdatedAt: number): void;
     setOriginalContent(newOriginalContent: string): void;
@@ -106,7 +114,7 @@ export declare class Comment extends Publication {
     updateOnce(): Promise<this>;
     update(updateIntervalMs?: number): Promise<this>;
     stop(): void;
-    edit(commentUpdateOptions: any): Promise<void>;
+    edit(commentUpdateOptions: CommentUpdate): Promise<void>;
     publish(userOptions: any): Promise<void>;
 }
 export declare class CommentEdit extends Comment {
@@ -126,6 +134,8 @@ export declare class CommentEdit extends Comment {
         locked: boolean;
         removed: boolean;
         moderatorReason: string;
+        authorBansExpiresAt: number;
+        protocolVersion: "1.0.0";
         content: string;
         replyCount: number;
         upvoteCount: number;

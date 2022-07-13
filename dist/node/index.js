@@ -65,6 +65,7 @@ var polyfill_1 = __importDefault(require("./runtime/node/polyfill"));
 (0, polyfill_1.default)();
 var PlebbitClass = __importStar(require("./plebbit"));
 module.exports = function Plebbit(plebbitOptions) {
+    if (plebbitOptions === void 0) { plebbitOptions = {}; }
     return __awaiter(this, void 0, void 0, function () {
         var plebbit;
         return __generator(this, function (_a) {

@@ -50,7 +50,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyPublication = exports.signPublication = exports.verifyBufferRsa = exports.signBufferRsa = exports.Signature = void 0;
+exports.verifyPublication = exports.signPublication = exports.verifyBufferRsa = exports.signBufferRsa = exports.Signature = exports.SIGNED_PROPERTY_NAMES = void 0;
 var util_1 = require("./util");
 var cborg_1 = require("cborg");
 var to_string_1 = require("uint8arrays/to-string");
@@ -60,6 +60,62 @@ var peer_id_1 = __importDefault(require("peer-id"));
 var util_2 = require("../util");
 var publication_1 = __importDefault(require("../publication"));
 var debugs = (0, util_2.getDebugLevels)("signer:signatures");
+exports.SIGNED_PROPERTY_NAMES = Object.freeze({
+    COMMENT: ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"],
+    COMMENT_EDIT: [
+        "subplebbitAddress",
+        "content",
+        "commentCid",
+        "editTimestamp",
+        "editReason",
+        "deleted",
+        "spoiler",
+        "pinned",
+        "locked",
+        "removed",
+        "moderatorReason"
+    ],
+    COMMENT_UPDATE: [
+        "content",
+        "editSignature",
+        "editTimestamp",
+        "editReason",
+        "deleted",
+        "upvoteCount",
+        "downvoteCount",
+        "replies",
+        "flair",
+        "spoiler",
+        "pinned",
+        "locked",
+        "removed",
+        "authorBanExpiresAt",
+        "moderatorReason",
+        "updatedAt",
+        "authorFlair",
+        "protocolVersion"
+    ],
+    VOTE: ["subplebbitAddress", "author", "timestamp", "vote", "commentCid"],
+    SUBPLEBBIT: [
+        "title",
+        "description",
+        "roles",
+        "pubsubTopic",
+        "latestPostCid",
+        "posts",
+        "challengeTypes",
+        "metricsCid",
+        "createdAt",
+        "updatedAt",
+        "features",
+        "suggested",
+        "rules",
+        "address",
+        "flairs",
+        "protocolVersion",
+        "encryption"
+    ]
+});
 var Signature = /** @class */ (function () {
     function Signature(props) {
         Object.assign(this, props);
@@ -75,31 +131,6 @@ var Signature = /** @class */ (function () {
     return Signature;
 }());
 exports.Signature = Signature;
-function getFieldsToSign(publication) {
-    if (publication.hasOwnProperty("vote"))
-        return ["subplebbitAddress", "author", "timestamp", "vote", "commentCid"];
-    else if (publication.commentCid)
-        // CommentEdit
-        return [
-            "subplebbitAddress",
-            "content",
-            "commentCid",
-            "editTimestamp",
-            "editReason",
-            "deleted",
-            "spoiler",
-            "pinned",
-            "locked",
-            "removed",
-            "moderatorReason"
-        ];
-    else if (publication.title)
-        // Post
-        return ["subplebbitAddress", "author", "timestamp", "content", "title", "link"];
-    else if (publication.content)
-        // Comment
-        return ["subplebbitAddress", "author", "timestamp", "parentCid", "content"];
-}
 var isProbablyBuffer = function (arg) { return arg && typeof arg !== "string" && typeof arg !== "number"; };
 var signBufferRsa = function (bufferToSign, privateKeyPem, privateKeyPemPassword) {
     if (privateKeyPemPassword === void 0) { privateKeyPemPassword = ""; }
@@ -137,13 +168,14 @@ var verifyBufferRsa = function (bufferToSign, bufferSignature, publicKeyPem) { r
     });
 }); };
 exports.verifyBufferRsa = verifyBufferRsa;
-function signPublication(publication, signer, plebbit) {
+function signPublication(publication, signer, plebbit, signedPropertyNames) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var resolvedAddress, derivedAddress, fieldsToSign, publicationSignFields, commentEncoded, signatureData, _b;
+        var resolvedAddress, derivedAddress, fieldsToSign, commentEncoded, signatureData, _b;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
+                    (0, assert_1.default)(signer.publicKey);
                     if (!((_a = publication === null || publication === void 0 ? void 0 : publication.author) === null || _a === void 0 ? void 0 : _a.address)) return [3 /*break*/, 3];
                     return [4 /*yield*/, plebbit.resolver.resolveAuthorAddressIfNeeded(publication.author.address)];
                 case 1:
@@ -154,10 +186,9 @@ function signPublication(publication, signer, plebbit) {
                     assert_1.default.equal(resolvedAddress, derivedAddress, "author.address (".concat(publication.author.address, ") does not equate its resolved address (").concat(resolvedAddress, ") is invalid. For this publication to be signed, user needs to ensure plebbit-author-address points to same key used by signer (").concat(derivedAddress, ")"));
                     _c.label = 3;
                 case 3:
-                    fieldsToSign = getFieldsToSign(publication);
-                    publicationSignFields = (0, util_2.removeKeysWithUndefinedValues)((0, util_2.keepKeys)(publication, fieldsToSign));
-                    debugs.TRACE("Fields to sign: ".concat(JSON.stringify(fieldsToSign), ". Publication object to sign:  ").concat(JSON.stringify(publicationSignFields)));
-                    commentEncoded = (0, cborg_1.encode)(publicationSignFields);
+                    debugs.TRACE("Fields to sign: ".concat(JSON.stringify(signedPropertyNames), ". Publication object to sign:  ").concat(JSON.stringify(publication)));
+                    fieldsToSign = (0, util_2.keepKeys)(publication, signedPropertyNames);
+                    commentEncoded = (0, cborg_1.encode)(fieldsToSign);
                     _b = to_string_1.toString;
                     return [4 /*yield*/, (0, exports.signBufferRsa)(commentEncoded, signer.privateKey)];
                 case 4:
@@ -167,7 +198,7 @@ function signPublication(publication, signer, plebbit) {
                             signature: signatureData,
                             publicKey: signer.publicKey,
                             type: signer.type,
-                            signedPropertyNames: fieldsToSign
+                            signedPropertyNames: signedPropertyNames
                         })];
             }
         });
@@ -225,8 +256,7 @@ function verifyPublication(publication, plebbit, overrideAuthorAddressIfInvalid)
                             switch (_a.label) {
                                 case 0:
                                     commentWithFieldsToSign = (0, util_2.keepKeys)(publicationToBeVerified, signature.signedPropertyNames);
-                                    debugs.TRACE("signature.signedPropertyNames: [".concat(signature.signedPropertyNames, "], Attempt to verify a publication: ").concat(JSON.stringify(commentWithFieldsToSign)));
-                                    commentEncoded = (0, cborg_1.encode)((0, util_2.removeKeysWithUndefinedValues)(commentWithFieldsToSign));
+                                    commentEncoded = (0, cborg_1.encode)(commentWithFieldsToSign);
                                     return [4 /*yield*/, (0, exports.verifyBufferRsa)(commentEncoded, (0, from_string_1.fromString)(signature.signature, "base64"), signature.publicKey)];
                                 case 1:
                                     signatureIsValid = _a.sent();

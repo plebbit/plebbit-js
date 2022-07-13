@@ -1,18 +1,75 @@
 import { Options } from "ipfs-http-client";
 import { Knex } from "knex";
+import Author from "./author";
 import { Comment } from "./comment";
 import { Pages } from "./pages";
 import { Signature, Signer } from "./signer";
-export declare type PlebbitOptions = {
-    ipfsHttpClientOptions: Options;
-    ipfsGatewayUrl: string;
-    pubsubHttpClientOptions: Options;
-    dataPath: string;
-    blockchainProviders: Object;
+export declare type BlockchainProvider = {
+    url: string;
+    chainId: number;
 };
-export declare type CreateSignerOptions = any;
-export declare type Encrypted = any;
-export declare type SubplebbitEncryption = any;
+export interface PlebbitOptions {
+    ipfsGatewayUrl?: string;
+    ipfsHttpClientOptions?: Options;
+    pubsubHttpClientOptions?: Options;
+    dataPath?: string;
+    blockchainProviders?: {
+        [chainTicker: string]: BlockchainProvider;
+    };
+    resolveAuthorAddresses?: boolean;
+}
+export declare type CreateSignerOptions = {
+    privateKey?: string;
+    type?: "rsa";
+};
+export declare type Encrypted = {
+    encrypted: string;
+    encryptedKey: string;
+    type: "aes-cbc";
+};
+export declare type SubplebbitEncryption = {
+    type: "aes-cbc";
+    publicKey: string;
+};
+export interface CreateCommentOptions {
+    subplebbitAddress: string;
+    timestamp?: number;
+    author: Author;
+    signer: Signer;
+    parentCid?: string;
+    content?: string;
+    title?: string;
+    link?: string;
+    spoiler?: boolean;
+    flair?: Flair;
+    cid?: string;
+    ipnsName?: string;
+}
+export interface CreateVoteOptions {
+    subplebbitAddress: string;
+    commentCid: string;
+    author: Author;
+    vote: 1 | 0 | -1;
+    signer: Signer;
+    timestamp?: number;
+}
+export interface CreateCommentEditOptions {
+    subplebbitAddress: string;
+    commentCid: string;
+    signer: Signer;
+    content?: string;
+    editTimestamp?: number;
+    editReason?: string;
+    deleted?: boolean;
+    flair?: Flair;
+    spoiler?: boolean;
+    pinned?: boolean;
+    locked?: boolean;
+    removed?: boolean;
+    authorBanExpiresAt?: number;
+    authorFlair?: Flair;
+    moderatorReason?: string;
+}
 export declare type Nft = {
     chainTicker: string;
     id: string;
@@ -77,6 +134,7 @@ export declare type Flair = {
     textColor?: string;
     expiresAt?: number;
 };
+export declare type FlairOwner = "post" | "author";
 export interface SubplebbitType {
     title?: string;
     description?: string;
@@ -95,6 +153,7 @@ export interface SubplebbitType {
     rules?: string[];
     address?: string;
     signer?: Signer;
+    flairs?: Record<FlairOwner, Flair[]>;
     protocolVersion: "1.0.0";
     encryption?: SubplebbitEncryption;
     signature?: Signature;
@@ -115,6 +174,7 @@ export interface SubplebbitEditOptions {
     metrics?: SubplebbitMetrics;
     features?: SubplebbitFeatures;
     suggested?: SubplebbitSuggested;
+    flairs?: Record<FlairOwner, Flair[]>;
     address?: string;
 }
 export declare type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
@@ -126,3 +186,30 @@ export declare type SortProps = {
 };
 export declare type PostSort = Record<PostSortName, SortProps>;
 export declare type ReplySort = Record<ReplySortName, SortProps>;
+export interface CommentUpdate {
+    content?: string;
+    editSignature?: Signature;
+    editTimestamp?: number;
+    editReason?: string;
+    deleted?: boolean;
+    upvoteCount?: number;
+    downvoteCount?: number;
+    replies?: Pages;
+    flair?: Flair;
+    spoiler?: boolean;
+    pinned?: boolean;
+    locked?: boolean;
+    removed?: boolean;
+    authorBanExpiresAt?: number;
+    moderatorReason?: string;
+    updatedAt?: number;
+    authorFlair?: Flair;
+    protocolVersion: "1.0.0";
+    signature: Signature;
+}
+export declare type CommentSignedPropertyNames = (keyof Pick<CreateCommentOptions, "subplebbitAddress" | "author" | "timestamp" | "content" | "title" | "link" | "parentCid">)[];
+export declare type CommentEditSignedPropertyNames = (keyof Pick<CreateCommentEditOptions, "subplebbitAddress" | "content" | "commentCid" | "editTimestamp" | "editReason" | "deleted" | "spoiler" | "pinned" | "locked" | "removed" | "moderatorReason">)[];
+export declare type CommentUpdatedSignedPropertyNames = (keyof Omit<CommentUpdate, "signature">)[];
+export declare type VoteSignedPropertyNames = (keyof Omit<CreateVoteOptions, "signer">)[];
+export declare type SubplebbitSignedPropertyNames = (keyof Omit<SubplebbitType, "signer" | "signature">)[];
+export declare type SignedPropertyNames = CommentSignedPropertyNames | CommentEditSignedPropertyNames | VoteSignedPropertyNames | SubplebbitSignedPropertyNames | CommentUpdatedSignedPropertyNames;

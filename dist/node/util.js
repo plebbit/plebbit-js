@@ -81,14 +81,18 @@ var DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 var debugs = getDebugLevels("util");
 function fetchWithLimit(url, options) {
     return __awaiter(this, void 0, void 0, function () {
-        var res, reader, currentChunk, totalBytesRead, done, value;
+        var res, originalRes, reader, currentChunk, totalBytesRead, done, value;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, (0, node_fetch_1.default)(url, options)];
+                case 0:
+                    // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
+                    debugs.DEBUG("Attempting to fetch url: ".concat(url));
+                    return [4 /*yield*/, (0, node_fetch_1.default)(url, options)];
                 case 1:
                     res = _a.sent();
                     if (typeof window === "undefined")
                         return [2 /*return*/, res]; // No need to process stream for Node
+                    originalRes = res.clone();
                     reader = res.body.getReader();
                     currentChunk = undefined, totalBytesRead = 0;
                     _a.label = 2;
@@ -98,14 +102,14 @@ function fetchWithLimit(url, options) {
                 case 3:
                     currentChunk = _a.sent();
                     done = currentChunk.done, value = currentChunk.value;
+                    if (done || !value)
+                        return [3 /*break*/, 4];
                     if (value.length + totalBytesRead > options.size)
                         throw new Error("content size at ".concat(url, " over limit: ").concat(options.size));
                     totalBytesRead += value.length;
-                    debugs.DEBUG("Total bytes read from ".concat(url, ": ").concat(totalBytesRead));
-                    if (done)
-                        return [3 /*break*/, 4];
+                    debugs.TRACE("Total bytes read from ".concat(url, ": ").concat(totalBytesRead));
                     return [3 /*break*/, 2];
-                case 4: return [2 /*return*/, res];
+                case 4: return [2 /*return*/, originalRes];
             }
         });
     });
@@ -118,26 +122,26 @@ function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
             switch (_a.label) {
                 case 0:
                     assert_1.default.ok(cid, "Cid has to not be null to load");
-                    if (!!plebbit.ipfsClient) return [3 /*break*/, 5];
+                    if (!!plebbit.ipfsClient) return [3 /*break*/, 2];
                     url = "".concat(plebbit.ipfsGatewayUrl, "/ipfs/").concat(cid);
                     return [4 /*yield*/, fetchWithLimit(url, { cache: "force-cache", size: DOWNLOAD_LIMIT_BYTES })];
                 case 1:
                     res = _a.sent();
-                    if (!(res.status === 200)) return [3 /*break*/, 3];
-                    return [4 /*yield*/, res.json()];
-                case 2: return [2 /*return*/, _a.sent()];
-                case 3: throw new Error("Failed to load IPFS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText));
-                case 4: return [3 /*break*/, 7];
-                case 5: return [4 /*yield*/, (0, it_all_1.default)(plebbit.ipfsClient.cat(cid, __assign(__assign({}, defaultOptions), { length: DOWNLOAD_LIMIT_BYTES })))];
-                case 6:
+                    if (res.status === 200)
+                        return [2 /*return*/, res.json()];
+                    else
+                        throw new Error("Failed to load IPFS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText));
+                    return [3 /*break*/, 4];
+                case 2: return [4 /*yield*/, (0, it_all_1.default)(plebbit.ipfsClient.cat(cid, __assign(__assign({}, defaultOptions), { length: DOWNLOAD_LIMIT_BYTES })))];
+                case 3:
                     rawData = _a.sent();
                     data = (0, concat_1.concat)(rawData);
                     if (!data)
                         throw new Error("IPFS file (".concat(cid, ") is empty or does not exist"));
                     else
                         return [2 /*return*/, JSON.parse((0, to_string_1.toString)(data))];
-                    _a.label = 7;
-                case 7: return [2 /*return*/];
+                    _a.label = 4;
+                case 4: return [2 /*return*/];
             }
         });
     });
