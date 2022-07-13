@@ -1,11 +1,12 @@
 import Publication from "./publication";
 import assert from "assert";
+import { CreateVoteOptions } from "./types";
 
-class Vote extends Publication {
+class Vote extends Publication implements CreateVoteOptions {
     commentCid: string;
-    vote: number;
+    vote: 1 | 0 | -1;
 
-    constructor(props, subplebbit) {
+    constructor(props: CreateVoteOptions, subplebbit: any) {
         super(props, subplebbit);
         this.commentCid = props["commentCid"];
         this.vote = props["vote"]; // Either 1, 0, -1 (upvote, cancel vote, downvote)
@@ -22,7 +23,7 @@ class Vote extends Publication {
         };
     }
 
-    toJSONForDb(challengeRequestId) {
+    toJSONForDb(challengeRequestId: string) {
         const json = this.toJSON();
         // @ts-ignore
         json["author"] = JSON.stringify(this.author);

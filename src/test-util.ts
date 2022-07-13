@@ -79,11 +79,14 @@ export async function generateMockVote(
     signer?: Signer
 ): Promise<Vote> {
     const voteTime = Date.now() / 1000;
+    const commentCid = parentPostOrComment.cid || parentPostOrComment.postCid;
+    assert(typeof commentCid === "string");
+
     signer = signer || (await plebbit.createSigner());
     const voteObj = await plebbit.createVote({
         author: { displayName: `Mock Author - ${voteTime}` },
         signer: signer,
-        commentCid: parentPostOrComment.cid || parentPostOrComment.postCid,
+        commentCid: commentCid,
         vote: vote,
         subplebbitAddress: parentPostOrComment.subplebbitAddress
     });

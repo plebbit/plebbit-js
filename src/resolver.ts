@@ -1,30 +1,25 @@
 import { ethers } from "ethers";
 import { Plebbit } from "./plebbit";
+import { BlockchainProvider } from "./types";
 import { getDebugLevels } from "./util";
 const debugs = getDebugLevels("resolver");
 
 export class Resolver {
-    blockchainProviders: Object;
-    cachedBlockchainProviders: Object;
-    plebbit: Plebbit;
+    blockchainProviders: { [chainTicker: string]: BlockchainProvider };
+    private cachedBlockchainProviders: { [chainTicker: string]: ethers.providers.BaseProvider };
+    private plebbit: Plebbit;
 
-    constructor(options: { plebbit: Plebbit; blockchainProviders: Object }) {
-        this.blockchainProviders = {
-            ...options["blockchainProviders"],
-            avax: {
-                url: "https://api.avax.network/ext/bc/C/rpc",
-                chainId: 43114
-            },
-            matic: {
-                url: "https://polygon-rpc.com",
-                chainId: 137
-            }
-        };
+    constructor(options: { plebbit: Plebbit; blockchainProviders: { [chainTicker: string]: BlockchainProvider } }) {
+        this.blockchainProviders = options.blockchainProviders;
         this.cachedBlockchainProviders = {};
         this.plebbit = options.plebbit;
     }
 
-    _getBlockchainProvider(chainTicker: string) {
+    toJSON() {
+        return { blockchainProviders: this.blockchainProviders };
+    }
+
+    _getBlockchainProvider(chainTicker: string): ethers.providers.BaseProvider {
         if (this.cachedBlockchainProviders[chainTicker]) return this.cachedBlockchainProviders[chainTicker];
 
         if (this.blockchainProviders[chainTicker]) {

@@ -37,6 +37,7 @@ export const createSigner = async (createSignerOptions: CreateSignerOptions = {}
         privateKey = await generatePrivateKeyPem();
         signerType = "rsa";
     }
+    assert(typeof signerType === "string");
 
     const publicKeyPem = await getPublicKeyPemFromPrivateKeyPem(privateKey);
     const address = await getPlebbitAddressFromPrivateKeyPem(privateKey);

@@ -13,14 +13,73 @@ import { getDebugLevels, keepKeys, removeKeysWithUndefinedValues } from "../util
 import Publication from "../publication";
 import { Plebbit } from "../plebbit";
 import { Signer } from ".";
+import { SignedPropertyNames } from "../types";
 
 const debugs = getDebugLevels("signer:signatures");
+
+export const SIGNED_PROPERTY_NAMES: Record<"COMMENT" | "COMMENT_EDIT" | "COMMENT_UPDATE" | "VOTE" | "SUBPLEBBIT", SignedPropertyNames> =
+    Object.freeze({
+        COMMENT: ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"],
+        COMMENT_EDIT: [
+            "subplebbitAddress",
+            "content",
+            "commentCid",
+            "editTimestamp",
+            "editReason",
+            "deleted",
+            "spoiler",
+            "pinned",
+            "locked",
+            "removed",
+            "moderatorReason"
+        ],
+        COMMENT_UPDATE: [
+            "content",
+            "editSignature",
+            "editTimestamp",
+            "editReason",
+            "deleted",
+            "upvoteCount",
+            "downvoteCount",
+            "replies",
+            "flair",
+            "spoiler",
+            "pinned",
+            "locked",
+            "removed",
+            "authorBanExpiresAt",
+            "moderatorReason",
+            "updatedAt",
+            "authorFlair",
+            "protocolVersion"
+        ],
+        VOTE: ["subplebbitAddress", "author", "timestamp", "vote", "commentCid"],
+        SUBPLEBBIT: [
+            "title",
+            "description",
+            "roles",
+            "pubsubTopic",
+            "latestPostCid",
+            "posts",
+            "challengeTypes",
+            "metricsCid",
+            "createdAt",
+            "updatedAt",
+            "features",
+            "suggested",
+            "rules",
+            "address",
+            "flairs",
+            "protocolVersion",
+            "encryption"
+        ]
+    });
 
 export class Signature {
     signature: string;
     publicKey: string;
     type: "rsa";
-    signedPropertyNames: string[];
+    signedPropertyNames: SignedPropertyNames;
 
     constructor(props: Signature) {
         Object.assign(this, props);
@@ -34,31 +93,6 @@ export class Signature {
             signedPropertyNames: this.signedPropertyNames
         };
     }
-}
-
-function getFieldsToSign(publication) {
-    if (publication.hasOwnProperty("vote")) return ["subplebbitAddress", "author", "timestamp", "vote", "commentCid"];
-    else if (publication.commentCid)
-        // CommentEdit
-        return [
-            "subplebbitAddress",
-            "content",
-            "commentCid",
-            "editTimestamp",
-            "editReason",
-            "deleted",
-            "spoiler",
-            "pinned",
-            "locked",
-            "removed",
-            "moderatorReason"
-        ];
-    else if (publication.title)
-        // Post
-        return ["subplebbitAddress", "author", "timestamp", "content", "title", "link"];
-    else if (publication.content)
-        // Comment
-        return ["subplebbitAddress", "author", "timestamp", "parentCid", "content"];
 }
 
 const isProbablyBuffer = (arg) => arg && typeof arg !== "string" && typeof arg !== "number";
@@ -77,7 +111,13 @@ export const verifyBufferRsa = async (bufferToSign, bufferSignature, publicKeyPe
     return await peerId.pubKey.verify(bufferToSign, bufferSignature);
 };
 
-export async function signPublication(publication: Publication, signer: Signer, plebbit: Plebbit): Promise<Signature> {
+export async function signPublication(
+    publication: any,
+    signer: Signer,
+    plebbit: Plebbit,
+    signedPropertyNames: SignedPropertyNames
+): Promise<Signature> {
+    assert(signer.publicKey);
     if (publication?.author?.address) {
         const resolvedAddress = await plebbit.resolver.resolveAuthorAddressIfNeeded(publication.author.address);
         const derivedAddress = await getPlebbitAddressFromPrivateKeyPem(signer.privateKey);
@@ -88,17 +128,17 @@ export async function signPublication(publication: Publication, signer: Signer, 
         );
     }
 
-    const fieldsToSign = getFieldsToSign(publication);
-    const publicationSignFields = removeKeysWithUndefinedValues(keepKeys(publication, fieldsToSign));
-    debugs.TRACE(`Fields to sign: ${JSON.stringify(fieldsToSign)}. Publication object to sign:  ${JSON.stringify(publicationSignFields)}`);
-    const commentEncoded = encode(publicationSignFields); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    debugs.TRACE(`Fields to sign: ${JSON.stringify(signedPropertyNames)}. Publication object to sign:  ${JSON.stringify(publication)}`);
+
+    const fieldsToSign = keepKeys(publication, signedPropertyNames);
+    const commentEncoded = encode(fieldsToSign); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
     const signatureData = uint8ArrayToString(await signBufferRsa(commentEncoded, signer.privateKey), "base64");
     debugs.TRACE(`Publication been signed, signature data is (${signatureData})`);
     return new Signature({
         signature: signatureData,
         publicKey: signer.publicKey,
         type: signer.type,
-        signedPropertyNames: fieldsToSign
+        signedPropertyNames: signedPropertyNames
     });
 }
 
@@ -132,12 +172,7 @@ export async function verifyPublication(publication, plebbit: Plebbit, overrideA
     };
     const verifyPublicationSignature = async (signature, publicationToBeVerified) => {
         const commentWithFieldsToSign = keepKeys(publicationToBeVerified, signature.signedPropertyNames);
-        debugs.TRACE(
-            `signature.signedPropertyNames: [${signature.signedPropertyNames}], Attempt to verify a publication: ${JSON.stringify(
-                commentWithFieldsToSign
-            )}`
-        );
-        const commentEncoded = encode(removeKeysWithUndefinedValues(commentWithFieldsToSign));
+        const commentEncoded = encode(commentWithFieldsToSign);
         const signatureIsValid = await verifyBufferRsa(
             commentEncoded,
             uint8ArrayFromString(signature.signature, "base64"),

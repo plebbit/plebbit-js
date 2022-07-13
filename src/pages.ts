@@ -67,4 +67,11 @@ export class Page {
     constructor(props: Page) {
         Object.assign(this, props);
     }
+
+    toJSON?() {
+        return {
+            comments: this.comments.map((c) => c.toJSON()),
+            nextCid: this.nextCid
+        };
+    }
 }

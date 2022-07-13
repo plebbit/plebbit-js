@@ -16,13 +16,14 @@ import { DbHandler, subplebbitInitDbIfNeeded } from "./runtime/node/db-handler";
 import { createCaptcha } from "./runtime/node/captcha";
 import { SortHandler } from "./sort-handler";
 import { getDebugLevels, ipfsImportKey, loadIpnsAsJson, shallowEqual, timestamp } from "./util";
-import { decrypt, encrypt, verifyPublication, Signer, Signature } from "./signer";
+import { decrypt, encrypt, verifyPublication, Signer, Signature, signPublication } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
 import {
     ChallengeType,
     CreateSubplebbitOptions,
     Flair,
+    FlairOwner,
     SubplebbitEditOptions,
     SubplebbitEncryption,
     SubplebbitFeatures,
@@ -37,6 +38,7 @@ import Post from "./post";
 import { getPlebbitAddressFromPublicKeyPem } from "./signer/util";
 import Publication from "./publication";
 import { v4 as uuidv4 } from "uuid";
+import { SIGNED_PROPERTY_NAMES } from "./signer/signatures";
 
 const debugs = getDebugLevels("subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
@@ -54,8 +56,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
     metrics?: SubplebbitMetrics;
     features?: SubplebbitFeatures;
     suggested?: SubplebbitSuggested;
-    flairs?: Flair[];
-
+    flairs: Record<FlairOwner, Flair[]>;
     address: string;
     moderatorsAddresses?: string[];
     metricsCid?: string;
@@ -148,8 +149,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             }
         }
 
+        assert(this.signer?.publicKey);
         this.encryption = {
-            type: this.signer.type,
+            type: "aes-cbc",
             publicKey: this.signer.publicKey
         };
 
@@ -287,12 +289,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
 
     update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
         if (this._updateInterval) clearInterval(this._updateInterval);
-        this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs); // One minute
+        this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
         return this.updateOnce();
     }
 
     async stop() {
-        clearInterval(this._updateInterval);
+        this._updateInterval = clearInterval(this._updateInterval);
     }
 
     async updateSubplebbitIpns() {
@@ -502,6 +504,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
                     postOrCommentOrVote.setDepth(parent.depth + 1);
                     const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
                     postOrCommentOrVote.setCid(file.path);
+                    postOrCommentOrVote.setPostCid(parent.postCid);
                     await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
                     await trx.commit();
 

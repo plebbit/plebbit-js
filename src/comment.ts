@@ -3,13 +3,18 @@ import { getDebugLevels, loadIpnsAsJson, parseJsonIfString, removeKeysWithUndefi
 import Publication from "./publication";
 import { Pages } from "./pages";
 import { Signature } from "./signer";
+import { CommentUpdate, CreateCommentOptions, Flair } from "./types";
 
 const debugs = getDebugLevels("comment");
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
-export class Comment extends Publication {
+export class Comment extends Publication implements CommentUpdate, CreateCommentOptions {
     // public
+    flair?: Flair | undefined;
+    authorBanExpiresAt?: number | undefined;
+    authorFlair?: Flair | undefined;
+    protocolVersion: "1.0.0";
     postCid?: string;
     cid?: string;
     parentCid?: string;
@@ -35,8 +40,7 @@ export class Comment extends Publication {
     previousCid?: string;
 
     // private
-    emittedAt?: number;
-    _updateInterval?: any;
+    private _updateInterval?: any;
 
     _initProps(props) {
         super._initProps(props);
@@ -56,7 +60,7 @@ export class Comment extends Publication {
         this.stop = this.stop.bind(this);
     }
 
-    _initCommentUpdate(props) {
+    _initCommentUpdate(props: CommentUpdate) {
         this.upvoteCount = props["upvoteCount"];
         this.downvoteCount = props["downvoteCount"];
         this.replyCount = props["replyCount"];
@@ -82,6 +86,8 @@ export class Comment extends Publication {
         this.locked = props["locked"];
         this.removed = props["removed"];
         this.moderatorReason = props["moderatorReason"];
+        this.authorBanExpiresAt = props["authorBanExpiresAt"];
+        this.protocolVersion = props["protocolVersion"];
     }
 
     toJSON() {
@@ -138,7 +144,9 @@ export class Comment extends Publication {
             pinned: this.pinned,
             locked: this.locked,
             removed: this.removed,
-            moderatorReason: this.moderatorReason
+            moderatorReason: this.moderatorReason,
+            authorBansExpiresAt: this.authorBanExpiresAt,
+            protocolVersion: this.protocolVersion
         };
     }
 
@@ -156,7 +164,7 @@ export class Comment extends Publication {
         this.cid = newCid;
     }
 
-    setPreviousCid(newPreviousCid: string) {
+    setPreviousCid(newPreviousCid?: string) {
         this.previousCid = newPreviousCid;
     }
 
@@ -182,10 +190,10 @@ export class Comment extends Publication {
     }
 
     async updateOnce() {
+        assert(this.ipnsName, "Comment needs to have ipnsName before updating");
         let res;
 
         try {
-            assert(this.ipnsName, "Comment needs to have ipnsName before updating");
             res = await loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit);
         } catch (e) {
             debugs.WARN(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error = ${e.message}`);
@@ -214,7 +222,7 @@ export class Comment extends Publication {
         clearInterval(this._updateInterval);
     }
 
-    async edit(commentUpdateOptions) {
+    async edit(commentUpdateOptions: CommentUpdate) {
         assert(this.ipnsKeyName && this.subplebbit.plebbit.ipfsClient, "You need to have commentUpdate and ipfs client defined");
         this._initCommentUpdate(commentUpdateOptions);
         const file = await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate()));

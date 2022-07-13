@@ -240,12 +240,13 @@ export class DbHandler {
         return this.baseTransaction(trx)(TABLES.COMMENTS).select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery);
     }
 
-    async createCommentsFromRows(commentsRows: Comment[]): Promise<Comment[] | Post[]> {
-        if (!commentsRows || commentsRows?.length === 0) return [];
+    async createCommentsFromRows(commentsRows: Comment[] | Comment): Promise<Comment[] | Post[]> {
+        if (!commentsRows || (Array.isArray(commentsRows) && commentsRows?.length === 0)) return [];
         if (!Array.isArray(commentsRows)) commentsRows = [commentsRows];
         return Promise.all(
             commentsRows.map((props) => {
                 const replacedProps = replaceXWithY(props, null, undefined); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
+                // @ts-ignore
                 return this.subplebbit.plebbit.createComment(replacedProps);
             })
         );
@@ -257,6 +258,7 @@ export class DbHandler {
         return Promise.all(
             voteRows.map((props) => {
                 const replacedProps = replaceXWithY(props, null, undefined);
+                // @ts-ignore
                 return this.subplebbit.plebbit.createVote(replacedProps);
             })
         );

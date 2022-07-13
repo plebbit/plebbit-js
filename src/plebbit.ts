@@ -1,44 +1,65 @@
-import { CreateSignerOptions, CreateSubplebbitOptions } from "./types";
+import {
+    BlockchainProvider,
+    CreateCommentEditOptions,
+    CreateCommentOptions,
+    CreateSignerOptions,
+    CreateSubplebbitOptions,
+    CreateVoteOptions,
+    PlebbitOptions
+} from "./types";
 import plebbitUtil from "./runtime/node/util";
 import { Comment, CommentEdit } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
 import { getDebugLevels, loadIpfsFileAsJson, loadIpnsAsJson, timestamp } from "./util";
 import Vote from "./vote";
-import { create as createIpfsClient, IPFSHTTPClient } from "ipfs-http-client";
+import { create as createIpfsClient, IPFSHTTPClient, Options } from "ipfs-http-client";
 import assert from "assert";
 import { createSigner, Signer, signPublication, verifyPublication } from "./signer";
 import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
+import { SIGNED_PROPERTY_NAMES } from "./signer/signatures";
 
 const debugs = getDebugLevels("plebbit");
 
-export class Plebbit {
-    ipfsHttpClientOptions: string | any;
-    ipfsGatewayUrl: string;
-    pubsubHttpClientOptions: string | any;
-    ipfsClient: IPFSHTTPClient | undefined;
+export class Plebbit implements PlebbitOptions {
+    ipfsClient?: IPFSHTTPClient;
     pubsubIpfsClient: IPFSHTTPClient;
-    dataPath: string | undefined;
-
     resolver: Resolver;
     _memCache: TinyCache;
+    ipfsGatewayUrl: string;
+    ipfsHttpClientOptions?: Options;
+    pubsubHttpClientOptions?: Options;
+    dataPath?: string;
+    blockchainProviders?: { [chainTicker: string]: BlockchainProvider };
+    resolveAuthorAddresses?: boolean;
 
-    constructor(options = {}) {
+    constructor(options: PlebbitOptions) {
         this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
         this.ipfsClient = this.ipfsHttpClientOptions ? createIpfsClient(this.ipfsHttpClientOptions) : undefined;
-        this.pubsubHttpClientOptions = options["pubsubHttpClientOptions"] || "https://pubsubprovider.xyz/api/v0";
+        this.pubsubHttpClientOptions = options["pubsubHttpClientOptions"] || { url: "https://pubsubprovider.xyz/api/v0" };
         this.pubsubIpfsClient = options["pubsubHttpClientOptions"]
             ? createIpfsClient(options["pubsubHttpClientOptions"])
             : this.ipfsClient
             ? this.ipfsClient
             : createIpfsClient(this.pubsubHttpClientOptions);
         this.dataPath = options["dataPath"] || plebbitUtil.getDefaultDataPath();
-        this.resolver = new Resolver({ plebbit: this, blockchainProviders: options["blockchainProviders"] });
+        this.blockchainProviders = options.blockchainProviders || {
+            avax: {
+                url: "https://api.avax.network/ext/bc/C/rpc",
+                chainId: 43114
+            },
+            matic: {
+                url: "https://polygon-rpc.com",
+                chainId: 137
+            }
+        };
+        this.resolver = new Resolver({ plebbit: this, blockchainProviders: this.blockchainProviders });
+        this.resolveAuthorAddresses = options["resolveAuthorAddresses"] || true;
         this._memCache = new TinyCache();
     }
 
-    async _init(options = {}) {
+    async _init(options: PlebbitOptions) {
         if (options["ipfsGatewayUrl"]) this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
         else {
             try {
@@ -86,34 +107,23 @@ export class Plebbit {
         return publication;
     }
 
-    async signPublication(createPublicationOptions) {
-        if (createPublicationOptions.author && !createPublicationOptions.author.address) {
-            createPublicationOptions.author.address = createPublicationOptions.signer.address;
+    async createComment(options: CreateCommentOptions): Promise<Comment | Post> {
+        const commentSubplebbit = { plebbit: this, address: options.subplebbitAddress };
+        if (!options.signer) return options.title ? new Post(options, commentSubplebbit) : new Comment(options, commentSubplebbit);
+        if (!options.timestamp) {
+            options.timestamp = timestamp();
+            debugs.TRACE(`User hasn't provided a timestamp in createCommentOptions, defaulting to (${options.timestamp})`);
+        }
+        if (options.author && !options.author.address) {
+            options.author.address = options.signer.address;
             debugs.TRACE(
-                `createPublicationOptions did not provide author.address, will define it to signer.address (${createPublicationOptions.signer.address})`
+                `createCommentOptions did not provide author.address, will define it to signer.address (${options.signer.address})`
             );
         }
-        const commentSignature = await signPublication(createPublicationOptions, createPublicationOptions.signer, this);
-        return { ...createPublicationOptions, signature: commentSignature };
-    }
 
-    defaultTimestampIfNeeded(createPublicationOptions) {
-        if (!createPublicationOptions.timestamp) {
-            const defaultTimestamp = timestamp();
-            debugs.TRACE(`User hasn't provided a timestamp in options, defaulting to (${defaultTimestamp})`);
-            createPublicationOptions.timestamp = defaultTimestamp;
-        }
-        return createPublicationOptions;
-    }
+        const commentSignature = await signPublication(options, options.signer, this, SIGNED_PROPERTY_NAMES.COMMENT);
 
-    async createComment(createCommentOptions): Promise<Comment | Post> {
-        const commentSubplebbit = { plebbit: this, address: createCommentOptions.subplebbitAddress };
-        if (!createCommentOptions.signer)
-            return createCommentOptions.title
-                ? new Post(createCommentOptions, commentSubplebbit)
-                : new Comment(createCommentOptions, commentSubplebbit);
-        createCommentOptions = this.defaultTimestampIfNeeded(createCommentOptions);
-        const commentProps = await this.signPublication(createCommentOptions);
+        const commentProps = { ...options, signature: commentSignature };
         return commentProps.title ? new Post(commentProps, commentSubplebbit) : new Comment(commentProps, commentSubplebbit);
     }
 
@@ -121,33 +131,41 @@ export class Plebbit {
         return new Subplebbit(options, this);
     }
 
-    async createVote(createVoteOptions): Promise<Vote> {
-        const subplebbit = { plebbit: this, address: createVoteOptions.subplebbitAddress };
-        if (!createVoteOptions.signer) return new Vote(createVoteOptions, subplebbit);
-        createVoteOptions = this.defaultTimestampIfNeeded(createVoteOptions);
-        const voteProps = await this.signPublication(createVoteOptions);
+    async createVote(options: CreateVoteOptions): Promise<Vote> {
+        const subplebbit = { plebbit: this, address: options.subplebbitAddress };
+        if (!options.signer) return new Vote(options, subplebbit);
+        if (!options.timestamp) {
+            options.timestamp = timestamp();
+            debugs.TRACE(`User hasn't provided a timestamp in createVote, defaulting to (${options.timestamp})`);
+        }
+        if (options.author && !options.author.address) {
+            options.author.address = options.signer.address;
+            debugs.TRACE(`CreateVoteOptions did not provide author.address, will define it to signer.address (${options.signer.address})`);
+        }
+        const voteSignature = await signPublication(options, options.signer, this, SIGNED_PROPERTY_NAMES.VOTE);
+        const voteProps = { ...options, signature: voteSignature };
         return new Vote(voteProps, subplebbit);
     }
 
-    async createCommentEdit(createCommentEditOptions): Promise<CommentEdit> {
-        const subplebbitObj = { plebbit: this, address: createCommentEditOptions.subplebbitAddress };
-        if (!createCommentEditOptions.signer)
-            // User just wants to instantiate a CommentEdit object, not publish
-            return new CommentEdit(createCommentEditOptions, subplebbitObj);
-        if (!createCommentEditOptions.editTimestamp) {
-            const defaultTimestamp = timestamp();
-            debugs.DEBUG(`User hasn't provided any editTimestamp for their CommentEdit, defaulted to (${defaultTimestamp})`);
-            createCommentEditOptions.editTimestamp = defaultTimestamp;
+    async createCommentEdit(options: CreateCommentEditOptions): Promise<CommentEdit> {
+        const subplebbitObj = { plebbit: this, address: options.subplebbitAddress };
+        if (!options.signer) return new CommentEdit(options, subplebbitObj); // User just wants to instantiate a CommentEdit object, not publish
+
+        if (!options.editTimestamp) {
+            options.editTimestamp = timestamp();
+            debugs.DEBUG(`User hasn't provided editTimestamp in createCommentEdit, defaulted to (${options.editTimestamp})`);
         }
 
+        const editSignature = await signPublication(options, options.signer, this, SIGNED_PROPERTY_NAMES.COMMENT_EDIT);
+
         const commentEditProps = {
-            ...createCommentEditOptions,
-            editSignature: await signPublication(createCommentEditOptions, createCommentEditOptions.signer, this)
+            ...options,
+            editSignature: editSignature
         };
         return new CommentEdit(commentEditProps, subplebbitObj);
     }
 
-    createSigner(createSignerOptions: CreateSignerOptions = {}): Promise<Signer> {
+    createSigner(createSignerOptions?: CreateSignerOptions): Promise<Signer> {
         return createSigner(createSignerOptions);
     }
 
