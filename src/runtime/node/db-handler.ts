@@ -405,6 +405,12 @@ export class DbHandler {
         return comments;
     }
 
+    async queryCountOfPosts(trx?: Knex.Transaction): Promise<number> {
+        const obj = await this.baseTransaction(trx)(TABLES.COMMENTS).count().where({ depth: 0 }).first();
+        if (!obj) return 0;
+        return Number(obj["count(*)"]);
+    }
+
     async changeDbFilename(newDbFileName: string) {
         const oldPathString = this.subplebbit?._dbConfig?.connection?.filename;
         assert.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
