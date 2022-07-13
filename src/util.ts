@@ -22,8 +22,11 @@ const debugs = getDebugLevels("util");
 
 async function fetchWithLimit(url: string, options?) {
     // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
+    debugs.DEBUG(`Attempting to fetch url: ${url}`);
     const res = await fetch(url, options);
     if (typeof window === "undefined") return res; // No need to process stream for Node
+
+    const originalRes = res.clone();
     // @ts-ignore
     const reader = res.body.getReader();
     let currentChunk: any = undefined,
@@ -32,12 +35,12 @@ async function fetchWithLimit(url: string, options?) {
     while (true) {
         currentChunk = await reader.read();
         const { done, value } = currentChunk;
+        if (done || !value) break;
         if (value.length + totalBytesRead > options.size) throw new Error(`content size at ${url} over limit: ${options.size}`);
         totalBytesRead += value.length;
-        debugs.DEBUG(`Total bytes read from ${url}: ${totalBytesRead}`);
-        if (done) break;
+        debugs.TRACE(`Total bytes read from ${url}: ${totalBytesRead}`);
     }
-    return res;
+    return originalRes;
 }
 
 export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultOptions = { timeout: 60000 }) {
@@ -45,7 +48,7 @@ export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultO
     if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
         const res = await fetchWithLimit(url, { cache: "force-cache", size: DOWNLOAD_LIMIT_BYTES });
-        if (res.status === 200) return await res.json();
+        if (res.status === 200) return res.json();
         else throw new Error(`Failed to load IPFS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
     } else {
         const rawData: any = await all(plebbit.ipfsClient.cat(cid, { ...defaultOptions, length: DOWNLOAD_LIMIT_BYTES })); // Limit is 1mb files
@@ -92,7 +95,7 @@ export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
 
-export function keepKeys(obj: Object, keys: any[]): Object {
+export function keepKeys(obj: Object, keys: any[]) {
     const newObj = {};
     keys.forEach((key) => (newObj[key] = undefined));
     for (const key of Object.keys(obj)) if (keys.includes(key)) newObj[key] = obj[key];
