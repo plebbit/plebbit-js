@@ -85,7 +85,7 @@ const testSorting = async (sort, shouldTestCommentReplies) => {
                             currentPost.replies.pageCids[currentSortName],
                             currentPost.replies
                         );
-                        expect(currentPost.replyCount).to.equal(alreadySortedComments.length);
+                        if (sortNames.length === 1) expect(currentPost.replyCount).to.equal(alreadySortedComments.length); // If sort with no timeframe then sortedComments should equal post.replyCount
                         return testListOfSortedComments(alreadySortedComments, currentSortName);
                     })
                 );
@@ -135,6 +135,9 @@ describe("Test pages sorting", async () => {
     });
 
     describe("comment.replies", async () => {
+        after(async () => {
+            await subplebbit.stop();
+        });
         repliesSortObjects.map((sort) =>
             it(`${sort.type} pages under a comment are sorted correctly`, async () => await testSorting(sort, true))
         );
