@@ -2,8 +2,11 @@ name: CI alerts
 
 on:
   workflow_run:
-    workflows: [CI]
-    types: [completed]
+    workflows:
+      - 'CI'
+      - 'CI-dist'
+    types:
+      - 'completed'
 
 jobs:
   on-failure:

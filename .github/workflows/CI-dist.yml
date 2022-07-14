@@ -1,25 +1,21 @@
-# CI for the src folder
-name: CI
+# CI for the dist folder
+name: CI dist
 
 on:
   pull_request:
     branches:
       - master
     paths:
-      - 'test/**'
-      - 'src/**'
-      - 'config/**'
-      - '.github/workflows/{CI.yml,CI-plebbit-react-hooks.yml}'
+      - 'dist/**'
+      - '.github/workflows/CI-dist*'
       - 'package.json'
       - 'package-lock.json'
   push:
     branches:
       - master
     paths:
-      - 'test/**'
-      - 'src/**'
-      - 'config/**'
-      - '.github/workflows/{CI.yml,CI-plebbit-react-hooks.yml}'
+      - 'dist/**'
+      - '.github/workflows/CI-dist*'
       - 'package.json'
       - 'package-lock.json'
 
@@ -44,12 +40,11 @@ jobs:
           cache: 'npm'
 
       - run: npm install
-      - run: npm run build
       - run: npm run webpack
       - run: npm run test:server & npm run test:server:wait-on
       - run: npm run test:node:parallel
       - run: CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) npm run test:browser
 
   test-plebbit-react-hooks:
-    uses: ./.github/workflows/CI-plebbit-react-hooks.yml
+    uses: ./.github/workflows/CI-dist-plebbit-react-hooks.yml
     secrets: inherit
