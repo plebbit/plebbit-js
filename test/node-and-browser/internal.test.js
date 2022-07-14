@@ -21,7 +21,7 @@ describe("Test util functions", async () => {
             const gibberishCid = "12345";
 
             await assert.isRejected(loadIpfsFileAsJson(gibberishCid, plebbit), "invalid path");
-            await assert.isRejected(loadIpfsFileAsJson(gibberishCid, gatewayPlebbit), "Status code 404");
+            await assert.isRejected(loadIpfsFileAsJson(gibberishCid, gatewayPlebbit));
         });
         it("Loads an ipfs file under 1mb as JSON correctly", async () => {
             const jsonFileTest = { 123: "123" };
@@ -38,7 +38,7 @@ describe("Test util functions", async () => {
 
             const cid = (await plebbit.ipfsClient.add(JSON.stringify(twoMbObject))).path; // Cid of a file with over 1mb size
 
-            await assert.isRejected(loadIpfsFileAsJson(cid, plebbit), "Unexpected end of JSON input");
+            await assert.isRejected(loadIpfsFileAsJson(cid, plebbit), "JSON");
             await assert.isRejected(loadIpfsFileAsJson(cid, gatewayPlebbit), "content size");
         });
     });
