@@ -51,7 +51,7 @@ const testSorting = async (sort, shouldTestCommentReplies) => {
                 // If sort types are more than 1 that means this particular sort type has timeframes
                 const syncIntervalSeconds = 5 * 60;
 
-                const sortStart = timestamp() - TIMEFRAMES_TO_SECONDS[currentTimeframe] - syncIntervalSeconds; // Should probably add extra buffer here
+                const sortStart = subplebbit.updatedAt - TIMEFRAMES_TO_SECONDS[currentTimeframe] - syncIntervalSeconds; // Should probably add extra buffer here
                 const errMsg = `${currentSortName} sort includes posts from different timeframes`;
                 expect(alreadySortedComments[j].timestamp).to.be.greaterThanOrEqual(sortStart, errMsg);
                 expect(alreadySortedComments[j].timestamp).to.be.lessThanOrEqual(subplebbit.updatedAt, errMsg);
