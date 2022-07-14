@@ -595,21 +595,37 @@ const plebbitOptions = {
   dataPath: __dirname
 }
 const plebbit = await Plebbit(plebbitOptions)
-const subplebbitOptions = {
-  address: 'Qmb...',
-}
-// create a subplebbit instance
+
+// create a new local subplebbit as the owner
+const subplebbit = await plebbit.createSubplebbit()
+
+// create a new local subplebbit as the owner, already with settings
+const subplebbit = await plebbit.createSubplebbit({title: 'Memes', description: 'Post your memes here.'})
+
+// create a new local subplebbit as the owner with a premade signer
+const signer = await plebbit.createSigner()
+const subplebbit = await plebbit.createSubplebbit({signer})
+// signer.address === subplebbit.address
+
+// create a new local subplebbit as the owner with a premade signer, already with settings
+const signer = await plebbit.createSigner()
+const subplebbit = await plebbit.createSubplebbit({signer, title: 'Memes', description: 'Post your memes here.'})
+
+// instantiate an already existing subplebbit instance
+const subplebbitOptions = {address: 'Qmb...',}
 const subplebbit = await plebbit.createSubplebbit(subplebbitOptions)
+
 // edit the subplebbit info in the database
 subplebbit.edit({
   title: 'Memes',
   description: 'Post your memes here.',
   pubsubTopic: 'Qmb...'
 })
+
 // start publishing updates every 5 minutes
 subplebbit.start()
 
-// initialize any property on the Subplebbit instance
+// instantiate an already existing subplebbit instance and initialize any property on it
 const subplebbit = await plebbit.createSubplebbit({
   address: 'Qmb...',
   title: 'Memes',
@@ -625,19 +641,6 @@ const subplebbit = await plebbit.createSubplebbit({
 })
 console.log(subplebbit.title) // prints 'Memes'
 console.log(subplebbit.posts.pages.hot.comments[0].content) // prints 'My first post'
-
-// create a new local subplebbit as the owner
-const subplebbit = await plebbit.createSubplebbit()
-// created subplebbit owner private key: subplebbit.signer.privateKey
-// created subplebbit address: subplebbit.address
-
-// create a new local subplebbit as the owner already with settings
-const subplebbit = await plebbit.createSubplebbit({title: 'Memes', description: 'Post memes here'})
-
-// create a new local subplebbit as the owner with a premade signer
-const signer = await plebbit.createSigner()
-const subplebbit = await plebbit.createSubplebbit({signer})
-// signer.address === subplebbit.address
 ```
 
 ### `plebbit.createSubplebbitEdit(createSubplebbitEditOptions)`
