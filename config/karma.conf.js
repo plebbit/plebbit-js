@@ -12,10 +12,7 @@ const CustomChrome = {
 };
 
 // choose which browser you prefer
-let browsers = [
-    // "FirefoxHeadless",
-    "CustomChrome"
-];
+let browsers = ["FirefoxHeadless", "CustomChrome"];
 
 // add firefox during CI
 // make sure non-headless DebugChrome is not included as it breaks the CI
