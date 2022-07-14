@@ -190,9 +190,26 @@ var Plebbit = /** @class */ (function () {
         });
     };
     Plebbit.prototype.createSubplebbit = function (options) {
+        if (options === void 0) { options = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new subplebbit_1.Subplebbit(options, this)];
+            var _a, subplebbit;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        if (!!options.signer) return [3 /*break*/, 2];
+                        _a = options;
+                        return [4 /*yield*/, this.createSigner()];
+                    case 1:
+                        _a.signer = _b.sent();
+                        debugs.DEBUG("Did not provide CreateSubplebbitOptions.signer, generated random signer with address (".concat(options.signer.address, ")"));
+                        _b.label = 2;
+                    case 2:
+                        subplebbit = new subplebbit_1.Subplebbit(options, this);
+                        return [4 /*yield*/, subplebbit.edit(options)];
+                    case 3:
+                        _b.sent();
+                        return [2 /*return*/, subplebbit];
+                }
             });
         });
     };

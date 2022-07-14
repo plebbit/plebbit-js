@@ -403,11 +403,20 @@ var DbHandler = /** @class */ (function () {
                     return [2 /*return*/, []];
                 if (!Array.isArray(commentsRows))
                     commentsRows = [commentsRows];
-                return [2 /*return*/, Promise.all(commentsRows.map(function (props) {
-                        var replacedProps = (0, util_1.replaceXWithY)(props, null, undefined); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
-                        // @ts-ignore
-                        return _this.subplebbit.plebbit.createComment(replacedProps);
-                    }))];
+                return [2 /*return*/, Promise.all(commentsRows.map(function (props) { return __awaiter(_this, void 0, void 0, function () {
+                        var replacedProps, comment;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    replacedProps = (0, util_1.replaceXWithY)(props, null, undefined);
+                                    return [4 /*yield*/, this.subplebbit.plebbit.createComment(replacedProps)];
+                                case 1:
+                                    comment = _a.sent();
+                                    (0, assert_1.default)(typeof comment.replyCount === "number");
+                                    return [2 /*return*/, comment];
+                            }
+                        });
+                    }); }))];
             });
         });
     };
@@ -670,14 +679,12 @@ var DbHandler = /** @class */ (function () {
                         depths = new Array(maxDepth + 1).fill(null).map(function (value, i) { return i; });
                         return [4 /*yield*/, Promise.all(depths.map(function (depth) { return __awaiter(_this, void 0, void 0, function () {
                                 var commentsWithDepth;
-                                var _this = this;
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
-                                        case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS).where({ depth: depth })];
+                                        case 0: return [4 /*yield*/, this.baseCommentQuery(trx).where({ depth: depth })];
                                         case 1:
                                             commentsWithDepth = _a.sent();
-                                            return [4 /*yield*/, Promise.all(commentsWithDepth.map(function (commentProps) { return _this.subplebbit.plebbit.createComment(commentProps); }))];
-                                        case 2: return [2 /*return*/, _a.sent()];
+                                            return [2 /*return*/, this.createCommentsFromRows(commentsWithDepth)];
                                     }
                                 });
                             }); }))];

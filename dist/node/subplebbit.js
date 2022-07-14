@@ -286,7 +286,6 @@ var Subplebbit = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        (0, assert_1.default)(this.plebbit.ipfsClient && this.dbHandler, "subplebbit.ipfsClient and dbHandler is needed to edit");
                         if (!newSubplebbitOptions.address) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.assertDomainResolvesCorrectlyIfNeeded(newSubplebbitOptions.address)];
                     case 1:
@@ -295,6 +294,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 2: return [4 /*yield*/, this.prePublish()];
                     case 3:
                         _a.sent();
+                        (0, assert_1.default)(this.plebbit.ipfsClient && this.dbHandler, "subplebbit.ipfsClient and dbHandler is needed to edit");
                         this.initSubplebbit(__assign({ updatedAt: (0, util_1.timestamp)() }, newSubplebbitOptions));
                         if (!newSubplebbitOptions.address) return [3 /*break*/, 5];
                         debugs.DEBUG("Attempting to edit subplebbit.address from ".concat(this.address, " to ").concat(newSubplebbitOptions.address));
@@ -919,6 +919,7 @@ var Subplebbit = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        (0, assert_1.default)(this.dbHandler, "DbHandler need to be defined before syncing");
                         debugs.TRACE("Starting to sync IPNS with DB");
                         // try {
                         return [4 /*yield*/, this.sortHandler.cacheCommentsPages()];

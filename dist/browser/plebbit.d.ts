@@ -25,7 +25,7 @@ export declare class Plebbit implements PlebbitOptions {
     getSubplebbit(subplebbitAddress: string): Promise<Subplebbit>;
     getComment(cid: string): Promise<Comment | Post>;
     createComment(options: CreateCommentOptions): Promise<Comment | Post>;
-    createSubplebbit(options: CreateSubplebbitOptions): Promise<Subplebbit>;
+    createSubplebbit(options?: CreateSubplebbitOptions): Promise<Subplebbit>;
     createVote(options: CreateVoteOptions): Promise<Vote>;
     createCommentEdit(options: CreateCommentEditOptions): Promise<CommentEdit>;
     createSigner(createSignerOptions?: CreateSignerOptions): Promise<Signer>;

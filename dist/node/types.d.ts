@@ -154,7 +154,7 @@ export interface SubplebbitType {
     address?: string;
     signer?: Signer;
     flairs?: Record<FlairOwner, Flair[]>;
-    protocolVersion: "1.0.0";
+    protocolVersion?: "1.0.0";
     encryption?: SubplebbitEncryption;
     signature?: Signature;
 }
