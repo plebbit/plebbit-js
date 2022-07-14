@@ -153,7 +153,7 @@ export interface SubplebbitType {
     address?: string;
     signer?: Signer;
     flairs?: Record<FlairOwner, Flair[]>; // list of post/author flairs authors and mods can choose from
-    protocolVersion: "1.0.0"; // semantic version of the protocol https://semver.org/
+    protocolVersion?: "1.0.0"; // semantic version of the protocol https://semver.org/
     encryption?: SubplebbitEncryption;
     signature?: Signature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
 }

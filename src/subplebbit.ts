@@ -247,10 +247,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
     }
 
     async edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit> {
-        assert(this.plebbit.ipfsClient && this.dbHandler, "subplebbit.ipfsClient and dbHandler is needed to edit");
-
         if (newSubplebbitOptions.address) await this.assertDomainResolvesCorrectlyIfNeeded(newSubplebbitOptions.address);
         await this.prePublish();
+        assert(this.plebbit.ipfsClient && this.dbHandler, "subplebbit.ipfsClient and dbHandler is needed to edit");
+
         this.initSubplebbit({
             updatedAt: timestamp(),
             ...newSubplebbitOptions
@@ -684,6 +684,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
     }
 
     async syncIpnsWithDb() {
+        assert(this.dbHandler, "DbHandler need to be defined before syncing");
         debugs.TRACE("Starting to sync IPNS with DB");
         // try {
         await this.sortHandler.cacheCommentsPages();

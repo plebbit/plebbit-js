@@ -127,8 +127,16 @@ export class Plebbit implements PlebbitOptions {
         return commentProps.title ? new Post(commentProps, commentSubplebbit) : new Comment(commentProps, commentSubplebbit);
     }
 
-    async createSubplebbit(options: CreateSubplebbitOptions): Promise<Subplebbit> {
-        return new Subplebbit(options, this);
+    async createSubplebbit(options: CreateSubplebbitOptions = {}): Promise<Subplebbit> {
+        if (!options.signer) {
+            options.signer = await this.createSigner();
+            debugs.DEBUG(
+                `Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${options.signer.address})`
+            );
+        }
+        const subplebbit = new Subplebbit(options, this);
+        await subplebbit.edit(options);
+        return subplebbit;
     }
 
     async createVote(options: CreateVoteOptions): Promise<Vote> {
