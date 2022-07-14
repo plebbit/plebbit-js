@@ -71,6 +71,7 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
 }
 Author {
   address: string
+  previousCommentCid: string // linked list of the author's comments
   displayName?: string
   wallets?: {[chainTicker: string]: Wallet}
   avatar?: Nft
