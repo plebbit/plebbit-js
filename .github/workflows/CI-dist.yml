@@ -7,7 +7,7 @@ on:
       - master
     paths:
       - 'dist/**'
-      - '.github/workflows/CI-dist*'
+      # - '.github/**'
       - 'package.json'
       - 'package-lock.json'
   push:
@@ -15,7 +15,7 @@ on:
       - master
     paths:
       - 'dist/**'
-      - '.github/workflows/CI-dist*'
+      # - '.github/**'
       - 'package.json'
       - 'package-lock.json'
 

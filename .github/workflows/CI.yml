@@ -9,7 +9,7 @@ on:
       - 'test/**'
       - 'src/**'
       - 'config/**'
-      - '.github/workflows/{CI.yml,CI-plebbit-react-hooks.yml}'
+      # - '.github/**'
       - 'package.json'
       - 'package-lock.json'
   push:
@@ -19,7 +19,7 @@ on:
       - 'test/**'
       - 'src/**'
       - 'config/**'
-      - '.github/workflows/{CI.yml,CI-plebbit-react-hooks.yml}'
+      # - '.github/**'
       - 'package.json'
       - 'package-lock.json'
 
