@@ -203,12 +203,19 @@ export class SortHandler {
             throw new Error(`Comment has not defined replyCount (${comment.replyCount}): ${JSON.stringify(comment)}`);
         const key = comment?.cid || "subplebbit"; // If comment is undefined then we're generating page for subplebbit
         if (await this.subplebbit._keyv.has(key)) {
-            const cachedPage = new Pages({ ...(await this.subplebbit._keyv.get(key)), subplebbit: this.subplebbit });
-            assert(JSON.stringify(cachedPage.toJSON()) !== "{}", "Cache returns empty pages");
-            return cachedPage;
+            const cachedPageJson = await this.subplebbit._keyv.get(key);
+            if (!cachedPageJson || JSON.stringify(cachedPageJson) === "{}") {
+                await this.subplebbit._keyv.delete(key);
+            } else {
+                const cachedPage = new Pages({ ...cachedPageJson, subplebbit: this.subplebbit });
+                assert(JSON.stringify(cachedPage.toJSON()) !== "{}", "Cache returns empty pages");
+                return cachedPage;
+            }
         }
 
-        if (key === "subp-lebbit" && (await this.subplebbit.dbHandler?.queryCountOfPosts(trx)) === 0)
+        let subplebbitPostCount = key === "subplebbit" && (await this.subplebbit.dbHandler?.queryCountOfPosts(trx));
+
+        if (subplebbitPostCount === 0)
             // If subplebbit and has no posts, then return undefined
             return undefined;
 
@@ -221,20 +228,22 @@ export class SortHandler {
         }
         [pagesRaw, pageCids] = [removeKeysWithUndefinedValues(pagesRaw), removeKeysWithUndefinedValues(pageCids)];
         if (!pagesRaw || !pageCids || JSON.stringify(pagesRaw) === "{}" || JSON.stringify(pageCids) === "{}")
-            throw new Error(`Failed to generate pages`);
+            throw new Error(`Failed to generate pages for ${key}: pagesRaw: ${pagesRaw}, pageCids: ${pageCids}`);
 
         const pages = new Pages({ pages: pagesRaw, pageCids: pageCids, subplebbit: this.subplebbit });
 
-        if (!comment && this.subplebbit.latestPostCid) {
+        if (key === "subplebbit") {
+            subplebbitPostCount = await this.subplebbit.dbHandler?.queryCountOfPosts(trx); // Query again since it might have changed
             // If there is at least one comment in subplebbit, then assert the following
-            const postCount = await this.subplebbit.dbHandler.queryCountOfPosts(trx);
             [pages?.pages?.controversialAll, pages?.pages?.hot, pages?.pages?.new, pages?.pages?.topAll].forEach((sortPage) => {
-                assert(sortPage?.comments?.length === Math.min(postCount, SORTED_POSTS_PAGE_SIZE));
+                assert.ok(sortPage?.comments?.length >= Math.min(subplebbitPostCount, SORTED_POSTS_PAGE_SIZE));
             });
-        } else if (comment) {
-            [pages?.pages?.controversialAll, pages?.pages?.new, pages?.pages?.topAll, pages?.pages?.old].forEach((sortPage, i) => {
-                if (sortPage?.comments?.length !== Math.min(SORTED_POSTS_PAGE_SIZE, comment.replyCount))
-                    throw new Error(`Problem with sort`);
+        } else {
+            [pages?.pages?.controversialAll, pages?.pages?.new, pages?.pages?.topAll, pages?.pages?.old].forEach((sortPage) => {
+                assert.ok(
+                    sortPage?.comments?.length >= Math.min(SORTED_POSTS_PAGE_SIZE, comment.replyCount),
+                    "Replies page is missing comments"
+                );
             });
         }
 

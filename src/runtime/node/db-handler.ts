@@ -244,10 +244,12 @@ export class DbHandler {
         if (!commentsRows || (Array.isArray(commentsRows) && commentsRows?.length === 0)) return [];
         if (!Array.isArray(commentsRows)) commentsRows = [commentsRows];
         return Promise.all(
-            commentsRows.map((props) => {
+            commentsRows.map(async (props) => {
                 const replacedProps = replaceXWithY(props, null, undefined); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
                 // @ts-ignore
-                return this.subplebbit.plebbit.createComment(replacedProps);
+                const comment = await this.subplebbit.plebbit.createComment(replacedProps);
+                assert(typeof comment.replyCount === "number");
+                return comment;
             })
         );
     }
@@ -398,8 +400,8 @@ export class DbHandler {
         const depths = new Array(maxDepth + 1).fill(null).map((value, i) => i);
         const comments: Comment[][] = await Promise.all(
             depths.map(async (depth) => {
-                const commentsWithDepth = await this.baseTransaction(trx)(TABLES.COMMENTS).where({ depth: depth });
-                return await Promise.all(commentsWithDepth.map((commentProps) => this.subplebbit.plebbit.createComment(commentProps)));
+                const commentsWithDepth = await this.baseCommentQuery(trx).where({ depth: depth });
+                return this.createCommentsFromRows(commentsWithDepth);
             })
         );
         return comments;
