@@ -30,6 +30,14 @@ describe("subplebbit", async () => {
         rm(path.join(plebbit.dataPath, subplebbit.address), () => console.log(`Deleted generated DB`));
     });
 
+    it(`Can create a subplebbit with empty CreateSubplebbitOptions`, async () => {
+        const newSubplebbit = await plebbit.createSubplebbit();
+        expect(newSubplebbit.address).to.equal(newSubplebbit.signer.address);
+        await newSubplebbit.start();
+        const subplebbitIpns = await plebbit.getSubplebbit(newSubplebbit.address);
+        expect(subplebbitIpns.address).to.equal(newSubplebbit.signer.address);
+    });
+
     it("create new subplebbit", async function () {
         const signer = await plebbit.createSigner();
         subplebbit = await plebbit.createSubplebbit({

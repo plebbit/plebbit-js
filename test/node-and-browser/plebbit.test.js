@@ -130,9 +130,8 @@ describe("plebbit (node and browser)", () => {
     describe("plebbit.getSubplebbit", async () => {
         it("loads subplebbit via IPNS address", async () => {
             const _subplebbitIpns = await loadIpnsAsJson(subplebbitSigner.address, plebbit);
-            const expectedSubplebbit = await plebbit.createSubplebbit(_subplebbitIpns);
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
-            expect(JSON.stringify(loadedSubplebbit)).to.equal(JSON.stringify(expectedSubplebbit));
+            expect(JSON.stringify(loadedSubplebbit)).to.equals(JSON.stringify(_subplebbitIpns));
         });
 
         it("Throws an error when subplebbit address is incorrect", async () => {
