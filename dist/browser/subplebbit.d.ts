@@ -1,0 +1,116 @@
+/// <reference types="node" />
+import EventEmitter from "events";
+import { Challenge } from "./challenge";
+import { DbHandler } from "./runtime/browser/db-handler";
+import { Signer, Signature } from "./signer";
+import { Pages } from "./pages";
+import { Plebbit } from "./plebbit";
+import { ChallengeType, CreateSubplebbitOptions, Flair, FlairOwner, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitMetrics, SubplebbitRole, SubplebbitSuggested, SubplebbitType } from "./types";
+import { Comment, CommentEdit } from "./comment";
+import Vote from "./vote";
+import Publication from "./publication";
+export declare class Subplebbit extends EventEmitter implements SubplebbitEditOptions, SubplebbitType {
+    title?: string;
+    description?: string;
+    roles?: {
+        [authorAddress: string]: SubplebbitRole;
+    };
+    latestPostCid?: string;
+    posts?: Pages;
+    pubsubTopic?: string;
+    challengeTypes?: ChallengeType[];
+    metrics?: SubplebbitMetrics;
+    features?: SubplebbitFeatures;
+    suggested?: SubplebbitSuggested;
+    flairs: Record<FlairOwner, Flair[]>;
+    address: string;
+    moderatorsAddresses?: string[];
+    metricsCid?: string;
+    createdAt?: number;
+    updatedAt?: number;
+    signer?: Signer;
+    encryption?: SubplebbitEncryption;
+    protocolVersion: "1.0.0";
+    signature: Signature;
+    plebbit: Plebbit;
+    dbHandler?: DbHandler;
+    _keyv: any;
+    _dbConfig?: any;
+    private _challengeToSolution;
+    private _challengeToPublication;
+    private provideCaptchaCallback?;
+    private validateCaptchaAnswerCallback?;
+    private ipnsKeyName?;
+    private sortHandler;
+    private emittedAt?;
+    private _updateInterval?;
+    private _sync;
+    constructor(props: CreateSubplebbitOptions, plebbit: Plebbit);
+    initSubplebbit(newProps: any): void;
+    initSignerIfNeeded(): Promise<void>;
+    initDbIfNeeded(): Promise<void>;
+    setProvideCaptchaCallback(newCallback: any): void;
+    setValidateCaptchaAnswerCallback(newCallback: any): void;
+    toJSONInternal(): {
+        ipnsKeyName: string;
+        database: any;
+        signer: Signer;
+        title: string;
+        description: string;
+        moderatorsAddresses: string[];
+        latestPostCid: string;
+        pubsubTopic: string;
+        address: string;
+        posts: Pages;
+        challengeTypes: ChallengeType[];
+        metricsCid: string;
+        createdAt: number;
+        updatedAt: number;
+        encryption: SubplebbitEncryption;
+        roles: {
+            [authorAddress: string]: SubplebbitRole;
+        };
+    };
+    toJSON(): {
+        title: string;
+        description: string;
+        moderatorsAddresses: string[];
+        latestPostCid: string;
+        pubsubTopic: string;
+        address: string;
+        posts: Pages;
+        challengeTypes: ChallengeType[];
+        metricsCid: string;
+        createdAt: number;
+        updatedAt: number;
+        encryption: SubplebbitEncryption;
+        roles: {
+            [authorAddress: string]: SubplebbitRole;
+        };
+    };
+    prePublish(): Promise<void>;
+    assertDomainResolvesCorrectlyIfNeeded(domain: string): Promise<void>;
+    edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit>;
+    updateOnce(): Promise<this>;
+    update(updateIntervalMs?: number): Promise<this>;
+    stop(): Promise<void>;
+    updateSubplebbitIpns(): Promise<Subplebbit>;
+    handleCommentEdit(commentEdit: CommentEdit, trx?: any): Promise<{
+        reason: string;
+    }>;
+    handleVote(newVote: Vote, challengeRequestId: string): Promise<{
+        reason: string;
+    }>;
+    publishPostAfterPassingChallenge(publication: any, challengeRequestId: any): Promise<any>;
+    handleChallengeRequest(msgParsed: any): Promise<void>;
+    handleChallengeAnswer(msgParsed: any): Promise<void>;
+    processCaptchaPubsub(pubsubMsg: any): Promise<void>;
+    defaultProvideCaptcha(challengeRequestMessage: any): Promise<Challenge[][]>;
+    defaultValidateCaptcha(challengeAnswerMessage: any): Promise<(boolean | string[])[]>;
+    syncComment(dbComment: Comment): Promise<void>;
+    syncIpnsWithDb(): Promise<void>;
+    _syncLoop(syncIntervalMs: number): Promise<void>;
+    start(syncIntervalMs?: number): Promise<void>;
+    stopPublishing(): Promise<void>;
+    _addPublicationToDb(publication: Publication): Promise<any>;
+}

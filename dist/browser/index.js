@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -38,32 +61,22 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.listSubplebbits = exports.getDefaultDataPath = void 0;
-var path_1 = __importDefault(require("path"));
-var fs_1 = require("fs");
-var assert_1 = __importDefault(require("assert"));
-var getDefaultDataPath = function () { return path_1.default.join(process.cwd(), ".plebbit"); };
-exports.getDefaultDataPath = getDefaultDataPath;
-var listSubplebbits = function (plebbit) { return __awaiter(void 0, void 0, void 0, function () {
-    var subplebbitsPath, addresses;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                (0, assert_1.default)(plebbit.dataPath, "plebbit.dataPath is needed to list subplebbits");
-                subplebbitsPath = path_1.default.join(plebbit.dataPath, "subplebbits");
-                return [4 /*yield*/, fs_1.promises.mkdir(subplebbitsPath, { recursive: true })];
-            case 1:
-                _a.sent();
-                return [4 /*yield*/, fs_1.promises.readdir(subplebbitsPath)];
-            case 2:
-                addresses = _a.sent();
-                return [2 /*return*/, addresses];
-        }
+var polyfill_1 = __importDefault(require("./runtime/browser/polyfill"));
+(0, polyfill_1.default)();
+var PlebbitClass = __importStar(require("./plebbit"));
+module.exports = function Plebbit(plebbitOptions) {
+    if (plebbitOptions === void 0) { plebbitOptions = {}; }
+    return __awaiter(this, void 0, void 0, function () {
+        var plebbit;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    plebbit = new PlebbitClass.Plebbit(plebbitOptions);
+                    return [4 /*yield*/, plebbit._init(plebbitOptions)];
+                case 1:
+                    _a.sent();
+                    return [2 /*return*/, plebbit];
+            }
+        });
     });
-}); };
-exports.listSubplebbits = listSubplebbits;
-exports.default = {
-    getDefaultDataPath: exports.getDefaultDataPath,
-    listSubplebbits: exports.listSubplebbits
 };

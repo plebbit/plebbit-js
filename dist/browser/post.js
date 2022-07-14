@@ -1,4 +1,30 @@
 "use strict";
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -39,31 +65,29 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.listSubplebbits = exports.getDefaultDataPath = void 0;
-var path_1 = __importDefault(require("path"));
-var fs_1 = require("fs");
+var comment_1 = require("./comment");
 var assert_1 = __importDefault(require("assert"));
-var getDefaultDataPath = function () { return path_1.default.join(process.cwd(), ".plebbit"); };
-exports.getDefaultDataPath = getDefaultDataPath;
-var listSubplebbits = function (plebbit) { return __awaiter(void 0, void 0, void 0, function () {
-    var subplebbitsPath, addresses;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                (0, assert_1.default)(plebbit.dataPath, "plebbit.dataPath is needed to list subplebbits");
-                subplebbitsPath = path_1.default.join(plebbit.dataPath, "subplebbits");
-                return [4 /*yield*/, fs_1.promises.mkdir(subplebbitsPath, { recursive: true })];
-            case 1:
-                _a.sent();
-                return [4 /*yield*/, fs_1.promises.readdir(subplebbitsPath)];
-            case 2:
-                addresses = _a.sent();
-                return [2 /*return*/, addresses];
-        }
-    });
-}); };
-exports.listSubplebbits = listSubplebbits;
-exports.default = {
-    getDefaultDataPath: exports.getDefaultDataPath,
-    listSubplebbits: exports.listSubplebbits
-};
+var Post = /** @class */ (function (_super) {
+    __extends(Post, _super);
+    function Post() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    Post.prototype._initProps = function (props) {
+        _super.prototype._initProps.call(this, props);
+        this.parentCid = undefined;
+        this.title = props["title"];
+    };
+    Post.prototype.toJSONSkeleton = function () {
+        return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { title: this.title });
+    };
+    Post.prototype.publish = function (userOptions) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                (0, assert_1.default)(this.title, "Post needs a title to publish");
+                return [2 /*return*/, _super.prototype.publish.call(this, userOptions)];
+            });
+        });
+    };
+    return Post;
+}(comment_1.Comment));
+exports.default = Post;
