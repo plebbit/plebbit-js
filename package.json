@@ -15,7 +15,7 @@
         "test:node:parallel": "mocha --parallel --config config/.mocharc.js test/{node,node-and-browser}/**/*.test.js",
         "test:browser": "karma start config/karma.conf.js",
         "test:server": "node test/test-server.js",
-        "test:server:wait-on": "wait-on http://localhost:14952 --timeout 120000",
+        "test:server:wait-on": "wait-on http://localhost:14952 --timeout 300000",
         "clean": "rimraf dist",
         "prettier": "prettier {src,test,config}/**/*.{js,ts} --write --config config/prettier.config.js",
         "test:prettier": "prettier-check {src,test,config}/**/*.{js,ts} --config config/prettier.config.js"
