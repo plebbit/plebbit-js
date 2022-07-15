@@ -33,9 +33,9 @@ describe("subplebbit", async () => {
     it(`Can create a subplebbit with empty CreateSubplebbitOptions`, async () => {
         const newSubplebbit = await plebbit.createSubplebbit();
         expect(newSubplebbit.address).to.equal(newSubplebbit.signer.address);
-        await newSubplebbit.start();
         const subplebbitIpns = await plebbit.getSubplebbit(newSubplebbit.address);
         expect(subplebbitIpns.address).to.equal(newSubplebbit.signer.address);
+        await newSubplebbit.stopPublishing();
     });
 
     it("create new subplebbit", async function () {
