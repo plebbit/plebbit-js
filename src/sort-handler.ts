@@ -213,7 +213,7 @@ export class SortHandler {
             }
         }
 
-        let subplebbitPostCount = key === "subplebbit" && (await this.subplebbit.dbHandler?.queryCountOfPosts(trx));
+        const subplebbitPostCount = key === "subplebbit" && (await this.subplebbit.dbHandler?.queryCountOfPosts(trx));
 
         if (subplebbitPostCount === 0)
             // If subplebbit and has no posts, then return undefined
@@ -233,7 +233,6 @@ export class SortHandler {
         const pages = new Pages({ pages: pagesRaw, pageCids: pageCids, subplebbit: this.subplebbit });
 
         if (key === "subplebbit") {
-            subplebbitPostCount = await this.subplebbit.dbHandler?.queryCountOfPosts(trx); // Query again since it might have changed
             // If there is at least one comment in subplebbit, then assert the following
             [pages?.pages?.controversialAll, pages?.pages?.hot, pages?.pages?.new, pages?.pages?.topAll].forEach((sortPage) => {
                 assert.ok(sortPage?.comments?.length >= Math.min(subplebbitPostCount, SORTED_POSTS_PAGE_SIZE));
