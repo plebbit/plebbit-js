@@ -40,5 +40,5 @@ jobs:
       - run: yarn build
       - run: yarn webpack
       # test
-      - run: yarn test:server & yarn test:server:wait-on
-      - run: CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) yarn test:e2e
+      - run: DEBUG=plebbit-js:* yarn test:server & yarn test:server:wait-on
+      - run: DEBUG=plebbit-js:* CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) yarn test:e2e
