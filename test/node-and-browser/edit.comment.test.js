@@ -104,29 +104,29 @@ describe("Editing", async () => {
         });
     });
 
-    [
-        { role: "owner", signer: signers[1] },
-        { role: "admin", signer: signers[2] },
-        { role: "mod", signer: signers[3] }
-    ].map((roleTest) =>
-        it(`${roleTest.role} can edit comment`, async () => {
-            const editedText = `${roleTest.role} role testing CommentEdit`;
-            const editReason = `For ${roleTest.role} role to test editing a comment`;
-            const originalContent = commentToBeEdited.originalContent;
-            const commentEdit = await plebbit.createCommentEdit({
-                subplebbitAddress: commentToBeEdited.subplebbitAddress,
-                commentCid: commentToBeEdited.cid,
-                editReason: editReason,
-                content: editedText,
-                signer: roleTest.signer
-            });
-            await commentEdit.publish();
-            commentToBeEdited.once("update", async (updatedCommentToBeEdited) => {
-                expect(updatedCommentToBeEdited.content).to.equal(editedText, "Comment has not been edited");
-                expect(updatedCommentToBeEdited.originalContent).to.equal(originalContent, "Original content should be preserved");
-                expect(updatedCommentToBeEdited.editReason).to.equal(editReason, "Edit reason has not been updated");
-                resolve();
-            });
-        })
-    );
+    // [
+    //     { role: "owner", signer: signers[1] },
+    //     { role: "admin", signer: signers[2] },
+    //     { role: "mod", signer: signers[3] }
+    // ].map((roleTest) =>
+    //     it(`${roleTest.role} can edit comment`, async () => {
+    //         const editedText = `${roleTest.role} role testing CommentEdit`;
+    //         const editReason = `For ${roleTest.role} role to test editing a comment`;
+    //         const originalContent = commentToBeEdited.originalContent;
+    //         const commentEdit = await plebbit.createCommentEdit({
+    //             subplebbitAddress: commentToBeEdited.subplebbitAddress,
+    //             commentCid: commentToBeEdited.cid,
+    //             editReason: editReason,
+    //             content: editedText,
+    //             signer: roleTest.signer
+    //         });
+    //         await commentEdit.publish();
+    //         commentToBeEdited.once("update", async (updatedCommentToBeEdited) => {
+    //             expect(updatedCommentToBeEdited.content).to.equal(editedText, "Comment has not been edited");
+    //             expect(updatedCommentToBeEdited.originalContent).to.equal(originalContent, "Original content should be preserved");
+    //             expect(updatedCommentToBeEdited.editReason).to.equal(editReason, "Edit reason has not been updated");
+    //             resolve();
+    //         });
+    //     })
+    // );
 });
