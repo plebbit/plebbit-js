@@ -4,7 +4,7 @@ import http from "http";
 import path from "path";
 import Knex from "knex";
 
-const plebbit = Plebbit({
+const plebbit = await Plebbit({
     ipfsHttpClientOptions: {
         url: `http://localhost:5001/api/v0`,
         agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
