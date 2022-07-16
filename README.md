@@ -62,12 +62,13 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   pinned?: boolean
   locked?: boolean
   removed?: boolean // mod deleted a comment
-  authorBanExpiresAt?: number // timestamp in second, if defined the author was banned for this comment
   moderatorReason?: string // reason the mod took a mod action
   updatedAt: number // timestamp in seconds the IPNS record was updated
-  authorFlair?: Flair // mod can edit an author's flair
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
   signature: Signature // signature of the CommentUpdate by the sub owner to protect against malicious gateway
+  // move from commentUpdate.authorProp -> comment.author.prop
+  authorBanExpiresAt?: number // timestamp in second, if defined the author was banned for this comment
+  authorFlair?: Flair // mod can edit an author's flair
 }
 Author {
   address: string
