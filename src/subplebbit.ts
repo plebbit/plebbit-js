@@ -15,7 +15,7 @@ import assert from "assert";
 import { DbHandler, subplebbitInitDbIfNeeded } from "./runtime/node/db-handler";
 import { createCaptcha } from "./runtime/node/captcha";
 import { SortHandler } from "./sort-handler";
-import { getDebugLevels, ipfsImportKey, loadIpnsAsJson, shallowEqual, timestamp } from "./util";
+import { getDebugLevels, ipfsImportKey, loadIpnsAsJson, removeKeys, shallowEqual, timestamp } from "./util";
 import { decrypt, encrypt, verifyPublication, Signer, Signature, signPublication } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
@@ -601,7 +601,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
                 this.dbHandler.upsertChallenge(challengeVerification, undefined),
                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
             ]);
-            debugs.INFO(`Published successful ${challengeVerification.type} (${challengeVerification.challengeRequestId}) over pubsub`);
+            debugs.INFO(
+                `Published ${challengeVerification.type} over pubsub: ${JSON.stringify(removeKeys(challengeVerification, ["publication"]))}`
+            );
         } else {
             debugs.INFO(`Challenge (${msgParsed.challengeRequestId}) has answered incorrectly`);
             const challengeVerification = new ChallengeVerificationMessage({
