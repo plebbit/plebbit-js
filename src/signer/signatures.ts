@@ -206,9 +206,9 @@ export async function verifyPublication(publication, plebbit: Plebbit, overrideA
             publication.author ? await verifyAuthor(publication.signature, publication.author) : undefined;
         }
         debugs.TRACE("Publication has been verified");
-        return [true];
+        return [true, undefined];
     } catch (e) {
-        debugs.WARN(`Failed to verify publication due to error: ${e}`);
+        debugs.WARN(`Failed to verify publication due to error: ${e}\nPublication: ${publication}`);
         return [false, String(e)];
     }
 }

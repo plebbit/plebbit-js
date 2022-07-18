@@ -557,7 +557,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
                 this.dbHandler.upsertChallenge(challengeVerification, undefined),
                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
             ]);
-            debugs.INFO(`Published ${challengeVerification.type} (${challengeVerification.challengeRequestId}) over pubsub`);
+            debugs.INFO(
+                `Published ${challengeVerification.type} over pubsub: ${JSON.stringify(removeKeys(challengeVerification, ["publication"]))}`
+            );
             this.emit("challengeverification", challengeVerification);
         } else {
             const challengeMessage = new ChallengeMessage({
