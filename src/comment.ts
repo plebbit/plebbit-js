@@ -235,11 +235,11 @@ export class Comment extends Publication implements CommentUpdate, CreateComment
     }
 
     async publish(userOptions): Promise<void> {
-        assert(this.content, "Need content field to publish comment");
         if (!this.toJSON().hasOwnProperty("commentCid")) {
             // Assert timestamp only if this is not a CommentEdit
             assert(this.timestamp, "Need timestamp field to publish comment");
             assert(this.author, "Need author to publish comment");
+            assert(this.content, "Need content field to publish comment");
         }
         return super.publish(userOptions);
     }
