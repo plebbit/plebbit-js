@@ -48,12 +48,32 @@ Vote extends Publication {
   commentCid: string
   vote: 1 | -1 | 0 // 0 is needed to cancel a vote
 }
+ModeratorCommentEditOptions {
+  commentCid: string
+  flair?: Flair
+  spoiler?: boolean
+  pinned?: boolean
+  locked?: boolean
+  removed?: boolean
+  moderatorReason?: string
+  commentAuthor?: {
+    flair: Flair
+    banExpiresAt?: number
+  }
+}
+AuthorCommentEditOptions {
+  commentCid: string
+  content?: string
+  deleted?: boolean
+  flair?: Flair
+  spoiler?: boolean
+  reason?: string
+}
+AuthorCommentEdit extends AuthorCommentEditOptions, Publication {}
+ModeratorCommentEdit extends ModeratorCommentEditOptions, Publication {}
+CommentEdit extends AuthorCommentEdit, ModeratorCommentEdit {}
 CommentUpdate /* (IPNS record Comment.ipnsName) */ {
-  content?: string // the author has edited the comment content
-  editSignature?: Signature // signature of the edited content by the author
-  editTimestamp?: number // the time of the last content edit
-  editReason?: string // reason of the author edit
-  deleted?: boolean // author deleted their comment
+  authorEdit: AuthorCommentEdit // most recent edit by comment author, merge authorEdit.content, authorEdit.deleted, authorEdit.flair with comment. Validate authorEdit.signature
   upvoteCount: number
   downvoteCount: number
   replies: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
@@ -66,9 +86,10 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   updatedAt: number // timestamp in seconds the IPNS record was updated
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
   signature: Signature // signature of the CommentUpdate by the sub owner to protect against malicious gateway
-  // move from commentUpdate.authorProp -> comment.author.prop
-  authorBanExpiresAt?: number // timestamp in second, if defined the author was banned for this comment
-  authorFlair?: Flair // mod can edit an author's flair
+  author?: { // merge commentUpdate.author with comment.author
+    banExpiresAt?: number // timestamp in second, if defined the author was banned for this comment
+    flair?: Flair // mod can edit an author's flair
+  }
 }
 Author {
   address: string
@@ -334,9 +355,7 @@ Encrypted {
   - `(only available after challengeverification event)`
   - `comment.cid`
   - `(only available after first update event)`
-  - `comment.editTimestamp`
-  - `comment.editSignature`
-  - `comment.editReason`
+  - `comment.authorEdit`
   - `comment.originalContent`
   - `comment.upvoteCount`
   - `comment.downvoteCount`
@@ -763,7 +782,7 @@ console.log(comment.replies.pages.topAll.comments[0].content) // prints 'My firs
 
 ### `plebbit.createCommentEdit(createCommentEditOptions)`
 
-> Create an edited `Comment` instance, which can be used by authors to edit their own comments, or moderators to remove comments. A `Comment` edit must still be published and go through a challenge handshake.
+> Create a `CommentEdit` instance, which can be used by authors to edit their own comments, or moderators to remove comments. A `CommentEdit` must still be published and go through a challenge handshake.
 
 #### Parameters
 
@@ -779,19 +798,28 @@ An object which may have the following keys:
 | ---- | ---- | ----------- |
 | subplebbitAddress | `string` | `Address` of the subplebbit |
 | commentCid | `string` | The comment CID to be edited (don't use 'cid' because eventually CommentEdit.cid will exist) |
+| timestamp | `number` or `undefined` | Time of publishing in ms, `Math.round(Date.now() / 1000)` if undefined |
+| author | `Author` | Author of the `CommentEdit` publication, either original author or moderator. Not used to edit the `comment.author` property, only to authenticate the `CommentEdit` publication |
 | signer | `Signer` | Signer of the edit, either original author or mod |
 | content | `string` or `undefined` | (Only author) Edited content of the comment |
-| editTimestamp | `number` or `undefined` | (Only author) Time of content edit in ms, `Math.round(Date.now() / 1000)` if undefined |
-| editReason | `string` or `undefined` | (Only author) Reason of the edit |
+| reason | `string` or `undefined` | (Only author) Reason of the edit |
 | deleted | `boolean` or `undefined` | (Only author) Edited deleted status of the comment |
 | flair | `Flair` or `undefined` | (Author or mod) Edited flair of the comment |
 | spoiler | `boolean` or `undefined` | (Author or mod) Edited spoiler of the comment |
 | pinned | `boolean` or `undefined` | (Only mod) Edited pinned status of the comment |
 | locked | `boolean` or `undefined` | (Only mod) Edited locked status of the comment |
 | removed | `boolean` or `undefined` | (Only mod) Edited removed status of the comment |
-| authorBanExpiresAt | `number` or `undefined` | (Only author) Author was banned for this comment |
-| authorFlair | `Flair` or `undefined` | (Only mod) Edited flair of the author |
 | moderatorReason | `string` or `undefined` | (Only mod) Reason for mod action |
+| commentAuthor | `CommentAuthorEditOptions` or `undefined` | (Only mod) Edited author property of the comment |
+
+##### CommentAuthorEditOptions
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| banExpiresAt | `number` or `undefined` | (Only mod) Comment author was banned for this comment |
+| flair | `Flair` or `undefined` | (Only mod) Edited flair of the comment author |
 
 #### Returns
 
