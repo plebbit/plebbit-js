@@ -73,10 +73,11 @@ AuthorCommentEdit extends AuthorCommentEditOptions, Publication {}
 ModeratorCommentEdit extends ModeratorCommentEditOptions, Publication {}
 CommentEdit extends AuthorCommentEdit, ModeratorCommentEdit {}
 CommentUpdate /* (IPNS record Comment.ipnsName) */ {
-  authorEdit: AuthorCommentEdit // most recent edit by comment author, merge authorEdit.content, authorEdit.deleted, authorEdit.flair with comment. Validate authorEdit.signature
+  authorEdit?: AuthorCommentEdit // most recent edit by comment author, merge authorEdit.content, authorEdit.deleted, authorEdit.flair with comment. Validate authorEdit.signature
   upvoteCount: number
   downvoteCount: number
-  replies: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
+  replies?: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
+  replyCount: number
   flair?: Flair // arbitrary colored strings added by the author or mods to describe the author or comment
   spoiler?: boolean
   pinned?: boolean
@@ -366,6 +367,7 @@ Encrypted {
   - `comment.locked`
   - `comment.moderatorReason`
   - `comment.replies`
+  - `comment.replyCount`
 - [Comment Events](#comment-events)
   - [`update`](#update)
   - [`challenge`](#challenge)
