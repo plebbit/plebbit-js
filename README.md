@@ -94,12 +94,12 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
 }
 Author {
   address: string
-  previousCommentCid: string // linked list of the author's comments
+  previousCommentCid?: string // linked list of the author's comments
   displayName?: string
   wallets?: {[chainTicker: string]: Wallet}
   avatar?: Nft
-  flair?: Flair // not part of the signature, mod can edit it after comment is published
-  banExpiresAt?: number // timestamp in second, if defined the author was banned for this comment
+  flair?: Flair // (added by moderator or author) not part of the signature, mod can edit it after comment is published
+  banExpiresAt?: number // (added by moderator only) timestamp in second, if defined the author was banned for this comment
 }
 Wallet {
   address: string
