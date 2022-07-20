@@ -21,5 +21,5 @@ Plebbit.setNativeFunctions(nativeFunctions)
 - `nativeFunctions.ls(path: string)`
 - `nativeFunctions.sqlQuery({dbPath: string, sqlQuery: string})`
 - `nativeFunctions.createCaptcha(captchaType: string)`
-- `nativeFunctions.ipfsHttpRequest({url: string, arguments: any[]})`
+- `nativeFunctions.ipfsHttpRequest({url: string, arguments: any})`
 - TODO ...
