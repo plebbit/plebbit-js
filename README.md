@@ -131,8 +131,8 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   description?: string
   roles?: {[authorAddress: string]: SubplebbitRole} // each author address can be mapped to 1 SubplebbitRole
   pubsubTopic?: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
-  latestPostCid: string // the most recent post in the linked list of posts
-  posts: Pages // only preload page 1 sorted by 'hot', might preload more later, comments should include Comment + CommentUpdate data
+  latestPostCid?: string // the most recent post in the linked list of posts
+  posts?: Pages // only preload page 1 sorted by 'hot', might preload more later, comments should include Comment + CommentUpdate data
   challengeTypes?: ChallengeType[] // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
   metricsCid?: subplebbitMetricsCid
   createdAt: number
@@ -140,7 +140,7 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   features?: SubplebbitFeatures
   suggested?: SubplebbitSuggested
   rules?: string[]
-  flairs: {[key: 'post' | 'author']: Flair[]} // list of post/author flairs authors and mods can choose from
+  flairs?: {[key: 'post' | 'author']: Flair[]} // list of post/author flairs authors and mods can choose from
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
   encryption: SubplebbitEncryption
   signature: Signature // signature of the Subplebbit update by the sub owner to protect against malicious gateway
