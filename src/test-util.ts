@@ -56,6 +56,7 @@ export async function generateMockComment(
     randomTimestamp = false,
     commentProps = {}
 ): Promise<Comment> {
+    assert(parentPostOrComment, "Need to have parentComment defined to generate mock comment");
     const commentTimestamp = (randomTimestamp && generateRandomTimestamp(parentPostOrComment.timestamp)) || timestamp();
     const commentTime = Date.now() / 1000 + Math.random();
     signer = signer || (await plebbit.createSigner());
