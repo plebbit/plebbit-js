@@ -34,9 +34,9 @@ describe("comment (node and browser)", async () => {
                 title: "Test post signature",
                 content: "some content..."
             };
-            const signature = await signPublication(comment, signers[0], plebbit, SIGNED_PROPERTY_NAMES.COMMENT);
+            const signature = await signPublication(comment, signers[0], plebbit, "comment");
             const signedComment = { signature: signature.toJSON(), ...comment };
-            const [isVerified, failedVerificationReason] = await verifyPublication(signedComment, plebbit);
+            const [isVerified, failedVerificationReason] = await verifyPublication(signedComment, plebbit, "comment");
             expect(isVerified).to.be.true;
         });
 
@@ -49,9 +49,9 @@ describe("comment (node and browser)", async () => {
                 title: "Test post signature",
                 content: "some content..."
             };
-            const signature = await signPublication(comment, signer, plebbit, SIGNED_PROPERTY_NAMES.COMMENT);
+            const signature = await signPublication(comment, signer, plebbit, "comment");
             const signedComment = { signature: signature.toJSON(), ...comment };
-            const [isVerified, failedVerificationReason] = await verifyPublication(signedComment, plebbit);
+            const [isVerified, failedVerificationReason] = await verifyPublication(signedComment, plebbit, "comment");
             expect(isVerified).to.be.true;
             expect(signedComment.signature.publicKey).to.be.equal(signers[1].publicKey, "Generated public key should be same as provided");
         });
