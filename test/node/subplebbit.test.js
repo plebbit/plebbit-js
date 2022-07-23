@@ -27,16 +27,21 @@ describe("subplebbit", async () => {
     after(async () => {
         // Delete DB
         await subplebbit.stopPublishing();
-        rm(path.join(plebbit.dataPath, subplebbit.address), () => console.log(`Deleted generated DB`));
+        rm(path.join(plebbit.dataPath, "subplebbits", subplebbit.address), () => console.log(`Deleted generated DB`));
     });
 
-    it(`Can create a subplebbit with empty CreateSubplebbitOptions`, async () => {
-        const newSubplebbit = await plebbit.createSubplebbit();
-        expect(newSubplebbit.address).to.equal(newSubplebbit.signer.address);
-        const subplebbitIpns = await plebbit.getSubplebbit(newSubplebbit.address);
-        expect(subplebbitIpns.address).to.equal(newSubplebbit.signer.address);
-        await newSubplebbit.stopPublishing();
-    });
+    [{}, { title: `Test title - ${Date.now()}` }].map((subArgs) =>
+        it(`createSubplebbit(${JSON.stringify(subArgs)})`, async () => {
+            const newSubplebbit = await plebbit.createSubplebbit(subArgs);
+            expect(newSubplebbit.address).to.equal(newSubplebbit.signer.address);
+            const subplebbitIpns = await plebbit.getSubplebbit(newSubplebbit.address);
+            expect(subplebbitIpns.address).to.equal(newSubplebbit.signer.address);
+            await newSubplebbit.stopPublishing();
+            rm(path.join(plebbit.dataPath, "subplebbits", newSubplebbit.address), () =>
+                console.log(`Deleted subplebbit (${newSubplebbit.address}) DB`)
+            );
+        })
+    );
 
     it("create new subplebbit", async function () {
         const signer = await plebbit.createSigner();
