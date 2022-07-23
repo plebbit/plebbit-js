@@ -73,10 +73,11 @@ AuthorCommentEdit extends AuthorCommentEditOptions, Publication {}
 ModeratorCommentEdit extends ModeratorCommentEditOptions, Publication {}
 CommentEdit extends AuthorCommentEdit, ModeratorCommentEdit {}
 CommentUpdate /* (IPNS record Comment.ipnsName) */ {
-  authorEdit: AuthorCommentEdit // most recent edit by comment author, merge authorEdit.content, authorEdit.deleted, authorEdit.flair with comment. Validate authorEdit.signature
+  authorEdit?: AuthorCommentEdit // most recent edit by comment author, merge authorEdit.content, authorEdit.deleted, authorEdit.flair with comment. Validate authorEdit.signature
   upvoteCount: number
   downvoteCount: number
-  replies: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
+  replies?: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
+  replyCount: number
   flair?: Flair // arbitrary colored strings added by the author or mods to describe the author or comment
   spoiler?: boolean
   pinned?: boolean
@@ -93,12 +94,12 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
 }
 Author {
   address: string
-  previousCommentCid: string // linked list of the author's comments
+  previousCommentCid?: string // linked list of the author's comments
   displayName?: string
   wallets?: {[chainTicker: string]: Wallet}
   avatar?: Nft
-  flair?: Flair // not part of the signature, mod can edit it after comment is published
-  banExpiresAt?: number // timestamp in second, if defined the author was banned for this comment
+  flair?: Flair // (added by moderator or author) not part of the signature, mod can edit it after comment is published
+  banExpiresAt?: number // (added by moderator only) timestamp in second, if defined the author was banned for this comment
 }
 Wallet {
   address: string
@@ -130,8 +131,8 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   description?: string
   roles?: {[authorAddress: string]: SubplebbitRole} // each author address can be mapped to 1 SubplebbitRole
   pubsubTopic?: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
-  latestPostCid: string // the most recent post in the linked list of posts
-  posts: Pages // only preload page 1 sorted by 'hot', might preload more later, comments should include Comment + CommentUpdate data
+  latestPostCid?: string // the most recent post in the linked list of posts
+  posts?: Pages // only preload page 1 sorted by 'hot', might preload more later, comments should include Comment + CommentUpdate data
   challengeTypes?: ChallengeType[] // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
   metricsCid?: subplebbitMetricsCid
   createdAt: number
@@ -139,7 +140,7 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   features?: SubplebbitFeatures
   suggested?: SubplebbitSuggested
   rules?: string[]
-  flairs: {[key: 'post' | 'author']: Flair[]} // list of post/author flairs authors and mods can choose from
+  flairs?: {[key: 'post' | 'author']: Flair[]} // list of post/author flairs authors and mods can choose from
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
   encryption: SubplebbitEncryption
   signature: Signature // signature of the Subplebbit update by the sub owner to protect against malicious gateway
@@ -366,6 +367,7 @@ Encrypted {
   - `comment.locked`
   - `comment.moderatorReason`
   - `comment.replies`
+  - `comment.replyCount`
 - [Comment Events](#comment-events)
   - [`update`](#update)
   - [`challenge`](#challenge)
