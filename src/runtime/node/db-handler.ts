@@ -7,7 +7,7 @@ import {
 } from "../../challenge";
 import Post from "../../post";
 import Author from "../../author";
-import { Comment, CommentEdit } from "../../comment";
+import { Comment } from "../../comment";
 import { getDebugLevels, removeKeysWithUndefinedValues, replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
 import Vote from "../../vote";
 import knex, { Knex } from "knex";
@@ -18,7 +18,8 @@ import fs from "fs";
 import Keyv from "keyv";
 import { Signer } from "../../signer";
 import Transaction = Knex.Transaction;
-import { SubplebbitMetrics } from "../../types";
+import { AuthorType, SubplebbitMetrics } from "../../types";
+import { CommentEdit } from "../../comment-edit";
 
 const debugs = getDebugLevels("db-handler");
 
@@ -29,6 +30,8 @@ const TABLES = Object.freeze({
     CHALLENGES: "challenges",
     SIGNERS: "signers" // To store private keys of subplebbit and comments' IPNS
 });
+
+const jsonFields = ["signature", "author", "authorEdit", "original", "flair"];
 
 export class DbHandler {
     _dbConfig: Knex.Config;
@@ -65,26 +68,26 @@ export class DbHandler {
 
             table.text("subplebbitAddress").notNullable();
             table.text("content").nullable();
-            table.text("originalContent").nullable();
             table.timestamp("timestamp").notNullable().checkPositive();
-            table.text("signature").notNullable().unique(); // Will contain {signature, public key, type}
+            table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
             table.text("ipnsName").notNullable().unique();
             table.text("ipnsKeyName").notNullable().unique().references("ipnsKeyName").inTable(TABLES.SIGNERS);
             table.text("title").nullable();
             table.integer("depth").notNullable();
-            table.increments("id");
+            table.increments("id"); // Used for sorts
 
             // CommentUpdate and CommentEdit props
+            table.json("original").nullable();
+            table.json("authorEdit").nullable();
+            table.json("flair").nullable();
             table.timestamp("updatedAt").nullable().checkPositive();
-            table.text("editSignature").nullable();
-            table.timestamp("editTimestamp").nullable().checkPositive();
-            table.text("editReason").nullable();
             table.boolean("deleted").nullable();
             table.boolean("spoiler").nullable();
             table.boolean("pinned").nullable();
             table.boolean("locked").nullable();
             table.boolean("removed").nullable();
             table.text("moderatorReason").nullable();
+            table.text("protocolVersion").notNullable();
         });
     }
 
@@ -99,6 +102,7 @@ export class DbHandler {
             table.text("subplebbitAddress").notNullable();
             table.integer("vote").checkBetween([-1, 1]).notNullable();
             table.text("signature").notNullable().unique();
+            table.text("protocolVersion").notNullable();
 
             table.primary(["commentCid", "authorAddress"]); // An author can't have multiple votes on a comment
         });
@@ -107,6 +111,8 @@ export class DbHandler {
     async createAuthorsTable() {
         await this.knex.schema.createTable(TABLES.AUTHORS, (table) => {
             table.text("address").notNullable().primary().unique();
+            table.timestamp("banExpiresAt").nullable();
+            table.json("flair").nullable();
         });
     }
 
@@ -152,35 +158,50 @@ export class DbHandler {
         }
     }
 
-    async addAuthorToDbIfNeeded(author: Author, trx?: Transaction) {
-        const authorFromDb = await this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first();
-        if (!authorFromDb)
-            // Author is new. Add to database
-            await this.baseTransaction(trx)(TABLES.AUTHORS).insert(author.toJSONForDb());
+    async upsertAuthor(author: Author | AuthorType, trx?: Transaction, upsertOnlyWhenNew = true) {
+        assert(JSON.stringify(author) !== "{}");
+        let existingDbObject = author.address
+            ? await this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first()
+            : undefined;
+        if (existingDbObject && upsertOnlyWhenNew) return;
+        if (existingDbObject) existingDbObject = replaceXWithY(existingDbObject, null, undefined);
+        const newDbObject: AuthorType = author instanceof Author ? author.toJSONForDb() : author;
+        const mergedDbObject = { ...existingDbObject, ...newDbObject };
+        debugs.DEBUG(
+            `upsertAuthor: attempt to upsert new merged author: ${JSON.stringify(mergedDbObject)}, existingDbObject = ${JSON.stringify(
+                existingDbObject
+            )}, author = ${JSON.stringify(newDbObject)}`
+        );
+        await this.baseTransaction(trx)(TABLES.AUTHORS).insert(mergedDbObject).onConflict(["address"]).merge();
+    }
+
+    async queryAuthor(authorAddress: string, trx?: Transaction): Promise<Author | undefined> {
+        const authorProps = await this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: authorAddress }).first();
+        if (authorProps) return new Author(authorProps);
     }
 
     async upsertVote(vote: Vote, challengeRequestId: string, trx?: Transaction) {
-        await this.addAuthorToDbIfNeeded(vote.author, trx);
+        await this.upsertAuthor(vote.author, trx, true);
         const dbObject = vote.toJSONForDb(challengeRequestId);
         await this.baseTransaction(trx)(TABLES.VOTES).insert(dbObject).onConflict(["commentCid", "authorAddress"]).merge();
     }
 
-    async upsertComment(postOrComment: Post | Comment | CommentEdit, challengeRequestId?: string, trx?: Transaction) {
+    async upsertComment(postOrComment: Post | Comment, challengeRequestId?: string, trx?: Transaction) {
         if (postOrComment.author)
             // Skip adding author (For CommentEdit)
-            await this.addAuthorToDbIfNeeded(postOrComment.author, trx);
+            await this.upsertAuthor(postOrComment.author, trx, true);
 
-        const cid = postOrComment instanceof CommentEdit ? postOrComment.commentCid : postOrComment.cid;
         if (!challengeRequestId)
             challengeRequestId = (
                 await this.baseTransaction(trx)(TABLES.COMMENTS)
                     .where({
-                        cid: cid
+                        cid: postOrComment.cid
                     })
                     .first()
             ).challengeRequestId;
-        assert(cid, "Comment need to have a cid before upserting");
-        const originalComment = await this.queryComment(cid, trx);
+        assert(postOrComment.cid, "Comment need to have a cid before upserting");
+        assert(challengeRequestId, "Need to have challengeRequestId before upserting");
+        const originalComment = await this.queryComment(postOrComment.cid, trx);
         const dbObject = originalComment
             ? {
                   ...removeKeysWithUndefinedValues(originalComment.toJSONForDb(challengeRequestId)),
@@ -188,6 +209,18 @@ export class DbHandler {
               }
             : postOrComment.toJSONForDb(challengeRequestId);
         await this.baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge();
+    }
+
+    async editComment(edit: CommentEdit, authorEdit: boolean, trx?: Transaction) {
+        // Fields that need to be merged
+        // flair
+        const commentToBeEdited = await this.queryComment(edit.commentCid, trx);
+        assert(commentToBeEdited);
+        const newFlair = { ...commentToBeEdited.flair, ...edit.flair };
+        const newCommentProps = authorEdit
+            ? { authorEdit: edit.toJSONForDb(), flair: newFlair }
+            : { ...edit.toJSONForDb(), flair: newFlair };
+        await this.upsertComment(newCommentProps, undefined, trx);
     }
 
     async upsertChallenge(
@@ -246,6 +279,8 @@ export class DbHandler {
         return Promise.all(
             commentsRows.map(async (props) => {
                 const replacedProps = replaceXWithY(props, null, undefined); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
+                for (const field of jsonFields) if (replacedProps[field]) replacedProps[field] = JSON.parse(replacedProps[field]);
+
                 // @ts-ignore
                 const comment = await this.subplebbit.plebbit.createComment(replacedProps);
                 assert(typeof comment.replyCount === "number");
@@ -260,6 +295,7 @@ export class DbHandler {
         return Promise.all(
             voteRows.map((props) => {
                 const replacedProps = replaceXWithY(props, null, undefined);
+                for (const field of jsonFields) if (replacedProps[field]) replacedProps[field] = JSON.parse(replacedProps[field]);
                 // @ts-ignore
                 return this.subplebbit.plebbit.createVote(replacedProps);
             })

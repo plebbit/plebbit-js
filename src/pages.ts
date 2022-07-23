@@ -12,9 +12,10 @@ export class Pages {
     pages: Partial<Record<PostSortName | ReplySortName, Page>>;
     pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
     subplebbit: Subplebbit;
-
     constructor(props: Pages) {
-        Object.assign(this, props);
+        this.pages = props.pages;
+        this.pageCids = props.pageCids;
+        this.subplebbit = props.subplebbit;
         assert(this.subplebbit.address, "Address of subplebbit is needed to verify pages");
     }
 
@@ -27,7 +28,7 @@ export class Pages {
             debugs.TRACE(
                 `In page (${pageCid}), Attempting to verify comment (${comment.cid}) under parent comment (${parentComment?.cid})`
             );
-            const [signatureIsVerified, failedVerificationReason] = await verifyPublication(comment, this.subplebbit.plebbit);
+            const [signatureIsVerified, failedVerificationReason] = await verifyPublication(comment, this.subplebbit.plebbit, "comment");
             assert.equal(
                 signatureIsVerified,
                 true,
@@ -65,7 +66,8 @@ export class Page {
     nextCid?: string;
 
     constructor(props: Page) {
-        Object.assign(this, props);
+        this.comments = props.comments;
+        this.nextCid = props.nextCid;
     }
 
     toJSON?() {

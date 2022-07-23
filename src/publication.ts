@@ -8,38 +8,42 @@ import Author from "./author";
 import assert from "assert";
 import { Subplebbit } from "./subplebbit";
 import { decrypt, encrypt, Signature, Signer, verifyPublication } from "./signer";
+import { ProtocolVersion, PublicationType, PublicationTypeName } from "./types";
 
 const debugs = getDebugLevels("publication");
 
-class Publication extends EventEmitter {
-    subplebbit: Subplebbit;
+class Publication extends EventEmitter implements PublicationType {
     subplebbitAddress: string;
     timestamp: number;
-    signer: Signer;
     signature: Signature;
+    signer: Signer;
     author: Author;
-    challenge: ChallengeRequestMessage;
+    protocolVersion: ProtocolVersion;
 
-    constructor(props, subplebbit) {
+    // private
+    protected subplebbit: Subplebbit;
+    private challenge: ChallengeRequestMessage;
+
+    constructor(props: PublicationType, subplebbit) {
         super();
         this.subplebbit = subplebbit;
         this._initProps(props);
     }
 
-    _initProps(props) {
+    _initProps(props: PublicationType) {
         this.subplebbitAddress = props["subplebbitAddress"];
         this.timestamp = props["timestamp"];
         this.signer = this.signer || props["signer"];
         this.signature = parseJsonIfString(props["signature"]);
-        this.author = props["author"] ? new Author(parseJsonIfString(props["author"])) : undefined;
+        assert(props.author?.address, "publication.author.address need to be defined");
+        this.author = new Author(parseJsonIfString(props["author"]));
+        this.protocolVersion = props.protocolVersion;
     }
-    getType() {
-        if (this.hasOwnProperty("title")) return "post";
-        else if (this.hasOwnProperty("vote")) return "vote";
-        else return "comment";
+    getType(): PublicationTypeName {
+        throw new Error(`Should be implemented by children of Publication`);
     }
 
-    toJSON() {
+    toJSON(): PublicationType {
         return { ...this.toJSONSkeleton() };
     }
 
@@ -47,8 +51,9 @@ class Publication extends EventEmitter {
         return {
             subplebbitAddress: this.subplebbitAddress,
             timestamp: this.timestamp,
-            signature: this.signature,
-            author: this.author
+            signature: this.signature instanceof Signature ? this.signature.toJSON() : this.signature,
+            author: this.author.toJSON(),
+            protocolVersion: this.protocolVersion
         };
     }
 
@@ -101,7 +106,10 @@ class Publication extends EventEmitter {
     }
 
     async publish(userOptions) {
-        const [isSignatureValid, failedVerificationReason] = await verifyPublication(this, this.subplebbit.plebbit, false);
+        assert(this.timestamp, "Need timestamp field to publish publication");
+        assert(this.author?.address, "Need author address to publish publication");
+
+        const [isSignatureValid, failedVerificationReason] = await verifyPublication(this, this.subplebbit.plebbit, this.getType());
         assert.ok(
             isSignatureValid,
             `Failed to publish since signature is invalid, failed verification reason: ${failedVerificationReason}`

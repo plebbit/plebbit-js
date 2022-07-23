@@ -2,57 +2,61 @@ import assert from "assert";
 import { getDebugLevels, loadIpnsAsJson, parseJsonIfString, removeKeysWithUndefinedValues, shallowEqual } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
-import { Signature } from "./signer";
-import { CommentUpdate, CreateCommentOptions, Flair } from "./types";
+import { verifyPublication } from "./signer";
+import { AuthorCommentEdit, CommentType, CommentUpdate, Flair, PublicationTypeName } from "./types";
+import Author from "./author";
 
 const debugs = getDebugLevels("comment");
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
-export class Comment extends Publication implements CommentUpdate, CreateCommentOptions {
+export class Comment extends Publication implements CommentType {
     // public
-    flair?: Flair | undefined;
-    authorBanExpiresAt?: number | undefined;
-    authorFlair?: Flair | undefined;
+    title?: string;
+    link?: string;
     protocolVersion: "1.0.0";
-    postCid?: string;
     cid?: string;
     parentCid?: string;
-    ipnsName?: string;
+    content?: string;
+    // Props that get defined after challengeverification
     ipnsKeyName?: string;
+    previousCid?: string;
+    ipnsName?: string;
     depth?: number;
+    postCid?: string;
+
+    // CommentEdit and CommentUpdate props
+    original?: Pick<Partial<CommentType>, "author" | "content">;
     upvoteCount?: number;
     downvoteCount?: number;
     replyCount?: number;
     updatedAt?: number;
     replies?: Pages;
-    originalContent?: string;
-    content?: string;
-    editSignature?: Signature;
-    editTimestamp?: number;
-    editReason?: string;
+    authorEdit?: AuthorCommentEdit;
+    flair?: Flair;
     deleted?: boolean;
     spoiler?: boolean;
     pinned?: boolean;
     locked?: boolean;
     removed?: boolean;
     moderatorReason?: string;
-    previousCid?: string;
 
     // private
     private _updateInterval?: any;
 
-    _initProps(props) {
+    _initProps(props: CommentType) {
         super._initProps(props);
-        this.postCid = props["postCid"];
-        this.cid = props["cid"];
-        this.parentCid = props["parentCid"];
-        this.ipnsName = props["ipnsName"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
-        this.ipnsKeyName = props["ipnsKeyName"];
-        this.depth = props["depth"];
-        this.setPreviousCid(props["previousCid"]);
+        this.postCid = props.postCid;
+        this.cid = props.cid;
+        this.parentCid = props.parentCid;
+        this.ipnsName = props.ipnsName; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
+        this.ipnsKeyName = props.ipnsKeyName;
+        this.depth = props.depth;
+        this.setPreviousCid(props.previousCid);
         // CommentUpdate props
         this._initCommentUpdate(props);
+
+        this._mergeFields(props);
 
         // these functions might get separated from their `this` when used
         this.publish = this.publish.bind(this);
@@ -60,42 +64,53 @@ export class Comment extends Publication implements CommentUpdate, CreateComment
         this.stop = this.stop.bind(this);
     }
 
-    _initCommentUpdate(props: CommentUpdate) {
-        this.upvoteCount = props["upvoteCount"];
-        this.downvoteCount = props["downvoteCount"];
-        this.replyCount = props["replyCount"];
-        this.updatedAt = props["updatedAt"];
-        this.replies =
-            props["replies"] instanceof Object && JSON.stringify(props["replies"]) !== "{}"
-                ? new Pages({
-                      ...props["replies"],
-                      subplebbit: this.subplebbit
-                  })
-                : undefined;
-        // Comment Edit props
-        this.originalContent =
-            props["originalContent"] || this.originalContent || (props["content"] && props["editSignature"] ? this.content : undefined);
-        this.content = props["content"] || this.content;
-        assert.notEqual(this.content, this.originalContent, "Content and original content can't be equal to each other");
-        this.editSignature = parseJsonIfString(props["editSignature"]);
-        this.editTimestamp = props["editTimestamp"];
-        this.editReason = props["editReason"];
-        this.deleted = props["deleted"];
-        this.spoiler = props["spoiler"];
-        this.pinned = props["pinned"];
-        this.locked = props["locked"];
-        this.removed = props["removed"];
-        this.moderatorReason = props["moderatorReason"];
-        this.authorBanExpiresAt = props["authorBanExpiresAt"];
-        this.protocolVersion = props["protocolVersion"];
+    _initCommentUpdate(props: CommentType | CommentUpdate) {
+        this.upvoteCount = props.upvoteCount;
+        this.downvoteCount = props.downvoteCount;
+        this.replyCount = props.replyCount;
+        this.updatedAt = props.updatedAt;
+        this.setReplies(props.replies);
+        this.deleted = props.authorEdit?.deleted;
+        this.spoiler = props.spoiler;
+        this.pinned = props.pinned;
+        this.locked = props.locked;
+        this.removed = props.removed;
+        this.moderatorReason = props.moderatorReason;
+        this.authorEdit = parseJsonIfString(props.authorEdit);
+        this.protocolVersion = props.protocolVersion;
     }
 
-    toJSON() {
+    _mergeFields(props: CommentType) {
+        // TODO merge flairs, deleted, content, author here
+        // TODO move original author and content to comment.original if needed
+        this.content = props.content || this.content;
+        this.author = new Author({ ...props.author, ...props.authorEdit });
+
+        const original = {};
+        original["content"] =
+            props.original?.content || this.original?.content || (props.content && props.authorEdit?.content ? this.content : undefined);
+        original["author"] =
+            props.original?.author || this.original?.author || (props.author && props.authorEdit ? props.author : undefined);
+
+        for (const key of Object.keys(original))
+            this[key] &&
+                original[key] &&
+                assert.notEqual(this[key], original[key], `${key} and original ${key} can't be equal to each other`);
+
+        if (this.content && original["content"]) if (JSON.stringify(original) !== "{}") this.original = original;
+    }
+
+    getType(): PublicationTypeName {
+        return "comment";
+    }
+
+    toJSON(): CommentType {
         return {
             ...this.toJSONIpfs(),
-            ...this.toJSONCommentUpdate(),
+            ...(this.updatedAt ? this.toJSONCommentUpdate() : undefined),
             cid: this.cid,
-            originalContent: this.originalContent
+            original: this.original,
+            author: this.author.toJSON()
         };
     }
 
@@ -128,25 +143,29 @@ export class Comment extends Publication implements CommentUpdate, CreateComment
         return removeKeysWithUndefinedValues(json);
     }
 
-    toJSONCommentUpdate() {
+    toJSONCommentUpdate(): Omit<CommentUpdate, "signature"> {
+        assert(
+            typeof this.upvoteCount === "number" &&
+                typeof this.downvoteCount === "number" &&
+                typeof this.replyCount === "number" &&
+                typeof this.updatedAt === "number",
+            "Fields are needed to export a CommentUpdate JSON"
+        );
         return {
-            replyCount: this.replyCount,
             upvoteCount: this.upvoteCount,
             downvoteCount: this.downvoteCount,
+            replyCount: this.replyCount,
+            authorEdit: this.authorEdit,
             replies: this.replies,
-            ...(this.originalContent ? { content: this.content } : undefined), // Only include content if content has been changed through commentEdit
-            updatedAt: this.updatedAt,
-            editSignature: this.editSignature,
-            editTimestamp: this.editTimestamp,
-            editReason: this.editReason,
-            deleted: this.deleted,
+            flair: this.flair, // Not sure this fits here
             spoiler: this.spoiler,
             pinned: this.pinned,
             locked: this.locked,
             removed: this.removed,
             moderatorReason: this.moderatorReason,
-            authorBansExpiresAt: this.authorBanExpiresAt,
-            protocolVersion: this.protocolVersion
+            updatedAt: this.updatedAt,
+            protocolVersion: this.protocolVersion,
+            author: { banExpiresAt: this.author.banExpiresAt, flair: this.flair }
         };
     }
 
@@ -176,10 +195,6 @@ export class Comment extends Publication implements CommentUpdate, CreateComment
         this.updatedAt = newUpdatedAt;
     }
 
-    setOriginalContent(newOriginalContent: string) {
-        this.originalContent = newOriginalContent;
-    }
-
     setReplies(replies?: Pages) {
         if (replies)
             this.replies = new Pages({
@@ -199,9 +214,17 @@ export class Comment extends Publication implements CommentUpdate, CreateComment
             debugs.WARN(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error = ${e.message}`);
             return;
         }
-        if (!shallowEqual(this.toJSONCommentUpdate(), res)) {
-            debugs.DEBUG(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Emitting an update event...`);
+        if (!this.updatedAt || !shallowEqual(this.toJSONCommentUpdate(), res)) {
+            debugs.DEBUG(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
+            const [verified, failedVerificationReason] = await verifyPublication(res, this.subplebbit.plebbit, "commentupdate");
+            if (!verified) {
+                debugs.ERROR(
+                    `Comment (${this.cid}) IPNS (${this.ipnsName}) signature is invalid. Will not update: ${failedVerificationReason}`
+                );
+                return;
+            }
             this._initCommentUpdate(res);
+            this._mergeFields(this.toJSON());
             this.emit("update", this);
         } else {
             debugs.TRACE(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
@@ -222,9 +245,10 @@ export class Comment extends Publication implements CommentUpdate, CreateComment
         clearInterval(this._updateInterval);
     }
 
-    async edit(commentUpdateOptions: CommentUpdate) {
+    async edit(options: CommentUpdate) {
         assert(this.ipnsKeyName && this.subplebbit.plebbit.ipfsClient, "You need to have commentUpdate and ipfs client defined");
-        this._initCommentUpdate(commentUpdateOptions);
+        this._initCommentUpdate(options);
+        this._mergeFields(this.toJSON());
         const file = await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate()));
         await this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
             lifetime: "72h",
@@ -235,39 +259,8 @@ export class Comment extends Publication implements CommentUpdate, CreateComment
     }
 
     async publish(userOptions): Promise<void> {
-        if (!this.toJSON().hasOwnProperty("commentCid")) {
-            // Assert timestamp only if this is not a CommentEdit
-            assert(this.timestamp, "Need timestamp field to publish comment");
-            assert(this.author, "Need author to publish comment");
-            assert(this.content, "Need content field to publish comment");
-        }
-        return super.publish(userOptions);
-    }
-}
+        assert(this.content, "Need content field to publish comment");
 
-export class CommentEdit extends Comment {
-    commentCid: string;
-
-    _initProps(props) {
-        super._initProps(props);
-        this.commentCid = props["commentCid"];
-    }
-
-    toJSON() {
-        return { ...super.toJSON(), commentCid: this.commentCid };
-    }
-
-    toJSONForDb(challengeRequestId: string) {
-        const json = super.toJSONForDb(challengeRequestId);
-        ["challengeRequestId", "ipnsKeyName", "signature", "commentCid"].forEach((key) => delete json[key]);
-        json["cid"] = this.commentCid;
-        return removeKeysWithUndefinedValues(json);
-    }
-
-    async publish(userOptions): Promise<void> {
-        assert(this.commentCid, "Need commentCid to be defined to publish CommentEdit");
-        assert(this.editTimestamp, "Need editTimestamp to be defined to publish CommentEdit");
-        assert(this.editSignature, "Need to have editSignature to publish CommentEdit");
         return super.publish(userOptions);
     }
 }

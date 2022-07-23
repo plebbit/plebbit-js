@@ -15,11 +15,12 @@ import assert from "assert";
 import { DbHandler, subplebbitInitDbIfNeeded } from "./runtime/node/db-handler";
 import { createCaptcha } from "./runtime/node/captcha";
 import { SortHandler } from "./sort-handler";
-import { getDebugLevels, ipfsImportKey, loadIpnsAsJson, removeKeys, shallowEqual, timestamp } from "./util";
+import { getDebugLevels, ipfsImportKey, loadIpnsAsJson, removeKeys, removeKeysWithUndefinedValues, shallowEqual, timestamp } from "./util";
 import { decrypt, encrypt, verifyPublication, Signer, Signature, signPublication } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
 import {
+    AuthorType,
     ChallengeType,
     CreateSubplebbitOptions,
     Flair,
@@ -32,26 +33,26 @@ import {
     SubplebbitSuggested,
     SubplebbitType
 } from "./types";
-import { Comment, CommentEdit } from "./comment";
+import { Comment } from "./comment";
 import Vote from "./vote";
 import Post from "./post";
 import { getPlebbitAddressFromPublicKeyPem } from "./signer/util";
 import Publication from "./publication";
 import { v4 as uuidv4 } from "uuid";
-import { SIGNED_PROPERTY_NAMES } from "./signer/signatures";
+import { CommentEdit, MOD_EDIT_FIELDS } from "./comment-edit";
 
 const debugs = getDebugLevels("subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 5 minutes
 
-export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, SubplebbitType {
+export class Subplebbit extends EventEmitter implements SubplebbitType {
     // public
     title?: string;
     description?: string;
     roles?: { [authorAddress: string]: SubplebbitRole };
     latestPostCid?: string;
     posts?: Pages;
-    pubsubTopic?: string;
+    pubsubTopic: string;
     challengeTypes?: ChallengeType[];
     metrics?: SubplebbitMetrics;
     features?: SubplebbitFeatures;
@@ -60,10 +61,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
     address: string;
     moderatorsAddresses?: string[];
     metricsCid?: string;
-    createdAt?: number;
-    updatedAt?: number;
+    createdAt: number;
+    updatedAt: number;
     signer?: Signer;
-    encryption?: SubplebbitEncryption;
+    encryption: SubplebbitEncryption;
     protocolVersion: "1.0.0"; // semantic version of the protocol https://semver.org/
     signature: Signature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
 
@@ -189,11 +190,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
         };
     }
 
-    toJSON() {
+    toJSON(): SubplebbitType {
         return {
             title: this.title,
             description: this.description,
-            moderatorsAddresses: this.moderatorsAddresses,
             latestPostCid: this.latestPostCid,
             pubsubTopic: this.pubsubTopic,
             address: this.address,
@@ -203,7 +203,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
             encryption: this.encryption,
-            roles: this.roles
+            roles: this.roles,
+            protocolVersion: this.protocolVersion,
+            signature: this.signature
         };
     }
 
@@ -341,23 +343,50 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
     async handleCommentEdit(commentEdit: CommentEdit, trx?) {
         assert(this.dbHandler, "Need db handler to handleCommentEdit");
         const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, trx);
-        const editorAddress = await getPlebbitAddressFromPublicKeyPem(commentEdit.editSignature?.publicKey);
-        const editorRole = this.roles && this.roles[editorAddress];
-        if (editorRole) debugs.INFO(`${editorRole.role} (${editorAddress}) is attempting to CommentEdit ${commentToBeEdited?.cid}`);
-
-        if (!editorRole && commentEdit?.editSignature?.publicKey !== commentToBeEdited.signature.publicKey) {
-            // Editor has no subplebbit role like owner, moderator or admin, and their signer is not the signer used in the original comment
-            // Original comment and CommentEdit need to have same signer key
-            debugs.INFO(`User attempted to edit a comment (${commentEdit.commentCid}) without having its signer's keys.`);
-            return {
-                reason: `Comment edit of ${commentEdit.commentCid} due to having different author keys than original comment`
-            };
-        } else {
-            commentEdit.setOriginalContent(commentToBeEdited.originalContent || commentToBeEdited.content);
-            await this.dbHandler.upsertComment(commentEdit, undefined, trx);
-            debugs.INFO(
-                `New content (${commentEdit.content}) for comment ${commentEdit.commentCid}. Original content: ${commentEdit.originalContent}`
+        assert(commentToBeEdited);
+        const editorAddress = await getPlebbitAddressFromPublicKeyPem(commentEdit.signature.publicKey);
+        const modRole = this.roles && this.roles[editorAddress];
+        if (modRole) {
+            debugs.DEBUG(
+                `${modRole.role} (${editorAddress}) is attempting to CommentEdit ${
+                    commentToBeEdited?.cid
+                } with CommentEdit (${JSON.stringify(commentEdit)})`
             );
+
+            Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON())).forEach((editField) => {
+                if (!MOD_EDIT_FIELDS.includes(<any>editField)) {
+                    const msg = `Mod ${modRole.role} (${editorAddress}) included field (${editField}) that cannot be used for a mod's CommentEdit`;
+                    debugs.WARN(msg);
+                    return { reason: msg };
+                }
+            });
+
+            await this.dbHandler.editComment(commentEdit, trx);
+
+            if (commentEdit.commentAuthor) {
+                // A mod is is trying to ban an author or add a flair
+                const newAuthorProps: AuthorType = {
+                    address: commentToBeEdited?.author.address,
+                    ...commentEdit.commentAuthor
+                };
+                await this.dbHandler.upsertAuthor(newAuthorProps, trx, false);
+                debugs.INFO(
+                    `Mod (${JSON.stringify(modRole)}) has banned author (${newAuthorProps.address}) until ${newAuthorProps.banExpiresAt}`
+                );
+                // TODO update all comments with this author to include new flair and ban
+            }
+        } else if (commentEdit?.signature?.publicKey === commentToBeEdited.signature.publicKey) {
+            // CommentEdit is signed by original author
+            // if (commentEdit.content) commentEdit.setOriginalContent(commentToBeEdited.originalContent || commentToBeEdited.content); // If commentEdit changes content, then make sure to set original content accordingly
+            // await this.dbHandler.upsertComment(commentEdit, undefined, trx);
+            await this.dbHandler.editComment(commentEdit, true, trx);
+            debugs.INFO(`Updated comment (${commentToBeEdited.cid}) with CommentEdit: ${JSON.stringify(commentEdit)}`);
+        } else {
+            // CommentEdit is signed by someone who's not the original author or a mod. Reject it
+            // Editor has no subplebbit role like owner, moderator or admin, and their signer is not the signer used in the original comment
+            const msg = `Editor (non-mod) - (${editorAddress}) attempted to edit a comment (${commentEdit.commentCid}) without having original author keys.`;
+            debugs.INFO(msg);
+            return { reason: msg };
         }
     }
 
@@ -400,7 +429,21 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
             ? await this.plebbit.createCommentEdit(publication)
             : await this.plebbit.createComment(publication);
 
-        debugs.TRACE(`Attempting to insert new publication into DB: ${JSON.stringify(postOrCommentOrVote)}`);
+        if (postOrCommentOrVote?.author?.address) {
+            // Check if author is banned
+            const author = await this.dbHandler.queryAuthor(postOrCommentOrVote.author.address);
+            if (author?.banExpiresAt && author.banExpiresAt > timestamp()) {
+                const msg = `Author (${postOrCommentOrVote?.author?.address}) attempted to publish ${postOrCommentOrVote.constructor.name} even though they're banned until ${author.banExpiresAt}. Rejecting`;
+                debugs.INFO(msg);
+                return { reason: msg };
+            }
+        } else {
+            const msg = `Rejecting ${postOrCommentOrVote.constructor.name} because it doesn't have author.address`;
+            debugs.INFO(msg);
+            return { reason: msg };
+        }
+
+        debugs.TRACE(`Attempting to insert ${postOrCommentOrVote.constructor.name} into DB: ${JSON.stringify(postOrCommentOrVote)}`);
         if (!(postOrCommentOrVote instanceof Post)) {
             const parentCid: string | undefined =
                 postOrCommentOrVote instanceof Comment && postOrCommentOrVote.parentCid
@@ -422,23 +465,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
                 debugs.INFO(errResponse.reason);
                 return errResponse;
             }
-            const timestamp =
-                (postOrCommentOrVote instanceof CommentEdit && postOrCommentOrVote.editTimestamp) || postOrCommentOrVote.timestamp;
 
-            if (parent.timestamp > timestamp) {
+            if (parent.timestamp > postOrCommentOrVote.timestamp) {
                 const err = {
-                    reason: `Rejecting ${postOrCommentOrVote.constructor.name} because its timestamp (${timestamp}) is earlier than its parent (${parent.timestamp})`
+                    reason: `Rejecting ${postOrCommentOrVote.constructor.name} because its timestamp (${postOrCommentOrVote.timestamp}) is earlier than its parent (${parent.timestamp})`
                 };
                 debugs.INFO(err.reason);
                 return err;
             }
         }
-        const derivedAddress = await getPlebbitAddressFromPublicKeyPem(
-            (postOrCommentOrVote instanceof CommentEdit && postOrCommentOrVote.editSignature
-                ? postOrCommentOrVote.editSignature
-                : postOrCommentOrVote.signature
-            ).publicKey
-        );
+        const derivedAddress = await getPlebbitAddressFromPublicKeyPem(postOrCommentOrVote.signature.publicKey);
         const resolvedAddress = await this.plebbit.resolver.resolveAuthorAddressIfNeeded(publication?.author?.address);
 
         if (resolvedAddress !== publication?.author?.address) {
@@ -450,10 +486,14 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
                 return { reason: msg };
             }
         }
-        const [signatureIsVerified, failedVerificationReason] = await verifyPublication(postOrCommentOrVote, this.plebbit);
+        const [signatureIsVerified, failedVerificationReason] = await verifyPublication(
+            postOrCommentOrVote,
+            this.plebbit,
+            postOrCommentOrVote.getType()
+        );
         if (!signatureIsVerified) {
             const msg = `Author (${
-                postOrCommentOrVote.author.address
+                postOrCommentOrVote?.author?.address
             }) ${postOrCommentOrVote.getType()}'s signature is invalid: ${failedVerificationReason}`;
             debugs.INFO(msg);
             return { reason: msg };
@@ -679,7 +719,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitEditOptions, S
                 { ...dbComment.toJSONCommentUpdate(), replies: dbComment?.replies?.toJSON() },
                 this.signer,
                 this.plebbit,
-                SIGNED_PROPERTY_NAMES.COMMENT_UPDATE
+                "commentupdate"
             );
 
             return dbComment.edit({ ...dbComment.toJSONCommentUpdate(), signature: subplebbitSignature });

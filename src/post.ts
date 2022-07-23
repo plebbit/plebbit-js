@@ -1,19 +1,35 @@
 import { Comment } from "./comment";
 import assert from "assert";
+import { PostType } from "./types";
 
-class Post extends Comment {
-    title?: string;
+class Post extends Comment implements PostType {
+    thumbnailUrl?: string;
+    title: string;
+    parentCid: undefined;
+    depth: 0;
+    link?: string;
 
-    _initProps(props) {
+    _initProps(props: PostType) {
         super._initProps(props);
+        this.thumbnailUrl = props.thumbnailUrl;
+        this.title = props.title;
         this.parentCid = undefined;
-        this.title = props["title"];
+        this.depth = 0;
+        this.link = props.link;
+    }
+
+    toJSON(): PostType {
+        return { ...super.toJSON(), ...this.toJSONSkeleton() };
     }
 
     toJSONSkeleton() {
         return {
             ...super.toJSONSkeleton(),
-            title: this.title
+            thumbnailUrl: this.thumbnailUrl,
+            title: this.title,
+            parentCid: this.parentCid,
+            depth: this.depth,
+            link: this.link
         };
     }
 

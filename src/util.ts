@@ -7,7 +7,7 @@ import fetch from "node-fetch";
 import FormData from "form-data";
 import assert from "assert";
 import { Plebbit } from "./plebbit";
-import { Timeframe } from "./types";
+import { CommentType, ProtocolVersion, Timeframe } from "./types";
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
     HOUR: 60 * 60,
@@ -108,7 +108,7 @@ export function removeKeys(object1: Object, keys: any[]): Object {
     return newObject;
 }
 
-export function replaceXWithY(obj: Object, x: any, y: any): Object {
+export function replaceXWithY(obj: Object, x: any, y: any): any {
     // obj is a JS object
     const newObj = {};
     Object.entries(obj).forEach(([key, value]) => {
@@ -171,25 +171,31 @@ export function hotScore(comment) {
     return round(sign * order + seconds / 45000, 7);
 }
 
-export function controversialScore(comment) {
+export function controversialScore(comment: CommentType) {
+    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
     if (comment.downvoteCount <= 0 || comment.upvoteCount <= 0) return 0;
     const magnitude = comment.upvoteCount + comment.downvoteCount;
     const balance =
         comment.upvoteCount > comment.downvoteCount
-            ? parseFloat(comment.downvoteCount) / comment.upvoteCount
-            : parseFloat(comment.upvoteCount) / comment.downvoteCount;
+            ? comment.downvoteCount / comment.upvoteCount
+            : comment.upvoteCount / comment.downvoteCount;
     return Math.pow(magnitude, balance);
 }
 
-export function topScore(comment) {
+export function topScore(comment: CommentType) {
+    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
     return comment.upvoteCount - comment.downvoteCount;
 }
 
-export function newScore(comment) {
+export function newScore(comment: CommentType) {
+    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
+
     return comment.timestamp;
 }
 
-export function oldScore(comment) {
+export function oldScore(comment: CommentType) {
+    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
+
     return -comment.timestamp;
 }
 
@@ -220,6 +226,14 @@ export function getDebugLevels(baseName: string): { FATAL: Debug; ERROR: Debug; 
     return Object.assign({}, ...debugsObj);
 }
 
+export function isJsonObject(x): boolean {
+    return false;
+}
+
 export function randomElement<T>(array: Array<T>): T {
     return array[Math.floor(Math.random() * array.length)];
+}
+
+export function getProtocolVersion(): ProtocolVersion {
+    return "1.0.0";
 }

@@ -1,9 +1,9 @@
+import { Signer } from "ethers";
 import { Options } from "ipfs-http-client";
 import { Knex } from "knex";
-import Author from "./author";
-import { Comment } from "./comment";
 import { Pages } from "./pages";
-import { Signature, Signer } from "./signer";
+
+export type ProtocolVersion = "1.0.0";
 
 export type BlockchainProvider = { url: string; chainId: number };
 export interface PlebbitOptions {
@@ -18,6 +18,16 @@ export type CreateSignerOptions = {
     privateKey?: string; // If undefined, generate a random private key
     type?: "rsa";
 };
+
+export interface SignerType {
+    type: "rsa";
+    privateKey: string;
+    publicKey?: string;
+    address?: string;
+    ipfsKey?: Uint8Array;
+    usage?: "comment" | "subplebbit";
+    ipnsKeyName?: string;
+}
 export type Encrypted = {
     // examples available at https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
     encrypted: string; // base64 encrypted string with AES CBC 128 // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_block_chaining_(CBC)
@@ -28,11 +38,8 @@ export type SubplebbitEncryption = {
     type: "aes-cbc"; // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
     publicKey: string; // PEM format https://en.wikipedia.org/wiki/PKCS_8
 };
-export interface CreateCommentOptions {
-    subplebbitAddress: string;
-    timestamp?: number; // Time of publishing in seconds, Math.round(Date.now() / 1000) if undefined
-    author: Author;
-    signer: Signer;
+export interface CreateCommentOptions extends CreatePublicationOptions {
+    signer: SignerType;
     parentCid?: string; // The parent comment CID, undefined if comment is a post, same as postCid if comment is top level
     content?: string; // Content of the comment, link posts have no content
     title?: string; // If comment is a post, it needs a title
@@ -43,32 +50,84 @@ export interface CreateCommentOptions {
     ipnsName?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
 }
 
-export interface CreateVoteOptions {
-    subplebbitAddress: string;
+export interface CreateVoteOptions extends CreatePublicationOptions {
     commentCid: string;
-    author: Author;
     vote: 1 | 0 | -1;
-    signer: Signer;
-    timestamp?: number;
+    signer: SignerType;
 }
 
-export interface CreateCommentEditOptions {
-    subplebbitAddress: string;
-    commentCid: string; // The comment CID to be edited (don't use 'cid' because eventually CommentEdit.cid will exist)
-    signer: Signer; // Signer of the edit, either original author or mod
-    content?: string; // (Only author) Edited content of the comment
-    editTimestamp?: number; // (Only author) Time of content edit in ms, Math.round(Date.now() / 1000) if undefined
-    editReason?: string; // (Only author) Reason of the edit
-    deleted?: boolean; // (Only author) Edited deleted status of the comment
-    flair?: Flair; // (Author or mod) Edited flair of the comment
-    spoiler?: boolean; // (Author or mod) Edited spoiler of the comment
-    pinned?: boolean; // (Only mod) Edited pinned status of the comment
-    locked?: boolean; // (Only mod) Edited locked status of the comment
-    removed?: boolean; // (Only mod) Edited removed status of the comment
-    authorBanExpiresAt?: number; // (Only author) Author was banned for this comment
-    authorFlair?: Flair; // (Only mod) Edited flair of the author
-    moderatorReason?: string; // (Only mod) Reason for mod action
+export interface VoteType extends Omit<CreateVoteOptions, "signer">, PublicationType {
+    author: AuthorType;
+    timestamp: number;
+    signer?: SignerType;
 }
+
+export interface AuthorType {
+    address: string;
+    previousCommentCid?: string; // linked list of the author's comments
+    displayName?: string;
+    wallets?: { [chainTicker: string]: Wallet };
+    avatar?: Nft;
+    flair?: Flair; // not part of the signature, mod can edit it after comment is published
+    banExpiresAt?: number; // timestamp in second, if defined the author was banned for this comment
+}
+
+export type Wallet = {
+    address: string;
+    // ...will add more stuff later, like signer or send/sign or balance
+};
+
+export interface SignatureType {
+    signature: string;
+    publicKey: string;
+    type: "rsa";
+    signedPropertyNames: SignedPropertyNames;
+}
+
+export interface PublicationType extends Required<CreatePublicationOptions> {
+    author: AuthorType;
+    signature: SignatureType; // sign immutable fields like author, title, content, timestamp to prevent tampering
+    protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
+}
+
+interface CreatePublicationOptions {
+    author?: Partial<AuthorType>;
+    subplebbitAddress: string; // all publications are directed to a subplebbit owner
+    timestamp?: number; // // Time of publishing in seconds, Math.round(Date.now() / 1000) if undefined
+}
+
+// CommentEdit section
+
+export interface ModeratorCommentEditOptions {
+    commentCid: string;
+    flair?: Flair;
+    spoiler?: boolean;
+    pinned?: boolean;
+    locked?: boolean;
+    removed?: boolean;
+    moderatorReason?: string;
+    commentAuthor?: CommentAuthorEditOptions;
+}
+interface AuthorCommentEditOptions {
+    commentCid: string;
+    content?: string;
+    deleted?: boolean;
+    flair?: Flair;
+    spoiler?: boolean;
+    reason?: string;
+}
+export interface AuthorCommentEdit extends AuthorCommentEditOptions, PublicationType {}
+
+export interface ModeratorCommentEdit extends ModeratorCommentEditOptions, PublicationType {}
+export type CommentAuthorEditOptions = Pick<AuthorType, "banExpiresAt" | "flair">;
+export interface CreateCommentEditOptions extends AuthorCommentEdit, ModeratorCommentEdit {
+    signer: SignerType;
+}
+
+//*********************
+//* "Edit" publications
+//*********************
+
 export type Nft = { chainTicker: string; id: string; address: string; signature: string };
 export type SubplebbitRole = { role: "owner" | "admin" | "moderator" };
 export type ChallengeType = {
@@ -136,33 +195,31 @@ export type Flair = {
 
 export type FlairOwner = "post" | "author";
 
-export interface SubplebbitType {
-    title?: string;
-    description?: string;
-    roles?: { [authorAddress: string]: SubplebbitRole }; // each author address can be mapped to 1 SubplebbitRole
-    pubsubTopic?: string; // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
-    latestPostCid?: string; // the most recent post in the linked list of posts
-    posts?: Pages; // only preload page 1 sorted by 'hot', might preload more later, comments should include Comment + CommentUpdate data
-    challengeTypes?: ChallengeType[]; // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
+export interface SubplebbitType extends CreateSubplebbitOptions {
+    signature: SignatureType;
+    encryption: SubplebbitEncryption;
+    address: string;
+    createdAt: number;
+    updatedAt: number;
+    pubsubTopic: string;
     metricsCid?: string;
+    protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
+}
+export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     createdAt?: number;
     updatedAt?: number;
-    features?: SubplebbitFeatures;
-    suggested?: SubplebbitSuggested;
-    rules?: string[];
-    address?: string;
-    signer?: Signer;
-    flairs?: Record<FlairOwner, Flair[]>; // list of post/author flairs authors and mods can choose from
-    protocolVersion?: "1.0.0"; // semantic version of the protocol https://semver.org/
+    signer?: SignerType;
     encryption?: SubplebbitEncryption;
-    signature?: Signature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
+    signature?: SignatureType; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
+
+    database?: Knex.Config;
 }
-export type CreateSubplebbitOptions = SubplebbitType & { database?: Knex.Config };
 
 export interface SubplebbitEditOptions {
     title?: string;
     description?: string;
     roles?: { [authorAddress: string]: SubplebbitRole };
+    rules?: string[];
     latestPostCid?: string;
     posts?: Pages;
     pubsubTopic?: string;
@@ -193,54 +250,62 @@ export type PostSortName =
     | "controversialAll";
 export type ReplySortName = "topAll" | "new" | "old" | "controversialAll";
 
-export type SortProps = { score?: (comment: Comment) => number; timeframe?: Timeframe };
+export type SortProps = { score?: (comment: CommentType) => number; timeframe?: Timeframe };
 
 export type PostSort = Record<PostSortName, SortProps>; // If score is undefined means it's sorted from db, no need to sort in code
 
 export type ReplySort = Record<ReplySortName, SortProps>;
 
 export interface CommentUpdate {
-    content?: string; // the author has edited the comment content
-    editSignature?: Signature; // signature of the edited content by the author
-    editTimestamp?: number; // the time of the last content edit
-    editReason?: string; // reason of the author edit
-    deleted?: boolean; // author deleted their comment
-    upvoteCount?: number;
-    downvoteCount?: number;
+    upvoteCount: number;
+    downvoteCount: number;
+    replyCount: number;
+    authorEdit?: AuthorCommentEdit; // most recent edit by comment author, merge authorEdit.content, authorEdit.deleted, authorEdit.flair with comment. Validate authorEdit.signature
     replies?: Pages; // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
     flair?: Flair; // arbitrary colored strings added by the author or mods to describe the author or comment
     spoiler?: boolean;
     pinned?: boolean;
     locked?: boolean;
     removed?: boolean; // mod deleted a comment
-    authorBanExpiresAt?: number; // timestamp in second, if defined the author was banned for this comment
     moderatorReason?: string; // reason the mod took a mod action
-    updatedAt?: number; // timestamp in seconds the IPNS record was updated
-    authorFlair?: Flair; // mod can edit an author's flair
-    protocolVersion: "1.0.0"; // semantic version of the protocol https://semver.org/
-    signature: Signature; // signature of the CommentUpdate by the sub owner to protect against malicious gateway
+    updatedAt: number; // timestamp in seconds the IPNS record was updated
+    protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
+    signature: SignatureType; // signature of the CommentUpdate by the sub owner to protect against malicious gateway
+    author?: CommentAuthorEditOptions;
 }
+
+export interface CommentType extends Partial<CommentUpdate>, Omit<CreateCommentOptions, "signer">, PublicationType {
+    author: AuthorType;
+    timestamp: number;
+    protocolVersion: ProtocolVersion;
+    signature: SignatureType;
+    postCid?: string;
+    previousCid?: string; // each post is a linked list
+    ipnsKeyName?: string;
+    depth?: number;
+    signer?: SignerType;
+    original?: Pick<Partial<CommentType>, "author" | "content">;
+}
+
+export interface PostType extends CommentType {
+    parentCid: undefined;
+    title: string;
+    depth: 0;
+    link?: string;
+    thumbnailUrl?: string; // fetched by subplebbit owner, not author, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
+}
+
+export interface CommentEditType extends PublicationType, Omit<CreateCommentEditOptions, "signer"> {
+    signer?: SignerType;
+}
+
+export type PublicationTypeName = "comment" | "vote" | "commentedit" | "commentupdate" | "subplebbit";
 
 export type CommentSignedPropertyNames = (keyof Pick<
     CreateCommentOptions,
     "subplebbitAddress" | "author" | "timestamp" | "content" | "title" | "link" | "parentCid"
 >)[];
-export type CommentEditSignedPropertyNames = (keyof Pick<
-    CreateCommentEditOptions,
-    | "subplebbitAddress"
-    | "content"
-    | "commentCid"
-    | "editTimestamp"
-    | "editReason"
-    | "deleted"
-    | "spoiler"
-    | "pinned"
-    | "locked"
-    | "removed"
-    | "moderatorReason"
->)[];
-
-[];
+export type CommentEditSignedPropertyNames = (keyof Omit<CreateCommentEditOptions, "signer">)[];
 
 export type CommentUpdatedSignedPropertyNames = (keyof Omit<CommentUpdate, "signature">)[];
 export type VoteSignedPropertyNames = (keyof Omit<CreateVoteOptions, "signer">)[];

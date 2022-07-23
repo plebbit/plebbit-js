@@ -1,4 +1,4 @@
-import { CreateSignerOptions } from "../types";
+import { CreateSignerOptions, SignerType } from "../types";
 import {
     generatePrivateKeyPem,
     getPublicKeyPemFromPrivateKeyPem,
@@ -9,7 +9,7 @@ import assert from "assert";
 export { signPublication, verifyPublication, Signature } from "./signatures";
 export { encrypt, decrypt } from "./encryption";
 
-export class Signer {
+export class Signer implements SignerType {
     type: "rsa";
     privateKey: string;
     publicKey?: string;
@@ -18,7 +18,7 @@ export class Signer {
     usage?: "comment" | "subplebbit";
     ipnsKeyName?: string;
 
-    constructor(props: Signer) {
+    constructor(props: SignerType) {
         this.type = props.type;
         this.privateKey = props.privateKey;
         this.publicKey = props.publicKey;

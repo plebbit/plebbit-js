@@ -1,24 +1,28 @@
 import {
     BlockchainProvider,
+    CommentType,
     CreateCommentEditOptions,
     CreateCommentOptions,
     CreateSignerOptions,
     CreateSubplebbitOptions,
     CreateVoteOptions,
-    PlebbitOptions
+    PlebbitOptions,
+    PostType,
+    VoteType
 } from "./types";
 import plebbitUtil from "./runtime/node/util";
-import { Comment, CommentEdit } from "./comment";
+import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
-import { getDebugLevels, loadIpfsFileAsJson, loadIpnsAsJson, timestamp } from "./util";
+import { getDebugLevels, getProtocolVersion, loadIpfsFileAsJson, loadIpnsAsJson, parseJsonIfString, timestamp } from "./util";
 import Vote from "./vote";
 import { create as createIpfsClient, IPFSHTTPClient, Options } from "ipfs-http-client";
 import assert from "assert";
 import { createSigner, Signer, signPublication, verifyPublication } from "./signer";
 import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
-import { SIGNED_PROPERTY_NAMES } from "./signer/signatures";
+import Author from "./author";
+import { CommentEdit } from "./comment-edit";
 
 const debugs = getDebugLevels("plebbit");
 
@@ -102,18 +106,22 @@ export class Plebbit implements PlebbitOptions {
                   subplebbit
               )
             : new Comment({ ...commentJson, cid: cid }, subplebbit);
-        const [signatureIsVerified, failedVerificationReason] = await verifyPublication(publication, this);
+        const [signatureIsVerified, failedVerificationReason] = await verifyPublication(publication, this, "comment");
         assert.equal(signatureIsVerified, true, `Signature of comment/post ${cid} is invalid due to reason=${failedVerificationReason}`);
         return publication;
     }
 
-    async createComment(options: CreateCommentOptions): Promise<Comment | Post> {
+    async createComment(options: CreateCommentOptions | CommentType): Promise<Comment | Post> {
         const commentSubplebbit = { plebbit: this, address: options.subplebbitAddress };
-        if (!options.signer) return options.title ? new Post(options, commentSubplebbit) : new Comment(options, commentSubplebbit);
+        if (!options.signer)
+            return options.title ? new Post(<PostType>options, commentSubplebbit) : new Comment(<CommentType>options, commentSubplebbit);
         if (!options.timestamp) {
             options.timestamp = timestamp();
             debugs.TRACE(`User hasn't provided a timestamp in createCommentOptions, defaulting to (${options.timestamp})`);
         }
+        options.author = parseJsonIfString(options.author);
+        if (!options.author) options.author = { address: options.signer.address };
+
         if (options.author && !options.author.address) {
             options.author.address = options.signer.address;
             debugs.TRACE(
@@ -121,10 +129,14 @@ export class Plebbit implements PlebbitOptions {
             );
         }
 
-        const commentSignature = await signPublication(options, options.signer, this, SIGNED_PROPERTY_NAMES.COMMENT);
+        const commentSignature = await signPublication(options, options.signer, this, "comment");
 
-        const commentProps = { ...options, signature: commentSignature };
-        return commentProps.title ? new Post(commentProps, commentSubplebbit) : new Comment(commentProps, commentSubplebbit);
+        const finalProps: CommentType | PostType = {
+            ...(<CommentType>options), // TODO Take out cast later
+            signature: commentSignature,
+            protocolVersion: getProtocolVersion()
+        };
+        return finalProps.title ? new Post(finalProps, commentSubplebbit) : new Comment(finalProps, commentSubplebbit);
     }
 
     async createSubplebbit(options: CreateSubplebbitOptions = {}): Promise<Subplebbit> {
@@ -135,36 +147,39 @@ export class Plebbit implements PlebbitOptions {
             );
         }
         const subplebbit = new Subplebbit(options, this);
+        await subplebbit.start();
         await subplebbit.edit(options);
+        await subplebbit.stopPublishing();
         return subplebbit;
     }
 
-    async createVote(options: CreateVoteOptions): Promise<Vote> {
+    async createVote(options: CreateVoteOptions | VoteType): Promise<Vote> {
         const subplebbit = { plebbit: this, address: options.subplebbitAddress };
-        if (!options.signer) return new Vote(options, subplebbit);
+        if (!options.signer) return new Vote(<VoteType>options, subplebbit);
         if (!options.timestamp) {
             options.timestamp = timestamp();
             debugs.TRACE(`User hasn't provided a timestamp in createVote, defaulting to (${options.timestamp})`);
         }
-        if (options.author && !options.author.address) {
+        if (!options.author) options.author = { address: options.signer.address };
+
+        if (options.author && !options?.author?.address) {
             options.author.address = options.signer.address;
             debugs.TRACE(`CreateVoteOptions did not provide author.address, will define it to signer.address (${options.signer.address})`);
         }
-        const voteSignature = await signPublication(options, options.signer, this, SIGNED_PROPERTY_NAMES.VOTE);
-        const voteProps = { ...options, signature: voteSignature };
+        const voteSignature = await signPublication(options, options.signer, this, "vote");
+        const voteProps: VoteType = <VoteType>{ ...options, signature: voteSignature, protocolVersion: getProtocolVersion() }; // TODO remove cast here
         return new Vote(voteProps, subplebbit);
     }
 
     async createCommentEdit(options: CreateCommentEditOptions): Promise<CommentEdit> {
         const subplebbitObj = { plebbit: this, address: options.subplebbitAddress };
         if (!options.signer) return new CommentEdit(options, subplebbitObj); // User just wants to instantiate a CommentEdit object, not publish
-
-        if (!options.editTimestamp) {
-            options.editTimestamp = timestamp();
-            debugs.DEBUG(`User hasn't provided editTimestamp in createCommentEdit, defaulted to (${options.editTimestamp})`);
+        if (!options.timestamp) {
+            options.timestamp = timestamp();
+            debugs.DEBUG(`User hasn't provided editTimestamp in createCommentEdit, defaulted to (${options.timestamp})`);
         }
 
-        const editSignature = await signPublication(options, options.signer, this, SIGNED_PROPERTY_NAMES.COMMENT_EDIT);
+        const editSignature = await signPublication(options, options.signer, this, "commentedit");
 
         const commentEditProps = {
             ...options,
