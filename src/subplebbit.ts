@@ -39,7 +39,7 @@ import Post from "./post";
 import { getPlebbitAddressFromPublicKeyPem } from "./signer/util";
 import Publication from "./publication";
 import { v4 as uuidv4 } from "uuid";
-import { CommentEdit, MOD_EDIT_FIELDS } from "./comment-edit";
+import { AUTHOR_EDIT_FIELDS, CommentEdit, MOD_EDIT_FIELDS } from "./comment-edit";
 
 const debugs = getDebugLevels("subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
@@ -301,9 +301,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     async updateSubplebbitIpns() {
         assert(this.dbHandler);
-        const trx: any = await this.dbHandler.createTransaction();
+        const trx: any = await this.dbHandler.createTransaction("subplebbit");
         const latestPost = await this.dbHandler.queryLatestPost(trx);
-        await trx.commit();
+        await this.dbHandler.commitTransaction("subplebbit");
         const [metrics, subplebbitPosts] = await Promise.all([
             this.dbHandler.querySubplebbitMetrics(undefined),
             this.sortHandler.generatePagesUnderComment(undefined, undefined)
@@ -377,8 +377,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             }
         } else if (commentEdit?.signature?.publicKey === commentToBeEdited.signature.publicKey) {
             // CommentEdit is signed by original author
-            // if (commentEdit.content) commentEdit.setOriginalContent(commentToBeEdited.originalContent || commentToBeEdited.content); // If commentEdit changes content, then make sure to set original content accordingly
-            // await this.dbHandler.upsertComment(commentEdit, undefined, trx);
+            Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON())).forEach((editField) => {
+                if (!AUTHOR_EDIT_FIELDS.includes(<any>editField)) {
+                    const msg = `Author (${editorAddress}) included field (${editField}) that cannot be used for a author's CommentEdit`;
+                    debugs.WARN(msg);
+                    return { reason: msg };
+                }
+            });
             await this.dbHandler.editComment(commentEdit, true, trx);
             debugs.INFO(`Updated comment (${commentToBeEdited.cid}) with CommentEdit: ${JSON.stringify(commentEdit)}`);
         } else {
@@ -411,9 +416,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             );
             return { reason: "User duplicated their vote" };
         } else {
-            const trx = await this.dbHandler?.createTransaction();
+            const trx = await this.dbHandler.createTransaction(challengeRequestId);
             await this.dbHandler.upsertVote(newVote, challengeRequestId, trx);
-            await trx?.commit();
+            await this.dbHandler?.commitTransaction(challengeRequestId);
             debugs.INFO(`Upserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
         }
     }
@@ -446,7 +451,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         debugs.TRACE(`Attempting to insert ${postOrCommentOrVote.constructor.name} into DB: ${JSON.stringify(postOrCommentOrVote)}`);
         if (!(postOrCommentOrVote instanceof Post)) {
             const parentCid: string | undefined =
-                postOrCommentOrVote instanceof Comment && postOrCommentOrVote.parentCid
+                postOrCommentOrVote instanceof Comment
                     ? postOrCommentOrVote.parentCid
                     : postOrCommentOrVote instanceof Vote || postOrCommentOrVote instanceof CommentEdit
                     ? postOrCommentOrVote.commentCid
@@ -525,19 +530,19 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 return { reason: msg };
             }
             if (postOrCommentOrVote instanceof Post) {
-                const trx = await this.dbHandler.createTransaction();
+                const trx = await this.dbHandler.createTransaction(challengeRequestId);
                 postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPost(trx))?.cid);
                 postOrCommentOrVote.setDepth(0);
                 const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
                 postOrCommentOrVote.setPostCid(file.path);
                 postOrCommentOrVote.setCid(file.path);
                 await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
-                await trx.commit();
+                await this.dbHandler.commitTransaction(challengeRequestId);
 
                 debugs.INFO(`New post with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
             } else if (postOrCommentOrVote instanceof Comment) {
                 // Comment
-                const trx = await this.dbHandler.createTransaction();
+                const trx = await this.dbHandler.createTransaction(challengeRequestId);
                 const [commentsUnderParent, parent] = await Promise.all([
                     this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx),
                     this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)
@@ -549,7 +554,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 postOrCommentOrVote.setCid(file.path);
                 postOrCommentOrVote.setPostCid(parent.postCid);
                 await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
-                await trx.commit();
+                await this.dbHandler.commitTransaction(challengeRequestId);
 
                 debugs.INFO(`New comment with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
             }
@@ -662,12 +667,19 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async processCaptchaPubsub(pubsubMsg) {
-        const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
-
-        if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST) await this.handleChallengeRequest(msgParsed);
-        else if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEANSWER && this._challengeToPublication[msgParsed.challengeRequestId])
-            // Only reply to peers who started a challenge request earlier
-            await this.handleChallengeAnswer(msgParsed);
+        let msgParsed;
+        assert(this.dbHandler);
+        try {
+            msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg.data));
+            if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST) await this.handleChallengeRequest(msgParsed);
+            else if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEANSWER && this._challengeToPublication[msgParsed.challengeRequestId])
+                // Only reply to peers who started a challenge request earlier
+                await this.handleChallengeAnswer(msgParsed);
+        } catch (e) {
+            e.message = `failed process captcha for challenge request id (${msgParsed?.challengeRequestId}): ${e.message}`;
+            debugs.ERROR(e);
+            if (msgParsed?.challengeRequestId) await this.dbHandler.rollbackTransaction(msgParsed?.challengeRequestId);
+        }
     }
 
     async defaultProvideCaptcha(challengeRequestMessage) {
@@ -761,15 +773,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
         assert(this.dbHandler, "A connection to a database is needed for the hosting a subplebbit");
         assert(this.pubsubTopic, "Pubsub topic need to defined before publishing");
-        await this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, async (pubsubMessage) => {
-            try {
-                await this.processCaptchaPubsub(pubsubMessage);
-            } catch (e) {
-                e.message = `failed process captcha: ${e.message}`;
-                debugs.ERROR(e);
-                await this.dbHandler.rollbackAllTrxs();
-            }
-        });
+        await this.plebbit.pubsubIpfsClient.pubsub.subscribe(
+            this.pubsubTopic,
+            async (pubsubMessage) => await this.processCaptchaPubsub(pubsubMessage)
+        );
         debugs.INFO(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
         await this._syncLoop(syncIntervalMs);
     }

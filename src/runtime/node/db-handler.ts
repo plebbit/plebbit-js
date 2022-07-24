@@ -37,19 +37,40 @@ export class DbHandler {
     _dbConfig: Knex.Config;
     knex: Knex;
     subplebbit: Subplebbit;
-    private _currentTrxs: Transaction[];
+    private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
 
     constructor(dbConfig: Knex.Config, subplebbit: Subplebbit) {
         this._dbConfig = dbConfig;
         this.knex = knex(dbConfig);
         this.subplebbit = subplebbit;
-        this._currentTrxs = [];
+        this._currentTrxs = {};
     }
 
-    async createTransaction(): Promise<Transaction> {
+    async createTransaction(transactionId: string): Promise<Transaction> {
+        assert(!this._currentTrxs[transactionId]);
         const trx = await this.knex.transaction();
-        this._currentTrxs.push(trx);
+        this._currentTrxs[transactionId] = trx;
         return trx;
+    }
+
+    async commitTransaction(transactionId: string) {
+        const trx: Transaction = this._currentTrxs[transactionId];
+        assert(trx && trx.isTransaction && !trx.isCompleted(), `Transaction (${transactionId}) needs to be stored to commit`);
+        await this._currentTrxs[transactionId].commit();
+        delete this._currentTrxs[transactionId];
+    }
+
+    async rollbackTransaction(transactionId: string) {
+        const trx: Transaction = this._currentTrxs[transactionId];
+        if (trx) {
+            assert(trx && trx.isTransaction && !trx.isCompleted(), `Transaction (${transactionId}) needs to be stored to rollback`);
+            await this._currentTrxs[transactionId].rollback();
+            delete this._currentTrxs[transactionId];
+        }
+
+        debugs.DEBUG(
+            `Rolledback transaction (${transactionId}), this._currentTrxs[transactionId].length = ${Object.keys(this._currentTrxs).length}`
+        );
     }
 
     baseTransaction(trx?: Transaction): Transaction | Knex {
@@ -405,6 +426,7 @@ export class DbHandler {
     }
 
     async queryComment(cid: string, trx?: Transaction): Promise<Comment | Post | undefined> {
+        assert(typeof cid === "string" && cid.length > 0, `Can't query a comment with null cid (${cid})`);
         const commentObj = await this.baseCommentQuery(trx).where("cid", cid).first();
         return (await this.createCommentsFromRows(commentObj))[0];
     }
@@ -468,11 +490,6 @@ export class DbHandler {
         this.subplebbit.dbHandler = new DbHandler(this.subplebbit._dbConfig, this.subplebbit);
         this.subplebbit._keyv = new Keyv(`sqlite://${this.subplebbit._dbConfig.connection.filename}`);
         debugs.INFO(`Changed db path from (${oldPathString}) to (${newPath})`);
-    }
-
-    async rollbackAllTrxs() {
-        await Promise.all(this._currentTrxs.map((trx) => trx.rollback()));
-        this._currentTrxs = [];
     }
 }
 
