@@ -73,7 +73,7 @@ AuthorCommentEdit extends AuthorCommentEditOptions, Publication {}
 ModeratorCommentEdit extends ModeratorCommentEditOptions, Publication {}
 CommentEdit extends AuthorCommentEdit, ModeratorCommentEdit {}
 CommentUpdate /* (IPNS record Comment.ipnsName) */ {
-  authorEdit?: AuthorCommentEdit // most recent edit by comment author, merge authorEdit.content, authorEdit.deleted, authorEdit.flair with comment. Validate authorEdit.signature
+  authorEdit?: AuthorCommentEdit // most recent edit by comment author, authorEdit.content, authorEdit.deleted, authorEdit.flair overwrite Comment instance props. Validate authorEdit.signature
   upvoteCount: number
   downvoteCount: number
   replies?: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
