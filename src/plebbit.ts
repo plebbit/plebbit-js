@@ -119,13 +119,10 @@ export class Plebbit implements PlebbitOptions {
             options.timestamp = timestamp();
             debugs.TRACE(`User hasn't provided a timestamp in createCommentOptions, defaulting to (${options.timestamp})`);
         }
-        options.author = parseJsonIfString(options.author);
-        if (!options.author) options.author = { address: options.signer.address };
-
-        if (options.author && !options.author.address) {
-            options.author.address = options.signer.address;
+        if (!options?.author?.address) {
+            options.author = { ...options.author, address: options.signer.address };
             debugs.TRACE(
-                `createCommentOptions did not provide author.address, will define it to signer.address (${options.signer.address})`
+                `CreateCommentOptions did not provide author.address, will define it to signer.address (${options.signer.address})`
             );
         }
 
@@ -160,10 +157,8 @@ export class Plebbit implements PlebbitOptions {
             options.timestamp = timestamp();
             debugs.TRACE(`User hasn't provided a timestamp in createVote, defaulting to (${options.timestamp})`);
         }
-        if (!options.author) options.author = { address: options.signer.address };
-
-        if (options.author && !options?.author?.address) {
-            options.author.address = options.signer.address;
+        if (!options?.author?.address) {
+            options.author = { ...options.author, address: options.signer.address };
             debugs.TRACE(`CreateVoteOptions did not provide author.address, will define it to signer.address (${options.signer.address})`);
         }
         const voteSignature = await signPublication(options, options.signer, this, "vote");
@@ -179,8 +174,12 @@ export class Plebbit implements PlebbitOptions {
             debugs.DEBUG(`User hasn't provided editTimestamp in createCommentEdit, defaulted to (${options.timestamp})`);
         }
 
-        const editSignature = await signPublication(options, options.signer, this, "commentedit");
-
+        if (!options?.author?.address) {
+            options.author = { ...options.author, address: options.signer.address };
+            debugs.TRACE(
+                `CreateCommentEditOptions did not provide author.address, will define it to signer.address (${options.signer.address})`
+            );
+        }
         const commentEditProps = {
             ...options,
             editSignature: editSignature
