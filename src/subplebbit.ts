@@ -340,13 +340,27 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         } else debugs.TRACE(`No need to sync subplebbit IPNS`);
     }
 
-    async handleCommentEdit(commentEdit: CommentEdit, trx?) {
+    async handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string) {
         assert(this.dbHandler, "Need db handler to handleCommentEdit");
-        const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, trx);
+        let commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
         assert(commentToBeEdited);
         const editorAddress = await getPlebbitAddressFromPublicKeyPem(commentEdit.signature.publicKey);
         const modRole = this.roles && this.roles[editorAddress];
-        if (modRole) {
+        if (commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey) {
+            // CommentEdit is signed by original author
+            Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON())).forEach((editField) => {
+                if (!AUTHOR_EDIT_FIELDS.includes(<any>editField)) {
+                    const msg = `Author (${editorAddress}) included field (${editField}) that cannot be used for a author's CommentEdit`;
+                    debugs.WARN(msg);
+                    return { reason: msg };
+                }
+            });
+            await this.dbHandler.insertEdit(commentEdit, challengeRequestId);
+            // If comment.flair is last modified by a mod, then reject
+            await this.dbHandler.editComment(commentEdit, challengeRequestId);
+            // const commentAfterEdit = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
+            debugs.INFO(`Updated comment (${commentEdit.commentCid}) with CommentEdit: ${JSON.stringify(commentEdit)}`);
+        } else if (modRole) {
             debugs.DEBUG(
                 `${modRole.role} (${editorAddress}) is attempting to CommentEdit ${
                     commentToBeEdited?.cid
@@ -361,31 +375,22 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 }
             });
 
-            await this.dbHandler.editComment(commentEdit, trx);
+            await this.dbHandler.insertEdit(commentEdit, challengeRequestId);
+            await this.dbHandler.editComment(commentEdit, challengeRequestId);
 
             if (commentEdit.commentAuthor) {
-                // A mod is is trying to ban an author or add a flair
+                // A mod is is trying to ban an author or add a flair to author
                 const newAuthorProps: AuthorType = {
                     address: commentToBeEdited?.author.address,
                     ...commentEdit.commentAuthor
                 };
-                await this.dbHandler.upsertAuthor(newAuthorProps, trx, false);
+                await this.dbHandler.updateAuthor(newAuthorProps, true);
                 debugs.INFO(
-                    `Mod (${JSON.stringify(modRole)}) has banned author (${newAuthorProps.address}) until ${newAuthorProps.banExpiresAt}`
+                    `Mod (${JSON.stringify(modRole)}) has add following props to author (${newAuthorProps.address}):  ${JSON.stringify(
+                        newAuthorProps
+                    )}`
                 );
-                // TODO update all comments with this author to include new flair and ban
             }
-        } else if (commentEdit?.signature?.publicKey === commentToBeEdited.signature.publicKey) {
-            // CommentEdit is signed by original author
-            Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON())).forEach((editField) => {
-                if (!AUTHOR_EDIT_FIELDS.includes(<any>editField)) {
-                    const msg = `Author (${editorAddress}) included field (${editField}) that cannot be used for a author's CommentEdit`;
-                    debugs.WARN(msg);
-                    return { reason: msg };
-                }
-            });
-            await this.dbHandler.editComment(commentEdit, true, trx);
-            debugs.INFO(`Updated comment (${commentToBeEdited.cid}) with CommentEdit: ${JSON.stringify(commentEdit)}`);
         } else {
             // CommentEdit is signed by someone who's not the original author or a mod. Reject it
             // Editor has no subplebbit role like owner, moderator or admin, and their signer is not the signer used in the original comment
@@ -448,7 +453,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             return { reason: msg };
         }
 
-        debugs.TRACE(`Attempting to insert ${postOrCommentOrVote.constructor.name} into DB: ${JSON.stringify(postOrCommentOrVote)}`);
         if (!(postOrCommentOrVote instanceof Post)) {
             const parentCid: string | undefined =
                 postOrCommentOrVote instanceof Comment
@@ -507,7 +511,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const res = await this.handleVote(postOrCommentOrVote, challengeRequestId);
             if (res) return res;
         } else if (postOrCommentOrVote instanceof CommentEdit) {
-            const res = await this.handleCommentEdit(postOrCommentOrVote, undefined);
+            const res = await this.handleCommentEdit(postOrCommentOrVote, challengeRequestId);
             if (res) return res;
         } else if (postOrCommentOrVote instanceof Comment) {
             // Comment and Post need to add file to ipfs
@@ -602,9 +606,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 this.dbHandler.upsertChallenge(challengeVerification, undefined),
                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
             ]);
-            debugs.INFO(
-                `Published ${challengeVerification.type} over pubsub: ${JSON.stringify(removeKeys(challengeVerification, ["publication"]))}`
-            );
+            debugs.INFO(`Published ${challengeVerification.type} over pubsub for challenge (${challengeVerification.challengeRequestId})`);
             this.emit("challengeverification", challengeVerification);
         } else {
             const challengeMessage = new ChallengeMessage({
@@ -734,7 +736,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 "commentupdate"
             );
 
-            return dbComment.edit({ ...dbComment.toJSONCommentUpdate(), signature: subplebbitSignature });
+            return dbComment.edit({ ...removeKeysWithUndefinedValues(dbComment.toJSONCommentUpdate()), signature: subplebbitSignature });
         }
         debugs.TRACE(`Comment (${dbComment.cid}) is up-to-date and does not need syncing`);
     }

@@ -86,10 +86,10 @@ export class CommentEdit extends Publication implements CommentEditType {
         };
     }
 
-    toJSONForDb() {
+    toJSONForDb(challengeRequestId: string) {
         const json = this.toJSON();
-        ["commentCid", "author"].forEach((key) => delete json[key]);
-        json["cid"] = this.commentCid;
+        json["authorAddress"] = this.author.address;
+        json["challengeRequestId"] = challengeRequestId;
         return removeKeysWithUndefinedValues(json);
     }
 

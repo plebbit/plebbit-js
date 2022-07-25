@@ -47,7 +47,7 @@ class Publication extends EventEmitter implements PublicationType {
         return { ...this.toJSONSkeleton() };
     }
 
-    toJSONSkeleton() {
+    toJSONSkeleton(): PublicationType {
         return {
             subplebbitAddress: this.subplebbitAddress,
             timestamp: this.timestamp,

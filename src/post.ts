@@ -19,7 +19,7 @@ class Post extends Comment implements PostType {
     }
 
     toJSON(): PostType {
-        return { ...super.toJSON(), ...this.toJSONSkeleton() };
+        return { ...super.toJSON(), ...this.toJSONSkeleton(), depth: this.depth };
     }
 
     toJSONSkeleton() {
@@ -27,8 +27,7 @@ class Post extends Comment implements PostType {
             ...super.toJSONSkeleton(),
             thumbnailUrl: this.thumbnailUrl,
             title: this.title,
-            parentCid: this.parentCid,
-            depth: this.depth,
+            parentCid: undefined,
             link: this.link
         };
     }

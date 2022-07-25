@@ -1,4 +1,3 @@
-import { Signer } from "ethers";
 import { Options } from "ipfs-http-client";
 import { Knex } from "knex";
 import { Pages } from "./pages";
@@ -284,7 +283,7 @@ export interface CommentType extends Partial<CommentUpdate>, Omit<CreateCommentO
     ipnsKeyName?: string;
     depth?: number;
     signer?: SignerType;
-    original?: Pick<Partial<CommentType>, "author" | "content">;
+    original?: Pick<Partial<CommentType>, "author" | "content" | "flair">;
 }
 
 export interface PostType extends CommentType {
@@ -305,11 +304,11 @@ export type CommentSignedPropertyNames = (keyof Pick<
     CreateCommentOptions,
     "subplebbitAddress" | "author" | "timestamp" | "content" | "title" | "link" | "parentCid"
 >)[];
-export type CommentEditSignedPropertyNames = (keyof Omit<CreateCommentEditOptions, "signer">)[];
+export type CommentEditSignedPropertyNames = (keyof Omit<CreateCommentEditOptions, "signer" | "signature" | "protocolVersion">)[];
 
-export type CommentUpdatedSignedPropertyNames = (keyof Omit<CommentUpdate, "signature">)[];
-export type VoteSignedPropertyNames = (keyof Omit<CreateVoteOptions, "signer">)[];
-export type SubplebbitSignedPropertyNames = (keyof Omit<SubplebbitType, "signer" | "signature">)[];
+export type CommentUpdatedSignedPropertyNames = (keyof Omit<CommentUpdate, "signature" | "protocolVersion">)[];
+export type VoteSignedPropertyNames = (keyof Omit<CreateVoteOptions, "signer" | "protocolVersion">)[];
+export type SubplebbitSignedPropertyNames = (keyof Omit<SubplebbitType, "signer" | "signature" | "protocolVersion">)[];
 // MultisubSignedPropertyNames: // TODO
 
 // the fields that were signed as part of the signature, client should require that certain fields be signed or reject the publication

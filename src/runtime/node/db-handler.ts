@@ -8,7 +8,7 @@ import {
 import Post from "../../post";
 import Author from "../../author";
 import { Comment } from "../../comment";
-import { getDebugLevels, removeKeysWithUndefinedValues, replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
+import { getDebugLevels, removeKeys, removeKeysWithUndefinedValues, replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
 import Vote from "../../vote";
 import knex, { Knex } from "knex";
 import { Subplebbit } from "../../subplebbit";
@@ -28,10 +28,11 @@ const TABLES = Object.freeze({
     VOTES: "votes",
     AUTHORS: "authors",
     CHALLENGES: "challenges",
-    SIGNERS: "signers" // To store private keys of subplebbit and comments' IPNS
+    SIGNERS: "signers", // To store private keys of subplebbit and comments' IPNS,
+    EDITS: "edits"
 });
 
-const jsonFields = ["signature", "author", "authorEdit", "original", "flair"];
+const jsonFields = ["signature", "author", "authorEdit", "original", "flair", "commentAuthor"];
 
 export class DbHandler {
     _dbConfig: Knex.Config;
@@ -163,13 +164,41 @@ export class DbHandler {
         });
     }
 
+    async createEditsTable() {
+        await this.knex.schema.createTable(TABLES.EDITS, (table) => {
+            table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
+            table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
+            table.json("author").notNullable();
+            table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
+            table.text("signature").notNullable().unique();
+            table.text("protocolVersion").notNullable();
+            table.increments("id"); // Used for sorts
+
+            table.timestamp("timestamp").checkPositive().notNullable();
+            table.text("subplebbitAddress").notNullable();
+            table.text("content").nullable();
+            table.text("reason").nullable();
+            table.boolean("deleted").nullable();
+            table.json("flair").nullable();
+            table.boolean("spoiler").nullable();
+            table.boolean("pinned").nullable();
+            table.boolean("locked").nullable();
+            table.boolean("removed").nullable();
+            table.text("moderatorReason").nullable();
+            table.json("commentAuthor").nullable();
+
+            table.primary(["commentCid", "id"]);
+        });
+    }
+
     async createTablesIfNeeded() {
         const functions = [
             this.createCommentsTable,
             this.createVotesTable,
             this.createAuthorsTable,
             this.createChallengesTable,
-            this.createSignersTable
+            this.createSignersTable,
+            this.createEditsTable
         ];
         const tables = Object.values(TABLES);
         for (const table of tables) {
@@ -196,6 +225,25 @@ export class DbHandler {
         await this.baseTransaction(trx)(TABLES.AUTHORS).insert(mergedDbObject).onConflict(["address"]).merge();
     }
 
+    async updateAuthor(newAuthorProps: AuthorType, updateCommentsAuthor = true, trx?: Transaction) {
+        const onlyNewProps = removeKeysWithUndefinedValues(removeKeys(newAuthorProps, ["address"]));
+        await this.baseTransaction(trx)(TABLES.AUTHORS).update(onlyNewProps).where("address", newAuthorProps.address);
+        if (updateCommentsAuthor) {
+            const commentsWithAuthor: Comment[] = await this.createCommentsFromRows(
+                await this.baseCommentQuery(trx).where("authorAddress", newAuthorProps.address)
+            );
+            await Promise.all(
+                commentsWithAuthor.map(async (comment) => {
+                    const newOriginal = comment.original?.author
+                        ? comment.original
+                        : { ...comment.original, author: comment.author.toJSON() };
+                    const newCommentProps = { author: { ...comment.author.toJSON(), ...onlyNewProps }, original: newOriginal };
+                    await this.baseTransaction(trx)(TABLES.COMMENTS).update(newCommentProps).where("cid", comment.cid);
+                })
+            );
+        }
+    }
+
     async queryAuthor(authorAddress: string, trx?: Transaction): Promise<Author | undefined> {
         const authorProps = await this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: authorAddress }).first();
         if (authorProps) return new Author(authorProps);
@@ -208,6 +256,8 @@ export class DbHandler {
     }
 
     async upsertComment(postOrComment: Post | Comment, challengeRequestId?: string, trx?: Transaction) {
+        assert(postOrComment.cid, "Comment need to have a cid before upserting");
+
         if (postOrComment.author)
             // Skip adding author (For CommentEdit)
             await this.upsertAuthor(postOrComment.author, trx, true);
@@ -220,7 +270,6 @@ export class DbHandler {
                     })
                     .first()
             ).challengeRequestId;
-        assert(postOrComment.cid, "Comment need to have a cid before upserting");
         assert(challengeRequestId, "Need to have challengeRequestId before upserting");
         const originalComment = await this.queryComment(postOrComment.cid, trx);
         const dbObject = originalComment
@@ -232,16 +281,57 @@ export class DbHandler {
         await this.baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge();
     }
 
-    async editComment(edit: CommentEdit, authorEdit: boolean, trx?: Transaction) {
+    async insertEdit(edit: CommentEdit, challengeRequestId: string, trx?: Transaction) {
+        await this.baseTransaction(trx)(TABLES.EDITS).insert(edit.toJSONForDb(challengeRequestId));
+    }
+
+    async queryEditsSorted(commentCid: string, editor?: "author" | "mod", trx?: Transaction): Promise<CommentEdit[]> {
+        const authorAddress = (await this.baseTransaction(trx)(TABLES.COMMENTS).select("authorAddress").where("cid", commentCid).first())
+            .authorAddress;
+        if (!editor) {
+            return this.createEditsFromRows(await this.baseTransaction(trx)(TABLES.EDITS).orderBy("id", "desc"));
+        } else if (editor === "author") {
+            return this.createEditsFromRows(
+                await this.baseTransaction(trx)(TABLES.EDITS).where("authorAddress", authorAddress).orderBy("id", "desc")
+            );
+        } else if (editor === "mod") {
+            return this.createEditsFromRows(
+                await this.baseTransaction(trx)(TABLES.EDITS).whereNot("authorAddress", authorAddress).orderBy("id", "desc")
+            );
+        } else {
+            return [];
+        }
+    }
+
+    async editComment(edit: CommentEdit, challengeRequestId: string, trx?: Transaction) {
         // Fields that need to be merged
         // flair
-        const commentToBeEdited = await this.queryComment(edit.commentCid, trx);
+        assert(edit.commentCid);
+        const commentToBeEdited = await this.queryComment(edit.commentCid);
         assert(commentToBeEdited);
-        const newFlair = { ...commentToBeEdited.flair, ...edit.flair };
-        const newCommentProps = authorEdit
-            ? { authorEdit: edit.toJSONForDb(), flair: newFlair }
-            : { ...edit.toJSONForDb(), flair: newFlair };
-        await this.upsertComment(newCommentProps, undefined, trx);
+
+        const isEditFromAuthor = commentToBeEdited.signature.publicKey === edit.signature.publicKey;
+        let newProps: Object;
+        if (isEditFromAuthor) {
+            const modEdits = await this.queryEditsSorted(edit.commentCid, "mod", trx);
+            const hasModEditedCommentFlairBefore = modEdits.some((modEdit) => Boolean(modEdit.flair));
+            const flairIfNeeded = hasModEditedCommentFlairBefore || !edit.flair ? undefined : { flair: JSON.stringify(edit.flair) };
+
+            newProps = removeKeysWithUndefinedValues({
+                authorEdit: JSON.stringify(edit.toJSONForDb(challengeRequestId)),
+                original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()),
+                ...flairIfNeeded
+            });
+            debugs.DEBUG(`Will update comment (${edit.commentCid}) with author props: ${JSON.stringify(newProps)}`);
+        } else {
+            newProps = {
+                ...edit.toJSONForDb(challengeRequestId),
+                original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton())
+            };
+            debugs.DEBUG(`Will update comment (${edit.commentCid}) with mod props: ${JSON.stringify(newProps)}`);
+        }
+
+        await this.baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid);
     }
 
     async upsertChallenge(
@@ -302,10 +392,22 @@ export class DbHandler {
                 const replacedProps = replaceXWithY(props, null, undefined); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
                 for (const field of jsonFields) if (replacedProps[field]) replacedProps[field] = JSON.parse(replacedProps[field]);
 
-                // @ts-ignore
                 const comment = await this.subplebbit.plebbit.createComment(replacedProps);
                 assert(typeof comment.replyCount === "number");
                 return comment;
+            })
+        );
+    }
+
+    async createEditsFromRows(edits: CommentEdit[] | CommentEdit): Promise<CommentEdit[]> {
+        if (!edits || (Array.isArray(edits) && edits?.length === 0)) return [];
+        if (!Array.isArray(edits)) edits = [edits];
+        return Promise.all(
+            edits.map(async (props) => {
+                const replacedProps = replaceXWithY(props, null, undefined); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
+                for (const field of jsonFields) if (replacedProps[field]) replacedProps[field] = JSON.parse(replacedProps[field]);
+
+                return this.subplebbit.plebbit.createCommentEdit(replacedProps);
             })
         );
     }
@@ -317,7 +419,6 @@ export class DbHandler {
             voteRows.map((props) => {
                 const replacedProps = replaceXWithY(props, null, undefined);
                 for (const field of jsonFields) if (replacedProps[field]) replacedProps[field] = JSON.parse(replacedProps[field]);
-                // @ts-ignore
                 return this.subplebbit.plebbit.createVote(replacedProps);
             })
         );

@@ -3,7 +3,7 @@ import { getDebugLevels, loadIpnsAsJson, parseJsonIfString, removeKeysWithUndefi
 import Publication from "./publication";
 import { Pages } from "./pages";
 import { verifyPublication } from "./signer";
-import { AuthorCommentEdit, CommentType, CommentUpdate, Flair, PublicationTypeName } from "./types";
+import { AuthorCommentEdit, CommentType, CommentUpdate, Flair, ProtocolVersion, PublicationTypeName } from "./types";
 import Author from "./author";
 
 const debugs = getDebugLevels("comment");
@@ -14,7 +14,7 @@ export class Comment extends Publication implements CommentType {
     // public
     title?: string;
     link?: string;
-    protocolVersion: "1.0.0";
+    protocolVersion: ProtocolVersion;
     cid?: string;
     parentCid?: string;
     content?: string;
@@ -26,7 +26,7 @@ export class Comment extends Publication implements CommentType {
     postCid?: string;
 
     // CommentEdit and CommentUpdate props
-    original?: Pick<Partial<CommentType>, "author" | "content">;
+    original?: Pick<Partial<CommentType>, "author" | "content" | "flair">;
     upvoteCount?: number;
     downvoteCount?: number;
     replyCount?: number;
@@ -76,28 +76,31 @@ export class Comment extends Publication implements CommentType {
         this.locked = props.locked;
         this.removed = props.removed;
         this.moderatorReason = props.moderatorReason;
-        this.authorEdit = parseJsonIfString(props.authorEdit);
+        this.authorEdit = props.authorEdit;
         this.protocolVersion = props.protocolVersion;
     }
 
     _mergeFields(props: CommentType) {
         // TODO merge flairs, deleted, content, author here
         // TODO move original author and content to comment.original if needed
-        this.content = props.content || this.content;
-        this.author = new Author({ ...props.author, ...props.authorEdit });
 
         const original = {};
         original["content"] =
             props.original?.content || this.original?.content || (props.content && props.authorEdit?.content ? this.content : undefined);
         original["author"] =
             props.original?.author || this.original?.author || (props.author && props.authorEdit ? props.author : undefined);
+        original["flair"] =
+            props.original?.flair || this.original?.flair || (props.flair && props.authorEdit?.flair ? props.flair : undefined);
+
+        this.content = props.authorEdit?.content || props.content || this.content;
+        this.author = new Author({ ...props.author, ...this.author });
 
         for (const key of Object.keys(original))
             this[key] &&
                 original[key] &&
                 assert.notEqual(this[key], original[key], `${key} and original ${key} can't be equal to each other`);
 
-        if (this.content && original["content"]) if (JSON.stringify(original) !== "{}") this.original = original;
+        if (JSON.stringify(original) !== "{}") this.original = original;
     }
 
     getType(): PublicationTypeName {
@@ -128,7 +131,9 @@ export class Comment extends Publication implements CommentType {
         return {
             ...super.toJSONSkeleton(),
             content: this.content,
-            parentCid: this.parentCid
+            parentCid: this.parentCid,
+            flair: this.flair,
+            spoiler: this.spoiler
         };
     }
 
@@ -214,7 +219,7 @@ export class Comment extends Publication implements CommentType {
             debugs.WARN(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error = ${e.message}`);
             return;
         }
-        if (!this.updatedAt || !shallowEqual(this.toJSONCommentUpdate(), res)) {
+        if (res && (!this.updatedAt || !shallowEqual(this.toJSONCommentUpdate(), res, ["signature"]))) {
             debugs.DEBUG(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
             const [verified, failedVerificationReason] = await verifyPublication(res, this.subplebbit.plebbit, "commentupdate");
             if (!verified) {
@@ -247,9 +252,13 @@ export class Comment extends Publication implements CommentType {
 
     async edit(options: CommentUpdate) {
         assert(this.ipnsKeyName && this.subplebbit.plebbit.ipfsClient, "You need to have commentUpdate and ipfs client defined");
+        const [validSignature, failedVerificationReason] = await verifyPublication(options, this.subplebbit.plebbit, "commentupdate");
+        assert(validSignature, `Failed to verify CommentUpdate (${JSON.stringify(options)}) due to: ${failedVerificationReason}`);
         this._initCommentUpdate(options);
         this._mergeFields(this.toJSON());
-        const file = await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate()));
+        const file = await this.subplebbit.plebbit.ipfsClient.add(
+            JSON.stringify({ ...this.toJSONCommentUpdate(), signature: options.signature })
+        );
         await this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
             lifetime: "72h",
             key: this.ipnsKeyName,

@@ -21,7 +21,6 @@ import assert from "assert";
 import { createSigner, Signer, signPublication, verifyPublication } from "./signer";
 import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
-import Author from "./author";
 import { CommentEdit } from "./comment-edit";
 
 const debugs = getDebugLevels("plebbit");
@@ -182,7 +181,8 @@ export class Plebbit implements PlebbitOptions {
         }
         const commentEditProps = {
             ...options,
-            editSignature: editSignature
+            signature: await signPublication(options, options.signer, this, "commentedit"),
+            protocolVersion: getProtocolVersion()
         };
         return new CommentEdit(commentEditProps, subplebbitObj);
     }
