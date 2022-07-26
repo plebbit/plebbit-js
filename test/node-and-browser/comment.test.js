@@ -3,7 +3,6 @@ const signers = require("../fixtures/signers");
 const { timestamp } = require("../../dist/node/util");
 const { signPublication, verifyPublication } = require("../../dist/node/signer");
 const { generateMockPost, generateMockComment } = require("../../dist/node/test-util");
-const { SIGNED_PROPERTY_NAMES } = require("../../dist/node/signer/signatures");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
@@ -95,5 +94,8 @@ describe("comment (node and browser)", async () => {
                 });
             });
         });
+
+        it(`Fail to publish a comment without author.address`);
+        it(`Fail to publish a comment with non valid signature.signedPropertyNames`);
     });
 });
