@@ -320,7 +320,7 @@ function hotScore(comment) {
 }
 exports.hotScore = hotScore;
 function controversialScore(comment) {
-    (0, assert_1.default)(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
+    (0, assert_1.default)(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number", "Comment.downvoteCount (".concat(comment.downvoteCount, ") and comment.upvoteCount (").concat(comment.upvoteCount, ") need to be defined before calculating controversialScore"));
     if (comment.downvoteCount <= 0 || comment.upvoteCount <= 0)
         return 0;
     var magnitude = comment.upvoteCount + comment.downvoteCount;
@@ -331,15 +331,17 @@ function controversialScore(comment) {
 }
 exports.controversialScore = controversialScore;
 function topScore(comment) {
-    (0, assert_1.default)(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
+    (0, assert_1.default)(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number", "Comment.downvoteCount (".concat(comment.downvoteCount, ") and comment.upvoteCount (").concat(comment.upvoteCount, ") need to be defined before calculating topScore"));
     return comment.upvoteCount - comment.downvoteCount;
 }
 exports.topScore = topScore;
 function newScore(comment) {
+    (0, assert_1.default)(typeof comment.timestamp === "number", "Comment.timestamp (".concat(comment.timestamp, ") needs to defined to calculate newScore"));
     return comment.timestamp;
 }
 exports.newScore = newScore;
 function oldScore(comment) {
+    (0, assert_1.default)(typeof comment.timestamp === "number", "Comment.timestamp (".concat(comment.timestamp, ") needs to defined to calculate oldScore"));
     return -comment.timestamp;
 }
 exports.oldScore = oldScore;
