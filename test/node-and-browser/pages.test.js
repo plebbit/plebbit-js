@@ -5,8 +5,7 @@ const {
     oldScore,
     TIMEFRAMES_TO_SECONDS,
     topScore,
-    getDebugLevels,
-    timestamp
+    getDebugLevels
 } = require("../../dist/node/util");
 const Plebbit = require("../../dist/node");
 const { expect } = require("chai");
@@ -86,6 +85,12 @@ const testSorting = async (sort, shouldTestCommentReplies) => {
                             currentPost.replies
                         );
                         if (sortNames.length === 1) expect(currentPost.replyCount).to.equal(alreadySortedComments.length); // If sort with no timeframe then sortedComments should equal post.replyCount
+                        await Promise.all(
+                            alreadySortedComments.map(async (comment) => {
+                                await comment.update();
+                                comment.stop();
+                            })
+                        );
                         return testListOfSortedComments(alreadySortedComments, currentSortName);
                     })
                 );
