@@ -172,7 +172,10 @@ export function hotScore(comment) {
 }
 
 export function controversialScore(comment: CommentType) {
-    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
+    assert(
+        typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number",
+        `Comment.downvoteCount (${comment.downvoteCount}) and comment.upvoteCount (${comment.upvoteCount}) need to be defined before calculating controversialScore`
+    );
     if (comment.downvoteCount <= 0 || comment.upvoteCount <= 0) return 0;
     const magnitude = comment.upvoteCount + comment.downvoteCount;
     const balance =
@@ -183,15 +186,20 @@ export function controversialScore(comment: CommentType) {
 }
 
 export function topScore(comment: CommentType) {
-    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
+    assert(
+        typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number",
+        `Comment.downvoteCount (${comment.downvoteCount}) and comment.upvoteCount (${comment.upvoteCount}) need to be defined before calculating topScore`
+    );
     return comment.upvoteCount - comment.downvoteCount;
 }
 
 export function newScore(comment: CommentType) {
+    assert(typeof comment.timestamp === "number", `Comment.timestamp (${comment.timestamp}) needs to defined to calculate newScore`);
     return comment.timestamp;
 }
 
 export function oldScore(comment: CommentType) {
+    assert(typeof comment.timestamp === "number", `Comment.timestamp (${comment.timestamp}) needs to defined to calculate oldScore`);
     return -comment.timestamp;
 }
 
