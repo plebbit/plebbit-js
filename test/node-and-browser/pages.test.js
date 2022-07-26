@@ -100,6 +100,12 @@ const testSorting = async (sort, shouldTestCommentReplies) => {
         await Promise.all(
             sortNames.map(async (currentSortName) => {
                 const alreadySortedComments = await loadAllPages(subplebbit.posts.pageCids[currentSortName], subplebbit.posts);
+                await Promise.all(
+                    alreadySortedComments.map(async (comment) => {
+                        await comment.update();
+                        comment.stop();
+                    })
+                );
                 return testListOfSortedComments(alreadySortedComments, currentSortName);
             })
         );
