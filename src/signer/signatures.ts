@@ -131,7 +131,7 @@ export async function signPublication(
 
     const signedPropertyNames = SIGNED_PROPERTY_NAMES[publicationType];
 
-    debugs.DEBUG(`Fields to sign: ${JSON.stringify(signedPropertyNames)}. Publication object to sign:  ${JSON.stringify(publication)}`);
+    debugs.TRACE(`Fields to sign: ${JSON.stringify(signedPropertyNames)}. Publication object to sign:  ${JSON.stringify(publication)}`);
 
     const fieldsToSign = keepKeys(publication, signedPropertyNames);
     const commentEncoded = encode(fieldsToSign); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned

@@ -348,13 +348,14 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const modRole = this.roles && this.roles[editorAddress];
         if (commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey) {
             // CommentEdit is signed by original author
-            Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON())).forEach((editField) => {
+            for (const editField of Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON()))) {
                 if (!AUTHOR_EDIT_FIELDS.includes(<any>editField)) {
                     const msg = `Author (${editorAddress}) included field (${editField}) that cannot be used for a author's CommentEdit`;
                     debugs.WARN(msg);
                     return { reason: msg };
                 }
-            });
+            }
+
             await this.dbHandler.insertEdit(commentEdit, challengeRequestId);
             // If comment.flair is last modified by a mod, then reject
             await this.dbHandler.editComment(commentEdit, challengeRequestId);
@@ -367,13 +368,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 } with CommentEdit (${JSON.stringify(commentEdit)})`
             );
 
-            Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON())).forEach((editField) => {
+            for (const editField of Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON()))) {
                 if (!MOD_EDIT_FIELDS.includes(<any>editField)) {
-                    const msg = `Mod ${modRole.role} (${editorAddress}) included field (${editField}) that cannot be used for a mod's CommentEdit`;
+                    const msg = `${modRole.role} (${editorAddress}) included field (${editField}) that cannot be used for a mod's CommentEdit`;
                     debugs.WARN(msg);
                     return { reason: msg };
                 }
-            });
+            }
 
             await this.dbHandler.insertEdit(commentEdit, challengeRequestId);
             await this.dbHandler.editComment(commentEdit, challengeRequestId);
