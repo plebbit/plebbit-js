@@ -360,12 +360,14 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             // If comment.flair is last modified by a mod, then reject
             await this.dbHandler.editComment(commentEdit, challengeRequestId);
             // const commentAfterEdit = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
-            debugs.INFO(`Updated comment (${commentEdit.commentCid}) with CommentEdit: ${JSON.stringify(commentEdit)}`);
+            debugs.INFO(
+                `Updated comment (${commentEdit.commentCid}) with CommentEdit: ${JSON.stringify(removeKeys(commentEdit, ["signature"]))}`
+            );
         } else if (modRole) {
             debugs.DEBUG(
                 `${modRole.role} (${editorAddress}) is attempting to CommentEdit ${
                     commentToBeEdited?.cid
-                } with CommentEdit (${JSON.stringify(commentEdit)})`
+                } with CommentEdit (${JSON.stringify(removeKeys(commentEdit, ["signature"]))})`
             );
 
             for (const editField of Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON()))) {

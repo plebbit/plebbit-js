@@ -188,14 +188,10 @@ export function topScore(comment: CommentType) {
 }
 
 export function newScore(comment: CommentType) {
-    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
-
     return comment.timestamp;
 }
 
 export function oldScore(comment: CommentType) {
-    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
-
     return -comment.timestamp;
 }
 

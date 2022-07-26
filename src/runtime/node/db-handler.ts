@@ -328,7 +328,7 @@ export class DbHandler {
                 ...edit.toJSONForDb(challengeRequestId),
                 original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton())
             };
-            debugs.DEBUG(`Will update comment (${edit.commentCid}) with mod props: ${JSON.stringify(newProps)}`);
+            debugs.DEBUG(`Will update comment (${edit.commentCid}) with mod props: ${JSON.stringify(removeKeys(newProps, ["signature"]))}`);
         }
 
         await this.baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid);
