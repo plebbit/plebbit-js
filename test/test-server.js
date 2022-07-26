@@ -54,8 +54,6 @@ const databaseConfig = {
     useNullAsDefault: true
 };
 
-const randomSigner = () => signers[Math.floor(Math.random() * signers.length)];
-
 const startIpfsNodes = async () => {
     await Promise.all(
         [offlineNodeArgs, ipfsNodeArgs, clientNodeArgs].map(async (nodeArgs) => {
