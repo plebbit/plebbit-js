@@ -323,12 +323,12 @@ var SortHandler = /** @class */ (function () {
         });
     };
     SortHandler.prototype.generatePagesUnderComment = function (comment, trx) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         return __awaiter(this, void 0, void 0, function () {
-            var key, cachedPageJson, cachedPage, subplebbitPostCount, _l, res, _m, pagesRaw, pageCids, _i, res_1, _o, page, pageCid, pages;
-            var _p;
-            return __generator(this, function (_q) {
-                switch (_q.label) {
+            var key, cachedPageJson, cachedPage, subplebbitPostCount, _k, res, _l, pagesRaw, pageCids, _i, res_1, _m, page, pageCid, pages;
+            var _o;
+            return __generator(this, function (_p) {
+                switch (_p.label) {
                     case 0:
                         if ((comment === null || comment === void 0 ? void 0 : comment.replyCount) === 0)
                             return [2 /*return*/, undefined];
@@ -337,64 +337,61 @@ var SortHandler = /** @class */ (function () {
                         key = (comment === null || comment === void 0 ? void 0 : comment.cid) || "subplebbit";
                         return [4 /*yield*/, this.subplebbit._keyv.has(key)];
                     case 1:
-                        if (!_q.sent()) return [3 /*break*/, 5];
+                        if (!_p.sent()) return [3 /*break*/, 5];
                         return [4 /*yield*/, this.subplebbit._keyv.get(key)];
                     case 2:
-                        cachedPageJson = _q.sent();
+                        cachedPageJson = _p.sent();
                         if (!(!cachedPageJson || JSON.stringify(cachedPageJson) === "{}")) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.subplebbit._keyv.delete(key)];
                     case 3:
-                        _q.sent();
+                        _p.sent();
                         return [3 /*break*/, 5];
                     case 4:
                         cachedPage = new pages_1.Pages(__assign(__assign({}, cachedPageJson), { subplebbit: this.subplebbit }));
                         (0, assert_1.default)(JSON.stringify(cachedPage.toJSON()) !== "{}", "Cache returns empty pages");
                         return [2 /*return*/, cachedPage];
                     case 5:
-                        _l = key === "subplebbit";
-                        if (!_l) return [3 /*break*/, 7];
+                        _k = key === "subplebbit";
+                        if (!_k) return [3 /*break*/, 7];
                         return [4 /*yield*/, ((_a = this.subplebbit.dbHandler) === null || _a === void 0 ? void 0 : _a.queryCountOfPosts(trx))];
                     case 6:
-                        _l = (_q.sent());
-                        _q.label = 7;
+                        _k = (_p.sent());
+                        _p.label = 7;
                     case 7:
-                        subplebbitPostCount = _l;
+                        subplebbitPostCount = _k;
                         if (subplebbitPostCount === 0)
                             // If subplebbit and has no posts, then return undefined
                             return [2 /*return*/, undefined];
                         return [4 /*yield*/, Promise.all(this.getSortPromises(comment, trx))];
                     case 8:
-                        res = _q.sent();
-                        _m = [{}, {}], pagesRaw = _m[0], pageCids = _m[1];
+                        res = _p.sent();
+                        _l = [{}, {}], pagesRaw = _l[0], pageCids = _l[1];
                         for (_i = 0, res_1 = res; _i < res_1.length; _i++) {
-                            _o = res_1[_i], page = _o[0], pageCid = _o[1];
+                            _m = res_1[_i], page = _m[0], pageCid = _m[1];
                             pagesRaw = __assign(__assign({}, pagesRaw), page);
                             if (page)
                                 pageCids[Object.keys(page)[0]] = pageCid;
                         }
-                        _p = [(0, util_1.removeKeysWithUndefinedValues)(pagesRaw), (0, util_1.removeKeysWithUndefinedValues)(pageCids)], pagesRaw = _p[0], pageCids = _p[1];
+                        _o = [(0, util_1.removeKeysWithUndefinedValues)(pagesRaw), (0, util_1.removeKeysWithUndefinedValues)(pageCids)], pagesRaw = _o[0], pageCids = _o[1];
                         if (!pagesRaw || !pageCids || JSON.stringify(pagesRaw) === "{}" || JSON.stringify(pageCids) === "{}")
                             throw new Error("Failed to generate pages for ".concat(key, ": pagesRaw: ").concat(pagesRaw, ", pageCids: ").concat(pageCids));
                         pages = new pages_1.Pages({ pages: pagesRaw, pageCids: pageCids, subplebbit: this.subplebbit });
-                        if (!(key === "subplebbit")) return [3 /*break*/, 10];
-                        return [4 /*yield*/, ((_b = this.subplebbit.dbHandler) === null || _b === void 0 ? void 0 : _b.queryCountOfPosts(trx))];
+                        if (key === "subplebbit") {
+                            // If there is at least one comment in subplebbit, then assert the following
+                            [(_b = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _b === void 0 ? void 0 : _b.controversialAll, (_c = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _c === void 0 ? void 0 : _c.hot, (_d = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _d === void 0 ? void 0 : _d.new, (_e = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _e === void 0 ? void 0 : _e.topAll].forEach(function (sortPage) {
+                                var _a;
+                                assert_1.default.ok(((_a = sortPage === null || sortPage === void 0 ? void 0 : sortPage.comments) === null || _a === void 0 ? void 0 : _a.length) >= Math.min(subplebbitPostCount, exports.SORTED_POSTS_PAGE_SIZE));
+                            });
+                        }
+                        else {
+                            [(_f = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _f === void 0 ? void 0 : _f.controversialAll, (_g = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _g === void 0 ? void 0 : _g.new, (_h = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _h === void 0 ? void 0 : _h.topAll, (_j = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _j === void 0 ? void 0 : _j.old].forEach(function (sortPage) {
+                                var _a;
+                                assert_1.default.ok(((_a = sortPage === null || sortPage === void 0 ? void 0 : sortPage.comments) === null || _a === void 0 ? void 0 : _a.length) >= Math.min(exports.SORTED_POSTS_PAGE_SIZE, comment.replyCount), "Replies page is missing comments");
+                            });
+                        }
+                        return [4 /*yield*/, this.subplebbit._keyv.set(key, pages.toJSON())];
                     case 9:
-                        subplebbitPostCount = _q.sent(); // Query again since it might have changed
-                        // If there is at least one comment in subplebbit, then assert the following
-                        [(_c = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _c === void 0 ? void 0 : _c.controversialAll, (_d = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _d === void 0 ? void 0 : _d.hot, (_e = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _e === void 0 ? void 0 : _e.new, (_f = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _f === void 0 ? void 0 : _f.topAll].forEach(function (sortPage) {
-                            var _a;
-                            assert_1.default.ok(((_a = sortPage === null || sortPage === void 0 ? void 0 : sortPage.comments) === null || _a === void 0 ? void 0 : _a.length) >= Math.min(subplebbitPostCount, exports.SORTED_POSTS_PAGE_SIZE));
-                        });
-                        return [3 /*break*/, 11];
-                    case 10:
-                        [(_g = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _g === void 0 ? void 0 : _g.controversialAll, (_h = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _h === void 0 ? void 0 : _h.new, (_j = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _j === void 0 ? void 0 : _j.topAll, (_k = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _k === void 0 ? void 0 : _k.old].forEach(function (sortPage) {
-                            var _a;
-                            assert_1.default.ok(((_a = sortPage === null || sortPage === void 0 ? void 0 : sortPage.comments) === null || _a === void 0 ? void 0 : _a.length) >= Math.min(exports.SORTED_POSTS_PAGE_SIZE, comment.replyCount), "Replies page is missing comments");
-                        });
-                        _q.label = 11;
-                    case 11: return [4 /*yield*/, this.subplebbit._keyv.set(key, pages.toJSON())];
-                    case 12:
-                        _q.sent();
+                        _p.sent();
                         return [2 /*return*/, pages];
                 }
             });

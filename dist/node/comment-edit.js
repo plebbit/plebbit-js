@@ -61,47 +61,89 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var publication_1 = __importDefault(require("./publication"));
+exports.CommentEdit = exports.AUTHOR_EDIT_FIELDS = exports.MOD_EDIT_FIELDS = void 0;
 var assert_1 = __importDefault(require("assert"));
-var Vote = /** @class */ (function (_super) {
-    __extends(Vote, _super);
-    function Vote(props, subplebbit) {
-        var _this = _super.call(this, props, subplebbit) || this;
-        _this.commentCid = props["commentCid"];
-        _this.vote = props["vote"]; // Either 1, 0, -1 (upvote, cancel vote, downvote)
-        return _this;
+var publication_1 = __importDefault(require("./publication"));
+var util_1 = require("./util");
+var PUBLICATION_FIELDS = [
+    "author",
+    "protocolVersion",
+    "signature",
+    "subplebbitAddress",
+    "timestamp"
+];
+// Storing fields here to check before publishing if CommentEdit has proper field for either author or mod.
+exports.MOD_EDIT_FIELDS = __spreadArray(__spreadArray([], PUBLICATION_FIELDS, true), [
+    "commentCid",
+    "flair",
+    "spoiler",
+    "pinned",
+    "locked",
+    "removed",
+    "moderatorReason",
+    "commentAuthor"
+], false);
+exports.AUTHOR_EDIT_FIELDS = __spreadArray(__spreadArray([], PUBLICATION_FIELDS, true), [
+    "commentCid",
+    "content",
+    "flair",
+    "spoiler",
+    "reason",
+    "deleted"
+], false);
+var CommentEdit = /** @class */ (function (_super) {
+    __extends(CommentEdit, _super);
+    function CommentEdit() {
+        return _super !== null && _super.apply(this, arguments) || this;
     }
-    Vote.prototype.toJSON = function () {
-        return __assign(__assign({}, _super.prototype.toJSON.call(this)), { author: this.author, timestamp: this.timestamp, signature: this.signature, commentCid: this.commentCid, vote: this.vote });
+    CommentEdit.prototype._initProps = function (props) {
+        _super.prototype._initProps.call(this, props);
+        this.commentCid = props.commentCid;
+        this.content = props.content;
+        this.reason = props.reason;
+        this.deleted = props.deleted;
+        this.flair = props.flair;
+        this.spoiler = props.spoiler;
+        this.pinned = props.pinned;
+        this.locked = props.pinned;
+        this.removed = props.removed;
+        this.moderatorReason = props.moderatorReason;
+        this.commentAuthor = props.commentAuthor;
     };
-    Vote.prototype.getType = function () {
-        return "vote";
+    CommentEdit.prototype.toJSON = function () {
+        return __assign(__assign({}, _super.prototype.toJSON.call(this)), { commentCid: this.commentCid, content: this.content, reason: this.reason, deleted: this.deleted, flair: this.flair, spoiler: this.spoiler, pinned: this.pinned, locked: this.locked, removed: this.removed, moderatorReason: this.moderatorReason, commentAuthor: this.commentAuthor });
     };
-    Vote.prototype.toJSONForDb = function (challengeRequestId) {
-        var _a;
+    CommentEdit.prototype.toJSONForDb = function (challengeRequestId) {
         var json = this.toJSON();
-        // @ts-ignore
-        json["author"] = JSON.stringify(this.author);
-        json["authorAddress"] = (_a = this === null || this === void 0 ? void 0 : this.author) === null || _a === void 0 ? void 0 : _a.address;
+        json["authorAddress"] = this.author.address;
         json["challengeRequestId"] = challengeRequestId;
-        // @ts-ignore
-        json["signature"] = JSON.stringify(this.signature);
-        return json;
+        return (0, util_1.removeKeysWithUndefinedValues)(json);
     };
-    Vote.prototype.publish = function (userOptions) {
+    CommentEdit.prototype.getType = function () {
+        return "commentedit";
+    };
+    CommentEdit.prototype.publish = function (userOptions) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                (0, assert_1.default)([-1, 0, 1].includes(this.vote) && this.commentCid, "Need vote and commentCid to be defined to publish Vote");
-                (0, assert_1.default)(this.timestamp, "Need timestamp field to publish comment");
-                (0, assert_1.default)(this.author, "Need author to publish comment");
+                // TODO if publishing with content,reason, deleted, verify that publisher is original author
+                (0, assert_1.default)(this.commentCid, "Need commentCid to be defined to publish CommentEdit");
                 return [2 /*return*/, _super.prototype.publish.call(this, userOptions)];
             });
         });
     };
-    return Vote;
+    return CommentEdit;
 }(publication_1.default));
-exports.default = Vote;
+exports.CommentEdit = CommentEdit;

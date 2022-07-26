@@ -78,11 +78,15 @@ var Vote = /** @class */ (function (_super) {
     Vote.prototype.toJSON = function () {
         return __assign(__assign({}, _super.prototype.toJSON.call(this)), { author: this.author, timestamp: this.timestamp, signature: this.signature, commentCid: this.commentCid, vote: this.vote });
     };
+    Vote.prototype.getType = function () {
+        return "vote";
+    };
     Vote.prototype.toJSONForDb = function (challengeRequestId) {
+        var _a;
         var json = this.toJSON();
         // @ts-ignore
         json["author"] = JSON.stringify(this.author);
-        json["authorAddress"] = this.author.address;
+        json["authorAddress"] = (_a = this === null || this === void 0 ? void 0 : this.author) === null || _a === void 0 ? void 0 : _a.address;
         json["challengeRequestId"] = challengeRequestId;
         // @ts-ignore
         json["signature"] = JSON.stringify(this.signature);

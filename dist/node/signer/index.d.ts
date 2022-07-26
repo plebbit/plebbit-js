@@ -1,7 +1,7 @@
-import { CreateSignerOptions } from "../types";
+import { CreateSignerOptions, SignerType } from "../types";
 export { signPublication, verifyPublication, Signature } from "./signatures";
 export { encrypt, decrypt } from "./encryption";
-export declare class Signer {
+export declare class Signer implements SignerType {
     type: "rsa";
     privateKey: string;
     publicKey?: string;
@@ -9,6 +9,6 @@ export declare class Signer {
     ipfsKey?: Uint8Array;
     usage?: "comment" | "subplebbit";
     ipnsKeyName?: string;
-    constructor(props: Signer);
+    constructor(props: SignerType);
 }
 export declare const createSigner: (createSignerOptions?: CreateSignerOptions) => Promise<Signer>;

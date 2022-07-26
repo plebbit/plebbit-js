@@ -46,7 +46,9 @@ var assert_1 = __importDefault(require("assert"));
 var debugs = (0, util_1.getDebugLevels)("pages");
 var Pages = /** @class */ (function () {
     function Pages(props) {
-        Object.assign(this, props);
+        this.pages = props.pages;
+        this.pageCids = props.pageCids;
+        this.subplebbit = props.subplebbit;
         (0, assert_1.default)(this.subplebbit.address, "Address of subplebbit is needed to verify pages");
     }
     Pages.prototype.getPage = function (pageCid) {
@@ -70,7 +72,7 @@ var Pages = /** @class */ (function () {
                                         if (parentComment)
                                             assert_1.default.equal(parentComment.cid, comment.parentCid, "Comment under parent comment/post should have parentCid initialized");
                                         debugs.TRACE("In page (".concat(pageCid, "), Attempting to verify comment (").concat(comment.cid, ") under parent comment (").concat(parentComment === null || parentComment === void 0 ? void 0 : parentComment.cid, ")"));
-                                        return [4 /*yield*/, (0, signer_1.verifyPublication)(comment, this.subplebbit.plebbit)];
+                                        return [4 /*yield*/, (0, signer_1.verifyPublication)(comment, this.subplebbit.plebbit, "comment")];
                                     case 1:
                                         _a = _b.sent(), signatureIsVerified = _a[0], failedVerificationReason = _a[1];
                                         assert_1.default.equal(signatureIsVerified, true, "Signature of published comment should be valid, Failed verification reason is ".concat(failedVerificationReason));
@@ -115,7 +117,8 @@ var Pages = /** @class */ (function () {
 exports.Pages = Pages;
 var Page = /** @class */ (function () {
     function Page(props) {
-        Object.assign(this, props);
+        this.comments = props.comments;
+        this.nextCid = props.nextCid;
     }
     Page.prototype.toJSON = function () {
         return {

@@ -62,7 +62,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.subplebbitInitDbIfNeeded = exports.DbHandler = void 0;
 var challenge_1 = require("../../challenge");
 var post_1 = __importDefault(require("../../post"));
-var comment_1 = require("../../comment");
+var author_1 = __importDefault(require("../../author"));
 var util_1 = require("../../util");
 var knex_1 = __importDefault(require("knex"));
 var path_1 = __importDefault(require("path"));
@@ -75,25 +75,67 @@ var TABLES = Object.freeze({
     VOTES: "votes",
     AUTHORS: "authors",
     CHALLENGES: "challenges",
-    SIGNERS: "signers" // To store private keys of subplebbit and comments' IPNS
+    SIGNERS: "signers",
+    EDITS: "edits"
 });
+var jsonFields = ["signature", "author", "authorEdit", "original", "flair", "commentAuthor"];
 var DbHandler = /** @class */ (function () {
     function DbHandler(dbConfig, subplebbit) {
         this._dbConfig = dbConfig;
         this.knex = (0, knex_1.default)(dbConfig);
         this.subplebbit = subplebbit;
-        this._currentTrxs = [];
+        this._currentTrxs = {};
     }
-    DbHandler.prototype.createTransaction = function () {
+    DbHandler.prototype.createTransaction = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
             var trx;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.transaction()];
+                    case 0:
+                        (0, assert_1.default)(!this._currentTrxs[transactionId]);
+                        return [4 /*yield*/, this.knex.transaction()];
                     case 1:
                         trx = _a.sent();
-                        this._currentTrxs.push(trx);
+                        this._currentTrxs[transactionId] = trx;
                         return [2 /*return*/, trx];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.commitTransaction = function (transactionId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var trx;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        trx = this._currentTrxs[transactionId];
+                        (0, assert_1.default)(trx && trx.isTransaction && !trx.isCompleted(), "Transaction (".concat(transactionId, ") needs to be stored to commit"));
+                        return [4 /*yield*/, this._currentTrxs[transactionId].commit()];
+                    case 1:
+                        _a.sent();
+                        delete this._currentTrxs[transactionId];
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.rollbackTransaction = function (transactionId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var trx;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        trx = this._currentTrxs[transactionId];
+                        if (!trx) return [3 /*break*/, 2];
+                        (0, assert_1.default)(trx && trx.isTransaction && !trx.isCompleted(), "Transaction (".concat(transactionId, ") needs to be stored to rollback"));
+                        return [4 /*yield*/, this._currentTrxs[transactionId].rollback()];
+                    case 1:
+                        _a.sent();
+                        delete this._currentTrxs[transactionId];
+                        _a.label = 2;
+                    case 2:
+                        debugs.DEBUG("Rolledback transaction (".concat(transactionId, "), this._currentTrxs[transactionId].length = ").concat(Object.keys(this._currentTrxs).length));
+                        return [2 /*return*/];
                 }
             });
         });
@@ -115,25 +157,25 @@ var DbHandler = /** @class */ (function () {
                             table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
                             table.text("subplebbitAddress").notNullable();
                             table.text("content").nullable();
-                            table.text("originalContent").nullable();
                             table.timestamp("timestamp").notNullable().checkPositive();
-                            table.text("signature").notNullable().unique(); // Will contain {signature, public key, type}
+                            table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
                             table.text("ipnsName").notNullable().unique();
                             table.text("ipnsKeyName").notNullable().unique().references("ipnsKeyName").inTable(TABLES.SIGNERS);
                             table.text("title").nullable();
                             table.integer("depth").notNullable();
-                            table.increments("id");
+                            table.increments("id"); // Used for sorts
                             // CommentUpdate and CommentEdit props
+                            table.json("original").nullable();
+                            table.json("authorEdit").nullable();
+                            table.json("flair").nullable();
                             table.timestamp("updatedAt").nullable().checkPositive();
-                            table.text("editSignature").nullable();
-                            table.timestamp("editTimestamp").nullable().checkPositive();
-                            table.text("editReason").nullable();
                             table.boolean("deleted").nullable();
                             table.boolean("spoiler").nullable();
                             table.boolean("pinned").nullable();
                             table.boolean("locked").nullable();
                             table.boolean("removed").nullable();
                             table.text("moderatorReason").nullable();
+                            table.text("protocolVersion").notNullable();
                         })];
                     case 1:
                         _a.sent();
@@ -155,6 +197,7 @@ var DbHandler = /** @class */ (function () {
                             table.text("subplebbitAddress").notNullable();
                             table.integer("vote").checkBetween([-1, 1]).notNullable();
                             table.text("signature").notNullable().unique();
+                            table.text("protocolVersion").notNullable();
                             table.primary(["commentCid", "authorAddress"]); // An author can't have multiple votes on a comment
                         })];
                     case 1:
@@ -170,6 +213,8 @@ var DbHandler = /** @class */ (function () {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.AUTHORS, function (table) {
                             table.text("address").notNullable().primary().unique();
+                            table.timestamp("banExpiresAt").nullable();
+                            table.json("flair").nullable();
                         })];
                     case 1:
                         _a.sent();
@@ -220,6 +265,39 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
+    DbHandler.prototype.createEditsTable = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.EDITS, function (table) {
+                            table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
+                            table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
+                            table.json("author").notNullable();
+                            table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
+                            table.text("signature").notNullable().unique();
+                            table.text("protocolVersion").notNullable();
+                            table.increments("id"); // Used for sorts
+                            table.timestamp("timestamp").checkPositive().notNullable();
+                            table.text("subplebbitAddress").notNullable();
+                            table.text("content").nullable();
+                            table.text("reason").nullable();
+                            table.boolean("deleted").nullable();
+                            table.json("flair").nullable();
+                            table.boolean("spoiler").nullable();
+                            table.boolean("pinned").nullable();
+                            table.boolean("locked").nullable();
+                            table.boolean("removed").nullable();
+                            table.text("moderatorReason").nullable();
+                            table.json("commentAuthor").nullable();
+                            table.primary(["commentCid", "id"]);
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     DbHandler.prototype.createTablesIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
             var functions, tables, _i, tables_1, table, i, tableExists;
@@ -231,7 +309,8 @@ var DbHandler = /** @class */ (function () {
                             this.createVotesTable,
                             this.createAuthorsTable,
                             this.createChallengesTable,
-                            this.createSignersTable
+                            this.createSignersTable,
+                            this.createEditsTable
                         ];
                         tables = Object.values(TABLES);
                         _i = 0, tables_1 = tables;
@@ -256,22 +335,93 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.addAuthorToDbIfNeeded = function (author, trx) {
+    DbHandler.prototype.upsertAuthor = function (author, trx, upsertOnlyWhenNew) {
+        if (upsertOnlyWhenNew === void 0) { upsertOnlyWhenNew = true; }
         return __awaiter(this, void 0, void 0, function () {
-            var authorFromDb;
+            var existingDbObject, _a, newDbObject, mergedDbObject;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        (0, assert_1.default)(JSON.stringify(author) !== "{}");
+                        if (!author.address) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first()];
+                    case 1:
+                        _a = _b.sent();
+                        return [3 /*break*/, 3];
+                    case 2:
+                        _a = undefined;
+                        _b.label = 3;
+                    case 3:
+                        existingDbObject = _a;
+                        if (existingDbObject && upsertOnlyWhenNew)
+                            return [2 /*return*/];
+                        if (existingDbObject)
+                            existingDbObject = (0, util_1.replaceXWithY)(existingDbObject, null, undefined);
+                        newDbObject = author instanceof author_1.default ? author.toJSONForDb() : author;
+                        mergedDbObject = __assign(__assign({}, existingDbObject), newDbObject);
+                        debugs.DEBUG("upsertAuthor: attempt to upsert new merged author: ".concat(JSON.stringify(mergedDbObject), ", existingDbObject = ").concat(JSON.stringify(existingDbObject), ", author = ").concat(JSON.stringify(newDbObject)));
+                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).insert(mergedDbObject).onConflict(["address"]).merge()];
+                    case 4:
+                        _b.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.updateAuthor = function (newAuthorProps, updateCommentsAuthor, trx) {
+        if (updateCommentsAuthor === void 0) { updateCommentsAuthor = true; }
+        return __awaiter(this, void 0, void 0, function () {
+            var onlyNewProps, commentsWithAuthor, _a;
+            var _this = this;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        onlyNewProps = (0, util_1.removeKeysWithUndefinedValues)((0, util_1.removeKeys)(newAuthorProps, ["address"]));
+                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).update(onlyNewProps).where("address", newAuthorProps.address)];
+                    case 1:
+                        _b.sent();
+                        if (!updateCommentsAuthor) return [3 /*break*/, 5];
+                        _a = this.createCommentsFromRows;
+                        return [4 /*yield*/, this.baseCommentQuery(trx).where("authorAddress", newAuthorProps.address)];
+                    case 2: return [4 /*yield*/, _a.apply(this, [_b.sent()])];
+                    case 3:
+                        commentsWithAuthor = _b.sent();
+                        return [4 /*yield*/, Promise.all(commentsWithAuthor.map(function (comment) { return __awaiter(_this, void 0, void 0, function () {
+                                var newOriginal, newCommentProps;
+                                var _a;
+                                return __generator(this, function (_b) {
+                                    switch (_b.label) {
+                                        case 0:
+                                            newOriginal = ((_a = comment.original) === null || _a === void 0 ? void 0 : _a.author)
+                                                ? comment.original
+                                                : __assign(__assign({}, comment.original), { author: comment.author.toJSON() });
+                                            newCommentProps = { author: __assign(__assign({}, comment.author.toJSON()), onlyNewProps), original: newOriginal };
+                                            return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS).update(newCommentProps).where("cid", comment.cid)];
+                                        case 1:
+                                            _b.sent();
+                                            return [2 /*return*/];
+                                    }
+                                });
+                            }); }))];
+                    case 4:
+                        _b.sent();
+                        _b.label = 5;
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.queryAuthor = function (authorAddress, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            var authorProps;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first()];
+                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: authorAddress }).first()];
                     case 1:
-                        authorFromDb = _a.sent();
-                        if (!!authorFromDb) return [3 /*break*/, 3];
-                        // Author is new. Add to database
-                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).insert(author.toJSONForDb())];
-                    case 2:
-                        // Author is new. Add to database
-                        _a.sent();
-                        _a.label = 3;
-                    case 3: return [2 /*return*/];
+                        authorProps = _a.sent();
+                        if (authorProps)
+                            return [2 /*return*/, new author_1.default(authorProps)];
+                        return [2 /*return*/];
                 }
             });
         });
@@ -281,7 +431,7 @@ var DbHandler = /** @class */ (function () {
             var dbObject;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.addAuthorToDbIfNeeded(vote.author, trx)];
+                    case 0: return [4 /*yield*/, this.upsertAuthor(vote.author, trx, true)];
                     case 1:
                         _a.sent();
                         dbObject = vote.toJSONForDb(challengeRequestId);
@@ -295,37 +445,112 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.upsertComment = function (postOrComment, challengeRequestId, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var cid, originalComment, dbObject;
+            var originalComment, dbObject;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        (0, assert_1.default)(postOrComment.cid, "Comment need to have a cid before upserting");
                         if (!postOrComment.author) return [3 /*break*/, 2];
                         // Skip adding author (For CommentEdit)
-                        return [4 /*yield*/, this.addAuthorToDbIfNeeded(postOrComment.author, trx)];
+                        return [4 /*yield*/, this.upsertAuthor(postOrComment.author, trx, true)];
                     case 1:
                         // Skip adding author (For CommentEdit)
                         _a.sent();
                         _a.label = 2;
                     case 2:
-                        cid = postOrComment instanceof comment_1.CommentEdit ? postOrComment.commentCid : postOrComment.cid;
                         if (!!challengeRequestId) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS)
                                 .where({
-                                cid: cid
+                                cid: postOrComment.cid
                             })
                                 .first()];
                     case 3:
                         challengeRequestId = (_a.sent()).challengeRequestId;
                         _a.label = 4;
                     case 4:
-                        (0, assert_1.default)(cid, "Comment need to have a cid before upserting");
-                        return [4 /*yield*/, this.queryComment(cid, trx)];
+                        (0, assert_1.default)(challengeRequestId, "Need to have challengeRequestId before upserting");
+                        return [4 /*yield*/, this.queryComment(postOrComment.cid, trx)];
                     case 5:
                         originalComment = _a.sent();
                         dbObject = originalComment
                             ? __assign(__assign({}, (0, util_1.removeKeysWithUndefinedValues)(originalComment.toJSONForDb(challengeRequestId))), (0, util_1.removeKeysWithUndefinedValues)(postOrComment.toJSONForDb(challengeRequestId))) : postOrComment.toJSONForDb(challengeRequestId);
                         return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge()];
                     case 6:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.insertEdit = function (edit, challengeRequestId, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.EDITS).insert(edit.toJSONForDb(challengeRequestId))];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.queryEditsSorted = function (commentCid, editor, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            var authorAddress, _a, _b, _c;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS).select("authorAddress").where("cid", commentCid).first()];
+                    case 1:
+                        authorAddress = (_d.sent())
+                            .authorAddress;
+                        if (!!editor) return [3 /*break*/, 3];
+                        _a = this.createEditsFromRows;
+                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.EDITS).orderBy("id", "desc")];
+                    case 2: return [2 /*return*/, _a.apply(this, [_d.sent()])];
+                    case 3:
+                        if (!(editor === "author")) return [3 /*break*/, 5];
+                        _b = this.createEditsFromRows;
+                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.EDITS).where("authorAddress", authorAddress).orderBy("id", "desc")];
+                    case 4: return [2 /*return*/, _b.apply(this, [_d.sent()])];
+                    case 5:
+                        if (!(editor === "mod")) return [3 /*break*/, 7];
+                        _c = this.createEditsFromRows;
+                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.EDITS).whereNot("authorAddress", authorAddress).orderBy("id", "desc")];
+                    case 6: return [2 /*return*/, _c.apply(this, [_d.sent()])];
+                    case 7: return [2 /*return*/, []];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.editComment = function (edit, challengeRequestId, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            var commentToBeEdited, isEditFromAuthor, newProps, modEdits, hasModEditedCommentFlairBefore, flairIfNeeded;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        // Fields that need to be merged
+                        // flair
+                        (0, assert_1.default)(edit.commentCid);
+                        return [4 /*yield*/, this.queryComment(edit.commentCid)];
+                    case 1:
+                        commentToBeEdited = _a.sent();
+                        (0, assert_1.default)(commentToBeEdited);
+                        isEditFromAuthor = commentToBeEdited.signature.publicKey === edit.signature.publicKey;
+                        if (!isEditFromAuthor) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.queryEditsSorted(edit.commentCid, "mod", trx)];
+                    case 2:
+                        modEdits = _a.sent();
+                        hasModEditedCommentFlairBefore = modEdits.some(function (modEdit) { return Boolean(modEdit.flair); });
+                        flairIfNeeded = hasModEditedCommentFlairBefore || !edit.flair ? undefined : { flair: JSON.stringify(edit.flair) };
+                        newProps = (0, util_1.removeKeysWithUndefinedValues)(__assign({ authorEdit: JSON.stringify(edit.toJSONForDb(challengeRequestId)), original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) }, flairIfNeeded));
+                        debugs.DEBUG("Will update comment (".concat(edit.commentCid, ") with author props: ").concat(JSON.stringify(newProps)));
+                        return [3 /*break*/, 4];
+                    case 3:
+                        newProps = __assign(__assign({}, edit.toJSONForDb(challengeRequestId)), { original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) });
+                        debugs.DEBUG("Will update comment (".concat(edit.commentCid, ") with mod props: ").concat(JSON.stringify((0, util_1.removeKeys)(newProps, ["signature"]))));
+                        _a.label = 4;
+                    case 4: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid)];
+                    case 5:
                         _a.sent();
                         return [2 /*return*/];
                 }
@@ -404,17 +629,45 @@ var DbHandler = /** @class */ (function () {
                 if (!Array.isArray(commentsRows))
                     commentsRows = [commentsRows];
                 return [2 /*return*/, Promise.all(commentsRows.map(function (props) { return __awaiter(_this, void 0, void 0, function () {
-                        var replacedProps, comment;
+                        var replacedProps, _i, jsonFields_1, field, comment;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
                                     replacedProps = (0, util_1.replaceXWithY)(props, null, undefined);
+                                    for (_i = 0, jsonFields_1 = jsonFields; _i < jsonFields_1.length; _i++) {
+                                        field = jsonFields_1[_i];
+                                        if (replacedProps[field])
+                                            replacedProps[field] = JSON.parse(replacedProps[field]);
+                                    }
                                     return [4 /*yield*/, this.subplebbit.plebbit.createComment(replacedProps)];
                                 case 1:
                                     comment = _a.sent();
                                     (0, assert_1.default)(typeof comment.replyCount === "number");
                                     return [2 /*return*/, comment];
                             }
+                        });
+                    }); }))];
+            });
+        });
+    };
+    DbHandler.prototype.createEditsFromRows = function (edits) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return __generator(this, function (_a) {
+                if (!edits || (Array.isArray(edits) && (edits === null || edits === void 0 ? void 0 : edits.length) === 0))
+                    return [2 /*return*/, []];
+                if (!Array.isArray(edits))
+                    edits = [edits];
+                return [2 /*return*/, Promise.all(edits.map(function (props) { return __awaiter(_this, void 0, void 0, function () {
+                        var replacedProps, _i, jsonFields_2, field;
+                        return __generator(this, function (_a) {
+                            replacedProps = (0, util_1.replaceXWithY)(props, null, undefined);
+                            for (_i = 0, jsonFields_2 = jsonFields; _i < jsonFields_2.length; _i++) {
+                                field = jsonFields_2[_i];
+                                if (replacedProps[field])
+                                    replacedProps[field] = JSON.parse(replacedProps[field]);
+                            }
+                            return [2 /*return*/, this.subplebbit.plebbit.createCommentEdit(replacedProps)];
                         });
                     }); }))];
             });
@@ -430,7 +683,11 @@ var DbHandler = /** @class */ (function () {
                     voteRows = [voteRows];
                 return [2 /*return*/, Promise.all(voteRows.map(function (props) {
                         var replacedProps = (0, util_1.replaceXWithY)(props, null, undefined);
-                        // @ts-ignore
+                        for (var _i = 0, jsonFields_3 = jsonFields; _i < jsonFields_3.length; _i++) {
+                            var field = jsonFields_3[_i];
+                            if (replacedProps[field])
+                                replacedProps[field] = JSON.parse(replacedProps[field]);
+                        }
                         return _this.subplebbit.plebbit.createVote(replacedProps);
                     }))];
             });
@@ -611,7 +868,9 @@ var DbHandler = /** @class */ (function () {
             var commentObj;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.baseCommentQuery(trx).where("cid", cid).first()];
+                    case 0:
+                        (0, assert_1.default)(typeof cid === "string" && cid.length > 0, "Can't query a comment with null cid (".concat(cid, ")"));
+                        return [4 /*yield*/, this.baseCommentQuery(trx).where("cid", cid).first()];
                     case 1:
                         commentObj = _a.sent();
                         return [4 /*yield*/, this.createCommentsFromRows(commentObj)];
@@ -736,19 +995,6 @@ var DbHandler = /** @class */ (function () {
                         this.subplebbit.dbHandler = new DbHandler(this.subplebbit._dbConfig, this.subplebbit);
                         this.subplebbit._keyv = new keyv_1.default("sqlite://".concat(this.subplebbit._dbConfig.connection.filename));
                         debugs.INFO("Changed db path from (".concat(oldPathString, ") to (").concat(newPath, ")"));
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    DbHandler.prototype.rollbackAllTrxs = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, Promise.all(this._currentTrxs.map(function (trx) { return trx.rollback(); }))];
-                    case 1:
-                        _a.sent();
-                        this._currentTrxs = [];
                         return [2 /*return*/];
                 }
             });

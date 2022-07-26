@@ -74,11 +74,17 @@ var Post = /** @class */ (function (_super) {
     }
     Post.prototype._initProps = function (props) {
         _super.prototype._initProps.call(this, props);
+        this.thumbnailUrl = props.thumbnailUrl;
+        this.title = props.title;
         this.parentCid = undefined;
-        this.title = props["title"];
+        this.depth = 0;
+        this.link = props.link;
+    };
+    Post.prototype.toJSON = function () {
+        return __assign(__assign(__assign({}, _super.prototype.toJSON.call(this)), this.toJSONSkeleton()), { depth: this.depth });
     };
     Post.prototype.toJSONSkeleton = function () {
-        return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { title: this.title });
+        return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { thumbnailUrl: this.thumbnailUrl, title: this.title, parentCid: undefined, link: this.link });
     };
     Post.prototype.publish = function (userOptions) {
         return __awaiter(this, void 0, void 0, function () {

@@ -84,19 +84,17 @@ var Publication = /** @class */ (function (_super) {
         return _this;
     }
     Publication.prototype._initProps = function (props) {
+        var _a;
         this.subplebbitAddress = props["subplebbitAddress"];
         this.timestamp = props["timestamp"];
         this.signer = this.signer || props["signer"];
         this.signature = (0, util_1.parseJsonIfString)(props["signature"]);
-        this.author = props["author"] ? new author_1.default((0, util_1.parseJsonIfString)(props["author"])) : undefined;
+        (0, assert_1.default)((_a = props.author) === null || _a === void 0 ? void 0 : _a.address, "publication.author.address need to be defined");
+        this.author = new author_1.default((0, util_1.parseJsonIfString)(props["author"]));
+        this.protocolVersion = props.protocolVersion;
     };
     Publication.prototype.getType = function () {
-        if (this.hasOwnProperty("title"))
-            return "post";
-        else if (this.hasOwnProperty("vote"))
-            return "vote";
-        else
-            return "comment";
+        throw new Error("Should be implemented by children of Publication");
     };
     Publication.prototype.toJSON = function () {
         return __assign({}, this.toJSONSkeleton());
@@ -105,8 +103,9 @@ var Publication = /** @class */ (function (_super) {
         return {
             subplebbitAddress: this.subplebbitAddress,
             timestamp: this.timestamp,
-            signature: this.signature,
-            author: this.author
+            signature: this.signature instanceof signer_1.Signature ? this.signature.toJSON() : this.signature,
+            author: this.author.toJSON(),
+            protocolVersion: this.protocolVersion
         };
     };
     Publication.prototype.handleChallengeExchange = function (pubsubMsg) {
@@ -177,33 +176,36 @@ var Publication = /** @class */ (function (_super) {
         });
     };
     Publication.prototype.publish = function (userOptions) {
-        var _a, _b;
+        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function () {
-            var _c, isSignatureValid, failedVerificationReason, options, _d, encryptedPublication;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
-                    case 0: return [4 /*yield*/, (0, signer_1.verifyPublication)(this, this.subplebbit.plebbit, false)];
+            var _d, isSignatureValid, failedVerificationReason, options, _e, encryptedPublication;
+            return __generator(this, function (_f) {
+                switch (_f.label) {
+                    case 0:
+                        (0, assert_1.default)(this.timestamp, "Need timestamp field to publish publication");
+                        (0, assert_1.default)((_a = this.author) === null || _a === void 0 ? void 0 : _a.address, "Need author address to publish publication");
+                        return [4 /*yield*/, (0, signer_1.verifyPublication)(this, this.subplebbit.plebbit, this.getType())];
                     case 1:
-                        _c = _e.sent(), isSignatureValid = _c[0], failedVerificationReason = _c[1];
+                        _d = _f.sent(), isSignatureValid = _d[0], failedVerificationReason = _d[1];
                         assert_1.default.ok(isSignatureValid, "Failed to publish since signature is invalid, failed verification reason: ".concat(failedVerificationReason));
                         assert_1.default.ok(this.subplebbitAddress);
                         options = __assign({ acceptedChallengeTypes: [] }, userOptions);
                         debugs.DEBUG("Attempting to publish ".concat(this.getType(), " with options (").concat(JSON.stringify(options), ")"));
-                        _d = this;
+                        _e = this;
                         return [4 /*yield*/, this.subplebbit.plebbit.getSubplebbit(this.subplebbitAddress)];
                     case 2:
-                        _d.subplebbit = _e.sent();
-                        assert_1.default.ok((_b = (_a = this.subplebbit) === null || _a === void 0 ? void 0 : _a.encryption) === null || _b === void 0 ? void 0 : _b.publicKey, "Failed to load subplebbit for publishing");
+                        _e.subplebbit = _f.sent();
+                        assert_1.default.ok((_c = (_b = this.subplebbit) === null || _b === void 0 ? void 0 : _b.encryption) === null || _c === void 0 ? void 0 : _c.publicKey, "Failed to load subplebbit for publishing");
                         return [4 /*yield*/, (0, signer_1.encrypt)(JSON.stringify(this), this.subplebbit.encryption.publicKey)];
                     case 3:
-                        encryptedPublication = _e.sent();
+                        encryptedPublication = _f.sent();
                         this.challenge = new challenge_1.ChallengeRequestMessage(__assign({ encryptedPublication: encryptedPublication, challengeRequestId: (0, uuid_1.v4)() }, options));
                         return [4 /*yield*/, Promise.all([
                                 this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(this.challenge))),
                                 this.subplebbit.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this))
                             ])];
                     case 4:
-                        _e.sent();
+                        _f.sent();
                         debugs.INFO("Sent a challenge request (".concat(this.challenge.challengeRequestId, ")"));
                         return [2 /*return*/];
                 }

@@ -6,10 +6,11 @@ import { Signer, Signature } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
 import { ChallengeType, CreateSubplebbitOptions, Flair, FlairOwner, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitMetrics, SubplebbitRole, SubplebbitSuggested, SubplebbitType } from "./types";
-import { Comment, CommentEdit } from "./comment";
+import { Comment } from "./comment";
 import Vote from "./vote";
 import Publication from "./publication";
-export declare class Subplebbit extends EventEmitter implements SubplebbitEditOptions, SubplebbitType {
+import { CommentEdit } from "./comment-edit";
+export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     title?: string;
     description?: string;
     roles?: {
@@ -17,7 +18,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitEditOp
     };
     latestPostCid?: string;
     posts?: Pages;
-    pubsubTopic?: string;
+    pubsubTopic: string;
     challengeTypes?: ChallengeType[];
     metrics?: SubplebbitMetrics;
     features?: SubplebbitFeatures;
@@ -26,10 +27,10 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitEditOp
     address: string;
     moderatorsAddresses?: string[];
     metricsCid?: string;
-    createdAt?: number;
-    updatedAt?: number;
+    createdAt: number;
+    updatedAt: number;
     signer?: Signer;
-    encryption?: SubplebbitEncryption;
+    encryption: SubplebbitEncryption;
     protocolVersion: "1.0.0";
     signature: Signature;
     plebbit: Plebbit;
@@ -55,39 +56,29 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitEditOp
         ipnsKeyName: string;
         database: any;
         signer: Signer;
-        title: string;
-        description: string;
-        moderatorsAddresses: string[];
-        latestPostCid: string;
-        pubsubTopic: string;
+        signature: import("./types").SignatureType;
+        encryption: SubplebbitEncryption;
         address: string;
-        posts: Pages;
-        challengeTypes: ChallengeType[];
-        metricsCid: string;
         createdAt: number;
         updatedAt: number;
-        encryption: SubplebbitEncryption;
-        roles: {
-            [authorAddress: string]: SubplebbitRole;
-        };
-    };
-    toJSON(): {
-        title: string;
-        description: string;
-        moderatorsAddresses: string[];
-        latestPostCid: string;
         pubsubTopic: string;
-        address: string;
-        posts: Pages;
-        challengeTypes: ChallengeType[];
-        metricsCid: string;
-        createdAt: number;
-        updatedAt: number;
-        encryption: SubplebbitEncryption;
-        roles: {
+        metricsCid?: string;
+        protocolVersion: "1.0.0";
+        title?: string;
+        description?: string;
+        roles?: {
             [authorAddress: string]: SubplebbitRole;
         };
+        rules?: string[];
+        latestPostCid?: string;
+        posts?: Pages;
+        challengeTypes?: ChallengeType[];
+        metrics?: SubplebbitMetrics;
+        features?: SubplebbitFeatures;
+        suggested?: SubplebbitSuggested;
+        flairs?: Record<FlairOwner, Flair[]>;
     };
+    toJSON(): SubplebbitType;
     prePublish(): Promise<void>;
     assertDomainResolvesCorrectlyIfNeeded(domain: string): Promise<void>;
     edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit>;
@@ -95,7 +86,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitEditOp
     update(updateIntervalMs?: number): Promise<this>;
     stop(): Promise<void>;
     updateSubplebbitIpns(): Promise<Subplebbit>;
-    handleCommentEdit(commentEdit: CommentEdit, trx?: any): Promise<{
+    handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string): Promise<{
         reason: string;
     }>;
     handleVote(newVote: Vote, challengeRequestId: string): Promise<{

@@ -65,11 +65,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CommentEdit = exports.Comment = void 0;
+exports.Comment = void 0;
 var assert_1 = __importDefault(require("assert"));
 var util_1 = require("./util");
 var publication_1 = __importDefault(require("./publication"));
 var pages_1 = require("./pages");
+var signer_1 = require("./signer");
+var author_1 = __importDefault(require("./author"));
 var debugs = (0, util_1.getDebugLevels)("comment");
 var DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 var Comment = /** @class */ (function (_super) {
@@ -79,54 +81,70 @@ var Comment = /** @class */ (function (_super) {
     }
     Comment.prototype._initProps = function (props) {
         _super.prototype._initProps.call(this, props);
-        this.postCid = props["postCid"];
-        this.cid = props["cid"];
-        this.parentCid = props["parentCid"];
-        this.ipnsName = props["ipnsName"]; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
-        this.ipnsKeyName = props["ipnsKeyName"];
-        this.depth = props["depth"];
-        this.setPreviousCid(props["previousCid"]);
+        this.postCid = props.postCid;
+        this.cid = props.cid;
+        this.parentCid = props.parentCid;
+        this.ipnsName = props.ipnsName; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
+        this.ipnsKeyName = props.ipnsKeyName;
+        this.depth = props.depth;
+        this.setPreviousCid(props.previousCid);
         // CommentUpdate props
         this._initCommentUpdate(props);
+        this._mergeFields(props);
         // these functions might get separated from their `this` when used
         this.publish = this.publish.bind(this);
         this.update = this.update.bind(this);
         this.stop = this.stop.bind(this);
     };
     Comment.prototype._initCommentUpdate = function (props) {
-        this.upvoteCount = props["upvoteCount"];
-        this.downvoteCount = props["downvoteCount"];
-        this.replyCount = props["replyCount"];
-        this.updatedAt = props["updatedAt"];
-        this.replies =
-            props["replies"] instanceof Object && JSON.stringify(props["replies"]) !== "{}"
-                ? new pages_1.Pages(__assign(__assign({}, props["replies"]), { subplebbit: this.subplebbit }))
-                : undefined;
-        // Comment Edit props
-        this.originalContent =
-            props["originalContent"] || this.originalContent || (props["content"] && props["editSignature"] ? this.content : undefined);
-        this.content = props["content"] || this.content;
-        assert_1.default.notEqual(this.content, this.originalContent, "Content and original content can't be equal to each other");
-        this.editSignature = (0, util_1.parseJsonIfString)(props["editSignature"]);
-        this.editTimestamp = props["editTimestamp"];
-        this.editReason = props["editReason"];
-        this.deleted = props["deleted"];
-        this.spoiler = props["spoiler"];
-        this.pinned = props["pinned"];
-        this.locked = props["locked"];
-        this.removed = props["removed"];
-        this.moderatorReason = props["moderatorReason"];
-        this.authorBanExpiresAt = props["authorBanExpiresAt"];
-        this.protocolVersion = props["protocolVersion"];
+        var _a;
+        this.upvoteCount = props.upvoteCount;
+        this.downvoteCount = props.downvoteCount;
+        this.replyCount = props.replyCount;
+        this.updatedAt = props.updatedAt;
+        this.setReplies(props.replies);
+        this.deleted = (_a = props.authorEdit) === null || _a === void 0 ? void 0 : _a.deleted;
+        this.spoiler = props.spoiler;
+        this.pinned = props.pinned;
+        this.locked = props.locked;
+        this.removed = props.removed;
+        this.moderatorReason = props.moderatorReason;
+        this.authorEdit = props.authorEdit;
+        this.protocolVersion = props.protocolVersion;
+    };
+    Comment.prototype._mergeFields = function (props) {
+        // TODO merge flairs, deleted, content, author here
+        // TODO move original author and content to comment.original if needed
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var original = {};
+        original["content"] =
+            ((_a = props.original) === null || _a === void 0 ? void 0 : _a.content) || ((_b = this.original) === null || _b === void 0 ? void 0 : _b.content) || (props.content && ((_c = props.authorEdit) === null || _c === void 0 ? void 0 : _c.content) ? this.content : undefined);
+        original["author"] =
+            ((_d = props.original) === null || _d === void 0 ? void 0 : _d.author) || ((_e = this.original) === null || _e === void 0 ? void 0 : _e.author) || (props.author && props.authorEdit ? props.author : undefined);
+        original["flair"] =
+            ((_f = props.original) === null || _f === void 0 ? void 0 : _f.flair) || ((_g = this.original) === null || _g === void 0 ? void 0 : _g.flair) || (props.flair && ((_h = props.authorEdit) === null || _h === void 0 ? void 0 : _h.flair) ? props.flair : undefined);
+        this.content = ((_j = props.authorEdit) === null || _j === void 0 ? void 0 : _j.content) || props.content || this.content;
+        this.author = new author_1.default(__assign(__assign({}, props.author), this.author));
+        for (var _i = 0, _k = Object.keys(original); _i < _k.length; _i++) {
+            var key = _k[_i];
+            this[key] &&
+                original[key] &&
+                assert_1.default.notEqual(this[key], original[key], "".concat(key, " and original ").concat(key, " can't be equal to each other"));
+        }
+        if (JSON.stringify(original) !== "{}")
+            this.original = original;
+    };
+    Comment.prototype.getType = function () {
+        return "comment";
     };
     Comment.prototype.toJSON = function () {
-        return __assign(__assign(__assign({}, this.toJSONIpfs()), this.toJSONCommentUpdate()), { cid: this.cid, originalContent: this.originalContent });
+        return __assign(__assign(__assign({}, this.toJSONIpfs()), (this.updatedAt ? this.toJSONCommentUpdate() : undefined)), { cid: this.cid, original: this.original, author: this.author.toJSON() });
     };
     Comment.prototype.toJSONIpfs = function () {
         return __assign(__assign({}, this.toJSONSkeleton()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.postCid, depth: this.depth });
     };
     Comment.prototype.toJSONSkeleton = function () {
-        return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { content: this.content, parentCid: this.parentCid });
+        return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { content: this.content, parentCid: this.parentCid, flair: this.flair, spoiler: this.spoiler });
     };
     Comment.prototype.toJSONForDb = function (challengeRequestId) {
         var _a;
@@ -140,7 +158,26 @@ var Comment = /** @class */ (function (_super) {
         return (0, util_1.removeKeysWithUndefinedValues)(json);
     };
     Comment.prototype.toJSONCommentUpdate = function () {
-        return __assign(__assign({ replyCount: this.replyCount, upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replies: this.replies }, (this.originalContent ? { content: this.content } : undefined)), { updatedAt: this.updatedAt, editSignature: this.editSignature, editTimestamp: this.editTimestamp, editReason: this.editReason, deleted: this.deleted, spoiler: this.spoiler, pinned: this.pinned, locked: this.locked, removed: this.removed, moderatorReason: this.moderatorReason, authorBansExpiresAt: this.authorBanExpiresAt, protocolVersion: this.protocolVersion });
+        (0, assert_1.default)(typeof this.upvoteCount === "number" &&
+            typeof this.downvoteCount === "number" &&
+            typeof this.replyCount === "number" &&
+            typeof this.updatedAt === "number", "Fields are needed to export a CommentUpdate JSON");
+        return {
+            upvoteCount: this.upvoteCount,
+            downvoteCount: this.downvoteCount,
+            replyCount: this.replyCount,
+            authorEdit: this.authorEdit,
+            replies: this.replies,
+            flair: this.flair,
+            spoiler: this.spoiler,
+            pinned: this.pinned,
+            locked: this.locked,
+            removed: this.removed,
+            moderatorReason: this.moderatorReason,
+            updatedAt: this.updatedAt,
+            protocolVersion: this.protocolVersion,
+            author: { banExpiresAt: this.author.banExpiresAt, flair: this.flair }
+        };
     };
     Comment.prototype.setCommentIpnsKey = function (ipnsKey) {
         // Contains name and id
@@ -162,9 +199,6 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype.setUpdatedAt = function (newUpdatedAt) {
         this.updatedAt = newUpdatedAt;
     };
-    Comment.prototype.setOriginalContent = function (newOriginalContent) {
-        this.originalContent = newOriginalContent;
-    };
     Comment.prototype.setReplies = function (replies) {
         if (replies)
             this.replies = new pages_1.Pages({
@@ -175,33 +209,41 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var res, e_1;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var res, e_1, _a, verified, failedVerificationReason;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         (0, assert_1.default)(this.ipnsName, "Comment needs to have ipnsName before updating");
-                        _a.label = 1;
+                        _b.label = 1;
                     case 1:
-                        _a.trys.push([1, 3, , 4]);
+                        _b.trys.push([1, 3, , 4]);
                         return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.subplebbit.plebbit)];
                     case 2:
-                        res = _a.sent();
+                        res = _b.sent();
                         return [3 /*break*/, 4];
                     case 3:
-                        e_1 = _a.sent();
+                        e_1 = _b.sent();
                         debugs.WARN("Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error = ").concat(e_1.message));
                         return [2 /*return*/];
                     case 4:
-                        if (!(0, util_1.shallowEqual)(this.toJSONCommentUpdate(), res)) {
-                            debugs.DEBUG("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Emitting an update event..."));
-                            this._initCommentUpdate(res);
-                            this.emit("update", this);
+                        if (!(res && (!this.updatedAt || !(0, util_1.shallowEqual)(this.toJSONCommentUpdate(), res, ["signature"])))) return [3 /*break*/, 6];
+                        debugs.DEBUG("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
+                        return [4 /*yield*/, (0, signer_1.verifyPublication)(res, this.subplebbit.plebbit, "commentupdate")];
+                    case 5:
+                        _a = _b.sent(), verified = _a[0], failedVerificationReason = _a[1];
+                        if (!verified) {
+                            debugs.ERROR("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") signature is invalid. Will not update: ").concat(failedVerificationReason));
+                            return [2 /*return*/];
                         }
-                        else {
-                            debugs.TRACE("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
-                            this._initCommentUpdate(res);
-                        }
-                        return [2 /*return*/, this];
+                        this._initCommentUpdate(res);
+                        this._mergeFields(this.toJSON());
+                        this.emit("update", this);
+                        return [3 /*break*/, 7];
+                    case 6:
+                        debugs.TRACE("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
+                        this._initCommentUpdate(res);
+                        _b.label = 7;
+                    case 7: return [2 /*return*/, this];
                 }
             });
         });
@@ -218,24 +260,29 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype.stop = function () {
         clearInterval(this._updateInterval);
     };
-    Comment.prototype.edit = function (commentUpdateOptions) {
+    Comment.prototype.edit = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var file;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var _a, validSignature, failedVerificationReason, file;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         (0, assert_1.default)(this.ipnsKeyName && this.subplebbit.plebbit.ipfsClient, "You need to have commentUpdate and ipfs client defined");
-                        this._initCommentUpdate(commentUpdateOptions);
-                        return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(this.toJSONCommentUpdate()))];
+                        return [4 /*yield*/, (0, signer_1.verifyPublication)(options, this.subplebbit.plebbit, "commentupdate")];
                     case 1:
-                        file = _a.sent();
+                        _a = _b.sent(), validSignature = _a[0], failedVerificationReason = _a[1];
+                        (0, assert_1.default)(validSignature, "Failed to verify CommentUpdate (".concat(JSON.stringify(options), ") due to: ").concat(failedVerificationReason));
+                        this._initCommentUpdate(options);
+                        this._mergeFields(this.toJSON());
+                        return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(__assign(__assign({}, this.toJSONCommentUpdate()), { signature: options.signature })))];
+                    case 2:
+                        file = _b.sent();
                         return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
                                 lifetime: "72h",
                                 key: this.ipnsKeyName,
                                 allowOffline: true
                             })];
-                    case 2:
-                        _a.sent();
+                    case 3:
+                        _b.sent();
                         debugs.TRACE("Linked comment (".concat(this.cid, ") ipns name(").concat(this.ipnsName, ") to ipfs file (").concat(file.path, ")"));
                         return [2 /*return*/];
                 }
@@ -246,11 +293,6 @@ var Comment = /** @class */ (function (_super) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 (0, assert_1.default)(this.content, "Need content field to publish comment");
-                if (!this.toJSON().hasOwnProperty("commentCid")) {
-                    // Assert timestamp only if this is not a CommentEdit
-                    (0, assert_1.default)(this.timestamp, "Need timestamp field to publish comment");
-                    (0, assert_1.default)(this.author, "Need author to publish comment");
-                }
                 return [2 /*return*/, _super.prototype.publish.call(this, userOptions)];
             });
         });
@@ -258,34 +300,3 @@ var Comment = /** @class */ (function (_super) {
     return Comment;
 }(publication_1.default));
 exports.Comment = Comment;
-var CommentEdit = /** @class */ (function (_super) {
-    __extends(CommentEdit, _super);
-    function CommentEdit() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    CommentEdit.prototype._initProps = function (props) {
-        _super.prototype._initProps.call(this, props);
-        this.commentCid = props["commentCid"];
-    };
-    CommentEdit.prototype.toJSON = function () {
-        return __assign(__assign({}, _super.prototype.toJSON.call(this)), { commentCid: this.commentCid });
-    };
-    CommentEdit.prototype.toJSONForDb = function (challengeRequestId) {
-        var json = _super.prototype.toJSONForDb.call(this, challengeRequestId);
-        ["challengeRequestId", "ipnsKeyName", "signature", "commentCid"].forEach(function (key) { return delete json[key]; });
-        json["cid"] = this.commentCid;
-        return (0, util_1.removeKeysWithUndefinedValues)(json);
-    };
-    CommentEdit.prototype.publish = function (userOptions) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                (0, assert_1.default)(this.commentCid, "Need commentCid to be defined to publish CommentEdit");
-                (0, assert_1.default)(this.editTimestamp, "Need editTimestamp to be defined to publish CommentEdit");
-                (0, assert_1.default)(this.editSignature, "Need to have editSignature to publish CommentEdit");
-                return [2 /*return*/, _super.prototype.publish.call(this, userOptions)];
-            });
-        });
-    };
-    return CommentEdit;
-}(Comment));
-exports.CommentEdit = CommentEdit;

@@ -1,30 +1,39 @@
 import { ChallengeMessage, ChallengeRequestMessage, ChallengeAnswerMessage, ChallengeVerificationMessage } from "../../challenge";
 import Post from "../../post";
 import Author from "../../author";
-import { Comment, CommentEdit } from "../../comment";
+import { Comment } from "../../comment";
 import Vote from "../../vote";
 import { Knex } from "knex";
 import { Subplebbit } from "../../subplebbit";
 import { Signer } from "../../signer";
 import Transaction = Knex.Transaction;
-import { SubplebbitMetrics } from "../../types";
+import { AuthorType, SubplebbitMetrics } from "../../types";
+import { CommentEdit } from "../../comment-edit";
 export declare class DbHandler {
     _dbConfig: Knex.Config;
     knex: Knex;
     subplebbit: Subplebbit;
     private _currentTrxs;
     constructor(dbConfig: Knex.Config, subplebbit: Subplebbit);
-    createTransaction(): Promise<Transaction>;
+    createTransaction(transactionId: string): Promise<Transaction>;
+    commitTransaction(transactionId: string): Promise<void>;
+    rollbackTransaction(transactionId: string): Promise<void>;
     baseTransaction(trx?: Transaction): Transaction | Knex;
     createCommentsTable(): Promise<void>;
     createVotesTable(): Promise<void>;
     createAuthorsTable(): Promise<void>;
     createChallengesTable(): Promise<void>;
     createSignersTable(): Promise<void>;
+    createEditsTable(): Promise<void>;
     createTablesIfNeeded(): Promise<void>;
-    addAuthorToDbIfNeeded(author: Author, trx?: Transaction): Promise<void>;
+    upsertAuthor(author: Author | AuthorType, trx?: Transaction, upsertOnlyWhenNew?: boolean): Promise<void>;
+    updateAuthor(newAuthorProps: AuthorType, updateCommentsAuthor?: boolean, trx?: Transaction): Promise<void>;
+    queryAuthor(authorAddress: string, trx?: Transaction): Promise<Author | undefined>;
     upsertVote(vote: Vote, challengeRequestId: string, trx?: Transaction): Promise<void>;
-    upsertComment(postOrComment: Post | Comment | CommentEdit, challengeRequestId?: string, trx?: Transaction): Promise<void>;
+    upsertComment(postOrComment: Post | Comment, challengeRequestId?: string, trx?: Transaction): Promise<void>;
+    insertEdit(edit: CommentEdit, challengeRequestId: string, trx?: Transaction): Promise<void>;
+    queryEditsSorted(commentCid: string, editor?: "author" | "mod", trx?: Transaction): Promise<CommentEdit[]>;
+    editComment(edit: CommentEdit, challengeRequestId: string, trx?: Transaction): Promise<void>;
     upsertChallenge(challenge: ChallengeRequestMessage | ChallengeMessage | ChallengeAnswerMessage | ChallengeVerificationMessage, trx?: Transaction): Promise<void>;
     getLastVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<Vote | undefined>;
     baseCommentQuery(trx?: Transaction): Knex.QueryBuilder<any, {
@@ -55,6 +64,7 @@ export declare class DbHandler {
         _unionProps: never;
     }[]>;
     createCommentsFromRows(commentsRows: Comment[] | Comment): Promise<Comment[] | Post[]>;
+    createEditsFromRows(edits: CommentEdit[] | CommentEdit): Promise<CommentEdit[]>;
     createVotesFromRows(voteRows: Vote[] | Vote): Promise<Vote[]>;
     queryCommentsSortedByTimestamp(parentCid: string | undefined | null, order?: string, trx?: Transaction): Promise<Comment[] | Post[]>;
     queryCommentsBetweenTimestampRange(parentCid: string | undefined | null, timestamp1: number, timestamp2: number, trx?: Transaction): Promise<Comment[] | Post[]>;
@@ -71,6 +81,5 @@ export declare class DbHandler {
     queryCommentsGroupByDepth(trx?: Knex.Transaction): Promise<Comment[][]>;
     queryCountOfPosts(trx?: Knex.Transaction): Promise<number>;
     changeDbFilename(newDbFileName: string): Promise<void>;
-    rollbackAllTrxs(): Promise<void>;
 }
 export declare const subplebbitInitDbIfNeeded: (subplebbit: Subplebbit) => Promise<void>;

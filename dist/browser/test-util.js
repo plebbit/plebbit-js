@@ -114,6 +114,7 @@ function generateMockComment(parentPostOrComment, plebbit, signer, randomTimesta
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
+                    (0, assert_1.default)(parentPostOrComment, "Need to have parentComment defined to generate mock comment");
                     commentTimestamp = (randomTimestamp && generateRandomTimestamp(parentPostOrComment.timestamp)) || (0, util_1.timestamp)();
                     commentTime = Date.now() / 1000 + Math.random();
                     _a = signer;
