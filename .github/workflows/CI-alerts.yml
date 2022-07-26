@@ -1,3 +1,4 @@
+# send alerts on failed CI
 name: CI alerts
 
 on:

@@ -1,3 +1,4 @@
+# build and commit the dist folder after successful CI
 name: CI build
 
 on:

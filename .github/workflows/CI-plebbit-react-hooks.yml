@@ -1,3 +1,4 @@
+# test @plebbit/plebbit-react-hooks repo whichs depends @plebbit/plebbit-js
 name: CI plebbit-react-hooks
 
 on:
