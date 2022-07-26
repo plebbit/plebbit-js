@@ -357,7 +357,7 @@ Encrypted {
   - `comment.cid`
   - `(only available after first update event)`
   - `comment.authorEdit`
-  - `comment.originalContent`
+  - `comment.original`
   - `comment.upvoteCount`
   - `comment.downvoteCount`
   - `comment.updatedAt`
