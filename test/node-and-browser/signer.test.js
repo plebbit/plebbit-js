@@ -75,7 +75,7 @@ describe("signer (node and browser)", async () => {
         let authorSignature, signedPublication;
 
         before(async () => {
-            authorSignature = await signPublication(fixtureComment, authorSigner, plebbit, SIGNED_PROPERTY_NAMES.COMMENT);
+            authorSignature = await signPublication(fixtureComment, authorSigner, plebbit, "comment");
             signedPublication = { ...fixtureComment, signature: authorSignature };
         });
 
@@ -85,7 +85,7 @@ describe("signer (node and browser)", async () => {
                     "IMff4G8CPJPS3O3zRYkqh160BU3dLCd9Is6F348yNkUBzMEstH2u6+PMfyULQeJQzspz+bEU6iq/b7QwRAvQKClV6kHXK0R5Yzfop7cDHD3v0uqTVwxbtbINOm6dbjO1iThOeP7ULSXzLEP0obVyy51v3xBqKfrdG8NMQd/VuU6rtxmRJQwJdPHEhjDFQ3QxtoOUnrGTUVED0eX22gORjxb1uW5vJ+T/63frIJ9gBgCYRA8luCmTt59hZRusmh0n21zIQmxIdRebmdwR15wI7hmrppqcH1e5Fm+MCVRu7JLySsP4r5DJ2PECw9gobq1am6F4SuUXZBbQaxq36QZk9Q",
                 publicKey: authorSignerFixture.publicKey,
                 type: "rsa",
-                signedPropertyNames: SIGNED_PROPERTY_NAMES.COMMENT
+                signedPropertyNames: SIGNED_PROPERTY_NAMES.comment
             };
             expect(authorSignature).not.to.equal(undefined);
             expect(authorSignature.signature).to.equal(expectedAuthorSignature.signature);
@@ -97,12 +97,12 @@ describe("signer (node and browser)", async () => {
         it(`signPublication throws with invalid author`, async () => {
             // Trying to sign a publication with author.address !== randomSigner.address
             // should throw an error
-            await assert.isRejected(signPublication(fixtureComment, randomSigner, plebbit, SIGNED_PROPERTY_NAMES.COMMENT));
+            await assert.isRejected(signPublication(fixtureComment, randomSigner, plebbit, "comment"));
         });
 
         it("verifyPublication success with correct author signature", async () => {
-            const verification = await verifyPublication(signedPublication);
-            expect(verification).to.deep.equal([true]);
+            const verification = await verifyPublication(signedPublication, plebbit, "comment");
+            expect(verification).to.deep.equal([true, undefined]);
         });
 
         it("verifyPublication failure with wrong signature", async () => {
@@ -112,15 +112,12 @@ describe("signer (node and browser)", async () => {
                 publicKey:
                     "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxAGJeGuWd7CBbei6MfOl\nFvX5sPf7tzU3SIeQlTsc4GNjV+Jn/y5nqnVHPFK38NUJIuYjaTlH4OoZv/CI4ze5\nBz6ZIxijd6wIgweHvCCuhhRKaLRl+BoGDCVU5SjEEi3NdeNnNRbSKlBv4v8l2Vdt\ngkt9iUelRyd8UmkRt7nSND1dPTdPE4tfyO2eAg2dNQ1ItWWhgW17Z3lPV1VwNhjU\nqGa8wt7M2Mse3vu2dprRtGs/3UeSvf4i9i3NaF+M7NhplB8t0KlmqSpy7ChX5MvQ\nv4tJ1c7MlG3Dzryt2I9xSueINVlWPTqBAR4HePcURET5h/0b4pajM61QICCq3X1d\n5QIDAQAB\n-----END PUBLIC KEY-----",
                 type: "rsa",
-                signedPropertyNames: ["subplebbitAddress", "author", "timestamp", "parentCid", "content"]
+                signedPropertyNames: SIGNED_PROPERTY_NAMES.comment
             };
 
             const wronglySignedPublication = { ...signedPublication, signature: invalidSignature };
-            const verification = await verifyPublication(wronglySignedPublication);
-            expect(verification).to.deep.equal([
-                false,
-                "AssertionError [ERR_ASSERTION]: comment.author.address doesn't match comment.signature.publicKey"
-            ]);
+            const verification = await verifyPublication(wronglySignedPublication, plebbit, "comment");
+            expect(verification).to.deep.equal([false, "AssertionError [ERR_ASSERTION]: Signature is invalid"]);
         });
 
         it("can sign a comment with author.displayName = undefined", async () => {
@@ -133,7 +130,7 @@ describe("signer (node and browser)", async () => {
                 signer,
                 author: { address: signer.address }
             });
-            const [validity, failedVerificationReason] = await verifyPublication(comment);
+            const [validity, failedVerificationReason] = await verifyPublication(comment, plebbit, "comment");
             expect(validity).to.be.true;
             expect(failedVerificationReason).to.be.undefined;
         });
