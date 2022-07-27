@@ -46,6 +46,11 @@ jobs:
       - run: npm install
       - run: npm run build
       - run: npm run webpack
+
+      # disable hosts we shouldn't use
+      - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
+      - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
+
       - run: npm run test:server & npm run test:server:wait-on
       - run: npm run test:node:parallel
       - run: CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) npm run test:browser

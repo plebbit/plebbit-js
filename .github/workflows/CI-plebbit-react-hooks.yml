@@ -40,6 +40,9 @@ jobs:
       # build
       - run: yarn build
       - run: yarn webpack
+      # disable hosts we shouldn't use
+      - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
+      - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
       # test
       - run: DEBUG=plebbit-js:* yarn test:server & yarn test:server:wait-on
       - run: DEBUG=plebbit-js:* CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) yarn test:e2e
