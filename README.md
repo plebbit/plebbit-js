@@ -127,6 +127,7 @@ Signer {
   ipfsKey?: IpfsKey // a Key object used for importing into IpfsHttpClient https://docs.ipfs.io/reference/cli/#ipfs-key-import
 }
 Subplebbit /* (IPNS record Subplebbit.address) */ {
+  address: string // validate subplebbit address in signature to prevent a crypto domain resolving to an impersonated subplebbit
   title?: string
   description?: string
   roles?: {[authorAddress: string]: SubplebbitRole} // each author address can be mapped to 1 SubplebbitRole
