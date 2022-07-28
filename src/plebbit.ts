@@ -10,11 +10,11 @@ import {
     PostType,
     VoteType
 } from "./types";
-import plebbitUtil from "./runtime/node/util";
+import plebbitUtil, { isRuntimeNode } from "./runtime/node/util";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
-import { getDebugLevels, getProtocolVersion, loadIpfsFileAsJson, loadIpnsAsJson, parseJsonIfString, timestamp } from "./util";
+import { getDebugLevels, getProtocolVersion, loadIpfsFileAsJson, loadIpnsAsJson, timestamp } from "./util";
 import Vote from "./vote";
 import { create as createIpfsClient, IPFSHTTPClient, Options } from "ipfs-http-client";
 import assert from "assert";
@@ -22,6 +22,7 @@ import { createSigner, Signer, signPublication, verifyPublication } from "./sign
 import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
+import { getPlebbitAddressFromPrivateKeyPem } from "./signer/util";
 
 const debugs = getDebugLevels("plebbit");
 
@@ -136,17 +137,40 @@ export class Plebbit implements PlebbitOptions {
     }
 
     async createSubplebbit(options: CreateSubplebbitOptions = {}): Promise<Subplebbit> {
-        if (!options.signer) {
-            options.signer = await this.createSigner();
-            debugs.DEBUG(
-                `Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${options.signer.address})`
-            );
-        }
-        const subplebbit = new Subplebbit(options, this);
-        await subplebbit.start();
-        await subplebbit.edit(options);
-        await subplebbit.stopPublishing();
-        return subplebbit;
+        const newSub = async () => {
+            assert(isRuntimeNode, "Runtime need to include node APIs to create a publishing subplebbit");
+            const subplebbit = new Subplebbit(options, this);
+            await subplebbit.start();
+            await subplebbit.edit(options);
+            await subplebbit.stopPublishing();
+            return subplebbit;
+        };
+
+        if (options.address && !options.signer) {
+            if (!isRuntimeNode) return new Subplebbit(options, this);
+            else {
+                const localSubs = await this.listSubplebbits();
+                if (localSubs.includes(options.address)) return newSub();
+                else return new Subplebbit(options, this);
+            }
+        } else if (!options.address && !options.signer) {
+            if (!isRuntimeNode) throw new Error(`Can't instantenate a publishing subplebbit without node API`);
+            else {
+                options.signer = await this.createSigner();
+                debugs.DEBUG(
+                    `Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${options.signer.address})`
+                );
+                return newSub();
+            }
+        } else if (!options.address && options.signer) {
+            if (!isRuntimeNode) throw new Error(`Can't instantenate a publishing subplebbit without node API`);
+
+            const localSubs = await this.listSubplebbits();
+            const derivedAddress = options.signer.address || (await getPlebbitAddressFromPrivateKeyPem(options.signer.privateKey));
+            if (localSubs.includes(derivedAddress)) options.address = derivedAddress;
+            return newSub();
+        } else if (!isRuntimeNode) return new Subplebbit(options, this);
+        else return newSub();
     }
 
     async createVote(options: CreateVoteOptions | VoteType): Promise<Vote> {
