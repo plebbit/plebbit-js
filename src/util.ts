@@ -8,6 +8,7 @@ import FormData from "form-data";
 import assert from "assert";
 import { Plebbit } from "./plebbit";
 import { CommentType, ProtocolVersion, Timeframe } from "./types";
+import { isRuntimeNode } from "./runtime/node/util";
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
     HOUR: 60 * 60,
@@ -24,7 +25,7 @@ async function fetchWithLimit(url: string, options?) {
     // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
     debugs.DEBUG(`Attempting to fetch url: ${url}`);
     const res = await fetch(url, options);
-    if (typeof window === "undefined") return res; // No need to process stream for Node
+    if (isRuntimeNode) return res; // No need to process stream for Node
 
     const originalRes = res.clone();
     // @ts-ignore

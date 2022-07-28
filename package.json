@@ -25,7 +25,8 @@
     "browser": {
         ".": "dist/browser/index.js",
         "./dist/node/index.js": "./dist/browser/index.js",
-        "./dist/node": "./dist/browser"
+        "./dist/node": "./dist/browser",
+        "./dist/node/runtime/node/util": "./dist/browser/runtime/browser/util"
     },
     "files": [
         "dist/"

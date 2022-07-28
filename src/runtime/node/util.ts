@@ -15,7 +15,10 @@ export const listSubplebbits = async (plebbit: Plebbit) => {
     return addresses;
 };
 
+export const isRuntimeNode = true;
+
 export default {
     getDefaultDataPath,
-    listSubplebbits
+    listSubplebbits,
+    isRuntimeNode
 };
