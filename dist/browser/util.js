@@ -68,6 +68,7 @@ var debug_1 = __importDefault(require("debug"));
 var node_fetch_1 = __importDefault(require("node-fetch"));
 var form_data_1 = __importDefault(require("form-data"));
 var assert_1 = __importDefault(require("assert"));
+var util_1 = require("./runtime/browser/util");
 //This is temp. TODO replace this with accurate mapping
 exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -90,7 +91,7 @@ function fetchWithLimit(url, options) {
                     return [4 /*yield*/, (0, node_fetch_1.default)(url, options)];
                 case 1:
                     res = _a.sent();
-                    if (typeof window === "undefined")
+                    if (util_1.isRuntimeNode)
                         return [2 /*return*/, res]; // No need to process stream for Node
                     originalRes = res.clone();
                     reader = res.body.getReader();

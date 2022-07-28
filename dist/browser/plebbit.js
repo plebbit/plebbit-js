@@ -10,6 +10,29 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -51,7 +74,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Plebbit = void 0;
-var util_1 = __importDefault(require("./runtime/browser/util"));
+var util_1 = __importStar(require("./runtime/browser/util"));
 var comment_1 = require("./comment");
 var post_1 = __importDefault(require("./post"));
 var subplebbit_1 = require("./subplebbit");
@@ -63,6 +86,7 @@ var signer_1 = require("./signer");
 var resolver_1 = require("./resolver");
 var tinycache_1 = __importDefault(require("tinycache"));
 var comment_edit_1 = require("./comment-edit");
+var util_3 = require("./signer/util");
 var debugs = (0, util_2.getDebugLevels)("plebbit");
 var Plebbit = /** @class */ (function () {
     function Plebbit(options) {
@@ -194,29 +218,80 @@ var Plebbit = /** @class */ (function () {
     Plebbit.prototype.createSubplebbit = function (options) {
         if (options === void 0) { options = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var _a, subplebbit;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var newSub, localSubs, _a, localSubs, derivedAddress, _b;
+            var _this = this;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        if (!!options.signer) return [3 /*break*/, 2];
+                        newSub = function () { return __awaiter(_this, void 0, void 0, function () {
+                            var subplebbit;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        (0, assert_1.default)(util_1.isRuntimeNode, "Runtime need to include node APIs to create a publishing subplebbit");
+                                        subplebbit = new subplebbit_1.Subplebbit(options, this);
+                                        return [4 /*yield*/, subplebbit.start()];
+                                    case 1:
+                                        _a.sent();
+                                        return [4 /*yield*/, subplebbit.edit(options)];
+                                    case 2:
+                                        _a.sent();
+                                        return [4 /*yield*/, subplebbit.stopPublishing()];
+                                    case 3:
+                                        _a.sent();
+                                        return [2 /*return*/, subplebbit];
+                                }
+                            });
+                        }); };
+                        if (!(options.address && !options.signer)) return [3 /*break*/, 4];
+                        if (!!util_1.isRuntimeNode) return [3 /*break*/, 1];
+                        return [2 /*return*/, new subplebbit_1.Subplebbit(options, this)];
+                    case 1: return [4 /*yield*/, this.listSubplebbits()];
+                    case 2:
+                        localSubs = _c.sent();
+                        if (localSubs.includes(options.address))
+                            return [2 /*return*/, newSub()];
+                        else
+                            return [2 /*return*/, new subplebbit_1.Subplebbit(options, this)];
+                        _c.label = 3;
+                    case 3: return [3 /*break*/, 13];
+                    case 4:
+                        if (!(!options.address && !options.signer)) return [3 /*break*/, 8];
+                        if (!!util_1.isRuntimeNode) return [3 /*break*/, 5];
+                        throw new Error("Can't instantenate a publishing subplebbit without node API");
+                    case 5:
                         _a = options;
                         return [4 /*yield*/, this.createSigner()];
-                    case 1:
-                        _a.signer = _b.sent();
+                    case 6:
+                        _a.signer = _c.sent();
                         debugs.DEBUG("Did not provide CreateSubplebbitOptions.signer, generated random signer with address (".concat(options.signer.address, ")"));
-                        _b.label = 2;
-                    case 2:
-                        subplebbit = new subplebbit_1.Subplebbit(options, this);
-                        return [4 /*yield*/, subplebbit.start()];
-                    case 3:
-                        _b.sent();
-                        return [4 /*yield*/, subplebbit.edit(options)];
-                    case 4:
-                        _b.sent();
-                        return [4 /*yield*/, subplebbit.stopPublishing()];
-                    case 5:
-                        _b.sent();
-                        return [2 /*return*/, subplebbit];
+                        return [2 /*return*/, newSub()];
+                    case 7: return [3 /*break*/, 13];
+                    case 8:
+                        if (!(!options.address && options.signer)) return [3 /*break*/, 12];
+                        if (!util_1.isRuntimeNode)
+                            throw new Error("Can't instantenate a publishing subplebbit without node API");
+                        return [4 /*yield*/, this.listSubplebbits()];
+                    case 9:
+                        localSubs = _c.sent();
+                        _b = options.signer.address;
+                        if (_b) return [3 /*break*/, 11];
+                        return [4 /*yield*/, (0, util_3.getPlebbitAddressFromPrivateKeyPem)(options.signer.privateKey)];
+                    case 10:
+                        _b = (_c.sent());
+                        _c.label = 11;
+                    case 11:
+                        derivedAddress = _b;
+                        if (localSubs.includes(derivedAddress))
+                            options.address = derivedAddress;
+                        return [2 /*return*/, newSub()];
+                    case 12:
+                        if (!util_1.isRuntimeNode)
+                            return [2 /*return*/, new subplebbit_1.Subplebbit(options, this)];
+                        else
+                            return [2 /*return*/, newSub()];
+                        _c.label = 13;
+                    case 13: return [2 /*return*/];
                 }
             });
         });

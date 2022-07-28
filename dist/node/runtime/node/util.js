@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.listSubplebbits = exports.getDefaultDataPath = void 0;
+exports.isRuntimeNode = exports.listSubplebbits = exports.getDefaultDataPath = void 0;
 var path_1 = __importDefault(require("path"));
 var fs_1 = require("fs");
 var assert_1 = __importDefault(require("assert"));
@@ -63,7 +63,9 @@ var listSubplebbits = function (plebbit) { return __awaiter(void 0, void 0, void
     });
 }); };
 exports.listSubplebbits = listSubplebbits;
+exports.isRuntimeNode = true;
 exports.default = {
     getDefaultDataPath: exports.getDefaultDataPath,
-    listSubplebbits: exports.listSubplebbits
+    listSubplebbits: exports.listSubplebbits,
+    isRuntimeNode: exports.isRuntimeNode
 };
