@@ -9,6 +9,9 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
+const updateInterval = 100;
+const subplebbitAddress = signers[0].address;
+
 const [ensSubplebbitSigner, ensSubplebbitAddress] = [signers[3], "plebbit.eth"];
 describe("plebbit (node and browser)", () => {
     let plebbit, signer, subplebbitSigner;
@@ -86,7 +89,7 @@ describe("plebbit (node and browser)", () => {
         });
         it("loads post correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
-            await subplebbit.update();
+            await subplebbit.update(updateInterval);
             await subplebbit.stop();
             expect(subplebbit.latestPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
             const expectedPostProps = await loadIpfsFileAsJson(subplebbit.latestPostCid, plebbit);
@@ -96,10 +99,10 @@ describe("plebbit (node and browser)", () => {
                 ...expectedPostProps
             });
             expect(expectedPost.constructor.name).to.equal("Post");
-            await expectedPost.update();
+            await expectedPost.update(updateInterval);
             const loadedPost = await plebbit.getComment(subplebbit.latestPostCid);
             expect(loadedPost.constructor.name).to.equal("Post");
-            await loadedPost.update();
+            await loadedPost.update(updateInterval);
 
             expect(JSON.stringify(loadedPost)).to.equal(JSON.stringify(expectedPost));
             await expectedPost.stop();
@@ -108,7 +111,7 @@ describe("plebbit (node and browser)", () => {
 
         it("loads comment correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
-            await subplebbit.update();
+            await subplebbit.update(updateInterval);
             await subplebbit.stop();
             const comment = subplebbit?.posts?.pages?.hot?.comments.filter((comment) => comment.replies)[0]?.replies?.pages?.topAll
                 ?.comments[0];
@@ -116,11 +119,11 @@ describe("plebbit (node and browser)", () => {
             const expectedCommentProps = await loadIpfsFileAsJson(comment.cid, plebbit);
             const expectedComment = await plebbit.createComment({ cid: comment.cid, ...expectedCommentProps });
             expect(expectedComment.constructor.name).to.equal("Comment");
-            await expectedComment.update();
+            await expectedComment.update(updateInterval);
             await expectedComment.stop();
             const loadedComment = await plebbit.getComment(comment.cid);
             expect(loadedComment.constructor.name).to.equal("Comment");
-            await loadedComment.update();
+            await loadedComment.update(updateInterval);
             await loadedComment.stop();
 
             expect(JSON.stringify(loadedComment)).to.equal(JSON.stringify(expectedComment));
@@ -152,6 +155,24 @@ describe("plebbit (node and browser)", () => {
         it(`A subplebbit with ENS domain for address can also be loaded from its IPNS`, async () => {
             const loadedSubplebbit = await plebbit.getSubplebbit(ensSubplebbitSigner.address);
             expect(loadedSubplebbit.address).to.equal(ensSubplebbitAddress);
+        });
+
+        it(`subplebbit = await createSubplebbit(await getSubplebbit(address))`, async () => {
+            const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            const createdSubplebbit = await plebbit.createSubplebbit(loadedSubplebbit);
+            expect(JSON.stringify(loadedSubplebbit)).to.equal(JSON.stringify(createdSubplebbit));
+        });
+
+        it(`subplebbit = await createSubplebbit({...await getSubplebbit()})`, async () => {
+            const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            const createdSubplebbit = await plebbit.createSubplebbit({ ...loadedSubplebbit });
+            expect(JSON.stringify(loadedSubplebbit)).to.equal(JSON.stringify(createdSubplebbit));
+        });
+
+        it(`subplebbit = await createSubplebbit(JSON.parse(JSON.stringify(await getSubplebbit())))`, async () => {
+            const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            const createdSubplebbit = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(loadedSubplebbit)));
+            expect(JSON.stringify(loadedSubplebbit)).to.equal(JSON.stringify(createdSubplebbit));
         });
     });
 });
