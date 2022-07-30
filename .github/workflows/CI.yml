@@ -19,7 +19,7 @@ on:
       - 'test/**'
       - 'src/**'
       - 'config/**'
-      # - '.github/**'
+      - '.github/**'
       - 'package.json'
       - 'package-lock.json'
 
