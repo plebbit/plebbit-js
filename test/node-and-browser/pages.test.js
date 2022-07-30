@@ -80,13 +80,14 @@ const testSorting = async (sort, shouldTestCommentReplies) => {
                 if (currentPost.replyCount === 0) return undefined;
                 await Promise.all(
                     sortNames.map(async (currentSortName) => {
-                        const alreadySortedComments = await loadAllPages(
-                            currentPost.replies.pageCids[currentSortName],
-                            currentPost.replies
-                        );
+                        const alreadySortedComments =
+                            (currentPost.replies.pageCids[currentSortName] &&
+                                (await loadAllPages(currentPost.replies.pageCids[currentSortName], currentPost.replies))) ||
+                            [];
                         if (sortNames.length === 1) expect(currentPost.replyCount).to.equal(alreadySortedComments.length); // If sort with no timeframe then sortedComments should equal post.replyCount
                         await Promise.all(
                             alreadySortedComments.map(async (comment) => {
+                                if (typeof comment.upvoteCount === "number") return;
                                 await comment.update(updateInterval);
                                 comment.stop();
                             })
@@ -99,9 +100,13 @@ const testSorting = async (sort, shouldTestCommentReplies) => {
     } else
         await Promise.all(
             sortNames.map(async (currentSortName) => {
-                const alreadySortedComments = await loadAllPages(subplebbit.posts.pageCids[currentSortName], subplebbit.posts);
+                const alreadySortedComments =
+                    (subplebbit.posts.pageCids[currentSortName] &&
+                        (await loadAllPages(subplebbit.posts.pageCids[currentSortName], subplebbit.posts))) ||
+                    [];
                 await Promise.all(
                     alreadySortedComments.map(async (comment) => {
+                        if (typeof comment.upvoteCount === "number") return;
                         await comment.update(updateInterval);
                         comment.stop();
                     })
