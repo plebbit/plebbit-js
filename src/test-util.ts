@@ -100,7 +100,7 @@ export async function generateMockVote(
 }
 
 export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promise<Comment[]> {
-    if (!pageCid) return [];
+    assert(typeof pageCid === "string");
     assert(pagesInstance.getPage);
     let sortedCommentsPage = await pagesInstance.getPage(pageCid);
     let sortedComments = sortedCommentsPage.comments;

@@ -322,13 +322,13 @@ export class DbHandler {
                 original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()),
                 ...flairIfNeeded
             });
-            debugs.DEBUG(`Will update comment (${edit.commentCid}) with author props: ${JSON.stringify(newProps)}`);
+            debugs.TRACE(`Will update comment (${edit.commentCid}) with author props: ${JSON.stringify(newProps)}`);
         } else {
             newProps = {
                 ...edit.toJSONForDb(challengeRequestId),
                 original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton())
             };
-            debugs.DEBUG(`Will update comment (${edit.commentCid}) with mod props: ${JSON.stringify(removeKeys(newProps, ["signature"]))}`);
+            debugs.TRACE(`Will update comment (${edit.commentCid}) with mod props: ${JSON.stringify(removeKeys(newProps, ["signature"]))}`);
         }
 
         await this.baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid);
