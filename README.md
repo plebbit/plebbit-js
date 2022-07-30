@@ -316,6 +316,7 @@ Encrypted {
   - [`subplebbit.start()`](#subplebbitstart)
   - [`subplebbit.stop()`](#subplebbitstop)
   - [`subplebbit.update()`](#subplebbitupdate)
+  - `subplebbit.delete()`
   - `subplebbit.address`
   - `subplebbit.roles`
   - `subplebbit.posts`
