@@ -248,25 +248,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit> {
-        if (newSubplebbitOptions.address) await this.assertDomainResolvesCorrectlyIfNeeded(newSubplebbitOptions.address);
-        await this.prePublish();
-        assert(this.plebbit.ipfsClient && this.dbHandler, "subplebbit.ipfsClient and dbHandler is needed to edit");
+        assert(this.dbHandler, "dbHandler is needed to edit");
 
-        this.initSubplebbit({
-            updatedAt: timestamp(),
-            ...newSubplebbitOptions
-        });
         if (newSubplebbitOptions.address) {
+            await this.assertDomainResolvesCorrectlyIfNeeded(newSubplebbitOptions.address);
             debugs.DEBUG(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
             await this.dbHandler.changeDbFilename(`${newSubplebbitOptions.address}`);
         }
-        const file = await this.plebbit.ipfsClient.add(JSON.stringify(this));
-        await this.plebbit.ipfsClient.name.publish(file["cid"], {
-            lifetime: "72h", // TODO decide on optimal time later
-            key: this.ipnsKeyName,
-            allowOffline: true
-        });
-        debugs.INFO(`Subplebbit (${this.address}) props (${Object.keys(newSubplebbitOptions)}) has been edited and its IPNS updated`);
+        this.initSubplebbit(newSubplebbitOptions);
+
+        debugs.INFO(`Subplebbit (${this.address}) props (${Object.keys(newSubplebbitOptions)}) has been edited`);
         return this;
     }
 
@@ -274,14 +265,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const ipnsAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
         assert(ipnsAddress, "Can't update subplebbit without address");
         try {
-            const subplebbitIpns = await loadIpnsAsJson(ipnsAddress, this.plebbit);
-            if (this.emittedAt !== subplebbitIpns.updatedAt) {
-                this.emittedAt = subplebbitIpns.updatedAt;
+            const subplebbitIpns: SubplebbitType = await loadIpnsAsJson(ipnsAddress, this.plebbit);
+            if (JSON.stringify(this.toJSON()) !== JSON.stringify(subplebbitIpns)) {
                 this.initSubplebbit(subplebbitIpns);
                 debugs.INFO(`Subplebbit received a new update. Will emit an update event`);
-                this.emit("update", this);
+                this.emit("update", subplebbitIpns);
             }
-            this.initSubplebbit(subplebbitIpns);
             return this;
         } catch (e) {
             debugs.ERROR(`Failed to update subplebbit IPNS, error: ${e}`);
@@ -299,25 +288,26 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async updateSubplebbitIpns() {
-        assert(this.dbHandler);
+        assert(this.dbHandler && this.plebbit.ipfsClient);
         const trx: any = await this.dbHandler.createTransaction("subplebbit");
         const latestPost = await this.dbHandler.queryLatestPost(trx);
         await this.dbHandler.commitTransaction("subplebbit");
+        this.latestPostCid = latestPost?.cid;
+
         const [metrics, subplebbitPosts] = await Promise.all([
             this.dbHandler.querySubplebbitMetrics(undefined),
             this.sortHandler.generatePagesUnderComment(undefined, undefined)
         ]);
         const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
-        let currentIpns;
+        let currentIpns: SubplebbitType | undefined;
         try {
             currentIpns = await loadIpnsAsJson(resolvedAddress, this.plebbit);
         } catch (e) {
             debugs.WARN(`Subplebbit IPNS (${resolvedAddress}) is not defined, will publish a new record`);
         }
-        let posts: Pages | undefined;
         if (subplebbitPosts) {
             if (!subplebbitPosts?.pages?.hot) throw new Error("Generated pages for subplebbit.posts is missing pages");
-            posts = new Pages({
+            this.posts = new Pages({
                 pages: {
                     hot: subplebbitPosts.pages.hot
                 },
@@ -326,17 +316,27 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
         }
 
-        const metricsCid = (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path;
-        const newSubplebbitOptions = {
-            ...(!currentIpns && !posts && !this.createdAt ? { createdAt: timestamp() } : {}),
-            ...(JSON.stringify(posts) !== JSON.stringify(this.posts) ? { posts: posts } : {}),
-            ...(metricsCid !== this.metricsCid ? { metricsCid: metricsCid } : {}),
-            ...(latestPost?.postCid !== this.latestPostCid ? { latestPostCid: latestPost?.postCid } : {})
-        };
-        if (JSON.stringify(newSubplebbitOptions) !== "{}") {
-            debugs.DEBUG(`Will attempt to sync subplebbit IPNS fields [${Object.keys(newSubplebbitOptions)}]`);
-            return this.edit(newSubplebbitOptions);
-        } else debugs.TRACE(`No need to sync subplebbit IPNS`);
+        if (!currentIpns?.createdAt && !this.createdAt) {
+            this.createdAt = timestamp();
+            debugs.INFO(`Subplebbit (${this.address}) has been just created with a timestamp of ${this.createdAt}`);
+        }
+
+        if (!this.pubsubTopic) {
+            this.pubsubTopic = this.address;
+            debugs.INFO(`Defaulted subplebbit (${this.address}) pubsub topic to ${this.pubsubTopic} since sub owner hasn't provided any`);
+        }
+
+        this.metricsCid = (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path;
+
+        if (!currentIpns || JSON.stringify(currentIpns) !== JSON.stringify(this.toJSON())) {
+            this.updatedAt = timestamp();
+            const file = await this.plebbit.ipfsClient.add(JSON.stringify(this.toJSON()));
+            await this.plebbit.ipfsClient.name.publish(file["cid"], {
+                lifetime: "72h", // TODO decide on optimal time later
+                key: this.ipnsKeyName,
+                allowOffline: true
+            });
+        }
     }
 
     async handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string) {
@@ -360,13 +360,15 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.dbHandler.editComment(commentEdit, challengeRequestId);
             // const commentAfterEdit = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
             debugs.INFO(
-                `Updated comment (${commentEdit.commentCid}) with CommentEdit: ${JSON.stringify(removeKeys(commentEdit, ["signature"]))}`
+                `Updated comment (${commentEdit.commentCid}) with CommentEdit: ${JSON.stringify(
+                    removeKeys(commentEdit.toJSON(), ["signature"])
+                )}`
             );
         } else if (modRole) {
             debugs.DEBUG(
                 `${modRole.role} (${editorAddress}) is attempting to CommentEdit ${
                     commentToBeEdited?.cid
-                } with CommentEdit (${JSON.stringify(removeKeys(commentEdit, ["signature"]))})`
+                } with CommentEdit (${JSON.stringify(removeKeys(commentEdit.toJSON(), ["signature"]))})`
             );
 
             for (const editField of Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON()))) {
@@ -746,13 +748,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async syncIpnsWithDb() {
         assert(this.dbHandler, "DbHandler need to be defined before syncing");
         debugs.TRACE("Starting to sync IPNS with DB");
-        // try {
-        await this.sortHandler.cacheCommentsPages();
-        const dbComments: Comment[] = await this.dbHandler.queryComments();
-        await Promise.all([...dbComments.map(async (comment: Comment) => this.syncComment(comment)), this.updateSubplebbitIpns()]);
-        // } catch (e) {
-        //     debugs.WARN(`Failed to sync due to error: ${e}`);
-        // }
+        try {
+            await this.sortHandler.cacheCommentsPages();
+            const dbComments = await this.dbHandler.queryComments();
+            await Promise.all([...dbComments.map(async (comment: Comment) => this.syncComment(comment)), this.updateSubplebbitIpns()]);
+        } catch (e) {
+            debugs.WARN(`Failed to sync due to error: ${e}`);
+        }
     }
 
     async _syncLoop(syncIntervalMs: number) {
@@ -793,7 +795,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic);
         this.dbHandler?.knex?.destroy();
         this.dbHandler = undefined;
-
         this._sync = false;
     }
 
