@@ -140,9 +140,6 @@ export class Plebbit implements PlebbitOptions {
         const newSub = async () => {
             assert(isRuntimeNode, "Runtime need to include node APIs to create a publishing subplebbit");
             const subplebbit = new Subplebbit(options, this);
-            await subplebbit.start();
-            await subplebbit.edit(options);
-            await subplebbit.stopPublishing();
             return subplebbit;
         };
 

@@ -71,7 +71,6 @@ describe("subplebbit", async () => {
             await loadedSubplebbit.update(syncInterval);
             if (loadedSubplebbit.description === newDescription && loadedSubplebbit.title === newTitle) resolve();
             loadedSubplebbit.once("update", (updatedSubplebbit) => {
-                // if (updatedSubplebbit.description !== newDescription || updatedSubplebbit.title !== newTitle) return;
                 expect(updatedSubplebbit.description).to.equal(newDescription);
                 expect(updatedSubplebbit.title).to.equal(newTitle);
                 loadedSubplebbit.removeAllListeners("update");
