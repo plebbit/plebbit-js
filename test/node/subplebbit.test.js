@@ -33,6 +33,7 @@ describe("subplebbit", async () => {
     [{}, { title: `Test title - ${Date.now()}` }].map((subArgs) =>
         it(`createSubplebbit(${JSON.stringify(subArgs)})`, async () => {
             const newSubplebbit = await plebbit.createSubplebbit(subArgs);
+            await newSubplebbit.start();
             expect(newSubplebbit.address).to.equal(newSubplebbit.signer.address);
             const subplebbitIpns = await plebbit.getSubplebbit(newSubplebbit.address);
             expect(subplebbitIpns.address).to.equal(newSubplebbit.signer.address);
@@ -57,21 +58,27 @@ describe("subplebbit", async () => {
         expect(subplebbit.toJSON()).to.deep.equal(loadedSubplebbit.toJSON());
     });
 
-    it("subplebbit.edit", async () => {
-        return new Promise(async (resolve) => {
+    it("subplebbit.edit", async () =>
+        new Promise(async (resolve) => {
             const newTitle = `New title to test subplebbit.edit - ${Date.now()}`;
             const newDescription = `New description to test subplebbit.edit - ${Date.now()}`;
             const newProps = { title: newTitle, description: newDescription };
-            await subplebbit.edit(newProps);
+            const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
 
-            subplebbit.once("update", async () => {
-                expect(subplebbit.title).to.equal(newTitle);
-                expect(subplebbit.description, newDescription);
+            await subplebbit.edit(newProps);
+            expect(subplebbit.title).to.equal(newTitle);
+            expect(subplebbit.description).to.equal(newDescription);
+            await loadedSubplebbit.update(syncInterval);
+            if (loadedSubplebbit.description === newDescription && loadedSubplebbit.title === newTitle) resolve();
+            loadedSubplebbit.once("update", (updatedSubplebbit) => {
+                // if (updatedSubplebbit.description !== newDescription || updatedSubplebbit.title !== newTitle) return;
+                expect(updatedSubplebbit.description).to.equal(newDescription);
+                expect(updatedSubplebbit.title).to.equal(newTitle);
+                loadedSubplebbit.removeAllListeners("update");
+                loadedSubplebbit.stop();
                 resolve();
             });
-            await subplebbit.update();
-        });
-    });
+        }));
 
     it(`Can edit a subplebbit to have ENS domain as address`, async () => {
         const address = subplebbit.address;
@@ -84,8 +91,12 @@ describe("subplebbit", async () => {
         };
         await subplebbit.edit({ address: "plebbit.eth" });
         expect(subplebbit.address).to.equal("plebbit.eth");
-        const loadedSubplebbit = await plebbit.getSubplebbit("plebbit.eth");
-        expect(JSON.stringify(loadedSubplebbit)).to.equal(JSON.stringify(subplebbit));
+        subplebbit.once("update", async (updatedSubplebbit) => {
+            expect(updatedSubplebbit.address).to.equal("plebbit.eth");
+            expect(subplebbit.address).to.equal("plebbit.eth");
+            const loadedSubplebbit = await plebbit.getSubplebbit("plebbit.eth");
+            expect(JSON.stringify(loadedSubplebbit)).to.equal(JSON.stringify(subplebbit));
+        });
     });
     it(`Fails to edit subplebbit.address to a new domain if subplebbit-address record does not exist or does not match signer.address`, async () => {
         await assert.isRejected(subplebbit.edit({ address: "testgibbreish.eth" }));
@@ -94,12 +105,18 @@ describe("subplebbit", async () => {
 
     it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () =>
         new Promise(async (resolve) => {
+            const loadedSubplebbit = await plebbit.getSubplebbit("plebbit.eth");
+            await loadedSubplebbit.update(syncInterval);
+
             const post = await subplebbit._addPublicationToDb(await generateMockPost("plebbit.eth", plebbit, signers[0]));
-            subplebbit.once("update", async (updatedSubplebbit) => {
+
+            loadedSubplebbit.on("update", async (updatedSubplebbit) => {
+                if (!updatedSubplebbit.posts) return;
                 expect(updatedSubplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.content === post.content)).to.be.true;
                 expect(updatedSubplebbit.latestPostCid).to.equal(post.cid);
+                await loadedSubplebbit.stop();
+                await loadedSubplebbit.removeAllListeners();
                 resolve();
             });
-            await subplebbit.update(syncInterval);
         }));
 });
