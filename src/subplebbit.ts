@@ -22,6 +22,7 @@ import { Plebbit } from "./plebbit";
 import {
     AuthorType,
     ChallengeType,
+    CommentUpdate,
     CreateSubplebbitOptions,
     Flair,
     FlairOwner,
@@ -59,7 +60,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     suggested?: SubplebbitSuggested;
     flairs: Record<FlairOwner, Flair[]>;
     address: string;
-    moderatorsAddresses?: string[];
     metricsCid?: string;
     createdAt: number;
     updatedAt: number;
@@ -81,8 +81,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     private validateCaptchaAnswerCallback?: Function;
     private ipnsKeyName?: string;
     private sortHandler: SortHandler;
-    private emittedAt?: number;
     private _updateInterval?: any;
+    private _syncInterval?: any;
     private _sync: boolean;
 
     constructor(props: CreateSubplebbitOptions, plebbit: Plebbit) {
@@ -102,24 +102,22 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.edit = this.edit.bind(this);
     }
 
-    initSubplebbit(newProps) {
+    initSubplebbit(newProps: SubplebbitType | SubplebbitEditOptions) {
         const oldProps = this.toJSONInternal();
         const mergedProps = { ...oldProps, ...newProps };
-        this.title = mergedProps["title"];
-        this.description = mergedProps["description"];
-        this.moderatorsAddresses = mergedProps["moderatorsAddresses"];
-        this.latestPostCid = mergedProps["latestPostCid"];
-        this._dbConfig = mergedProps["database"];
-        this.address = mergedProps["address"];
-        this.ipnsKeyName = mergedProps["ipnsKeyName"];
-        this.pubsubTopic = mergedProps["pubsubTopic"] || this.address;
-        this.sortHandler = new SortHandler(this);
-        this.challengeTypes = mergedProps["challengeTypes"];
-        this.metricsCid = mergedProps["metricsCid"];
-        this.createdAt = mergedProps["createdAt"];
-        this.updatedAt = mergedProps["updatedAt"];
-        this.signer = mergedProps["signer"];
-        this.encryption = mergedProps["encryption"];
+        this.title = mergedProps.title;
+        this.description = mergedProps.description;
+        this.latestPostCid = mergedProps.latestPostCid;
+        this._dbConfig = mergedProps.database;
+        this.address = mergedProps.address;
+        this.ipnsKeyName = mergedProps.ipnsKeyName;
+        this.pubsubTopic = mergedProps.pubsubTopic;
+        this.challengeTypes = mergedProps.challengeTypes;
+        this.metricsCid = mergedProps.metricsCid;
+        this.createdAt = mergedProps.createdAt;
+        this.updatedAt = mergedProps.updatedAt;
+        this.signer = mergedProps.signer;
+        this.encryption = mergedProps.encryption;
         this.posts =
             mergedProps["posts"] instanceof Object
                 ? new Pages({
@@ -127,7 +125,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                       subplebbit: this
                   })
                 : mergedProps["posts"];
-        this.roles = mergedProps["roles"];
+        this.roles = mergedProps.roles;
     }
 
     async initSignerIfNeeded() {
@@ -170,7 +168,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async initDbIfNeeded() {
-        return subplebbitInitDbIfNeeded(this);
+        await subplebbitInitDbIfNeeded(this);
+        this.sortHandler = new SortHandler(this);
     }
 
     setProvideCaptchaCallback(newCallback) {
@@ -716,9 +715,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     async syncComment(dbComment: Comment) {
         assert(this.dbHandler);
-        let commentIpns;
+        let commentIpns: CommentUpdate | undefined;
         try {
-            commentIpns = await loadIpnsAsJson(dbComment.ipnsName, this.plebbit);
+            commentIpns = dbComment.ipnsName && (await loadIpnsAsJson(dbComment.ipnsName, this.plebbit));
         } catch (e) {
             debugs.TRACE(
                 `Failed to load Comment (${dbComment.cid}) IPNS (${dbComment.ipnsName}) while syncing. Will attempt to publish a new IPNS record`
@@ -764,7 +763,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             }
         };
         await this.syncIpnsWithDb();
-        setTimeout(loop.bind(this), syncIntervalMs);
+        this._syncInterval = setTimeout(loop.bind(this), syncIntervalMs);
     }
 
     async start(syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS) {
@@ -789,6 +788,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async stopPublishing() {
         this.removeAllListeners();
         await this.stop();
+        this._syncInterval = clearInterval(this._syncInterval);
+
         await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic);
         this.dbHandler?.knex?.destroy();
         this.dbHandler = undefined;
