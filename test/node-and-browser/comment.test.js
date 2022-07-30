@@ -10,6 +10,7 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 let plebbit;
+const updateInterval = 100;
 const subplebbitAddress = signers[0].address;
 
 describe("comment (node and browser)", async () => {
@@ -82,7 +83,7 @@ describe("comment (node and browser)", async () => {
         it(`Fail to publish a reply with a timestamp earlier than parent`, async () => {
             return new Promise(async (resolve) => {
                 const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-                await subplebbit.update();
+                await subplebbit.update(updateInterval);
                 await subplebbit.stop();
                 const parentPost = await plebbit.getComment(subplebbit.latestPostCid);
                 const reply = await generateMockComment(parentPost, plebbit, signers[0], false, { timestamp: parentPost.timestamp - 1 });
