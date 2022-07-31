@@ -56,7 +56,7 @@ const databaseConfig = {
 
 const startIpfsNodes = async () => {
     await Promise.all(
-        [offlineNodeArgs, ipfsNodeArgs, clientNodeArgs].map(async (nodeArgs) => {
+        [offlineNodeArgs, ipfsNodeArgs, onlineNodeArgs].map(async (nodeArgs) => {
             try {
                 execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} init`, { stdio: "ignore" });
             } catch {}
