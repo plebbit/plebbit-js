@@ -54,16 +54,11 @@ describe("subplebbit", async () => {
 
         const title = `Test online plebbit`;
 
-        const onlineSubplebbit = await onlinePlebbit.createSubplebbit({ title: title });
-
-        await onlineSubplebbit.start();
+        await onlinePlebbit.createSubplebbit({ title: title });
 
         const endTime = timestamp();
 
         expect(endTime).to.be.lessThanOrEqual(startTime + 10, "createSubplebbit took more than 10s in an online ipfs node");
-
-        const loadedSubplebbit = await onlinePlebbit.getSubplebbit(onlineSubplebbit.address);
-        expect(loadedSubplebbit.title).to.equal(title);
     });
 
     it("create new subplebbit", async function () {
