@@ -26,6 +26,7 @@ import {
     CreateSubplebbitOptions,
     Flair,
     FlairOwner,
+    ProtocolVersion,
     SubplebbitEditOptions,
     SubplebbitEncryption,
     SubplebbitFeatures,
@@ -65,7 +66,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     updatedAt: number;
     signer?: Signer;
     encryption: SubplebbitEncryption;
-    protocolVersion: "1.0.0"; // semantic version of the protocol https://semver.org/
+    protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
     signature: Signature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
 
     plebbit: Plebbit;
@@ -77,8 +78,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     private _challengeToSolution: any;
     private _challengeToPublication: any;
-    private provideCaptchaCallback?: Function;
-    private validateCaptchaAnswerCallback?: Function;
+    private provideCaptchaCallback?: (request: ChallengeRequestMessage) => Promise<[Challenge[], string | undefined]>;
+    private validateCaptchaAnswerCallback?: (answerMessage: ChallengeAnswerMessage) => Promise<[boolean, string[] | undefined]>;
     private ipnsKeyName?: string;
     private sortHandler: SortHandler;
     private _updateInterval?: any;
@@ -172,11 +173,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.sortHandler = new SortHandler(this);
     }
 
-    setProvideCaptchaCallback(newCallback) {
+    setProvideCaptchaCallback(newCallback: (request: ChallengeRequestMessage) => Promise<[Challenge[], string | undefined]>) {
         this.provideCaptchaCallback = newCallback;
     }
 
-    setValidateCaptchaAnswerCallback(newCallback) {
+    setValidateCaptchaAnswerCallback(newCallback: (answerMessage: ChallengeAnswerMessage) => Promise<[boolean, string[] | undefined]>) {
         this.validateCaptchaAnswerCallback = newCallback;
     }
 
@@ -691,10 +692,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    async defaultProvideCaptcha(request: ChallengeRequestMessage) {
+    async defaultProvideCaptcha(request: ChallengeRequestMessage): Promise<[Challenge[], string | undefined]> {
         // Return question, type
         // Expected return is:
-        // captcha, captcha type, reason for skipping captcha (if it's skipped by nullifying captcha)
+        // captcha, reason for skipping captcha (if it's skipped by nullifying captcha)
         const { image, text } = createCaptcha(300, 100);
         this._challengeToSolution[request.challengeRequestId] = [text];
         const imageBuffer = (await image).toString("base64");
@@ -704,11 +705,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     challenge: imageBuffer,
                     type: CHALLENGE_TYPES.IMAGE
                 })
-            ]
+            ],
+            undefined
         ];
     }
 
-    async defaultValidateCaptcha(answerMessage: ChallengeAnswerMessage) {
+    async defaultValidateCaptcha(answerMessage: ChallengeAnswerMessage): Promise<[boolean, string[] | undefined]> {
         const actualSolution = this._challengeToSolution[answerMessage.challengeRequestId];
         const answerIsCorrect = JSON.stringify(answerMessage.challengeAnswers) === JSON.stringify(actualSolution);
         debugs.DEBUG(
