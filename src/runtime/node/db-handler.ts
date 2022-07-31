@@ -32,7 +32,18 @@ const TABLES = Object.freeze({
     EDITS: "edits"
 });
 
-const jsonFields = ["signature", "author", "authorEdit", "original", "flair", "commentAuthor"];
+const jsonFields = [
+    "signature",
+    "author",
+    "authorEdit",
+    "original",
+    "flair",
+    "commentAuthor",
+    "acceptedChallengeTypes",
+    "challenges",
+    "challengeAnswers",
+    "challengeErrors"
+];
 
 export class DbHandler {
     _dbConfig: Knex.Config;

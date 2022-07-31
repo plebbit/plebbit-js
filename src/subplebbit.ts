@@ -571,24 +571,22 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         return { publication: postOrCommentOrVote };
     }
 
-    async handleChallengeRequest(msgParsed) {
-        const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(msgParsed);
+    async handleChallengeRequest(request: ChallengeRequestMessage) {
+        this.emit("challengerequest", request);
+        const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(request);
         const decryptedPublication = JSON.parse(
-            await decrypt(msgParsed.encryptedPublication.encrypted, msgParsed.encryptedPublication.encryptedKey, this.signer.privateKey)
+            await decrypt(request.encryptedPublication.encrypted, request.encryptedPublication.encryptedKey, this.signer.privateKey)
         );
-        this._challengeToPublication[msgParsed.challengeRequestId] = decryptedPublication;
-        debugs.DEBUG(`Received a request to a challenge (${msgParsed.challengeRequestId})`);
+        this._challengeToPublication[request.challengeRequestId] = decryptedPublication;
+        debugs.DEBUG(`Received a request to a challenge (${request.challengeRequestId})`);
         if (!providedChallenges) {
             // Subplebbit owner has chosen to skip challenging this user or post
             debugs.DEBUG(
-                `Skipping challenge for ${msgParsed.challengeRequestId}, add publication to IPFS and respond with challengeVerificationMessage right away`
+                `Skipping challenge for ${request.challengeRequestId}, add publication to IPFS and respond with challengeVerificationMessage right away`
             );
-            await this.dbHandler.upsertChallenge(new ChallengeRequestMessage(msgParsed), undefined);
+            await this.dbHandler.upsertChallenge(request, undefined);
 
-            const publishedPublication: any = await this.publishPostAfterPassingChallenge(
-                decryptedPublication,
-                msgParsed.challengeRequestId
-            );
+            const publishedPublication: any = await this.publishPostAfterPassingChallenge(decryptedPublication, request.challengeRequestId);
             const restOfMsg =
                 "publication" in publishedPublication
                     ? {
@@ -601,9 +599,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const challengeVerification = new ChallengeVerificationMessage({
                 reason: reasonForSkippingCaptcha,
                 challengeSuccess: Boolean(publishedPublication.publication), // If no publication, this will be false
-                challengeAnswerId: msgParsed.challengeAnswerId,
+                challengeAnswerId: request.challengeAnswerId,
                 challengeErrors: undefined,
-                challengeRequestId: msgParsed.challengeRequestId,
+                challengeRequestId: request.challengeRequestId,
                 ...restOfMsg
             });
             await Promise.all([
@@ -614,24 +612,27 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.emit("challengeverification", challengeVerification);
         } else {
             const challengeMessage = new ChallengeMessage({
-                challengeRequestId: msgParsed.challengeRequestId,
-                challenges: providedChallenges
+                challengeRequestId: request.challengeRequestId,
+                challenges: providedChallenges,
+                challengeAnswerId: request.challengeAnswerId
             });
             await Promise.all([
                 this.dbHandler.upsertChallenge(challengeMessage, undefined),
                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeMessage)))
             ]);
+            this.emit("challengemessage", challengeMessage);
             debugs.INFO(`Published ${challengeMessage.type} (${challengeMessage.challengeRequestId}) over pubsub`);
         }
     }
 
-    async handleChallengeAnswer(msgParsed) {
-        const [challengeSuccess, challengeErrors] = await this.validateCaptchaAnswerCallback(msgParsed);
+    async handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage) {
+        this.emit("challengeanswer", challengeAnswer);
+        const [challengeSuccess, challengeErrors] = await this.validateCaptchaAnswerCallback(challengeAnswer);
         if (challengeSuccess) {
-            debugs.DEBUG(`Challenge (${msgParsed.challengeRequestId}) has been answered correctly`);
-            const storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
-            await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(msgParsed), undefined);
-            const publishedPublication = await this.publishPostAfterPassingChallenge(storedPublication, msgParsed.challengeRequestId); // could contain "publication" or "reason"
+            debugs.DEBUG(`Challenge (${challengeAnswer.challengeRequestId}) has been answered correctly`);
+            const storedPublication = this._challengeToPublication[challengeAnswer.challengeRequestId];
+            await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(challengeAnswer), undefined);
+            const publishedPublication = await this.publishPostAfterPassingChallenge(storedPublication, challengeAnswer.challengeRequestId); // could contain "publication" or "reason"
             const restOfMsg =
                 "publication" in publishedPublication
                     ? {
@@ -642,8 +643,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                       }
                     : publishedPublication;
             const challengeVerification = new ChallengeVerificationMessage({
-                challengeRequestId: msgParsed.challengeRequestId,
-                challengeAnswerId: msgParsed.challengeAnswerId,
+                challengeRequestId: challengeAnswer.challengeRequestId,
+                challengeAnswerId: challengeAnswer.challengeAnswerId,
                 challengeSuccess: challengeSuccess,
                 challengeErrors: challengeErrors,
                 ...restOfMsg
@@ -655,11 +656,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             debugs.INFO(
                 `Published ${challengeVerification.type} over pubsub: ${JSON.stringify(removeKeys(challengeVerification, ["publication"]))}`
             );
+            this.emit("challengeverification", challengeVerification);
         } else {
-            debugs.INFO(`Challenge (${msgParsed.challengeRequestId}) has answered incorrectly`);
+            debugs.INFO(`Challenge (${challengeAnswer.challengeRequestId}) has been answered incorrectly`);
             const challengeVerification = new ChallengeVerificationMessage({
-                challengeRequestId: msgParsed.challengeRequestId,
-                challengeAnswerId: msgParsed.challengeAnswerId,
+                challengeRequestId: challengeAnswer.challengeRequestId,
+                challengeAnswerId: challengeAnswer.challengeAnswerId,
                 challengeSuccess: challengeSuccess,
                 challengeErrors: challengeErrors
             });
@@ -677,10 +679,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         assert(this.dbHandler);
         try {
             msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg.data));
-            if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST) await this.handleChallengeRequest(msgParsed);
+            if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST)
+                await this.handleChallengeRequest(new ChallengeRequestMessage(msgParsed));
             else if (msgParsed.type === PUBSUB_MESSAGE_TYPES.CHALLENGEANSWER && this._challengeToPublication[msgParsed.challengeRequestId])
                 // Only reply to peers who started a challenge request earlier
-                await this.handleChallengeAnswer(msgParsed);
+                await this.handleChallengeAnswer(new ChallengeAnswerMessage(msgParsed));
         } catch (e) {
             e.message = `failed process captcha for challenge request id (${msgParsed?.challengeRequestId}): ${e.message}`;
             debugs.ERROR(e);
@@ -688,12 +691,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    async defaultProvideCaptcha(challengeRequestMessage) {
+    async defaultProvideCaptcha(request: ChallengeRequestMessage) {
         // Return question, type
         // Expected return is:
         // captcha, captcha type, reason for skipping captcha (if it's skipped by nullifying captcha)
         const { image, text } = createCaptcha(300, 100);
-        this._challengeToSolution[challengeRequestMessage.challengeRequestId] = [text];
+        this._challengeToSolution[request.challengeRequestId] = [text];
         const imageBuffer = (await image).toString("base64");
         return [
             [
@@ -705,11 +708,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         ];
     }
 
-    async defaultValidateCaptcha(challengeAnswerMessage) {
-        const actualSolution = this._challengeToSolution[challengeAnswerMessage.challengeRequestId];
-        const answerIsCorrect = JSON.stringify(challengeAnswerMessage.challengeAnswers) === JSON.stringify(actualSolution);
+    async defaultValidateCaptcha(answerMessage: ChallengeAnswerMessage) {
+        const actualSolution = this._challengeToSolution[answerMessage.challengeRequestId];
+        const answerIsCorrect = JSON.stringify(answerMessage.challengeAnswers) === JSON.stringify(actualSolution);
         debugs.DEBUG(
-            `Challenge (${challengeAnswerMessage.challengeRequestId}): Answer's validity: ${answerIsCorrect}, user's answer: ${challengeAnswerMessage.challengeAnswers}, actual solution: ${actualSolution}`
+            `Challenge (${answerMessage.challengeRequestId}): Answer's validity: ${answerIsCorrect}, user's answer: ${answerMessage.challengeAnswers}, actual solution: ${actualSolution}`
         );
         const challengeErrors = answerIsCorrect ? undefined : ["User solved captcha incorrectly"];
         return [answerIsCorrect, challengeErrors];
@@ -801,6 +804,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async _addPublicationToDb(publication: Publication) {
         debugs.INFO(`Adding ${publication.getType()} with author (${JSON.stringify(publication.author)}) to DB directly`);
         const randomUUID = uuidv4();
+        //@ts-ignore
         await this.dbHandler.upsertChallenge(new ChallengeRequestMessage({ challengeRequestId: randomUUID }));
         return (await this.publishPostAfterPassingChallenge(publication, randomUUID)).publication;
     }
