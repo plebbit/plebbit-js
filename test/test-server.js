@@ -32,12 +32,12 @@ const ipfsNodeArgs = {
     extraCommands: ["bootstrap rm --all"]
 };
 
-const clientNodeArgs = {
-    dir: path.join(process.cwd(), ".test-ipfs-client"),
+const onlineNodeArgs = {
+    dir: path.join(process.cwd(), ".test-ipfs-online"),
     apiPort: 5003,
     gatewayPort: 8082,
     daemonArgs: "--enable-pubsub-experiment",
-    extraCommands: ["bootstrap rm --all"]
+    extraCommands: []
 };
 
 const debugs = getDebugLevels("test-server");

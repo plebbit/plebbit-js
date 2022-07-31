@@ -3,6 +3,7 @@ const signers = require("../fixtures/signers");
 const { rm } = require("fs");
 const path = require("path");
 const { generateMockPost } = require("../../dist/node/test-util");
+const { timestamp } = require("../../dist/node/util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
@@ -43,6 +44,27 @@ describe("subplebbit", async () => {
             );
         })
     );
+
+    it(`createSubplebbit on IPFS node doesn't take more than 10s`, async () => {
+        const onlinePlebbit = await Plebbit({
+            ipfsHttpClientOptions: "http://localhost:5003/api/v0",
+            pubsubHttpClientOptions: `http://localhost:5003/api/v0`
+        });
+        const startTime = timestamp();
+
+        const title = `Test online plebbit`;
+
+        const onlineSubplebbit = await onlinePlebbit.createSubplebbit({ title: title });
+
+        await onlineSubplebbit.start();
+
+        const endTime = timestamp();
+
+        expect(endTime).to.be.lessThanOrEqual(startTime + 10, "createSubplebbit took more than 10s in an online ipfs node");
+
+        const loadedSubplebbit = await onlinePlebbit.getSubplebbit(onlineSubplebbit.address);
+        expect(loadedSubplebbit.title).to.equal(title);
+    });
 
     it("create new subplebbit", async function () {
         const signer = await plebbit.createSigner();

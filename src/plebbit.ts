@@ -82,8 +82,7 @@ export class Plebbit implements PlebbitOptions {
     }
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
-        assert(typeof subplebbitAddress === "string");
-        assert(subplebbitAddress.length > 0);
+        assert(typeof subplebbitAddress === "string" && subplebbitAddress.length > 0, "Subplebbit address needs to be an IPNS string");
         const resolvedSubplebbitAddress = await this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
         assert(
             typeof resolvedSubplebbitAddress === "string" && resolvedSubplebbitAddress.length > 0,
