@@ -13,37 +13,39 @@ export declare const CHALLENGE_TYPES: Readonly<{
     HTML: "html";
 }>;
 export declare class Challenge {
-    challenge: any[];
+    challenge: any;
     type: string;
-    constructor(props: any);
+    constructor(props: Challenge);
 }
 declare class ChallengeBase {
     type: string;
     challengeRequestId: string;
-    acceptedChallengeTypes: string[];
-    encryptedPublication: Encrypted;
+    acceptedChallengeTypes?: string[];
+    encryptedPublication?: Encrypted;
     challengeAnswerId: string;
-    toJSONForDb(): any;
+    toJSONForDb?(): any;
 }
 export declare class ChallengeRequestMessage extends ChallengeBase {
-    constructor(props: any);
-    toJSONForDb(): any;
+    encryptedPublication: Encrypted;
+    constructor(props: Omit<ChallengeRequestMessage, "type">);
+    toJSONForDb?(): any;
 }
 export declare class ChallengeMessage extends ChallengeBase {
     challenges: Challenge[];
-    constructor(props: any);
-    toJSONForDb(): any;
+    constructor(props: Omit<ChallengeMessage, "type">);
+    toJSONForDb?(): any;
 }
 export declare class ChallengeAnswerMessage extends ChallengeBase {
     challengeAnswers: string[];
-    constructor(props: any);
-    toJSONForDb(): any;
+    constructor(props: Omit<ChallengeAnswerMessage, "type">);
+    toJSONForDb?(): any;
 }
 export declare class ChallengeVerificationMessage extends ChallengeBase {
     challengeSuccess: boolean;
-    challengeErrors: (string | null)[];
-    reason: string;
-    constructor(props: any);
-    toJSONForDb(): any;
+    challengeErrors: string[] | undefined;
+    encryptedPublication?: Encrypted;
+    reason?: string;
+    constructor(props: Omit<ChallengeVerificationMessage, "type">);
+    toJSONForDb?(): any;
 }
 export {};

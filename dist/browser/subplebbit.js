@@ -731,28 +731,30 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Subplebbit.prototype.handleChallengeRequest = function (msgParsed) {
+    Subplebbit.prototype.handleChallengeRequest = function (request) {
         return __awaiter(this, void 0, void 0, function () {
             var _a, providedChallenges, reasonForSkippingCaptcha, decryptedPublication, _b, _c, publishedPublication, restOfMsg, _d, challengeVerification, challengeMessage;
             var _e;
             return __generator(this, function (_f) {
                 switch (_f.label) {
-                    case 0: return [4 /*yield*/, this.provideCaptchaCallback(msgParsed)];
+                    case 0:
+                        this.emit("challengerequest", request);
+                        return [4 /*yield*/, this.provideCaptchaCallback(request)];
                     case 1:
                         _a = _f.sent(), providedChallenges = _a[0], reasonForSkippingCaptcha = _a[1];
                         _c = (_b = JSON).parse;
-                        return [4 /*yield*/, (0, signer_1.decrypt)(msgParsed.encryptedPublication.encrypted, msgParsed.encryptedPublication.encryptedKey, this.signer.privateKey)];
+                        return [4 /*yield*/, (0, signer_1.decrypt)(request.encryptedPublication.encrypted, request.encryptedPublication.encryptedKey, this.signer.privateKey)];
                     case 2:
                         decryptedPublication = _c.apply(_b, [_f.sent()]);
-                        this._challengeToPublication[msgParsed.challengeRequestId] = decryptedPublication;
-                        debugs.DEBUG("Received a request to a challenge (".concat(msgParsed.challengeRequestId, ")"));
+                        this._challengeToPublication[request.challengeRequestId] = decryptedPublication;
+                        debugs.DEBUG("Received a request to a challenge (".concat(request.challengeRequestId, ")"));
                         if (!!providedChallenges) return [3 /*break*/, 9];
                         // Subplebbit owner has chosen to skip challenging this user or post
-                        debugs.DEBUG("Skipping challenge for ".concat(msgParsed.challengeRequestId, ", add publication to IPFS and respond with challengeVerificationMessage right away"));
-                        return [4 /*yield*/, this.dbHandler.upsertChallenge(new challenge_1.ChallengeRequestMessage(msgParsed), undefined)];
+                        debugs.DEBUG("Skipping challenge for ".concat(request.challengeRequestId, ", add publication to IPFS and respond with challengeVerificationMessage right away"));
+                        return [4 /*yield*/, this.dbHandler.upsertChallenge(request, undefined)];
                     case 3:
                         _f.sent();
-                        return [4 /*yield*/, this.publishPostAfterPassingChallenge(decryptedPublication, msgParsed.challengeRequestId)];
+                        return [4 /*yield*/, this.publishPostAfterPassingChallenge(decryptedPublication, request.challengeRequestId)];
                     case 4:
                         publishedPublication = _f.sent();
                         if (!("publication" in publishedPublication)) return [3 /*break*/, 6];
@@ -767,7 +769,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _f.label = 7;
                     case 7:
                         restOfMsg = _d;
-                        challengeVerification = new challenge_1.ChallengeVerificationMessage(__assign({ reason: reasonForSkippingCaptcha, challengeSuccess: Boolean(publishedPublication.publication), challengeAnswerId: msgParsed.challengeAnswerId, challengeErrors: undefined, challengeRequestId: msgParsed.challengeRequestId }, restOfMsg));
+                        challengeVerification = new challenge_1.ChallengeVerificationMessage(__assign({ reason: reasonForSkippingCaptcha, challengeSuccess: Boolean(publishedPublication.publication), challengeAnswerId: request.challengeAnswerId, challengeErrors: undefined, challengeRequestId: request.challengeRequestId }, restOfMsg));
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.upsertChallenge(challengeVerification, undefined),
                                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeVerification)))
@@ -779,8 +781,9 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [3 /*break*/, 11];
                     case 9:
                         challengeMessage = new challenge_1.ChallengeMessage({
-                            challengeRequestId: msgParsed.challengeRequestId,
-                            challenges: providedChallenges
+                            challengeRequestId: request.challengeRequestId,
+                            challenges: providedChallenges,
+                            challengeAnswerId: request.challengeAnswerId
                         });
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.upsertChallenge(challengeMessage, undefined),
@@ -788,6 +791,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 10:
                         _f.sent();
+                        this.emit("challengemessage", challengeMessage);
                         debugs.INFO("Published ".concat(challengeMessage.type, " (").concat(challengeMessage.challengeRequestId, ") over pubsub"));
                         _f.label = 11;
                     case 11: return [2 /*return*/];
@@ -795,22 +799,24 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Subplebbit.prototype.handleChallengeAnswer = function (msgParsed) {
+    Subplebbit.prototype.handleChallengeAnswer = function (challengeAnswer) {
         return __awaiter(this, void 0, void 0, function () {
             var _a, challengeSuccess, challengeErrors, storedPublication, publishedPublication, restOfMsg, _b, challengeVerification, challengeVerification;
             var _c;
             return __generator(this, function (_d) {
                 switch (_d.label) {
-                    case 0: return [4 /*yield*/, this.validateCaptchaAnswerCallback(msgParsed)];
+                    case 0:
+                        this.emit("challengeanswer", challengeAnswer);
+                        return [4 /*yield*/, this.validateCaptchaAnswerCallback(challengeAnswer)];
                     case 1:
                         _a = _d.sent(), challengeSuccess = _a[0], challengeErrors = _a[1];
                         if (!challengeSuccess) return [3 /*break*/, 8];
-                        debugs.DEBUG("Challenge (".concat(msgParsed.challengeRequestId, ") has been answered correctly"));
-                        storedPublication = this._challengeToPublication[msgParsed.challengeRequestId];
-                        return [4 /*yield*/, this.dbHandler.upsertChallenge(new challenge_1.ChallengeAnswerMessage(msgParsed), undefined)];
+                        debugs.DEBUG("Challenge (".concat(challengeAnswer.challengeRequestId, ") has been answered correctly"));
+                        storedPublication = this._challengeToPublication[challengeAnswer.challengeRequestId];
+                        return [4 /*yield*/, this.dbHandler.upsertChallenge(new challenge_1.ChallengeAnswerMessage(challengeAnswer), undefined)];
                     case 2:
                         _d.sent();
-                        return [4 /*yield*/, this.publishPostAfterPassingChallenge(storedPublication, msgParsed.challengeRequestId)];
+                        return [4 /*yield*/, this.publishPostAfterPassingChallenge(storedPublication, challengeAnswer.challengeRequestId)];
                     case 3:
                         publishedPublication = _d.sent();
                         if (!("publication" in publishedPublication)) return [3 /*break*/, 5];
@@ -825,7 +831,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _d.label = 6;
                     case 6:
                         restOfMsg = _b;
-                        challengeVerification = new challenge_1.ChallengeVerificationMessage(__assign({ challengeRequestId: msgParsed.challengeRequestId, challengeAnswerId: msgParsed.challengeAnswerId, challengeSuccess: challengeSuccess, challengeErrors: challengeErrors }, restOfMsg));
+                        challengeVerification = new challenge_1.ChallengeVerificationMessage(__assign({ challengeRequestId: challengeAnswer.challengeRequestId, challengeAnswerId: challengeAnswer.challengeAnswerId, challengeSuccess: challengeSuccess, challengeErrors: challengeErrors }, restOfMsg));
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.upsertChallenge(challengeVerification, undefined),
                                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeVerification)))
@@ -833,12 +839,13 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 7:
                         _d.sent();
                         debugs.INFO("Published ".concat(challengeVerification.type, " over pubsub: ").concat(JSON.stringify((0, util_1.removeKeys)(challengeVerification, ["publication"]))));
+                        this.emit("challengeverification", challengeVerification);
                         return [3 /*break*/, 10];
                     case 8:
-                        debugs.INFO("Challenge (".concat(msgParsed.challengeRequestId, ") has answered incorrectly"));
+                        debugs.INFO("Challenge (".concat(challengeAnswer.challengeRequestId, ") has been answered incorrectly"));
                         challengeVerification = new challenge_1.ChallengeVerificationMessage({
-                            challengeRequestId: msgParsed.challengeRequestId,
-                            challengeAnswerId: msgParsed.challengeAnswerId,
+                            challengeRequestId: challengeAnswer.challengeRequestId,
+                            challengeAnswerId: challengeAnswer.challengeAnswerId,
                             challengeSuccess: challengeSuccess,
                             challengeErrors: challengeErrors
                         });
@@ -868,14 +875,14 @@ var Subplebbit = /** @class */ (function (_super) {
                         _a.trys.push([1, 6, , 9]);
                         msgParsed = JSON.parse((0, to_string_1.toString)(pubsubMsg.data));
                         if (!(msgParsed.type === challenge_1.PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, this.handleChallengeRequest(msgParsed)];
+                        return [4 /*yield*/, this.handleChallengeRequest(new challenge_1.ChallengeRequestMessage(msgParsed))];
                     case 2:
                         _a.sent();
                         return [3 /*break*/, 5];
                     case 3:
                         if (!(msgParsed.type === challenge_1.PUBSUB_MESSAGE_TYPES.CHALLENGEANSWER && this._challengeToPublication[msgParsed.challengeRequestId])) return [3 /*break*/, 5];
                         // Only reply to peers who started a challenge request earlier
-                        return [4 /*yield*/, this.handleChallengeAnswer(msgParsed)];
+                        return [4 /*yield*/, this.handleChallengeAnswer(new challenge_1.ChallengeAnswerMessage(msgParsed))];
                     case 4:
                         // Only reply to peers who started a challenge request earlier
                         _a.sent();
@@ -896,14 +903,14 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Subplebbit.prototype.defaultProvideCaptcha = function (challengeRequestMessage) {
+    Subplebbit.prototype.defaultProvideCaptcha = function (request) {
         return __awaiter(this, void 0, void 0, function () {
             var _a, image, text, imageBuffer;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         _a = (0, captcha_1.createCaptcha)(300, 100), image = _a.image, text = _a.text;
-                        this._challengeToSolution[challengeRequestMessage.challengeRequestId] = [text];
+                        this._challengeToSolution[request.challengeRequestId] = [text];
                         return [4 /*yield*/, image];
                     case 1:
                         imageBuffer = (_b.sent()).toString("base64");
@@ -919,13 +926,13 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Subplebbit.prototype.defaultValidateCaptcha = function (challengeAnswerMessage) {
+    Subplebbit.prototype.defaultValidateCaptcha = function (answerMessage) {
         return __awaiter(this, void 0, void 0, function () {
             var actualSolution, answerIsCorrect, challengeErrors;
             return __generator(this, function (_a) {
-                actualSolution = this._challengeToSolution[challengeAnswerMessage.challengeRequestId];
-                answerIsCorrect = JSON.stringify(challengeAnswerMessage.challengeAnswers) === JSON.stringify(actualSolution);
-                debugs.DEBUG("Challenge (".concat(challengeAnswerMessage.challengeRequestId, "): Answer's validity: ").concat(answerIsCorrect, ", user's answer: ").concat(challengeAnswerMessage.challengeAnswers, ", actual solution: ").concat(actualSolution));
+                actualSolution = this._challengeToSolution[answerMessage.challengeRequestId];
+                answerIsCorrect = JSON.stringify(answerMessage.challengeAnswers) === JSON.stringify(actualSolution);
+                debugs.DEBUG("Challenge (".concat(answerMessage.challengeRequestId, "): Answer's validity: ").concat(answerIsCorrect, ", user's answer: ").concat(answerMessage.challengeAnswers, ", actual solution: ").concat(actualSolution));
                 challengeErrors = answerIsCorrect ? undefined : ["User solved captcha incorrectly"];
                 return [2 /*return*/, [answerIsCorrect, challengeErrors]];
             });
@@ -1112,8 +1119,10 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 0:
                         debugs.INFO("Adding ".concat(publication.getType(), " with author (").concat(JSON.stringify(publication.author), ") to DB directly"));
                         randomUUID = (0, uuid_1.v4)();
+                        //@ts-ignore
                         return [4 /*yield*/, this.dbHandler.upsertChallenge(new challenge_1.ChallengeRequestMessage({ challengeRequestId: randomUUID }))];
                     case 1:
+                        //@ts-ignore
                         _a.sent();
                         return [4 /*yield*/, this.publishPostAfterPassingChallenge(publication, randomUUID)];
                     case 2: return [2 /*return*/, (_a.sent()).publication];

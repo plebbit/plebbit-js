@@ -78,7 +78,18 @@ var TABLES = Object.freeze({
     SIGNERS: "signers",
     EDITS: "edits"
 });
-var jsonFields = ["signature", "author", "authorEdit", "original", "flair", "commentAuthor"];
+var jsonFields = [
+    "signature",
+    "author",
+    "authorEdit",
+    "original",
+    "flair",
+    "commentAuthor",
+    "acceptedChallengeTypes",
+    "challenges",
+    "challengeAnswers",
+    "challengeErrors"
+];
 var DbHandler = /** @class */ (function () {
     function DbHandler(dbConfig, subplebbit) {
         this._dbConfig = dbConfig;

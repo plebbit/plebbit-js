@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import EventEmitter from "events";
-import { Challenge } from "./challenge";
+import { Challenge, ChallengeAnswerMessage, ChallengeRequestMessage } from "./challenge";
 import { DbHandler } from "./runtime/node/db-handler";
 import { Signer, Signature } from "./signer";
 import { Pages } from "./pages";
@@ -92,11 +92,11 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
         reason: string;
     }>;
     publishPostAfterPassingChallenge(publication: any, challengeRequestId: any): Promise<any>;
-    handleChallengeRequest(msgParsed: any): Promise<void>;
-    handleChallengeAnswer(msgParsed: any): Promise<void>;
+    handleChallengeRequest(request: ChallengeRequestMessage): Promise<void>;
+    handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage): Promise<void>;
     processCaptchaPubsub(pubsubMsg: any): Promise<void>;
-    defaultProvideCaptcha(challengeRequestMessage: any): Promise<Challenge[][]>;
-    defaultValidateCaptcha(challengeAnswerMessage: any): Promise<(boolean | string[])[]>;
+    defaultProvideCaptcha(request: ChallengeRequestMessage): Promise<Challenge[][]>;
+    defaultValidateCaptcha(answerMessage: ChallengeAnswerMessage): Promise<(boolean | string[])[]>;
     syncComment(dbComment: Comment): Promise<void>;
     syncIpnsWithDb(): Promise<void>;
     _syncLoop(syncIntervalMs: number): Promise<void>;
