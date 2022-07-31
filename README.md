@@ -335,6 +335,8 @@ Encrypted {
   - [`update`](#update)
   - [`challengerequest`](#challengerequest)
   - [`challengeanswer`](#challengeanswer)
+  - `challenge`
+  - `challengeverification`
 - [Comment API](#comment-api)
   - [`comment.publish()`](#commentpublish)
   - [`comment.publishChallengeAnswers()`](#commentpublishchallengeanswerschallengeanswers)
@@ -374,6 +376,8 @@ Encrypted {
   - [`update`](#update)
   - [`challenge`](#challenge)
   - [`challengeverification`](#challengeverification)
+  - `challengerequest`
+  - `challengeanswer`
 - [Pages API](#pages-api)
   - [`pages.getPage(pageCid)`](#pagesgetpagepagecid)
   - `pages.pages`
@@ -1222,6 +1226,7 @@ setTimeout(() => comment.stop(), 60000)
 | Type | Description |
 | -------- | -------- |
 | `ChallengeMessage` | The challenge the user must complete |
+| `Comment` | The `Comment` instance, i.e. `this` |
 
 Object is of the form:
 
@@ -1233,9 +1238,9 @@ Object is of the form:
 
 ```js
 const comment = await plebbit.createComment(commentObject)
-comment.on('challenge', async (challengeMessage) => {
+comment.on('challenge', async (challengeMessage, _comment) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
-  comment.publishChallengeAnswers(challengeAnswers)
+  _comment.publishChallengeAnswers(challengeAnswers)
 })
 comment.on('challengeverification', console.log)
 await comment.publish()
@@ -1250,6 +1255,7 @@ await comment.publish()
 | Type | Description |
 | -------- | -------- |
 | `ChallengeVerificationMessage` | The challenge verification result |
+| `Comment` | The `Comment` instance, i.e. `this` |
 
 Object is of the form:
 

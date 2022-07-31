@@ -25,7 +25,6 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     suggested?: SubplebbitSuggested;
     flairs: Record<FlairOwner, Flair[]>;
     address: string;
-    moderatorsAddresses?: string[];
     metricsCid?: string;
     createdAt: number;
     updatedAt: number;
@@ -43,11 +42,11 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     private validateCaptchaAnswerCallback?;
     private ipnsKeyName?;
     private sortHandler;
-    private emittedAt?;
     private _updateInterval?;
+    private _syncInterval?;
     private _sync;
     constructor(props: CreateSubplebbitOptions, plebbit: Plebbit);
-    initSubplebbit(newProps: any): void;
+    initSubplebbit(newProps: SubplebbitType | SubplebbitEditOptions): void;
     initSignerIfNeeded(): Promise<void>;
     initDbIfNeeded(): Promise<void>;
     setProvideCaptchaCallback(newCallback: any): void;
@@ -85,7 +84,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     updateOnce(): Promise<this>;
     update(updateIntervalMs?: number): Promise<this>;
     stop(): Promise<void>;
-    updateSubplebbitIpns(): Promise<Subplebbit>;
+    updateSubplebbitIpns(): Promise<void>;
     handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string): Promise<{
         reason: string;
     }>;

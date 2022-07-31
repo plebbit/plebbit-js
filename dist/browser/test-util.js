@@ -179,8 +179,7 @@ function loadAllPages(pageCid, pagesInstance) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!pageCid)
-                        return [2 /*return*/, []];
+                    (0, assert_1.default)(typeof pageCid === "string");
                     (0, assert_1.default)(pagesInstance.getPage);
                     return [4 /*yield*/, pagesInstance.getPage(pageCid)];
                 case 1:

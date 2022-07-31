@@ -543,11 +543,11 @@ var DbHandler = /** @class */ (function () {
                         hasModEditedCommentFlairBefore = modEdits.some(function (modEdit) { return Boolean(modEdit.flair); });
                         flairIfNeeded = hasModEditedCommentFlairBefore || !edit.flair ? undefined : { flair: JSON.stringify(edit.flair) };
                         newProps = (0, util_1.removeKeysWithUndefinedValues)(__assign({ authorEdit: JSON.stringify(edit.toJSONForDb(challengeRequestId)), original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) }, flairIfNeeded));
-                        debugs.DEBUG("Will update comment (".concat(edit.commentCid, ") with author props: ").concat(JSON.stringify(newProps)));
+                        debugs.TRACE("Will update comment (".concat(edit.commentCid, ") with author props: ").concat(JSON.stringify(newProps)));
                         return [3 /*break*/, 4];
                     case 3:
                         newProps = __assign(__assign({}, edit.toJSONForDb(challengeRequestId)), { original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) });
-                        debugs.DEBUG("Will update comment (".concat(edit.commentCid, ") with mod props: ").concat(JSON.stringify((0, util_1.removeKeys)(newProps, ["signature"]))));
+                        debugs.TRACE("Will update comment (".concat(edit.commentCid, ") with mod props: ").concat(JSON.stringify((0, util_1.removeKeys)(newProps, ["signature"]))));
                         _a.label = 4;
                     case 4: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid)];
                     case 5:
