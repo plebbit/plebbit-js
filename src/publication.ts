@@ -1,4 +1,10 @@
-import { ChallengeAnswerMessage, ChallengeRequestMessage, PUBSUB_MESSAGE_TYPES } from "./challenge";
+import {
+    ChallengeAnswerMessage,
+    ChallengeMessage,
+    ChallengeRequestMessage,
+    ChallengeVerificationMessage,
+    PUBSUB_MESSAGE_TYPES
+} from "./challenge";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { v4 as uuidv4 } from "uuid";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
@@ -58,30 +64,35 @@ class Publication extends EventEmitter implements PublicationType {
     }
 
     async handleChallengeExchange(pubsubMsg) {
-        const msgParsed = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
+        const msgParsed: ChallengeMessage | ChallengeVerificationMessage = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
         if (msgParsed?.challengeRequestId !== this.challenge.challengeRequestId) return; // Process only this publication's challenge
         if (msgParsed?.type === PUBSUB_MESSAGE_TYPES.CHALLENGE) {
             debugs.INFO(`Received challenges, will emit them and wait for user to solve them and call publishChallengeAnswers`);
             this.emit("challenge", msgParsed);
         } else if (msgParsed?.type === PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION) {
-            if (!msgParsed.challengeSuccess)
+            let decryptedPublication: PublicationType | undefined;
+            if (!(<ChallengeVerificationMessage>msgParsed).challengeSuccess)
                 debugs.WARN(
-                    `Challenge ${msgParsed.challengeRequestId} has failed to pass. Challenge errors = ${msgParsed.challengeErrors}, reason = ${msgParsed.reason}`
+                    `Challenge ${msgParsed.challengeRequestId} has failed to pass. Challenge errors = ${
+                        (<ChallengeVerificationMessage>msgParsed).challengeErrors
+                    }, reason = ${(<ChallengeVerificationMessage>msgParsed).reason}`
                 );
             else {
                 debugs.INFO(
                     `Challenge (${msgParsed.challengeRequestId}) has passed. Will update publication props from ChallengeVerificationMessage.publication`
                 );
-                msgParsed.publication = JSON.parse(
+                assert(msgParsed.encryptedPublication, "Challengeverification did not include encrypted publication");
+                decryptedPublication = JSON.parse(
                     await decrypt(
                         msgParsed.encryptedPublication.encrypted,
                         msgParsed.encryptedPublication.encryptedKey,
                         this.signer.privateKey
                     )
                 );
-                this._initProps(msgParsed.publication);
+                assert(decryptedPublication);
+                this._initProps(decryptedPublication);
             }
-            this.emit("challengeverification", msgParsed, this);
+            this.emit("challengeverification", { ...msgParsed, publication: decryptedPublication }, this);
             await this.subplebbit.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic);
         }
     }
@@ -100,6 +111,7 @@ class Publication extends EventEmitter implements PublicationType {
                 uint8ArrayFromString(JSON.stringify(challengeAnswer))
             );
             debugs.DEBUG(`Responded to challenge (${challengeAnswer.challengeRequestId}) with answers ${JSON.stringify(challengeAnswers)}`);
+            this.emit("challengeanswer", challengeAnswer);
         } catch (e) {
             debugs.ERROR(`Failed to publish challenge answers: `, e);
         }
@@ -135,6 +147,7 @@ class Publication extends EventEmitter implements PublicationType {
             this.subplebbit.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this))
         ]);
         debugs.INFO(`Sent a challenge request (${this.challenge.challengeRequestId})`);
+        this.emit("challengerequest", this.challenge);
     }
 }
 
