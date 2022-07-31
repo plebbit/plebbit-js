@@ -226,9 +226,15 @@ var Plebbit = /** @class */ (function () {
                         newSub = function () { return __awaiter(_this, void 0, void 0, function () {
                             var subplebbit;
                             return __generator(this, function (_a) {
-                                (0, assert_1.default)(util_1.isRuntimeNode, "Runtime need to include node APIs to create a publishing subplebbit");
-                                subplebbit = new subplebbit_1.Subplebbit(options, this);
-                                return [2 /*return*/, subplebbit];
+                                switch (_a.label) {
+                                    case 0:
+                                        (0, assert_1.default)(util_1.isRuntimeNode, "Runtime need to include node APIs to create a publishing subplebbit");
+                                        subplebbit = new subplebbit_1.Subplebbit(options, this);
+                                        return [4 /*yield*/, subplebbit.prePublish()];
+                                    case 1:
+                                        _a.sent();
+                                        return [2 /*return*/, subplebbit];
+                                }
                             });
                         }); };
                         if (!(options.address && !options.signer)) return [3 /*break*/, 4];
