@@ -920,7 +920,8 @@ var Subplebbit = /** @class */ (function (_super) {
                                         challenge: imageBuffer,
                                         type: challenge_1.CHALLENGE_TYPES.IMAGE
                                     })
-                                ]
+                                ],
+                                undefined
                             ]];
                 }
             });
