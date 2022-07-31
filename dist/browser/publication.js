@@ -110,9 +110,9 @@ var Publication = /** @class */ (function (_super) {
     };
     Publication.prototype.handleChallengeExchange = function (pubsubMsg) {
         return __awaiter(this, void 0, void 0, function () {
-            var msgParsed, _a, _b, _c;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
+            var msgParsed, decryptedPublication, _a, _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         msgParsed = JSON.parse((0, to_string_1.toString)(pubsubMsg["data"]));
                         if ((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId) !== this.challenge.challengeRequestId)
@@ -123,24 +123,26 @@ var Publication = /** @class */ (function (_super) {
                         return [3 /*break*/, 6];
                     case 1:
                         if (!((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.type) === challenge_1.PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION)) return [3 /*break*/, 6];
+                        decryptedPublication = void 0;
                         if (!!msgParsed.challengeSuccess) return [3 /*break*/, 2];
                         debugs.WARN("Challenge ".concat(msgParsed.challengeRequestId, " has failed to pass. Challenge errors = ").concat(msgParsed.challengeErrors, ", reason = ").concat(msgParsed.reason));
                         return [3 /*break*/, 4];
                     case 2:
                         debugs.INFO("Challenge (".concat(msgParsed.challengeRequestId, ") has passed. Will update publication props from ChallengeVerificationMessage.publication"));
-                        _a = msgParsed;
-                        _c = (_b = JSON).parse;
+                        (0, assert_1.default)(msgParsed.encryptedPublication, "Challengeverification did not include encrypted publication");
+                        _b = (_a = JSON).parse;
                         return [4 /*yield*/, (0, signer_1.decrypt)(msgParsed.encryptedPublication.encrypted, msgParsed.encryptedPublication.encryptedKey, this.signer.privateKey)];
                     case 3:
-                        _a.publication = _c.apply(_b, [_d.sent()]);
-                        this._initProps(msgParsed.publication);
-                        _d.label = 4;
+                        decryptedPublication = _b.apply(_a, [_c.sent()]);
+                        (0, assert_1.default)(decryptedPublication);
+                        this._initProps(decryptedPublication);
+                        _c.label = 4;
                     case 4:
-                        this.emit("challengeverification", msgParsed, this);
+                        this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication }), this);
                         return [4 /*yield*/, this.subplebbit.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic)];
                     case 5:
-                        _d.sent();
-                        _d.label = 6;
+                        _c.sent();
+                        _c.label = 6;
                     case 6: return [2 /*return*/];
                 }
             });
@@ -165,6 +167,7 @@ var Publication = /** @class */ (function (_super) {
                     case 1:
                         _a.sent();
                         debugs.DEBUG("Responded to challenge (".concat(challengeAnswer.challengeRequestId, ") with answers ").concat(JSON.stringify(challengeAnswers)));
+                        this.emit("challengeanswer", challengeAnswer);
                         return [3 /*break*/, 3];
                     case 2:
                         e_1 = _a.sent();
@@ -207,6 +210,7 @@ var Publication = /** @class */ (function (_super) {
                     case 4:
                         _f.sent();
                         debugs.INFO("Sent a challenge request (".concat(this.challenge.challengeRequestId, ")"));
+                        this.emit("challengerequest", this.challenge);
                         return [2 /*return*/];
                 }
             });
