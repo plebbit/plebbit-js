@@ -213,6 +213,7 @@ export class Plebbit implements PlebbitOptions {
     }
 
     listSubplebbits(): Promise<string[]> {
+        assert(isRuntimeNode, "plebbit-js has no access to runtime Node APIs");
         return plebbitUtil.listSubplebbits(this);
     }
 }
