@@ -151,8 +151,7 @@ var Plebbit = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        (0, assert_1.default)(typeof subplebbitAddress === "string");
-                        (0, assert_1.default)(subplebbitAddress.length > 0);
+                        (0, assert_1.default)(typeof subplebbitAddress === "string" && subplebbitAddress.length > 0, "Subplebbit address needs to be an IPNS string");
                         return [4 /*yield*/, this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
                     case 1:
                         resolvedSubplebbitAddress = _a.sent();
@@ -350,6 +349,7 @@ var Plebbit = /** @class */ (function () {
         return (0, signer_1.createSigner)(createSignerOptions);
     };
     Plebbit.prototype.listSubplebbits = function () {
+        (0, assert_1.default)(util_1.isRuntimeNode, "plebbit-js has no access to runtime Node APIs");
         return util_1.default.listSubplebbits(this);
     };
     return Plebbit;
