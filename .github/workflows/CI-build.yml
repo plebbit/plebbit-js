@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: 16
-          cache: 'npm'
+          # cache: 'npm'
 
       # build dist folder
       - run: npm install
