@@ -212,8 +212,8 @@ export class Plebbit implements PlebbitOptions {
         return createSigner(createSignerOptions);
     }
 
-    listSubplebbits(): Promise<string[]> {
-        assert(isRuntimeNode, "plebbit-js has no access to runtime Node APIs");
+    async listSubplebbits(): Promise<string[]> {
+        if (!isRuntimeNode) return [];
         return plebbitUtil.listSubplebbits(this);
     }
 }
