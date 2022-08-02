@@ -30,11 +30,11 @@ jobs:
       # move plebbit-js back to working dir in a sub folder
       - run: mv ../plebbit-js-tmp plebbit-js
       # build the latest plebbit-js dist folder
-      - run: cd plebbit-js && npm install
+      - run: cd plebbit-js && npm ci
       - run: cd plebbit-js && npm run build
       - run: rm -fr plebbit-js/node_modules
       # install plebbit-react-hooks
-      - run: yarn
+      - run: yarn install --frozen-lockfile
       # install latest plebbit-js using add ./plebbit-js (local folder module)
       - run: yarn remove @plebbit/plebbit-js
       - run: yarn add ./plebbit-js
