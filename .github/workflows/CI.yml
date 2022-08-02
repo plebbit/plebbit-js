@@ -43,7 +43,7 @@ jobs:
           node-version: ${{ matrix.node_version }}
           # cache: 'npm'
 
-      - run: npm install
+      - run: npm ci
       - run: npm run build
       - run: npm run webpack
 

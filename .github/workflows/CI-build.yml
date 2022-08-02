@@ -22,7 +22,7 @@ jobs:
           # cache: 'npm'
 
       # build dist folder
-      - run: npm install
+      - run: npm ci
       - run: npm run build
 
       # NOTE: doesn't work if `git add dist --force` is removed
