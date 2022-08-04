@@ -349,8 +349,13 @@ var Plebbit = /** @class */ (function () {
         return (0, signer_1.createSigner)(createSignerOptions);
     };
     Plebbit.prototype.listSubplebbits = function () {
-        (0, assert_1.default)(util_1.isRuntimeNode, "plebbit-js has no access to runtime Node APIs");
-        return util_1.default.listSubplebbits(this);
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                if (!util_1.isRuntimeNode)
+                    return [2 /*return*/, []];
+                return [2 /*return*/, util_1.default.listSubplebbits(this)];
+            });
+        });
     };
     return Plebbit;
 }());

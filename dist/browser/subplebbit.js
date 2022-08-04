@@ -838,7 +838,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 7:
                         _d.sent();
-                        debugs.INFO("Published ".concat(challengeVerification.type, " over pubsub: ").concat(JSON.stringify((0, util_1.removeKeys)(challengeVerification, ["publication"]))));
+                        debugs.INFO("Published ".concat(challengeVerification.type, " over pubsub: ").concat(JSON.stringify((0, util_1.removeKeys)(challengeVerification, ["publication", "encryptedPublication"]))));
                         this.emit("challengeverification", challengeVerification);
                         return [3 /*break*/, 10];
                     case 8:
