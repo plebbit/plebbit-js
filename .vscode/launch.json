@@ -335,7 +335,7 @@
             "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
         },
         {
-            "type": "pwa-node",
+            "type": "node",
             "request": "launch",
             "name": "Launch Test Server",
             "skipFiles": [
