@@ -217,7 +217,7 @@ var Plebbit = /** @class */ (function () {
     Plebbit.prototype.createSubplebbit = function (options) {
         if (options === void 0) { options = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var newSub, localSubs, _a, localSubs, derivedAddress, _b;
+            var newSub, remoteSub, localSubs, _a, localSubs, derivedAddress, _b;
             var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
@@ -236,16 +236,21 @@ var Plebbit = /** @class */ (function () {
                                 }
                             });
                         }); };
+                        remoteSub = function () { return __awaiter(_this, void 0, void 0, function () {
+                            return __generator(this, function (_a) {
+                                return [2 /*return*/, new subplebbit_1.Subplebbit(options, this)];
+                            });
+                        }); };
                         if (!(options.address && !options.signer)) return [3 /*break*/, 4];
                         if (!!util_1.isRuntimeNode) return [3 /*break*/, 1];
-                        return [2 /*return*/, new subplebbit_1.Subplebbit(options, this)];
+                        return [2 /*return*/, remoteSub()];
                     case 1: return [4 /*yield*/, this.listSubplebbits()];
                     case 2:
                         localSubs = _c.sent();
                         if (localSubs.includes(options.address))
                             return [2 /*return*/, newSub()];
                         else
-                            return [2 /*return*/, new subplebbit_1.Subplebbit(options, this)];
+                            return [2 /*return*/, remoteSub()];
                         _c.label = 3;
                     case 3: return [3 /*break*/, 13];
                     case 4:
@@ -280,7 +285,7 @@ var Plebbit = /** @class */ (function () {
                         return [2 /*return*/, newSub()];
                     case 12:
                         if (!util_1.isRuntimeNode)
-                            return [2 /*return*/, new subplebbit_1.Subplebbit(options, this)];
+                            return [2 /*return*/, remoteSub()];
                         else
                             return [2 /*return*/, newSub()];
                         _c.label = 13;

@@ -224,7 +224,7 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.prePublish = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var subplebbitIpfsNodeKey, ipfsKey;
+            var subplebbitIpfsNodeKey, ipfsKey, cachedSubplebbit;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -262,7 +262,17 @@ var Subplebbit = /** @class */ (function (_super) {
                         _a.label = 8;
                     case 8:
                         (0, assert_1.default)(this.ipnsKeyName && this.address && this.signer && this.encryption && this.pubsubTopic, "These fields are needed to run the subplebbit");
-                        return [2 /*return*/];
+                        return [4 /*yield*/, this._keyv.get(this.address)];
+                    case 9:
+                        cachedSubplebbit = _a.sent();
+                        if (!(cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")) return [3 /*break*/, 10];
+                        this.initSubplebbit(cachedSubplebbit); // Init subplebbit fields from DB
+                        return [3 /*break*/, 12];
+                    case 10: return [4 /*yield*/, this._keyv.set(this.address, this.toJSON())];
+                    case 11:
+                        _a.sent(); // If subplebbit is not cached, then create a cache
+                        _a.label = 12;
+                    case 12: return [2 /*return*/];
                 }
             });
         });
@@ -303,6 +313,9 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 3:
                         this.initSubplebbit(newSubplebbitOptions);
                         debugs.INFO("Subplebbit (".concat(this.address, ") props (").concat(Object.keys(newSubplebbitOptions), ") has been edited"));
+                        return [4 /*yield*/, this._keyv.set(this.address, this.toJSON())];
+                    case 4:
+                        _a.sent();
                         return [2 /*return*/, this];
                 }
             });
@@ -1000,7 +1013,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         debugs.TRACE("Starting to sync IPNS with DB");
                         _a.label = 1;
                     case 1:
-                        _a.trys.push([1, 5, , 6]);
+                        _a.trys.push([1, 6, , 7]);
                         return [4 /*yield*/, this.sortHandler.cacheCommentsPages()];
                     case 2:
                         _a.sent();
@@ -1012,12 +1025,15 @@ var Subplebbit = /** @class */ (function (_super) {
                             }); }); }), true), [this.updateSubplebbitIpns()], false))];
                     case 4:
                         _a.sent();
-                        return [3 /*break*/, 6];
+                        return [4 /*yield*/, this._keyv.set(this.address, this.toJSON())];
                     case 5:
+                        _a.sent();
+                        return [3 /*break*/, 7];
+                    case 6:
                         e_6 = _a.sent();
                         debugs.WARN("Failed to sync due to error: ".concat(e_6));
-                        return [3 /*break*/, 6];
-                    case 6: return [2 /*return*/];
+                        return [3 /*break*/, 7];
+                    case 7: return [2 /*return*/];
                 }
             });
         });

@@ -31,6 +31,5 @@ export declare function getDebugLevels(baseName: string): {
     DEBUG: Debug;
     TRACE: Debug;
 };
-export declare function isJsonObject(x: any): boolean;
 export declare function randomElement<T>(array: Array<T>): T;
 export declare function getProtocolVersion(): ProtocolVersion;
