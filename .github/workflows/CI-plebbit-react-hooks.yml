@@ -48,6 +48,7 @@ jobs:
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
       # test
       - run: DEBUG=plebbit-js:* yarn test:server & yarn test:server:wait-on
+      - run: CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) yarn test:e2e:mock
       - run: CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) yarn test:e2e:browser
       # electron cannot run headless needs virtual display xvfb
-      - run: xvfb-run yarn test:e2e:electron
+      # - run: xvfb-run yarn test:e2e:electron
