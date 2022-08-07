@@ -135,4 +135,10 @@ describe("subplebbit", async () => {
                 resolve();
             });
         }));
+
+    it(`local subplebbit retains fields upon createSubplebbit(address)`, async () => {
+        const createdSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
+        expect(JSON.stringify(createdSubplebbit.toJSON())).to.equal(JSON.stringify(subplebbit.toJSON()));
+        await createdSubplebbit.stopPublishing();
+    });
 });
