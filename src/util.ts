@@ -231,10 +231,6 @@ export function getDebugLevels(baseName: string): { FATAL: Debug; ERROR: Debug; 
     return Object.assign({}, ...debugsObj);
 }
 
-export function isJsonObject(x): boolean {
-    return false;
-}
-
 export function randomElement<T>(array: Array<T>): T {
     return array[Math.floor(Math.random() * array.length)];
 }

@@ -235,6 +235,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.ipnsKeyName && this.address && this.signer && this.encryption && this.pubsubTopic,
             "These fields are needed to run the subplebbit"
         );
+
+        const cachedSubplebbit: SubplebbitType | undefined = await this._keyv.get(this.address);
+        if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")
+            this.initSubplebbit(cachedSubplebbit); // Init subplebbit fields from DB
+        else await this._keyv.set(this.address, this.toJSON()); // If subplebbit is not cached, then create a cache
     }
 
     async assertDomainResolvesCorrectlyIfNeeded(domain: string) {
@@ -259,6 +264,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.initSubplebbit(newSubplebbitOptions);
 
         debugs.INFO(`Subplebbit (${this.address}) props (${Object.keys(newSubplebbitOptions)}) has been edited`);
+        await this._keyv.set(this.address, this.toJSON());
         return this;
     }
 
@@ -759,6 +765,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.sortHandler.cacheCommentsPages();
             const dbComments = await this.dbHandler.queryComments();
             await Promise.all([...dbComments.map(async (comment: Comment) => this.syncComment(comment)), this.updateSubplebbitIpns()]);
+            await this._keyv.set(this.address, this.toJSON());
         } catch (e) {
             debugs.WARN(`Failed to sync due to error: ${e}`);
         }

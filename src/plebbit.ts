@@ -143,12 +143,16 @@ export class Plebbit implements PlebbitOptions {
             return subplebbit;
         };
 
+        const remoteSub = async () => {
+            return new Subplebbit(options, this);
+        };
+
         if (options.address && !options.signer) {
-            if (!isRuntimeNode) return new Subplebbit(options, this);
+            if (!isRuntimeNode) return remoteSub();
             else {
                 const localSubs = await this.listSubplebbits();
                 if (localSubs.includes(options.address)) return newSub();
-                else return new Subplebbit(options, this);
+                else return remoteSub();
             }
         } else if (!options.address && !options.signer) {
             if (!isRuntimeNode) throw new Error(`Can't instantenate a publishing subplebbit without node API`);
@@ -166,7 +170,7 @@ export class Plebbit implements PlebbitOptions {
             const derivedAddress = options.signer.address || (await getPlebbitAddressFromPrivateKeyPem(options.signer.privateKey));
             if (localSubs.includes(derivedAddress)) options.address = derivedAddress;
             return newSub();
-        } else if (!isRuntimeNode) return new Subplebbit(options, this);
+        } else if (!isRuntimeNode) return remoteSub();
         else return newSub();
     }
 
