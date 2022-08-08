@@ -45,7 +45,7 @@ const subplebbitsProps = [
 async function runSubplebbit(props) {
     const subplebbit = await plebbit.createSubplebbit(props);
     await subplebbit.start(100000); // Sync every 5 minutes
-    console.log(`Subplebbit ${props.title} is running now`);
+    console.log(`Subplebbit ${props.title} (${subplebbit.address}) is running now`);
 }
 
 await Promise.all(subplebbitsProps.map((prop) => runSubplebbit(prop)));
