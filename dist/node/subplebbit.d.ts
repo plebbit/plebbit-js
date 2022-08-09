@@ -10,6 +10,7 @@ import { Comment } from "./comment";
 import Vote from "./vote";
 import Publication from "./publication";
 import { CommentEdit } from "./comment-edit";
+export declare const RUNNING_SUBPLEBBITS: Record<string, boolean>;
 export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     title?: string;
     description?: string;
