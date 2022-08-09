@@ -118,7 +118,7 @@ function fetchWithLimit(url, options) {
 function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
     if (defaultOptions === void 0) { defaultOptions = { timeout: 60000 }; }
     return __awaiter(this, void 0, void 0, function () {
-        var url, res, rawData, data;
+        var url, res, rawData, error, e_1, data;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -132,17 +132,28 @@ function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
                         return [2 /*return*/, res.json()];
                     else
                         throw new Error("Failed to load IPFS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText));
-                    return [3 /*break*/, 4];
-                case 2: return [4 /*yield*/, (0, it_all_1.default)(plebbit.ipfsClient.cat(cid, __assign(__assign({}, defaultOptions), { length: DOWNLOAD_LIMIT_BYTES })))];
+                    return [3 /*break*/, 7];
+                case 2:
+                    rawData = void 0, error = void 0;
+                    _a.label = 3;
                 case 3:
-                    rawData = _a.sent();
+                    _a.trys.push([3, 5, , 6]);
+                    return [4 /*yield*/, (0, it_all_1.default)(plebbit.ipfsClient.cat(cid, __assign(__assign({}, defaultOptions), { length: DOWNLOAD_LIMIT_BYTES })))];
+                case 4:
+                    rawData = _a.sent(); // Limit is 1mb files
+                    return [3 /*break*/, 6];
+                case 5:
+                    e_1 = _a.sent();
+                    error = e_1;
+                    return [3 /*break*/, 6];
+                case 6:
                     data = (0, concat_1.concat)(rawData);
                     if (!data)
-                        throw new Error("IPFS file (".concat(cid, ") is empty or does not exist"));
+                        throw new Error("Was not able to load IPFS (".concat(cid, ") due to error: ").concat(error));
                     else
                         return [2 /*return*/, JSON.parse((0, to_string_1.toString)(data))];
-                    _a.label = 4;
-                case 4: return [2 /*return*/];
+                    _a.label = 7;
+                case 7: return [2 /*return*/];
             }
         });
     });
@@ -150,7 +161,7 @@ function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
 exports.loadIpfsFileAsJson = loadIpfsFileAsJson;
 function loadIpnsAsJson(ipns, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
-        var url, res, cid;
+        var url, res, cid, error, e_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -164,16 +175,27 @@ function loadIpnsAsJson(ipns, plebbit) {
                     return [4 /*yield*/, res.json()];
                 case 2: return [2 /*return*/, _a.sent()];
                 case 3: throw new Error("Failed to load IPNS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText));
-                case 4: return [3 /*break*/, 7];
-                case 5: return [4 /*yield*/, (0, it_last_1.default)(plebbit.ipfsClient.name.resolve(ipns))];
+                case 4: return [3 /*break*/, 10];
+                case 5:
+                    cid = void 0, error = void 0;
+                    _a.label = 6;
                 case 6:
+                    _a.trys.push([6, 8, , 9]);
+                    return [4 /*yield*/, (0, it_last_1.default)(plebbit.ipfsClient.name.resolve(ipns))];
+                case 7:
                     cid = _a.sent();
+                    return [3 /*break*/, 9];
+                case 8:
+                    e_2 = _a.sent();
+                    error = e_2;
+                    return [3 /*break*/, 9];
+                case 9:
                     if (!cid)
-                        throw new Error("IPNS (".concat(ipns, ") resolves to undefined"));
+                        throw new Error("IPNS (".concat(ipns, ") resolves to undefined due to error: ").concat(error));
                     (0, assert_1.default)(typeof cid === "string", "CID has to be a string");
                     debugs.TRACE("IPNS (".concat(ipns, ") resolved to ").concat(cid));
                     return [2 /*return*/, loadIpfsFileAsJson(cid, plebbit)];
-                case 7: return [2 /*return*/];
+                case 10: return [2 /*return*/];
             }
         });
     });
@@ -313,6 +335,7 @@ function waitTillCommentsUpdate(comments, updateInterval) {
 }
 exports.waitTillCommentsUpdate = waitTillCommentsUpdate;
 function hotScore(comment) {
+    (0, assert_1.default)(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number", "Comment.downvoteCount (".concat(comment.downvoteCount, ") and comment.upvoteCount (").concat(comment.upvoteCount, ") need to be defined before calculating hotScore"));
     var score = comment.upvoteCount - comment.downvoteCount;
     var order = Math.log10(Math.max(score, 1));
     var sign = score > 0 ? 1 : score < 0 ? -1 : 0;

@@ -1,6 +1,7 @@
 import Debug from "debug";
 import { Plebbit } from "./plebbit";
 import { CommentType, ProtocolVersion, Timeframe } from "./types";
+import { Signer } from "./signer";
 export declare const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number>;
 export declare function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultOptions?: {
     timeout: number;
@@ -16,13 +17,13 @@ export declare function replaceXWithY(obj: Object, x: any, y: any): any;
 export declare function shallowEqual(object1: any, object2: any, excludeKeys?: any[]): boolean;
 export declare function waitTillPublicationsArePublished(publications: any): Promise<any[]>;
 export declare function waitTillCommentsUpdate(comments: any, updateInterval: any): Promise<unknown>;
-export declare function hotScore(comment: any): number;
+export declare function hotScore(comment: CommentType): number;
 export declare function controversialScore(comment: CommentType): number;
 export declare function topScore(comment: CommentType): number;
 export declare function newScore(comment: CommentType): number;
 export declare function oldScore(comment: CommentType): number;
 export declare function removeKeysWithUndefinedValues(object: any): any;
-export declare function ipfsImportKey(signer: any, plebbit: any, password?: string): Promise<any>;
+export declare function ipfsImportKey(signer: Signer, plebbit: any, password?: string): Promise<any>;
 export declare function getDebugLevels(baseName: string): {
     FATAL: Debug;
     ERROR: Debug;
