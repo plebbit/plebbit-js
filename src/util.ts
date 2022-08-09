@@ -9,6 +9,7 @@ import assert from "assert";
 import { Plebbit } from "./plebbit";
 import { CommentType, ProtocolVersion, Timeframe } from "./types";
 import { isRuntimeNode } from "./runtime/node/util";
+import { Signer } from "./signer";
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
     HOUR: 60 * 60,
@@ -52,9 +53,14 @@ export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultO
         if (res.status === 200) return res.json();
         else throw new Error(`Failed to load IPFS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
     } else {
-        const rawData: any = await all(plebbit.ipfsClient.cat(cid, { ...defaultOptions, length: DOWNLOAD_LIMIT_BYTES })); // Limit is 1mb files
+        let rawData, error;
+        try {
+            rawData = await all(plebbit.ipfsClient.cat(cid, { ...defaultOptions, length: DOWNLOAD_LIMIT_BYTES })); // Limit is 1mb files
+        } catch (e) {
+            error = e;
+        }
         const data = uint8ArrayConcat(rawData);
-        if (!data) throw new Error(`IPFS file (${cid}) is empty or does not exist`);
+        if (!data) throw new Error(`Was not able to load IPFS (${cid}) due to error: ${error}`);
         else return JSON.parse(uint8ArrayToString(data));
     }
 }
@@ -67,8 +73,13 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
         if (res.status === 200) return await res.json();
         else throw new Error(`Failed to load IPNS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
     } else {
-        const cid = await last(plebbit.ipfsClient.name.resolve(ipns));
-        if (!cid) throw new Error(`IPNS (${ipns}) resolves to undefined`);
+        let cid, error;
+        try {
+            cid = await last(plebbit.ipfsClient.name.resolve(ipns));
+        } catch (e) {
+            error = e;
+        }
+        if (!cid) throw new Error(`IPNS (${ipns}) resolves to undefined due to error: ${error}`);
         assert(typeof cid === "string", "CID has to be a string");
         debugs.TRACE(`IPNS (${ipns}) resolved to ${cid}`);
         return loadIpfsFileAsJson(cid, plebbit);
@@ -164,7 +175,11 @@ export async function waitTillCommentsUpdate(comments, updateInterval) {
     });
 }
 
-export function hotScore(comment) {
+export function hotScore(comment: CommentType) {
+    assert(
+        typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number",
+        `Comment.downvoteCount (${comment.downvoteCount}) and comment.upvoteCount (${comment.upvoteCount}) need to be defined before calculating hotScore`
+    );
     const score = comment.upvoteCount - comment.downvoteCount;
     const order = Math.log10(Math.max(score, 1));
     const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
@@ -209,7 +224,7 @@ export function removeKeysWithUndefinedValues(object) {
 }
 
 // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
-export async function ipfsImportKey(signer, plebbit, password = "") {
+export async function ipfsImportKey(signer: Signer, plebbit, password = "") {
     const data = new FormData();
     data.append("file", Buffer.from(signer.ipfsKey));
     const nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;

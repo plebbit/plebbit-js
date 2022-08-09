@@ -159,6 +159,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         if (!this.address && this.signer) {
             // Look for subplebbit address (key.id) in the ipfs node
+            assert(this.plebbit.ipfsClient, "a defined plebbit.ipfsClient is needed to load sub address from IPFS node");
             const ipnsKeys = await this.plebbit.ipfsClient.key.list();
             const ipfsKey = ipnsKeys.filter((key) => key.name === this.signer.address)[0];
             debugs.DEBUG(
@@ -219,12 +220,20 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (!this.signer && this.address) {
             // Load signer from DB
             await this.initDbIfNeeded();
-        } else if (!this.address && this.signer) this.address = this.signer.address;
+        } else if (!this.address && this.signer?.address) this.address = this.signer.address;
         await this.initDbIfNeeded();
         assert(this.address && this.signer, "Both address and signer need to be defined at this point");
         if (!this.pubsubTopic) this.pubsubTopic = this.address;
         // import ipfs key into ipfs node
-        const subplebbitIpfsNodeKey = (await this.plebbit.ipfsClient.key.list()).filter((key) => key.name === this.signer.address)[0];
+        assert(this.plebbit.ipfsClient, "a defined plebbit.ipfsClient is needed to load sub address from IPFS node");
+
+        let subplebbitIpfsNodeKey, error;
+        try {
+            subplebbitIpfsNodeKey = (await this.plebbit.ipfsClient.key.list()).filter((key) => key.name === this.signer.address)[0];
+        } catch (e) {
+            error = e;
+        }
+        if (error) throw new Error(`Failed to list keys from ipfs node due to error: ${error}`);
         if (!subplebbitIpfsNodeKey) {
             const ipfsKey = await ipfsImportKey({ ...this.signer, ipnsKeyName: this.signer.address }, this.plebbit);
             this.ipnsKeyName = ipfsKey["name"] || ipfsKey["Name"];
@@ -309,7 +318,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async updateSubplebbitIpns() {
-        assert(this.dbHandler && this.plebbit.ipfsClient);
+        assert(this.dbHandler && this.plebbit.ipfsClient, "A connection to DB and ipfs client are needed to update subplebbit IPNS");
         const trx: any = await this.dbHandler.createTransaction("subplebbit");
         const latestPost = await this.dbHandler.queryLatestPost(trx);
         await this.dbHandler.commitTransaction("subplebbit");

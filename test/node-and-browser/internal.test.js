@@ -20,7 +20,7 @@ describe("Test util functions", async () => {
         it("Throws if provided with invalid cid", async () => {
             const gibberishCid = "12345";
 
-            await assert.isRejected(loadIpfsFileAsJson(gibberishCid, plebbit), "invalid path");
+            await assert.isRejected(loadIpfsFileAsJson(gibberishCid, plebbit));
             await assert.isRejected(loadIpfsFileAsJson(gibberishCid, gatewayPlebbit));
         });
         it("Loads an ipfs file under 1mb as JSON correctly", async () => {
