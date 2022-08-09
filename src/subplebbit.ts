@@ -47,6 +47,8 @@ const debugs = getDebugLevels("subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 5 minutes
 
+export const RUNNING_SUBPLEBBITS: Record<string, boolean> = {};
+
 export class Subplebbit extends EventEmitter implements SubplebbitType {
     // public
     title?: string;
@@ -760,12 +762,14 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     async syncIpnsWithDb() {
         assert(this.dbHandler, "DbHandler need to be defined before syncing");
+        assert(this.signer?.address, "Signer is needed to sync");
         debugs.TRACE("Starting to sync IPNS with DB");
         try {
             await this.sortHandler.cacheCommentsPages();
             const dbComments = await this.dbHandler.queryComments();
             await Promise.all([...dbComments.map(async (comment: Comment) => this.syncComment(comment)), this.updateSubplebbitIpns()]);
             await this._keyv.set(this.address, this.toJSON());
+            RUNNING_SUBPLEBBITS[this.signer.address] = true;
         } catch (e) {
             debugs.WARN(`Failed to sync due to error: ${e}`);
         }
@@ -783,8 +787,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async start(syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS) {
-        assert(!this._sync, "Subplebbit is already started");
+        assert(this.signer?.address, "Signer is needed to start subplebbit");
+        assert(!this._sync && !RUNNING_SUBPLEBBITS[this.signer.address], "Subplebbit is already started");
         this._sync = true;
+        RUNNING_SUBPLEBBITS[this.signer.address] = true;
         await this.prePublish();
         if (!this.provideCaptchaCallback) {
             debugs.INFO("Subplebbit owner has not provided any captcha. Will go with default image captcha");
@@ -802,6 +808,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async stopPublishing() {
+        assert(this.signer?.address, "Signer is needed to stop publishing");
         this.removeAllListeners();
         await this.stop();
         this._syncInterval = clearInterval(this._syncInterval);
@@ -810,6 +817,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.dbHandler?.knex?.destroy();
         this.dbHandler = undefined;
         this._sync = false;
+        RUNNING_SUBPLEBBITS[this.signer.address] = false;
     }
 
     async _addPublicationToDb(publication: Publication) {
