@@ -74,7 +74,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Subplebbit = void 0;
+exports.Subplebbit = exports.RUNNING_SUBPLEBBITS = void 0;
 var to_string_1 = require("uint8arrays/to-string");
 var events_1 = __importDefault(require("events"));
 var js_sha256_1 = require("js-sha256");
@@ -96,6 +96,7 @@ var comment_edit_1 = require("./comment-edit");
 var debugs = (0, util_1.getDebugLevels)("subplebbit");
 var DEFAULT_UPDATE_INTERVAL_MS = 60000;
 var DEFAULT_SYNC_INTERVAL_MS = 100000; // 5 minutes
+exports.RUNNING_SUBPLEBBITS = {};
 var Subplebbit = /** @class */ (function (_super) {
     __extends(Subplebbit, _super);
     function Subplebbit(props, plebbit) {
@@ -1003,34 +1004,37 @@ var Subplebbit = /** @class */ (function (_super) {
         });
     };
     Subplebbit.prototype.syncIpnsWithDb = function () {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var dbComments, e_6;
             var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         (0, assert_1.default)(this.dbHandler, "DbHandler need to be defined before syncing");
+                        (0, assert_1.default)((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address, "Signer is needed to sync");
                         debugs.TRACE("Starting to sync IPNS with DB");
-                        _a.label = 1;
+                        _b.label = 1;
                     case 1:
-                        _a.trys.push([1, 6, , 7]);
+                        _b.trys.push([1, 6, , 7]);
                         return [4 /*yield*/, this.sortHandler.cacheCommentsPages()];
                     case 2:
-                        _a.sent();
+                        _b.sent();
                         return [4 /*yield*/, this.dbHandler.queryComments()];
                     case 3:
-                        dbComments = _a.sent();
+                        dbComments = _b.sent();
                         return [4 /*yield*/, Promise.all(__spreadArray(__spreadArray([], dbComments.map(function (comment) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                                 return [2 /*return*/, this.syncComment(comment)];
                             }); }); }), true), [this.updateSubplebbitIpns()], false))];
                     case 4:
-                        _a.sent();
+                        _b.sent();
                         return [4 /*yield*/, this._keyv.set(this.address, this.toJSON())];
                     case 5:
-                        _a.sent();
+                        _b.sent();
+                        exports.RUNNING_SUBPLEBBITS[this.signer.address] = true;
                         return [3 /*break*/, 7];
                     case 6:
-                        e_6 = _a.sent();
+                        e_6 = _b.sent();
                         debugs.WARN("Failed to sync due to error: ".concat(e_6));
                         return [3 /*break*/, 7];
                     case 7: return [2 /*return*/];
@@ -1071,17 +1075,20 @@ var Subplebbit = /** @class */ (function (_super) {
         });
     };
     Subplebbit.prototype.start = function (syncIntervalMs) {
+        var _a;
         if (syncIntervalMs === void 0) { syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS; }
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        (0, assert_1.default)(!this._sync, "Subplebbit is already started");
+                        (0, assert_1.default)((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address, "Signer is needed to start subplebbit");
+                        (0, assert_1.default)(!this._sync && !exports.RUNNING_SUBPLEBBITS[this.signer.address], "Subplebbit is already started");
                         this._sync = true;
+                        exports.RUNNING_SUBPLEBBITS[this.signer.address] = true;
                         return [4 /*yield*/, this.prePublish()];
                     case 1:
-                        _a.sent();
+                        _b.sent();
                         if (!this.provideCaptchaCallback) {
                             debugs.INFO("Subplebbit owner has not provided any captcha. Will go with default image captcha");
                             this.provideCaptchaCallback = this.defaultProvideCaptcha;
@@ -1096,33 +1103,35 @@ var Subplebbit = /** @class */ (function (_super) {
                                 }
                             }); }); })];
                     case 2:
-                        _a.sent();
+                        _b.sent();
                         debugs.INFO("Waiting for publications on pubsub topic (".concat(this.pubsubTopic, ")"));
                         return [4 /*yield*/, this._syncLoop(syncIntervalMs)];
                     case 3:
-                        _a.sent();
+                        _b.sent();
                         return [2 /*return*/];
                 }
             });
         });
     };
     Subplebbit.prototype.stopPublishing = function () {
-        var _a, _b;
+        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
+                        (0, assert_1.default)((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address, "Signer is needed to stop publishing");
                         this.removeAllListeners();
                         return [4 /*yield*/, this.stop()];
                     case 1:
-                        _c.sent();
+                        _d.sent();
                         this._syncInterval = clearInterval(this._syncInterval);
                         return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic)];
                     case 2:
-                        _c.sent();
-                        (_b = (_a = this.dbHandler) === null || _a === void 0 ? void 0 : _a.knex) === null || _b === void 0 ? void 0 : _b.destroy();
+                        _d.sent();
+                        (_c = (_b = this.dbHandler) === null || _b === void 0 ? void 0 : _b.knex) === null || _c === void 0 ? void 0 : _c.destroy();
                         this.dbHandler = undefined;
                         this._sync = false;
+                        exports.RUNNING_SUBPLEBBITS[this.signer.address] = false;
                         return [2 /*return*/];
                 }
             });
