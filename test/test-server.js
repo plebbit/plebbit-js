@@ -40,6 +40,12 @@ const onlineNodeArgs = {
     extraCommands: []
 };
 
+const anotherOfflineNodeArgs = {
+    dir: path.join(process.cwd(), ".test-ipfs-offline2"),
+    apiPort: 5004,
+    gatewayPort: 8083,
+    daemonArgs: "--offline"
+};
 const debugs = getDebugLevels("test-server");
 
 const numOfCommentsToPublish = 6;
@@ -56,7 +62,7 @@ const databaseConfig = {
 
 const startIpfsNodes = async () => {
     await Promise.all(
-        [offlineNodeArgs, ipfsNodeArgs, onlineNodeArgs].map(async (nodeArgs) => {
+        [offlineNodeArgs, ipfsNodeArgs, onlineNodeArgs, anotherOfflineNodeArgs].map(async (nodeArgs) => {
             try {
                 execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} init`, { stdio: "ignore" });
             } catch {}

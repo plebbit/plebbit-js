@@ -12,6 +12,7 @@ const { expect, assert } = chai;
 const syncInterval = 100;
 let plebbit;
 let subplebbit;
+let subplebbitSigner;
 
 describe("subplebbit", async () => {
     before(async () => {
@@ -62,9 +63,9 @@ describe("subplebbit", async () => {
     });
 
     it("create new subplebbit", async function () {
-        const signer = await plebbit.createSigner();
+        subplebbitSigner = await plebbit.createSigner();
         subplebbit = await plebbit.createSubplebbit({
-            signer: signer,
+            signer: subplebbitSigner,
             title: `Test subplebbit - ${Date.now() / 1000}`
         });
 
@@ -139,6 +140,21 @@ describe("subplebbit", async () => {
     it(`local subplebbit retains fields upon createSubplebbit(address)`, async () => {
         const createdSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
         expect(JSON.stringify(createdSubplebbit.toJSON())).to.equal(JSON.stringify(subplebbit.toJSON()));
-        await createdSubplebbit.stopPublishing();
+    });
+
+    it(`Can't call subplebbit.start from same Subplebbit instance, another Subplebbit instance or through a different ipfs client`, async () => {
+        let sameSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
+        await assert.isRejected(sameSubplebbit.start(), "Subplebbit is already started");
+        const anotherPlebbit = await Plebbit({
+            ipfsHttpClientOptions: "http://localhost:5004/api/v0",
+            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
+        });
+        anotherPlebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
+            if (authorAddress === "plebbit.eth") return signers[6].address;
+            else if (authorAddress === "testgibbreish.eth") return undefined;
+            return authorAddress;
+        };
+        sameSubplebbit = await anotherPlebbit.createSubplebbit({ signer: subplebbitSigner });
+        await assert.isRejected(sameSubplebbit.start(), "Subplebbit is already started");
     });
 });
