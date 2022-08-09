@@ -28,7 +28,7 @@ describe("subplebbit", async () => {
     });
     after(async () => {
         // Delete DB
-        await subplebbit.stopPublishing();
+        await subplebbit.stop();
         rm(path.join(plebbit.dataPath, "subplebbits", subplebbit.address), () => console.log(`Deleted generated DB`));
     });
 
@@ -39,7 +39,7 @@ describe("subplebbit", async () => {
             expect(newSubplebbit.address).to.equal(newSubplebbit.signer.address);
             const subplebbitIpns = await plebbit.getSubplebbit(newSubplebbit.address);
             expect(subplebbitIpns.address).to.equal(newSubplebbit.signer.address);
-            await newSubplebbit.stopPublishing();
+            await newSubplebbit.stop();
             rm(path.join(plebbit.dataPath, "subplebbits", newSubplebbit.address), () =>
                 console.log(`Deleted subplebbit (${newSubplebbit.address}) DB`)
             );

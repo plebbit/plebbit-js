@@ -33,7 +33,7 @@ describe("plebbit", () => {
         // A new subplebbit should be created, and its SQLite db file be listed under plebbit.dataPath/subplebbits
         const listedSubplebbits = await plebbit.listSubplebbits();
         expect(listedSubplebbits).to.include(newSubplebbit.address);
-        await newSubplebbit.stopPublishing();
+        await newSubplebbit.stop();
         await fs.rm(path.join(plebbit.dataPath, "subplebbits", newSubplebbit.address)); // Cleanup subplebbit
     });
 });

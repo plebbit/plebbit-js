@@ -294,6 +294,18 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     async stop() {
         this._updateInterval = clearInterval(this._updateInterval);
+        if (this.signer) {
+            assert(this.signer?.address, "Signer is needed to stop publishing");
+            this.removeAllListeners();
+            this._sync = false;
+
+            this._syncInterval = clearInterval(this._syncInterval);
+
+            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic);
+            this.dbHandler?.knex?.destroy();
+            this.dbHandler = undefined;
+            RUNNING_SUBPLEBBITS[this.signer.address] = false;
+        }
     }
 
     async updateSubplebbitIpns() {
@@ -805,19 +817,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         );
         debugs.INFO(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
         await this._syncLoop(syncIntervalMs);
-    }
-
-    async stopPublishing() {
-        assert(this.signer?.address, "Signer is needed to stop publishing");
-        this.removeAllListeners();
-        await this.stop();
-        this._syncInterval = clearInterval(this._syncInterval);
-
-        await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic);
-        this.dbHandler?.knex?.destroy();
-        this.dbHandler = undefined;
-        this._sync = false;
-        RUNNING_SUBPLEBBITS[this.signer.address] = false;
     }
 
     async _addPublicationToDb(publication: Publication) {
