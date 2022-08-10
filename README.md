@@ -337,6 +337,7 @@ Encrypted {
   - [`challengeanswer`](#challengeanswer)
   - `challenge`
   - `challengeverification`
+  - `error`
 - [Comment API](#comment-api)
   - [`comment.publish()`](#commentpublish)
   - [`comment.publishChallengeAnswers()`](#commentpublishchallengeanswerschallengeanswers)
@@ -378,6 +379,7 @@ Encrypted {
   - [`challengeverification`](#challengeverification)
   - `challengerequest`
   - `challengeanswer`
+  - `error`
 - [Pages API](#pages-api)
   - [`pages.getPage(pageCid)`](#pagesgetpagepagecid)
   - `pages.pages`
