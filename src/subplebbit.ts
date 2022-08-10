@@ -253,14 +253,14 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         else await this._keyv.set(this.address, this.toJSON()); // If subplebbit is not cached, then create a cache
     }
 
-    async assertDomainResolvesCorrectlyIfNeeded(domain: string) {
+    async logErrorIfDomainResolvesIncorrectly(domain: string) {
         if (this.plebbit.resolver.isDomain(domain)) {
             const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(domain);
-            assert.strictEqual(
-                resolvedAddress,
-                this.signer?.address,
-                `ENS (${this.address}) resolved address (${resolvedAddress}) should be equal to derived address from signer (${this.signer?.address})`
-            );
+            if (resolvedAddress !== this.signer?.address) {
+                const msg = `subplebbit.edit: ENS (${this.address}) resolved address (${resolvedAddress}) should be equal to derived address from signer (${this.signer?.address})`;
+                debugs.WARN(msg);
+                this.emit("error", new Error(msg));
+            }
         }
     }
 
@@ -268,7 +268,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         assert(this.dbHandler, "dbHandler is needed to edit");
 
         if (newSubplebbitOptions.address) {
-            await this.assertDomainResolvesCorrectlyIfNeeded(newSubplebbitOptions.address);
+            await this.logErrorIfDomainResolvesIncorrectly(newSubplebbitOptions.address);
             debugs.DEBUG(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
             await this.dbHandler.changeDbFilename(`${newSubplebbitOptions.address}`);
         }
