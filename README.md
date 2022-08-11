@@ -108,7 +108,7 @@ Wallet {
 Nft {
   chainTicker: string // ticker of the chain, like eth, avax, sol, etc in lowercase
   address: string // address of the NFT contract
-  index: number // index of the specific NFT used
+  id: number // tokenId or index of the specific NFT used
   signature: Signature // proof that author.address owns the nft
   // how to resolve and verify NFT signatures https://github.com/plebbit/plebbit-js/blob/master/docs/nft.md
 }
