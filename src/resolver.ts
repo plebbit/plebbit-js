@@ -3,6 +3,7 @@ import { Plebbit } from "./plebbit";
 import { BlockchainProvider } from "./types";
 import { getDebugLevels } from "./util";
 const debugs = getDebugLevels("resolver");
+import assert from "assert";
 
 export class Resolver {
     blockchainProviders: { [chainTicker: string]: BlockchainProvider };
@@ -19,9 +20,23 @@ export class Resolver {
         return { blockchainProviders: this.blockchainProviders };
     }
 
-    _getBlockchainProvider(chainTicker: string): ethers.providers.BaseProvider {
-        if (this.cachedBlockchainProviders[chainTicker]) return this.cachedBlockchainProviders[chainTicker];
-
+    // cache the blockchain providers because only 1 should be running at the same time
+    _getBlockchainProvider(chainTicker: string) {
+        assert(chainTicker && typeof chainTicker === "string", `invalid chainTicker '${chainTicker}'`);
+        assert(
+            this.blockchainProviders && typeof this.blockchainProviders === "object",
+            `invalid blockchainProviders '${this.blockchainProviders}'`
+        );
+        if (this.cachedBlockchainProviders[chainTicker]) {
+            return this.cachedBlockchainProviders[chainTicker];
+        }
+        if (chainTicker === "eth") {
+            // if using eth, use ethers' default provider unless another provider is specified
+            if (!this.blockchainProviders["eth"] || this.blockchainProviders["eth"]?.url?.match(/DefaultProvider/i)) {
+                this.cachedBlockchainProviders["eth"] = ethers.getDefaultProvider();
+                return this.cachedBlockchainProviders["eth"];
+            }
+        }
         if (this.blockchainProviders[chainTicker]) {
             this.cachedBlockchainProviders[chainTicker] = new ethers.providers.JsonRpcProvider(
                 { url: this.blockchainProviders[chainTicker].url },
@@ -29,11 +44,7 @@ export class Resolver {
             );
             return this.cachedBlockchainProviders[chainTicker];
         }
-        if (chainTicker === "eth") {
-            this.cachedBlockchainProviders["eth"] = ethers.getDefaultProvider();
-            return this.cachedBlockchainProviders["eth"];
-        }
-        throw Error(`no blockchain provider settings for chain ticker '${chainTicker}'`);
+        throw Error(`no blockchain provider options set for chain ticker '${chainTicker}'`);
     }
 
     async _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string> {
@@ -45,6 +56,7 @@ export class Resolver {
         }
         const blockchainProvider = this._getBlockchainProvider("eth");
         const resolver = await blockchainProvider.getResolver(ensName);
+        assert(resolver, `Resolver for eth is undefined`);
         const txtRecordResult = await resolver.getText(txtRecordName);
         debugs.DEBUG(`Resolved text record name (${txtRecordName}) of ENS (${ensName}) to ${txtRecordResult}`);
         if (!txtRecordResult) throw new Error(`ENS (${ensName}) has no field for ${txtRecordName}`);
