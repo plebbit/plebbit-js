@@ -106,11 +106,10 @@ Wallet {
   // ...will add more stuff later, like signer or send/sign or balance
 }
 Nft {
-  chainTicker: string // ticker of the chain, like ETH, AVAX, SOL, etc
+  chainTicker: string // ticker of the chain, like eth, avax, sol, etc in lowercase
   address: string // address of the NFT contract
-  index: number // index of the specific NFT used
+  id: string // tokenId or index of the specific NFT used, must be string type, not number
   signature: Signature // proof that author.address owns the nft
-  // plebbit-js should resolve the image URL if any, and add an `imageUrl` property for convenience (not part of the IPFS file)
   // how to resolve and verify NFT signatures https://github.com/plebbit/plebbit-js/blob/master/docs/nft.md
 }
 Signature {
@@ -337,6 +336,7 @@ Encrypted {
   - [`challengeanswer`](#challengeanswer)
   - `challenge`
   - `challengeverification`
+  - `error`
 - [Comment API](#comment-api)
   - [`comment.publish()`](#commentpublish)
   - [`comment.publishChallengeAnswers()`](#commentpublishchallengeanswerschallengeanswers)
@@ -378,6 +378,7 @@ Encrypted {
   - [`challengeverification`](#challengeverification)
   - `challengerequest`
   - `challengeanswer`
+  - `error`
 - [Pages API](#pages-api)
   - [`pages.getPage(pageCid)`](#pagesgetpagepagecid)
   - `pages.pages`
