@@ -72,7 +72,7 @@ const createNftSignature = async (nft, authorAddress, ethersJsSigner) => {
   // insert props one at a time otherwise babel/webpack will reorder
   messageToSign.domainSeparator = 'plebbit-author-avatar'
   messageToSign.tokenAddress =  nft.address
-  messageToSign.tokenId = nft.id
+  messageToSign.tokenId = String(nft.id) // must be a type string, not number
   messageToSign.authorAddress = authorAddress
   // use plain JSON so the user can read what he's signing
   messageToSign = JSON.stringify(messageToSign)
@@ -92,7 +92,7 @@ const verifyNftSignature = async (nft, authorAddress) => {
   // insert props one at a time otherwise babel/webpack will reorder
   messageThatShouldBeSigned.domainSeparator = 'plebbit-author-avatar'
   messageThatShouldBeSigned.tokenAddress =  nft.address
-  messageThatShouldBeSigned.tokenId = nft.id
+  messageThatShouldBeSigned.tokenId = String(nft.id) // must be a type string, not number
   messageThatShouldBeSigned.authorAddress = authorAddress
   messageThatShouldBeSigned = JSON.stringify(messageThatShouldBeSigned)
 
