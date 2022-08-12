@@ -1,6 +1,7 @@
 const Plebbit = require("../../dist/node");
 const { loadIpfsFileAsJson, loadIpnsAsJson } = require("../../dist/node/util");
 const chai = require("chai");
+const fetch = require("node-fetch");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -16,6 +17,11 @@ describe("Test util functions", async () => {
             ipfsGatewayUrl: "http://127.0.0.1:8080"
         });
     });
+
+    if (process.env.NO_INTERNET === "1")
+        it(`Test environment has no access to internet`, async () => {
+            await assert.isRejected(fetch("https://ifconfig.me"));
+        });
     describe("loadIpfsAsJson", async () => {
         it("Throws if provided with invalid cid", async () => {
             const gibberishCid = "12345";
@@ -46,7 +52,7 @@ describe("Test util functions", async () => {
     describe("loadIpnsAsJson", async () => {
         it("Throws if provided with invalid ipns", async () => {
             const gibberishIpns = "12345";
-            await assert.isRejected(loadIpnsAsJson(gibberishIpns, plebbit), "could not resolve name");
+            await assert.isRejected(loadIpnsAsJson(gibberishIpns, plebbit));
         });
         it("Loads an IPNS file as JSON correctly", async () => {
             const jsonFileTest = { 1234: "1234" };
