@@ -57,7 +57,7 @@ var Resolver = /** @class */ (function () {
     Resolver.prototype._getBlockchainProvider = function (chainTicker) {
         var _a, _b;
         (0, assert_1.default)(chainTicker && typeof chainTicker === "string", "invalid chainTicker '".concat(chainTicker, "'"));
-        (0, assert_1.default)(this.blockchainProviders && typeof this.blockchainProviders === "object", "invalid blockchainProviders '".concat(this.blockchainProviders, "'"));
+        (0, assert_1.default)(this.blockchainProviders, "invalid blockchainProviders '".concat(this.blockchainProviders, "'"));
         if (this.cachedBlockchainProviders[chainTicker]) {
             return this.cachedBlockchainProviders[chainTicker];
         }
