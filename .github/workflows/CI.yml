@@ -47,8 +47,9 @@ jobs:
       - run: npm run build
       - run: npm run webpack
 
-      # disable internet, test should work offline
-      - run: sudo ufw default deny outgoing && sudo ufw default deny incoming && sudo ufw enable
+      # disable hosts we shouldn't use
+      - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
+      - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
       - run: npm run test:server & npm run test:server:wait-on
       - run: npm run test:node:parallel
