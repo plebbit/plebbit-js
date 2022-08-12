@@ -2,11 +2,8 @@
 name: CI build
 
 on:
-  workflow_run:
-    workflows:
-      - 'CI'
-    types:
-      - 'completed'
+  status:
+    - 'success'
 
 jobs:
   on-success:
