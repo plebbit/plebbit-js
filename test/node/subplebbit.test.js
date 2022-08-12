@@ -8,7 +8,6 @@ const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-
 const syncInterval = 100;
 let plebbit;
 let subplebbit;
@@ -115,9 +114,17 @@ describe("subplebbit", async () => {
             expect(JSON.stringify(loadedSubplebbit)).to.equal(JSON.stringify(subplebbit));
         });
     });
-    it(`Fails to edit subplebbit.address to a new domain if subplebbit-address record does not exist or does not match signer.address`, async () => {
-        await assert.isRejected(subplebbit.edit({ address: "testgibbreish.eth" }));
-        await assert.isRejected(subplebbit.edit({ address: "plebbit2.eth" }));
+    it(`Can edit subplebbit.address to a new domain if subplebbit-address record does not exist or does not match signer.address`, async () => {
+        await subplebbit.edit({ address: "testgibbreish.eth" });
+
+        assert.equal(subplebbit.address, "testgibbreish.eth");
+
+        await subplebbit.edit({ address: "plebbit2.eth" });
+
+        assert.equal(subplebbit.address, "plebbit2.eth");
+
+        // Revert back to "plebbit.eth"
+        await subplebbit.edit({ address: "plebbit.eth" });
     });
 
     it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () =>
