@@ -5,7 +5,7 @@ import { Plebbit } from "./plebbit";
 import Vote from "./vote";
 import { Pages } from "./pages";
 import { Subplebbit } from "./subplebbit";
-export declare function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, signer?: Signer, randomTimestamp?: boolean, postProps?: {}): Promise<Comment | Post>;
+export declare function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, signer?: Signer, randomTimestamp?: boolean, postProps?: {}): Promise<Post | Comment>;
 export declare function generateMockComment(parentPostOrComment: Post | Comment, plebbit: Plebbit, signer?: Signer, randomTimestamp?: boolean, commentProps?: {}): Promise<Comment>;
 export declare function generateMockVote(parentPostOrComment: Comment | Post, vote: -1 | 0 | 1, plebbit: Plebbit, signer?: Signer): Promise<Vote>;
 export declare function loadAllPages(pageCid: string, pagesInstance: Pages): Promise<Comment[]>;

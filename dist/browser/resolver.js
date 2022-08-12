@@ -35,11 +35,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Resolver = void 0;
 var ethers_1 = require("ethers");
 var util_1 = require("./util");
 var debugs = (0, util_1.getDebugLevels)("resolver");
+var assert_1 = __importDefault(require("assert"));
 var Resolver = /** @class */ (function () {
     function Resolver(options) {
         this.blockchainProviders = options.blockchainProviders;
@@ -49,18 +53,26 @@ var Resolver = /** @class */ (function () {
     Resolver.prototype.toJSON = function () {
         return { blockchainProviders: this.blockchainProviders };
     };
+    // cache the blockchain providers because only 1 should be running at the same time
     Resolver.prototype._getBlockchainProvider = function (chainTicker) {
-        if (this.cachedBlockchainProviders[chainTicker])
+        var _a, _b;
+        (0, assert_1.default)(chainTicker && typeof chainTicker === "string", "invalid chainTicker '".concat(chainTicker, "'"));
+        (0, assert_1.default)(this.blockchainProviders && typeof this.blockchainProviders === "object", "invalid blockchainProviders '".concat(this.blockchainProviders, "'"));
+        if (this.cachedBlockchainProviders[chainTicker]) {
             return this.cachedBlockchainProviders[chainTicker];
+        }
+        if (chainTicker === "eth") {
+            // if using eth, use ethers' default provider unless another provider is specified
+            if (!this.blockchainProviders["eth"] || ((_b = (_a = this.blockchainProviders["eth"]) === null || _a === void 0 ? void 0 : _a.url) === null || _b === void 0 ? void 0 : _b.match(/DefaultProvider/i))) {
+                this.cachedBlockchainProviders["eth"] = ethers_1.ethers.getDefaultProvider();
+                return this.cachedBlockchainProviders["eth"];
+            }
+        }
         if (this.blockchainProviders[chainTicker]) {
             this.cachedBlockchainProviders[chainTicker] = new ethers_1.ethers.providers.JsonRpcProvider({ url: this.blockchainProviders[chainTicker].url }, this.blockchainProviders[chainTicker].chainId);
             return this.cachedBlockchainProviders[chainTicker];
         }
-        if (chainTicker === "eth") {
-            this.cachedBlockchainProviders["eth"] = ethers_1.ethers.getDefaultProvider();
-            return this.cachedBlockchainProviders["eth"];
-        }
-        throw Error("no blockchain provider settings for chain ticker '".concat(chainTicker, "'"));
+        throw Error("no blockchain provider options set for chain ticker '".concat(chainTicker, "'"));
     };
     Resolver.prototype._resolveEnsTxtRecord = function (ensName, txtRecordName) {
         return __awaiter(this, void 0, void 0, function () {
@@ -78,6 +90,7 @@ var Resolver = /** @class */ (function () {
                         return [4 /*yield*/, blockchainProvider.getResolver(ensName)];
                     case 1:
                         resolver = _a.sent();
+                        (0, assert_1.default)(resolver, "Resolver for eth is undefined");
                         return [4 /*yield*/, resolver.getText(txtRecordName)];
                     case 2:
                         txtRecordResult = _a.sent();
