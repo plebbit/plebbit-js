@@ -100,6 +100,7 @@ Author {
   avatar?: Nft
   flair?: Flair // (added by moderator or author) not part of the signature, mod can edit it after comment is published
   banExpiresAt?: number // (added by moderator only) timestamp in second, if defined the author was banned for this comment
+  subplebbitKarma: {['replyScore' | 'postScore']: number} // the total karma of the author inside the subplebbit
 }
 Wallet {
   address: string
