@@ -2,15 +2,18 @@
 name: CI build
 
 on:
-  status:
-    - 'success'
+  workflow_run:
+    workflows:
+      - 'CI'
+    types:
+      - 'completed'
 
 jobs:
   on-success:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    # if: ${{ github.event.state == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
