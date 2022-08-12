@@ -100,6 +100,7 @@ Author {
   avatar?: Nft
   flair?: Flair // (added by moderator or author) not part of the signature, mod can edit it after comment is published
   banExpiresAt?: number // (added by moderator only) timestamp in second, if defined the author was banned for this comment
+  subplebbitKarma: {['replyScore' | 'postScore']: number} // the total karma of the author inside the subplebbit
 }
 Wallet {
   address: string
@@ -326,6 +327,7 @@ Encrypted {
   - `subplebbit.flairs`
   - `subplebbit.suggested`
   - `subplebbit.features`
+  - `subplebbit.settings`
   - `subplebbit.createdAt`
   - `subplebbit.updatedAt`
   - `subplebbit.metrics`
@@ -992,6 +994,16 @@ An object which may have the following keys:
 | features | `SubplebbitFeatures` or `undefined` | The features of the subplebbit |
 | suggested | `SubplebbitSuggested` or `undefined` | The suggested client settings for the subplebbit |
 | flairs | `{[key: 'post' or 'author']: Flair[]}` or `undefined` | The list of flairs (colored labels for comments or authors) authors or mods can choose from |
+| settings | `SubplebbitSettings` or `undefined` | The private subplebbit.settings property of the subplebbit, not shared in the subplebbit IPNS |
+
+##### SubplebbitSettings
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| fetchThumbnailUrls | `boolean` or `undefined` | Fetch the thumbnail URLs of comments `comment.link` property, could reveal the IP address of the subplebbit node |
+| fetchThumbnailUrlsProxyUrl | `string` or `undefined` | The HTTP proxy URL used to fetch thumbnail URLs |
 
 #### Example
 

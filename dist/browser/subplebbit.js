@@ -294,10 +294,10 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Subplebbit.prototype.assertDomainResolvesCorrectlyIfNeeded = function (domain) {
+    Subplebbit.prototype.logErrorIfDomainResolvesIncorrectly = function (domain) {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
-            var resolvedAddress;
+            var resolvedAddress, msg;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
@@ -305,7 +305,11 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(domain)];
                     case 1:
                         resolvedAddress = _c.sent();
-                        assert_1.default.strictEqual(resolvedAddress, (_a = this.signer) === null || _a === void 0 ? void 0 : _a.address, "ENS (".concat(this.address, ") resolved address (").concat(resolvedAddress, ") should be equal to derived address from signer (").concat((_b = this.signer) === null || _b === void 0 ? void 0 : _b.address, ")"));
+                        if (resolvedAddress !== ((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address)) {
+                            msg = "subplebbit.edit: ENS (".concat(this.address, ") resolved address (").concat(resolvedAddress, ") should be equal to derived address from signer (").concat((_b = this.signer) === null || _b === void 0 ? void 0 : _b.address, ")");
+                            debugs.WARN(msg);
+                            this.emit("error", new Error(msg));
+                        }
                         _c.label = 2;
                     case 2: return [2 /*return*/];
                 }
@@ -319,7 +323,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 0:
                         (0, assert_1.default)(this.dbHandler, "dbHandler is needed to edit");
                         if (!newSubplebbitOptions.address) return [3 /*break*/, 3];
-                        return [4 /*yield*/, this.assertDomainResolvesCorrectlyIfNeeded(newSubplebbitOptions.address)];
+                        return [4 /*yield*/, this.logErrorIfDomainResolvesIncorrectly(newSubplebbitOptions.address)];
                     case 1:
                         _a.sent();
                         debugs.DEBUG("Attempting to edit subplebbit.address from ".concat(this.address, " to ").concat(newSubplebbitOptions.address));

@@ -80,7 +80,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     };
     toJSON(): SubplebbitType;
     prePublish(): Promise<void>;
-    assertDomainResolvesCorrectlyIfNeeded(domain: string): Promise<void>;
+    logErrorIfDomainResolvesIncorrectly(domain: string): Promise<void>;
     edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit>;
     updateOnce(): Promise<this>;
     update(updateIntervalMs?: number): Promise<this>;
