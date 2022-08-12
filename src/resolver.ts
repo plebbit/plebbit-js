@@ -23,10 +23,7 @@ export class Resolver {
     // cache the blockchain providers because only 1 should be running at the same time
     _getBlockchainProvider(chainTicker: string) {
         assert(chainTicker && typeof chainTicker === "string", `invalid chainTicker '${chainTicker}'`);
-        assert(
-            this.blockchainProviders && typeof this.blockchainProviders === "object",
-            `invalid blockchainProviders '${this.blockchainProviders}'`
-        );
+        assert(this.blockchainProviders, `invalid blockchainProviders '${this.blockchainProviders}'`);
         if (this.cachedBlockchainProviders[chainTicker]) {
             return this.cachedBlockchainProviders[chainTicker];
         }
