@@ -292,7 +292,6 @@
 
         },
         {
-            // --config config/.mocharc.js test/{node,node-and-browser}/**/*.test.js
             "args": [
                 "--timeout",
                 "999999",
