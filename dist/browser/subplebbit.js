@@ -318,7 +318,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         if (resolvedAddress !== ((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address)) {
                             msg = "subplebbit.edit: ENS (".concat(this.address, ") resolved address (").concat(resolvedAddress, ") should be equal to derived address from signer (").concat((_b = this.signer) === null || _b === void 0 ? void 0 : _b.address, "). Error from resolving ENS: ").concat(error);
                             debugs.WARN(msg);
-                            this.emit("error", new Error(msg));
+                            // this.emit("error", Error(msg));
                         }
                         _c.label = 5;
                     case 5: return [2 /*return*/];

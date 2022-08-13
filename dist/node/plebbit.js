@@ -73,7 +73,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Plebbit = void 0;
+exports.Plebbit = exports.pendingSubplebbitCreations = void 0;
 var util_1 = __importStar(require("./runtime/node/util"));
 var comment_1 = require("./comment");
 var post_1 = __importDefault(require("./post"));
@@ -88,6 +88,7 @@ var tinycache_1 = __importDefault(require("tinycache"));
 var comment_edit_1 = require("./comment-edit");
 var util_3 = require("./signer/util");
 var debugs = (0, util_2.getDebugLevels)("plebbit");
+exports.pendingSubplebbitCreations = {};
 var Plebbit = /** @class */ (function () {
     function Plebbit(options) {
         if (options === void 0) { options = {}; }
@@ -223,15 +224,20 @@ var Plebbit = /** @class */ (function () {
                 switch (_c.label) {
                     case 0:
                         newSub = function () { return __awaiter(_this, void 0, void 0, function () {
-                            var subplebbit;
+                            var subplebbit, key;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
                                         (0, assert_1.default)(util_1.isRuntimeNode, "Runtime need to include node APIs to create a publishing subplebbit");
                                         subplebbit = new subplebbit_1.Subplebbit(options, this);
+                                        key = subplebbit.address || subplebbit.signer.address;
+                                        (0, assert_1.default)(typeof key === "string", "To create a subplebbit you need to either defined signer or address");
+                                        (0, assert_1.default)(!exports.pendingSubplebbitCreations[key], "Can't recreate a pending subplebbit that is waiting to be created");
+                                        exports.pendingSubplebbitCreations[key] = true;
                                         return [4 /*yield*/, subplebbit.prePublish()];
                                     case 1:
                                         _a.sent();
+                                        exports.pendingSubplebbitCreations[key] = false;
                                         return [2 /*return*/, subplebbit];
                                 }
                             });

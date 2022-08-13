@@ -8,6 +8,7 @@ import { Signer } from "./signer";
 import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
+export declare const pendingSubplebbitCreations: Record<string, boolean>;
 export declare class Plebbit implements PlebbitOptions {
     ipfsClient?: IPFSHTTPClient;
     pubsubIpfsClient: IPFSHTTPClient;
