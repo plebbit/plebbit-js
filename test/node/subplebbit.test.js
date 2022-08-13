@@ -54,11 +54,16 @@ describe("subplebbit", async () => {
 
         const title = `Test online plebbit`;
 
-        await onlinePlebbit.createSubplebbit({ title: title });
+        const createdSub = await onlinePlebbit.createSubplebbit({ title: title });
 
         const endTime = timestamp();
 
+        await createdSub.stop();
+
         expect(endTime).to.be.lessThanOrEqual(startTime + 10, "createSubplebbit took more than 10s in an online ipfs node");
+        rm(path.join(plebbit.dataPath, "subplebbits", createdSub.address), () =>
+            console.log(`Deleted subplebbit DB (${createdSub.address})`)
+        );
     });
 
     it("create new subplebbit", async function () {
@@ -73,6 +78,16 @@ describe("subplebbit", async () => {
         // Should have address now
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
         expect(subplebbit.toJSON()).to.deep.equal(loadedSubplebbit.toJSON());
+    });
+
+    it(`subplebbit = await createSubplebbit(await createSubplebbit)`, async () => {
+        const props = { title: "subplebbit = await createSubplebbit(await createSubplebbit)" };
+        const createdSub = await plebbit.createSubplebbit(await plebbit.createSubplebbit(props));
+        expect(createdSub.title).to.equal(props.title);
+        expect(createdSub.signer.address).to.be.a("string");
+        rm(path.join(plebbit.dataPath, "subplebbits", createdSub.address), () =>
+            console.log(`Deleted subplebbit DB (${createdSub.address})`)
+        );
     });
 
     it("subplebbit.edit", async () =>
@@ -164,4 +179,31 @@ describe("subplebbit", async () => {
         sameSubplebbit = await anotherPlebbit.createSubplebbit({ signer: subplebbitSigner });
         await assert.isRejected(sameSubplebbit.start(), "Subplebbit is already started");
     });
+
+    it(`listSubplebbits shows only created subplebbits`, async () =>
+        new Promise(async (resolve) => {
+            const subplebbitSigner = await plebbit.createSigner();
+            const title = "Test listSubplebbits";
+
+            plebbit.createSubplebbit({ signer: subplebbitSigner, title: title });
+
+            let interval;
+            const loop = async () => {
+                const subs = await plebbit.listSubplebbits();
+                if (subs.includes(subplebbitSigner.address)) {
+                    const createdSubplebbit = await plebbit.createSubplebbit({ signer: subplebbitSigner });
+                    expect(createdSubplebbit.address).to.equal(subplebbitSigner.address);
+                    expect(createdSubplebbit.title).to.equal(title);
+                    await createdSubplebbit.stop();
+                    rm(path.join(plebbit.dataPath, "subplebbits", createdSubplebbit.address), () =>
+                        console.log(`Deleted subplebbit DB (${createdSubplebbit.address})`)
+                    );
+
+                    clearInterval(interval);
+                    resolve();
+                }
+            };
+
+            interval = setInterval(loop, 50);
+        }));
 });
