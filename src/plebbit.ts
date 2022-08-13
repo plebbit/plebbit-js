@@ -26,6 +26,8 @@ import { getPlebbitAddressFromPrivateKeyPem } from "./signer/util";
 
 const debugs = getDebugLevels("plebbit");
 
+export const pendingSubplebbitCreations: Record<string, boolean> = {};
+
 export class Plebbit implements PlebbitOptions {
     ipfsClient?: IPFSHTTPClient;
     pubsubIpfsClient: IPFSHTTPClient;
@@ -139,7 +141,12 @@ export class Plebbit implements PlebbitOptions {
         const newSub = async () => {
             assert(isRuntimeNode, "Runtime need to include node APIs to create a publishing subplebbit");
             const subplebbit = new Subplebbit(options, this);
+            const key = subplebbit.address || subplebbit.signer.address;
+            assert(typeof key === "string", "To create a subplebbit you need to either defined signer or address");
+            assert(!pendingSubplebbitCreations[key], "Can't recreate a pending subplebbit that is waiting to be created");
+            pendingSubplebbitCreations[key] = true;
             await subplebbit.prePublish();
+            pendingSubplebbitCreations[key] = false;
             return subplebbit;
         };
 

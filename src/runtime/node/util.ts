@@ -1,6 +1,6 @@
 import path from "path";
 import { promises as fs } from "fs";
-import { Plebbit } from "../../plebbit";
+import { pendingSubplebbitCreations, Plebbit } from "../../plebbit";
 import assert from "assert";
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
@@ -11,7 +11,10 @@ export const listSubplebbits = async (plebbit: Plebbit) => {
 
     await fs.mkdir(subplebbitsPath, { recursive: true });
 
-    const addresses = await fs.readdir(subplebbitsPath);
+    const addresses = (await fs.readdir(subplebbitsPath)).filter(
+        (address: string) => !Boolean(pendingSubplebbitCreations[address]) && !address.includes("journal")
+    );
+
     return addresses;
 };
 
