@@ -264,7 +264,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             if (resolvedAddress !== this.signer?.address) {
                 const msg = `subplebbit.edit: ENS (${this.address}) resolved address (${resolvedAddress}) should be equal to derived address from signer (${this.signer?.address}). Error from resolving ENS: ${error}`;
                 debugs.WARN(msg);
-                this.emit("error", new Error(msg));
+                // this.emit("error", Error(msg));
             }
         }
     }
