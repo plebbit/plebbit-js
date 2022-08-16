@@ -42,6 +42,8 @@ import { getPlebbitAddressFromPublicKeyPem } from "./signer/util";
 import Publication from "./publication";
 import { v4 as uuidv4 } from "uuid";
 import { AUTHOR_EDIT_FIELDS, CommentEdit, MOD_EDIT_FIELDS } from "./comment-edit";
+import errcode from "err-code";
+import { codes, messages } from "./errors";
 
 const debugs = getDebugLevels("subplebbit");
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
@@ -103,6 +105,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.update = this.update.bind(this);
         this.stop = this.stop.bind(this);
         this.edit = this.edit.bind(this);
+
+        this.on("error", (...args) => this.plebbit.emit("error", ...args));
     }
 
     initSubplebbit(newProps: SubplebbitType | SubplebbitEditOptions) {
@@ -253,19 +257,18 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         else await this._keyv.set(this.address, this.toJSON()); // If subplebbit is not cached, then create a cache
     }
 
-    async logErrorIfDomainResolvesIncorrectly(domain: string) {
+    async assertDomainResolvesCorrectly(domain: string) {
         if (this.plebbit.resolver.isDomain(domain)) {
-            let resolvedAddress, error: Error | undefined;
-            try {
-                resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(domain);
-            } catch (e) {
-                error = e;
-            }
-            if (resolvedAddress !== this.signer?.address) {
-                const msg = `subplebbit.edit: ENS (${this.address}) resolved address (${resolvedAddress}) should be equal to derived address from signer (${this.signer?.address}). Error from resolving ENS: ${error}`;
-                debugs.WARN(msg);
-                // this.emit("error", Error(msg));
-            }
+            const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(domain);
+            const derivedAddress = await getPlebbitAddressFromPublicKeyPem(this.encryption.publicKey);
+            if (resolvedAddress !== derivedAddress)
+                throw errcode(
+                    Error(messages.ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS),
+                    codes.ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS,
+                    {
+                        details: `subplebbit.address (${this.address}), resolved address (${resolvedAddress}), subplebbit.signer.address (${this.signer?.address})`
+                    }
+                );
         }
     }
 
@@ -273,7 +276,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         assert(this.dbHandler, "dbHandler is needed to edit");
 
         if (newSubplebbitOptions.address) {
-            this.logErrorIfDomainResolvesIncorrectly(newSubplebbitOptions.address);
+            this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch((err) => {
+                const editError = errcode(err, err.code, { details: `subplebbit.edit: ${err.details}` });
+                debugs.WARN(editError);
+                this.emit("error", editError);
+            });
             debugs.DEBUG(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
             await this.dbHandler.changeDbFilename(`${newSubplebbitOptions.address}`);
         }
@@ -285,8 +292,19 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async updateOnce() {
+        if (this._sync) throw errcode(Error(messages.ERR_SUB_CAN_EITHER_RUN_OR_UPDATE), codes.ERR_SUB_CAN_EITHER_RUN_OR_UPDATE);
+
+        if (this.plebbit.resolver.isDomain(this.address))
+            try {
+                await this.assertDomainResolvesCorrectly(this.address);
+            } catch (e) {
+                const updateError = errcode(e, e.code, { details: `subplebbit.update: ${e.details}` });
+                debugs.ERROR(updateError);
+                this.emit("error", updateError);
+                return;
+            }
+
         const ipnsAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
-        assert(ipnsAddress, "Can't update subplebbit without address");
         try {
             const subplebbitIpns: SubplebbitType = await loadIpnsAsJson(ipnsAddress, this.plebbit);
             if (JSON.stringify(this.toJSON()) !== JSON.stringify(subplebbitIpns)) {
@@ -302,6 +320,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
         if (this._updateInterval) clearInterval(this._updateInterval);
+        if (this._sync) throw errcode(Error(messages.ERR_SUB_CAN_EITHER_RUN_OR_UPDATE), codes.ERR_SUB_CAN_EITHER_RUN_OR_UPDATE);
         this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
         return this.updateOnce();
     }
@@ -353,7 +372,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         if (!currentIpns?.createdAt && !this.createdAt) {
             this.createdAt = timestamp();
-            debugs.INFO(`Subplebbit (${this.address}) has been just created with a timestamp of ${this.createdAt}`);
+            debugs.INFO(`Subplebbit (${this.address}) createdAt has been set to ${this.createdAt}`);
         }
 
         if (!this.pubsubTopic) {
@@ -813,8 +832,14 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async start(syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS) {
-        assert(this.signer?.address, "Signer is needed to start subplebbit");
-        assert(!this._sync && !RUNNING_SUBPLEBBITS[this.signer.address], "Subplebbit is already started");
+        if (!this.signer?.address)
+            throw errcode(new Error(messages.ERR_SUB_SIGNER_NOT_DEFINED), codes.ERR_SUB_SIGNER_NOT_DEFINED, {
+                details: `signer: ${JSON.stringify(this.signer)}, address: ${this.address}`
+            });
+        if (this._sync || RUNNING_SUBPLEBBITS[this.signer.address])
+            throw errcode(new Error(messages.ERR_SUB_ALREADY_STARTED), codes.ERR_SUB_ALREADY_STARTED, {
+                details: `address: ${this.address}`
+            });
         this._sync = true;
         RUNNING_SUBPLEBBITS[this.signer.address] = true;
         await this.prePublish();
@@ -823,8 +848,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.provideCaptchaCallback = this.defaultProvideCaptcha;
             this.validateCaptchaAnswerCallback = this.defaultValidateCaptcha;
         }
-        assert(this.dbHandler, "A connection to a database is needed for the hosting a subplebbit");
-        assert(this.pubsubTopic, "Pubsub topic need to defined before publishing");
         await this.plebbit.pubsubIpfsClient.pubsub.subscribe(
             this.pubsubTopic,
             async (pubsubMessage) => await this.processCaptchaPubsub(pubsubMessage)

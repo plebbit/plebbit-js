@@ -4,6 +4,7 @@ const { rm } = require("fs");
 const path = require("path");
 const { generateMockPost } = require("../../dist/node/test-util");
 const { timestamp } = require("../../dist/node/util");
+const { messages, codes } = require("../../dist/node/errors");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
@@ -166,7 +167,7 @@ describe("subplebbit", async () => {
 
     it(`Can't call subplebbit.start from same Subplebbit instance, another Subplebbit instance or through a different ipfs client`, async () => {
         let sameSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
-        await assert.isRejected(sameSubplebbit.start(), "Subplebbit is already started");
+        await assert.isRejected(sameSubplebbit.start(), messages.ERR_SUB_ALREADY_STARTED);
         const anotherPlebbit = await Plebbit({
             ipfsHttpClientOptions: "http://localhost:5004/api/v0",
             pubsubHttpClientOptions: `http://localhost:5002/api/v0`
@@ -177,7 +178,7 @@ describe("subplebbit", async () => {
             return authorAddress;
         };
         sameSubplebbit = await anotherPlebbit.createSubplebbit({ signer: subplebbitSigner });
-        await assert.isRejected(sameSubplebbit.start(), "Subplebbit is already started");
+        await assert.isRejected(sameSubplebbit.start(), messages.ERR_SUB_ALREADY_STARTED);
     });
 
     it(`listSubplebbits shows only created subplebbits`, async () =>

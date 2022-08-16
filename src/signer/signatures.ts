@@ -197,7 +197,7 @@ export async function verifyPublication(
 
     try {
         // Need to verify comment.signature (of original comment) and authorEdit (latest edit by author, if exists)
-        debugs.DEBUG(`Attempting to verify a ${publicationType}`);
+        debugs.TRACE(`Attempting to verify a ${publicationType}`);
 
         if (publicationJson.original) {
             // Means comment has been edited, verify both comment.signature and comment.authorEdit.signature

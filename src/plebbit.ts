@@ -23,12 +23,13 @@ import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
 import { getPlebbitAddressFromPrivateKeyPem } from "./signer/util";
+import EventEmitter from "events";
 
 const debugs = getDebugLevels("plebbit");
 
 export const pendingSubplebbitCreations: Record<string, boolean> = {};
 
-export class Plebbit implements PlebbitOptions {
+export class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsClient?: IPFSHTTPClient;
     pubsubIpfsClient: IPFSHTTPClient;
     resolver: Resolver;
@@ -41,6 +42,7 @@ export class Plebbit implements PlebbitOptions {
     resolveAuthorAddresses?: boolean;
 
     constructor(options: PlebbitOptions = {}) {
+        super();
         this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
         this.ipfsClient = this.ipfsHttpClientOptions ? createIpfsClient(this.ipfsHttpClientOptions) : undefined;
         this.pubsubHttpClientOptions = options["pubsubHttpClientOptions"] || { url: "https://pubsubprovider.xyz/api/v0" };

@@ -4,6 +4,8 @@ import { BlockchainProvider } from "./types";
 import { getDebugLevels } from "./util";
 const debugs = getDebugLevels("resolver");
 import assert from "assert";
+import errcode from "err-code";
+import { codes, messages } from "./errors";
 
 export class Resolver {
     blockchainProviders: { [chainTicker: string]: BlockchainProvider };
@@ -47,18 +49,25 @@ export class Resolver {
     async _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string> {
         const cachedResponse = this.plebbit._memCache.get(ensName + txtRecordName);
         debugs.TRACE(`Attempting to resolve ENS (${ensName}) text record (${txtRecordName}), cached response: ${cachedResponse}`);
-        if (cachedResponse) {
+        if (cachedResponse && typeof cachedResponse === "string") {
             debugs.DEBUG(`ENS (${ensName}) text record (${txtRecordName}) is already cached: ${JSON.stringify(cachedResponse)}`);
             return cachedResponse;
         }
         const blockchainProvider = this._getBlockchainProvider("eth");
         const resolver = await blockchainProvider.getResolver(ensName);
-        assert(resolver, `Resolver for eth is undefined`);
+        if (!resolver)
+            throw errcode(new Error(messages.ERR_ENS_RESOLVER_NOT_FOUND), codes.ERR_ENS_RESOLVER_NOT_FOUND, {
+                details: `ensName: ${ensName}, blockchainProvider: ${JSON.stringify(blockchainProvider)} `
+            });
         const txtRecordResult = await resolver.getText(txtRecordName);
-        debugs.DEBUG(`Resolved text record name (${txtRecordName}) of ENS (${ensName}) to ${txtRecordResult}`);
-        if (!txtRecordResult) throw new Error(`ENS (${ensName}) has no field for ${txtRecordName}`);
+        if (!txtRecordResult)
+            throw errcode(new Error(messages.ERR_ENS_TXT_RECORD_NOT_FOUND), codes.ERR_ENS_TXT_RECORD_NOT_FOUND, {
+                details: `ensName: ${ensName}, txtRecordName: ${txtRecordName}, blockchainProvider: ${JSON.stringify(blockchainProvider)},`
+            });
 
-        this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // Expire ENS cache after an hour
+        debugs.DEBUG(`Resolved text record name (${txtRecordName}) of ENS (${ensName}) to ${txtRecordResult}`);
+
+        this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // Expire memory ENS cache after an hour
 
         return txtRecordResult;
     }
