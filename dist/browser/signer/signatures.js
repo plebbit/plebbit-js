@@ -280,7 +280,7 @@ function verifyPublication(publication, plebbit, publicationType, overrideAuthor
                 case 1:
                     _d.trys.push([1, 8, , 9]);
                     // Need to verify comment.signature (of original comment) and authorEdit (latest edit by author, if exists)
-                    debugs.DEBUG("Attempting to verify a ".concat(publicationType));
+                    debugs.TRACE("Attempting to verify a ".concat(publicationType));
                     if (!publicationJson.original) return [3 /*break*/, 4];
                     originalObj = __assign(__assign({}, (0, util_2.removeKeys)(publicationJson, ["original"])), publication.original);
                     return [4 /*yield*/, verifyPublication(originalObj, plebbit, "comment", overrideAuthorAddressIfInvalid)];

@@ -1,4 +1,19 @@
 "use strict";
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -87,21 +102,24 @@ var resolver_1 = require("./resolver");
 var tinycache_1 = __importDefault(require("tinycache"));
 var comment_edit_1 = require("./comment-edit");
 var util_3 = require("./signer/util");
+var events_1 = __importDefault(require("events"));
 var debugs = (0, util_2.getDebugLevels)("plebbit");
 exports.pendingSubplebbitCreations = {};
-var Plebbit = /** @class */ (function () {
+var Plebbit = /** @class */ (function (_super) {
+    __extends(Plebbit, _super);
     function Plebbit(options) {
         if (options === void 0) { options = {}; }
-        this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        this.ipfsClient = this.ipfsHttpClientOptions ? (0, ipfs_http_client_1.create)(this.ipfsHttpClientOptions) : undefined;
-        this.pubsubHttpClientOptions = options["pubsubHttpClientOptions"] || { url: "https://pubsubprovider.xyz/api/v0" };
-        this.pubsubIpfsClient = options["pubsubHttpClientOptions"]
+        var _this = _super.call(this) || this;
+        _this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
+        _this.ipfsClient = _this.ipfsHttpClientOptions ? (0, ipfs_http_client_1.create)(_this.ipfsHttpClientOptions) : undefined;
+        _this.pubsubHttpClientOptions = options["pubsubHttpClientOptions"] || { url: "https://pubsubprovider.xyz/api/v0" };
+        _this.pubsubIpfsClient = options["pubsubHttpClientOptions"]
             ? (0, ipfs_http_client_1.create)(options["pubsubHttpClientOptions"])
-            : this.ipfsClient
-                ? this.ipfsClient
-                : (0, ipfs_http_client_1.create)(this.pubsubHttpClientOptions);
-        this.dataPath = options["dataPath"] || util_1.default.getDefaultDataPath();
-        this.blockchainProviders = options.blockchainProviders || {
+            : _this.ipfsClient
+                ? _this.ipfsClient
+                : (0, ipfs_http_client_1.create)(_this.pubsubHttpClientOptions);
+        _this.dataPath = options["dataPath"] || util_1.default.getDefaultDataPath();
+        _this.blockchainProviders = options.blockchainProviders || {
             avax: {
                 url: "https://api.avax.network/ext/bc/C/rpc",
                 chainId: 43114
@@ -111,9 +129,10 @@ var Plebbit = /** @class */ (function () {
                 chainId: 137
             }
         };
-        this.resolver = new resolver_1.Resolver({ plebbit: this, blockchainProviders: this.blockchainProviders });
-        this.resolveAuthorAddresses = options["resolveAuthorAddresses"] || true;
-        this._memCache = new tinycache_1.default();
+        _this.resolver = new resolver_1.Resolver({ plebbit: _this, blockchainProviders: _this.blockchainProviders });
+        _this.resolveAuthorAddresses = options["resolveAuthorAddresses"] || true;
+        _this._memCache = new tinycache_1.default();
+        return _this;
     }
     Plebbit.prototype._init = function (options) {
         return __awaiter(this, void 0, void 0, function () {
@@ -369,5 +388,5 @@ var Plebbit = /** @class */ (function () {
         });
     };
     return Plebbit;
-}());
+}(events_1.default));
 exports.Plebbit = Plebbit;
