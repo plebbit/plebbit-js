@@ -10,7 +10,8 @@ export enum messages {
     ERR_COMMENT_UPDATE_MISSING_IPNS_NAME = "Can't update comment without a defined IPNS name (comment.ipnsName)",
     ERR_SUBPLEBBIT_MISSING_FIELD = "Subplebbit is missing field needed for publishing",
     ERR_INVALID_SUBPLEBBIT_ADDRESS = "Subplebbit address is incorrect. Address should be either a domain or CID",
-    ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID = "subplebbit-address resolves to an invalid CID"
+    ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID = "subplebbit-address resolves to an invalid CID",
+    ERR_CID_IS_INVALID = "CID is invalid"
 }
 
 export enum codes {
@@ -25,5 +26,6 @@ export enum codes {
     ERR_COMMENT_UPDATE_MISSING_IPNS_NAME = "ERR_COMMENT_UPDATE_MISSING_IPNS_NAME",
     ERR_SUBPLEBBIT_MISSING_FIELD = "ERR_SUBPLEBBIT_MISSING_FIELD",
     ERR_INVALID_SUBPLEBBIT_ADDRESS = "ERR_INVALID_SUBPLEBBIT_ADDRESS",
-    ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID = "ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID"
+    ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID = "ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID",
+    ERR_CID_IS_INVALID = "ERR_CID_IS_INVALID"
 }

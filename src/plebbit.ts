@@ -107,6 +107,10 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     async getComment(cid: string): Promise<Comment | Post> {
+        if (!isIPFS.cid(cid))
+            throw errcode(Error(messages.ERR_CID_IS_INVALID), codes.ERR_CID_IS_INVALID, {
+                details: `getComment: cid (${cid}) is invalid as a CID`
+            });
         const commentJson = await loadIpfsFileAsJson(cid, this);
         const subplebbit = await this.getSubplebbit(commentJson["subplebbitAddress"]);
         const publication = commentJson["title"]
@@ -120,7 +124,12 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
               )
             : new Comment({ ...commentJson, cid: cid }, subplebbit);
         const [signatureIsVerified, failedVerificationReason] = await verifyPublication(publication, this, "comment");
-        assert.equal(signatureIsVerified, true, `Signature of comment/post ${cid} is invalid due to reason=${failedVerificationReason}`);
+        if (!signatureIsVerified)
+            throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+                details: `getComment: Failed verification reason: ${failedVerificationReason}, ${publication.getType()}: ${JSON.stringify(
+                    publication
+                )}`
+            });
         return publication;
     }
 
