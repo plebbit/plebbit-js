@@ -588,7 +588,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 const msg = `Failed to insert ${
                     postOrCommentOrVote.constructor.name
                 } due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?): ${e}`;
-                debugs.DEBUG(msg);
+                debugs.INFO(msg);
                 return { reason: msg };
             }
             if (postOrCommentOrVote instanceof Post) {
@@ -652,7 +652,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     : publishedPublication;
             const challengeVerification = new ChallengeVerificationMessage({
                 reason: reasonForSkippingCaptcha,
-                challengeSuccess: Boolean(publishedPublication.publication), // If no publication, this will be false
+                challengeSuccess: publishedPublication.reason ? false : Boolean(publishedPublication.publication), // If no publication, this will be false
                 challengeAnswerId: request.challengeAnswerId,
                 challengeErrors: undefined,
                 challengeRequestId: request.challengeRequestId,
@@ -699,7 +699,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const challengeVerification = new ChallengeVerificationMessage({
                 challengeRequestId: challengeAnswer.challengeRequestId,
                 challengeAnswerId: challengeAnswer.challengeAnswerId,
-                challengeSuccess: challengeSuccess,
+                challengeSuccess: publishedPublication.reason ? false : challengeSuccess,
                 challengeErrors: challengeErrors,
                 ...restOfMsg
             });

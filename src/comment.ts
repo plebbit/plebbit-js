@@ -5,6 +5,8 @@ import { Pages } from "./pages";
 import { verifyPublication } from "./signer";
 import { AuthorCommentEdit, CommentType, CommentUpdate, Flair, ProtocolVersion, PublicationTypeName } from "./types";
 import Author from "./author";
+import errcode from "err-code";
+import { codes, messages } from "./errors";
 
 const debugs = getDebugLevels("comment");
 
@@ -210,9 +212,7 @@ export class Comment extends Publication implements CommentType {
     }
 
     async updateOnce() {
-        assert(this.ipnsName, "Comment needs to have ipnsName before updating");
         let res;
-
         try {
             res = await loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit);
         } catch (e) {
@@ -239,7 +239,9 @@ export class Comment extends Publication implements CommentType {
     }
 
     update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
-        assert(this.ipnsName, "Comment need to have ipnsName field to poll updates");
+        if (typeof this.ipnsName !== "string")
+            throw errcode(Error(messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME), codes.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME);
+
         debugs.DEBUG(`Starting to poll updates for comment (${this.cid}) IPNS (${this.ipnsName}) every ${updateIntervalMs} milliseconds`);
         if (this._updateInterval) clearInterval(this._updateInterval);
         this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
@@ -253,7 +255,10 @@ export class Comment extends Publication implements CommentType {
     async edit(options: CommentUpdate) {
         assert(this.ipnsKeyName && this.subplebbit.plebbit.ipfsClient, "You need to have commentUpdate and ipfs client defined");
         const [validSignature, failedVerificationReason] = await verifyPublication(options, this.subplebbit.plebbit, "commentupdate");
-        assert(validSignature, `Failed to verify CommentUpdate (${JSON.stringify(options)}) due to: ${failedVerificationReason}`);
+        if (!validSignature)
+            throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+                details: `comment.edit: Failed verification reason: ${failedVerificationReason}, editOptions: ${JSON.stringify(options)}`
+            });
         this._initCommentUpdate(options);
         this._mergeFields(this.toJSON());
         const file = await this.subplebbit.plebbit.ipfsClient.add(
@@ -268,8 +273,6 @@ export class Comment extends Publication implements CommentType {
     }
 
     async publish(userOptions): Promise<void> {
-        assert(this.content, "Need content field to publish comment");
-
         return super.publish(userOptions);
     }
 }

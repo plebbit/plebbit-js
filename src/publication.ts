@@ -15,6 +15,8 @@ import assert from "assert";
 import { Subplebbit } from "./subplebbit";
 import { decrypt, encrypt, Signature, Signer, verifyPublication } from "./signer";
 import { ProtocolVersion, PublicationType, PublicationTypeName } from "./types";
+import errcode from "err-code";
+import { codes, messages } from "./errors";
 
 const debugs = getDebugLevels("publication");
 
@@ -97,41 +99,58 @@ class Publication extends EventEmitter implements PublicationType {
         }
     }
 
-    async publishChallengeAnswers(challengeAnswers) {
-        try {
-            if (!Array.isArray(challengeAnswers)) challengeAnswers = [challengeAnswers];
-            debugs.DEBUG(`Challenge Answers: ${challengeAnswers}`);
-            const challengeAnswer = new ChallengeAnswerMessage({
-                challengeRequestId: this.challenge.challengeRequestId,
-                challengeAnswerId: uuidv4(),
-                challengeAnswers: challengeAnswers
-            });
-            await this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(
-                this.subplebbit.pubsubTopic,
-                uint8ArrayFromString(JSON.stringify(challengeAnswer))
-            );
-            debugs.DEBUG(`Responded to challenge (${challengeAnswer.challengeRequestId}) with answers ${JSON.stringify(challengeAnswers)}`);
-            this.emit("challengeanswer", challengeAnswer);
-        } catch (e) {
-            debugs.ERROR(`Failed to publish challenge answers: `, e);
-        }
+    async publishChallengeAnswers(challengeAnswers: string[]) {
+        if (!Array.isArray(challengeAnswers)) challengeAnswers = [challengeAnswers];
+        debugs.DEBUG(`Challenge Answers: ${challengeAnswers}`);
+        const challengeAnswer = new ChallengeAnswerMessage({
+            challengeRequestId: this.challenge.challengeRequestId,
+            challengeAnswerId: uuidv4(),
+            challengeAnswers: challengeAnswers
+        });
+        await this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(
+            this.subplebbit.pubsubTopic,
+            uint8ArrayFromString(JSON.stringify(challengeAnswer))
+        );
+        debugs.DEBUG(`Responded to challenge (${challengeAnswer.challengeRequestId}) with answers ${JSON.stringify(challengeAnswers)}`);
+        this.emit("challengeanswer", challengeAnswer);
     }
 
     async publish(userOptions) {
-        assert(this.timestamp, "Need timestamp field to publish publication");
-        assert(this.author?.address, "Need author address to publish publication");
+        if (typeof this.timestamp !== "number" || this.timestamp <= 0)
+            throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), codes.ERR_PUBLICATION_MISSING_FIELD, {
+                details: `${this.getType()}.publish: timestamp should be a number`
+            });
+
+        if (typeof this.author?.address !== "string")
+            throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), codes.ERR_PUBLICATION_MISSING_FIELD, {
+                details: `${this.getType()}.publish: author.address should be a string`
+            });
+        if (typeof this.subplebbitAddress !== "string")
+            throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), codes.ERR_PUBLICATION_MISSING_FIELD, {
+                details: `${this.getType()}.publish: subplebbitAddress should be a string`
+            });
 
         const [isSignatureValid, failedVerificationReason] = await verifyPublication(this, this.subplebbit.plebbit, this.getType());
-        assert.ok(
-            isSignatureValid,
-            `Failed to publish since signature is invalid, failed verification reason: ${failedVerificationReason}`
-        );
-        assert.ok(this.subplebbitAddress);
+        if (!isSignatureValid)
+            throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+                details: `${this.getType()}.publish: Failed verification reason: ${failedVerificationReason}, publication: ${JSON.stringify(
+                    this
+                )}`
+            });
 
         const options = { acceptedChallengeTypes: [], ...userOptions };
-        debugs.DEBUG(`Attempting to publish ${this.getType()} with options (${JSON.stringify(options)})`);
         this.subplebbit = await this.subplebbit.plebbit.getSubplebbit(this.subplebbitAddress);
-        assert.ok(this.subplebbit?.encryption?.publicKey, "Failed to load subplebbit for publishing");
+
+        if (typeof this.subplebbit?.encryption?.publicKey !== "string")
+            throw errcode(Error(messages.ERR_SUBPLEBBIT_MISSING_FIELD), codes.ERR_SUBPLEBBIT_MISSING_FIELD, {
+                details: `${this.getType()}.publish: subplebbit.encryption.publicKey does not exist`
+            });
+
+        if (typeof this.subplebbit.pubsubTopic !== "string")
+            throw errcode(Error(messages.ERR_SUBPLEBBIT_MISSING_FIELD), codes.ERR_SUBPLEBBIT_MISSING_FIELD, {
+                details: `${this.getType()}.publish: subplebbit.pubsubTopic does not exist`
+            });
+
         const encryptedPublication = await encrypt(JSON.stringify(this), this.subplebbit.encryption.publicKey);
 
         this.challenge = new ChallengeRequestMessage({
@@ -139,6 +158,8 @@ class Publication extends EventEmitter implements PublicationType {
             challengeRequestId: uuidv4(),
             ...options
         });
+        debugs.DEBUG(`Attempting to publish ${this.getType()} with options (${JSON.stringify(options)})`);
+
         await Promise.all([
             this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(
                 this.subplebbit.pubsubTopic,

@@ -1,6 +1,7 @@
 import { Comment } from "./comment";
-import assert from "assert";
 import { PostType } from "./types";
+import errcode from "err-code";
+import { codes, messages } from "./errors";
 
 class Post extends Comment implements PostType {
     thumbnailUrl?: string;
@@ -33,7 +34,10 @@ class Post extends Comment implements PostType {
     }
 
     async publish(userOptions): Promise<void> {
-        assert(this.title, "Post needs a title to publish");
+        if (typeof this.title !== "string")
+            throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), codes.ERR_PUBLICATION_MISSING_FIELD, {
+                details: `${this.getType()}.publish: title should be a string`
+            });
         return super.publish(userOptions);
     }
 }
