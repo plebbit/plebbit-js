@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { BlockchainProvider, CommentType, CreateCommentEditOptions, CreateCommentOptions, CreateSignerOptions, CreateSubplebbitOptions, CreateVoteOptions, PlebbitOptions, VoteType } from "./types";
 import { Comment } from "./comment";
 import Post from "./post";
@@ -8,8 +9,9 @@ import { Signer } from "./signer";
 import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
+import EventEmitter from "events";
 export declare const pendingSubplebbitCreations: Record<string, boolean>;
-export declare class Plebbit implements PlebbitOptions {
+export declare class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsClient?: IPFSHTTPClient;
     pubsubIpfsClient: IPFSHTTPClient;
     resolver: Resolver;

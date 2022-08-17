@@ -44,6 +44,8 @@ var ethers_1 = require("ethers");
 var util_1 = require("./util");
 var debugs = (0, util_1.getDebugLevels)("resolver");
 var assert_1 = __importDefault(require("assert"));
+var err_code_1 = __importDefault(require("err-code"));
+var errors_1 = require("./errors");
 var Resolver = /** @class */ (function () {
     function Resolver(options) {
         this.blockchainProviders = options.blockchainProviders;
@@ -82,7 +84,7 @@ var Resolver = /** @class */ (function () {
                     case 0:
                         cachedResponse = this.plebbit._memCache.get(ensName + txtRecordName);
                         debugs.TRACE("Attempting to resolve ENS (".concat(ensName, ") text record (").concat(txtRecordName, "), cached response: ").concat(cachedResponse));
-                        if (cachedResponse) {
+                        if (cachedResponse && typeof cachedResponse === "string") {
                             debugs.DEBUG("ENS (".concat(ensName, ") text record (").concat(txtRecordName, ") is already cached: ").concat(JSON.stringify(cachedResponse)));
                             return [2 /*return*/, cachedResponse];
                         }
@@ -90,14 +92,19 @@ var Resolver = /** @class */ (function () {
                         return [4 /*yield*/, blockchainProvider.getResolver(ensName)];
                     case 1:
                         resolver = _a.sent();
-                        (0, assert_1.default)(resolver, "Resolver for eth is undefined");
+                        if (!resolver)
+                            throw (0, err_code_1.default)(new Error(errors_1.messages.ERR_ENS_RESOLVER_NOT_FOUND), errors_1.codes.ERR_ENS_RESOLVER_NOT_FOUND, {
+                                details: "ensName: ".concat(ensName, ", blockchainProvider: ").concat(JSON.stringify(blockchainProvider), " ")
+                            });
                         return [4 /*yield*/, resolver.getText(txtRecordName)];
                     case 2:
                         txtRecordResult = _a.sent();
-                        debugs.DEBUG("Resolved text record name (".concat(txtRecordName, ") of ENS (").concat(ensName, ") to ").concat(txtRecordResult));
                         if (!txtRecordResult)
-                            throw new Error("ENS (".concat(ensName, ") has no field for ").concat(txtRecordName));
-                        this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // Expire ENS cache after an hour
+                            throw (0, err_code_1.default)(new Error(errors_1.messages.ERR_ENS_TXT_RECORD_NOT_FOUND), errors_1.codes.ERR_ENS_TXT_RECORD_NOT_FOUND, {
+                                details: "ensName: ".concat(ensName, ", txtRecordName: ").concat(txtRecordName, ", blockchainProvider: ").concat(JSON.stringify(blockchainProvider), ",")
+                            });
+                        debugs.DEBUG("Resolved text record name (".concat(txtRecordName, ") of ENS (").concat(ensName, ") to ").concat(txtRecordResult));
+                        this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // Expire memory ENS cache after an hour
                         return [2 /*return*/, txtRecordResult];
                 }
             });
