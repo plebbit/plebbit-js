@@ -24,6 +24,9 @@ import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
 import { getPlebbitAddressFromPrivateKeyPem } from "./signer/util";
 import EventEmitter from "events";
+import isIPFS from "is-ipfs";
+import errcode from "err-code";
+import { codes, messages } from "./errors";
 
 const debugs = getDebugLevels("plebbit");
 
@@ -86,12 +89,19 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
-        assert(typeof subplebbitAddress === "string" && subplebbitAddress.length > 0, "Subplebbit address needs to be an IPNS string");
+        if (!this.resolver.isDomain(subplebbitAddress) && !isIPFS.cid(subplebbitAddress))
+            throw errcode(Error(messages.ERR_INVALID_SUBPLEBBIT_ADDRESS), codes.ERR_INVALID_SUBPLEBBIT_ADDRESS, {
+                details: `getSubplebbit: subplebbitAddress (${subplebbitAddress}) can't be used to get a subplebbit`
+            });
         const resolvedSubplebbitAddress = await this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
-        assert(
-            typeof resolvedSubplebbitAddress === "string" && resolvedSubplebbitAddress.length > 0,
-            "Resolved address of a subplebbit needs to be defined"
-        );
+        if (!isIPFS.cid(resolvedSubplebbitAddress))
+            throw errcode(
+                Error(messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID),
+                codes.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID,
+                {
+                    details: `getSubplebbit: subplebbitAddress (${subplebbitAddress}) resolves to an incorrect CID (${resolvedSubplebbitAddress})`
+                }
+            );
         const subplebbitJson = await loadIpnsAsJson(resolvedSubplebbitAddress, this);
         return new Subplebbit(subplebbitJson, this);
     }
