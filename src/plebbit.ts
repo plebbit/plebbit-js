@@ -94,14 +94,6 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
                 details: `getSubplebbit: subplebbitAddress (${subplebbitAddress}) can't be used to get a subplebbit`
             });
         const resolvedSubplebbitAddress = await this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
-        if (!isIPFS.cid(resolvedSubplebbitAddress))
-            throw errcode(
-                Error(messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID),
-                codes.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID,
-                {
-                    details: `getSubplebbit: subplebbitAddress (${subplebbitAddress}) resolves to an incorrect CID (${resolvedSubplebbitAddress})`
-                }
-            );
         const subplebbitJson = await loadIpnsAsJson(resolvedSubplebbitAddress, this);
         return new Subplebbit(subplebbitJson, this);
     }

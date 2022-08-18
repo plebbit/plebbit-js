@@ -6,6 +6,7 @@ const debugs = getDebugLevels("resolver");
 import assert from "assert";
 import errcode from "err-code";
 import { codes, messages } from "./errors";
+import isIPFS from "is-ipfs";
 
 export class Resolver {
     blockchainProviders: { [chainTicker: string]: BlockchainProvider };
@@ -76,17 +77,33 @@ export class Resolver {
         if (!this.plebbit.resolveAuthorAddresses) return authorAddress;
         if (authorAddress?.endsWith(".eth")) {
             debugs.DEBUG(`Will attempt to resolve plebbit-author-address of ${authorAddress}`);
-            return this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address");
-        }
-        return authorAddress;
+            const resolvedAuthorAddress = await this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address");
+            if (!isIPFS.cid(resolvedAuthorAddress))
+                throw errcode(
+                    Error(messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID),
+                    codes.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID,
+                    {
+                        details: `resolver: Author address (${authorAddress}) resolves to an incorrect CID (${resolvedAuthorAddress})`
+                    }
+                );
+            return resolvedAuthorAddress;
+        } else return authorAddress;
     }
 
     async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string> {
         if (subplebbitAddress?.endsWith(".eth")) {
             debugs.DEBUG(`Will attempt to resolve subplebbit-address of ${subplebbitAddress}`);
-            return this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address");
-        }
-        return subplebbitAddress;
+            const resolvedSubplebbitAddress = await this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address");
+            if (!isIPFS.cid(resolvedSubplebbitAddress))
+                throw errcode(
+                    Error(messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID),
+                    codes.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID,
+                    {
+                        details: `resolver: subplebbitAddress (${subplebbitAddress}) resolves to an incorrect CID (${resolvedSubplebbitAddress})`
+                    }
+                );
+            return resolvedSubplebbitAddress;
+        } else return subplebbitAddress;
     }
 
     isDomain(address: string): boolean {
