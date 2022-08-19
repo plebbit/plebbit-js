@@ -63,7 +63,7 @@ describe("publishing", async () => {
 
             post.once("challengeverification", (challengeVerificationMessage, updatedComment) => {
                 expect(challengeVerificationMessage.challengeSuccess).to.be.true;
-                expect(challengeVerificationMessage.reason).to.be.undefined;
+                expect(challengeVerificationMessage.reason).to.not.be.a("string");
                 expect(updatedComment.link).to.equal(postLink);
                 resolve();
             });
