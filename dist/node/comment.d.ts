@@ -4,6 +4,7 @@ import { AuthorCommentEdit, CommentType, CommentUpdate, Flair, ProtocolVersion, 
 export declare class Comment extends Publication implements CommentType {
     title?: string;
     link?: string;
+    thumbnailUrl?: string;
     protocolVersion: ProtocolVersion;
     cid?: string;
     parentCid?: string;
@@ -38,6 +39,7 @@ export declare class Comment extends Publication implements CommentType {
         ipnsName: string;
         postCid: string;
         depth: number;
+        thumbnailUrl: string;
         content: string;
         parentCid: string;
         flair: Flair;
