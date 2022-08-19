@@ -132,7 +132,7 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   description?: string
   roles?: {[authorAddress: string]: SubplebbitRole} // each author address can be mapped to 1 SubplebbitRole
   pubsubTopic?: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
-  latestPostCid?: string // the most recent post in the linked list of posts
+  lastPostCid?: string // the most recent post in the linked list of posts
   posts?: Pages // only preload page 1 sorted by 'hot', might preload more later, comments should include Comment + CommentUpdate data
   challengeTypes?: ChallengeType[] // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
   metricsCid?: subplebbitMetricsCid
@@ -320,7 +320,7 @@ Encrypted {
   - `subplebbit.address`
   - `subplebbit.roles`
   - `subplebbit.posts`
-  - `subplebbit.latestPostCid`
+  - `subplebbit.lastPostCid`
   - `subplebbit.pubsubTopic`
   - `subplebbit.challengeTypes`
   - `subplebbit.rules`
@@ -487,7 +487,7 @@ const subplebbitAddress = 'QmbWqx...'
 const subplebbit = await plebbit.getSubplebbit(subplebbitAddress)
 console.log(subplebbit)
 
-let currentPostCid = subplebbit.latestPostCid
+let currentPostCid = subplebbit.lastPostCid
 const scrollAllSubplebbitPosts = async () => {
   while (currentPostCid) {
     const post = await plebbit.getComment(currentPostCid)
@@ -986,7 +986,7 @@ An object which may have the following keys:
 | title | `string` or `undefined` | Title of the subplebbit |
 | description | `string` or `undefined` | Description of the subplebbit |
 | roles | `{[authorAddress: string]: SubplebbitRole}` or `undefined` | Author addresses of the moderators |
-| latestPostCid | `string` or `undefined` | The most recent post in the linked list of posts |
+| lastPostCid | `string` or `undefined` | The most recent post in the linked list of posts |
 | posts | `Pages` or `undefined` | Only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post |
 | pubsubTopic | `string` or `undefined` | The string to publish to in the pubsub, a public key of the subplebbit owner's choice |
 | challengeTypes | `ChallengeType[]` or `undefined` | The challenge types provided by the subplebbit owner |
