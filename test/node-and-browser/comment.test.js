@@ -85,6 +85,7 @@ describe("comment (node and browser)", async () => {
                 const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
                 await subplebbit.update(updateInterval);
                 await subplebbit.stop();
+                expect(subplebbit.lastPostCid).to.be.a("string");
                 const parentPost = await plebbit.getComment(subplebbit.lastPostCid);
                 const reply = await generateMockComment(parentPost, plebbit, signers[0], false, { timestamp: parentPost.timestamp - 1 });
                 await reply.publish();
