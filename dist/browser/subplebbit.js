@@ -146,6 +146,10 @@ var Subplebbit = /** @class */ (function (_super) {
                 ? new pages_1.Pages(__assign(__assign({}, mergedProps["posts"]), { subplebbit: this }))
                 : mergedProps["posts"];
         this.roles = mergedProps.roles;
+        this.features = mergedProps.features;
+        this.suggested = mergedProps.suggested;
+        this.rules = mergedProps.rules;
+        this.flairs = mergedProps.flairs;
     };
     Subplebbit.prototype.initSignerIfNeeded = function () {
         var _a;
@@ -232,7 +236,11 @@ var Subplebbit = /** @class */ (function (_super) {
             encryption: this.encryption,
             roles: this.roles,
             protocolVersion: this.protocolVersion,
-            signature: this.signature
+            signature: this.signature,
+            features: this.features,
+            suggested: this.suggested,
+            rules: this.rules,
+            flairs: this.flairs
         };
     };
     Subplebbit.prototype.prePublish = function () {
