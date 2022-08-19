@@ -63,7 +63,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     metrics?: SubplebbitMetrics;
     features?: SubplebbitFeatures;
     suggested?: SubplebbitSuggested;
-    flairs: Record<FlairOwner, Flair[]>;
+    flairs?: Record<FlairOwner, Flair[]>;
     address: string;
     metricsCid?: string;
     createdAt: number;
@@ -72,6 +72,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     encryption: SubplebbitEncryption;
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
     signature: Signature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
+    rules?: string[];
 
     plebbit: Plebbit;
     dbHandler?: DbHandler;
@@ -133,6 +134,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                   })
                 : mergedProps["posts"];
         this.roles = mergedProps.roles;
+        this.features = mergedProps.features;
+        this.suggested = mergedProps.suggested;
+        this.rules = mergedProps.rules;
+        this.flairs = mergedProps.flairs;
     }
 
     async initSignerIfNeeded() {
@@ -212,7 +217,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             encryption: this.encryption,
             roles: this.roles,
             protocolVersion: this.protocolVersion,
-            signature: this.signature
+            signature: this.signature,
+            features: this.features,
+            suggested: this.suggested,
+            rules: this.rules,
+            flairs: this.flairs
         };
     }
 
