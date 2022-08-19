@@ -103,6 +103,9 @@ var tinycache_1 = __importDefault(require("tinycache"));
 var comment_edit_1 = require("./comment-edit");
 var util_3 = require("./signer/util");
 var events_1 = __importDefault(require("events"));
+var is_ipfs_1 = __importDefault(require("is-ipfs"));
+var err_code_1 = __importDefault(require("err-code"));
+var errors_1 = require("./errors");
 var debugs = (0, util_2.getDebugLevels)("plebbit");
 exports.pendingSubplebbitCreations = {};
 var Plebbit = /** @class */ (function (_super) {
@@ -171,11 +174,13 @@ var Plebbit = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        (0, assert_1.default)(typeof subplebbitAddress === "string" && subplebbitAddress.length > 0, "Subplebbit address needs to be an IPNS string");
+                        if (!this.resolver.isDomain(subplebbitAddress) && !is_ipfs_1.default.cid(subplebbitAddress))
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_INVALID_SUBPLEBBIT_ADDRESS), errors_1.codes.ERR_INVALID_SUBPLEBBIT_ADDRESS, {
+                                details: "getSubplebbit: subplebbitAddress (".concat(subplebbitAddress, ") can't be used to get a subplebbit")
+                            });
                         return [4 /*yield*/, this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
                     case 1:
                         resolvedSubplebbitAddress = _a.sent();
-                        (0, assert_1.default)(typeof resolvedSubplebbitAddress === "string" && resolvedSubplebbitAddress.length > 0, "Resolved address of a subplebbit needs to be defined");
                         return [4 /*yield*/, (0, util_2.loadIpnsAsJson)(resolvedSubplebbitAddress, this)];
                     case 2:
                         subplebbitJson = _a.sent();
@@ -189,7 +194,12 @@ var Plebbit = /** @class */ (function (_super) {
             var commentJson, subplebbit, publication, _a, signatureIsVerified, failedVerificationReason;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0: return [4 /*yield*/, (0, util_2.loadIpfsFileAsJson)(cid, this)];
+                    case 0:
+                        if (!is_ipfs_1.default.cid(cid))
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.codes.ERR_CID_IS_INVALID, {
+                                details: "getComment: cid (".concat(cid, ") is invalid as a CID")
+                            });
+                        return [4 /*yield*/, (0, util_2.loadIpfsFileAsJson)(cid, this)];
                     case 1:
                         commentJson = _b.sent();
                         return [4 /*yield*/, this.getSubplebbit(commentJson["subplebbitAddress"])];
@@ -201,7 +211,10 @@ var Plebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signer_1.verifyPublication)(publication, this, "comment")];
                     case 3:
                         _a = _b.sent(), signatureIsVerified = _a[0], failedVerificationReason = _a[1];
-                        assert_1.default.equal(signatureIsVerified, true, "Signature of comment/post ".concat(cid, " is invalid due to reason=").concat(failedVerificationReason));
+                        if (!signatureIsVerified)
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+                                details: "getComment: Failed verification reason: ".concat(failedVerificationReason, ", ").concat(publication.getType(), ": ").concat(JSON.stringify(publication))
+                            });
                         return [2 /*return*/, publication];
                 }
             });

@@ -72,6 +72,8 @@ var publication_1 = __importDefault(require("./publication"));
 var pages_1 = require("./pages");
 var signer_1 = require("./signer");
 var author_1 = __importDefault(require("./author"));
+var err_code_1 = __importDefault(require("err-code"));
+var errors_1 = require("./errors");
 var debugs = (0, util_1.getDebugLevels)("comment");
 var DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 var Comment = /** @class */ (function (_super) {
@@ -87,6 +89,7 @@ var Comment = /** @class */ (function (_super) {
         this.ipnsName = props.ipnsName; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.ipnsKeyName = props.ipnsKeyName;
         this.depth = props.depth;
+        this.link = props.link;
         this.setPreviousCid(props.previousCid);
         // CommentUpdate props
         this._initCommentUpdate(props);
@@ -144,7 +147,7 @@ var Comment = /** @class */ (function (_super) {
         return __assign(__assign({}, this.toJSONSkeleton()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.postCid, depth: this.depth });
     };
     Comment.prototype.toJSONSkeleton = function () {
-        return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { content: this.content, parentCid: this.parentCid, flair: this.flair, spoiler: this.spoiler });
+        return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { content: this.content, parentCid: this.parentCid, flair: this.flair, spoiler: this.spoiler, link: this.link });
     };
     Comment.prototype.toJSONForDb = function (challengeRequestId) {
         var _a;
@@ -213,23 +216,20 @@ var Comment = /** @class */ (function (_super) {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        (0, assert_1.default)(this.ipnsName, "Comment needs to have ipnsName before updating");
-                        _b.label = 1;
-                    case 1:
-                        _b.trys.push([1, 3, , 4]);
+                        _b.trys.push([0, 2, , 3]);
                         return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.subplebbit.plebbit)];
-                    case 2:
+                    case 1:
                         res = _b.sent();
-                        return [3 /*break*/, 4];
-                    case 3:
+                        return [3 /*break*/, 3];
+                    case 2:
                         e_1 = _b.sent();
                         debugs.WARN("Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error = ").concat(e_1.message));
                         return [2 /*return*/];
-                    case 4:
-                        if (!(res && (!this.updatedAt || !(0, util_1.shallowEqual)(this.toJSONCommentUpdate(), res, ["signature"])))) return [3 /*break*/, 6];
+                    case 3:
+                        if (!(res && (!this.updatedAt || !(0, util_1.shallowEqual)(this.toJSONCommentUpdate(), res, ["signature"])))) return [3 /*break*/, 5];
                         debugs.DEBUG("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
                         return [4 /*yield*/, (0, signer_1.verifyPublication)(res, this.subplebbit.plebbit, "commentupdate")];
-                    case 5:
+                    case 4:
                         _a = _b.sent(), verified = _a[0], failedVerificationReason = _a[1];
                         if (!verified) {
                             debugs.ERROR("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") signature is invalid. Will not update: ").concat(failedVerificationReason));
@@ -238,19 +238,20 @@ var Comment = /** @class */ (function (_super) {
                         this._initCommentUpdate(res);
                         this._mergeFields(this.toJSON());
                         this.emit("update", this);
-                        return [3 /*break*/, 7];
-                    case 6:
+                        return [3 /*break*/, 6];
+                    case 5:
                         debugs.TRACE("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
                         this._initCommentUpdate(res);
-                        _b.label = 7;
-                    case 7: return [2 /*return*/, this];
+                        _b.label = 6;
+                    case 6: return [2 /*return*/, this];
                 }
             });
         });
     };
     Comment.prototype.update = function (updateIntervalMs) {
         if (updateIntervalMs === void 0) { updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS; }
-        (0, assert_1.default)(this.ipnsName, "Comment need to have ipnsName field to poll updates");
+        if (typeof this.ipnsName !== "string")
+            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME), errors_1.codes.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME);
         debugs.DEBUG("Starting to poll updates for comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") every ").concat(updateIntervalMs, " milliseconds"));
         if (this._updateInterval)
             clearInterval(this._updateInterval);
@@ -270,7 +271,10 @@ var Comment = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signer_1.verifyPublication)(options, this.subplebbit.plebbit, "commentupdate")];
                     case 1:
                         _a = _b.sent(), validSignature = _a[0], failedVerificationReason = _a[1];
-                        (0, assert_1.default)(validSignature, "Failed to verify CommentUpdate (".concat(JSON.stringify(options), ") due to: ").concat(failedVerificationReason));
+                        if (!validSignature)
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+                                details: "comment.edit: Failed verification reason: ".concat(failedVerificationReason, ", editOptions: ").concat(JSON.stringify(options))
+                            });
                         this._initCommentUpdate(options);
                         this._mergeFields(this.toJSON());
                         return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(__assign(__assign({}, this.toJSONCommentUpdate()), { signature: options.signature })))];
@@ -292,7 +296,6 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype.publish = function (userOptions) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                (0, assert_1.default)(this.content, "Need content field to publish comment");
                 return [2 /*return*/, _super.prototype.publish.call(this, userOptions)];
             });
         });

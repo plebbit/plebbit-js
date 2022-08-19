@@ -66,7 +66,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var comment_1 = require("./comment");
-var assert_1 = __importDefault(require("assert"));
+var err_code_1 = __importDefault(require("err-code"));
+var errors_1 = require("./errors");
 var Post = /** @class */ (function (_super) {
     __extends(Post, _super);
     function Post() {
@@ -89,7 +90,10 @@ var Post = /** @class */ (function (_super) {
     Post.prototype.publish = function (userOptions) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                (0, assert_1.default)(this.title, "Post needs a title to publish");
+                if (typeof this.title !== "string")
+                    throw (0, err_code_1.default)(Error(errors_1.messages.ERR_PUBLICATION_MISSING_FIELD), errors_1.codes.ERR_PUBLICATION_MISSING_FIELD, {
+                        details: "".concat(this.getType(), ".publish: title should be a string")
+                    });
                 return [2 /*return*/, _super.prototype.publish.call(this, userOptions)];
             });
         });

@@ -758,7 +758,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 24:
                         e_5 = _s.sent();
                         msg = "Failed to insert ".concat(postOrCommentOrVote.constructor.name, " due to previous ").concat(postOrCommentOrVote.getType(), " having same ipns key name (duplicate?): ").concat(e_5);
-                        debugs.DEBUG(msg);
+                        debugs.INFO(msg);
                         return [2 /*return*/, { reason: msg }];
                     case 25:
                         if (!(postOrCommentOrVote instanceof post_1.default)) return [3 /*break*/, 31];
@@ -852,7 +852,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _f.label = 7;
                     case 7:
                         restOfMsg = _d;
-                        challengeVerification = new challenge_1.ChallengeVerificationMessage(__assign({ reason: reasonForSkippingCaptcha, challengeSuccess: Boolean(publishedPublication.publication), challengeAnswerId: request.challengeAnswerId, challengeErrors: undefined, challengeRequestId: request.challengeRequestId }, restOfMsg));
+                        challengeVerification = new challenge_1.ChallengeVerificationMessage(__assign({ reason: reasonForSkippingCaptcha, challengeSuccess: publishedPublication.reason ? false : Boolean(publishedPublication.publication), challengeAnswerId: request.challengeAnswerId, challengeErrors: undefined, challengeRequestId: request.challengeRequestId }, restOfMsg));
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.upsertChallenge(challengeVerification, undefined),
                                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeVerification)))
@@ -914,7 +914,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _d.label = 6;
                     case 6:
                         restOfMsg = _b;
-                        challengeVerification = new challenge_1.ChallengeVerificationMessage(__assign({ challengeRequestId: challengeAnswer.challengeRequestId, challengeAnswerId: challengeAnswer.challengeAnswerId, challengeSuccess: challengeSuccess, challengeErrors: challengeErrors }, restOfMsg));
+                        challengeVerification = new challenge_1.ChallengeVerificationMessage(__assign({ challengeRequestId: challengeAnswer.challengeRequestId, challengeAnswerId: challengeAnswer.challengeAnswerId, challengeSuccess: publishedPublication.reason ? false : challengeSuccess, challengeErrors: challengeErrors }, restOfMsg));
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.upsertChallenge(challengeVerification, undefined),
                                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeVerification)))

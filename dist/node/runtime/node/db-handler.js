@@ -90,6 +90,7 @@ var jsonFields = [
     "challengeAnswers",
     "challengeErrors"
 ];
+var currentDbVersion = 1;
 var DbHandler = /** @class */ (function () {
     function DbHandler(dbConfig, subplebbit) {
         this._dbConfig = dbConfig;
@@ -154,14 +155,15 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype.baseTransaction = function (trx) {
         return trx ? trx : this.knex;
     };
-    DbHandler.prototype.createCommentsTable = function () {
+    DbHandler.prototype.createCommentsTable = function (tableName) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.COMMENTS, function (table) {
+                    case 0: return [4 /*yield*/, this.knex.schema.createTable(tableName, function (table) {
                             table.text("cid").notNullable().primary().unique();
                             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
                             table.json("author").notNullable();
+                            table.string("link").nullable();
                             table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);
@@ -195,11 +197,11 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.createVotesTable = function () {
+    DbHandler.prototype.createVotesTable = function (tableName) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.VOTES, function (table) {
+                    case 0: return [4 /*yield*/, this.knex.schema.createTable(tableName, function (table) {
                             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
                             table.json("author").notNullable();
@@ -218,11 +220,11 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.createAuthorsTable = function () {
+    DbHandler.prototype.createAuthorsTable = function (tableName) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.AUTHORS, function (table) {
+                    case 0: return [4 /*yield*/, this.knex.schema.createTable(tableName, function (table) {
                             table.text("address").notNullable().primary().unique();
                             table.timestamp("banExpiresAt").nullable();
                             table.json("flair").nullable();
@@ -234,11 +236,11 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.createChallengesTable = function () {
+    DbHandler.prototype.createChallengesTable = function (tableName) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.CHALLENGES, function (table) {
+                    case 0: return [4 /*yield*/, this.knex.schema.createTable(tableName, function (table) {
                             table.uuid("challengeRequestId").notNullable().primary().unique();
                             table.enum("type", Object.values(challenge_1.PUBSUB_MESSAGE_TYPES)).notNullable();
                             table.json("acceptedChallengeTypes").nullable().defaultTo(null);
@@ -256,11 +258,11 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.createSignersTable = function () {
+    DbHandler.prototype.createSignersTable = function (tableName) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.SIGNERS, function (table) {
+                    case 0: return [4 /*yield*/, this.knex.schema.createTable(tableName, function (table) {
                             table.text("ipnsKeyName").notNullable().unique().primary();
                             table.text("privateKey").notNullable().unique();
                             table.text("publicKey").notNullable().unique();
@@ -276,11 +278,11 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.createEditsTable = function () {
+    DbHandler.prototype.createEditsTable = function (tableName) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(TABLES.EDITS, function (table) {
+                    case 0: return [4 /*yield*/, this.knex.schema.createTable(tableName, function (table) {
                             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
                             table.json("author").notNullable();
@@ -311,11 +313,23 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.createTablesIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var functions, tables, _i, tables_1, table, i, tableExists;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var dbVersion, _a, _b, _c, _d, _e, _f, needToMigrate, createTableFunctions, tables;
+            var _this = this;
+            return __generator(this, function (_g) {
+                switch (_g.label) {
                     case 0:
-                        functions = [
+                        _a = Number;
+                        return [4 /*yield*/, this.knex.raw("PRAGMA user_version")];
+                    case 1:
+                        dbVersion = _a.apply(void 0, [(_g.sent())[0]["user_version"]]);
+                        _c = (_b = debugs).DEBUG;
+                        _d = "PRAGMA user_version = ".concat;
+                        _f = (_e = JSON).stringify;
+                        return [4 /*yield*/, this.knex.raw("PRAGMA user_version")];
+                    case 2:
+                        _c.apply(_b, [_d.apply("PRAGMA user_version = ", [_f.apply(_e, [_g.sent()]), ", dbVersion(parsed) = "]).concat(dbVersion)]);
+                        needToMigrate = dbVersion !== currentDbVersion;
+                        createTableFunctions = [
                             this.createCommentsTable,
                             this.createVotesTable,
                             this.createAuthorsTable,
@@ -324,24 +338,74 @@ var DbHandler = /** @class */ (function () {
                             this.createEditsTable
                         ];
                         tables = Object.values(TABLES);
-                        _i = 0, tables_1 = tables;
-                        _a.label = 1;
-                    case 1:
-                        if (!(_i < tables_1.length)) return [3 /*break*/, 5];
-                        table = tables_1[_i];
-                        i = tables.indexOf(table);
-                        return [4 /*yield*/, this.knex.schema.hasTable(table)];
-                    case 2:
-                        tableExists = _a.sent();
-                        if (!!tableExists) return [3 /*break*/, 4];
-                        return [4 /*yield*/, functions[i].bind(this)()];
+                        return [4 /*yield*/, Promise.all(tables.map(function (table) { return __awaiter(_this, void 0, void 0, function () {
+                                var i, tableExists, tempTableName;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            i = tables.indexOf(table);
+                                            return [4 /*yield*/, this.knex.schema.hasTable(table)];
+                                        case 1:
+                                            tableExists = _a.sent();
+                                            if (!!tableExists) return [3 /*break*/, 3];
+                                            return [4 /*yield*/, createTableFunctions[i].bind(this)(table)];
+                                        case 2:
+                                            _a.sent();
+                                            return [3 /*break*/, 9];
+                                        case 3:
+                                            if (!(tableExists && needToMigrate)) return [3 /*break*/, 9];
+                                            debugs.INFO("Migrating table ".concat(table, " to new schema"));
+                                            return [4 /*yield*/, this.knex.raw("PRAGMA foreign_keys = OFF")];
+                                        case 4:
+                                            _a.sent();
+                                            tempTableName = "".concat(table).concat(currentDbVersion);
+                                            return [4 /*yield*/, createTableFunctions[i].bind(this)(tempTableName)];
+                                        case 5:
+                                            _a.sent();
+                                            return [4 /*yield*/, this.copyTable(table, tempTableName)];
+                                        case 6:
+                                            _a.sent();
+                                            return [4 /*yield*/, this.knex.schema.dropTable(table)];
+                                        case 7:
+                                            _a.sent();
+                                            return [4 /*yield*/, this.knex.schema.renameTable(tempTableName, table)];
+                                        case 8:
+                                            _a.sent();
+                                            _a.label = 9;
+                                        case 9: return [2 /*return*/];
+                                    }
+                                });
+                            }); }))];
                     case 3:
-                        _a.sent();
-                        _a.label = 4;
+                        _g.sent();
+                        return [4 /*yield*/, this.knex.raw("PRAGMA foreign_keys = ON")];
                     case 4:
-                        _i++;
-                        return [3 /*break*/, 1];
-                    case 5: return [2 /*return*/];
+                        _g.sent();
+                        return [4 /*yield*/, this.knex.raw("PRAGMA user_version = ".concat(currentDbVersion))];
+                    case 5:
+                        _g.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.copyTable = function (srcTable, dstTable) {
+        return __awaiter(this, void 0, void 0, function () {
+            var srcRecords;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.knex(srcTable).select("*")];
+                    case 1:
+                        srcRecords = _a.sent();
+                        debugs.DEBUG("Attempting to copy ".concat(srcRecords.length, " ").concat(srcTable));
+                        if (!(srcRecords.length > 0)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.knex(dstTable).insert(srcRecords)];
+                    case 2:
+                        _a.sent();
+                        _a.label = 3;
+                    case 3:
+                        debugs.DEBUG("copied table ".concat(srcTable, " to table ").concat(dstTable));
+                        return [2 /*return*/];
                 }
             });
         });
