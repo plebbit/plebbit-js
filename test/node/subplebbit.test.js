@@ -207,4 +207,14 @@ describe("subplebbit", async () => {
 
             interval = setInterval(loop, 50);
         }));
+
+    it(`DB get migrated successfully`, async () => {
+        const originalDbVersion = Number((await subplebbit.dbHandler.knex.raw("PRAGMA user_version"))[0]["user_version"]);
+        await subplebbit.dbHandler.knex.raw("PRAGMA user_version = 999999"); // Force a migrate
+        await subplebbit.stop(); // Clear out dbHandler
+        await subplebbit.start(syncInterval);
+
+        const currentDbVersion = Number((await subplebbit.dbHandler.knex.raw("PRAGMA user_version"))[0]["user_version"]);
+        expect(currentDbVersion).to.equal(originalDbVersion); // If they're equal, that means all tables have been migrated
+    });
 });
