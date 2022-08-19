@@ -164,6 +164,7 @@ var DbHandler = /** @class */ (function () {
                             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
                             table.json("author").notNullable();
                             table.string("link").nullable();
+                            table.string("thumbnailUrl").nullable();
                             table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);

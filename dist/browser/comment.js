@@ -90,6 +90,7 @@ var Comment = /** @class */ (function (_super) {
         this.ipnsKeyName = props.ipnsKeyName;
         this.depth = props.depth;
         this.link = props.link;
+        this.thumbnailUrl = props.thumbnailUrl;
         this.setPreviousCid(props.previousCid);
         // CommentUpdate props
         this._initCommentUpdate(props);
@@ -144,7 +145,7 @@ var Comment = /** @class */ (function (_super) {
         return __assign(__assign(__assign({}, this.toJSONIpfs()), (this.updatedAt ? this.toJSONCommentUpdate() : undefined)), { cid: this.cid, original: this.original, author: this.author.toJSON() });
     };
     Comment.prototype.toJSONIpfs = function () {
-        return __assign(__assign({}, this.toJSONSkeleton()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.postCid, depth: this.depth });
+        return __assign(__assign({}, this.toJSONSkeleton()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl });
     };
     Comment.prototype.toJSONSkeleton = function () {
         return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { content: this.content, parentCid: this.parentCid, flair: this.flair, spoiler: this.spoiler, link: this.link });

@@ -252,6 +252,7 @@ export interface CommentType extends Partial<CommentUpdate>, Omit<CreateCommentO
     depth?: number;
     signer?: SignerType;
     original?: Pick<Partial<CommentType>, "author" | "content" | "flair">;
+    thumbnailUrl?: string;
 }
 export interface PostType extends CommentType {
     parentCid: undefined;
