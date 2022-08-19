@@ -99,7 +99,7 @@ exports.SIGNED_PROPERTY_NAMES = Object.freeze({
         "description",
         "roles",
         "pubsubTopic",
-        "latestPostCid",
+        "lastPostCid",
         "posts",
         "challengeTypes",
         "metricsCid",

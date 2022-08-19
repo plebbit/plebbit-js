@@ -130,7 +130,7 @@ var Subplebbit = /** @class */ (function (_super) {
         var mergedProps = __assign(__assign({}, oldProps), newProps);
         this.title = mergedProps.title;
         this.description = mergedProps.description;
-        this.latestPostCid = mergedProps.latestPostCid;
+        this.lastPostCid = mergedProps.lastPostCid;
         this._dbConfig = mergedProps.database;
         this.address = mergedProps.address;
         this.ipnsKeyName = mergedProps.ipnsKeyName;
@@ -225,7 +225,7 @@ var Subplebbit = /** @class */ (function (_super) {
         return {
             title: this.title,
             description: this.description,
-            latestPostCid: this.latestPostCid,
+            lastPostCid: this.lastPostCid,
             pubsubTopic: this.pubsubTopic,
             address: this.address,
             posts: this.posts,
@@ -461,7 +461,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.dbHandler.commitTransaction("subplebbit")];
                     case 3:
                         _d.sent();
-                        this.latestPostCid = latestPost === null || latestPost === void 0 ? void 0 : latestPost.cid;
+                        this.lastPostCid = latestPost === null || latestPost === void 0 ? void 0 : latestPost.cid;
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.querySubplebbitMetrics(undefined),
                                 this.sortHandler.generatePagesUnderComment(undefined, undefined)
