@@ -1,5 +1,5 @@
 import assert from "assert";
-import { getDebugLevels, loadIpnsAsJson, parseJsonIfString, removeKeysWithUndefinedValues, shallowEqual } from "./util";
+import { getDebugLevels, loadIpnsAsJson, removeKeysWithUndefinedValues, shallowEqual } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
 import { verifyPublication } from "./signer";
@@ -16,6 +16,7 @@ export class Comment extends Publication implements CommentType {
     // public
     title?: string;
     link?: string;
+    thumbnailUrl?: string;
     protocolVersion: ProtocolVersion;
     cid?: string;
     parentCid?: string;
@@ -55,6 +56,7 @@ export class Comment extends Publication implements CommentType {
         this.ipnsKeyName = props.ipnsKeyName;
         this.depth = props.depth;
         this.link = props.link;
+        this.thumbnailUrl = props.thumbnailUrl;
         this.setPreviousCid(props.previousCid);
         // CommentUpdate props
         this._initCommentUpdate(props);
@@ -126,7 +128,8 @@ export class Comment extends Publication implements CommentType {
             previousCid: this.previousCid,
             ipnsName: this.ipnsName,
             postCid: this.postCid,
-            depth: this.depth
+            depth: this.depth,
+            thumbnailUrl: this.thumbnailUrl
         };
     }
 
