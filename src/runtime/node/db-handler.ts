@@ -45,6 +45,8 @@ const jsonFields = [
     "challengeErrors"
 ];
 
+const currentDbVersion = 1;
+
 export class DbHandler {
     _dbConfig: Knex.Config;
     knex: Knex;
@@ -89,11 +91,12 @@ export class DbHandler {
         return trx ? trx : this.knex;
     }
 
-    async createCommentsTable() {
-        await this.knex.schema.createTable(TABLES.COMMENTS, (table) => {
+    async createCommentsTable(tableName: string) {
+        await this.knex.schema.createTable(tableName, (table) => {
             table.text("cid").notNullable().primary().unique();
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
             table.json("author").notNullable();
+            table.string("link").nullable();
             table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);
@@ -124,8 +127,8 @@ export class DbHandler {
         });
     }
 
-    async createVotesTable() {
-        await this.knex.schema.createTable(TABLES.VOTES, (table) => {
+    async createVotesTable(tableName: string) {
+        await this.knex.schema.createTable(tableName, (table) => {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
             table.json("author").notNullable();
@@ -141,16 +144,16 @@ export class DbHandler {
         });
     }
 
-    async createAuthorsTable() {
-        await this.knex.schema.createTable(TABLES.AUTHORS, (table) => {
+    async createAuthorsTable(tableName: string) {
+        await this.knex.schema.createTable(tableName, (table) => {
             table.text("address").notNullable().primary().unique();
             table.timestamp("banExpiresAt").nullable();
             table.json("flair").nullable();
         });
     }
 
-    async createChallengesTable() {
-        await this.knex.schema.createTable(TABLES.CHALLENGES, (table) => {
+    async createChallengesTable(tableName: string) {
+        await this.knex.schema.createTable(tableName, (table) => {
             table.uuid("challengeRequestId").notNullable().primary().unique();
             table.enum("type", Object.values(PUBSUB_MESSAGE_TYPES)).notNullable();
             table.json("acceptedChallengeTypes").nullable().defaultTo(null);
@@ -163,8 +166,8 @@ export class DbHandler {
         });
     }
 
-    async createSignersTable() {
-        await this.knex.schema.createTable(TABLES.SIGNERS, (table) => {
+    async createSignersTable(tableName: string) {
+        await this.knex.schema.createTable(tableName, (table) => {
             table.text("ipnsKeyName").notNullable().unique().primary();
             table.text("privateKey").notNullable().unique();
             table.text("publicKey").notNullable().unique();
@@ -175,8 +178,8 @@ export class DbHandler {
         });
     }
 
-    async createEditsTable() {
-        await this.knex.schema.createTable(TABLES.EDITS, (table) => {
+    async createEditsTable(tableName: string) {
+        await this.knex.schema.createTable(tableName, (table) => {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
             table.json("author").notNullable();
@@ -203,7 +206,12 @@ export class DbHandler {
     }
 
     async createTablesIfNeeded() {
-        const functions = [
+        const dbVersion = Number((await this.knex.raw("PRAGMA user_version"))[0]["user_version"]);
+        debugs.DEBUG(
+            `PRAGMA user_version = ${JSON.stringify(await this.knex.raw("PRAGMA user_version"))}, dbVersion(parsed) = ${dbVersion}`
+        );
+        const needToMigrate = dbVersion !== currentDbVersion;
+        const createTableFunctions = [
             this.createCommentsTable,
             this.createVotesTable,
             this.createAuthorsTable,
@@ -212,11 +220,33 @@ export class DbHandler {
             this.createEditsTable
         ];
         const tables = Object.values(TABLES);
-        for (const table of tables) {
-            const i = tables.indexOf(table);
-            const tableExists = await this.knex.schema.hasTable(table);
-            if (!tableExists) await functions[i].bind(this)();
-        }
+
+        await Promise.all(
+            tables.map(async (table) => {
+                const i = tables.indexOf(table);
+                const tableExists = await this.knex.schema.hasTable(table);
+                if (!tableExists) await createTableFunctions[i].bind(this)(table);
+                else if (tableExists && needToMigrate) {
+                    debugs.INFO(`Migrating table ${table} to new schema`);
+                    await this.knex.raw("PRAGMA foreign_keys = OFF");
+                    const tempTableName = `${table}${currentDbVersion}`;
+                    await createTableFunctions[i].bind(this)(tempTableName);
+                    await this.copyTable(table, tempTableName);
+                    await this.knex.schema.dropTable(table);
+                    await this.knex.schema.renameTable(tempTableName, table);
+                }
+            })
+        );
+
+        await this.knex.raw("PRAGMA foreign_keys = ON");
+        await this.knex.raw(`PRAGMA user_version = ${currentDbVersion}`);
+    }
+
+    async copyTable(srcTable: string, dstTable: string) {
+        const srcRecords = await this.knex(srcTable).select("*");
+        debugs.DEBUG(`Attempting to copy ${srcRecords.length} ${srcTable}`);
+        if (srcRecords.length > 0) await this.knex(dstTable).insert(srcRecords);
+        debugs.DEBUG(`copied table ${srcTable} to table ${dstTable}`);
     }
 
     async upsertAuthor(author: Author | AuthorType, trx?: Transaction, upsertOnlyWhenNew = true) {

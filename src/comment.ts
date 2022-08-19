@@ -54,6 +54,7 @@ export class Comment extends Publication implements CommentType {
         this.ipnsName = props.ipnsName; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.ipnsKeyName = props.ipnsKeyName;
         this.depth = props.depth;
+        this.link = props.link;
         this.setPreviousCid(props.previousCid);
         // CommentUpdate props
         this._initCommentUpdate(props);
@@ -135,7 +136,8 @@ export class Comment extends Publication implements CommentType {
             content: this.content,
             parentCid: this.parentCid,
             flair: this.flair,
-            spoiler: this.spoiler
+            spoiler: this.spoiler,
+            link: this.link
         };
     }
 
