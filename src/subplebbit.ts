@@ -391,7 +391,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         this.metricsCid = (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path;
 
-        if (!currentIpns || JSON.stringify(currentIpns) !== JSON.stringify(this.toJSON())) {
+        const lastPublishOverTwentyMinutes = this.updatedAt < timestamp() - 60 * 20;
+
+        if (!currentIpns || JSON.stringify(currentIpns) !== JSON.stringify(this.toJSON()) || lastPublishOverTwentyMinutes) {
             this.updatedAt = timestamp();
             const file = await this.plebbit.ipfsClient.add(JSON.stringify(this.toJSON()));
             await this.plebbit.ipfsClient.name.publish(file["cid"], {
@@ -399,6 +401,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 key: this.ipnsKeyName,
                 allowOffline: true
             });
+            debugs.INFO(`Published a new IPNS record for sub(${this.address})`);
         }
     }
 
