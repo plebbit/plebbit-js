@@ -24,7 +24,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     metrics?: SubplebbitMetrics;
     features?: SubplebbitFeatures;
     suggested?: SubplebbitSuggested;
-    flairs: Record<FlairOwner, Flair[]>;
+    flairs?: Record<FlairOwner, Flair[]>;
     address: string;
     metricsCid?: string;
     createdAt: number;
@@ -33,6 +33,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     encryption: SubplebbitEncryption;
     protocolVersion: ProtocolVersion;
     signature: Signature;
+    rules?: string[];
     plebbit: Plebbit;
     dbHandler?: DbHandler;
     _keyv: any;
