@@ -56,7 +56,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     title?: string;
     description?: string;
     roles?: { [authorAddress: string]: SubplebbitRole };
-    latestPostCid?: string;
+    lastPostCid?: string;
     posts?: Pages;
     pubsubTopic: string;
     challengeTypes?: ChallengeType[];
@@ -115,7 +115,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const mergedProps = { ...oldProps, ...newProps };
         this.title = mergedProps.title;
         this.description = mergedProps.description;
-        this.latestPostCid = mergedProps.latestPostCid;
+        this.lastPostCid = mergedProps.lastPostCid;
         this._dbConfig = mergedProps.database;
         this.address = mergedProps.address;
         this.ipnsKeyName = mergedProps.ipnsKeyName;
@@ -206,7 +206,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         return {
             title: this.title,
             description: this.description,
-            latestPostCid: this.latestPostCid,
+            lastPostCid: this.lastPostCid,
             pubsubTopic: this.pubsubTopic,
             address: this.address,
             posts: this.posts,
@@ -355,7 +355,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const trx: any = await this.dbHandler.createTransaction("subplebbit");
         const latestPost = await this.dbHandler.queryLatestPost(trx);
         await this.dbHandler.commitTransaction("subplebbit");
-        this.latestPostCid = latestPost?.cid;
+        this.lastPostCid = latestPost?.cid;
 
         const [metrics, subplebbitPosts] = await Promise.all([
             this.dbHandler.querySubplebbitMetrics(undefined),

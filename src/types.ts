@@ -219,7 +219,7 @@ export interface SubplebbitEditOptions {
     description?: string;
     roles?: { [authorAddress: string]: SubplebbitRole };
     rules?: string[];
-    latestPostCid?: string;
+    lastPostCid?: string;
     posts?: Pages;
     pubsubTopic?: string;
     challengeTypes?: ChallengeType[];

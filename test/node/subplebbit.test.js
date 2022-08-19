@@ -153,7 +153,7 @@ describe("subplebbit", async () => {
             loadedSubplebbit.on("update", async (updatedSubplebbit) => {
                 if (!updatedSubplebbit.posts) return;
                 expect(updatedSubplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.content === post.content)).to.be.true;
-                expect(updatedSubplebbit.latestPostCid).to.equal(post.cid);
+                expect(updatedSubplebbit.lastPostCid).to.equal(post.cid);
                 await loadedSubplebbit.stop();
                 await loadedSubplebbit.removeAllListeners();
                 resolve();

@@ -91,16 +91,16 @@ describe("plebbit (node and browser)", () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             await subplebbit.update(updateInterval);
             await subplebbit.stop();
-            expect(subplebbit.latestPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
-            const expectedPostProps = await loadIpfsFileAsJson(subplebbit.latestPostCid, plebbit);
+            expect(subplebbit.lastPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
+            const expectedPostProps = await loadIpfsFileAsJson(subplebbit.lastPostCid, plebbit);
             const expectedPost = await plebbit.createComment({
-                cid: subplebbit.latestPostCid,
-                postCid: subplebbit.latestPostCid,
+                cid: subplebbit.lastPostCid,
+                postCid: subplebbit.lastPostCid,
                 ...expectedPostProps
             });
             expect(expectedPost.constructor.name).to.equal("Post");
             await expectedPost.update(updateInterval);
-            const loadedPost = await plebbit.getComment(subplebbit.latestPostCid);
+            const loadedPost = await plebbit.getComment(subplebbit.lastPostCid);
             expect(loadedPost.constructor.name).to.equal("Post");
             await loadedPost.update(updateInterval);
 

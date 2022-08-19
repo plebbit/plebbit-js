@@ -56,7 +56,7 @@ export const SIGNED_PROPERTY_NAMES: Record<PublicationTypeName, SignedPropertyNa
         "description",
         "roles",
         "pubsubTopic",
-        "latestPostCid",
+        "lastPostCid",
         "posts",
         "challengeTypes",
         "metricsCid",
