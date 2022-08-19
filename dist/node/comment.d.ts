@@ -42,6 +42,7 @@ export declare class Comment extends Publication implements CommentType {
         parentCid: string;
         flair: Flair;
         spoiler: boolean;
+        link: string;
         author: import("./types").AuthorType;
         signature: import("./types").SignatureType;
         protocolVersion: "1.0.0";
@@ -53,6 +54,7 @@ export declare class Comment extends Publication implements CommentType {
         parentCid: string;
         flair: Flair;
         spoiler: boolean;
+        link: string;
         author: import("./types").AuthorType;
         signature: import("./types").SignatureType;
         protocolVersion: "1.0.0";

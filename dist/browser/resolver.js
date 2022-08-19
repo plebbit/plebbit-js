@@ -46,6 +46,7 @@ var debugs = (0, util_1.getDebugLevels)("resolver");
 var assert_1 = __importDefault(require("assert"));
 var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
+var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var Resolver = /** @class */ (function () {
     function Resolver(options) {
         this.blockchainProviders = options.blockchainProviders;
@@ -112,25 +113,45 @@ var Resolver = /** @class */ (function () {
     };
     Resolver.prototype.resolveAuthorAddressIfNeeded = function (authorAddress) {
         return __awaiter(this, void 0, void 0, function () {
+            var resolvedAuthorAddress;
             return __generator(this, function (_a) {
-                if (!this.plebbit.resolveAuthorAddresses)
-                    return [2 /*return*/, authorAddress];
-                if (authorAddress === null || authorAddress === void 0 ? void 0 : authorAddress.endsWith(".eth")) {
-                    debugs.DEBUG("Will attempt to resolve plebbit-author-address of ".concat(authorAddress));
-                    return [2 /*return*/, this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address")];
+                switch (_a.label) {
+                    case 0:
+                        if (!this.plebbit.resolveAuthorAddresses)
+                            return [2 /*return*/, authorAddress];
+                        if (!(authorAddress === null || authorAddress === void 0 ? void 0 : authorAddress.endsWith(".eth"))) return [3 /*break*/, 2];
+                        debugs.DEBUG("Will attempt to resolve plebbit-author-address of ".concat(authorAddress));
+                        return [4 /*yield*/, this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address")];
+                    case 1:
+                        resolvedAuthorAddress = _a.sent();
+                        if (!is_ipfs_1.default.cid(resolvedAuthorAddress))
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID), errors_1.codes.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID, {
+                                details: "resolver: Author address (".concat(authorAddress, ") resolves to an incorrect CID (").concat(resolvedAuthorAddress, ")")
+                            });
+                        return [2 /*return*/, resolvedAuthorAddress];
+                    case 2: return [2 /*return*/, authorAddress];
                 }
-                return [2 /*return*/, authorAddress];
             });
         });
     };
     Resolver.prototype.resolveSubplebbitAddressIfNeeded = function (subplebbitAddress) {
         return __awaiter(this, void 0, void 0, function () {
+            var resolvedSubplebbitAddress;
             return __generator(this, function (_a) {
-                if (subplebbitAddress === null || subplebbitAddress === void 0 ? void 0 : subplebbitAddress.endsWith(".eth")) {
-                    debugs.DEBUG("Will attempt to resolve subplebbit-address of ".concat(subplebbitAddress));
-                    return [2 /*return*/, this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address")];
+                switch (_a.label) {
+                    case 0:
+                        if (!(subplebbitAddress === null || subplebbitAddress === void 0 ? void 0 : subplebbitAddress.endsWith(".eth"))) return [3 /*break*/, 2];
+                        debugs.DEBUG("Will attempt to resolve subplebbit-address of ".concat(subplebbitAddress));
+                        return [4 /*yield*/, this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address")];
+                    case 1:
+                        resolvedSubplebbitAddress = _a.sent();
+                        if (!is_ipfs_1.default.cid(resolvedSubplebbitAddress))
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID), errors_1.codes.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID, {
+                                details: "resolver: subplebbitAddress (".concat(subplebbitAddress, ") resolves to an incorrect CID (").concat(resolvedSubplebbitAddress, ")")
+                            });
+                        return [2 /*return*/, resolvedSubplebbitAddress];
+                    case 2: return [2 /*return*/, subplebbitAddress];
                 }
-                return [2 /*return*/, subplebbitAddress];
             });
         });
     };
