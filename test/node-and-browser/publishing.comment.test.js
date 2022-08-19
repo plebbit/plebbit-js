@@ -47,6 +47,28 @@ describe("publishing", async () => {
         });
     });
 
+    it(`Publish a post with only link`, async () =>
+        new Promise(async (resolve) => {
+            const postLink = "https://demo.plebbit.eth.limo";
+            const post = await plebbit.createComment({
+                title: "Post with link",
+                link: postLink,
+                subplebbitAddress: subplebbitAddress,
+                signer: await plebbit.createSigner()
+            });
+
+            expect(post.link).to.equal(postLink);
+
+            await post.publish();
+
+            post.once("challengeverification", (challengeVerificationMessage, updatedComment) => {
+                expect(challengeVerificationMessage.challengeSuccess).to.be.true;
+                expect(challengeVerificationMessage.reason).to.be.undefined;
+                expect(updatedComment.link).to.equal(postLink);
+                resolve();
+            });
+        }));
+
     [1, 2].map((depth) =>
         it(`Can publish comment with depth = ${depth}`, async () => {
             return new Promise(async (resolve, reject) => {
