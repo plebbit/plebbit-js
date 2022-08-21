@@ -66,7 +66,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             }
         };
         this.resolver = new Resolver({ plebbit: this, blockchainProviders: this.blockchainProviders });
-        this.resolveAuthorAddresses = options["resolveAuthorAddresses"] || true;
+        this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         this._memCache = new TinyCache();
     }
 
@@ -104,7 +104,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
                 details: `getComment: cid (${cid}) is invalid as a CID`
             });
         const commentJson = await loadIpfsFileAsJson(cid, this);
-        const subplebbit = await this.getSubplebbit(commentJson["subplebbitAddress"]);
+        const subplebbit = await this.getSubplebbit(commentJson.subplebbitAddress);
         const publication = commentJson["title"]
             ? new Post(
                   {
