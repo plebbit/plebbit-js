@@ -61,7 +61,7 @@ export class SortHandler {
         assert(this.subplebbit.plebbit.ipfsClient);
         for (let i = chunksWithReplies.length - 1; i >= 0; i--) {
             const pageComments = chunksWithReplies[i].map((c) => c.toJSONPages());
-            pageComments.forEach((c) => assert.equal(typeof c.upvoteCount, "number"));
+            pageComments.forEach((c) => assert(typeof c.upvoteCount === "number"));
             const page = new Page({
                 nextCid: cids[i + 1],
                 comments: pageComments
@@ -247,7 +247,7 @@ export class SortHandler {
         }
 
         Object.values(JSON.parse(JSON.stringify(pages)).pages).forEach((sortPage: Page) => {
-            sortPage.comments.forEach((comment) => assert.equal(typeof comment.upvoteCount, "number"));
+            assert(sortPage.comments.every((comment) => typeof comment.upvoteCount === "number"));
         });
 
         await this.subplebbit._keyv.set(key, pages.toJSON());
