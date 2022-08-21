@@ -43,6 +43,8 @@ exports.Page = exports.Pages = void 0;
 var util_1 = require("./util");
 var signer_1 = require("./signer");
 var assert_1 = __importDefault(require("assert"));
+var err_code_1 = __importDefault(require("err-code"));
+var errors_1 = require("./errors");
 var debugs = (0, util_1.getDebugLevels)("pages");
 var Pages = /** @class */ (function () {
     function Pages(props) {
@@ -68,6 +70,7 @@ var Pages = /** @class */ (function () {
                             return __generator(this, function (_b) {
                                 switch (_b.label) {
                                     case 0:
+                                        (0, assert_1.default)(typeof comment.upvoteCount === "number" && typeof comment.downvoteCount === "number");
                                         assert_1.default.equal(comment.subplebbitAddress, this.subplebbit.address, "Comment in page should be under the same subplebbit");
                                         if (parentComment)
                                             assert_1.default.equal(parentComment.cid, comment.parentCid, "Comment under parent comment/post should have parentCid initialized");
@@ -75,7 +78,10 @@ var Pages = /** @class */ (function () {
                                         return [4 /*yield*/, (0, signer_1.verifyPublication)(comment, this.subplebbit.plebbit, "comment")];
                                     case 1:
                                         _a = _b.sent(), signatureIsVerified = _a[0], failedVerificationReason = _a[1];
-                                        assert_1.default.equal(signatureIsVerified, true, "Signature of published comment should be valid, Failed verification reason is ".concat(failedVerificationReason));
+                                        if (!signatureIsVerified)
+                                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+                                                details: "getPage: Failed verification reason: ".concat(failedVerificationReason, ", ").concat(comment.depth === 0 ? "post" : "comment", ": ").concat(JSON.stringify(comment))
+                                            });
                                         debugs.TRACE("Comment (".concat(comment.cid, ") has been verified. Will attempt to verify its ").concat(comment.replyCount, " replies"));
                                         if (!comment.replies) return [3 /*break*/, 3];
                                         preloadedCommentsChunks = Object.keys(comment.replies.pages).map(function (sortType) { return comment.replies.pages[sortType].comments; });
@@ -122,7 +128,7 @@ var Page = /** @class */ (function () {
     }
     Page.prototype.toJSON = function () {
         return {
-            comments: this.comments.map(function (c) { return c.toJSON(); }),
+            comments: this.comments,
             nextCid: this.nextCid
         };
     };

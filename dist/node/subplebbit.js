@@ -447,7 +447,7 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.updateSubplebbitIpns = function () {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var trx, latestPost, _b, metrics, subplebbitPosts, resolvedAddress, currentIpns, e_4, _c, file;
+            var trx, latestPost, _b, metrics, subplebbitPosts, resolvedAddress, currentIpns, e_4, _c, lastPublishOverTwentyMinutes, file;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
@@ -506,7 +506,8 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(metrics))];
                     case 10:
                         _c.metricsCid = (_d.sent()).path;
-                        if (!(!currentIpns || JSON.stringify(currentIpns) !== JSON.stringify(this.toJSON()))) return [3 /*break*/, 13];
+                        lastPublishOverTwentyMinutes = this.updatedAt < (0, util_1.timestamp)() - 60 * 20;
+                        if (!(!currentIpns || JSON.stringify(currentIpns) !== JSON.stringify(this.toJSON()) || lastPublishOverTwentyMinutes)) return [3 /*break*/, 13];
                         this.updatedAt = (0, util_1.timestamp)();
                         return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(this.toJSON()))];
                     case 11:
@@ -518,6 +519,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             })];
                     case 12:
                         _d.sent();
+                        debugs.INFO("Published a new IPNS record for sub(".concat(this.address, ")"));
                         _d.label = 13;
                     case 13: return [2 /*return*/];
                 }

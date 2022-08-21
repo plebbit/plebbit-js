@@ -142,7 +142,10 @@ var Comment = /** @class */ (function (_super) {
         return "comment";
     };
     Comment.prototype.toJSON = function () {
-        return __assign(__assign(__assign({}, this.toJSONIpfs()), (this.updatedAt ? this.toJSONCommentUpdate() : undefined)), { cid: this.cid, original: this.original, author: this.author.toJSON() });
+        return __assign(__assign(__assign({}, this.toJSONIpfs()), (typeof this.updatedAt === "number" ? this.toJSONCommentUpdate() : undefined)), { cid: this.cid, original: this.original, author: this.author.toJSON() });
+    };
+    Comment.prototype.toJSONPages = function () {
+        return __assign(__assign(__assign({}, this.toJSON()), this.toJSONCommentUpdate(true)), { author: this.author.toJSON() });
     };
     Comment.prototype.toJSONIpfs = function () {
         return __assign(__assign({}, this.toJSONSkeleton()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl });
@@ -161,11 +164,13 @@ var Comment = /** @class */ (function (_super) {
         json["signature"] = JSON.stringify(this.signature);
         return (0, util_1.removeKeysWithUndefinedValues)(json);
     };
-    Comment.prototype.toJSONCommentUpdate = function () {
-        (0, assert_1.default)(typeof this.upvoteCount === "number" &&
-            typeof this.downvoteCount === "number" &&
-            typeof this.replyCount === "number" &&
-            typeof this.updatedAt === "number", "Fields are needed to export a CommentUpdate JSON");
+    Comment.prototype.toJSONCommentUpdate = function (skipAssert) {
+        if (skipAssert === void 0) { skipAssert = false; }
+        if (!skipAssert)
+            (0, assert_1.default)(typeof this.upvoteCount === "number" &&
+                typeof this.downvoteCount === "number" &&
+                typeof this.replyCount === "number" &&
+                typeof this.updatedAt === "number", "Fields are needed to export a CommentUpdate JSON");
         return {
             upvoteCount: this.upvoteCount,
             downvoteCount: this.downvoteCount,

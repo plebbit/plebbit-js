@@ -180,7 +180,6 @@ function loadAllPages(pageCid, pagesInstance) {
             switch (_a.label) {
                 case 0:
                     (0, assert_1.default)(typeof pageCid === "string");
-                    (0, assert_1.default)(pagesInstance.getPage);
                     return [4 /*yield*/, pagesInstance.getPage(pageCid)];
                 case 1:
                     sortedCommentsPage = _a.sent();

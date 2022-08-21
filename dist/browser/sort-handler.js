@@ -93,7 +93,7 @@ var SortHandler = /** @class */ (function () {
     }
     SortHandler.prototype.chunksToListOfPage = function (chunks) {
         return __awaiter(this, void 0, void 0, function () {
-            var listOfPage, cids, chunksWithReplies, i, page, _a, _b;
+            var listOfPage, cids, chunksWithReplies, i, pageComments, page, _a, _b;
             var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
@@ -106,13 +106,13 @@ var SortHandler = /** @class */ (function () {
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
                                         case 0: return [4 /*yield*/, Promise.all(chunk.map(function (comment) { return __awaiter(_this, void 0, void 0, function () {
-                                                var pages;
+                                                var repliesPages;
                                                 return __generator(this, function (_a) {
                                                     switch (_a.label) {
                                                         case 0: return [4 /*yield*/, this.generatePagesUnderComment(comment, undefined)];
                                                         case 1:
-                                                            pages = _a.sent();
-                                                            comment.setReplies(pages);
+                                                            repliesPages = _a.sent();
+                                                            comment.setReplies(repliesPages);
                                                             return [2 /*return*/, comment];
                                                     }
                                                 });
@@ -128,9 +128,11 @@ var SortHandler = /** @class */ (function () {
                         _c.label = 2;
                     case 2:
                         if (!(i >= 0)) return [3 /*break*/, 5];
+                        pageComments = chunksWithReplies[i].map(function (c) { return c.toJSONPages(); });
+                        pageComments.forEach(function (c) { return (0, assert_1.default)(typeof c.upvoteCount === "number"); });
                         page = new pages_1.Page({
                             nextCid: cids[i + 1],
-                            comments: chunksWithReplies[i]
+                            comments: pageComments
                         });
                         _a = cids;
                         _b = i;
@@ -170,11 +172,12 @@ var SortHandler = /** @class */ (function () {
                             }); })
                                 .sort(function (postA, postB) { return postB.score - postA.score; })
                                 .map(function (comment) { return comment.comment; });
+                        (0, assert_1.default)(commentsSorted.every(function (comment) { return typeof comment.upvoteCount === "number" && typeof comment.downvoteCount === "number"; }));
                         commentsChunks = (0, util_1.chunks)(commentsSorted, limit);
                         return [4 /*yield*/, this.chunksToListOfPage(commentsChunks)];
                     case 1:
                         _a = _c.sent(), listOfPage = _a[0], cids = _a[1];
-                        expectedNumOfPages = Math.ceil(comments.length / parseFloat(String(limit)));
+                        expectedNumOfPages = Math.ceil(comments.length / limit);
                         assert_1.default.equal(listOfPage.length, expectedNumOfPages, "Should generate ".concat(expectedNumOfPages, " pages for sort ").concat(sortName, " while it generated ").concat(listOfPage.length));
                         return [2 /*return*/, [(_b = {}, _b[sortName] = listOfPage[0], _b), cids[0]]];
                 }
@@ -281,13 +284,14 @@ var SortHandler = /** @class */ (function () {
                         case 3:
                             comments = _b.sent();
                             return [3 /*break*/, 6];
-                        case 4: return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsUnderComment(comment === null || comment === void 0 ? void 0 : comment.cid, trx)];
+                        case 4: return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx)];
                         case 5:
                             comments = _b.sent();
                             _b.label = 6;
                         case 6:
                             if (comments.length === 0)
                                 return [2 /*return*/, [undefined, undefined]];
+                            (0, assert_1.default)(comments.every(function (comment) { return typeof comment.upvoteCount === "number" && typeof comment.downvoteCount === "number"; }));
                             return [2 /*return*/, this.sortComments(comments, sortName)];
                     }
                 });
@@ -326,9 +330,8 @@ var SortHandler = /** @class */ (function () {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         return __awaiter(this, void 0, void 0, function () {
             var key, cachedPageJson, cachedPage, subplebbitPostCount, _k, res, _l, pagesRaw, pageCids, _i, res_1, _m, page, pageCid, pages;
-            var _o;
-            return __generator(this, function (_p) {
-                switch (_p.label) {
+            return __generator(this, function (_o) {
+                switch (_o.label) {
                     case 0:
                         if ((comment === null || comment === void 0 ? void 0 : comment.replyCount) === 0)
                             return [2 /*return*/, undefined];
@@ -337,26 +340,26 @@ var SortHandler = /** @class */ (function () {
                         key = (comment === null || comment === void 0 ? void 0 : comment.cid) || "subplebbit";
                         return [4 /*yield*/, this.subplebbit._keyv.has(key)];
                     case 1:
-                        if (!_p.sent()) return [3 /*break*/, 5];
+                        if (!_o.sent()) return [3 /*break*/, 5];
                         return [4 /*yield*/, this.subplebbit._keyv.get(key)];
                     case 2:
-                        cachedPageJson = _p.sent();
+                        cachedPageJson = _o.sent();
                         if (!(!cachedPageJson || JSON.stringify(cachedPageJson) === "{}")) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.subplebbit._keyv.delete(key)];
                     case 3:
-                        _p.sent();
+                        _o.sent();
                         return [3 /*break*/, 5];
                     case 4:
                         cachedPage = new pages_1.Pages(__assign(__assign({}, cachedPageJson), { subplebbit: this.subplebbit }));
-                        (0, assert_1.default)(JSON.stringify(cachedPage.toJSON()) !== "{}", "Cache returns empty pages");
+                        (0, assert_1.default)(cachedPage.toJSON && JSON.stringify(cachedPage.toJSON()) !== "{}", "Cache returns empty pages");
                         return [2 /*return*/, cachedPage];
                     case 5:
                         _k = key === "subplebbit";
                         if (!_k) return [3 /*break*/, 7];
                         return [4 /*yield*/, ((_a = this.subplebbit.dbHandler) === null || _a === void 0 ? void 0 : _a.queryCountOfPosts(trx))];
                     case 6:
-                        _k = (_p.sent());
-                        _p.label = 7;
+                        _k = (_o.sent());
+                        _o.label = 7;
                     case 7:
                         subplebbitPostCount = _k;
                         if (subplebbitPostCount === 0)
@@ -364,7 +367,7 @@ var SortHandler = /** @class */ (function () {
                             return [2 /*return*/, undefined];
                         return [4 /*yield*/, Promise.all(this.getSortPromises(comment, trx))];
                     case 8:
-                        res = _p.sent();
+                        res = _o.sent();
                         _l = [{}, {}], pagesRaw = _l[0], pageCids = _l[1];
                         for (_i = 0, res_1 = res; _i < res_1.length; _i++) {
                             _m = res_1[_i], page = _m[0], pageCid = _m[1];
@@ -372,7 +375,7 @@ var SortHandler = /** @class */ (function () {
                             if (page)
                                 pageCids[Object.keys(page)[0]] = pageCid;
                         }
-                        _o = [(0, util_1.removeKeysWithUndefinedValues)(pagesRaw), (0, util_1.removeKeysWithUndefinedValues)(pageCids)], pagesRaw = _o[0], pageCids = _o[1];
+                        // [pagesRaw, pageCids] = [removeKeysWithUndefinedValues(pagesRaw), removeKeysWithUndefinedValues(pageCids)];
                         if (!pagesRaw || !pageCids || JSON.stringify(pagesRaw) === "{}" || JSON.stringify(pageCids) === "{}")
                             throw new Error("Failed to generate pages for ".concat(key, ": pagesRaw: ").concat(pagesRaw, ", pageCids: ").concat(pageCids));
                         pages = new pages_1.Pages({ pages: pagesRaw, pageCids: pageCids, subplebbit: this.subplebbit });
@@ -380,18 +383,25 @@ var SortHandler = /** @class */ (function () {
                             // If there is at least one comment in subplebbit, then assert the following
                             [(_b = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _b === void 0 ? void 0 : _b.controversialAll, (_c = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _c === void 0 ? void 0 : _c.hot, (_d = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _d === void 0 ? void 0 : _d.new, (_e = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _e === void 0 ? void 0 : _e.topAll].forEach(function (sortPage) {
                                 var _a;
-                                assert_1.default.ok(((_a = sortPage === null || sortPage === void 0 ? void 0 : sortPage.comments) === null || _a === void 0 ? void 0 : _a.length) >= Math.min(subplebbitPostCount, exports.SORTED_POSTS_PAGE_SIZE));
+                                (0, assert_1.default)(typeof subplebbitPostCount === "number");
+                                if (sortPage && Array.isArray(sortPage === null || sortPage === void 0 ? void 0 : sortPage.comments))
+                                    assert_1.default.ok(((_a = sortPage === null || sortPage === void 0 ? void 0 : sortPage.comments) === null || _a === void 0 ? void 0 : _a.length) >= Math.min(subplebbitPostCount, exports.SORTED_POSTS_PAGE_SIZE));
                             });
                         }
                         else {
                             [(_f = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _f === void 0 ? void 0 : _f.controversialAll, (_g = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _g === void 0 ? void 0 : _g.new, (_h = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _h === void 0 ? void 0 : _h.topAll, (_j = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _j === void 0 ? void 0 : _j.old].forEach(function (sortPage) {
                                 var _a;
-                                assert_1.default.ok(((_a = sortPage === null || sortPage === void 0 ? void 0 : sortPage.comments) === null || _a === void 0 ? void 0 : _a.length) >= Math.min(exports.SORTED_POSTS_PAGE_SIZE, comment.replyCount), "Replies page is missing comments");
+                                (0, assert_1.default)(typeof (comment === null || comment === void 0 ? void 0 : comment.replyCount) === "number");
+                                if (sortPage && Array.isArray(sortPage === null || sortPage === void 0 ? void 0 : sortPage.comments))
+                                    assert_1.default.ok(((_a = sortPage === null || sortPage === void 0 ? void 0 : sortPage.comments) === null || _a === void 0 ? void 0 : _a.length) >= Math.min(exports.SORTED_POSTS_PAGE_SIZE, comment.replyCount), "Replies page is missing comments");
                             });
                         }
+                        Object.values(JSON.parse(JSON.stringify(pages)).pages).forEach(function (sortPage) {
+                            (0, assert_1.default)(sortPage.comments.every(function (comment) { return typeof comment.upvoteCount === "number"; }));
+                        });
                         return [4 /*yield*/, this.subplebbit._keyv.set(key, pages.toJSON())];
                     case 9:
-                        _p.sent();
+                        _o.sent();
                         return [2 /*return*/, pages];
                 }
             });
@@ -413,7 +423,7 @@ var SortHandler = /** @class */ (function () {
                         cachesToDelete = __spreadArray.apply(void 0, [__spreadArray.apply(void 0, _a.concat([(_b.sent()).map(function (comment) { return comment.cid; }), true])), [
                                 "subplebbit"
                             ], false]);
-                        debugs.DEBUG("Caches to delete: ".concat(cachesToDelete));
+                        debugs.TRACE("Caches to delete: ".concat(cachesToDelete));
                         return [4 /*yield*/, Promise.all(cachesToDelete.map(function (cacheKey) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                                 return [2 /*return*/, this.subplebbit._keyv.delete(cacheKey)];
                             }); }); }))];

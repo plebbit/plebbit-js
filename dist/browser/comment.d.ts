@@ -34,6 +34,7 @@ export declare class Comment extends Publication implements CommentType {
     _mergeFields(props: CommentType): void;
     getType(): PublicationTypeName;
     toJSON(): CommentType;
+    toJSONPages(): CommentType;
     toJSONIpfs(): {
         previousCid: string;
         ipnsName: string;
@@ -64,7 +65,7 @@ export declare class Comment extends Publication implements CommentType {
         timestamp: number;
     };
     toJSONForDb(challengeRequestId: string): any;
-    toJSONCommentUpdate(): Omit<CommentUpdate, "signature">;
+    toJSONCommentUpdate(skipAssert?: boolean): Omit<CommentUpdate, "signature">;
     setCommentIpnsKey(ipnsKey: any): void;
     setPostCid(newPostCid: string): void;
     setCid(newCid: string): void;

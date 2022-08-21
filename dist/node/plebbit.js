@@ -133,7 +133,7 @@ var Plebbit = /** @class */ (function (_super) {
             }
         };
         _this.resolver = new resolver_1.Resolver({ plebbit: _this, blockchainProviders: _this.blockchainProviders });
-        _this.resolveAuthorAddresses = options["resolveAuthorAddresses"] || true;
+        _this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         _this._memCache = new tinycache_1.default();
         return _this;
     }
@@ -202,7 +202,7 @@ var Plebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, util_2.loadIpfsFileAsJson)(cid, this)];
                     case 1:
                         commentJson = _b.sent();
-                        return [4 /*yield*/, this.getSubplebbit(commentJson["subplebbitAddress"])];
+                        return [4 /*yield*/, this.getSubplebbit(commentJson.subplebbitAddress)];
                     case 2:
                         subplebbit = _b.sent();
                         publication = commentJson["title"]

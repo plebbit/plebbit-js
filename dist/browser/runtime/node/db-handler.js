@@ -314,21 +314,16 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.createTablesIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var dbVersion, _a, _b, _c, _d, _e, _f, needToMigrate, createTableFunctions, tables;
+            var dbVersion, _a, needToMigrate, createTableFunctions, tables;
             var _this = this;
-            return __generator(this, function (_g) {
-                switch (_g.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         _a = Number;
                         return [4 /*yield*/, this.knex.raw("PRAGMA user_version")];
                     case 1:
-                        dbVersion = _a.apply(void 0, [(_g.sent())[0]["user_version"]]);
-                        _c = (_b = debugs).DEBUG;
-                        _d = "PRAGMA user_version = ".concat;
-                        _f = (_e = JSON).stringify;
-                        return [4 /*yield*/, this.knex.raw("PRAGMA user_version")];
-                    case 2:
-                        _c.apply(_b, [_d.apply("PRAGMA user_version = ", [_f.apply(_e, [_g.sent()]), ", dbVersion(parsed) = "]).concat(dbVersion)]);
+                        dbVersion = _a.apply(void 0, [(_b.sent())[0]["user_version"]]);
+                        debugs.TRACE("PRAGMA user_version = ".concat(dbVersion));
                         needToMigrate = dbVersion !== currentDbVersion;
                         createTableFunctions = [
                             this.createCommentsTable,
@@ -377,14 +372,14 @@ var DbHandler = /** @class */ (function () {
                                     }
                                 });
                             }); }))];
-                    case 3:
-                        _g.sent();
+                    case 2:
+                        _b.sent();
                         return [4 /*yield*/, this.knex.raw("PRAGMA foreign_keys = ON")];
-                    case 4:
-                        _g.sent();
+                    case 3:
+                        _b.sent();
                         return [4 /*yield*/, this.knex.raw("PRAGMA user_version = ".concat(currentDbVersion))];
-                    case 5:
-                        _g.sent();
+                    case 4:
+                        _b.sent();
                         return [2 /*return*/];
                 }
             });
@@ -718,7 +713,9 @@ var DbHandler = /** @class */ (function () {
                                     return [4 /*yield*/, this.subplebbit.plebbit.createComment(replacedProps)];
                                 case 1:
                                     comment = _a.sent();
-                                    (0, assert_1.default)(typeof comment.replyCount === "number");
+                                    (0, assert_1.default)(typeof comment.replyCount === "number" &&
+                                        typeof comment.upvoteCount === "number" &&
+                                        typeof comment.downvoteCount === "number");
                                     return [2 /*return*/, comment];
                             }
                         });
