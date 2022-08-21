@@ -206,7 +206,7 @@ Page /* (IPFS file) */ {
   nextCid: string // get next page (sorted by the same sort type)
   comments: Comment[] // Comments should include Comment + CommentUpdate data
 }
-PostsSortType: 'hot' | 'new' | 'topHour' | 'topDay' | 'topWeek' | 'topMonth' | 'topYear' | 'topAll' | 'controversialHour' | 'controversialDay' | 'controversialWeek' | 'controversialMonth' | 'controversialYear' | 'controversialAll'
+PostsSortType: 'hot' | 'new' | 'active' | 'topHour' | 'topDay' | 'topWeek' | 'topMonth' | 'topYear' | 'topAll' | 'controversialHour' | 'controversialDay' | 'controversialWeek' | 'controversialMonth' | 'controversialYear' | 'controversialAll' | 
 RepliesSortType: 'topAll' | 'new' | 'old' | 'controversialAll'
 ModSortType: 'reports' | 'spam' | 'modqueue' | 'unmoderated' | 'edited'
 SubplebbitMetrics {
