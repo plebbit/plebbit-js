@@ -69,14 +69,9 @@ const testSorting = async (sort, shouldTestCommentReplies) => {
         sortName.includes(sort.type)
     );
 
-    await subplebbit.update(updateInterval);
-    await subplebbit.stop();
-
     if (shouldTestCommentReplies) {
         await Promise.all(
             posts.map(async (currentPost) => {
-                await currentPost.update(updateInterval);
-                await currentPost.stop();
                 if (currentPost.replyCount === 0) return undefined;
                 await Promise.all(
                     sortNames.map(async (currentSortName) => {
@@ -85,13 +80,6 @@ const testSorting = async (sort, shouldTestCommentReplies) => {
                                 (await loadAllPages(currentPost.replies.pageCids[currentSortName], currentPost.replies))) ||
                             [];
                         if (sortNames.length === 1) expect(currentPost.replyCount).to.equal(alreadySortedComments.length); // If sort with no timeframe then sortedComments should equal post.replyCount
-                        await Promise.all(
-                            alreadySortedComments.map(async (comment) => {
-                                if (typeof comment.upvoteCount === "number") return;
-                                await comment.update(updateInterval);
-                                comment.stop();
-                            })
-                        );
                         return testListOfSortedComments(alreadySortedComments, currentSortName);
                     })
                 );
@@ -104,13 +92,6 @@ const testSorting = async (sort, shouldTestCommentReplies) => {
                     (subplebbit.posts.pageCids[currentSortName] &&
                         (await loadAllPages(subplebbit.posts.pageCids[currentSortName], subplebbit.posts))) ||
                     [];
-                await Promise.all(
-                    alreadySortedComments.map(async (comment) => {
-                        if (typeof comment.upvoteCount === "number") return;
-                        await comment.update(updateInterval);
-                        comment.stop();
-                    })
-                );
                 return testListOfSortedComments(alreadySortedComments, currentSortName);
             })
         );
@@ -151,9 +132,6 @@ describe("Test pages sorting", async () => {
     });
 
     describe("comment.replies", async () => {
-        after(async () => {
-            await subplebbit.stop();
-        });
         repliesSortObjects.map((sort) =>
             it(`${sort.type} pages under a comment are sorted correctly`, async () => await testSorting(sort, true))
         );
