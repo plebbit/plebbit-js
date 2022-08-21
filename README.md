@@ -100,7 +100,12 @@ Author {
   avatar?: Nft
   flair?: Flair // (added by moderator or author) not part of the signature, mod can edit it after comment is published
   banExpiresAt?: number // (added by moderator only) timestamp in second, if defined the author was banned for this comment
-  subplebbitKarma: {['replyScore' | 'postScore']: number} // the total karma of the author inside the subplebbit
+  subplebbit: SubplebbitAuthor // (added by CommentUpdate) up to date author properties specific to the subplebbit it's in
+}
+SubplebbitAuthor { 
+  postScore: number // total post karma in the subplebbit
+  replyScore: number // total reply karma in the subplebbit
+  lastCommentCid: string // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
 }
 Wallet {
   address: string
