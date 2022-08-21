@@ -1,6 +1,7 @@
 import { Options } from "ipfs-http-client";
 import { Knex } from "knex";
 import { Pages } from "./pages";
+import { Subplebbit } from "./subplebbit";
 
 export type ProtocolVersion = "1.0.0";
 
@@ -18,6 +19,16 @@ export type CreateSignerOptions = {
     type?: "rsa";
 };
 
+export interface PageType {
+    comments: CommentType[];
+    nextCid?: string;
+}
+
+export interface PagesType {
+    pages: Partial<Record<PostSortName | ReplySortName, PageType>>;
+    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
+    subplebbit: Subplebbit;
+}
 export interface SignerType {
     type: "rsa";
     privateKey: string;

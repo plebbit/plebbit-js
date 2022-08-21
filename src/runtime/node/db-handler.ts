@@ -208,9 +208,7 @@ export class DbHandler {
 
     async createTablesIfNeeded() {
         const dbVersion = Number((await this.knex.raw("PRAGMA user_version"))[0]["user_version"]);
-        debugs.DEBUG(
-            `PRAGMA user_version = ${JSON.stringify(await this.knex.raw("PRAGMA user_version"))}, dbVersion(parsed) = ${dbVersion}`
-        );
+        debugs.TRACE(`PRAGMA user_version = ${dbVersion}`);
         const needToMigrate = dbVersion !== currentDbVersion;
         const createTableFunctions = [
             this.createCommentsTable,
@@ -435,7 +433,11 @@ export class DbHandler {
                 for (const field of jsonFields) if (replacedProps[field]) replacedProps[field] = JSON.parse(replacedProps[field]);
 
                 const comment = await this.subplebbit.plebbit.createComment(replacedProps);
-                assert(typeof comment.replyCount === "number");
+                assert(
+                    typeof comment.replyCount === "number" &&
+                        typeof comment.upvoteCount === "number" &&
+                        typeof comment.downvoteCount === "number"
+                );
                 return comment;
             })
         );

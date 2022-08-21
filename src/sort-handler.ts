@@ -1,12 +1,4 @@
-import {
-    chunks,
-    controversialScore,
-    getDebugLevels,
-    hotScore,
-    removeKeysWithUndefinedValues,
-    TIMEFRAMES_TO_SECONDS,
-    timestamp
-} from "./util";
+import { chunks, controversialScore, getDebugLevels, hotScore, TIMEFRAMES_TO_SECONDS, timestamp } from "./util";
 import { Page, Pages } from "./pages";
 import { Subplebbit } from "./subplebbit";
 import assert from "assert";
@@ -53,15 +45,14 @@ export class SortHandler {
     async chunksToListOfPage(chunks: Comment[][]): Promise<[Page[], string[]]> {
         assert(chunks.length > 0);
 
-        const listOfPage = new Array(chunks.length);
+        const listOfPage: Page[] = new Array(chunks.length);
         const cids = new Array(chunks.length);
         const chunksWithReplies = await Promise.all(
             chunks.map(async (chunk) => {
                 return await Promise.all(
                     chunk.map(async (comment: Comment) => {
-                        const pages = await this.generatePagesUnderComment(comment, undefined);
-                        comment.setReplies(pages);
-
+                        const repliesPages = await this.generatePagesUnderComment(comment, undefined);
+                        comment.setReplies(repliesPages);
                         return comment;
                     })
                 );
@@ -69,9 +60,11 @@ export class SortHandler {
         );
         assert(this.subplebbit.plebbit.ipfsClient);
         for (let i = chunksWithReplies.length - 1; i >= 0; i--) {
+            const pageComments = chunksWithReplies[i].map((c) => c.toJSONPages());
+            pageComments.forEach((c) => assert.equal(typeof c.upvoteCount, "number"));
             const page = new Page({
                 nextCid: cids[i + 1],
-                comments: chunksWithReplies[i]
+                comments: pageComments
             });
             cids[i] = (await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(page))).path;
             listOfPage[i] = page;
@@ -101,11 +94,12 @@ export class SortHandler {
                 .sort((postA, postB) => postB.score - postA.score)
                 .map((comment) => comment.comment);
 
+        assert(commentsSorted.every((comment) => typeof comment.upvoteCount === "number" && typeof comment.downvoteCount === "number"));
         const commentsChunks = chunks(commentsSorted, limit);
 
         const [listOfPage, cids] = await this.chunksToListOfPage(commentsChunks);
 
-        const expectedNumOfPages = Math.ceil(comments.length / parseFloat(String(limit)));
+        const expectedNumOfPages = Math.ceil(comments.length / limit);
         assert.equal(
             listOfPage.length,
             expectedNumOfPages,
@@ -182,8 +176,9 @@ export class SortHandler {
                     );
                 else if (sortName === "old")
                     comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", trx);
-                else comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(comment?.cid, trx);
+                else comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx);
                 if (comments.length === 0) return [undefined, undefined];
+                assert(comments.every((comment) => typeof comment.upvoteCount === "number" && typeof comment.downvoteCount === "number"));
                 return this.sortComments(comments, sortName);
             });
         }
@@ -208,7 +203,7 @@ export class SortHandler {
                 await this.subplebbit._keyv.delete(key);
             } else {
                 const cachedPage = new Pages({ ...cachedPageJson, subplebbit: this.subplebbit });
-                assert(JSON.stringify(cachedPage.toJSON()) !== "{}", "Cache returns empty pages");
+                assert(cachedPage.toJSON && JSON.stringify(cachedPage.toJSON()) !== "{}", "Cache returns empty pages");
                 return cachedPage;
             }
         }
@@ -226,7 +221,8 @@ export class SortHandler {
             pagesRaw = { ...pagesRaw, ...page };
             if (page) pageCids[Object.keys(page)[0]] = pageCid;
         }
-        [pagesRaw, pageCids] = [removeKeysWithUndefinedValues(pagesRaw), removeKeysWithUndefinedValues(pageCids)];
+
+        // [pagesRaw, pageCids] = [removeKeysWithUndefinedValues(pagesRaw), removeKeysWithUndefinedValues(pageCids)];
         if (!pagesRaw || !pageCids || JSON.stringify(pagesRaw) === "{}" || JSON.stringify(pageCids) === "{}")
             throw new Error(`Failed to generate pages for ${key}: pagesRaw: ${pagesRaw}, pageCids: ${pageCids}`);
 
@@ -235,16 +231,24 @@ export class SortHandler {
         if (key === "subplebbit") {
             // If there is at least one comment in subplebbit, then assert the following
             [pages?.pages?.controversialAll, pages?.pages?.hot, pages?.pages?.new, pages?.pages?.topAll].forEach((sortPage) => {
-                assert.ok(sortPage?.comments?.length >= Math.min(subplebbitPostCount, SORTED_POSTS_PAGE_SIZE));
+                assert(typeof subplebbitPostCount === "number");
+                if (sortPage && Array.isArray(sortPage?.comments))
+                    assert.ok(sortPage?.comments?.length >= Math.min(subplebbitPostCount, SORTED_POSTS_PAGE_SIZE));
             });
         } else {
             [pages?.pages?.controversialAll, pages?.pages?.new, pages?.pages?.topAll, pages?.pages?.old].forEach((sortPage) => {
-                assert.ok(
-                    sortPage?.comments?.length >= Math.min(SORTED_POSTS_PAGE_SIZE, comment.replyCount),
-                    "Replies page is missing comments"
-                );
+                assert(typeof comment?.replyCount === "number");
+                if (sortPage && Array.isArray(sortPage?.comments))
+                    assert.ok(
+                        sortPage?.comments?.length >= Math.min(SORTED_POSTS_PAGE_SIZE, comment.replyCount),
+                        "Replies page is missing comments"
+                    );
             });
         }
+
+        Object.values(JSON.parse(JSON.stringify(pages)).pages).forEach((sortPage: Page) => {
+            sortPage.comments.forEach((comment) => assert.equal(typeof comment.upvoteCount, "number"));
+        });
 
         await this.subplebbit._keyv.set(key, pages.toJSON());
 
@@ -258,7 +262,7 @@ export class SortHandler {
             ...(await this.subplebbit.dbHandler.queryParentsOfComment(dbComment, undefined)).map((comment) => comment.cid),
             "subplebbit"
         ];
-        debugs.DEBUG(`Caches to delete: ${cachesToDelete}`);
+        debugs.TRACE(`Caches to delete: ${cachesToDelete}`);
         await Promise.all(cachesToDelete.map(async (cacheKey) => this.subplebbit._keyv.delete(cacheKey)));
     }
 }

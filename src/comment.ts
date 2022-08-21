@@ -115,9 +115,17 @@ export class Comment extends Publication implements CommentType {
     toJSON(): CommentType {
         return {
             ...this.toJSONIpfs(),
-            ...(this.updatedAt ? this.toJSONCommentUpdate() : undefined),
+            ...(typeof this.updatedAt === "number" ? this.toJSONCommentUpdate() : undefined),
             cid: this.cid,
             original: this.original,
+            author: this.author.toJSON()
+        };
+    }
+
+    toJSONPages(): CommentType {
+        return {
+            ...this.toJSON(),
+            ...this.toJSONCommentUpdate(true),
             author: this.author.toJSON()
         };
     }
@@ -155,14 +163,15 @@ export class Comment extends Publication implements CommentType {
         return removeKeysWithUndefinedValues(json);
     }
 
-    toJSONCommentUpdate(): Omit<CommentUpdate, "signature"> {
-        assert(
-            typeof this.upvoteCount === "number" &&
-                typeof this.downvoteCount === "number" &&
-                typeof this.replyCount === "number" &&
-                typeof this.updatedAt === "number",
-            "Fields are needed to export a CommentUpdate JSON"
-        );
+    toJSONCommentUpdate(skipAssert = false): Omit<CommentUpdate, "signature"> {
+        if (!skipAssert)
+            assert(
+                typeof this.upvoteCount === "number" &&
+                    typeof this.downvoteCount === "number" &&
+                    typeof this.replyCount === "number" &&
+                    typeof this.updatedAt === "number",
+                "Fields are needed to export a CommentUpdate JSON"
+            );
         return {
             upvoteCount: this.upvoteCount,
             downvoteCount: this.downvoteCount,

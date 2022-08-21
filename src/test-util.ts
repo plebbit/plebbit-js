@@ -7,6 +7,7 @@ import { Plebbit } from "./plebbit";
 import Vote from "./vote";
 import { Pages } from "./pages";
 import { Subplebbit } from "./subplebbit";
+import { CommentType } from "./types";
 const debugs = getDebugLevels("test-util");
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
@@ -101,9 +102,8 @@ export async function generateMockVote(
 
 export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promise<Comment[]> {
     assert(typeof pageCid === "string");
-    assert(pagesInstance.getPage);
     let sortedCommentsPage = await pagesInstance.getPage(pageCid);
-    let sortedComments = sortedCommentsPage.comments;
+    let sortedComments: Comment[] | CommentType[] = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {
         sortedCommentsPage = await pagesInstance.getPage(sortedCommentsPage.nextCid);
         sortedComments = sortedComments.concat(sortedCommentsPage.comments);
@@ -111,7 +111,7 @@ export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promi
     sortedComments = await Promise.all(
         sortedComments.map(async (commentProps) => pagesInstance.subplebbit.plebbit.createComment(commentProps))
     );
-    return sortedComments;
+    return <Comment[]>sortedComments;
 }
 
 export async function getAllCommentsUnderSubplebbit(subplebbit: Subplebbit): Promise<Comment[]> {
