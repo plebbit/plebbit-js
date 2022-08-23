@@ -2,7 +2,6 @@ import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import all from "it-all";
 import last from "it-last";
-import Debug from "debug";
 import fetch from "node-fetch";
 import FormData from "form-data";
 import assert from "assert";
@@ -10,6 +9,8 @@ import { Plebbit } from "./plebbit";
 import { CommentType, ProtocolVersion, Timeframe } from "./types";
 import { isRuntimeNode } from "./runtime/node/util";
 import { Signer } from "./signer";
+import Logger from "@plebbit/plebbit-logger";
+
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
     HOUR: 60 * 60,
@@ -20,11 +21,9 @@ export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
     ALL: Infinity
 });
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
-const debugs = getDebugLevels("util");
 
 async function fetchWithLimit(url: string, options?) {
     // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
-    debugs.DEBUG(`Attempting to fetch url: ${url}`);
     const res = await fetch(url, options);
     if (isRuntimeNode) return res; // No need to process stream for Node
 
@@ -40,7 +39,6 @@ async function fetchWithLimit(url: string, options?) {
         if (done || !value) break;
         if (value.length + totalBytesRead > options.size) throw new Error(`content size at ${url} over limit: ${options.size}`);
         totalBytesRead += value.length;
-        debugs.TRACE(`Total bytes read from ${url}: ${totalBytesRead}`);
     }
     return originalRes;
 }
@@ -81,7 +79,6 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
         }
         if (!cid) throw new Error(`IPNS (${ipns}) resolves to undefined due to error: ${error}`);
         assert(typeof cid === "string", "CID has to be a string");
-        debugs.TRACE(`IPNS (${ipns}) resolved to ${cid}`);
         return loadIpfsFileAsJson(cid, plebbit);
     }
 }
@@ -237,13 +234,6 @@ export async function ipfsImportKey(signer: Signer, plebbit, password = "") {
     });
     if (res.status !== 200) throw new Error(`failed ipfs import key: '${url}' '${res.status}' '${res.statusText}'`);
     return await res.json();
-}
-
-export function getDebugLevels(baseName: string): { FATAL: Debug; ERROR: Debug; WARN: Debug; INFO: Debug; DEBUG: Debug; TRACE: Debug } {
-    const debugsObj = ["FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE"].map((debugLevel) => ({
-        [debugLevel]: Debug(`plebbit-js:${baseName}:${debugLevel}`)
-    }));
-    return Object.assign({}, ...debugsObj);
 }
 
 export function randomElement<T>(array: Array<T>): T {

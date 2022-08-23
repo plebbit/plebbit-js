@@ -8,7 +8,7 @@ import {
 import Post from "../../post";
 import Author from "../../author";
 import { Comment } from "../../comment";
-import { getDebugLevels, removeKeys, removeKeysWithUndefinedValues, replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
+import { removeKeys, removeKeysWithUndefinedValues, replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
 import Vote from "../../vote";
 import knex, { Knex } from "knex";
 import { Subplebbit } from "../../subplebbit";
@@ -20,8 +20,7 @@ import { Signer } from "../../signer";
 import Transaction = Knex.Transaction;
 import { AuthorType, SubplebbitMetrics } from "../../types";
 import { CommentEdit } from "../../comment-edit";
-
-const debugs = getDebugLevels("db-handler");
+import Logger from "@plebbit/plebbit-logger";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -75,6 +74,8 @@ export class DbHandler {
     }
 
     async rollbackTransaction(transactionId: string) {
+        const log = Logger("plebbit-js:db-handler:rollbackTransaction");
+
         const trx: Transaction = this._currentTrxs[transactionId];
         if (trx) {
             assert(trx && trx.isTransaction && !trx.isCompleted(), `Transaction (${transactionId}) needs to be stored to rollback`);
@@ -82,7 +83,7 @@ export class DbHandler {
             delete this._currentTrxs[transactionId];
         }
 
-        debugs.DEBUG(
+        log.trace(
             `Rolledback transaction (${transactionId}), this._currentTrxs[transactionId].length = ${Object.keys(this._currentTrxs).length}`
         );
     }
@@ -207,8 +208,9 @@ export class DbHandler {
     }
 
     async createTablesIfNeeded() {
+        const log = Logger("plebbit-js:db-handler:createTablesIfNeeded");
+
         const dbVersion = Number((await this.knex.raw("PRAGMA user_version"))[0]["user_version"]);
-        debugs.TRACE(`PRAGMA user_version = ${dbVersion}`);
         const needToMigrate = dbVersion !== currentDbVersion;
         const createTableFunctions = [
             this.createCommentsTable,
@@ -226,7 +228,7 @@ export class DbHandler {
                 const tableExists = await this.knex.schema.hasTable(table);
                 if (!tableExists) await createTableFunctions[i].bind(this)(table);
                 else if (tableExists && needToMigrate) {
-                    debugs.INFO(`Migrating table ${table} to new schema`);
+                    log(`Migrating table ${table} to new schema`);
                     await this.knex.raw("PRAGMA foreign_keys = OFF");
                     const tempTableName = `${table}${currentDbVersion}`;
                     await createTableFunctions[i].bind(this)(tempTableName);
@@ -242,10 +244,12 @@ export class DbHandler {
     }
 
     async copyTable(srcTable: string, dstTable: string) {
+        const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
+
         const srcRecords = await this.knex(srcTable).select("*");
-        debugs.DEBUG(`Attempting to copy ${srcRecords.length} ${srcTable}`);
+        log(`Attempting to copy ${srcRecords.length} ${srcTable}`);
         if (srcRecords.length > 0) await this.knex(dstTable).insert(srcRecords);
-        debugs.DEBUG(`copied table ${srcTable} to table ${dstTable}`);
+        log(`copied table ${srcTable} to table ${dstTable}`);
     }
 
     async upsertAuthor(author: Author | AuthorType, trx?: Transaction, upsertOnlyWhenNew = true) {
@@ -257,11 +261,6 @@ export class DbHandler {
         if (existingDbObject) existingDbObject = replaceXWithY(existingDbObject, null, undefined);
         const newDbObject: AuthorType = author instanceof Author ? author.toJSONForDb() : author;
         const mergedDbObject = { ...existingDbObject, ...newDbObject };
-        debugs.DEBUG(
-            `upsertAuthor: attempt to upsert new merged author: ${JSON.stringify(mergedDbObject)}, existingDbObject = ${JSON.stringify(
-                existingDbObject
-            )}, author = ${JSON.stringify(newDbObject)}`
-        );
         await this.baseTransaction(trx)(TABLES.AUTHORS).insert(mergedDbObject).onConflict(["address"]).merge();
     }
 
@@ -362,13 +361,11 @@ export class DbHandler {
                 original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()),
                 ...flairIfNeeded
             });
-            debugs.TRACE(`Will update comment (${edit.commentCid}) with author props: ${JSON.stringify(newProps)}`);
         } else {
             newProps = {
                 ...edit.toJSONForDb(challengeRequestId),
                 original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton())
             };
-            debugs.TRACE(`Will update comment (${edit.commentCid}) with mod props: ${JSON.stringify(removeKeys(newProps, ["signature"]))}`);
         }
 
         await this.baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid);
@@ -617,10 +614,12 @@ export class DbHandler {
     }
 
     async changeDbFilename(newDbFileName: string) {
+        const log = Logger("plebbit-js:db-handler:changeDbFilename");
+
         const oldPathString = this.subplebbit?._dbConfig?.connection?.filename;
         assert.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
         if (oldPathString === ":memory:") {
-            debugs.DEBUG(`No need to change file name of db since it's in memory`);
+            log.trace(`No need to change file name of db since it's in memory`);
             return;
         }
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbFileName });
@@ -634,16 +633,18 @@ export class DbHandler {
         };
         this.subplebbit.dbHandler = new DbHandler(this.subplebbit._dbConfig, this.subplebbit);
         this.subplebbit._keyv = new Keyv(`sqlite://${this.subplebbit._dbConfig.connection.filename}`);
-        debugs.INFO(`Changed db path from (${oldPathString}) to (${newPath})`);
+        log(`Changed db path from (${oldPathString}) to (${newPath})`);
     }
 }
 
 export const subplebbitInitDbIfNeeded = async (subplebbit: Subplebbit) => {
+    const log = Logger("plebbit-js:db-handler:subplebbitInitDbIfNeeded");
+
     if (subplebbit.dbHandler) return;
     if (!subplebbit._dbConfig) {
         assert(subplebbit.address, "Need subplebbit address to initialize a DB connection");
         const dbPath = path.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
-        debugs.INFO(`User has not provided a DB config. Will initialize DB in ${dbPath}`);
+        log(`User has not provided a DB config. Will initialize DB in ${dbPath}`);
         subplebbit._dbConfig = {
             client: "sqlite3",
             connection: {
@@ -652,7 +653,7 @@ export const subplebbitInitDbIfNeeded = async (subplebbit: Subplebbit) => {
             useNullAsDefault: true,
             acquireConnectionTimeout: 120000
         };
-    } else debugs.DEBUG(`User provided a DB config of ${JSON.stringify(subplebbit._dbConfig)}`);
+    } else log.trace(`User provided a DB config of ${JSON.stringify(subplebbit._dbConfig)}`);
 
     const dir = path.dirname(subplebbit._dbConfig.connection.filename);
     await fs.promises.mkdir(dir, { recursive: true });

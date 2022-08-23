@@ -14,7 +14,7 @@ import plebbitUtil, { isRuntimeNode } from "./runtime/node/util";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
-import { getDebugLevels, getProtocolVersion, loadIpfsFileAsJson, loadIpnsAsJson, timestamp } from "./util";
+import { getProtocolVersion, loadIpfsFileAsJson, loadIpnsAsJson, timestamp } from "./util";
 import Vote from "./vote";
 import { create as createIpfsClient, IPFSHTTPClient, Options } from "ipfs-http-client";
 import assert from "assert";
@@ -27,8 +27,7 @@ import EventEmitter from "events";
 import isIPFS from "is-ipfs";
 import errcode from "err-code";
 import { codes, messages } from "./errors";
-
-const debugs = getDebugLevels("plebbit");
+import Logger from "@plebbit/plebbit-logger";
 
 export const pendingSubplebbitCreations: Record<string, boolean> = {};
 
@@ -71,19 +70,20 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     async _init(options: PlebbitOptions) {
+        const log = Logger("plebbit-js:plebbit:_init");
+
         if (options["ipfsGatewayUrl"]) this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
         else {
             try {
                 let gatewayFromNode = await this.ipfsClient.config.get("Addresses.Gateway");
-                debugs.TRACE(`Gateway from node: ${JSON.stringify(gatewayFromNode)}`);
                 if (Array.isArray(gatewayFromNode)) gatewayFromNode = gatewayFromNode[0];
 
                 const splits = gatewayFromNode.toString().split("/");
                 this.ipfsGatewayUrl = `http://${splits[2]}:${splits[4]}`;
-                debugs.TRACE(`plebbit.ipfsGatewayUrl retrieved from IPFS node: ${this.ipfsGatewayUrl}`);
+                log.trace(`plebbit.ipfsGatewayUrl retrieved from IPFS node: ${this.ipfsGatewayUrl}`);
             } catch (e) {
                 this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
-                debugs.ERROR(`${e.msg}: Failed to retrieve gateway url from ipfs node, will default to ${this.ipfsGatewayUrl}`);
+                log(`${e.msg}: Failed to retrieve gateway url from ipfs node, will default to ${this.ipfsGatewayUrl}`);
             }
         }
     }
@@ -126,18 +126,18 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     async createComment(options: CreateCommentOptions | CommentType): Promise<Comment | Post> {
+        const log = Logger("plebbit-js:plebbit:createComment");
+
         const commentSubplebbit = { plebbit: this, address: options.subplebbitAddress };
         if (!options.signer)
             return options.title ? new Post(<PostType>options, commentSubplebbit) : new Comment(<CommentType>options, commentSubplebbit);
         if (!options.timestamp) {
             options.timestamp = timestamp();
-            debugs.TRACE(`User hasn't provided a timestamp in createCommentOptions, defaulting to (${options.timestamp})`);
+            log.trace(`User hasn't provided a timestamp in createCommentOptions, defaulting to (${options.timestamp})`);
         }
         if (!options?.author?.address) {
             options.author = { ...options.author, address: options.signer.address };
-            debugs.TRACE(
-                `CreateCommentOptions did not provide author.address, will define it to signer.address (${options.signer.address})`
-            );
+            log.trace(`CreateCommentOptions did not provide author.address, will define it to signer.address (${options.signer.address})`);
         }
 
         const commentSignature = await signPublication(options, options.signer, this, "comment");
@@ -151,6 +151,8 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     async createSubplebbit(options: CreateSubplebbitOptions = {}): Promise<Subplebbit> {
+        const log = Logger("plebbit-js:plebbit:createSubplebbit");
+
         const newSub = async () => {
             assert(isRuntimeNode, "Runtime need to include node APIs to create a publishing subplebbit");
             const subplebbit = new Subplebbit(options, this);
@@ -178,9 +180,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             if (!isRuntimeNode) throw new Error(`Can't instantenate a publishing subplebbit without node API`);
             else {
                 options.signer = await this.createSigner();
-                debugs.DEBUG(
-                    `Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${options.signer.address})`
-                );
+                log(`Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${options.signer.address})`);
                 return newSub();
             }
         } else if (!options.address && options.signer) {
@@ -195,15 +195,17 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     async createVote(options: CreateVoteOptions | VoteType): Promise<Vote> {
+        const log = Logger("plebbit-js:plebbit:createVote");
+
         const subplebbit = { plebbit: this, address: options.subplebbitAddress };
         if (!options.signer) return new Vote(<VoteType>options, subplebbit);
         if (!options.timestamp) {
             options.timestamp = timestamp();
-            debugs.TRACE(`User hasn't provided a timestamp in createVote, defaulting to (${options.timestamp})`);
+            log.trace(`User hasn't provided a timestamp in createVote, defaulting to (${options.timestamp})`);
         }
         if (!options?.author?.address) {
             options.author = { ...options.author, address: options.signer.address };
-            debugs.TRACE(`CreateVoteOptions did not provide author.address, will define it to signer.address (${options.signer.address})`);
+            log.trace(`CreateVoteOptions did not provide author.address, will define it to signer.address (${options.signer.address})`);
         }
         const voteSignature = await signPublication(options, options.signer, this, "vote");
         const voteProps: VoteType = <VoteType>{ ...options, signature: voteSignature, protocolVersion: getProtocolVersion() }; // TODO remove cast here
@@ -211,16 +213,18 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     async createCommentEdit(options: CreateCommentEditOptions): Promise<CommentEdit> {
+        const log = Logger("plebbit-js:plebbit:createVote");
+
         const subplebbitObj = { plebbit: this, address: options.subplebbitAddress };
         if (!options.signer) return new CommentEdit(options, subplebbitObj); // User just wants to instantiate a CommentEdit object, not publish
         if (!options.timestamp) {
             options.timestamp = timestamp();
-            debugs.DEBUG(`User hasn't provided editTimestamp in createCommentEdit, defaulted to (${options.timestamp})`);
+            log.trace(`User hasn't provided editTimestamp in createCommentEdit, defaulted to (${options.timestamp})`);
         }
 
         if (!options?.author?.address) {
             options.author = { ...options.author, address: options.signer.address };
-            debugs.TRACE(
+            log.trace(
                 `CreateCommentEditOptions did not provide author.address, will define it to signer.address (${options.signer.address})`
             );
         }

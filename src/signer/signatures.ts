@@ -9,13 +9,12 @@ import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import assert from "assert";
 import PeerId from "peer-id";
-import { getDebugLevels, keepKeys, removeKeys, removeKeysWithUndefinedValues } from "../util";
+import { keepKeys, removeKeys, removeKeysWithUndefinedValues } from "../util";
 import { Plebbit } from "../plebbit";
 import { Signer } from ".";
 import { AuthorType, PublicationTypeName, SignatureType, SignedPropertyNames } from "../types";
 import { sha256 } from "js-sha256";
-
-const debugs = getDebugLevels("signer:signatures");
+import Logger from "@plebbit/plebbit-logger";
 
 export const SIGNED_PROPERTY_NAMES: Record<PublicationTypeName, SignedPropertyNames> = Object.freeze({
     comment: ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"],
@@ -118,6 +117,8 @@ export async function signPublication(
 ): Promise<Signature> {
     assert(signer.publicKey);
     assert(Object.keys(SIGNED_PROPERTY_NAMES).includes(publicationType));
+    const log = Logger("plebbit-js:signatures:signPublication");
+
     publication = removeKeysWithUndefinedValues(publication);
     if (publication?.author?.address) {
         const resolvedAddress = await plebbit.resolver.resolveAuthorAddressIfNeeded(publication.author.address);
@@ -131,12 +132,12 @@ export async function signPublication(
 
     const signedPropertyNames = SIGNED_PROPERTY_NAMES[publicationType];
 
-    debugs.TRACE(`Fields to sign: ${JSON.stringify(signedPropertyNames)}. Publication object to sign:  ${JSON.stringify(publication)}`);
+    log.trace(`Fields to sign: ${JSON.stringify(signedPropertyNames)}. Publication object to sign:  ${JSON.stringify(publication)}`);
 
     const fieldsToSign = keepKeys(publication, signedPropertyNames);
     const commentEncoded = encode(fieldsToSign); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
     const signatureData = uint8ArrayToString(await signBufferRsa(commentEncoded, signer.privateKey), "base64");
-    debugs.TRACE(`Publication been signed, signature data is (${signatureData})`);
+    log.trace(`Publication been signed, signature data is (${signatureData})`);
     return new Signature({
         signature: signatureData,
         publicKey: signer.publicKey,
@@ -153,6 +154,8 @@ export async function verifyPublication(
     overrideAuthorAddressIfInvalid = true
 ): Promise<[boolean, string | undefined]> {
     assert(Object.keys(SIGNED_PROPERTY_NAMES).includes(publicationType));
+    const log = Logger("plebbit-js:signatures:verifyPublication");
+
     const publicationJson = removeKeysWithUndefinedValues(publication);
     const cachedResult: [boolean, string] = plebbit._memCache.get(sha256(JSON.stringify(publicationJson) + publicationType));
     if (Array.isArray(cachedResult)) return cachedResult;
@@ -176,7 +179,7 @@ export async function verifyPublication(
                 if (resolvedAddress !== derivedAddress) {
                     // Means plebbit-author-address text record is resolving to another comment (outdated?)
                     // Will always use address derived from publication.signature.publicKey as truth
-                    debugs.INFO(
+                    log.error(
                         `domain (${publicationJson.author.address}) resolved address (${resolvedAddress}) is invalid, changing publication.author.address to derived address ${derivedAddress}`
                     );
                     publication.author.address = derivedAddress;
@@ -197,7 +200,7 @@ export async function verifyPublication(
 
     try {
         // Need to verify comment.signature (of original comment) and authorEdit (latest edit by author, if exists)
-        debugs.TRACE(`Attempting to verify a ${publicationType}`);
+        log.trace(`Attempting to verify a ${publicationType}`);
 
         if (publicationJson.original) {
             // Means comment has been edited, verify both comment.signature and comment.authorEdit.signature
@@ -217,19 +220,17 @@ export async function verifyPublication(
             );
             if (!verified) return [false, `Failed to verify ${publicationType}.authorEdit due to: ${failedVerificationReason}`];
         } else {
-            debugs.TRACE(`Attempting to verify ${publicationType}.signature`);
             await verifyPublicationSignature(publicationJson.signature, publicationJson);
             // Verify author at the end since we might change author.address which will fail signature verification
             if (publicationJson?.author?.address && plebbit.resolveAuthorAddresses)
                 await verifyAuthor(publicationJson.signature, publicationJson.author);
         }
 
-        debugs.TRACE("Publication has been verified");
         const res: [boolean, string | undefined] = [true, undefined];
         plebbit._memCache.put(sha256(JSON.stringify(publicationJson) + publicationType), res);
         return res;
     } catch (e) {
-        debugs.WARN(`Failed to verify ${publicationType} due to error: ${e}\nPublication: ${JSON.stringify(publicationJson)}`);
+        log(`Failed to verify ${publicationType} due to error: ${e}\nPublication: ${JSON.stringify(publicationJson)}`);
         const res: [boolean, string | undefined] = [false, String(e)];
         plebbit._memCache.put(sha256(JSON.stringify(publicationJson) + publicationType), res);
 

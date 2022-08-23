@@ -19,12 +19,9 @@
 
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "type": "node",
-            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
-
+            "env": { "DEBUG": "plebbit-js:*, -plebbit-js:*:trace" }
         },
         {
             "args": [
@@ -41,12 +38,9 @@
 
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "type": "node",
-            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
-
+            "env": { "DEBUG": "plebbit-js:*, -plebbit-js:*:trace" }
         },
         {
             "args": [
@@ -63,12 +57,9 @@
 
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "type": "node",
-            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
-
+            "env": { "DEBUG": "plebbit-js:*, -plebbit-js:*:trace" }
         },
 
         {
@@ -86,12 +77,9 @@
 
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "type": "node",
-            "env": {"DEBUG": "plebbit-js:*"}
-
+            "env": { "DEBUG": "plebbit-js:*" }
         },
         {
             "args": [
@@ -108,12 +96,9 @@
 
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "type": "node",
-            "env": {"DEBUG": "plebbit-js:*"}
-
+            "env": { "DEBUG": "plebbit-js:*" }
         },
         {
             "args": [
@@ -130,12 +115,9 @@
 
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "type": "node",
-            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
-
+            "env": { "DEBUG": "plebbit-js:*, -plebbit-js:*:trace, -plebbit-js:trace" }
         },
         {
             "args": [
@@ -152,12 +134,9 @@
 
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "type": "node",
-            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
-
+            "env": { "DEBUG": "plebbit-js:*, -plebbit-js:*:trace, -plebbit-js:trace" }
         },
         {
             "args": [
@@ -174,12 +153,9 @@
 
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "type": "node",
-            "env": {"DEBUG": "plebbit-js:*"}
-
+            "env": { "DEBUG": "plebbit-js:*" }
         },
         {
             "args": [
@@ -196,12 +172,28 @@
 
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "type": "node",
-            "env": {"DEBUG": "plebbit-js:pages.test.js:*"}
+            "env": { "DEBUG": "plebbit-js:pages.test.js:*" }
+        },
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node-and-browser/publishing.comment.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "publishing.comment.test.js (browser and node)",
+            "console": "integratedTerminal",
 
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": ["<node_internals>/**"],
+            "type": "node",
+            "env": { "DEBUG": "plebbit-js:*" }
         },
         {
             "args": [
@@ -218,12 +210,9 @@
 
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "type": "node",
-            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
-
+            "env": { "DEBUG": "plebbit-js:*, -plebbit-js:*:trace, -plebbit-js:trace" }
         },
         {
             "args": [
@@ -240,12 +229,9 @@
 
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "type": "node",
-            "env": {"DEBUG": "plebbit-js:*"}
-
+            "env": { "DEBUG": "plebbit-js:*" }
         },
         {
             "args": [
@@ -262,12 +248,9 @@
 
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "type": "node",
-            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
-
+            "env": { "DEBUG": "plebbit-js:*, -plebbit-js:*:trace, -plebbit-js:trace" }
         },
         {
             "args": [
@@ -284,12 +267,9 @@
 
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "type": "node",
-            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
-
+            "env": { "DEBUG": "plebbit-js:*, -plebbit-js:*:trace, -plebbit-js:trace" }
         },
         {
             "args": [
@@ -305,11 +285,9 @@
             "name": "Node tests",
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "type": "node",
-            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
+            "env": { "DEBUG": "plebbit-js:*, -plebbit-js:*:trace, -plebbit-js:trace" }
         },
         {
             // --config config/.mocharc.js test/{node,node-and-browser}/**/*.test.js
@@ -327,25 +305,19 @@
             "name": "Node tests (Parallel)",
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "type": "node",
-            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
+            "env": { "DEBUG": "plebbit-js:*, -plebbit-js:*:trace, -plebbit-js:trace" }
         },
         {
             "type": "node",
             "request": "launch",
             "name": "Launch Test Server",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "program": "${workspaceFolder}/test/test-server.js",
             "console": "integratedTerminal",
 
-            "env": {"DEBUG": "plebbit-js:*, -plebbit-js:*:TRACE"}
-
-        },
-       
+            "env": { "DEBUG": "plebbit-js:*, -plebbit-js:*:trace, -plebbit-js:trace" }
+        }
     ]
 }

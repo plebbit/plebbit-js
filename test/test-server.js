@@ -10,7 +10,6 @@ const ipfsPath = getIpfsPath();
 const Plebbit = require("../dist/node");
 const signers = require("./fixtures/signers");
 
-const { getDebugLevels } = require("../dist/node/util");
 const { generateMockComment, generateMockVote, generateMockPost } = require("../dist/node/test-util");
 
 const path = require("path");
@@ -46,7 +45,6 @@ const anotherOfflineNodeArgs = {
     gatewayPort: 8083,
     daemonArgs: "--offline"
 };
-const debugs = getDebugLevels("test-server");
 
 const numOfCommentsToPublish = 6;
 const votesPerCommentToPublish = 6;
@@ -222,7 +220,7 @@ const publishVotes = async (comments, subplebbit) => {
         })
     );
 
-    debugs.DEBUG(`${votes.length} votes for ${comments.length} ${comments[0].depth === 0 ? "posts" : "replies"} have been published`);
+    console.log(`${votes.length} votes for ${comments.length} ${comments[0].depth === 0 ? "posts" : "replies"} have been published`);
     return votes;
 };
 
@@ -231,9 +229,9 @@ const populateSubplebbit = async (subplebbit) => {
         roles: { [signers[1].address]: { role: "owner" }, [signers[2].address]: { role: "admin" }, [signers[3].address]: { role: "mod" } }
     });
     posts = await publishComments(undefined, subplebbit); // If no comment[] is provided, we publish posts
-    debugs.DEBUG(`Have successfully published ${posts.length} posts`);
+    console.log(`Have successfully published ${posts.length} posts`);
     [replies] = await Promise.all([publishComments([posts[0]], subplebbit), publishVotes(posts, subplebbit)]);
-    debugs.DEBUG(`Have sucessfully published ${replies.length} replies`);
+    console.log(`Have sucessfully published ${replies.length} replies`);
     await publishVotes(replies, subplebbit);
 };
 
@@ -256,7 +254,7 @@ const populateSubplebbit = async (subplebbit) => {
     ]);
     console.timeEnd("populate");
 
-    debugs.INFO("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
+    console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 
     // create a test server to be able to use npm module 'wait-on'
     // to know when the test server is finished getting ready

@@ -1,5 +1,5 @@
 import assert from "assert";
-import { getDebugLevels, loadIpnsAsJson, removeKeysWithUndefinedValues, shallowEqual } from "./util";
+import { loadIpnsAsJson, removeKeysWithUndefinedValues, shallowEqual } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
 import { verifyPublication } from "./signer";
@@ -8,8 +8,7 @@ import Author from "./author";
 import errcode from "err-code";
 import { codes, messages } from "./errors";
 
-const debugs = getDebugLevels("comment");
-
+import Logger from "@plebbit/plebbit-logger";
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
 export class Comment extends Publication implements CommentType {
@@ -226,18 +225,19 @@ export class Comment extends Publication implements CommentType {
     }
 
     async updateOnce() {
+        const log = Logger("plebbit-js:comment:update");
         let res;
         try {
             res = await loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit);
         } catch (e) {
-            debugs.WARN(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error = ${e.message}`);
+            log.error(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error = ${e.message}`);
             return;
         }
         if (res && (!this.updatedAt || !shallowEqual(this.toJSONCommentUpdate(), res, ["signature"]))) {
-            debugs.DEBUG(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
+            log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
             const [verified, failedVerificationReason] = await verifyPublication(res, this.subplebbit.plebbit, "commentupdate");
             if (!verified) {
-                debugs.ERROR(
+                log.error(
                     `Comment (${this.cid}) IPNS (${this.ipnsName}) signature is invalid. Will not update: ${failedVerificationReason}`
                 );
                 return;
@@ -246,7 +246,7 @@ export class Comment extends Publication implements CommentType {
             this._mergeFields(this.toJSON());
             this.emit("update", this);
         } else {
-            debugs.TRACE(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
+            log.trace(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
             this._initCommentUpdate(res);
         }
         return this;
@@ -256,7 +256,6 @@ export class Comment extends Publication implements CommentType {
         if (typeof this.ipnsName !== "string")
             throw errcode(Error(messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME), codes.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME);
 
-        debugs.DEBUG(`Starting to poll updates for comment (${this.cid}) IPNS (${this.ipnsName}) every ${updateIntervalMs} milliseconds`);
         if (this._updateInterval) clearInterval(this._updateInterval);
         this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
         return this.updateOnce();
@@ -267,6 +266,7 @@ export class Comment extends Publication implements CommentType {
     }
 
     async edit(options: CommentUpdate) {
+        const log = Logger("plebbit-js:comment:edit");
         assert(this.ipnsKeyName && this.subplebbit.plebbit.ipfsClient, "You need to have commentUpdate and ipfs client defined");
         const [validSignature, failedVerificationReason] = await verifyPublication(options, this.subplebbit.plebbit, "commentupdate");
         if (!validSignature)
@@ -283,7 +283,7 @@ export class Comment extends Publication implements CommentType {
             key: this.ipnsKeyName,
             allowOffline: true
         });
-        debugs.TRACE(`Linked comment (${this.cid}) ipns name(${this.ipnsName}) to ipfs file (${file.path})`);
+        log.trace(`Linked comment (${this.cid}) ipns name(${this.ipnsName}) to ipfs file (${file.path})`);
     }
 
     async publish(userOptions): Promise<void> {

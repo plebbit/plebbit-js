@@ -1,12 +1,11 @@
 import { ethers } from "ethers";
 import { Plebbit } from "./plebbit";
 import { BlockchainProvider } from "./types";
-import { getDebugLevels } from "./util";
-const debugs = getDebugLevels("resolver");
 import assert from "assert";
 import errcode from "err-code";
 import { codes, messages } from "./errors";
 import isIPFS from "is-ipfs";
+import Logger from "@plebbit/plebbit-logger";
 
 export class Resolver {
     blockchainProviders: { [chainTicker: string]: BlockchainProvider };
@@ -48,10 +47,11 @@ export class Resolver {
     }
 
     async _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string> {
+        const log = Logger("plebbit-js:resolver:_resolveEnsTxtRecord");
+
         const cachedResponse = this.plebbit._memCache.get(ensName + txtRecordName);
-        debugs.TRACE(`Attempting to resolve ENS (${ensName}) text record (${txtRecordName}), cached response: ${cachedResponse}`);
         if (cachedResponse && typeof cachedResponse === "string") {
-            debugs.DEBUG(`ENS (${ensName}) text record (${txtRecordName}) is already cached: ${JSON.stringify(cachedResponse)}`);
+            log(`ENS (${ensName}) text record (${txtRecordName}) is already cached: ${JSON.stringify(cachedResponse)}`);
             return cachedResponse;
         }
         const blockchainProvider = this._getBlockchainProvider("eth");
@@ -66,7 +66,7 @@ export class Resolver {
                 details: `ensName: ${ensName}, txtRecordName: ${txtRecordName}, blockchainProvider: ${JSON.stringify(blockchainProvider)},`
             });
 
-        debugs.DEBUG(`Resolved text record name (${txtRecordName}) of ENS (${ensName}) to ${txtRecordResult}`);
+        log.trace(`Resolved text record name (${txtRecordName}) of ENS (${ensName}) to ${txtRecordResult}`);
 
         this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // Expire memory ENS cache after an hour
 
@@ -76,7 +76,6 @@ export class Resolver {
     async resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string> {
         if (!this.plebbit.resolveAuthorAddresses) return authorAddress;
         if (authorAddress?.endsWith(".eth")) {
-            debugs.DEBUG(`Will attempt to resolve plebbit-author-address of ${authorAddress}`);
             const resolvedAuthorAddress = await this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address");
             if (!isIPFS.cid(resolvedAuthorAddress))
                 throw errcode(
@@ -92,7 +91,6 @@ export class Resolver {
 
     async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string> {
         if (subplebbitAddress?.endsWith(".eth")) {
-            debugs.DEBUG(`Will attempt to resolve subplebbit-address of ${subplebbitAddress}`);
             const resolvedSubplebbitAddress = await this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address");
             if (!isIPFS.cid(resolvedSubplebbitAddress))
                 throw errcode(

@@ -9,7 +9,7 @@ import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { v4 as uuidv4 } from "uuid";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import EventEmitter from "events";
-import { getDebugLevels, parseJsonIfString } from "./util";
+import { parseJsonIfString } from "./util";
 import Author from "./author";
 import assert from "assert";
 import { Subplebbit } from "./subplebbit";
@@ -17,8 +17,7 @@ import { decrypt, encrypt, Signature, Signer, verifyPublication } from "./signer
 import { ProtocolVersion, PublicationType, PublicationTypeName } from "./types";
 import errcode from "err-code";
 import { codes, messages } from "./errors";
-
-const debugs = getDebugLevels("publication");
+import Logger from "@plebbit/plebbit-logger";
 
 class Publication extends EventEmitter implements PublicationType {
     subplebbitAddress: string;
@@ -66,21 +65,23 @@ class Publication extends EventEmitter implements PublicationType {
     }
 
     async handleChallengeExchange(pubsubMsg) {
+        const log = Logger("plebbit-js:publication:handleChallengeExchange");
+
         const msgParsed: ChallengeMessage | ChallengeVerificationMessage = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
         if (msgParsed?.challengeRequestId !== this.challenge.challengeRequestId) return; // Process only this publication's challenge
         if (msgParsed?.type === PUBSUB_MESSAGE_TYPES.CHALLENGE) {
-            debugs.INFO(`Received challenges, will emit them and wait for user to solve them and call publishChallengeAnswers`);
+            log(`Received challenges, will emit them and wait for user to solve them and call publishChallengeAnswers`);
             this.emit("challenge", msgParsed);
         } else if (msgParsed?.type === PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION) {
             let decryptedPublication: PublicationType | undefined;
             if (!(<ChallengeVerificationMessage>msgParsed).challengeSuccess)
-                debugs.WARN(
+                log.error(
                     `Challenge ${msgParsed.challengeRequestId} has failed to pass. Challenge errors = ${
                         (<ChallengeVerificationMessage>msgParsed).challengeErrors
                     }, reason = ${(<ChallengeVerificationMessage>msgParsed).reason}`
                 );
             else {
-                debugs.INFO(
+                log(
                     `Challenge (${msgParsed.challengeRequestId}) has passed. Will update publication props from ChallengeVerificationMessage.publication`
                 );
                 assert(msgParsed.encryptedPublication, "Challengeverification did not include encrypted publication");
@@ -100,8 +101,9 @@ class Publication extends EventEmitter implements PublicationType {
     }
 
     async publishChallengeAnswers(challengeAnswers: string[]) {
+        const log = Logger("plebbit-js:publication:publishChallengeAnswers");
+
         if (!Array.isArray(challengeAnswers)) challengeAnswers = [challengeAnswers];
-        debugs.DEBUG(`Challenge Answers: ${challengeAnswers}`);
         const challengeAnswer = new ChallengeAnswerMessage({
             challengeRequestId: this.challenge.challengeRequestId,
             challengeAnswerId: uuidv4(),
@@ -111,11 +113,13 @@ class Publication extends EventEmitter implements PublicationType {
             this.subplebbit.pubsubTopic,
             uint8ArrayFromString(JSON.stringify(challengeAnswer))
         );
-        debugs.DEBUG(`Responded to challenge (${challengeAnswer.challengeRequestId}) with answers ${JSON.stringify(challengeAnswers)}`);
+        log(`Responded to challenge (${challengeAnswer.challengeRequestId}) with answers ${JSON.stringify(challengeAnswers)}`);
         this.emit("challengeanswer", challengeAnswer);
     }
 
     async publish(userOptions) {
+        const log = Logger("plebbit-js:publication:publish");
+
         if (typeof this.timestamp !== "number" || this.timestamp <= 0)
             throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), codes.ERR_PUBLICATION_MISSING_FIELD, {
                 details: `${this.getType()}.publish: timestamp should be a number`
@@ -158,7 +162,7 @@ class Publication extends EventEmitter implements PublicationType {
             challengeRequestId: uuidv4(),
             ...options
         });
-        debugs.DEBUG(`Attempting to publish ${this.getType()} with options (${JSON.stringify(options)})`);
+        log.trace(`Attempting to publish ${this.getType()} with options (${JSON.stringify(options)})`);
 
         await Promise.all([
             this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(
@@ -167,7 +171,7 @@ class Publication extends EventEmitter implements PublicationType {
             ),
             this.subplebbit.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this))
         ]);
-        debugs.INFO(`Sent a challenge request (${this.challenge.challengeRequestId})`);
+        log(`Sent a challenge request (${this.challenge.challengeRequestId})`);
         this.emit("challengerequest", this.challenge);
     }
 }

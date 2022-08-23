@@ -1,15 +1,6 @@
-const {
-    controversialScore,
-    hotScore,
-    newScore,
-    oldScore,
-    TIMEFRAMES_TO_SECONDS,
-    topScore,
-    getDebugLevels
-} = require("../../dist/node/util");
+const { controversialScore, hotScore, newScore, oldScore, TIMEFRAMES_TO_SECONDS, topScore } = require("../../dist/node/util");
 const Plebbit = require("../../dist/node");
 const { expect } = require("chai");
-const debugs = getDebugLevels("pages.test.js");
 const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../dist/node/sort-handler");
 const signers = require("../fixtures/signers");
 const { loadAllPages } = require("../../dist/node/test-util");
@@ -38,12 +29,12 @@ const testSorting = async (sort, shouldTestCommentReplies) => {
     // We use a plebbit for each comment/vote so that when we unsubscribe from a pubsub it doesn't affect other publications
 
     const testListOfSortedComments = (alreadySortedComments, currentSortName) => {
-        debugs.DEBUG(`Testing sort ${currentSortName}. There are ${alreadySortedComments.length} comments under ${currentSortName}`);
+        console.log(`Testing sort ${currentSortName}. There are ${alreadySortedComments.length} comments under ${currentSortName}`);
 
         const currentTimeframe = Object.keys(TIMEFRAMES_TO_SECONDS).filter((timeframe) =>
             currentSortName.toLowerCase().includes(timeframe.toLowerCase())
         )[0];
-        debugs.DEBUG(`Current sort ${currentSortName} current timeframe = ${currentTimeframe}`);
+        console.log(`Current sort ${currentSortName} current timeframe = ${currentTimeframe}`);
         for (let j = 0; j < alreadySortedComments.length - 1; j++) {
             // Check if timestamp is within [timestamp() - timeframe, subplebbit.updatedAt]
             if (currentTimeframe) {
@@ -62,7 +53,7 @@ const testSorting = async (sort, shouldTestCommentReplies) => {
             const scoreB = sort.scoreFunction(alreadySortedComments[j + 1]);
             expect(scoreA).to.be.greaterThanOrEqual(scoreB);
         }
-        debugs.DEBUG(`Passed tests for current sort ${currentSortName}`);
+        console.log(`Passed tests for current sort ${currentSortName}`);
     };
 
     const sortNames = Object.keys(shouldTestCommentReplies ? REPLIES_SORT_TYPES : POSTS_SORT_TYPES).filter((sortName) =>
@@ -96,7 +87,7 @@ const testSorting = async (sort, shouldTestCommentReplies) => {
             })
         );
 
-    debugs.DEBUG(`Passed all tests for sort ${sort.type}`);
+    console.log(`Passed all tests for sort ${sort.type}`);
 };
 
 const postSortObjects = [

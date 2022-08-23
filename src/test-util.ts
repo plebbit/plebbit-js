@@ -1,4 +1,4 @@
-import { getDebugLevels, TIMEFRAMES_TO_SECONDS, timestamp } from "./util";
+import { TIMEFRAMES_TO_SECONDS, timestamp } from "./util";
 import { Signer } from "./signer";
 import { Comment } from "./comment";
 import Post from "./post";
@@ -8,7 +8,6 @@ import Vote from "./vote";
 import { Pages } from "./pages";
 import { Subplebbit } from "./subplebbit";
 import { CommentType } from "./types";
-const debugs = getDebugLevels("test-util");
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [parentTimestamp || 0, timestamp()];
@@ -19,7 +18,6 @@ function generateRandomTimestamp(parentTimestamp?: number): number {
         const tempTimestamp = lowerLimit + Object.values(TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
         if (tempTimestamp >= lowerLimit && tempTimestamp <= upperLimit) randomTimestamp = tempTimestamp;
     }
-    debugs.TRACE(`generateRandomTimestamp: randomTimestamp: ${randomTimestamp}`);
 
     return randomTimestamp;
 }

@@ -1,4 +1,4 @@
-import { chunks, controversialScore, getDebugLevels, hotScore, TIMEFRAMES_TO_SECONDS, timestamp } from "./util";
+import { chunks, controversialScore, hotScore, TIMEFRAMES_TO_SECONDS, timestamp } from "./util";
 import { Page, Pages } from "./pages";
 import { Subplebbit } from "./subplebbit";
 import assert from "assert";
@@ -6,8 +6,7 @@ import { Knex } from "knex";
 import { Comment } from "./comment";
 import Transaction = Knex.Transaction;
 import { PostSort, PostSortName, ReplySort, ReplySortName, SortProps, Timeframe } from "./types";
-
-const debugs = getDebugLevels("sort-handler");
+import Logger from "@plebbit/plebbit-logger";
 
 export const POSTS_SORT_TYPES: PostSort = {
     hot: { score: hotScore },
@@ -256,13 +255,15 @@ export class SortHandler {
     }
 
     async deleteCommentPageCache(dbComment: Comment) {
+        const log = Logger("plebbit-js:sort-handler:deleteCommentPageCache");
+
         assert(this.subplebbit.dbHandler);
         const cachesToDelete = [
             dbComment.cid,
             ...(await this.subplebbit.dbHandler.queryParentsOfComment(dbComment, undefined)).map((comment) => comment.cid),
             "subplebbit"
         ];
-        debugs.TRACE(`Caches to delete: ${cachesToDelete}`);
+        log.trace(`Caches to delete: ${cachesToDelete}`);
         await Promise.all(cachesToDelete.map(async (cacheKey) => this.subplebbit._keyv.delete(cacheKey)));
     }
 }

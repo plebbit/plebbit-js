@@ -35,6 +35,7 @@
     ],
     "dependencies": {
         "@keyv/sqlite": "3.5.3",
+        "@plebbit/plebbit-logger": "github:plebbit/plebbit-logger",
         "@types/node-fetch": "2.6.2",
         "@types/uuid": "8.3.4",
         "assert": "2.0.0",
