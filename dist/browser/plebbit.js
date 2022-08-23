@@ -106,7 +106,7 @@ var events_1 = __importDefault(require("events"));
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
-var debugs = (0, util_2.getDebugLevels)("plebbit");
+var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 exports.pendingSubplebbitCreations = {};
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
@@ -139,10 +139,11 @@ var Plebbit = /** @class */ (function (_super) {
     }
     Plebbit.prototype._init = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var gatewayFromNode, splits, e_1;
+            var log, gatewayFromNode, splits, e_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:_init");
                         if (!options["ipfsGatewayUrl"]) return [3 /*break*/, 1];
                         this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
                         return [3 /*break*/, 4];
@@ -151,17 +152,16 @@ var Plebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.ipfsClient.config.get("Addresses.Gateway")];
                     case 2:
                         gatewayFromNode = _a.sent();
-                        debugs.TRACE("Gateway from node: ".concat(JSON.stringify(gatewayFromNode)));
                         if (Array.isArray(gatewayFromNode))
                             gatewayFromNode = gatewayFromNode[0];
                         splits = gatewayFromNode.toString().split("/");
                         this.ipfsGatewayUrl = "http://".concat(splits[2], ":").concat(splits[4]);
-                        debugs.TRACE("plebbit.ipfsGatewayUrl retrieved from IPFS node: ".concat(this.ipfsGatewayUrl));
+                        log.trace("plebbit.ipfsGatewayUrl retrieved from IPFS node: ".concat(this.ipfsGatewayUrl));
                         return [3 /*break*/, 4];
                     case 3:
                         e_1 = _a.sent();
                         this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
-                        debugs.ERROR("".concat(e_1.msg, ": Failed to retrieve gateway url from ipfs node, will default to ").concat(this.ipfsGatewayUrl));
+                        log("".concat(e_1.msg, ": Failed to retrieve gateway url from ipfs node, will default to ").concat(this.ipfsGatewayUrl));
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/];
                 }
@@ -223,20 +223,21 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.createComment = function (options) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var commentSubplebbit, commentSignature, finalProps;
+            var log, commentSubplebbit, commentSignature, finalProps;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createComment");
                         commentSubplebbit = { plebbit: this, address: options.subplebbitAddress };
                         if (!options.signer)
                             return [2 /*return*/, options.title ? new post_1.default(options, commentSubplebbit) : new comment_1.Comment(options, commentSubplebbit)];
                         if (!options.timestamp) {
                             options.timestamp = (0, util_2.timestamp)();
-                            debugs.TRACE("User hasn't provided a timestamp in createCommentOptions, defaulting to (".concat(options.timestamp, ")"));
+                            log.trace("User hasn't provided a timestamp in createCommentOptions, defaulting to (".concat(options.timestamp, ")"));
                         }
                         if (!((_a = options === null || options === void 0 ? void 0 : options.author) === null || _a === void 0 ? void 0 : _a.address)) {
                             options.author = __assign(__assign({}, options.author), { address: options.signer.address });
-                            debugs.TRACE("CreateCommentOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
+                            log.trace("CreateCommentOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
                         }
                         return [4 /*yield*/, (0, signer_1.signPublication)(options, options.signer, this, "comment")];
                     case 1:
@@ -250,11 +251,12 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.createSubplebbit = function (options) {
         if (options === void 0) { options = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var newSub, remoteSub, localSubs, _a, localSubs, derivedAddress, _b;
+            var log, newSub, remoteSub, localSubs, _a, localSubs, derivedAddress, _b;
             var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
                         newSub = function () { return __awaiter(_this, void 0, void 0, function () {
                             var subplebbit, key;
                             return __generator(this, function (_a) {
@@ -300,7 +302,7 @@ var Plebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.createSigner()];
                     case 6:
                         _a.signer = _c.sent();
-                        debugs.DEBUG("Did not provide CreateSubplebbitOptions.signer, generated random signer with address (".concat(options.signer.address, ")"));
+                        log("Did not provide CreateSubplebbitOptions.signer, generated random signer with address (".concat(options.signer.address, ")"));
                         return [2 /*return*/, newSub()];
                     case 7: return [3 /*break*/, 13];
                     case 8:
@@ -335,20 +337,21 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.createVote = function (options) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var subplebbit, voteSignature, voteProps;
+            var log, subplebbit, voteSignature, voteProps;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createVote");
                         subplebbit = { plebbit: this, address: options.subplebbitAddress };
                         if (!options.signer)
                             return [2 /*return*/, new vote_1.default(options, subplebbit)];
                         if (!options.timestamp) {
                             options.timestamp = (0, util_2.timestamp)();
-                            debugs.TRACE("User hasn't provided a timestamp in createVote, defaulting to (".concat(options.timestamp, ")"));
+                            log.trace("User hasn't provided a timestamp in createVote, defaulting to (".concat(options.timestamp, ")"));
                         }
                         if (!((_a = options === null || options === void 0 ? void 0 : options.author) === null || _a === void 0 ? void 0 : _a.address)) {
                             options.author = __assign(__assign({}, options.author), { address: options.signer.address });
-                            debugs.TRACE("CreateVoteOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
+                            log.trace("CreateVoteOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
                         }
                         return [4 /*yield*/, (0, signer_1.signPublication)(options, options.signer, this, "vote")];
                     case 1:
@@ -362,21 +365,22 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.createCommentEdit = function (options) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var subplebbitObj, commentEditProps, _b;
+            var log, subplebbitObj, commentEditProps, _b;
             var _c;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createVote");
                         subplebbitObj = { plebbit: this, address: options.subplebbitAddress };
                         if (!options.signer)
                             return [2 /*return*/, new comment_edit_1.CommentEdit(options, subplebbitObj)]; // User just wants to instantiate a CommentEdit object, not publish
                         if (!options.timestamp) {
                             options.timestamp = (0, util_2.timestamp)();
-                            debugs.DEBUG("User hasn't provided editTimestamp in createCommentEdit, defaulted to (".concat(options.timestamp, ")"));
+                            log.trace("User hasn't provided editTimestamp in createCommentEdit, defaulted to (".concat(options.timestamp, ")"));
                         }
                         if (!((_a = options === null || options === void 0 ? void 0 : options.author) === null || _a === void 0 ? void 0 : _a.address)) {
                             options.author = __assign(__assign({}, options.author), { address: options.signer.address });
-                            debugs.TRACE("CreateCommentEditOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
+                            log.trace("CreateCommentEditOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
                         }
                         _b = [__assign({}, options)];
                         _c = {};

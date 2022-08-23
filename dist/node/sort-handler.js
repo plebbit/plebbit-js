@@ -63,7 +63,7 @@ exports.SortHandler = exports.SORTED_POSTS_PAGE_SIZE = exports.REPLIES_SORT_TYPE
 var util_1 = require("./util");
 var pages_1 = require("./pages");
 var assert_1 = __importDefault(require("assert"));
-var debugs = (0, util_1.getDebugLevels)("sort-handler");
+var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 exports.POSTS_SORT_TYPES = {
     hot: { score: util_1.hotScore },
     new: {},
@@ -409,11 +409,12 @@ var SortHandler = /** @class */ (function () {
     };
     SortHandler.prototype.deleteCommentPageCache = function (dbComment) {
         return __awaiter(this, void 0, void 0, function () {
-            var cachesToDelete, _a;
+            var log, cachesToDelete, _a;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:sort-handler:deleteCommentPageCache");
                         (0, assert_1.default)(this.subplebbit.dbHandler);
                         _a = [[
                                 dbComment.cid
@@ -423,7 +424,7 @@ var SortHandler = /** @class */ (function () {
                         cachesToDelete = __spreadArray.apply(void 0, [__spreadArray.apply(void 0, _a.concat([(_b.sent()).map(function (comment) { return comment.cid; }), true])), [
                                 "subplebbit"
                             ], false]);
-                        debugs.TRACE("Caches to delete: ".concat(cachesToDelete));
+                        log.trace("Caches to delete: ".concat(cachesToDelete));
                         return [4 /*yield*/, Promise.all(cachesToDelete.map(function (cacheKey) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                                 return [2 /*return*/, this.subplebbit._keyv.delete(cacheKey)];
                             }); }); }))];

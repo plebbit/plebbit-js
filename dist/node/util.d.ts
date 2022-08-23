@@ -1,4 +1,3 @@
-import Debug from "debug";
 import { Plebbit } from "./plebbit";
 import { CommentType, ProtocolVersion, Timeframe } from "./types";
 import { Signer } from "./signer";
@@ -24,13 +23,5 @@ export declare function newScore(comment: CommentType): number;
 export declare function oldScore(comment: CommentType): number;
 export declare function removeKeysWithUndefinedValues(object: any): any;
 export declare function ipfsImportKey(signer: Signer, plebbit: any, password?: string): Promise<any>;
-export declare function getDebugLevels(baseName: string): {
-    FATAL: Debug;
-    ERROR: Debug;
-    WARN: Debug;
-    INFO: Debug;
-    DEBUG: Debug;
-    TRACE: Debug;
-};
 export declare function randomElement<T>(array: Array<T>): T;
 export declare function getProtocolVersion(): ProtocolVersion;

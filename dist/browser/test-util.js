@@ -62,7 +62,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAllCommentsUnderSubplebbit = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
 var util_1 = require("./util");
 var assert_1 = __importDefault(require("assert"));
-var debugs = (0, util_1.getDebugLevels)("test-util");
 function generateRandomTimestamp(parentTimestamp) {
     var _a = [parentTimestamp || 0, (0, util_1.timestamp)()], lowerLimit = _a[0], upperLimit = _a[1];
     var randomTimestamp;
@@ -72,7 +71,6 @@ function generateRandomTimestamp(parentTimestamp) {
         if (tempTimestamp >= lowerLimit && tempTimestamp <= upperLimit)
             randomTimestamp = tempTimestamp;
     }
-    debugs.TRACE("generateRandomTimestamp: randomTimestamp: ".concat(randomTimestamp));
     return randomTimestamp;
 }
 function generateMockPost(subplebbitAddress, plebbit, signer, randomTimestamp, postProps) {

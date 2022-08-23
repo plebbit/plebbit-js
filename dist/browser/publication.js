@@ -76,7 +76,7 @@ var assert_1 = __importDefault(require("assert"));
 var signer_1 = require("./signer");
 var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
-var debugs = (0, util_1.getDebugLevels)("publication");
+var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var Publication = /** @class */ (function (_super) {
     __extends(Publication, _super);
     function Publication(props, subplebbit) {
@@ -112,25 +112,26 @@ var Publication = /** @class */ (function (_super) {
     };
     Publication.prototype.handleChallengeExchange = function (pubsubMsg) {
         return __awaiter(this, void 0, void 0, function () {
-            var msgParsed, decryptedPublication, _a, _b;
+            var log, msgParsed, decryptedPublication, _a, _b;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:publication:handleChallengeExchange");
                         msgParsed = JSON.parse((0, to_string_1.toString)(pubsubMsg["data"]));
                         if ((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId) !== this.challenge.challengeRequestId)
                             return [2 /*return*/]; // Process only this publication's challenge
                         if (!((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.type) === challenge_1.PUBSUB_MESSAGE_TYPES.CHALLENGE)) return [3 /*break*/, 1];
-                        debugs.INFO("Received challenges, will emit them and wait for user to solve them and call publishChallengeAnswers");
+                        log("Received challenges, will emit them and wait for user to solve them and call publishChallengeAnswers");
                         this.emit("challenge", msgParsed);
                         return [3 /*break*/, 6];
                     case 1:
                         if (!((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.type) === challenge_1.PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION)) return [3 /*break*/, 6];
                         decryptedPublication = void 0;
                         if (!!msgParsed.challengeSuccess) return [3 /*break*/, 2];
-                        debugs.WARN("Challenge ".concat(msgParsed.challengeRequestId, " has failed to pass. Challenge errors = ").concat(msgParsed.challengeErrors, ", reason = ").concat(msgParsed.reason));
+                        log.error("Challenge ".concat(msgParsed.challengeRequestId, " has failed to pass. Challenge errors = ").concat(msgParsed.challengeErrors, ", reason = ").concat(msgParsed.reason));
                         return [3 /*break*/, 4];
                     case 2:
-                        debugs.INFO("Challenge (".concat(msgParsed.challengeRequestId, ") has passed. Will update publication props from ChallengeVerificationMessage.publication"));
+                        log("Challenge (".concat(msgParsed.challengeRequestId, ") has passed. Will update publication props from ChallengeVerificationMessage.publication"));
                         (0, assert_1.default)(msgParsed.encryptedPublication, "Challengeverification did not include encrypted publication");
                         _b = (_a = JSON).parse;
                         return [4 /*yield*/, (0, signer_1.decrypt)(msgParsed.encryptedPublication.encrypted, msgParsed.encryptedPublication.encryptedKey, this.signer.privateKey)];
@@ -152,13 +153,13 @@ var Publication = /** @class */ (function (_super) {
     };
     Publication.prototype.publishChallengeAnswers = function (challengeAnswers) {
         return __awaiter(this, void 0, void 0, function () {
-            var challengeAnswer;
+            var log, challengeAnswer;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:publication:publishChallengeAnswers");
                         if (!Array.isArray(challengeAnswers))
                             challengeAnswers = [challengeAnswers];
-                        debugs.DEBUG("Challenge Answers: ".concat(challengeAnswers));
                         challengeAnswer = new challenge_1.ChallengeAnswerMessage({
                             challengeRequestId: this.challenge.challengeRequestId,
                             challengeAnswerId: (0, uuid_1.v4)(),
@@ -167,7 +168,7 @@ var Publication = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeAnswer)))];
                     case 1:
                         _a.sent();
-                        debugs.DEBUG("Responded to challenge (".concat(challengeAnswer.challengeRequestId, ") with answers ").concat(JSON.stringify(challengeAnswers)));
+                        log("Responded to challenge (".concat(challengeAnswer.challengeRequestId, ") with answers ").concat(JSON.stringify(challengeAnswers)));
                         this.emit("challengeanswer", challengeAnswer);
                         return [2 /*return*/];
                 }
@@ -177,10 +178,11 @@ var Publication = /** @class */ (function (_super) {
     Publication.prototype.publish = function (userOptions) {
         var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function () {
-            var _d, isSignatureValid, failedVerificationReason, options, _e, encryptedPublication;
+            var log, _d, isSignatureValid, failedVerificationReason, options, _e, encryptedPublication;
             return __generator(this, function (_f) {
                 switch (_f.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:publication:publish");
                         if (typeof this.timestamp !== "number" || this.timestamp <= 0)
                             throw (0, err_code_1.default)(Error(errors_1.messages.ERR_PUBLICATION_MISSING_FIELD), errors_1.codes.ERR_PUBLICATION_MISSING_FIELD, {
                                 details: "".concat(this.getType(), ".publish: timestamp should be a number")
@@ -217,14 +219,14 @@ var Publication = /** @class */ (function (_super) {
                     case 3:
                         encryptedPublication = _f.sent();
                         this.challenge = new challenge_1.ChallengeRequestMessage(__assign({ encryptedPublication: encryptedPublication, challengeRequestId: (0, uuid_1.v4)() }, options));
-                        debugs.DEBUG("Attempting to publish ".concat(this.getType(), " with options (").concat(JSON.stringify(options), ")"));
+                        log.trace("Attempting to publish ".concat(this.getType(), " with options (").concat(JSON.stringify(options), ")"));
                         return [4 /*yield*/, Promise.all([
                                 this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(this.challenge))),
                                 this.subplebbit.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this))
                             ])];
                     case 4:
                         _f.sent();
-                        debugs.INFO("Sent a challenge request (".concat(this.challenge.challengeRequestId, ")"));
+                        log("Sent a challenge request (".concat(this.challenge.challengeRequestId, ")"));
                         this.emit("challengerequest", this.challenge);
                         return [2 /*return*/];
                 }
