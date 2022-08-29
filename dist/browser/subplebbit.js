@@ -154,8 +154,7 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.initSignerIfNeeded = function () {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log, dbSigner, ipnsKeys, ipfsKey;
-            var _this = this;
+            var log, dbSigner;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -183,19 +182,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             type: "aes-cbc",
                             publicKey: this.signer.publicKey
                         };
-                        if (!(!this.address && this.signer)) return [3 /*break*/, 6];
-                        // Look for subplebbit address (key.id) in the ipfs node
-                        (0, assert_1.default)(this.plebbit.ipfsClient, "a defined plebbit.ipfsClient is needed to load sub address from IPFS node");
-                        return [4 /*yield*/, this.plebbit.ipfsClient.key.list()];
-                    case 5:
-                        ipnsKeys = _b.sent();
-                        ipfsKey = ipnsKeys.filter(function (key) { return key.name === _this.signer.address; })[0];
-                        log(Boolean(ipfsKey)
-                            ? "Owner has provided a signer that maps to ".concat(ipfsKey.id, " subplebbit address within ipfs node")
-                            : "Owner has provided a signer that doesn't map to any subplebbit address within the ipfs node");
-                        this.address = ipfsKey === null || ipfsKey === void 0 ? void 0 : ipfsKey.id;
-                        _b.label = 6;
-                    case 6: return [2 /*return*/];
+                        return [2 /*return*/];
                 }
             });
         });
@@ -354,7 +341,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             _this.emit("error", editError);
                         });
                         log.trace("Attempting to edit subplebbit.address from ".concat(this.address, " to ").concat(newSubplebbitOptions.address));
-                        return [4 /*yield*/, this.dbHandler.changeDbFilename("".concat(newSubplebbitOptions.address))];
+                        return [4 /*yield*/, this.dbHandler.changeDbFilename(newSubplebbitOptions.address)];
                     case 1:
                         _a.sent();
                         _a.label = 2;
@@ -1142,30 +1129,24 @@ var Subplebbit = /** @class */ (function (_super) {
             var loop;
             var _this = this;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        loop = function () { return __awaiter(_this, void 0, void 0, function () {
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        if (!this._sync) return [3 /*break*/, 3];
-                                        return [4 /*yield*/, this.syncIpnsWithDb()];
-                                    case 1:
-                                        _a.sent();
-                                        return [4 /*yield*/, this._syncLoop(syncIntervalMs)];
-                                    case 2:
-                                        _a.sent();
-                                        _a.label = 3;
-                                    case 3: return [2 /*return*/];
-                                }
-                            });
-                        }); };
-                        return [4 /*yield*/, this.syncIpnsWithDb()];
-                    case 1:
-                        _a.sent();
-                        this._syncInterval = setTimeout(loop.bind(this), syncIntervalMs);
-                        return [2 /*return*/];
-                }
+                loop = function () { return __awaiter(_this, void 0, void 0, function () {
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0:
+                                if (!this._sync) return [3 /*break*/, 3];
+                                return [4 /*yield*/, this.syncIpnsWithDb()];
+                            case 1:
+                                _a.sent();
+                                return [4 /*yield*/, this._syncLoop(syncIntervalMs)];
+                            case 2:
+                                _a.sent();
+                                _a.label = 3;
+                            case 3: return [2 /*return*/];
+                        }
+                    });
+                }); };
+                this._syncInterval = setTimeout(loop.bind(this), syncIntervalMs);
+                return [2 /*return*/];
             });
         });
     };
@@ -1206,8 +1187,11 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 2:
                         _b.sent();
                         log.trace("Waiting for publications on pubsub topic (".concat(this.pubsubTopic, ")"));
-                        return [4 /*yield*/, this._syncLoop(syncIntervalMs)];
+                        return [4 /*yield*/, this.syncIpnsWithDb()];
                     case 3:
+                        _b.sent();
+                        return [4 /*yield*/, this._syncLoop(syncIntervalMs)];
+                    case 4:
                         _b.sent();
                         return [2 /*return*/];
                 }
@@ -1220,7 +1204,7 @@ var Subplebbit = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:sync");
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:_addPublicationToDb");
                         log("Adding ".concat(publication.getType(), " with author (").concat(JSON.stringify(publication.author), ") to DB directly"));
                         randomUUID = (0, uuid_1.v4)();
                         //@ts-ignore
