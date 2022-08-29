@@ -95,7 +95,7 @@ var uuid_1 = require("uuid");
 var comment_edit_1 = require("./comment-edit");
 var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
-var debugs = (0, util_1.getDebugLevels)("subplebbit");
+var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var DEFAULT_UPDATE_INTERVAL_MS = 60000;
 var DEFAULT_SYNC_INTERVAL_MS = 100000; // 5 minutes
 exports.RUNNING_SUBPLEBBITS = {};
@@ -154,25 +154,26 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.initSignerIfNeeded = function () {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var dbSigner, ipnsKeys, ipfsKey;
+            var log, dbSigner, ipnsKeys, ipfsKey;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:prePublish");
                         if (!this.dbHandler) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.dbHandler.querySubplebbitSigner(undefined)];
                     case 1:
                         dbSigner = _b.sent();
                         if (!!dbSigner) return [3 /*break*/, 3];
                         (0, assert_1.default)(this.signer, "Subplebbit needs a signer to start");
-                        debugs.INFO("Subplebbit has no signer in DB, will insert provided signer from createSubplebbitOptions into DB");
+                        log.trace("Subplebbit has no signer in DB, will insert provided signer from createSubplebbitOptions into DB");
                         return [4 /*yield*/, this.dbHandler.insertSigner(__assign(__assign({}, this.signer), { ipnsKeyName: this.signer.address, usage: "subplebbit" }), undefined)];
                     case 2:
                         _b.sent();
                         return [3 /*break*/, 4];
                     case 3:
                         if (!this.signer) {
-                            debugs.DEBUG("Subplebbit loaded signer from DB");
+                            log.trace("Subplebbit loaded signer from DB");
                             this.signer = dbSigner;
                         }
                         _b.label = 4;
@@ -189,7 +190,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 5:
                         ipnsKeys = _b.sent();
                         ipfsKey = ipnsKeys.filter(function (key) { return key.name === _this.signer.address; })[0];
-                        debugs.DEBUG(Boolean(ipfsKey)
+                        log(Boolean(ipfsKey)
                             ? "Owner has provided a signer that maps to ".concat(ipfsKey.id, " subplebbit address within ipfs node")
                             : "Owner has provided a signer that doesn't map to any subplebbit address within the ipfs node");
                         this.address = ipfsKey === null || ipfsKey === void 0 ? void 0 : ipfsKey.id;
@@ -246,11 +247,12 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.prePublish = function () {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var subplebbitIpfsNodeKey, error, e_1, ipfsKey, cachedSubplebbit;
+            var log, subplebbitIpfsNodeKey, error, e_1, ipfsKey, cachedSubplebbit;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:prePublish");
                         if (!(!this.signer && this.address)) return [3 /*break*/, 2];
                         // Load signer from DB
                         return [4 /*yield*/, this.initDbIfNeeded()];
@@ -289,10 +291,10 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 9:
                         ipfsKey = _b.sent();
                         this.ipnsKeyName = ipfsKey["name"] || ipfsKey["Name"];
-                        debugs.INFO("Imported subplebbit keys into ipfs node, ".concat(JSON.stringify(ipfsKey)));
+                        log("Imported subplebbit keys into ipfs node, ".concat(JSON.stringify(ipfsKey)));
                         return [3 /*break*/, 11];
                     case 10:
-                        debugs.TRACE("Subplebbit key is already in ipfs node, no need to import (".concat(JSON.stringify(subplebbitIpfsNodeKey), ")"));
+                        log.trace("Subplebbit key is already in ipfs node, no need to import (".concat(JSON.stringify(subplebbitIpfsNodeKey), ")"));
                         this.ipnsKeyName = subplebbitIpfsNodeKey["name"] || subplebbitIpfsNodeKey["Name"];
                         _b.label = 11;
                     case 11:
@@ -338,25 +340,27 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.edit = function (newSubplebbitOptions) {
         return __awaiter(this, void 0, void 0, function () {
+            var log;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         (0, assert_1.default)(this.dbHandler, "dbHandler is needed to edit");
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:edit");
                         if (!newSubplebbitOptions.address) return [3 /*break*/, 2];
                         this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch(function (err) {
                             var editError = (0, err_code_1.default)(err, err.code, { details: "subplebbit.edit: ".concat(err.details) });
-                            debugs.WARN(editError);
+                            log.error(editError);
                             _this.emit("error", editError);
                         });
-                        debugs.DEBUG("Attempting to edit subplebbit.address from ".concat(this.address, " to ").concat(newSubplebbitOptions.address));
+                        log.trace("Attempting to edit subplebbit.address from ".concat(this.address, " to ").concat(newSubplebbitOptions.address));
                         return [4 /*yield*/, this.dbHandler.changeDbFilename("".concat(newSubplebbitOptions.address))];
                     case 1:
                         _a.sent();
                         _a.label = 2;
                     case 2:
                         this.initSubplebbit(newSubplebbitOptions);
-                        debugs.INFO("Subplebbit (".concat(this.address, ") props (").concat(Object.keys(newSubplebbitOptions), ") has been edited"));
+                        log("Subplebbit (".concat(this.address, ") props (").concat(Object.keys(newSubplebbitOptions), ") has been edited"));
                         return [4 /*yield*/, this._keyv.set(this.address, this.toJSON())];
                     case 3:
                         _a.sent();
@@ -367,10 +371,11 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var e_2, updateError, ipnsAddress, subplebbitIpns, e_3;
+            var log, e_2, updateError, ipnsAddress, subplebbitIpns, e_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:update");
                         if (this._sync)
                             throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SUB_CAN_EITHER_RUN_OR_UPDATE), errors_1.codes.ERR_SUB_CAN_EITHER_RUN_OR_UPDATE);
                         if (!this.plebbit.resolver.isDomain(this.address)) return [3 /*break*/, 4];
@@ -384,7 +389,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 3:
                         e_2 = _a.sent();
                         updateError = (0, err_code_1.default)(e_2, e_2.code, { details: "subplebbit.update: ".concat(e_2.details) });
-                        debugs.ERROR(updateError);
+                        log.error(updateError);
                         this.emit("error", updateError);
                         return [2 /*return*/];
                     case 4: return [4 /*yield*/, this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address)];
@@ -398,13 +403,13 @@ var Subplebbit = /** @class */ (function (_super) {
                         subplebbitIpns = _a.sent();
                         if (JSON.stringify(this.toJSON()) !== JSON.stringify(subplebbitIpns)) {
                             this.initSubplebbit(subplebbitIpns);
-                            debugs.INFO("Subplebbit received a new update. Will emit an update event");
+                            log("Subplebbit received a new update. Will emit an update event");
                             this.emit("update", subplebbitIpns);
                         }
                         return [2 /*return*/, this];
                     case 8:
                         e_3 = _a.sent();
-                        debugs.ERROR("Failed to update subplebbit IPNS, error: ".concat(e_3));
+                        log.error("Failed to update subplebbit IPNS, error: ".concat(e_3));
                         return [3 /*break*/, 9];
                     case 9: return [2 /*return*/];
                 }
@@ -447,10 +452,11 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.updateSubplebbitIpns = function () {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var trx, latestPost, _b, metrics, subplebbitPosts, resolvedAddress, currentIpns, e_4, _c, lastPublishOverTwentyMinutes, file;
+            var log, trx, latestPost, _b, metrics, subplebbitPosts, resolvedAddress, currentIpns, e_4, _c, lastPublishOverTwentyMinutes, file;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:sync");
                         (0, assert_1.default)(this.dbHandler && this.plebbit.ipfsClient, "A connection to DB and ipfs client are needed to update subplebbit IPNS");
                         return [4 /*yield*/, this.dbHandler.createTransaction("subplebbit")];
                     case 1:
@@ -480,7 +486,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [3 /*break*/, 9];
                     case 8:
                         e_4 = _d.sent();
-                        debugs.WARN("Subplebbit IPNS (".concat(resolvedAddress, ") is not defined, will publish a new record"));
+                        log("Subplebbit IPNS (".concat(resolvedAddress, ") is not defined, will publish a new record"));
                         return [3 /*break*/, 9];
                     case 9:
                         if (subplebbitPosts) {
@@ -496,11 +502,11 @@ var Subplebbit = /** @class */ (function (_super) {
                         }
                         if (!(currentIpns === null || currentIpns === void 0 ? void 0 : currentIpns.createdAt) && !this.createdAt) {
                             this.createdAt = (0, util_1.timestamp)();
-                            debugs.INFO("Subplebbit (".concat(this.address, ") createdAt has been set to ").concat(this.createdAt));
+                            log("Subplebbit (".concat(this.address, ") createdAt has been set to ").concat(this.createdAt));
                         }
                         if (!this.pubsubTopic) {
                             this.pubsubTopic = this.address;
-                            debugs.INFO("Defaulted subplebbit (".concat(this.address, ") pubsub topic to ").concat(this.pubsubTopic, " since sub owner hasn't provided any"));
+                            log("Defaulted subplebbit (".concat(this.address, ") pubsub topic to ").concat(this.pubsubTopic, " since sub owner hasn't provided any"));
                         }
                         _c = this;
                         return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(metrics))];
@@ -519,7 +525,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             })];
                     case 12:
                         _d.sent();
-                        debugs.INFO("Published a new IPNS record for sub(".concat(this.address, ")"));
+                        log("Published a new IPNS record for sub(".concat(this.address, ")"));
                         _d.label = 13;
                     case 13: return [2 /*return*/];
                 }
@@ -528,10 +534,11 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.handleCommentEdit = function (commentEdit, challengeRequestId) {
         return __awaiter(this, void 0, void 0, function () {
-            var commentToBeEdited, editorAddress, modRole, _i, _a, editField, msg, _b, _c, editField, msg, newAuthorProps, msg;
+            var log, commentToBeEdited, editorAddress, modRole, _i, _a, editField, msg, _b, _c, editField, msg, newAuthorProps, msg;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:handleChallengeExchange:storePublicationIfValid:handleCommentEdit");
                         (0, assert_1.default)(this.dbHandler, "Need db handler to handleCommentEdit");
                         return [4 /*yield*/, this.dbHandler.queryComment(commentEdit.commentCid, undefined)];
                     case 1:
@@ -547,7 +554,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             editField = _a[_i];
                             if (!comment_edit_1.AUTHOR_EDIT_FIELDS.includes(editField)) {
                                 msg = "Author (".concat(editorAddress, ") included field (").concat(editField, ") that cannot be used for a author's CommentEdit");
-                                debugs.WARN(msg);
+                                log.error(msg);
                                 return [2 /*return*/, { reason: msg }];
                             }
                         }
@@ -560,16 +567,16 @@ var Subplebbit = /** @class */ (function (_super) {
                         // If comment.flair is last modified by a mod, then reject
                         _d.sent();
                         // const commentAfterEdit = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
-                        debugs.INFO("Updated comment (".concat(commentEdit.commentCid, ") with CommentEdit: ").concat(JSON.stringify((0, util_1.removeKeys)(commentEdit.toJSON(), ["signature"]))));
+                        log.trace("Updated comment (".concat(commentEdit.commentCid, ") with CommentEdit: ").concat(JSON.stringify((0, util_1.removeKeys)(commentEdit.toJSON(), ["signature"]))));
                         return [3 /*break*/, 11];
                     case 5:
                         if (!modRole) return [3 /*break*/, 10];
-                        debugs.DEBUG("".concat(modRole.role, " (").concat(editorAddress, ") is attempting to CommentEdit ").concat(commentToBeEdited === null || commentToBeEdited === void 0 ? void 0 : commentToBeEdited.cid, " with CommentEdit (").concat(JSON.stringify((0, util_1.removeKeys)(commentEdit.toJSON(), ["signature"])), ")"));
+                        log.trace("".concat(modRole.role, " (").concat(editorAddress, ") is attempting to CommentEdit ").concat(commentToBeEdited === null || commentToBeEdited === void 0 ? void 0 : commentToBeEdited.cid, " with CommentEdit (").concat(JSON.stringify((0, util_1.removeKeys)(commentEdit.toJSON(), ["signature"])), ")"));
                         for (_b = 0, _c = Object.keys((0, util_1.removeKeysWithUndefinedValues)(commentEdit.toJSON())); _b < _c.length; _b++) {
                             editField = _c[_b];
                             if (!comment_edit_1.MOD_EDIT_FIELDS.includes(editField)) {
                                 msg = "".concat(modRole.role, " (").concat(editorAddress, ") included field (").concat(editField, ") that cannot be used for a mod's CommentEdit");
-                                debugs.WARN(msg);
+                                log.error(msg);
                                 return [2 /*return*/, { reason: msg }];
                             }
                         }
@@ -584,12 +591,12 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.dbHandler.updateAuthor(newAuthorProps, true)];
                     case 8:
                         _d.sent();
-                        debugs.INFO("Mod (".concat(JSON.stringify(modRole), ") has add following props to author (").concat(newAuthorProps.address, "):  ").concat(JSON.stringify(newAuthorProps)));
+                        log("Mod (".concat(JSON.stringify(modRole), ") has add following props to author (").concat(newAuthorProps.address, "):  ").concat(JSON.stringify(newAuthorProps)));
                         _d.label = 9;
                     case 9: return [3 /*break*/, 11];
                     case 10:
                         msg = "Editor (non-mod) - (".concat(editorAddress, ") attempted to edit a comment (").concat(commentEdit.commentCid, ") without having original author keys.");
-                        debugs.INFO(msg);
+                        log(msg);
                         return [2 /*return*/, { reason: msg }];
                     case 11: return [2 /*return*/];
                 }
@@ -597,88 +604,91 @@ var Subplebbit = /** @class */ (function (_super) {
         });
     };
     Subplebbit.prototype.handleVote = function (newVote, challengeRequestId) {
-        var _a, _b;
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var lastVote, trx;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
-                    case 0: return [4 /*yield*/, this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address)];
+            var log, lastVote, trx;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:handleChallengeExchange:storePublicationIfValid:handleVote");
+                        return [4 /*yield*/, this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address)];
                     case 1:
-                        lastVote = _c.sent();
+                        lastVote = _b.sent();
                         if (!(lastVote && newVote.signature.publicKey !== lastVote.signature.publicKey)) return [3 /*break*/, 2];
-                        debugs.INFO("Author (".concat(newVote.author.address, ") attempted to edit a comment vote (").concat(newVote.commentCid, ") without having correct credentials"));
+                        log("Author (".concat(newVote.author.address, ") attempted to edit a comment vote (").concat(newVote.commentCid, ") without having correct credentials"));
                         return [2 /*return*/, {
                                 reason: "Author (".concat(newVote.author.address, ") attempted to change vote on  ").concat(newVote.commentCid, " without having correct credentials")
                             }];
                     case 2:
                         if (!(0, util_1.shallowEqual)(newVote.signature, lastVote === null || lastVote === void 0 ? void 0 : lastVote.signature)) return [3 /*break*/, 3];
-                        debugs.INFO("Signature of Vote is identical to original Vote (".concat(newVote.commentCid, ")"));
+                        log("Rejecting vote because signature of vote is identical to a vote that has been recorded before on comment (".concat(newVote.commentCid, ")"));
                         return [2 /*return*/, {
-                                reason: "Signature of Vote is identical to original Vote (".concat(newVote.commentCid, ") by author ").concat((_a = newVote === null || newVote === void 0 ? void 0 : newVote.author) === null || _a === void 0 ? void 0 : _a.address)
+                                reason: "Signature of Vote is identical to original Vote (".concat(newVote.commentCid, ") by author ").concat(newVote.author.address)
                             }];
                     case 3:
                         if (!((lastVote === null || lastVote === void 0 ? void 0 : lastVote.vote) === newVote.vote)) return [3 /*break*/, 4];
-                        debugs.INFO("Author (".concat(newVote === null || newVote === void 0 ? void 0 : newVote.author.address, ") has duplicated their vote for comment ").concat(newVote.commentCid, ". Returning an error"));
+                        log("Author (".concat(newVote.author.address, ") has duplicated their vote for comment ").concat(newVote.commentCid));
                         return [2 /*return*/, { reason: "User duplicated their vote" }];
                     case 4: return [4 /*yield*/, this.dbHandler.createTransaction(challengeRequestId)];
                     case 5:
-                        trx = _c.sent();
+                        trx = _b.sent();
                         return [4 /*yield*/, this.dbHandler.upsertVote(newVote, challengeRequestId, trx)];
                     case 6:
-                        _c.sent();
-                        return [4 /*yield*/, ((_b = this.dbHandler) === null || _b === void 0 ? void 0 : _b.commitTransaction(challengeRequestId))];
+                        _b.sent();
+                        return [4 /*yield*/, ((_a = this.dbHandler) === null || _a === void 0 ? void 0 : _a.commitTransaction(challengeRequestId))];
                     case 7:
-                        _c.sent();
-                        debugs.INFO("Upserted new vote (".concat(newVote.vote, ") for comment ").concat(newVote.commentCid));
-                        _c.label = 8;
+                        _b.sent();
+                        log.trace("Upserted new vote (".concat(newVote.vote, ") for comment ").concat(newVote.commentCid));
+                        _b.label = 8;
                     case 8: return [2 /*return*/];
                 }
             });
         });
     };
-    Subplebbit.prototype.publishPostAfterPassingChallenge = function (publication, challengeRequestId) {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+    Subplebbit.prototype.storePublicationIfValid = function (publication, challengeRequestId) {
+        var _a, _b, _c, _d, _e;
         return __awaiter(this, void 0, void 0, function () {
-            var postOrCommentOrVote, _j, _k, author, msg, msg, parentCid, errResponse, parent_1, err, derivedAddress, resolvedAddress, msg, _l, signatureIsVerified, failedVerificationReason, msg, res, res, ipnsKeyName, ipfsSigner, _m, _o, ipfsKey, e_5, msg, trx, _p, _q, file, trx, _r, commentsUnderParent, parent_2, file;
-            return __generator(this, function (_s) {
-                switch (_s.label) {
+            var log, postOrCommentOrVote, _f, _g, author, msg, msg, parentCid, errResponse, parent_1, err, derivedAddress, resolvedAddress, msg, _h, signatureIsVerified, failedVerificationReason, msg, res, res, ipnsKeyName, ipfsSigner, _j, _k, ipfsKey, e_5, msg, trx, _l, _m, file, trx, _o, commentsUnderParent, parent_2, file;
+            return __generator(this, function (_p) {
+                switch (_p.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:handleChallengeExchange:storePublicationIfValid");
                         delete this._challengeToSolution[challengeRequestId];
                         delete this._challengeToPublication[challengeRequestId];
                         (0, assert_1.default)(this.dbHandler);
                         if (!publication.hasOwnProperty("vote")) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.plebbit.createVote(publication)];
                     case 1:
-                        _j = _s.sent();
+                        _f = _p.sent();
                         return [3 /*break*/, 7];
                     case 2:
                         if (!publication.commentCid) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.plebbit.createCommentEdit(publication)];
                     case 3:
-                        _k = _s.sent();
+                        _g = _p.sent();
                         return [3 /*break*/, 6];
                     case 4: return [4 /*yield*/, this.plebbit.createComment(publication)];
                     case 5:
-                        _k = _s.sent();
-                        _s.label = 6;
+                        _g = _p.sent();
+                        _p.label = 6;
                     case 6:
-                        _j = _k;
-                        _s.label = 7;
+                        _f = _g;
+                        _p.label = 7;
                     case 7:
-                        postOrCommentOrVote = _j;
+                        postOrCommentOrVote = _f;
                         if (!((_a = postOrCommentOrVote === null || postOrCommentOrVote === void 0 ? void 0 : postOrCommentOrVote.author) === null || _a === void 0 ? void 0 : _a.address)) return [3 /*break*/, 9];
                         return [4 /*yield*/, this.dbHandler.queryAuthor(postOrCommentOrVote.author.address)];
                     case 8:
-                        author = _s.sent();
+                        author = _p.sent();
                         if ((author === null || author === void 0 ? void 0 : author.banExpiresAt) && author.banExpiresAt > (0, util_1.timestamp)()) {
                             msg = "Author (".concat((_b = postOrCommentOrVote === null || postOrCommentOrVote === void 0 ? void 0 : postOrCommentOrVote.author) === null || _b === void 0 ? void 0 : _b.address, ") attempted to publish ").concat(postOrCommentOrVote.constructor.name, " even though they're banned until ").concat(author.banExpiresAt, ". Rejecting");
-                            debugs.INFO(msg);
+                            log(msg);
                             return [2 /*return*/, { reason: msg }];
                         }
                         return [3 /*break*/, 10];
                     case 9:
                         msg = "Rejecting ".concat(postOrCommentOrVote.constructor.name, " because it doesn't have author.address");
-                        debugs.INFO(msg);
+                        log(msg);
                         return [2 /*return*/, { reason: msg }];
                     case 10:
                         if (!!(postOrCommentOrVote instanceof post_1.default)) return [3 /*break*/, 12];
@@ -691,146 +701,147 @@ var Subplebbit = /** @class */ (function (_super) {
                             reason: "Rejecting ".concat(postOrCommentOrVote.constructor.name, " because its parentCid or commentCid is not defined")
                         };
                         if (!parentCid) {
-                            debugs.INFO(errResponse.reason);
+                            log(errResponse.reason);
                             return [2 /*return*/, errResponse];
                         }
                         return [4 /*yield*/, this.dbHandler.queryComment(parentCid)];
                     case 11:
-                        parent_1 = _s.sent();
+                        parent_1 = _p.sent();
                         if (!parent_1) {
-                            debugs.INFO(errResponse.reason);
+                            log(errResponse.reason);
                             return [2 /*return*/, errResponse];
                         }
                         if (parent_1.timestamp > postOrCommentOrVote.timestamp) {
                             err = {
                                 reason: "Rejecting ".concat(postOrCommentOrVote.constructor.name, " because its timestamp (").concat(postOrCommentOrVote.timestamp, ") is earlier than its parent (").concat(parent_1.timestamp, ")")
                             };
-                            debugs.INFO(err.reason);
+                            log(err.reason);
                             return [2 /*return*/, err];
                         }
-                        _s.label = 12;
-                    case 12: return [4 /*yield*/, (0, util_2.getPlebbitAddressFromPublicKeyPem)(postOrCommentOrVote.signature.publicKey)];
+                        _p.label = 12;
+                    case 12:
+                        if (!this.plebbit.resolver.isDomain(publication.author.address)) return [3 /*break*/, 15];
+                        return [4 /*yield*/, (0, util_2.getPlebbitAddressFromPublicKeyPem)(postOrCommentOrVote.signature.publicKey)];
                     case 13:
-                        derivedAddress = _s.sent();
-                        return [4 /*yield*/, this.plebbit.resolver.resolveAuthorAddressIfNeeded((_c = publication === null || publication === void 0 ? void 0 : publication.author) === null || _c === void 0 ? void 0 : _c.address)];
+                        derivedAddress = _p.sent();
+                        return [4 /*yield*/, this.plebbit.resolver.resolveAuthorAddressIfNeeded(publication.author.address)];
                     case 14:
-                        resolvedAddress = _s.sent();
-                        if (resolvedAddress !== ((_d = publication === null || publication === void 0 ? void 0 : publication.author) === null || _d === void 0 ? void 0 : _d.address)) {
-                            // Means author.address is a crypto domain
-                            if (resolvedAddress !== derivedAddress) {
-                                msg = "domain (".concat(postOrCommentOrVote.author.address, ") plebbit-author-address (").concat(resolvedAddress, ") does not have the same signer address (").concat((_e = this.signer) === null || _e === void 0 ? void 0 : _e.address, ")");
-                                debugs.INFO(msg);
-                                return [2 /*return*/, { reason: msg }];
-                            }
-                        }
-                        return [4 /*yield*/, (0, signer_1.verifyPublication)(postOrCommentOrVote, this.plebbit, postOrCommentOrVote.getType())];
-                    case 15:
-                        _l = _s.sent(), signatureIsVerified = _l[0], failedVerificationReason = _l[1];
-                        if (!signatureIsVerified) {
-                            msg = "Author (".concat((_f = postOrCommentOrVote === null || postOrCommentOrVote === void 0 ? void 0 : postOrCommentOrVote.author) === null || _f === void 0 ? void 0 : _f.address, ") ").concat(postOrCommentOrVote.getType(), "'s signature is invalid: ").concat(failedVerificationReason);
-                            debugs.INFO(msg);
+                        resolvedAddress = _p.sent();
+                        if (resolvedAddress !== derivedAddress) {
+                            msg = "domain (".concat(postOrCommentOrVote.author.address, ") plebbit-author-address (").concat(resolvedAddress, ") does not have the same signer address (").concat((_c = this.signer) === null || _c === void 0 ? void 0 : _c.address, ")");
+                            log(msg);
                             return [2 /*return*/, { reason: msg }];
                         }
-                        if (!(postOrCommentOrVote instanceof vote_1.default)) return [3 /*break*/, 17];
-                        return [4 /*yield*/, this.handleVote(postOrCommentOrVote, challengeRequestId)];
+                        _p.label = 15;
+                    case 15: return [4 /*yield*/, (0, signer_1.verifyPublication)(postOrCommentOrVote, this.plebbit, postOrCommentOrVote.getType())];
                     case 16:
-                        res = _s.sent();
-                        if (res)
-                            return [2 /*return*/, res];
-                        return [3 /*break*/, 37];
+                        _h = _p.sent(), signatureIsVerified = _h[0], failedVerificationReason = _h[1];
+                        if (!signatureIsVerified) {
+                            msg = "Author (".concat(postOrCommentOrVote.author.address, ") ").concat(postOrCommentOrVote.getType(), "'s signature is invalid: ").concat(failedVerificationReason);
+                            log(msg);
+                            return [2 /*return*/, { reason: msg }];
+                        }
+                        if (!(postOrCommentOrVote instanceof vote_1.default)) return [3 /*break*/, 18];
+                        return [4 /*yield*/, this.handleVote(postOrCommentOrVote, challengeRequestId)];
                     case 17:
-                        if (!(postOrCommentOrVote instanceof comment_edit_1.CommentEdit)) return [3 /*break*/, 19];
-                        return [4 /*yield*/, this.handleCommentEdit(postOrCommentOrVote, challengeRequestId)];
-                    case 18:
-                        res = _s.sent();
+                        res = _p.sent();
                         if (res)
                             return [2 /*return*/, res];
-                        return [3 /*break*/, 37];
+                        return [3 /*break*/, 38];
+                    case 18:
+                        if (!(postOrCommentOrVote instanceof comment_edit_1.CommentEdit)) return [3 /*break*/, 20];
+                        return [4 /*yield*/, this.handleCommentEdit(postOrCommentOrVote, challengeRequestId)];
                     case 19:
-                        if (!(postOrCommentOrVote instanceof comment_1.Comment)) return [3 /*break*/, 37];
-                        ipnsKeyName = (0, js_sha256_1.sha256)(JSON.stringify(postOrCommentOrVote.toJSONSkeleton()));
-                        _s.label = 20;
+                        res = _p.sent();
+                        if (res)
+                            return [2 /*return*/, res];
+                        return [3 /*break*/, 38];
                     case 20:
-                        _s.trys.push([20, 24, , 25]);
-                        _m = signer_1.Signer.bind;
-                        _o = [{}];
-                        return [4 /*yield*/, this.plebbit.createSigner()];
+                        if (!(postOrCommentOrVote instanceof comment_1.Comment)) return [3 /*break*/, 38];
+                        ipnsKeyName = (0, js_sha256_1.sha256)(JSON.stringify(postOrCommentOrVote.toJSONSkeleton()));
+                        _p.label = 21;
                     case 21:
-                        ipfsSigner = new (_m.apply(signer_1.Signer, [void 0, __assign.apply(void 0, [__assign.apply(void 0, _o.concat([(_s.sent())])), { ipnsKeyName: ipnsKeyName, usage: "comment" }])]))();
-                        return [4 /*yield*/, this.dbHandler.insertSigner(ipfsSigner, undefined)];
+                        _p.trys.push([21, 25, , 26]);
+                        _j = signer_1.Signer.bind;
+                        _k = [{}];
+                        return [4 /*yield*/, this.plebbit.createSigner()];
                     case 22:
-                        _s.sent();
-                        return [4 /*yield*/, (0, util_1.ipfsImportKey)(ipfsSigner, this.plebbit)];
+                        ipfsSigner = new (_j.apply(signer_1.Signer, [void 0, __assign.apply(void 0, [__assign.apply(void 0, _k.concat([(_p.sent())])), { ipnsKeyName: ipnsKeyName, usage: "comment" }])]))();
+                        return [4 /*yield*/, this.dbHandler.insertSigner(ipfsSigner, undefined)];
                     case 23:
-                        ipfsKey = _s.sent();
-                        postOrCommentOrVote.setCommentIpnsKey(ipfsKey);
-                        return [3 /*break*/, 25];
+                        _p.sent();
+                        return [4 /*yield*/, (0, util_1.ipfsImportKey)(ipfsSigner, this.plebbit)];
                     case 24:
-                        e_5 = _s.sent();
-                        msg = "Failed to insert ".concat(postOrCommentOrVote.constructor.name, " due to previous ").concat(postOrCommentOrVote.getType(), " having same ipns key name (duplicate?): ").concat(e_5);
-                        debugs.INFO(msg);
-                        return [2 /*return*/, { reason: msg }];
+                        ipfsKey = _p.sent();
+                        postOrCommentOrVote.setCommentIpnsKey(ipfsKey);
+                        return [3 /*break*/, 26];
                     case 25:
-                        if (!(postOrCommentOrVote instanceof post_1.default)) return [3 /*break*/, 31];
-                        return [4 /*yield*/, this.dbHandler.createTransaction(challengeRequestId)];
+                        e_5 = _p.sent();
+                        msg = "Failed to insert ".concat(postOrCommentOrVote.constructor.name, " due to previous ").concat(postOrCommentOrVote.getType(), " having same ipns key name (duplicate?): ").concat(e_5);
+                        log(msg);
+                        return [2 /*return*/, { reason: msg }];
                     case 26:
-                        trx = _s.sent();
-                        _q = (_p = postOrCommentOrVote).setPreviousCid;
-                        return [4 /*yield*/, this.dbHandler.queryLatestPost(trx)];
+                        if (!(postOrCommentOrVote instanceof post_1.default)) return [3 /*break*/, 32];
+                        return [4 /*yield*/, this.dbHandler.createTransaction(challengeRequestId)];
                     case 27:
-                        _q.apply(_p, [(_g = (_s.sent())) === null || _g === void 0 ? void 0 : _g.cid]);
+                        trx = _p.sent();
+                        _m = (_l = postOrCommentOrVote).setPreviousCid;
+                        return [4 /*yield*/, this.dbHandler.queryLatestPost(trx)];
+                    case 28:
+                        _m.apply(_l, [(_d = (_p.sent())) === null || _d === void 0 ? void 0 : _d.cid]);
                         postOrCommentOrVote.setDepth(0);
                         return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()))];
-                    case 28:
-                        file = _s.sent();
+                    case 29:
+                        file = _p.sent();
                         postOrCommentOrVote.setPostCid(file.path);
                         postOrCommentOrVote.setCid(file.path);
                         return [4 /*yield*/, this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx)];
-                    case 29:
-                        _s.sent();
-                        return [4 /*yield*/, this.dbHandler.commitTransaction(challengeRequestId)];
                     case 30:
-                        _s.sent();
-                        debugs.INFO("New post with cid ".concat(postOrCommentOrVote.cid, " has been inserted into DB"));
-                        return [3 /*break*/, 37];
+                        _p.sent();
+                        return [4 /*yield*/, this.dbHandler.commitTransaction(challengeRequestId)];
                     case 31:
-                        if (!(postOrCommentOrVote instanceof comment_1.Comment)) return [3 /*break*/, 37];
-                        return [4 /*yield*/, this.dbHandler.createTransaction(challengeRequestId)];
+                        _p.sent();
+                        log("New post with cid ".concat(postOrCommentOrVote.cid, " has been inserted into DB"));
+                        return [3 /*break*/, 38];
                     case 32:
-                        trx = _s.sent();
+                        if (!(postOrCommentOrVote instanceof comment_1.Comment)) return [3 /*break*/, 38];
+                        return [4 /*yield*/, this.dbHandler.createTransaction(challengeRequestId)];
+                    case 33:
+                        trx = _p.sent();
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx),
                                 this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)
                             ])];
-                    case 33:
-                        _r = _s.sent(), commentsUnderParent = _r[0], parent_2 = _r[1];
-                        postOrCommentOrVote.setPreviousCid((_h = commentsUnderParent[0]) === null || _h === void 0 ? void 0 : _h.cid);
+                    case 34:
+                        _o = _p.sent(), commentsUnderParent = _o[0], parent_2 = _o[1];
+                        postOrCommentOrVote.setPreviousCid((_e = commentsUnderParent[0]) === null || _e === void 0 ? void 0 : _e.cid);
                         postOrCommentOrVote.setDepth(parent_2.depth + 1);
                         return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()))];
-                    case 34:
-                        file = _s.sent();
+                    case 35:
+                        file = _p.sent();
                         postOrCommentOrVote.setCid(file.path);
                         postOrCommentOrVote.setPostCid(parent_2.postCid);
                         return [4 /*yield*/, this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx)];
-                    case 35:
-                        _s.sent();
-                        return [4 /*yield*/, this.dbHandler.commitTransaction(challengeRequestId)];
                     case 36:
-                        _s.sent();
-                        debugs.INFO("New comment with cid ".concat(postOrCommentOrVote.cid, " has been inserted into DB"));
-                        _s.label = 37;
-                    case 37: return [2 /*return*/, { publication: postOrCommentOrVote }];
+                        _p.sent();
+                        return [4 /*yield*/, this.dbHandler.commitTransaction(challengeRequestId)];
+                    case 37:
+                        _p.sent();
+                        log("New comment with cid ".concat(postOrCommentOrVote.cid, " has been inserted into DB"));
+                        _p.label = 38;
+                    case 38: return [2 /*return*/, { publication: postOrCommentOrVote }];
                 }
             });
         });
     };
     Subplebbit.prototype.handleChallengeRequest = function (request) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, providedChallenges, reasonForSkippingCaptcha, decryptedPublication, _b, _c, publishedPublication, restOfMsg, _d, challengeVerification, challengeMessage;
+            var log, _a, providedChallenges, reasonForSkippingCaptcha, decryptedPublication, _b, _c, publishedPublication, restOfMsg, _d, challengeVerification, challengeMessage;
             var _e;
             return __generator(this, function (_f) {
                 switch (_f.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:handleChallengeRequest");
                         this.emit("challengerequest", request);
                         return [4 /*yield*/, this.provideCaptchaCallback(request)];
                     case 1:
@@ -840,14 +851,14 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 2:
                         decryptedPublication = _c.apply(_b, [_f.sent()]);
                         this._challengeToPublication[request.challengeRequestId] = decryptedPublication;
-                        debugs.DEBUG("Received a request to a challenge (".concat(request.challengeRequestId, ")"));
+                        log("Received a request to a challenge (".concat(request.challengeRequestId, ")"));
                         if (!!providedChallenges) return [3 /*break*/, 9];
                         // Subplebbit owner has chosen to skip challenging this user or post
-                        debugs.DEBUG("Skipping challenge for ".concat(request.challengeRequestId, ", add publication to IPFS and respond with challengeVerificationMessage right away"));
+                        log.trace("Skipping challenge for ".concat(request.challengeRequestId, ", add publication to IPFS and respond with challengeVerificationMessage right away"));
                         return [4 /*yield*/, this.dbHandler.upsertChallenge(request, undefined)];
                     case 3:
                         _f.sent();
-                        return [4 /*yield*/, this.publishPostAfterPassingChallenge(decryptedPublication, request.challengeRequestId)];
+                        return [4 /*yield*/, this.storePublicationIfValid(decryptedPublication, request.challengeRequestId)];
                     case 4:
                         publishedPublication = _f.sent();
                         if (!("publication" in publishedPublication)) return [3 /*break*/, 6];
@@ -869,7 +880,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 8:
                         _f.sent();
-                        debugs.INFO("Published ".concat(challengeVerification.type, " over pubsub for challenge (").concat(challengeVerification.challengeRequestId, ")"));
+                        log.trace("Published ".concat(challengeVerification.type, " over pubsub for challenge (").concat(challengeVerification.challengeRequestId, ")"));
                         this.emit("challengeverification", challengeVerification);
                         return [3 /*break*/, 11];
                     case 9:
@@ -885,7 +896,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 10:
                         _f.sent();
                         this.emit("challengemessage", challengeMessage);
-                        debugs.INFO("Published ".concat(challengeMessage.type, " (").concat(challengeMessage.challengeRequestId, ") over pubsub"));
+                        log.trace("Published ".concat(challengeMessage.type, " (").concat(challengeMessage.challengeRequestId, ") over pubsub"));
                         _f.label = 11;
                     case 11: return [2 /*return*/];
                 }
@@ -894,22 +905,23 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.handleChallengeAnswer = function (challengeAnswer) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, challengeSuccess, challengeErrors, storedPublication, publishedPublication, restOfMsg, _b, challengeVerification, challengeVerification;
+            var log, _a, challengeSuccess, challengeErrors, storedPublication, publishedPublication, restOfMsg, _b, challengeVerification, challengeVerification;
             var _c;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:handleChallengeAnswer");
                         this.emit("challengeanswer", challengeAnswer);
                         return [4 /*yield*/, this.validateCaptchaAnswerCallback(challengeAnswer)];
                     case 1:
                         _a = _d.sent(), challengeSuccess = _a[0], challengeErrors = _a[1];
                         if (!challengeSuccess) return [3 /*break*/, 8];
-                        debugs.DEBUG("Challenge (".concat(challengeAnswer.challengeRequestId, ") has been answered correctly"));
+                        log.trace("Challenge (".concat(challengeAnswer.challengeRequestId, ") has been answered correctly"));
                         storedPublication = this._challengeToPublication[challengeAnswer.challengeRequestId];
                         return [4 /*yield*/, this.dbHandler.upsertChallenge(new challenge_1.ChallengeAnswerMessage(challengeAnswer), undefined)];
                     case 2:
                         _d.sent();
-                        return [4 /*yield*/, this.publishPostAfterPassingChallenge(storedPublication, challengeAnswer.challengeRequestId)];
+                        return [4 /*yield*/, this.storePublicationIfValid(storedPublication, challengeAnswer.challengeRequestId)];
                     case 3:
                         publishedPublication = _d.sent();
                         if (!("publication" in publishedPublication)) return [3 /*break*/, 5];
@@ -931,11 +943,11 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 7:
                         _d.sent();
-                        debugs.INFO("Published ".concat(challengeVerification.type, " over pubsub: ").concat(JSON.stringify((0, util_1.removeKeys)(challengeVerification, ["publication", "encryptedPublication"]))));
+                        log("Published ".concat(challengeVerification.type, " over pubsub: ").concat(JSON.stringify((0, util_1.removeKeys)(challengeVerification, ["publication", "encryptedPublication"]))));
                         this.emit("challengeverification", challengeVerification);
                         return [3 /*break*/, 10];
                     case 8:
-                        debugs.INFO("Challenge (".concat(challengeAnswer.challengeRequestId, ") has been answered incorrectly"));
+                        log.trace("Challenge (".concat(challengeAnswer.challengeRequestId, ") has been answered incorrectly"));
                         challengeVerification = new challenge_1.ChallengeVerificationMessage({
                             challengeRequestId: challengeAnswer.challengeRequestId,
                             challengeAnswerId: challengeAnswer.challengeAnswerId,
@@ -948,7 +960,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 9:
                         _d.sent();
-                        debugs.INFO("Published failed ".concat(challengeVerification.type, " (").concat(challengeVerification.challengeRequestId, ")"));
+                        log("Published failed ".concat(challengeVerification.type, " (").concat(challengeVerification.challengeRequestId, ")"));
                         this.emit("challengeverification", challengeVerification);
                         _d.label = 10;
                     case 10: return [2 /*return*/];
@@ -956,12 +968,13 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Subplebbit.prototype.processCaptchaPubsub = function (pubsubMsg) {
+    Subplebbit.prototype.handleChallengeExchange = function (pubsubMsg) {
         return __awaiter(this, void 0, void 0, function () {
-            var msgParsed, e_6;
+            var log, msgParsed, e_6;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:handleChallengeExchange");
                         (0, assert_1.default)(this.dbHandler);
                         _a.label = 1;
                     case 1:
@@ -984,7 +997,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 6:
                         e_6 = _a.sent();
                         e_6.message = "failed process captcha for challenge request id (".concat(msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId, "): ").concat(e_6.message);
-                        debugs.ERROR(e_6);
+                        log.error(e_6);
                         if (!(msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId)) return [3 /*break*/, 8];
                         return [4 /*yield*/, this.dbHandler.rollbackTransaction(msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId)];
                     case 7:
@@ -1022,11 +1035,12 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.defaultValidateCaptcha = function (answerMessage) {
         return __awaiter(this, void 0, void 0, function () {
-            var actualSolution, answerIsCorrect, challengeErrors;
+            var log, actualSolution, answerIsCorrect, challengeErrors;
             return __generator(this, function (_a) {
+                log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:validateCaptcha");
                 actualSolution = this._challengeToSolution[answerMessage.challengeRequestId];
                 answerIsCorrect = JSON.stringify(answerMessage.challengeAnswers) === JSON.stringify(actualSolution);
-                debugs.DEBUG("Challenge (".concat(answerMessage.challengeRequestId, "): Answer's validity: ").concat(answerIsCorrect, ", user's answer: ").concat(answerMessage.challengeAnswers, ", actual solution: ").concat(actualSolution));
+                log("Challenge (".concat(answerMessage.challengeRequestId, "): Answer's validity: ").concat(answerIsCorrect, ", user's answer: ").concat(answerMessage.challengeAnswers, ", actual solution: ").concat(actualSolution));
                 challengeErrors = answerIsCorrect ? undefined : ["User solved captcha incorrectly"];
                 return [2 /*return*/, [answerIsCorrect, challengeErrors]];
             });
@@ -1035,10 +1049,11 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.syncComment = function (dbComment) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var commentIpns, _b, e_7, commentReplies, subplebbitSignature;
+            var log, commentIpns, _b, e_7, commentReplies, subplebbitSignature;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:sync:syncComment");
                         (0, assert_1.default)(this.dbHandler);
                         _c.label = 1;
                     case 1:
@@ -1054,11 +1069,11 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [3 /*break*/, 5];
                     case 4:
                         e_7 = _c.sent();
-                        debugs.TRACE("Failed to load Comment (".concat(dbComment.cid, ") IPNS (").concat(dbComment.ipnsName, ") while syncing. Will attempt to publish a new IPNS record"));
+                        log.trace("Failed to load Comment (".concat(dbComment.cid, ") IPNS (").concat(dbComment.ipnsName, ") while syncing. Will attempt to publish a new IPNS record"));
                         return [3 /*break*/, 5];
                     case 5:
                         if (!(!commentIpns || !(0, util_1.shallowEqual)(commentIpns, dbComment.toJSONCommentUpdate(), ["replies", "signature"]))) return [3 /*break*/, 10];
-                        debugs.DEBUG("Attempting to update Comment (".concat(dbComment.cid, ")"));
+                        log.trace("Attempting to update Comment (".concat(dbComment.cid, ")"));
                         return [4 /*yield*/, this.sortHandler.deleteCommentPageCache(dbComment)];
                     case 6:
                         _c.sent();
@@ -1076,7 +1091,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         subplebbitSignature = _c.sent();
                         return [2 /*return*/, dbComment.edit(__assign(__assign({}, (0, util_1.removeKeysWithUndefinedValues)(dbComment.toJSONCommentUpdate())), { signature: subplebbitSignature }))];
                     case 10:
-                        debugs.TRACE("Comment (".concat(dbComment.cid, ") is up-to-date and does not need syncing"));
+                        log.trace("Comment (".concat(dbComment.cid, ") is up-to-date and does not need syncing"));
                         return [2 /*return*/];
                 }
             });
@@ -1085,14 +1100,15 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.syncIpnsWithDb = function () {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var dbComments, e_8;
+            var log, dbComments, e_8;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:sync");
                         (0, assert_1.default)(this.dbHandler, "DbHandler need to be defined before syncing");
                         (0, assert_1.default)((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address, "Signer is needed to sync");
-                        debugs.TRACE("Starting to sync IPNS with DB");
+                        log.trace("Starting to sync IPNS with DB");
                         _b.label = 1;
                     case 1:
                         _b.trys.push([1, 6, , 7]);
@@ -1114,7 +1130,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [3 /*break*/, 7];
                     case 6:
                         e_8 = _b.sent();
-                        debugs.WARN("Failed to sync due to error: ".concat(e_8));
+                        log.error("Failed to sync due to error: ".concat(e_8));
                         return [3 /*break*/, 7];
                     case 7: return [2 /*return*/];
                 }
@@ -1157,10 +1173,12 @@ var Subplebbit = /** @class */ (function (_super) {
         var _a;
         if (syncIntervalMs === void 0) { syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS; }
         return __awaiter(this, void 0, void 0, function () {
+            var log;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:start");
                         if (!((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address))
                             throw (0, err_code_1.default)(new Error(errors_1.messages.ERR_SUB_SIGNER_NOT_DEFINED), errors_1.codes.ERR_SUB_SIGNER_NOT_DEFINED, {
                                 details: "signer: ".concat(JSON.stringify(this.signer), ", address: ").concat(this.address)
@@ -1175,19 +1193,19 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 1:
                         _b.sent();
                         if (!this.provideCaptchaCallback) {
-                            debugs.INFO("Subplebbit owner has not provided any captcha. Will go with default image captcha");
+                            log("Subplebbit owner has not provided any captcha. Will go with default image captcha");
                             this.provideCaptchaCallback = this.defaultProvideCaptcha;
                             this.validateCaptchaAnswerCallback = this.defaultValidateCaptcha;
                         }
                         return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, function (pubsubMessage) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0: return [4 /*yield*/, this.processCaptchaPubsub(pubsubMessage)];
+                                    case 0: return [4 /*yield*/, this.handleChallengeExchange(pubsubMessage)];
                                     case 1: return [2 /*return*/, _a.sent()];
                                 }
                             }); }); })];
                     case 2:
                         _b.sent();
-                        debugs.INFO("Waiting for publications on pubsub topic (".concat(this.pubsubTopic, ")"));
+                        log.trace("Waiting for publications on pubsub topic (".concat(this.pubsubTopic, ")"));
                         return [4 /*yield*/, this._syncLoop(syncIntervalMs)];
                     case 3:
                         _b.sent();
@@ -1198,18 +1216,19 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype._addPublicationToDb = function (publication) {
         return __awaiter(this, void 0, void 0, function () {
-            var randomUUID;
+            var log, randomUUID;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        debugs.INFO("Adding ".concat(publication.getType(), " with author (").concat(JSON.stringify(publication.author), ") to DB directly"));
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:sync");
+                        log("Adding ".concat(publication.getType(), " with author (").concat(JSON.stringify(publication.author), ") to DB directly"));
                         randomUUID = (0, uuid_1.v4)();
                         //@ts-ignore
                         return [4 /*yield*/, this.dbHandler.upsertChallenge(new challenge_1.ChallengeRequestMessage({ challengeRequestId: randomUUID }))];
                     case 1:
                         //@ts-ignore
                         _a.sent();
-                        return [4 /*yield*/, this.publishPostAfterPassingChallenge(publication, randomUUID)];
+                        return [4 /*yield*/, this.storePublicationIfValid(publication, randomUUID)];
                     case 2: return [2 /*return*/, (_a.sent()).publication];
                 }
             });

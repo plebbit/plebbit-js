@@ -74,7 +74,7 @@ var signer_1 = require("./signer");
 var author_1 = __importDefault(require("./author"));
 var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
-var debugs = (0, util_1.getDebugLevels)("comment");
+var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 var Comment = /** @class */ (function (_super) {
     __extends(Comment, _super);
@@ -218,38 +218,41 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var res, e_1, _a, verified, failedVerificationReason;
+            var log, res, e_1, _a, verified, failedVerificationReason;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        _b.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.subplebbit.plebbit)];
+                        log = (0, plebbit_logger_1.default)("plebbit-js:comment:update");
+                        _b.label = 1;
                     case 1:
-                        res = _b.sent();
-                        return [3 /*break*/, 3];
+                        _b.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.subplebbit.plebbit)];
                     case 2:
-                        e_1 = _b.sent();
-                        debugs.WARN("Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error = ").concat(e_1.message));
-                        return [2 /*return*/];
+                        res = _b.sent();
+                        return [3 /*break*/, 4];
                     case 3:
-                        if (!(res && (!this.updatedAt || !(0, util_1.shallowEqual)(this.toJSONCommentUpdate(), res, ["signature"])))) return [3 /*break*/, 5];
-                        debugs.DEBUG("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
-                        return [4 /*yield*/, (0, signer_1.verifyPublication)(res, this.subplebbit.plebbit, "commentupdate")];
+                        e_1 = _b.sent();
+                        log.error("Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error = ").concat(e_1.message));
+                        return [2 /*return*/];
                     case 4:
+                        if (!(res && (!this.updatedAt || !(0, util_1.shallowEqual)(this.toJSONCommentUpdate(), res, ["signature"])))) return [3 /*break*/, 6];
+                        log("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
+                        return [4 /*yield*/, (0, signer_1.verifyPublication)(res, this.subplebbit.plebbit, "commentupdate")];
+                    case 5:
                         _a = _b.sent(), verified = _a[0], failedVerificationReason = _a[1];
                         if (!verified) {
-                            debugs.ERROR("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") signature is invalid. Will not update: ").concat(failedVerificationReason));
+                            log.error("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") signature is invalid. Will not update: ").concat(failedVerificationReason));
                             return [2 /*return*/];
                         }
                         this._initCommentUpdate(res);
                         this._mergeFields(this.toJSON());
                         this.emit("update", this);
-                        return [3 /*break*/, 6];
-                    case 5:
-                        debugs.TRACE("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
+                        return [3 /*break*/, 7];
+                    case 6:
+                        log.trace("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
                         this._initCommentUpdate(res);
-                        _b.label = 6;
-                    case 6: return [2 /*return*/, this];
+                        _b.label = 7;
+                    case 7: return [2 /*return*/, this];
                 }
             });
         });
@@ -258,7 +261,6 @@ var Comment = /** @class */ (function (_super) {
         if (updateIntervalMs === void 0) { updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS; }
         if (typeof this.ipnsName !== "string")
             throw (0, err_code_1.default)(Error(errors_1.messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME), errors_1.codes.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME);
-        debugs.DEBUG("Starting to poll updates for comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") every ").concat(updateIntervalMs, " milliseconds"));
         if (this._updateInterval)
             clearInterval(this._updateInterval);
         this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
@@ -269,10 +271,11 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.edit = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, validSignature, failedVerificationReason, file;
+            var log, _a, validSignature, failedVerificationReason, file;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:comment:edit");
                         (0, assert_1.default)(this.ipnsKeyName && this.subplebbit.plebbit.ipfsClient, "You need to have commentUpdate and ipfs client defined");
                         return [4 /*yield*/, (0, signer_1.verifyPublication)(options, this.subplebbit.plebbit, "commentupdate")];
                     case 1:
@@ -293,7 +296,7 @@ var Comment = /** @class */ (function (_super) {
                             })];
                     case 3:
                         _b.sent();
-                        debugs.TRACE("Linked comment (".concat(this.cid, ") ipns name(").concat(this.ipnsName, ") to ipfs file (").concat(file.path, ")"));
+                        log.trace("Linked comment (".concat(this.cid, ") ipns name(").concat(this.ipnsName, ") to ipfs file (").concat(file.path, ")"));
                         return [2 /*return*/];
                 }
             });

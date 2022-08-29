@@ -59,7 +59,7 @@ var assert_1 = __importDefault(require("assert"));
 var peer_id_1 = __importDefault(require("peer-id"));
 var util_2 = require("../util");
 var js_sha256_1 = require("js-sha256");
-var debugs = (0, util_2.getDebugLevels)("signer:signatures");
+var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 exports.SIGNED_PROPERTY_NAMES = Object.freeze({
     comment: ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"],
     commentedit: [
@@ -171,12 +171,13 @@ exports.verifyBufferRsa = verifyBufferRsa;
 function signPublication(publication, signer, plebbit, publicationType) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var resolvedAddress, derivedAddress, signedPropertyNames, fieldsToSign, commentEncoded, signatureData, _b;
+        var log, resolvedAddress, derivedAddress, signedPropertyNames, fieldsToSign, commentEncoded, signatureData, _b;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
                     (0, assert_1.default)(signer.publicKey);
                     (0, assert_1.default)(Object.keys(exports.SIGNED_PROPERTY_NAMES).includes(publicationType));
+                    log = (0, plebbit_logger_1.default)("plebbit-js:signatures:signPublication");
                     publication = (0, util_2.removeKeysWithUndefinedValues)(publication);
                     if (!((_a = publication === null || publication === void 0 ? void 0 : publication.author) === null || _a === void 0 ? void 0 : _a.address)) return [3 /*break*/, 3];
                     return [4 /*yield*/, plebbit.resolver.resolveAuthorAddressIfNeeded(publication.author.address)];
@@ -189,14 +190,14 @@ function signPublication(publication, signer, plebbit, publicationType) {
                     _c.label = 3;
                 case 3:
                     signedPropertyNames = exports.SIGNED_PROPERTY_NAMES[publicationType];
-                    debugs.TRACE("Fields to sign: ".concat(JSON.stringify(signedPropertyNames), ". Publication object to sign:  ").concat(JSON.stringify(publication)));
+                    log.trace("Fields to sign: ".concat(JSON.stringify(signedPropertyNames), ". Publication object to sign:  ").concat(JSON.stringify(publication)));
                     fieldsToSign = (0, util_2.keepKeys)(publication, signedPropertyNames);
                     commentEncoded = (0, cborg_1.encode)(fieldsToSign);
                     _b = to_string_1.toString;
                     return [4 /*yield*/, (0, exports.signBufferRsa)(commentEncoded, signer.privateKey)];
                 case 4:
                     signatureData = _b.apply(void 0, [_c.sent(), "base64"]);
-                    debugs.TRACE("Publication been signed, signature data is (".concat(signatureData, ")"));
+                    log.trace("Publication been signed, signature data is (".concat(signatureData, ")"));
                     return [2 /*return*/, new Signature({
                             signature: signatureData,
                             publicKey: signer.publicKey,
@@ -213,13 +214,14 @@ function verifyPublication(publication, plebbit, publicationType, overrideAuthor
     var _a;
     if (overrideAuthorAddressIfInvalid === void 0) { overrideAuthorAddressIfInvalid = true; }
     return __awaiter(this, void 0, void 0, function () {
-        var publicationJson, cachedResult, verifyAuthor, verifyPublicationSignature, originalObj, _b, verified, failedVerificationReason, res, e_1, res;
+        var log, publicationJson, cachedResult, verifyAuthor, verifyPublicationSignature, originalObj, _b, verified, failedVerificationReason, res, e_1, res;
         var _c;
         var _this = this;
         return __generator(this, function (_d) {
             switch (_d.label) {
                 case 0:
                     (0, assert_1.default)(Object.keys(exports.SIGNED_PROPERTY_NAMES).includes(publicationType));
+                    log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifyPublication");
                     publicationJson = (0, util_2.removeKeysWithUndefinedValues)(publication);
                     cachedResult = plebbit._memCache.get((0, js_sha256_1.sha256)(JSON.stringify(publicationJson) + publicationType));
                     if (Array.isArray(cachedResult))
@@ -253,7 +255,7 @@ function verifyPublication(publication, plebbit, publicationType, overrideAuthor
                                     if (resolvedAddress !== derivedAddress) {
                                         // Means plebbit-author-address text record is resolving to another comment (outdated?)
                                         // Will always use address derived from publication.signature.publicKey as truth
-                                        debugs.INFO("domain (".concat(publicationJson.author.address, ") resolved address (").concat(resolvedAddress, ") is invalid, changing publication.author.address to derived address ").concat(derivedAddress));
+                                        log.error("domain (".concat(publicationJson.author.address, ") resolved address (").concat(resolvedAddress, ") is invalid, changing publication.author.address to derived address ").concat(derivedAddress));
                                         publication.author.address = derivedAddress;
                                     }
                                     _b.label = 5;
@@ -280,7 +282,7 @@ function verifyPublication(publication, plebbit, publicationType, overrideAuthor
                 case 1:
                     _d.trys.push([1, 8, , 9]);
                     // Need to verify comment.signature (of original comment) and authorEdit (latest edit by author, if exists)
-                    debugs.TRACE("Attempting to verify a ".concat(publicationType));
+                    log.trace("Attempting to verify a ".concat(publicationType));
                     if (!publicationJson.original) return [3 /*break*/, 4];
                     originalObj = __assign(__assign({}, (0, util_2.removeKeys)(publicationJson, ["original"])), publication.original);
                     return [4 /*yield*/, verifyPublication(originalObj, plebbit, "comment", overrideAuthorAddressIfInvalid)];
@@ -294,9 +296,7 @@ function verifyPublication(publication, plebbit, publicationType, overrideAuthor
                     if (!verified)
                         return [2 /*return*/, [false, "Failed to verify ".concat(publicationType, ".authorEdit due to: ").concat(failedVerificationReason)]];
                     return [3 /*break*/, 7];
-                case 4:
-                    debugs.TRACE("Attempting to verify ".concat(publicationType, ".signature"));
-                    return [4 /*yield*/, verifyPublicationSignature(publicationJson.signature, publicationJson)];
+                case 4: return [4 /*yield*/, verifyPublicationSignature(publicationJson.signature, publicationJson)];
                 case 5:
                     _d.sent();
                     if (!(((_a = publicationJson === null || publicationJson === void 0 ? void 0 : publicationJson.author) === null || _a === void 0 ? void 0 : _a.address) && plebbit.resolveAuthorAddresses)) return [3 /*break*/, 7];
@@ -305,13 +305,12 @@ function verifyPublication(publication, plebbit, publicationType, overrideAuthor
                     _d.sent();
                     _d.label = 7;
                 case 7:
-                    debugs.TRACE("Publication has been verified");
                     res = [true, undefined];
                     plebbit._memCache.put((0, js_sha256_1.sha256)(JSON.stringify(publicationJson) + publicationType), res);
                     return [2 /*return*/, res];
                 case 8:
                     e_1 = _d.sent();
-                    debugs.WARN("Failed to verify ".concat(publicationType, " due to error: ").concat(e_1, "\nPublication: ").concat(JSON.stringify(publicationJson)));
+                    log("Failed to verify ".concat(publicationType, " due to error: ").concat(e_1, "\nPublication: ").concat(JSON.stringify(publicationJson)));
                     res = [false, String(e_1)];
                     plebbit._memCache.put((0, js_sha256_1.sha256)(JSON.stringify(publicationJson) + publicationType), res);
                     return [2 /*return*/, res];

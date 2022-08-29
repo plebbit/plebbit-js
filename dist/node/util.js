@@ -46,25 +46,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getProtocolVersion = exports.randomElement = exports.getDebugLevels = exports.ipfsImportKey = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.waitTillCommentsUpdate = exports.waitTillPublicationsArePublished = exports.shallowEqual = exports.replaceXWithY = exports.removeKeys = exports.keepKeys = exports.timestamp = exports.parseJsonIfString = exports.round = exports.chunks = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.getProtocolVersion = exports.randomElement = exports.ipfsImportKey = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.waitTillCommentsUpdate = exports.waitTillPublicationsArePublished = exports.shallowEqual = exports.replaceXWithY = exports.removeKeys = exports.keepKeys = exports.timestamp = exports.parseJsonIfString = exports.round = exports.chunks = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var concat_1 = require("uint8arrays/concat");
 var to_string_1 = require("uint8arrays/to-string");
 var it_all_1 = __importDefault(require("it-all"));
 var it_last_1 = __importDefault(require("it-last"));
-var debug_1 = __importDefault(require("debug"));
 var node_fetch_1 = __importDefault(require("node-fetch"));
 var form_data_1 = __importDefault(require("form-data"));
 var assert_1 = __importDefault(require("assert"));
@@ -79,16 +69,12 @@ exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     ALL: Infinity
 });
 var DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
-var debugs = getDebugLevels("util");
 function fetchWithLimit(url, options) {
     return __awaiter(this, void 0, void 0, function () {
         var res, originalRes, reader, currentChunk, totalBytesRead, done, value;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0:
-                    // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
-                    debugs.DEBUG("Attempting to fetch url: ".concat(url));
-                    return [4 /*yield*/, (0, node_fetch_1.default)(url, options)];
+                case 0: return [4 /*yield*/, (0, node_fetch_1.default)(url, options)];
                 case 1:
                     res = _a.sent();
                     if (util_1.isRuntimeNode)
@@ -108,7 +94,6 @@ function fetchWithLimit(url, options) {
                     if (value.length + totalBytesRead > options.size)
                         throw new Error("content size at ".concat(url, " over limit: ").concat(options.size));
                     totalBytesRead += value.length;
-                    debugs.TRACE("Total bytes read from ".concat(url, ": ").concat(totalBytesRead));
                     return [3 /*break*/, 2];
                 case 4: return [2 /*return*/, originalRes];
             }
@@ -193,7 +178,6 @@ function loadIpnsAsJson(ipns, plebbit) {
                     if (!cid)
                         throw new Error("IPNS (".concat(ipns, ") resolves to undefined due to error: ").concat(error));
                     (0, assert_1.default)(typeof cid === "string", "CID has to be a string");
-                    debugs.TRACE("IPNS (".concat(ipns, ") resolved to ").concat(cid));
                     return [2 /*return*/, loadIpfsFileAsJson(cid, plebbit)];
                 case 10: return [2 /*return*/];
             }
@@ -404,16 +388,6 @@ function ipfsImportKey(signer, plebbit, password) {
     });
 }
 exports.ipfsImportKey = ipfsImportKey;
-function getDebugLevels(baseName) {
-    var debugsObj = ["FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE"].map(function (debugLevel) {
-        var _a;
-        return (_a = {},
-            _a[debugLevel] = (0, debug_1.default)("plebbit-js:".concat(baseName, ":").concat(debugLevel)),
-            _a);
-    });
-    return Object.assign.apply(Object, __spreadArray([{}], debugsObj, false));
-}
-exports.getDebugLevels = getDebugLevels;
 function randomElement(array) {
     return array[Math.floor(Math.random() * array.length)];
 }

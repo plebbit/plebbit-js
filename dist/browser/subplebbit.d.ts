@@ -93,10 +93,10 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     handleVote(newVote: Vote, challengeRequestId: string): Promise<{
         reason: string;
     }>;
-    publishPostAfterPassingChallenge(publication: any, challengeRequestId: any): Promise<any>;
+    storePublicationIfValid(publication: any, challengeRequestId: string): Promise<any>;
     handleChallengeRequest(request: ChallengeRequestMessage): Promise<void>;
     handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage): Promise<void>;
-    processCaptchaPubsub(pubsubMsg: any): Promise<void>;
+    handleChallengeExchange(pubsubMsg: any): Promise<void>;
     defaultProvideCaptcha(request: ChallengeRequestMessage): Promise<[Challenge[], string | undefined]>;
     defaultValidateCaptcha(answerMessage: ChallengeAnswerMessage): Promise<[boolean, string[] | undefined]>;
     syncComment(dbComment: Comment): Promise<void>;

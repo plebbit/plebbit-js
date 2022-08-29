@@ -69,7 +69,7 @@ var path_1 = __importDefault(require("path"));
 var assert_1 = __importDefault(require("assert"));
 var fs_1 = __importDefault(require("fs"));
 var keyv_1 = __importDefault(require("keyv"));
-var debugs = (0, util_1.getDebugLevels)("db-handler");
+var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var TABLES = Object.freeze({
     COMMENTS: "comments",
     VOTES: "votes",
@@ -133,10 +133,11 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.rollbackTransaction = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
-            var trx;
+            var log, trx;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:rollbackTransaction");
                         trx = this._currentTrxs[transactionId];
                         if (!trx) return [3 /*break*/, 2];
                         (0, assert_1.default)(trx && trx.isTransaction && !trx.isCompleted(), "Transaction (".concat(transactionId, ") needs to be stored to rollback"));
@@ -146,7 +147,7 @@ var DbHandler = /** @class */ (function () {
                         delete this._currentTrxs[transactionId];
                         _a.label = 2;
                     case 2:
-                        debugs.DEBUG("Rolledback transaction (".concat(transactionId, "), this._currentTrxs[transactionId].length = ").concat(Object.keys(this._currentTrxs).length));
+                        log.trace("Rolledback transaction (".concat(transactionId, "), this._currentTrxs[transactionId].length = ").concat(Object.keys(this._currentTrxs).length));
                         return [2 /*return*/];
                 }
             });
@@ -314,16 +315,16 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.createTablesIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var dbVersion, _a, needToMigrate, createTableFunctions, tables;
+            var log, dbVersion, _a, needToMigrate, createTableFunctions, tables;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:createTablesIfNeeded");
                         _a = Number;
                         return [4 /*yield*/, this.knex.raw("PRAGMA user_version")];
                     case 1:
                         dbVersion = _a.apply(void 0, [(_b.sent())[0]["user_version"]]);
-                        debugs.TRACE("PRAGMA user_version = ".concat(dbVersion));
                         needToMigrate = dbVersion !== currentDbVersion;
                         createTableFunctions = [
                             this.createCommentsTable,
@@ -350,7 +351,7 @@ var DbHandler = /** @class */ (function () {
                                             return [3 /*break*/, 9];
                                         case 3:
                                             if (!(tableExists && needToMigrate)) return [3 /*break*/, 9];
-                                            debugs.INFO("Migrating table ".concat(table, " to new schema"));
+                                            log("Migrating table ".concat(table, " to new schema"));
                                             return [4 /*yield*/, this.knex.raw("PRAGMA foreign_keys = OFF")];
                                         case 4:
                                             _a.sent();
@@ -387,20 +388,22 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.copyTable = function (srcTable, dstTable) {
         return __awaiter(this, void 0, void 0, function () {
-            var srcRecords;
+            var log, srcRecords;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex(srcTable).select("*")];
+                    case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
+                        return [4 /*yield*/, this.knex(srcTable).select("*")];
                     case 1:
                         srcRecords = _a.sent();
-                        debugs.DEBUG("Attempting to copy ".concat(srcRecords.length, " ").concat(srcTable));
+                        log("Attempting to copy ".concat(srcRecords.length, " ").concat(srcTable));
                         if (!(srcRecords.length > 0)) return [3 /*break*/, 3];
                         return [4 /*yield*/, this.knex(dstTable).insert(srcRecords)];
                     case 2:
                         _a.sent();
                         _a.label = 3;
                     case 3:
-                        debugs.DEBUG("copied table ".concat(srcTable, " to table ").concat(dstTable));
+                        log("copied table ".concat(srcTable, " to table ").concat(dstTable));
                         return [2 /*return*/];
                 }
             });
@@ -430,7 +433,6 @@ var DbHandler = /** @class */ (function () {
                             existingDbObject = (0, util_1.replaceXWithY)(existingDbObject, null, undefined);
                         newDbObject = author instanceof author_1.default ? author.toJSONForDb() : author;
                         mergedDbObject = __assign(__assign({}, existingDbObject), newDbObject);
-                        debugs.DEBUG("upsertAuthor: attempt to upsert new merged author: ".concat(JSON.stringify(mergedDbObject), ", existingDbObject = ").concat(JSON.stringify(existingDbObject), ", author = ").concat(JSON.stringify(newDbObject)));
                         return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).insert(mergedDbObject).onConflict(["address"]).merge()];
                     case 4:
                         _b.sent();
@@ -614,11 +616,9 @@ var DbHandler = /** @class */ (function () {
                         hasModEditedCommentFlairBefore = modEdits.some(function (modEdit) { return Boolean(modEdit.flair); });
                         flairIfNeeded = hasModEditedCommentFlairBefore || !edit.flair ? undefined : { flair: JSON.stringify(edit.flair) };
                         newProps = (0, util_1.removeKeysWithUndefinedValues)(__assign({ authorEdit: JSON.stringify(edit.toJSONForDb(challengeRequestId)), original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) }, flairIfNeeded));
-                        debugs.TRACE("Will update comment (".concat(edit.commentCid, ") with author props: ").concat(JSON.stringify(newProps)));
                         return [3 /*break*/, 4];
                     case 3:
                         newProps = __assign(__assign({}, edit.toJSONForDb(challengeRequestId)), { original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) });
-                        debugs.TRACE("Will update comment (".concat(edit.commentCid, ") with mod props: ").concat(JSON.stringify((0, util_1.removeKeys)(newProps, ["signature"]))));
                         _a.label = 4;
                     case 4: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid)];
                     case 5:
@@ -1045,14 +1045,15 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype.changeDbFilename = function (newDbFileName) {
         var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function () {
-            var oldPathString, newPath;
+            var log, oldPathString, newPath;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:changeDbFilename");
                         oldPathString = (_c = (_b = (_a = this.subplebbit) === null || _a === void 0 ? void 0 : _a._dbConfig) === null || _b === void 0 ? void 0 : _b.connection) === null || _c === void 0 ? void 0 : _c.filename;
                         assert_1.default.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
                         if (oldPathString === ":memory:") {
-                            debugs.DEBUG("No need to change file name of db since it's in memory");
+                            log.trace("No need to change file name of db since it's in memory");
                             return [2 /*return*/];
                         }
                         newPath = path_1.default.format({ dir: path_1.default.dirname(oldPathString), base: newDbFileName });
@@ -1067,7 +1068,7 @@ var DbHandler = /** @class */ (function () {
                             } });
                         this.subplebbit.dbHandler = new DbHandler(this.subplebbit._dbConfig, this.subplebbit);
                         this.subplebbit._keyv = new keyv_1.default("sqlite://".concat(this.subplebbit._dbConfig.connection.filename));
-                        debugs.INFO("Changed db path from (".concat(oldPathString, ") to (").concat(newPath, ")"));
+                        log("Changed db path from (".concat(oldPathString, ") to (").concat(newPath, ")"));
                         return [2 /*return*/];
                 }
             });
@@ -1077,16 +1078,17 @@ var DbHandler = /** @class */ (function () {
 }());
 exports.DbHandler = DbHandler;
 var subplebbitInitDbIfNeeded = function (subplebbit) { return __awaiter(void 0, void 0, void 0, function () {
-    var dbPath, dir;
+    var log, dbPath, dir;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
+                log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:subplebbitInitDbIfNeeded");
                 if (subplebbit.dbHandler)
                     return [2 /*return*/];
                 if (!subplebbit._dbConfig) {
                     (0, assert_1.default)(subplebbit.address, "Need subplebbit address to initialize a DB connection");
                     dbPath = path_1.default.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
-                    debugs.INFO("User has not provided a DB config. Will initialize DB in ".concat(dbPath));
+                    log("User has not provided a DB config. Will initialize DB in ".concat(dbPath));
                     subplebbit._dbConfig = {
                         client: "sqlite3",
                         connection: {
@@ -1097,7 +1099,7 @@ var subplebbitInitDbIfNeeded = function (subplebbit) { return __awaiter(void 0, 
                     };
                 }
                 else
-                    debugs.DEBUG("User provided a DB config of ".concat(JSON.stringify(subplebbit._dbConfig)));
+                    log.trace("User provided a DB config of ".concat(JSON.stringify(subplebbit._dbConfig)));
                 dir = path_1.default.dirname(subplebbit._dbConfig.connection.filename);
                 return [4 /*yield*/, fs_1.default.promises.mkdir(dir, { recursive: true })];
             case 1:

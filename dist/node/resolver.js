@@ -41,12 +41,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Resolver = void 0;
 var ethers_1 = require("ethers");
-var util_1 = require("./util");
-var debugs = (0, util_1.getDebugLevels)("resolver");
 var assert_1 = __importDefault(require("assert"));
 var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
+var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var Resolver = /** @class */ (function () {
     function Resolver(options) {
         this.blockchainProviders = options.blockchainProviders;
@@ -79,14 +78,14 @@ var Resolver = /** @class */ (function () {
     };
     Resolver.prototype._resolveEnsTxtRecord = function (ensName, txtRecordName) {
         return __awaiter(this, void 0, void 0, function () {
-            var cachedResponse, blockchainProvider, resolver, txtRecordResult;
+            var log, cachedResponse, blockchainProvider, resolver, txtRecordResult;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:resolver:_resolveEnsTxtRecord");
                         cachedResponse = this.plebbit._memCache.get(ensName + txtRecordName);
-                        debugs.TRACE("Attempting to resolve ENS (".concat(ensName, ") text record (").concat(txtRecordName, "), cached response: ").concat(cachedResponse));
                         if (cachedResponse && typeof cachedResponse === "string") {
-                            debugs.DEBUG("ENS (".concat(ensName, ") text record (").concat(txtRecordName, ") is already cached: ").concat(JSON.stringify(cachedResponse)));
+                            log("ENS (".concat(ensName, ") text record (").concat(txtRecordName, ") is already cached: ").concat(JSON.stringify(cachedResponse)));
                             return [2 /*return*/, cachedResponse];
                         }
                         blockchainProvider = this._getBlockchainProvider("eth");
@@ -104,7 +103,7 @@ var Resolver = /** @class */ (function () {
                             throw (0, err_code_1.default)(new Error(errors_1.messages.ERR_ENS_TXT_RECORD_NOT_FOUND), errors_1.codes.ERR_ENS_TXT_RECORD_NOT_FOUND, {
                                 details: "ensName: ".concat(ensName, ", txtRecordName: ").concat(txtRecordName, ", blockchainProvider: ").concat(JSON.stringify(blockchainProvider), ",")
                             });
-                        debugs.DEBUG("Resolved text record name (".concat(txtRecordName, ") of ENS (").concat(ensName, ") to ").concat(txtRecordResult));
+                        log.trace("Resolved text record name (".concat(txtRecordName, ") of ENS (").concat(ensName, ") to ").concat(txtRecordResult));
                         this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // Expire memory ENS cache after an hour
                         return [2 /*return*/, txtRecordResult];
                 }
@@ -120,7 +119,6 @@ var Resolver = /** @class */ (function () {
                         if (!this.plebbit.resolveAuthorAddresses)
                             return [2 /*return*/, authorAddress];
                         if (!(authorAddress === null || authorAddress === void 0 ? void 0 : authorAddress.endsWith(".eth"))) return [3 /*break*/, 2];
-                        debugs.DEBUG("Will attempt to resolve plebbit-author-address of ".concat(authorAddress));
                         return [4 /*yield*/, this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address")];
                     case 1:
                         resolvedAuthorAddress = _a.sent();
@@ -141,7 +139,6 @@ var Resolver = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         if (!(subplebbitAddress === null || subplebbitAddress === void 0 ? void 0 : subplebbitAddress.endsWith(".eth"))) return [3 /*break*/, 2];
-                        debugs.DEBUG("Will attempt to resolve subplebbit-address of ".concat(subplebbitAddress));
                         return [4 /*yield*/, this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address")];
                     case 1:
                         resolvedSubplebbitAddress = _a.sent();
