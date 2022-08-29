@@ -166,19 +166,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             type: "aes-cbc",
             publicKey: this.signer.publicKey
         };
-
-        if (!this.address && this.signer) {
-            // Look for subplebbit address (key.id) in the ipfs node
-            assert(this.plebbit.ipfsClient, "a defined plebbit.ipfsClient is needed to load sub address from IPFS node");
-            const ipnsKeys = await this.plebbit.ipfsClient.key.list();
-            const ipfsKey = ipnsKeys.filter((key) => key.name === this.signer.address)[0];
-            log(
-                Boolean(ipfsKey)
-                    ? `Owner has provided a signer that maps to ${ipfsKey.id} subplebbit address within ipfs node`
-                    : `Owner has provided a signer that doesn't map to any subplebbit address within the ipfs node`
-            );
-            this.address = ipfsKey?.id;
-        }
     }
 
     async initDbIfNeeded() {
@@ -897,7 +884,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async _addPublicationToDb(publication: Publication) {
-        const log = Logger("plebbit-js:subplebbit:sync");
+        const log = Logger("plebbit-js:subplebbit:_addPublicationToDb");
         log(`Adding ${publication.getType()} with author (${JSON.stringify(publication.author)}) to DB directly`);
         const randomUUID = uuidv4();
         //@ts-ignore
