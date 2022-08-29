@@ -282,7 +282,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 this.emit("error", editError);
             });
             log.trace(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
-            await this.dbHandler.changeDbFilename(`${newSubplebbitOptions.address}`);
+            await this.dbHandler.changeDbFilename(newSubplebbitOptions.address);
         }
         this.initSubplebbit(newSubplebbitOptions);
 
@@ -852,7 +852,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 await this._syncLoop(syncIntervalMs);
             }
         };
-        await this.syncIpnsWithDb();
         this._syncInterval = setTimeout(loop.bind(this), syncIntervalMs);
     }
 
@@ -880,6 +879,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             async (pubsubMessage) => await this.handleChallengeExchange(pubsubMessage)
         );
         log.trace(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
+        await this.syncIpnsWithDb();
+
         await this._syncLoop(syncIntervalMs);
     }
 
