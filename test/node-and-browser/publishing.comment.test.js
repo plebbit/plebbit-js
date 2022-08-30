@@ -1,6 +1,6 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { waitTillCommentsUpdate } = require("../../dist/node/util");
+const { waitTillCommentsUpdate, randomElement } = require("../../dist/node/util");
 const { generateMockPost, generateMockComment } = require("../../dist/node/test-util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
@@ -34,6 +34,18 @@ describe("publishing", async () => {
                 resolve();
             });
         });
+    });
+
+    it(`(comment: Comment) === plebbit.createComment(JSON.parse(JSON.stringify(comment)))`, async () => {
+        const comment = await generateMockComment(mockComments[0], plebbit, randomElement(signers));
+        const commentFromStringifiedComment = await plebbit.createComment(JSON.parse(JSON.stringify(comment)));
+        expect(JSON.stringify(comment)).to.equal(JSON.stringify(commentFromStringifiedComment));
+    });
+
+    it(`(post: Post) === plebbit.createComment(JSON.parse(JSON.stringify(post)))`, async () => {
+        const post = await generateMockPost(subplebbitAddress, plebbit, randomElement(signers));
+        const postFromStringifiedPost = await plebbit.createComment(JSON.parse(JSON.stringify(post)));
+        expect(JSON.stringify(post)).to.equal(JSON.stringify(postFromStringifiedPost));
     });
 
     it("Throws an error when publishing a duplicate post", async function () {

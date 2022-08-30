@@ -65,6 +65,18 @@ describe("Editing", async () => {
         });
     });
 
+    it(`(edit: CommentEdit) === plebbit.createCommentEdit(JSON.parse(JSON.stringify(edit)))`, async () => {
+        const edit = await plebbit.createCommentEdit({
+            subplebbitAddress: commentToBeEdited.subplebbitAddress,
+            commentCid: commentToBeEdited.cid,
+            reason: "editReason",
+            content: "editedText",
+            signer: signers[7] // Create a new signer, different than the signer of the original comment
+        });
+        const editFromStringifiedEdit = await plebbit.createCommentEdit(JSON.parse(JSON.stringify(edit)));
+        expect(JSON.stringify(edit)).to.equal(JSON.stringify(editFromStringifiedEdit));
+    });
+
     it("Author can edit comment.content", async function () {
         return new Promise(async (resolve, reject) => {
             const editedText = "edit test";

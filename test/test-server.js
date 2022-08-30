@@ -173,8 +173,6 @@ const startEnsSubplebbit = async () => {
 
 const publishComments = async (parentComments, subplebbit) => {
     const comments = [];
-    // Publish comments for specific use in tests, whether for upvoting, downvoting or editing
-    // Use comment.content as a flag
     if (!parentComments)
         await Promise.all(
             new Array(numOfCommentsToPublish).fill(null).map(async () => {

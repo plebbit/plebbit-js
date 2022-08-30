@@ -30,6 +30,12 @@ describe("Test upvote", async () => {
         await postToVote.stop();
     });
 
+    it(`(vote: Vote) === plebbit.createVote(JSON.parse(JSON.stringify(vote)))`, async () => {
+        const vote = await generateMockVote(postToVote, 1, plebbit, randomElement(signers));
+        const voteFromStringifiedVote = await plebbit.createVote(JSON.parse(JSON.stringify(vote)));
+        expect(JSON.stringify(vote)).to.equal(JSON.stringify(voteFromStringifiedVote));
+    });
+
     it("Can upvote a comment", async () => {
         return new Promise(async (resolve, reject) => {
             const vote = await generateMockVote(postToVote, 1, plebbit, randomElement(signers));
