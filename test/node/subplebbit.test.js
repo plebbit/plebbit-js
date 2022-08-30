@@ -117,8 +117,7 @@ describe("subplebbit", async () => {
         plebbit.resolver.resolveSubplebbitAddressIfNeeded = async (subplebbitAddress) => {
             if (subplebbitAddress === "plebbit.eth") return address;
             else if (subplebbitAddress === "plebbit2.eth") return signers[2];
-            else if (subplebbitAddress === "testgibbreish.eth")
-                throw new Error(`Domain (${subplebbitAddress}) has no plebbit-author-address`);
+            else if (subplebbitAddress === "testgibbreish.eth") throw new Error(`Domain (${subplebbitAddress}) has no subplebbit-address`);
             return subplebbitAddress;
         };
         await subplebbit.edit({ address: "plebbit.eth" });
