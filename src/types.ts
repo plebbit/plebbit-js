@@ -1,6 +1,7 @@
 import { Options } from "ipfs-http-client";
 import { Knex } from "knex";
 import { Pages } from "./pages";
+import { DbHandler } from "./runtime/node/db-handler";
 import { Subplebbit } from "./subplebbit";
 
 export type ProtocolVersion = "1.0.0";
@@ -331,3 +332,9 @@ export type SignedPropertyNames =
     | SubplebbitSignedPropertyNames
     | CommentUpdatedSignedPropertyNames;
 // | MultisubSignedPropertyNames;
+
+type FunctionPropertyOf<T> = {
+    [P in keyof T]: T[P] extends Function ? P : never;
+}[keyof T];
+
+export type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHandler>>;

@@ -48,7 +48,7 @@ const currentDbVersion = 1;
 
 export class DbHandler {
     private _dbConfig: Knex.Config;
-    knex: Knex;
+    private knex: Knex;
     private subplebbit: Subplebbit;
     private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
 
@@ -59,6 +59,9 @@ export class DbHandler {
         this._currentTrxs = {};
     }
 
+    async destoryConnection() {
+        if (this.knex) await this.knex.destroy();
+    }
     async createTransaction(transactionId: string): Promise<Transaction> {
         assert(!this._currentTrxs[transactionId]);
         const trx = await this.knex.transaction();
@@ -207,10 +210,14 @@ export class DbHandler {
         });
     }
 
+    async getDbVersion(): Promise<number> {
+        return Number((await this.knex.raw("PRAGMA user_version"))[0]["user_version"]);
+    }
+
     async createTablesIfNeeded() {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded");
 
-        const dbVersion = Number((await this.knex.raw("PRAGMA user_version"))[0]["user_version"]);
+        let dbVersion = await this.getDbVersion();
         const needToMigrate = dbVersion !== currentDbVersion;
         const createTableFunctions = [
             this._createCommentsTable,
@@ -241,6 +248,8 @@ export class DbHandler {
 
         await this.knex.raw("PRAGMA foreign_keys = ON");
         await this.knex.raw(`PRAGMA user_version = ${currentDbVersion}`);
+        dbVersion = await this.getDbVersion();
+        assert.equal(dbVersion, currentDbVersion);
     }
 
     private async _copyTable(srcTable: string, dstTable: string) {

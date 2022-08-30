@@ -337,7 +337,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this._syncInterval = clearInterval(this._syncInterval);
 
             await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic);
-            this.dbHandler?.knex?.destroy();
+            this.dbHandler?.destoryConnection();
             this.dbHandler = undefined;
             RUNNING_SUBPLEBBITS[this.signer.address] = false;
         }
