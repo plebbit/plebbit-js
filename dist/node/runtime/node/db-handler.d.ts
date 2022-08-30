@@ -11,10 +11,11 @@ import { AuthorType, SubplebbitMetrics } from "../../types";
 import { CommentEdit } from "../../comment-edit";
 export declare class DbHandler {
     private _dbConfig;
-    knex: Knex;
+    private knex;
     private subplebbit;
     private _currentTrxs;
     constructor(dbConfig: Knex.Config, subplebbit: Subplebbit);
+    destoryConnection(): Promise<void>;
     createTransaction(transactionId: string): Promise<Transaction>;
     commitTransaction(transactionId: string): Promise<void>;
     rollbackTransaction(transactionId: string): Promise<void>;
@@ -25,6 +26,7 @@ export declare class DbHandler {
     private _createChallengesTable;
     private _createSignersTable;
     private _createEditsTable;
+    getDbVersion(): Promise<number>;
     createTablesIfNeeded(): Promise<void>;
     private _copyTable;
     private _upsertAuthor;

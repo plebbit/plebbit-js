@@ -413,10 +413,10 @@ var Subplebbit = /** @class */ (function (_super) {
         return this.updateOnce();
     };
     Subplebbit.prototype.stop = function () {
-        var _a, _b, _c;
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_d) {
-                switch (_d.label) {
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         this._updateInterval = clearInterval(this._updateInterval);
                         if (!this.signer) return [3 /*break*/, 2];
@@ -426,11 +426,11 @@ var Subplebbit = /** @class */ (function (_super) {
                         this._syncInterval = clearInterval(this._syncInterval);
                         return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic)];
                     case 1:
-                        _d.sent();
-                        (_c = (_b = this.dbHandler) === null || _b === void 0 ? void 0 : _b.knex) === null || _c === void 0 ? void 0 : _c.destroy();
+                        _c.sent();
+                        (_b = this.dbHandler) === null || _b === void 0 ? void 0 : _b.destoryConnection();
                         this.dbHandler = undefined;
                         exports.RUNNING_SUBPLEBBITS[this.signer.address] = false;
-                        _d.label = 2;
+                        _c.label = 2;
                     case 2: return [2 /*return*/];
                 }
             });
