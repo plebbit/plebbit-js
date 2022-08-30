@@ -153,10 +153,10 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.baseTransaction = function (trx) {
+    DbHandler.prototype._baseTransaction = function (trx) {
         return trx ? trx : this.knex;
     };
-    DbHandler.prototype.createCommentsTable = function (tableName) {
+    DbHandler.prototype._createCommentsTable = function (tableName) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -199,7 +199,7 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.createVotesTable = function (tableName) {
+    DbHandler.prototype._createVotesTable = function (tableName) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -222,7 +222,7 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.createAuthorsTable = function (tableName) {
+    DbHandler.prototype._createAuthorsTable = function (tableName) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -238,7 +238,7 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.createChallengesTable = function (tableName) {
+    DbHandler.prototype._createChallengesTable = function (tableName) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -260,7 +260,7 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.createSignersTable = function (tableName) {
+    DbHandler.prototype._createSignersTable = function (tableName) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -280,7 +280,7 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.createEditsTable = function (tableName) {
+    DbHandler.prototype._createEditsTable = function (tableName) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -327,12 +327,12 @@ var DbHandler = /** @class */ (function () {
                         dbVersion = _a.apply(void 0, [(_b.sent())[0]["user_version"]]);
                         needToMigrate = dbVersion !== currentDbVersion;
                         createTableFunctions = [
-                            this.createCommentsTable,
-                            this.createVotesTable,
-                            this.createAuthorsTable,
-                            this.createChallengesTable,
-                            this.createSignersTable,
-                            this.createEditsTable
+                            this._createCommentsTable,
+                            this._createVotesTable,
+                            this._createAuthorsTable,
+                            this._createChallengesTable,
+                            this._createSignersTable,
+                            this._createEditsTable
                         ];
                         tables = Object.values(TABLES);
                         return [4 /*yield*/, Promise.all(tables.map(function (table) { return __awaiter(_this, void 0, void 0, function () {
@@ -359,7 +359,7 @@ var DbHandler = /** @class */ (function () {
                                             return [4 /*yield*/, createTableFunctions[i].bind(this)(tempTableName)];
                                         case 5:
                                             _a.sent();
-                                            return [4 /*yield*/, this.copyTable(table, tempTableName)];
+                                            return [4 /*yield*/, this._copyTable(table, tempTableName)];
                                         case 6:
                                             _a.sent();
                                             return [4 /*yield*/, this.knex.schema.dropTable(table)];
@@ -386,7 +386,7 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.copyTable = function (srcTable, dstTable) {
+    DbHandler.prototype._copyTable = function (srcTable, dstTable) {
         return __awaiter(this, void 0, void 0, function () {
             var log, srcRecords;
             return __generator(this, function (_a) {
@@ -409,7 +409,7 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.upsertAuthor = function (author, trx, upsertOnlyWhenNew) {
+    DbHandler.prototype._upsertAuthor = function (author, trx, upsertOnlyWhenNew) {
         if (upsertOnlyWhenNew === void 0) { upsertOnlyWhenNew = true; }
         return __awaiter(this, void 0, void 0, function () {
             var existingDbObject, _a, newDbObject, mergedDbObject;
@@ -418,7 +418,7 @@ var DbHandler = /** @class */ (function () {
                     case 0:
                         (0, assert_1.default)(JSON.stringify(author) !== "{}");
                         if (!author.address) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first()];
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first()];
                     case 1:
                         _a = _b.sent();
                         return [3 /*break*/, 3];
@@ -433,7 +433,7 @@ var DbHandler = /** @class */ (function () {
                             existingDbObject = (0, util_1.replaceXWithY)(existingDbObject, null, undefined);
                         newDbObject = author instanceof author_1.default ? author.toJSONForDb() : author;
                         mergedDbObject = __assign(__assign({}, existingDbObject), newDbObject);
-                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).insert(mergedDbObject).onConflict(["address"]).merge()];
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.AUTHORS).insert(mergedDbObject).onConflict(["address"]).merge()];
                     case 4:
                         _b.sent();
                         return [2 /*return*/];
@@ -450,12 +450,12 @@ var DbHandler = /** @class */ (function () {
                 switch (_b.label) {
                     case 0:
                         onlyNewProps = (0, util_1.removeKeysWithUndefinedValues)((0, util_1.removeKeys)(newAuthorProps, ["address"]));
-                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).update(onlyNewProps).where("address", newAuthorProps.address)];
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.AUTHORS).update(onlyNewProps).where("address", newAuthorProps.address)];
                     case 1:
                         _b.sent();
                         if (!updateCommentsAuthor) return [3 /*break*/, 5];
-                        _a = this.createCommentsFromRows;
-                        return [4 /*yield*/, this.baseCommentQuery(trx).where("authorAddress", newAuthorProps.address)];
+                        _a = this._createCommentsFromRows;
+                        return [4 /*yield*/, this._baseCommentQuery(trx).where("authorAddress", newAuthorProps.address)];
                     case 2: return [4 /*yield*/, _a.apply(this, [_b.sent()])];
                     case 3:
                         commentsWithAuthor = _b.sent();
@@ -469,7 +469,7 @@ var DbHandler = /** @class */ (function () {
                                                 ? comment.original
                                                 : __assign(__assign({}, comment.original), { author: comment.author.toJSON() });
                                             newCommentProps = { author: __assign(__assign({}, comment.author.toJSON()), onlyNewProps), original: newOriginal };
-                                            return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS).update(newCommentProps).where("cid", comment.cid)];
+                                            return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).update(newCommentProps).where("cid", comment.cid)];
                                         case 1:
                                             _b.sent();
                                             return [2 /*return*/];
@@ -489,7 +489,7 @@ var DbHandler = /** @class */ (function () {
             var authorProps;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: authorAddress }).first()];
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.AUTHORS).where({ address: authorAddress }).first()];
                     case 1:
                         authorProps = _a.sent();
                         if (authorProps)
@@ -504,11 +504,11 @@ var DbHandler = /** @class */ (function () {
             var dbObject;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.upsertAuthor(vote.author, trx, true)];
+                    case 0: return [4 /*yield*/, this._upsertAuthor(vote.author, trx, true)];
                     case 1:
                         _a.sent();
                         dbObject = vote.toJSONForDb(challengeRequestId);
-                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.VOTES).insert(dbObject).onConflict(["commentCid", "authorAddress"]).merge()];
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.VOTES).insert(dbObject).onConflict(["commentCid", "authorAddress"]).merge()];
                     case 2:
                         _a.sent();
                         return [2 /*return*/];
@@ -525,14 +525,14 @@ var DbHandler = /** @class */ (function () {
                         (0, assert_1.default)(postOrComment.cid, "Comment need to have a cid before upserting");
                         if (!postOrComment.author) return [3 /*break*/, 2];
                         // Skip adding author (For CommentEdit)
-                        return [4 /*yield*/, this.upsertAuthor(postOrComment.author, trx, true)];
+                        return [4 /*yield*/, this._upsertAuthor(postOrComment.author, trx, true)];
                     case 1:
                         // Skip adding author (For CommentEdit)
                         _a.sent();
                         _a.label = 2;
                     case 2:
                         if (!!challengeRequestId) return [3 /*break*/, 4];
-                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS)
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
                                 .where({
                                 cid: postOrComment.cid
                             })
@@ -547,7 +547,7 @@ var DbHandler = /** @class */ (function () {
                         originalComment = _a.sent();
                         dbObject = originalComment
                             ? __assign(__assign({}, (0, util_1.removeKeysWithUndefinedValues)(originalComment.toJSONForDb(challengeRequestId))), (0, util_1.removeKeysWithUndefinedValues)(postOrComment.toJSONForDb(challengeRequestId))) : postOrComment.toJSONForDb(challengeRequestId);
-                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge()];
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge()];
                     case 6:
                         _a.sent();
                         return [2 /*return*/];
@@ -559,7 +559,7 @@ var DbHandler = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.EDITS).insert(edit.toJSONForDb(challengeRequestId))];
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.EDITS).insert(edit.toJSONForDb(challengeRequestId))];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -572,23 +572,23 @@ var DbHandler = /** @class */ (function () {
             var authorAddress, _a, _b, _c;
             return __generator(this, function (_d) {
                 switch (_d.label) {
-                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS).select("authorAddress").where("cid", commentCid).first()];
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).select("authorAddress").where("cid", commentCid).first()];
                     case 1:
                         authorAddress = (_d.sent())
                             .authorAddress;
                         if (!!editor) return [3 /*break*/, 3];
-                        _a = this.createEditsFromRows;
-                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.EDITS).orderBy("id", "desc")];
+                        _a = this._createEditsFromRows;
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.EDITS).orderBy("id", "desc")];
                     case 2: return [2 /*return*/, _a.apply(this, [_d.sent()])];
                     case 3:
                         if (!(editor === "author")) return [3 /*break*/, 5];
-                        _b = this.createEditsFromRows;
-                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.EDITS).where("authorAddress", authorAddress).orderBy("id", "desc")];
+                        _b = this._createEditsFromRows;
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.EDITS).where("authorAddress", authorAddress).orderBy("id", "desc")];
                     case 4: return [2 /*return*/, _b.apply(this, [_d.sent()])];
                     case 5:
                         if (!(editor === "mod")) return [3 /*break*/, 7];
-                        _c = this.createEditsFromRows;
-                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.EDITS).whereNot("authorAddress", authorAddress).orderBy("id", "desc")];
+                        _c = this._createEditsFromRows;
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.EDITS).whereNot("authorAddress", authorAddress).orderBy("id", "desc")];
                     case 6: return [2 /*return*/, _c.apply(this, [_d.sent()])];
                     case 7: return [2 /*return*/, []];
                 }
@@ -620,7 +620,7 @@ var DbHandler = /** @class */ (function () {
                     case 3:
                         newProps = __assign(__assign({}, edit.toJSONForDb(challengeRequestId)), { original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) });
                         _a.label = 4;
-                    case 4: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid)];
+                    case 4: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid)];
                     case 5:
                         _a.sent();
                         return [2 /*return*/];
@@ -633,13 +633,13 @@ var DbHandler = /** @class */ (function () {
             var existingChallenge, dbObject;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.CHALLENGES)
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.CHALLENGES)
                             .where({ challengeRequestId: challenge.challengeRequestId })
                             .first()];
                     case 1:
                         existingChallenge = _a.sent();
                         dbObject = __assign(__assign({}, existingChallenge), challenge.toJSONForDb());
-                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.CHALLENGES).insert(dbObject).onConflict("challengeRequestId").merge()];
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.CHALLENGES).insert(dbObject).onConflict("challengeRequestId").merge()];
                     case 2:
                         _a.sent();
                         return [2 /*return*/];
@@ -652,7 +652,7 @@ var DbHandler = /** @class */ (function () {
             var voteObj;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.VOTES)
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.VOTES)
                             .where({
                             commentCid: commentCid,
                             authorAddress: authorAddress
@@ -660,38 +660,38 @@ var DbHandler = /** @class */ (function () {
                             .first()];
                     case 1:
                         voteObj = _a.sent();
-                        return [4 /*yield*/, this.createVotesFromRows(voteObj)];
+                        return [4 /*yield*/, this._createVotesFromRows(voteObj)];
                     case 2: return [2 /*return*/, (_a.sent())[0]];
                 }
             });
         });
     };
-    DbHandler.prototype.baseCommentQuery = function (trx) {
+    DbHandler.prototype._baseCommentQuery = function (trx) {
         var _a, _b;
-        var upvoteQuery = this.baseTransaction(trx)(TABLES.VOTES)
+        var upvoteQuery = this._baseTransaction(trx)(TABLES.VOTES)
             .count("".concat(TABLES.VOTES, ".vote"))
             .where((_a = {},
             _a["".concat(TABLES.COMMENTS, ".cid")] = this.knex.raw("".concat(TABLES.VOTES, ".commentCid")),
             _a["".concat(TABLES.VOTES, ".vote")] = 1,
             _a))
             .as("upvoteCount");
-        var downvoteQuery = this.baseTransaction(trx)(TABLES.VOTES)
+        var downvoteQuery = this._baseTransaction(trx)(TABLES.VOTES)
             .count("".concat(TABLES.VOTES, ".vote"))
             .where((_b = {},
             _b["".concat(TABLES.COMMENTS, ".cid")] = this.knex.raw("".concat(TABLES.VOTES, ".commentCid")),
             _b["".concat(TABLES.VOTES, ".vote")] = -1,
             _b))
             .as("downvoteCount");
-        var replyCountQuery = this.baseTransaction(trx)
+        var replyCountQuery = this._baseTransaction(trx)
             .from("".concat(TABLES.COMMENTS, " AS comments2"))
             .count("")
             .where({
             "comments2.parentCid": this.knex.raw("".concat(TABLES.COMMENTS, ".cid"))
         })
             .as("replyCount");
-        return this.baseTransaction(trx)(TABLES.COMMENTS).select("".concat(TABLES.COMMENTS, ".*"), upvoteQuery, downvoteQuery, replyCountQuery);
+        return this._baseTransaction(trx)(TABLES.COMMENTS).select("".concat(TABLES.COMMENTS, ".*"), upvoteQuery, downvoteQuery, replyCountQuery);
     };
-    DbHandler.prototype.createCommentsFromRows = function (commentsRows) {
+    DbHandler.prototype._createCommentsFromRows = function (commentsRows) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_a) {
@@ -723,7 +723,7 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.createEditsFromRows = function (edits) {
+    DbHandler.prototype._createEditsFromRows = function (edits) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_a) {
@@ -746,7 +746,7 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.createVotesFromRows = function (voteRows) {
+    DbHandler.prototype._createVotesFromRows = function (voteRows) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_a) {
@@ -774,10 +774,10 @@ var DbHandler = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         parentCid = parentCid || null;
-                        return [4 /*yield*/, this.baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", order)];
+                        return [4 /*yield*/, this._baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", order)];
                     case 1:
                         commentObj = _a.sent();
-                        return [2 /*return*/, this.createCommentsFromRows(commentObj)];
+                        return [2 /*return*/, this._createCommentsFromRows(commentObj)];
                 }
             });
         });
@@ -791,12 +791,12 @@ var DbHandler = /** @class */ (function () {
                         parentCid = parentCid || null;
                         if (timestamp1 === Number.NEGATIVE_INFINITY)
                             timestamp1 = 0;
-                        return [4 /*yield*/, this.baseCommentQuery(trx)
+                        return [4 /*yield*/, this._baseCommentQuery(trx)
                                 .where({ parentCid: parentCid })
                                 .whereBetween("timestamp", [timestamp1, timestamp2])];
                     case 1:
                         rawCommentObjs = _a.sent();
-                        return [2 /*return*/, this.createCommentsFromRows(rawCommentObjs)];
+                        return [2 /*return*/, this._createCommentsFromRows(rawCommentObjs)];
                 }
             });
         });
@@ -811,13 +811,13 @@ var DbHandler = /** @class */ (function () {
                         if (timestamp1 === Number.NEGATIVE_INFINITY)
                             timestamp1 = 0;
                         parentCid = parentCid || null;
-                        topScoreQuery = this.baseTransaction(trx)(TABLES.VOTES)
+                        topScoreQuery = this._baseTransaction(trx)(TABLES.VOTES)
                             .select(this.knex.raw("COALESCE(SUM(".concat(TABLES.VOTES, ".vote), 0)"))) // We're using raw expressions because there's no native method in Knexjs to return 0 if SUM is null
                             .where((_a = {},
                             _a["".concat(TABLES.COMMENTS, ".cid")] = this.knex.raw("".concat(TABLES.VOTES, ".commentCid")),
                             _a))
                             .as("topScore");
-                        return [4 /*yield*/, this.baseCommentQuery(trx)
+                        return [4 /*yield*/, this._baseCommentQuery(trx)
                                 .select(topScoreQuery)
                                 .groupBy("".concat(TABLES.COMMENTS, ".cid"))
                                 .orderBy("topScore", "desc")
@@ -825,7 +825,7 @@ var DbHandler = /** @class */ (function () {
                                 .where((_b = {}, _b["".concat(TABLES.COMMENTS, ".parentCid")] = parentCid, _b))];
                     case 1:
                         rawCommentsObjs = _c.sent();
-                        return [2 /*return*/, this.createCommentsFromRows(rawCommentsObjs)];
+                        return [2 /*return*/, this._createCommentsFromRows(rawCommentsObjs)];
                 }
             });
         });
@@ -837,10 +837,10 @@ var DbHandler = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         parentCid = parentCid || null;
-                        return [4 /*yield*/, this.baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", "desc")];
+                        return [4 /*yield*/, this._baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", "desc")];
                     case 1:
                         commentsObjs = _a.sent();
-                        return [4 /*yield*/, this.createCommentsFromRows(commentsObjs)];
+                        return [4 /*yield*/, this._createCommentsFromRows(commentsObjs)];
                     case 2: return [2 /*return*/, _a.sent()];
                 }
             });
@@ -877,8 +877,8 @@ var DbHandler = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        _a = this.createCommentsFromRows;
-                        return [4 /*yield*/, this.baseCommentQuery(trx).orderBy("id", "desc")];
+                        _a = this._createCommentsFromRows;
+                        return [4 /*yield*/, this._baseCommentQuery(trx).orderBy("id", "desc")];
                     case 1: return [2 /*return*/, _a.apply(this, [_b.sent()])];
                 }
             });
@@ -903,7 +903,7 @@ var DbHandler = /** @class */ (function () {
                                                         propertyName = "".concat(timeframe.toLowerCase()).concat(metricType);
                                                         _a = [Math.max(0, (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[timeframe]), (0, util_1.timestamp)()], from = _a[0], to = _a[1];
                                                         if (!(metricType === "ActiveUserCount")) return [3 /*break*/, 2];
-                                                        return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS)
+                                                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
                                                                 .countDistinct("comments.authorAddress")
                                                                 .join(TABLES.VOTES, "".concat(TABLES.COMMENTS, ".authorAddress"), "=", "".concat(TABLES.VOTES, ".authorAddress"))
                                                                 .whereBetween("comments.timestamp", [from, to])];
@@ -912,7 +912,7 @@ var DbHandler = /** @class */ (function () {
                                                         return [2 /*return*/, (_b = {}, _b[propertyName] = res, _b)];
                                                     case 2:
                                                         if (!(metricType === "PostCount")) return [3 /*break*/, 4];
-                                                        query = this.baseTransaction(trx)(TABLES.COMMENTS)
+                                                        query = this._baseTransaction(trx)(TABLES.COMMENTS)
                                                             .count()
                                                             .whereBetween("timestamp", [from, to])
                                                             .whereNotNull("title");
@@ -943,10 +943,10 @@ var DbHandler = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         (0, assert_1.default)(typeof cid === "string" && cid.length > 0, "Can't query a comment with null cid (".concat(cid, ")"));
-                        return [4 /*yield*/, this.baseCommentQuery(trx).where("cid", cid).first()];
+                        return [4 /*yield*/, this._baseCommentQuery(trx).where("cid", cid).first()];
                     case 1:
                         commentObj = _a.sent();
-                        return [4 /*yield*/, this.createCommentsFromRows(commentObj)];
+                        return [4 /*yield*/, this._createCommentsFromRows(commentObj)];
                     case 2: return [2 /*return*/, (_a.sent())[0]];
                 }
             });
@@ -957,10 +957,10 @@ var DbHandler = /** @class */ (function () {
             var commentObj, post;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.baseCommentQuery(trx).whereNotNull("title").orderBy("id", "desc").first()];
+                    case 0: return [4 /*yield*/, this._baseCommentQuery(trx).whereNotNull("title").orderBy("id", "desc").first()];
                     case 1:
                         commentObj = _a.sent();
-                        return [4 /*yield*/, this.createCommentsFromRows(commentObj)];
+                        return [4 /*yield*/, this._createCommentsFromRows(commentObj)];
                     case 2:
                         post = (_a.sent())[0];
                         if (!post)
@@ -975,7 +975,7 @@ var DbHandler = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.SIGNERS).insert(signer)];
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.SIGNERS).insert(signer)];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -986,14 +986,14 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype.querySubplebbitSigner = function (trx) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, this.baseTransaction(trx)(TABLES.SIGNERS).where({ usage: "subplebbit" }).first()];
+                return [2 /*return*/, this._baseTransaction(trx)(TABLES.SIGNERS).where({ usage: "subplebbit" }).first()];
             });
         });
     };
     DbHandler.prototype.querySigner = function (ipnsKeyName, trx) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, this.baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName: ipnsKeyName }).first()];
+                return [2 /*return*/, this._baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName: ipnsKeyName }).first()];
             });
         });
     };
@@ -1003,7 +1003,7 @@ var DbHandler = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS).max("depth")];
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).max("depth")];
                     case 1:
                         maxDepth = (_a.sent())[0]["max(`depth`)"];
                         if (typeof maxDepth !== "number")
@@ -1013,10 +1013,10 @@ var DbHandler = /** @class */ (function () {
                                 var commentsWithDepth;
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
-                                        case 0: return [4 /*yield*/, this.baseCommentQuery(trx).where({ depth: depth })];
+                                        case 0: return [4 /*yield*/, this._baseCommentQuery(trx).where({ depth: depth })];
                                         case 1:
                                             commentsWithDepth = _a.sent();
-                                            return [2 /*return*/, this.createCommentsFromRows(commentsWithDepth)];
+                                            return [2 /*return*/, this._createCommentsFromRows(commentsWithDepth)];
                                     }
                                 });
                             }); }))];
@@ -1032,7 +1032,7 @@ var DbHandler = /** @class */ (function () {
             var obj;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.baseTransaction(trx)(TABLES.COMMENTS).count().where({ depth: 0 }).first()];
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).count().where({ depth: 0 }).first()];
                     case 1:
                         obj = _a.sent();
                         if (!obj)
