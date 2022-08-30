@@ -15,9 +15,6 @@ class Vote extends Publication implements VoteType {
     toJSON(): VoteType {
         return {
             ...super.toJSON(),
-            author: this.author,
-            timestamp: this.timestamp,
-            signature: this.signature,
             commentCid: this.commentCid,
             vote: this.vote
         };
