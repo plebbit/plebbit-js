@@ -132,14 +132,16 @@ describe("subplebbit", async () => {
     it(`Can edit subplebbit.address to a new domain if subplebbit-address record does not exist or does not match signer.address`, async () => {
         await subplebbit.edit({ address: "testgibbreish.eth" });
 
-        assert.equal(subplebbit.address, "testgibbreish.eth");
+        expect(subplebbit.address).to.equal("testgibbreish.eth");
 
         await subplebbit.edit({ address: "plebbit2.eth" });
 
-        assert.equal(subplebbit.address, "plebbit2.eth");
+        expect(subplebbit.address).to.equal("plebbit2.eth");
 
         // Revert back to "plebbit.eth"
         await subplebbit.edit({ address: "plebbit.eth" });
+
+        expect(subplebbit.address).to.equal("plebbit.eth");
     });
 
     it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () =>
@@ -151,6 +153,7 @@ describe("subplebbit", async () => {
 
             loadedSubplebbit.on("update", async (updatedSubplebbit) => {
                 if (!updatedSubplebbit.posts) return;
+                expect(updatedSubplebbit.address).to.equal("plebbit.eth");
                 expect(updatedSubplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.content === post.content)).to.be.true;
                 expect(updatedSubplebbit.lastPostCid).to.equal(post.cid);
                 await loadedSubplebbit.stop();
