@@ -47,14 +47,12 @@ const jsonFields = [
 const currentDbVersion = 1;
 
 export class DbHandler {
-    private _dbConfig: Knex.Config;
     private knex: Knex;
     private subplebbit: Subplebbit;
     private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
 
-    constructor(dbConfig: Knex.Config, subplebbit: Subplebbit) {
-        this._dbConfig = dbConfig;
-        this.knex = knex(dbConfig);
+    constructor(subplebbit: Subplebbit) {
+        this.knex = knex(subplebbit.dbConfig);
         this.subplebbit = subplebbit;
         this._currentTrxs = {};
     }
@@ -640,7 +638,7 @@ export class DbHandler {
                 filename: newPath
             }
         };
-        this.subplebbit.dbHandler = new DbHandler(this.subplebbit.dbConfig, this.subplebbit);
+        this.subplebbit.dbHandler = new DbHandler(this.subplebbit);
         this.subplebbit._keyv = new Keyv(`sqlite://${this.subplebbit.dbConfig.connection.filename}`);
         log(`Changed db path from (${oldPathString}) to (${newPath})`);
     }
@@ -666,7 +664,7 @@ export const subplebbitInitDbIfNeeded = async (subplebbit: Subplebbit) => {
 
     const dir = path.dirname(subplebbit.dbConfig.connection.filename);
     await fs.promises.mkdir(dir, { recursive: true });
-    subplebbit.dbHandler = new DbHandler(subplebbit.dbConfig, subplebbit);
+    subplebbit.dbHandler = new DbHandler(subplebbit);
     await subplebbit.dbHandler.createTablesIfNeeded();
     await subplebbit.initSignerIfNeeded();
     subplebbit._keyv = new Keyv(`sqlite://${subplebbit.dbConfig.connection.filename}`); // TODO make this work with DBs other than sqlite
