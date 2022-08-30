@@ -92,9 +92,8 @@ var jsonFields = [
 ];
 var currentDbVersion = 1;
 var DbHandler = /** @class */ (function () {
-    function DbHandler(dbConfig, subplebbit) {
-        this._dbConfig = dbConfig;
-        this.knex = (0, knex_1.default)(dbConfig);
+    function DbHandler(subplebbit) {
+        this.knex = (0, knex_1.default)(subplebbit.dbConfig);
         this.subplebbit = subplebbit;
         this._currentTrxs = {};
     }
@@ -1081,7 +1080,7 @@ var DbHandler = /** @class */ (function () {
                 switch (_d.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:changeDbFilename");
-                        oldPathString = (_c = (_b = (_a = this.subplebbit) === null || _a === void 0 ? void 0 : _a._dbConfig) === null || _b === void 0 ? void 0 : _b.connection) === null || _c === void 0 ? void 0 : _c.filename;
+                        oldPathString = (_c = (_b = (_a = this.subplebbit) === null || _a === void 0 ? void 0 : _a.dbConfig) === null || _b === void 0 ? void 0 : _b.connection) === null || _c === void 0 ? void 0 : _c.filename;
                         assert_1.default.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
                         if (oldPathString === ":memory:") {
                             log.trace("No need to change file name of db since it's in memory");
@@ -1094,11 +1093,11 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, fs_1.default.promises.rename(oldPathString, newPath)];
                     case 2:
                         _d.sent();
-                        this.subplebbit._dbConfig = __assign(__assign({}, this.subplebbit._dbConfig), { connection: {
+                        this.subplebbit.dbConfig = __assign(__assign({}, this.subplebbit.dbConfig), { connection: {
                                 filename: newPath
                             } });
-                        this.subplebbit.dbHandler = new DbHandler(this.subplebbit._dbConfig, this.subplebbit);
-                        this.subplebbit._keyv = new keyv_1.default("sqlite://".concat(this.subplebbit._dbConfig.connection.filename));
+                        this.subplebbit.dbHandler = new DbHandler(this.subplebbit);
+                        this.subplebbit._keyv = new keyv_1.default("sqlite://".concat(this.subplebbit.dbConfig.connection.filename));
                         log("Changed db path from (".concat(oldPathString, ") to (").concat(newPath, ")"));
                         return [2 /*return*/];
                 }
@@ -1116,11 +1115,11 @@ var subplebbitInitDbIfNeeded = function (subplebbit) { return __awaiter(void 0, 
                 log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:subplebbitInitDbIfNeeded");
                 if (subplebbit.dbHandler)
                     return [2 /*return*/];
-                if (!subplebbit._dbConfig) {
+                if (!subplebbit.dbConfig) {
                     (0, assert_1.default)(subplebbit.address, "Need subplebbit address to initialize a DB connection");
                     dbPath = path_1.default.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
                     log("User has not provided a DB config. Will initialize DB in ".concat(dbPath));
-                    subplebbit._dbConfig = {
+                    subplebbit.dbConfig = {
                         client: "sqlite3",
                         connection: {
                             filename: dbPath
@@ -1130,19 +1129,19 @@ var subplebbitInitDbIfNeeded = function (subplebbit) { return __awaiter(void 0, 
                     };
                 }
                 else
-                    log.trace("User provided a DB config of ".concat(JSON.stringify(subplebbit._dbConfig)));
-                dir = path_1.default.dirname(subplebbit._dbConfig.connection.filename);
+                    log.trace("User provided a DB config of ".concat(JSON.stringify(subplebbit.dbConfig)));
+                dir = path_1.default.dirname(subplebbit.dbConfig.connection.filename);
                 return [4 /*yield*/, fs_1.default.promises.mkdir(dir, { recursive: true })];
             case 1:
                 _a.sent();
-                subplebbit.dbHandler = new DbHandler(subplebbit._dbConfig, subplebbit);
+                subplebbit.dbHandler = new DbHandler(subplebbit);
                 return [4 /*yield*/, subplebbit.dbHandler.createTablesIfNeeded()];
             case 2:
                 _a.sent();
                 return [4 /*yield*/, subplebbit.initSignerIfNeeded()];
             case 3:
                 _a.sent();
-                subplebbit._keyv = new keyv_1.default("sqlite://".concat(subplebbit._dbConfig.connection.filename)); // TODO make this work with DBs other than sqlite
+                subplebbit._keyv = new keyv_1.default("sqlite://".concat(subplebbit.dbConfig.connection.filename)); // TODO make this work with DBs other than sqlite
                 return [2 /*return*/];
         }
     });

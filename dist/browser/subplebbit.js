@@ -131,7 +131,7 @@ var Subplebbit = /** @class */ (function (_super) {
         this.title = mergedProps.title;
         this.description = mergedProps.description;
         this.lastPostCid = mergedProps.lastPostCid;
-        this._dbConfig = mergedProps.database;
+        this.dbConfig = mergedProps.database;
         this.address = mergedProps.address;
         this.ipnsKeyName = mergedProps.ipnsKeyName;
         this.pubsubTopic = mergedProps.pubsubTopic;
@@ -207,7 +207,7 @@ var Subplebbit = /** @class */ (function (_super) {
         this.validateCaptchaAnswerCallback = newCallback;
     };
     Subplebbit.prototype.toJSONInternal = function () {
-        return __assign(__assign({}, this.toJSON()), { ipnsKeyName: this.ipnsKeyName, database: this._dbConfig, signer: this.signer });
+        return __assign(__assign({}, this.toJSON()), { ipnsKeyName: this.ipnsKeyName, database: this.dbConfig, signer: this.signer });
     };
     Subplebbit.prototype.toJSON = function () {
         return {
