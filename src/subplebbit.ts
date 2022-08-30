@@ -77,7 +77,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     plebbit: Plebbit;
     dbHandler?: DbHandler;
     _keyv: any; // Don't change any here to Keyv since it will crash for browsers
-    _dbConfig?: any;
+    dbConfig: any;
 
     // private
 
@@ -116,7 +116,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.title = mergedProps.title;
         this.description = mergedProps.description;
         this.lastPostCid = mergedProps.lastPostCid;
-        this._dbConfig = mergedProps.database;
+        this.dbConfig = mergedProps.database;
         this.address = mergedProps.address;
         this.ipnsKeyName = mergedProps.ipnsKeyName;
         this.pubsubTopic = mergedProps.pubsubTopic;
@@ -185,7 +185,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         return {
             ...this.toJSON(),
             ipnsKeyName: this.ipnsKeyName,
-            database: this._dbConfig,
+            database: this.dbConfig,
             signer: this.signer
         };
     }
