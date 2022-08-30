@@ -113,7 +113,7 @@ describe("subplebbit", async () => {
         }));
 
     it(`Can edit a subplebbit to have ENS domain as address`, async () => {
-        const address = subplebbit.address;
+        const address = JSON.parse(JSON.stringify(subplebbit.address));
         plebbit.resolver.resolveSubplebbitAddressIfNeeded = async (subplebbitAddress) => {
             if (subplebbitAddress === "plebbit.eth") return address;
             else if (subplebbitAddress === "plebbit2.eth") return signers[2];
