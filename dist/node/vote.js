@@ -76,7 +76,7 @@ var Vote = /** @class */ (function (_super) {
         return _this;
     }
     Vote.prototype.toJSON = function () {
-        return __assign(__assign({}, _super.prototype.toJSON.call(this)), { author: this.author, timestamp: this.timestamp, signature: this.signature, commentCid: this.commentCid, vote: this.vote });
+        return __assign(__assign({}, _super.prototype.toJSON.call(this)), { commentCid: this.commentCid, vote: this.vote });
     };
     Vote.prototype.getType = function () {
         return "vote";
