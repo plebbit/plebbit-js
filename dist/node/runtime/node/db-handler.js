@@ -98,6 +98,21 @@ var DbHandler = /** @class */ (function () {
         this.subplebbit = subplebbit;
         this._currentTrxs = {};
     }
+    DbHandler.prototype.destoryConnection = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!this.knex) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.knex.destroy()];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2: return [2 /*return*/];
+                }
+            });
+        });
+    };
     DbHandler.prototype.createTransaction = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
             var trx;
@@ -313,18 +328,30 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.createTablesIfNeeded = function () {
+    DbHandler.prototype.getDbVersion = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, dbVersion, _a, needToMigrate, createTableFunctions, tables;
-            var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:createTablesIfNeeded");
                         _a = Number;
                         return [4 /*yield*/, this.knex.raw("PRAGMA user_version")];
+                    case 1: return [2 /*return*/, _a.apply(void 0, [(_b.sent())[0]["user_version"]])];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.createTablesIfNeeded = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var log, dbVersion, needToMigrate, createTableFunctions, tables;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:createTablesIfNeeded");
+                        return [4 /*yield*/, this.getDbVersion()];
                     case 1:
-                        dbVersion = _a.apply(void 0, [(_b.sent())[0]["user_version"]]);
+                        dbVersion = _a.sent();
                         needToMigrate = dbVersion !== currentDbVersion;
                         createTableFunctions = [
                             this._createCommentsTable,
@@ -374,13 +401,17 @@ var DbHandler = /** @class */ (function () {
                                 });
                             }); }))];
                     case 2:
-                        _b.sent();
+                        _a.sent();
                         return [4 /*yield*/, this.knex.raw("PRAGMA foreign_keys = ON")];
                     case 3:
-                        _b.sent();
+                        _a.sent();
                         return [4 /*yield*/, this.knex.raw("PRAGMA user_version = ".concat(currentDbVersion))];
                     case 4:
-                        _b.sent();
+                        _a.sent();
+                        return [4 /*yield*/, this.getDbVersion()];
+                    case 5:
+                        dbVersion = _a.sent();
+                        assert_1.default.equal(dbVersion, currentDbVersion);
                         return [2 /*return*/];
                 }
             });
