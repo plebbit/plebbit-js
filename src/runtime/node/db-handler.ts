@@ -47,9 +47,9 @@ const jsonFields = [
 const currentDbVersion = 1;
 
 export class DbHandler {
-    _dbConfig: Knex.Config;
+    private _dbConfig: Knex.Config;
     knex: Knex;
-    subplebbit: Subplebbit;
+    private subplebbit: Subplebbit;
     private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
 
     constructor(dbConfig: Knex.Config, subplebbit: Subplebbit) {
@@ -88,11 +88,11 @@ export class DbHandler {
         );
     }
 
-    baseTransaction(trx?: Transaction): Transaction | Knex {
+    private _baseTransaction(trx?: Transaction): Transaction | Knex {
         return trx ? trx : this.knex;
     }
 
-    async createCommentsTable(tableName: string) {
+    private async _createCommentsTable(tableName: string) {
         await this.knex.schema.createTable(tableName, (table) => {
             table.text("cid").notNullable().primary().unique();
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
@@ -129,7 +129,7 @@ export class DbHandler {
         });
     }
 
-    async createVotesTable(tableName: string) {
+    private async _createVotesTable(tableName: string) {
         await this.knex.schema.createTable(tableName, (table) => {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
@@ -146,7 +146,7 @@ export class DbHandler {
         });
     }
 
-    async createAuthorsTable(tableName: string) {
+    private async _createAuthorsTable(tableName: string) {
         await this.knex.schema.createTable(tableName, (table) => {
             table.text("address").notNullable().primary().unique();
             table.timestamp("banExpiresAt").nullable();
@@ -154,7 +154,7 @@ export class DbHandler {
         });
     }
 
-    async createChallengesTable(tableName: string) {
+    private async _createChallengesTable(tableName: string) {
         await this.knex.schema.createTable(tableName, (table) => {
             table.uuid("challengeRequestId").notNullable().primary().unique();
             table.enum("type", Object.values(PUBSUB_MESSAGE_TYPES)).notNullable();
@@ -168,7 +168,7 @@ export class DbHandler {
         });
     }
 
-    async createSignersTable(tableName: string) {
+    private async _createSignersTable(tableName: string) {
         await this.knex.schema.createTable(tableName, (table) => {
             table.text("ipnsKeyName").notNullable().unique().primary();
             table.text("privateKey").notNullable().unique();
@@ -180,7 +180,7 @@ export class DbHandler {
         });
     }
 
-    async createEditsTable(tableName: string) {
+    private async _createEditsTable(tableName: string) {
         await this.knex.schema.createTable(tableName, (table) => {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
@@ -213,12 +213,12 @@ export class DbHandler {
         const dbVersion = Number((await this.knex.raw("PRAGMA user_version"))[0]["user_version"]);
         const needToMigrate = dbVersion !== currentDbVersion;
         const createTableFunctions = [
-            this.createCommentsTable,
-            this.createVotesTable,
-            this.createAuthorsTable,
-            this.createChallengesTable,
-            this.createSignersTable,
-            this.createEditsTable
+            this._createCommentsTable,
+            this._createVotesTable,
+            this._createAuthorsTable,
+            this._createChallengesTable,
+            this._createSignersTable,
+            this._createEditsTable
         ];
         const tables = Object.values(TABLES);
 
@@ -232,7 +232,7 @@ export class DbHandler {
                     await this.knex.raw("PRAGMA foreign_keys = OFF");
                     const tempTableName = `${table}${currentDbVersion}`;
                     await createTableFunctions[i].bind(this)(tempTableName);
-                    await this.copyTable(table, tempTableName);
+                    await this._copyTable(table, tempTableName);
                     await this.knex.schema.dropTable(table);
                     await this.knex.schema.renameTable(tempTableName, table);
                 }
@@ -243,7 +243,7 @@ export class DbHandler {
         await this.knex.raw(`PRAGMA user_version = ${currentDbVersion}`);
     }
 
-    async copyTable(srcTable: string, dstTable: string) {
+    private async _copyTable(srcTable: string, dstTable: string) {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
 
         const srcRecords = await this.knex(srcTable).select("*");
@@ -252,24 +252,24 @@ export class DbHandler {
         log(`copied table ${srcTable} to table ${dstTable}`);
     }
 
-    async upsertAuthor(author: Author | AuthorType, trx?: Transaction, upsertOnlyWhenNew = true) {
+    private async _upsertAuthor(author: Author | AuthorType, trx?: Transaction, upsertOnlyWhenNew = true) {
         assert(JSON.stringify(author) !== "{}");
         let existingDbObject = author.address
-            ? await this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first()
+            ? await this._baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first()
             : undefined;
         if (existingDbObject && upsertOnlyWhenNew) return;
         if (existingDbObject) existingDbObject = replaceXWithY(existingDbObject, null, undefined);
         const newDbObject: AuthorType = author instanceof Author ? author.toJSONForDb() : author;
         const mergedDbObject = { ...existingDbObject, ...newDbObject };
-        await this.baseTransaction(trx)(TABLES.AUTHORS).insert(mergedDbObject).onConflict(["address"]).merge();
+        await this._baseTransaction(trx)(TABLES.AUTHORS).insert(mergedDbObject).onConflict(["address"]).merge();
     }
 
     async updateAuthor(newAuthorProps: AuthorType, updateCommentsAuthor = true, trx?: Transaction) {
         const onlyNewProps = removeKeysWithUndefinedValues(removeKeys(newAuthorProps, ["address"]));
-        await this.baseTransaction(trx)(TABLES.AUTHORS).update(onlyNewProps).where("address", newAuthorProps.address);
+        await this._baseTransaction(trx)(TABLES.AUTHORS).update(onlyNewProps).where("address", newAuthorProps.address);
         if (updateCommentsAuthor) {
-            const commentsWithAuthor: Comment[] = await this.createCommentsFromRows(
-                await this.baseCommentQuery(trx).where("authorAddress", newAuthorProps.address)
+            const commentsWithAuthor: Comment[] = await this._createCommentsFromRows(
+                await this._baseCommentQuery(trx).where("authorAddress", newAuthorProps.address)
             );
             await Promise.all(
                 commentsWithAuthor.map(async (comment) => {
@@ -277,21 +277,21 @@ export class DbHandler {
                         ? comment.original
                         : { ...comment.original, author: comment.author.toJSON() };
                     const newCommentProps = { author: { ...comment.author.toJSON(), ...onlyNewProps }, original: newOriginal };
-                    await this.baseTransaction(trx)(TABLES.COMMENTS).update(newCommentProps).where("cid", comment.cid);
+                    await this._baseTransaction(trx)(TABLES.COMMENTS).update(newCommentProps).where("cid", comment.cid);
                 })
             );
         }
     }
 
     async queryAuthor(authorAddress: string, trx?: Transaction): Promise<Author | undefined> {
-        const authorProps = await this.baseTransaction(trx)(TABLES.AUTHORS).where({ address: authorAddress }).first();
+        const authorProps = await this._baseTransaction(trx)(TABLES.AUTHORS).where({ address: authorAddress }).first();
         if (authorProps) return new Author(authorProps);
     }
 
     async upsertVote(vote: Vote, challengeRequestId: string, trx?: Transaction) {
-        await this.upsertAuthor(vote.author, trx, true);
+        await this._upsertAuthor(vote.author, trx, true);
         const dbObject = vote.toJSONForDb(challengeRequestId);
-        await this.baseTransaction(trx)(TABLES.VOTES).insert(dbObject).onConflict(["commentCid", "authorAddress"]).merge();
+        await this._baseTransaction(trx)(TABLES.VOTES).insert(dbObject).onConflict(["commentCid", "authorAddress"]).merge();
     }
 
     async upsertComment(postOrComment: Post | Comment, challengeRequestId?: string, trx?: Transaction) {
@@ -299,11 +299,11 @@ export class DbHandler {
 
         if (postOrComment.author)
             // Skip adding author (For CommentEdit)
-            await this.upsertAuthor(postOrComment.author, trx, true);
+            await this._upsertAuthor(postOrComment.author, trx, true);
 
         if (!challengeRequestId)
             challengeRequestId = (
-                await this.baseTransaction(trx)(TABLES.COMMENTS)
+                await this._baseTransaction(trx)(TABLES.COMMENTS)
                     .where({
                         cid: postOrComment.cid
                     })
@@ -317,25 +317,25 @@ export class DbHandler {
                   ...removeKeysWithUndefinedValues(postOrComment.toJSONForDb(challengeRequestId))
               }
             : postOrComment.toJSONForDb(challengeRequestId);
-        await this.baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge();
+        await this._baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge();
     }
 
     async insertEdit(edit: CommentEdit, challengeRequestId: string, trx?: Transaction) {
-        await this.baseTransaction(trx)(TABLES.EDITS).insert(edit.toJSONForDb(challengeRequestId));
+        await this._baseTransaction(trx)(TABLES.EDITS).insert(edit.toJSONForDb(challengeRequestId));
     }
 
     async queryEditsSorted(commentCid: string, editor?: "author" | "mod", trx?: Transaction): Promise<CommentEdit[]> {
-        const authorAddress = (await this.baseTransaction(trx)(TABLES.COMMENTS).select("authorAddress").where("cid", commentCid).first())
+        const authorAddress = (await this._baseTransaction(trx)(TABLES.COMMENTS).select("authorAddress").where("cid", commentCid).first())
             .authorAddress;
         if (!editor) {
-            return this.createEditsFromRows(await this.baseTransaction(trx)(TABLES.EDITS).orderBy("id", "desc"));
+            return this._createEditsFromRows(await this._baseTransaction(trx)(TABLES.EDITS).orderBy("id", "desc"));
         } else if (editor === "author") {
-            return this.createEditsFromRows(
-                await this.baseTransaction(trx)(TABLES.EDITS).where("authorAddress", authorAddress).orderBy("id", "desc")
+            return this._createEditsFromRows(
+                await this._baseTransaction(trx)(TABLES.EDITS).where("authorAddress", authorAddress).orderBy("id", "desc")
             );
         } else if (editor === "mod") {
-            return this.createEditsFromRows(
-                await this.baseTransaction(trx)(TABLES.EDITS).whereNot("authorAddress", authorAddress).orderBy("id", "desc")
+            return this._createEditsFromRows(
+                await this._baseTransaction(trx)(TABLES.EDITS).whereNot("authorAddress", authorAddress).orderBy("id", "desc")
             );
         } else {
             return [];
@@ -368,49 +368,49 @@ export class DbHandler {
             };
         }
 
-        await this.baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid);
+        await this._baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid);
     }
 
     async upsertChallenge(
         challenge: ChallengeRequestMessage | ChallengeMessage | ChallengeAnswerMessage | ChallengeVerificationMessage,
         trx?: Transaction
     ) {
-        const existingChallenge = await this.baseTransaction(trx)(TABLES.CHALLENGES)
+        const existingChallenge = await this._baseTransaction(trx)(TABLES.CHALLENGES)
             .where({ challengeRequestId: challenge.challengeRequestId })
             .first();
         const dbObject = {
             ...existingChallenge,
             ...challenge.toJSONForDb()
         };
-        await this.baseTransaction(trx)(TABLES.CHALLENGES).insert(dbObject).onConflict("challengeRequestId").merge();
+        await this._baseTransaction(trx)(TABLES.CHALLENGES).insert(dbObject).onConflict("challengeRequestId").merge();
     }
 
     async getLastVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<Vote | undefined> {
-        const voteObj = await this.baseTransaction(trx)(TABLES.VOTES)
+        const voteObj = await this._baseTransaction(trx)(TABLES.VOTES)
             .where({
                 commentCid: commentCid,
                 authorAddress: authorAddress
             })
             .first();
-        return (await this.createVotesFromRows(voteObj))[0];
+        return (await this._createVotesFromRows(voteObj))[0];
     }
 
-    baseCommentQuery(trx?: Transaction) {
-        const upvoteQuery = this.baseTransaction(trx)(TABLES.VOTES)
+    private _baseCommentQuery(trx?: Transaction) {
+        const upvoteQuery = this._baseTransaction(trx)(TABLES.VOTES)
             .count(`${TABLES.VOTES}.vote`)
             .where({
                 [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`),
                 [`${TABLES.VOTES}.vote`]: 1
             })
             .as("upvoteCount");
-        const downvoteQuery = this.baseTransaction(trx)(TABLES.VOTES)
+        const downvoteQuery = this._baseTransaction(trx)(TABLES.VOTES)
             .count(`${TABLES.VOTES}.vote`)
             .where({
                 [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`),
                 [`${TABLES.VOTES}.vote`]: -1
             })
             .as("downvoteCount");
-        const replyCountQuery = this.baseTransaction(trx)
+        const replyCountQuery = this._baseTransaction(trx)
             .from(`${TABLES.COMMENTS} AS comments2`)
             .count("")
             .where({
@@ -418,10 +418,10 @@ export class DbHandler {
             })
             .as("replyCount");
 
-        return this.baseTransaction(trx)(TABLES.COMMENTS).select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery);
+        return this._baseTransaction(trx)(TABLES.COMMENTS).select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery);
     }
 
-    async createCommentsFromRows(commentsRows: Comment[] | Comment): Promise<Comment[] | Post[]> {
+    private async _createCommentsFromRows(commentsRows: Comment[] | Comment): Promise<Comment[] | Post[]> {
         if (!commentsRows || (Array.isArray(commentsRows) && commentsRows?.length === 0)) return [];
         if (!Array.isArray(commentsRows)) commentsRows = [commentsRows];
         return Promise.all(
@@ -440,7 +440,7 @@ export class DbHandler {
         );
     }
 
-    async createEditsFromRows(edits: CommentEdit[] | CommentEdit): Promise<CommentEdit[]> {
+    private async _createEditsFromRows(edits: CommentEdit[] | CommentEdit): Promise<CommentEdit[]> {
         if (!edits || (Array.isArray(edits) && edits?.length === 0)) return [];
         if (!Array.isArray(edits)) edits = [edits];
         return Promise.all(
@@ -453,7 +453,7 @@ export class DbHandler {
         );
     }
 
-    async createVotesFromRows(voteRows: Vote[] | Vote): Promise<Vote[]> {
+    private async _createVotesFromRows(voteRows: Vote[] | Vote): Promise<Vote[]> {
         if (!voteRows || (Array.isArray(voteRows) && voteRows.length === 0)) return [];
         if (!Array.isArray(voteRows)) voteRows = [voteRows];
         return Promise.all(
@@ -468,8 +468,8 @@ export class DbHandler {
     async queryCommentsSortedByTimestamp(parentCid: string | undefined | null, order = "desc", trx?: Transaction) {
         parentCid = parentCid || null;
 
-        const commentObj = await this.baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", order);
-        return this.createCommentsFromRows(commentObj);
+        const commentObj = await this._baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", order);
+        return this._createCommentsFromRows(commentObj);
     }
 
     async queryCommentsBetweenTimestampRange(
@@ -481,10 +481,10 @@ export class DbHandler {
         parentCid = parentCid || null;
 
         if (timestamp1 === Number.NEGATIVE_INFINITY) timestamp1 = 0;
-        const rawCommentObjs = await this.baseCommentQuery(trx)
+        const rawCommentObjs = await this._baseCommentQuery(trx)
             .where({ parentCid: parentCid })
             .whereBetween("timestamp", [timestamp1, timestamp2]);
-        return this.createCommentsFromRows(rawCommentObjs);
+        return this._createCommentsFromRows(rawCommentObjs);
     }
 
     async queryTopCommentsBetweenTimestampRange(
@@ -495,27 +495,27 @@ export class DbHandler {
     ): Promise<Comment[] | Post[]> {
         if (timestamp1 === Number.NEGATIVE_INFINITY) timestamp1 = 0;
         parentCid = parentCid || null;
-        const topScoreQuery = this.baseTransaction(trx)(TABLES.VOTES)
+        const topScoreQuery = this._baseTransaction(trx)(TABLES.VOTES)
             .select(this.knex.raw(`COALESCE(SUM(${TABLES.VOTES}.vote), 0)`)) // We're using raw expressions because there's no native method in Knexjs to return 0 if SUM is null
             .where({
                 [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`)
             })
             .as("topScore");
-        const rawCommentsObjs = await this.baseCommentQuery(trx)
+        const rawCommentsObjs = await this._baseCommentQuery(trx)
             .select(topScoreQuery)
             .groupBy(`${TABLES.COMMENTS}.cid`)
             .orderBy("topScore", "desc")
             .whereBetween(`${TABLES.COMMENTS}.timestamp`, [timestamp1, timestamp2])
             .where({ [`${TABLES.COMMENTS}.parentCid`]: parentCid });
 
-        return this.createCommentsFromRows(rawCommentsObjs);
+        return this._createCommentsFromRows(rawCommentsObjs);
     }
 
     async queryCommentsUnderComment(parentCid: string | undefined | null, trx?: Transaction): Promise<Comment[] | Post[]> {
         parentCid = parentCid || null;
 
-        const commentsObjs = await this.baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", "desc");
-        return await this.createCommentsFromRows(commentsObjs);
+        const commentsObjs = await this._baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", "desc");
+        return await this._createCommentsFromRows(commentsObjs);
     }
 
     async queryParentsOfComment(comment: Comment, trx?: Transaction): Promise<Comment[]> {
@@ -531,7 +531,7 @@ export class DbHandler {
     }
 
     async queryComments(trx?: Transaction): Promise<Comment[] | Post[]> {
-        return this.createCommentsFromRows(await this.baseCommentQuery(trx).orderBy("id", "desc"));
+        return this._createCommentsFromRows(await this._baseCommentQuery(trx).orderBy("id", "desc"));
     }
 
     async querySubplebbitMetrics(trx?: Transaction): Promise<SubplebbitMetrics> {
@@ -544,14 +544,14 @@ export class DbHandler {
                             const [from, to] = [Math.max(0, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe]), timestamp()];
                             if (metricType === "ActiveUserCount") {
                                 const res = (
-                                    await this.baseTransaction(trx)(TABLES.COMMENTS)
+                                    await this._baseTransaction(trx)(TABLES.COMMENTS)
                                         .countDistinct("comments.authorAddress")
                                         .join(TABLES.VOTES, `${TABLES.COMMENTS}.authorAddress`, `=`, `${TABLES.VOTES}.authorAddress`)
                                         .whereBetween("comments.timestamp", [from, to])
                                 )[0]["count(distinct `comments`.`authorAddress`)"];
                                 return { [propertyName]: res };
                             } else if (metricType === "PostCount") {
-                                const query = this.baseTransaction(trx)(TABLES.COMMENTS)
+                                const query = this._baseTransaction(trx)(TABLES.COMMENTS)
                                     .count()
                                     .whereBetween("timestamp", [from, to])
                                     .whereNotNull("title");
@@ -569,46 +569,46 @@ export class DbHandler {
 
     async queryComment(cid: string, trx?: Transaction): Promise<Comment | Post | undefined> {
         assert(typeof cid === "string" && cid.length > 0, `Can't query a comment with null cid (${cid})`);
-        const commentObj = await this.baseCommentQuery(trx).where("cid", cid).first();
-        return (await this.createCommentsFromRows(commentObj))[0];
+        const commentObj = await this._baseCommentQuery(trx).where("cid", cid).first();
+        return (await this._createCommentsFromRows(commentObj))[0];
     }
 
     async queryLatestPost(trx?: Transaction): Promise<Post | undefined> {
-        const commentObj = await this.baseCommentQuery(trx).whereNotNull("title").orderBy("id", "desc").first();
-        const post = (await this.createCommentsFromRows(commentObj))[0];
+        const commentObj = await this._baseCommentQuery(trx).whereNotNull("title").orderBy("id", "desc").first();
+        const post = (await this._createCommentsFromRows(commentObj))[0];
         if (!post) return undefined;
         assert(post instanceof Post);
         return post;
     }
 
     async insertSigner(signer: Signer, trx?: Transaction) {
-        await this.baseTransaction(trx)(TABLES.SIGNERS).insert(signer);
+        await this._baseTransaction(trx)(TABLES.SIGNERS).insert(signer);
     }
 
     async querySubplebbitSigner(trx?: Transaction): Promise<Signer> {
-        return this.baseTransaction(trx)(TABLES.SIGNERS).where({ usage: "subplebbit" }).first();
+        return this._baseTransaction(trx)(TABLES.SIGNERS).where({ usage: "subplebbit" }).first();
     }
 
     async querySigner(ipnsKeyName: string, trx?: Transaction): Promise<Signer | undefined> {
-        return this.baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName: ipnsKeyName }).first();
+        return this._baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName: ipnsKeyName }).first();
     }
 
     async queryCommentsGroupByDepth(trx?: Knex.Transaction): Promise<Comment[][]> {
-        const maxDepth = (await this.baseTransaction(trx)(TABLES.COMMENTS).max("depth"))[0]["max(`depth`)"];
+        const maxDepth = (await this._baseTransaction(trx)(TABLES.COMMENTS).max("depth"))[0]["max(`depth`)"];
         if (typeof maxDepth !== "number") return [[]];
 
         const depths = new Array(maxDepth + 1).fill(null).map((value, i) => i);
         const comments: Comment[][] = await Promise.all(
             depths.map(async (depth) => {
-                const commentsWithDepth = await this.baseCommentQuery(trx).where({ depth: depth });
-                return this.createCommentsFromRows(commentsWithDepth);
+                const commentsWithDepth = await this._baseCommentQuery(trx).where({ depth: depth });
+                return this._createCommentsFromRows(commentsWithDepth);
             })
         );
         return comments;
     }
 
     async queryCountOfPosts(trx?: Knex.Transaction): Promise<number> {
-        const obj = await this.baseTransaction(trx)(TABLES.COMMENTS).count().where({ depth: 0 }).first();
+        const obj = await this._baseTransaction(trx)(TABLES.COMMENTS).count().where({ depth: 0 }).first();
         if (!obj) return 0;
         return Number(obj["count(*)"]);
     }
