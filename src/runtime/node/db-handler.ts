@@ -47,22 +47,22 @@ const jsonFields = [
 const currentDbVersion = 1;
 
 export class DbHandler {
-    private knex: Knex;
-    private subplebbit: Subplebbit;
+    private _knex: Knex;
+    private _subplebbit: Subplebbit;
     private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
 
     constructor(subplebbit: Subplebbit) {
-        this.knex = knex(subplebbit.dbConfig);
-        this.subplebbit = subplebbit;
+        this._knex = knex(subplebbit.dbConfig);
+        this._subplebbit = subplebbit;
         this._currentTrxs = {};
     }
 
     async destoryConnection() {
-        if (this.knex) await this.knex.destroy();
+        if (this._knex) await this._knex.destroy();
     }
     async createTransaction(transactionId: string): Promise<Transaction> {
         assert(!this._currentTrxs[transactionId]);
-        const trx = await this.knex.transaction();
+        const trx = await this._knex.transaction();
         this._currentTrxs[transactionId] = trx;
         return trx;
     }
@@ -90,11 +90,11 @@ export class DbHandler {
     }
 
     private _baseTransaction(trx?: Transaction): Transaction | Knex {
-        return trx ? trx : this.knex;
+        return trx ? trx : this._knex;
     }
 
     private async _createCommentsTable(tableName: string) {
-        await this.knex.schema.createTable(tableName, (table) => {
+        await this._knex.schema.createTable(tableName, (table) => {
             table.text("cid").notNullable().primary().unique();
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
             table.json("author").notNullable();
@@ -131,7 +131,7 @@ export class DbHandler {
     }
 
     private async _createVotesTable(tableName: string) {
-        await this.knex.schema.createTable(tableName, (table) => {
+        await this._knex.schema.createTable(tableName, (table) => {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
             table.json("author").notNullable();
@@ -148,7 +148,7 @@ export class DbHandler {
     }
 
     private async _createAuthorsTable(tableName: string) {
-        await this.knex.schema.createTable(tableName, (table) => {
+        await this._knex.schema.createTable(tableName, (table) => {
             table.text("address").notNullable().primary().unique();
             table.timestamp("banExpiresAt").nullable();
             table.json("flair").nullable();
@@ -156,7 +156,7 @@ export class DbHandler {
     }
 
     private async _createChallengesTable(tableName: string) {
-        await this.knex.schema.createTable(tableName, (table) => {
+        await this._knex.schema.createTable(tableName, (table) => {
             table.uuid("challengeRequestId").notNullable().primary().unique();
             table.enum("type", Object.values(PUBSUB_MESSAGE_TYPES)).notNullable();
             table.json("acceptedChallengeTypes").nullable().defaultTo(null);
@@ -170,7 +170,7 @@ export class DbHandler {
     }
 
     private async _createSignersTable(tableName: string) {
-        await this.knex.schema.createTable(tableName, (table) => {
+        await this._knex.schema.createTable(tableName, (table) => {
             table.text("ipnsKeyName").notNullable().unique().primary();
             table.text("privateKey").notNullable().unique();
             table.text("publicKey").notNullable().unique();
@@ -182,7 +182,7 @@ export class DbHandler {
     }
 
     private async _createEditsTable(tableName: string) {
-        await this.knex.schema.createTable(tableName, (table) => {
+        await this._knex.schema.createTable(tableName, (table) => {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
             table.json("author").notNullable();
@@ -209,7 +209,7 @@ export class DbHandler {
     }
 
     async getDbVersion(): Promise<number> {
-        return Number((await this.knex.raw("PRAGMA user_version"))[0]["user_version"]);
+        return Number((await this._knex.raw("PRAGMA user_version"))[0]["user_version"]);
     }
 
     async createTablesIfNeeded() {
@@ -230,22 +230,22 @@ export class DbHandler {
         await Promise.all(
             tables.map(async (table) => {
                 const i = tables.indexOf(table);
-                const tableExists = await this.knex.schema.hasTable(table);
+                const tableExists = await this._knex.schema.hasTable(table);
                 if (!tableExists) await createTableFunctions[i].bind(this)(table);
                 else if (tableExists && needToMigrate) {
                     log(`Migrating table ${table} to new schema`);
-                    await this.knex.raw("PRAGMA foreign_keys = OFF");
+                    await this._knex.raw("PRAGMA foreign_keys = OFF");
                     const tempTableName = `${table}${currentDbVersion}`;
                     await createTableFunctions[i].bind(this)(tempTableName);
                     await this._copyTable(table, tempTableName);
-                    await this.knex.schema.dropTable(table);
-                    await this.knex.schema.renameTable(tempTableName, table);
+                    await this._knex.schema.dropTable(table);
+                    await this._knex.schema.renameTable(tempTableName, table);
                 }
             })
         );
 
-        await this.knex.raw("PRAGMA foreign_keys = ON");
-        await this.knex.raw(`PRAGMA user_version = ${currentDbVersion}`);
+        await this._knex.raw("PRAGMA foreign_keys = ON");
+        await this._knex.raw(`PRAGMA user_version = ${currentDbVersion}`);
         dbVersion = await this.getDbVersion();
         assert.equal(dbVersion, currentDbVersion);
     }
@@ -253,9 +253,9 @@ export class DbHandler {
     private async _copyTable(srcTable: string, dstTable: string) {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
 
-        const srcRecords = await this.knex(srcTable).select("*");
+        const srcRecords = await this._knex(srcTable).select("*");
         log(`Attempting to copy ${srcRecords.length} ${srcTable}`);
-        if (srcRecords.length > 0) await this.knex(dstTable).insert(srcRecords);
+        if (srcRecords.length > 0) await this._knex(dstTable).insert(srcRecords);
         log(`copied table ${srcTable} to table ${dstTable}`);
     }
 
@@ -406,14 +406,14 @@ export class DbHandler {
         const upvoteQuery = this._baseTransaction(trx)(TABLES.VOTES)
             .count(`${TABLES.VOTES}.vote`)
             .where({
-                [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`),
+                [`${TABLES.COMMENTS}.cid`]: this._knex.raw(`${TABLES.VOTES}.commentCid`),
                 [`${TABLES.VOTES}.vote`]: 1
             })
             .as("upvoteCount");
         const downvoteQuery = this._baseTransaction(trx)(TABLES.VOTES)
             .count(`${TABLES.VOTES}.vote`)
             .where({
-                [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`),
+                [`${TABLES.COMMENTS}.cid`]: this._knex.raw(`${TABLES.VOTES}.commentCid`),
                 [`${TABLES.VOTES}.vote`]: -1
             })
             .as("downvoteCount");
@@ -421,7 +421,7 @@ export class DbHandler {
             .from(`${TABLES.COMMENTS} AS comments2`)
             .count("")
             .where({
-                "comments2.parentCid": this.knex.raw(`${TABLES.COMMENTS}.cid`)
+                "comments2.parentCid": this._knex.raw(`${TABLES.COMMENTS}.cid`)
             })
             .as("replyCount");
 
@@ -436,7 +436,7 @@ export class DbHandler {
                 const replacedProps = replaceXWithY(props, null, undefined); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
                 for (const field of jsonFields) if (replacedProps[field]) replacedProps[field] = JSON.parse(replacedProps[field]);
 
-                const comment = await this.subplebbit.plebbit.createComment(replacedProps);
+                const comment = await this._subplebbit.plebbit.createComment(replacedProps);
                 assert(
                     typeof comment.replyCount === "number" &&
                         typeof comment.upvoteCount === "number" &&
@@ -455,7 +455,7 @@ export class DbHandler {
                 const replacedProps = replaceXWithY(props, null, undefined); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
                 for (const field of jsonFields) if (replacedProps[field]) replacedProps[field] = JSON.parse(replacedProps[field]);
 
-                return this.subplebbit.plebbit.createCommentEdit(replacedProps);
+                return this._subplebbit.plebbit.createCommentEdit(replacedProps);
             })
         );
     }
@@ -467,7 +467,7 @@ export class DbHandler {
             voteRows.map((props) => {
                 const replacedProps = replaceXWithY(props, null, undefined);
                 for (const field of jsonFields) if (replacedProps[field]) replacedProps[field] = JSON.parse(replacedProps[field]);
-                return this.subplebbit.plebbit.createVote(replacedProps);
+                return this._subplebbit.plebbit.createVote(replacedProps);
             })
         );
     }
@@ -503,9 +503,9 @@ export class DbHandler {
         if (timestamp1 === Number.NEGATIVE_INFINITY) timestamp1 = 0;
         parentCid = parentCid || null;
         const topScoreQuery = this._baseTransaction(trx)(TABLES.VOTES)
-            .select(this.knex.raw(`COALESCE(SUM(${TABLES.VOTES}.vote), 0)`)) // We're using raw expressions because there's no native method in Knexjs to return 0 if SUM is null
+            .select(this._knex.raw(`COALESCE(SUM(${TABLES.VOTES}.vote), 0)`)) // We're using raw expressions because there's no native method in Knexjs to return 0 if SUM is null
             .where({
-                [`${TABLES.COMMENTS}.cid`]: this.knex.raw(`${TABLES.VOTES}.commentCid`)
+                [`${TABLES.COMMENTS}.cid`]: this._knex.raw(`${TABLES.VOTES}.commentCid`)
             })
             .as("topScore");
         const rawCommentsObjs = await this._baseCommentQuery(trx)
@@ -623,7 +623,7 @@ export class DbHandler {
     async changeDbFilename(newDbFileName: string) {
         const log = Logger("plebbit-js:db-handler:changeDbFilename");
 
-        const oldPathString = this.subplebbit?.dbConfig?.connection?.filename;
+        const oldPathString = this._subplebbit?.dbConfig?.connection?.filename;
         assert.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
         if (oldPathString === ":memory:") {
             log.trace(`No need to change file name of db since it's in memory`);
@@ -632,14 +632,14 @@ export class DbHandler {
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbFileName });
         await fs.promises.mkdir(path.dirname(newPath), { recursive: true });
         await fs.promises.rename(oldPathString, newPath);
-        this.subplebbit.dbConfig = {
-            ...this.subplebbit.dbConfig,
+        this._subplebbit.dbConfig = {
+            ...this._subplebbit.dbConfig,
             connection: {
                 filename: newPath
             }
         };
-        this.subplebbit.dbHandler = new DbHandler(this.subplebbit);
-        this.subplebbit._keyv = new Keyv(`sqlite://${this.subplebbit.dbConfig.connection.filename}`);
+        this._subplebbit.dbHandler = new DbHandler(this._subplebbit);
+        this._subplebbit._keyv = new Keyv(`sqlite://${this._subplebbit.dbConfig.connection.filename}`);
         log(`Changed db path from (${oldPathString}) to (${newPath})`);
     }
 }
