@@ -332,9 +332,3 @@ export type SignedPropertyNames =
     | SubplebbitSignedPropertyNames
     | CommentUpdatedSignedPropertyNames;
 // | MultisubSignedPropertyNames;
-
-type FunctionPropertyOf<T> = {
-    [P in keyof T]: T[P] extends Function ? P : never;
-}[keyof T];
-
-export type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHandler>>;
