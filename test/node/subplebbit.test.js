@@ -211,12 +211,13 @@ describe("subplebbit", async () => {
         }));
 
     it(`DB get migrated successfully`, async () => {
-        const originalDbVersion = Number((await subplebbit.dbHandler.knex.raw("PRAGMA user_version"))[0]["user_version"]);
-        await subplebbit.dbHandler.knex.raw("PRAGMA user_version = 999999"); // Force a migrate
+        // TODO this test is not through at all. Rewrite it at some point
+        const originalDbVersion = await subplebbit.dbHandler.getDbVersion();
+        await subplebbit.dbHandler._knex.raw("PRAGMA user_version = 999999"); // Force a migrate
         await subplebbit.stop(); // Clear out dbHandler
         await subplebbit.start(syncInterval);
 
-        const currentDbVersion = Number((await subplebbit.dbHandler.knex.raw("PRAGMA user_version"))[0]["user_version"]);
+        const currentDbVersion = await subplebbit.dbHandler.getDbVersion();
         expect(currentDbVersion).to.equal(originalDbVersion); // If they're equal, that means all tables have been migrated
     });
 });
