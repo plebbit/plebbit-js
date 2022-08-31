@@ -37,7 +37,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     plebbit: Plebbit;
     dbHandler?: DbHandler;
     _keyv: any;
-    _dbConfig?: any;
+    dbConfig: any;
     private _challengeToSolution;
     private _challengeToPublication;
     private provideCaptchaCallback?;
