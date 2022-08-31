@@ -10,8 +10,8 @@ import Transaction = Knex.Transaction;
 import { AuthorType, SubplebbitMetrics } from "../../types";
 import { CommentEdit } from "../../comment-edit";
 export declare class DbHandler {
-    private knex;
-    private subplebbit;
+    private _knex;
+    private _subplebbit;
     private _currentTrxs;
     constructor(subplebbit: Subplebbit);
     destoryConnection(): Promise<void>;

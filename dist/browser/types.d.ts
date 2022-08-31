@@ -1,7 +1,6 @@
 import { Options } from "ipfs-http-client";
 import { Knex } from "knex";
 import { Pages } from "./pages";
-import { DbHandler } from "./runtime/browser/db-handler";
 import { Subplebbit } from "./subplebbit";
 export declare type ProtocolVersion = "1.0.0";
 export declare type BlockchainProvider = {
@@ -282,8 +281,4 @@ export declare type CommentUpdatedSignedPropertyNames = (keyof Omit<CommentUpdat
 export declare type VoteSignedPropertyNames = (keyof Omit<CreateVoteOptions, "signer" | "protocolVersion">)[];
 export declare type SubplebbitSignedPropertyNames = (keyof Omit<SubplebbitType, "signer" | "signature" | "protocolVersion">)[];
 export declare type SignedPropertyNames = CommentSignedPropertyNames | CommentEditSignedPropertyNames | VoteSignedPropertyNames | SubplebbitSignedPropertyNames | CommentUpdatedSignedPropertyNames;
-declare type FunctionPropertyOf<T> = {
-    [P in keyof T]: T[P] extends Function ? P : never;
-}[keyof T];
-export declare type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHandler>>;
 export {};

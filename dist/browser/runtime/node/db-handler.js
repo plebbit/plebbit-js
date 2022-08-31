@@ -93,8 +93,8 @@ var jsonFields = [
 var currentDbVersion = 1;
 var DbHandler = /** @class */ (function () {
     function DbHandler(subplebbit) {
-        this.knex = (0, knex_1.default)(subplebbit.dbConfig);
-        this.subplebbit = subplebbit;
+        this._knex = (0, knex_1.default)(subplebbit.dbConfig);
+        this._subplebbit = subplebbit;
         this._currentTrxs = {};
     }
     DbHandler.prototype.destoryConnection = function () {
@@ -102,8 +102,8 @@ var DbHandler = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!this.knex) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.knex.destroy()];
+                        if (!this._knex) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this._knex.destroy()];
                     case 1:
                         _a.sent();
                         _a.label = 2;
@@ -119,7 +119,7 @@ var DbHandler = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         (0, assert_1.default)(!this._currentTrxs[transactionId]);
-                        return [4 /*yield*/, this.knex.transaction()];
+                        return [4 /*yield*/, this._knex.transaction()];
                     case 1:
                         trx = _a.sent();
                         this._currentTrxs[transactionId] = trx;
@@ -168,13 +168,13 @@ var DbHandler = /** @class */ (function () {
         });
     };
     DbHandler.prototype._baseTransaction = function (trx) {
-        return trx ? trx : this.knex;
+        return trx ? trx : this._knex;
     };
     DbHandler.prototype._createCommentsTable = function (tableName) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(tableName, function (table) {
+                    case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
                             table.text("cid").notNullable().primary().unique();
                             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
                             table.json("author").notNullable();
@@ -217,7 +217,7 @@ var DbHandler = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(tableName, function (table) {
+                    case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
                             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
                             table.json("author").notNullable();
@@ -240,7 +240,7 @@ var DbHandler = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(tableName, function (table) {
+                    case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
                             table.text("address").notNullable().primary().unique();
                             table.timestamp("banExpiresAt").nullable();
                             table.json("flair").nullable();
@@ -256,7 +256,7 @@ var DbHandler = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(tableName, function (table) {
+                    case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
                             table.uuid("challengeRequestId").notNullable().primary().unique();
                             table.enum("type", Object.values(challenge_1.PUBSUB_MESSAGE_TYPES)).notNullable();
                             table.json("acceptedChallengeTypes").nullable().defaultTo(null);
@@ -278,7 +278,7 @@ var DbHandler = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(tableName, function (table) {
+                    case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
                             table.text("ipnsKeyName").notNullable().unique().primary();
                             table.text("privateKey").notNullable().unique();
                             table.text("publicKey").notNullable().unique();
@@ -298,7 +298,7 @@ var DbHandler = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.knex.schema.createTable(tableName, function (table) {
+                    case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
                             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("authorAddress").notNullable().references("address").inTable(TABLES.AUTHORS);
                             table.json("author").notNullable();
@@ -334,7 +334,7 @@ var DbHandler = /** @class */ (function () {
                 switch (_b.label) {
                     case 0:
                         _a = Number;
-                        return [4 /*yield*/, this.knex.raw("PRAGMA user_version")];
+                        return [4 /*yield*/, this._knex.raw("PRAGMA user_version")];
                     case 1: return [2 /*return*/, _a.apply(void 0, [(_b.sent())[0]["user_version"]])];
                 }
             });
@@ -367,7 +367,7 @@ var DbHandler = /** @class */ (function () {
                                     switch (_a.label) {
                                         case 0:
                                             i = tables.indexOf(table);
-                                            return [4 /*yield*/, this.knex.schema.hasTable(table)];
+                                            return [4 /*yield*/, this._knex.schema.hasTable(table)];
                                         case 1:
                                             tableExists = _a.sent();
                                             if (!!tableExists) return [3 /*break*/, 3];
@@ -378,7 +378,7 @@ var DbHandler = /** @class */ (function () {
                                         case 3:
                                             if (!(tableExists && needToMigrate)) return [3 /*break*/, 9];
                                             log("Migrating table ".concat(table, " to new schema"));
-                                            return [4 /*yield*/, this.knex.raw("PRAGMA foreign_keys = OFF")];
+                                            return [4 /*yield*/, this._knex.raw("PRAGMA foreign_keys = OFF")];
                                         case 4:
                                             _a.sent();
                                             tempTableName = "".concat(table).concat(currentDbVersion);
@@ -388,10 +388,10 @@ var DbHandler = /** @class */ (function () {
                                             return [4 /*yield*/, this._copyTable(table, tempTableName)];
                                         case 6:
                                             _a.sent();
-                                            return [4 /*yield*/, this.knex.schema.dropTable(table)];
+                                            return [4 /*yield*/, this._knex.schema.dropTable(table)];
                                         case 7:
                                             _a.sent();
-                                            return [4 /*yield*/, this.knex.schema.renameTable(tempTableName, table)];
+                                            return [4 /*yield*/, this._knex.schema.renameTable(tempTableName, table)];
                                         case 8:
                                             _a.sent();
                                             _a.label = 9;
@@ -401,10 +401,10 @@ var DbHandler = /** @class */ (function () {
                             }); }))];
                     case 2:
                         _a.sent();
-                        return [4 /*yield*/, this.knex.raw("PRAGMA foreign_keys = ON")];
+                        return [4 /*yield*/, this._knex.raw("PRAGMA foreign_keys = ON")];
                     case 3:
                         _a.sent();
-                        return [4 /*yield*/, this.knex.raw("PRAGMA user_version = ".concat(currentDbVersion))];
+                        return [4 /*yield*/, this._knex.raw("PRAGMA user_version = ".concat(currentDbVersion))];
                     case 4:
                         _a.sent();
                         return [4 /*yield*/, this.getDbVersion()];
@@ -423,12 +423,12 @@ var DbHandler = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
-                        return [4 /*yield*/, this.knex(srcTable).select("*")];
+                        return [4 /*yield*/, this._knex(srcTable).select("*")];
                     case 1:
                         srcRecords = _a.sent();
                         log("Attempting to copy ".concat(srcRecords.length, " ").concat(srcTable));
                         if (!(srcRecords.length > 0)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, this.knex(dstTable).insert(srcRecords)];
+                        return [4 /*yield*/, this._knex(dstTable).insert(srcRecords)];
                     case 2:
                         _a.sent();
                         _a.label = 3;
@@ -701,14 +701,14 @@ var DbHandler = /** @class */ (function () {
         var upvoteQuery = this._baseTransaction(trx)(TABLES.VOTES)
             .count("".concat(TABLES.VOTES, ".vote"))
             .where((_a = {},
-            _a["".concat(TABLES.COMMENTS, ".cid")] = this.knex.raw("".concat(TABLES.VOTES, ".commentCid")),
+            _a["".concat(TABLES.COMMENTS, ".cid")] = this._knex.raw("".concat(TABLES.VOTES, ".commentCid")),
             _a["".concat(TABLES.VOTES, ".vote")] = 1,
             _a))
             .as("upvoteCount");
         var downvoteQuery = this._baseTransaction(trx)(TABLES.VOTES)
             .count("".concat(TABLES.VOTES, ".vote"))
             .where((_b = {},
-            _b["".concat(TABLES.COMMENTS, ".cid")] = this.knex.raw("".concat(TABLES.VOTES, ".commentCid")),
+            _b["".concat(TABLES.COMMENTS, ".cid")] = this._knex.raw("".concat(TABLES.VOTES, ".commentCid")),
             _b["".concat(TABLES.VOTES, ".vote")] = -1,
             _b))
             .as("downvoteCount");
@@ -716,7 +716,7 @@ var DbHandler = /** @class */ (function () {
             .from("".concat(TABLES.COMMENTS, " AS comments2"))
             .count("")
             .where({
-            "comments2.parentCid": this.knex.raw("".concat(TABLES.COMMENTS, ".cid"))
+            "comments2.parentCid": this._knex.raw("".concat(TABLES.COMMENTS, ".cid"))
         })
             .as("replyCount");
         return this._baseTransaction(trx)(TABLES.COMMENTS).select("".concat(TABLES.COMMENTS, ".*"), upvoteQuery, downvoteQuery, replyCountQuery);
@@ -740,7 +740,7 @@ var DbHandler = /** @class */ (function () {
                                         if (replacedProps[field])
                                             replacedProps[field] = JSON.parse(replacedProps[field]);
                                     }
-                                    return [4 /*yield*/, this.subplebbit.plebbit.createComment(replacedProps)];
+                                    return [4 /*yield*/, this._subplebbit.plebbit.createComment(replacedProps)];
                                 case 1:
                                     comment = _a.sent();
                                     (0, assert_1.default)(typeof comment.replyCount === "number" &&
@@ -770,7 +770,7 @@ var DbHandler = /** @class */ (function () {
                                 if (replacedProps[field])
                                     replacedProps[field] = JSON.parse(replacedProps[field]);
                             }
-                            return [2 /*return*/, this.subplebbit.plebbit.createCommentEdit(replacedProps)];
+                            return [2 /*return*/, this._subplebbit.plebbit.createCommentEdit(replacedProps)];
                         });
                     }); }))];
             });
@@ -791,7 +791,7 @@ var DbHandler = /** @class */ (function () {
                             if (replacedProps[field])
                                 replacedProps[field] = JSON.parse(replacedProps[field]);
                         }
-                        return _this.subplebbit.plebbit.createVote(replacedProps);
+                        return _this._subplebbit.plebbit.createVote(replacedProps);
                     }))];
             });
         });
@@ -842,9 +842,9 @@ var DbHandler = /** @class */ (function () {
                             timestamp1 = 0;
                         parentCid = parentCid || null;
                         topScoreQuery = this._baseTransaction(trx)(TABLES.VOTES)
-                            .select(this.knex.raw("COALESCE(SUM(".concat(TABLES.VOTES, ".vote), 0)"))) // We're using raw expressions because there's no native method in Knexjs to return 0 if SUM is null
+                            .select(this._knex.raw("COALESCE(SUM(".concat(TABLES.VOTES, ".vote), 0)"))) // We're using raw expressions because there's no native method in Knexjs to return 0 if SUM is null
                             .where((_a = {},
-                            _a["".concat(TABLES.COMMENTS, ".cid")] = this.knex.raw("".concat(TABLES.VOTES, ".commentCid")),
+                            _a["".concat(TABLES.COMMENTS, ".cid")] = this._knex.raw("".concat(TABLES.VOTES, ".commentCid")),
                             _a))
                             .as("topScore");
                         return [4 /*yield*/, this._baseCommentQuery(trx)
@@ -1080,7 +1080,7 @@ var DbHandler = /** @class */ (function () {
                 switch (_d.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:changeDbFilename");
-                        oldPathString = (_c = (_b = (_a = this.subplebbit) === null || _a === void 0 ? void 0 : _a.dbConfig) === null || _b === void 0 ? void 0 : _b.connection) === null || _c === void 0 ? void 0 : _c.filename;
+                        oldPathString = (_c = (_b = (_a = this._subplebbit) === null || _a === void 0 ? void 0 : _a.dbConfig) === null || _b === void 0 ? void 0 : _b.connection) === null || _c === void 0 ? void 0 : _c.filename;
                         assert_1.default.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
                         if (oldPathString === ":memory:") {
                             log.trace("No need to change file name of db since it's in memory");
@@ -1093,11 +1093,11 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, fs_1.default.promises.rename(oldPathString, newPath)];
                     case 2:
                         _d.sent();
-                        this.subplebbit.dbConfig = __assign(__assign({}, this.subplebbit.dbConfig), { connection: {
+                        this._subplebbit.dbConfig = __assign(__assign({}, this._subplebbit.dbConfig), { connection: {
                                 filename: newPath
                             } });
-                        this.subplebbit.dbHandler = new DbHandler(this.subplebbit);
-                        this.subplebbit._keyv = new keyv_1.default("sqlite://".concat(this.subplebbit.dbConfig.connection.filename));
+                        this._subplebbit.dbHandler = new DbHandler(this._subplebbit);
+                        this._subplebbit._keyv = new keyv_1.default("sqlite://".concat(this._subplebbit.dbConfig.connection.filename));
                         log("Changed db path from (".concat(oldPathString, ") to (").concat(newPath, ")"));
                         return [2 /*return*/];
                 }
