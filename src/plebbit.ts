@@ -10,7 +10,7 @@ import {
     PostType,
     VoteType
 } from "./types";
-import plebbitUtil, { isRuntimeNode } from "./runtime/node/util";
+import plebbitUtil, { isRuntimeNode, mkdir } from "./runtime/node/util";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
@@ -86,6 +86,8 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
                 log(`${e.msg}: Failed to retrieve gateway url from ipfs node, will default to ${this.ipfsGatewayUrl}`);
             }
         }
+
+        if (this.dataPath && isRuntimeNode) await mkdir(this.dataPath, { recursive: true });
     }
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
