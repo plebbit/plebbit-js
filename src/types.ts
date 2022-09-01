@@ -1,7 +1,6 @@
 import { Options } from "ipfs-http-client";
 import { Knex } from "knex";
 import { Pages } from "./pages";
-import { DbHandler } from "./runtime/node/db-handler";
 import { Subplebbit } from "./subplebbit";
 
 export type ProtocolVersion = "1.0.0";
@@ -26,9 +25,9 @@ export interface PageType {
 }
 
 export interface PagesType {
-    pages: Partial<Record<PostSortName | ReplySortName, PageType>>;
-    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
-    subplebbit: Subplebbit;
+    pages?: Partial<Record<PostSortName | ReplySortName, PageType>>;
+    pageCids?: Partial<Record<PostSortName | ReplySortName, string>>;
+    subplebbit: Pick<Subplebbit, "address" | "plebbit">; // We don't need full Subplebbit, just these two
 }
 export interface SignerType {
     type: "rsa";
@@ -215,6 +214,7 @@ export interface SubplebbitType extends CreateSubplebbitOptions {
     pubsubTopic: string;
     metricsCid?: string;
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
+    posts: Pages;
 }
 export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     createdAt?: number;
@@ -272,7 +272,7 @@ export interface CommentUpdate {
     downvoteCount: number;
     replyCount: number;
     authorEdit?: AuthorCommentEdit; // most recent edit by comment author, merge authorEdit.content, authorEdit.deleted, authorEdit.flair with comment. Validate authorEdit.signature
-    replies?: Pages; // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
+    replies: Pages; // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
     flair?: Flair; // arbitrary colored strings added by the author or mods to describe the author or comment
     spoiler?: boolean;
     pinned?: boolean;

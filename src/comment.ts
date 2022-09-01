@@ -33,7 +33,7 @@ export class Comment extends Publication implements CommentType {
     downvoteCount?: number;
     replyCount?: number;
     updatedAt?: number;
-    replies?: Pages;
+    replies: Pages;
     authorEdit?: AuthorCommentEdit;
     flair?: Flair;
     deleted?: boolean;
@@ -216,12 +216,11 @@ export class Comment extends Publication implements CommentType {
     }
 
     setReplies(replies?: Pages) {
-        if (replies)
-            this.replies = new Pages({
-                pages: { topAll: replies.pages.topAll },
-                pageCids: replies.pageCids,
-                subplebbit: this.subplebbit
-            });
+        this.replies = new Pages({
+            pages: { topAll: replies?.pages?.topAll },
+            pageCids: replies?.pageCids,
+            subplebbit: this.subplebbit
+        });
     }
 
     async updateOnce() {

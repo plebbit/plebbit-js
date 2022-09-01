@@ -7,20 +7,26 @@ import { CommentType, PagesType, PageType, PostSortName, ReplySortName } from ".
 import errcode from "err-code";
 import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
+import isIPFS from "is-ipfs";
 
 export class Pages implements PagesType {
-    pages: Partial<Record<PostSortName | ReplySortName, PageType>>;
-    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
-    subplebbit: Subplebbit;
+    pages?: Partial<Record<PostSortName | ReplySortName, PageType>>;
+    pageCids?: Partial<Record<PostSortName | ReplySortName, string>>;
+    subplebbit: Pick<Subplebbit, "address" | "plebbit">;
     constructor(props: PagesType) {
         this.pages = props.pages;
         this.pageCids = props.pageCids;
         this.subplebbit = props.subplebbit;
-        assert(this.subplebbit.address, "Address of subplebbit is needed to verify pages");
     }
 
     async getPage(pageCid: string): Promise<Page> {
         const log = Logger("plebbit-js:pages:getPage");
+        if (!isIPFS.cid(pageCid))
+            throw errcode(Error(messages.ERR_CID_IS_INVALID), codes.ERR_CID_IS_INVALID, {
+                details: `getPage: cid (${pageCid}) is invalid as a CID`
+            });
+
+        assert(this.subplebbit.address, "Address of subplebbit is needed to load pages");
 
         const page = new Page(await loadIpfsFileAsJson(pageCid, this.subplebbit.plebbit));
         const verifyComment = async (comment: CommentType, parentComment?: CommentType) => {

@@ -57,7 +57,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     description?: string;
     roles?: { [authorAddress: string]: SubplebbitRole };
     lastPostCid?: string;
-    posts?: Pages;
+    posts: Pages;
     pubsubTopic: string;
     challengeTypes?: ChallengeType[];
     metrics?: SubplebbitMetrics;
@@ -127,12 +127,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.signer = mergedProps.signer;
         this.encryption = mergedProps.encryption;
         this.posts =
-            mergedProps["posts"] instanceof Object
-                ? new Pages({
-                      ...mergedProps["posts"],
+            mergedProps.posts instanceof Pages
+                ? mergedProps.posts
+                : new Pages({
+                      ...(<any>mergedProps.posts instanceof Object ? mergedProps.posts : {}),
                       subplebbit: this
-                  })
-                : mergedProps["posts"];
+                  });
+
         this.roles = mergedProps.roles;
         this.features = mergedProps.features;
         this.suggested = mergedProps.suggested;
