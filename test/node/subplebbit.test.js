@@ -78,7 +78,7 @@ describe("subplebbit", async () => {
         expect(subplebbit.address).to.be.a("string");
         // Should have address now
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
-        expect(subplebbit.toJSON()).to.deep.equal(loadedSubplebbit.toJSON());
+        expect(JSON.stringify(subplebbit)).to.equal(JSON.stringify(loadedSubplebbit));
     });
 
     it(`subplebbit = await createSubplebbit(await createSubplebbit)`, async () => {
@@ -228,5 +228,10 @@ describe("subplebbit", async () => {
 
         const currentDbVersion = await subplebbit.dbHandler.getDbVersion();
         expect(currentDbVersion).to.equal(originalDbVersion); // If they're equal, that means all tables have been migrated
+    });
+
+    it(`local subplebbit retains fields upon createSubplebbit(address)`, async () => {
+        const createdSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
+        expect(JSON.stringify(createdSubplebbit.toJSON())).to.equal(JSON.stringify(subplebbit.toJSON()));
     });
 });
