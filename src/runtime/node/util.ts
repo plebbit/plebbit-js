@@ -1,13 +1,14 @@
 import path from "path";
 import { promises as fs } from "fs";
-import { pendingSubplebbitCreations, Plebbit } from "../../plebbit";
+import { pendingSubplebbitCreations } from "../../plebbit";
 import assert from "assert";
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
-export const listSubplebbits = async (plebbit: Plebbit) => {
-    assert(plebbit.dataPath, "plebbit.dataPath is needed to list subplebbits");
-    const subplebbitsPath = path.join(plebbit.dataPath, "subplebbits");
+export const listSubplebbits = async (dataPath: string) => {
+    const stat = await fs.lstat(dataPath);
+    assert(stat.isDirectory(), `dataPath (${dataPath}) is not a directory`);
+    const subplebbitsPath = path.join(dataPath, "subplebbits");
 
     await fs.mkdir(subplebbitsPath, { recursive: true });
 
@@ -17,6 +18,8 @@ export const listSubplebbits = async (plebbit: Plebbit) => {
 
     return addresses;
 };
+
+export const mkdir = fs.mkdir;
 
 export const isRuntimeNode = true;
 
