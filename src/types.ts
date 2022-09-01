@@ -1,7 +1,10 @@
-import { Options } from "ipfs-http-client";
+import { IPFSHTTPClient, Options } from "ipfs-http-client";
 import { Knex } from "knex";
 import { Pages } from "./pages";
+import { DbHandler } from "./runtime/node/db-handler";
 import { Subplebbit } from "./subplebbit";
+import fetch from "node-fetch";
+import fs from "fs";
 
 export type ProtocolVersion = "1.0.0";
 
@@ -332,3 +335,25 @@ export type SignedPropertyNames =
     | SubplebbitSignedPropertyNames
     | CommentUpdatedSignedPropertyNames;
 // | MultisubSignedPropertyNames;
+
+type FunctionPropertyOf<T> = {
+    [P in keyof T]: T[P] extends Function ? P : never;
+}[keyof T];
+
+type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHandler>>;
+export type NativeFunctions = {
+    listSubplebbits: (dataPath: string) => string[];
+    createDbHandler: (subplebbit: SubplebbitType) => DbHandlerPublicAPI;
+
+    fetch: typeof fetch;
+    mkdir: typeof fs.promises.mkdir;
+
+    createIpfsClient: (options: Options) => {
+        add: IPFSHTTPClient["add"];
+        cat: IPFSHTTPClient["cat"];
+        pubsubSubscribe: IPFSHTTPClient["pubsub"]["subscribe"];
+        pubsubUnsubscribe: IPFSHTTPClient["pubsub"]["unsubscribe"];
+        pubsubPublish: IPFSHTTPClient["pubsub"]["publish"];
+        publishName: IPFSHTTPClient["name"]["publish"];
+    };
+};
