@@ -162,9 +162,18 @@ describe("subplebbit", async () => {
             });
         }));
 
-    it(`local subplebbit retains fields upon createSubplebbit(address)`, async () => {
-        const createdSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
-        expect(JSON.stringify(createdSubplebbit.toJSON())).to.equal(JSON.stringify(subplebbit.toJSON()));
+    it(`Can call subplebbit.posts.getPage on a remote sub with no posts`, async () => {
+        const pageCid = subplebbit.posts?.pageCids?.hot;
+        expect(pageCid).to.be.a.string;
+        const plebbitWithDifferentPath = await Plebbit({
+            dataPath: plebbit.dataPath.replace(".plebbit", ".plebbit2"),
+            ipfsHttpClientOptions: "http://localhost:5001/api/v0",
+            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
+        });
+        const emptySubplebbit = await plebbitWithDifferentPath.createSubplebbit({ address: subplebbit.address }); // This should generate an empty subplebbit
+        const actualPage = await subplebbit.posts.getPage(pageCid);
+        const fetchedSubplebbitPage = await emptySubplebbit.posts.getPage(pageCid);
+        expect(JSON.stringify(actualPage)).to.equal(JSON.stringify(fetchedSubplebbitPage));
     });
 
     it(`Can't call subplebbit.start from same Subplebbit instance, another Subplebbit instance or through a different ipfs client`, async () => {
