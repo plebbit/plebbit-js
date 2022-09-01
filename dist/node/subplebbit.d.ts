@@ -18,7 +18,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
         [authorAddress: string]: SubplebbitRole;
     };
     lastPostCid?: string;
-    posts?: Pages;
+    posts: Pages;
     pubsubTopic: string;
     challengeTypes?: ChallengeType[];
     metrics?: SubplebbitMetrics;
@@ -65,6 +65,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
         pubsubTopic: string;
         metricsCid?: string;
         protocolVersion: "1.0.0";
+        posts: Pages;
         title?: string;
         description?: string;
         roles?: {
@@ -72,7 +73,6 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
         };
         rules?: string[];
         lastPostCid?: string;
-        posts?: Pages;
         challengeTypes?: ChallengeType[];
         metrics?: SubplebbitMetrics;
         features?: SubplebbitFeatures;

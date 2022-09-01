@@ -209,12 +209,12 @@ var Comment = /** @class */ (function (_super) {
         this.updatedAt = newUpdatedAt;
     };
     Comment.prototype.setReplies = function (replies) {
-        if (replies)
-            this.replies = new pages_1.Pages({
-                pages: { topAll: replies.pages.topAll },
-                pageCids: replies.pageCids,
-                subplebbit: this.subplebbit
-            });
+        var _a;
+        this.replies = new pages_1.Pages({
+            pages: { topAll: (_a = replies === null || replies === void 0 ? void 0 : replies.pages) === null || _a === void 0 ? void 0 : _a.topAll },
+            pageCids: replies === null || replies === void 0 ? void 0 : replies.pageCids,
+            subplebbit: this.subplebbit
+        });
     };
     Comment.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {

@@ -163,7 +163,13 @@ var Plebbit = /** @class */ (function (_super) {
                         this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
                         log("".concat(e_1.msg, ": Failed to retrieve gateway url from ipfs node, will default to ").concat(this.ipfsGatewayUrl));
                         return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
+                    case 4:
+                        if (!(this.dataPath && util_1.isRuntimeNode)) return [3 /*break*/, 6];
+                        return [4 /*yield*/, (0, util_1.mkdir)(this.dataPath, { recursive: true })];
+                    case 5:
+                        _a.sent();
+                        _a.label = 6;
+                    case 6: return [2 /*return*/];
                 }
             });
         });
@@ -400,7 +406,8 @@ var Plebbit = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 if (!util_1.isRuntimeNode)
                     return [2 /*return*/, []];
-                return [2 /*return*/, util_1.default.listSubplebbits(this)];
+                (0, assert_1.default)(this.dataPath, "Data path must exist in plebbit before calling listSubplebbits");
+                return [2 /*return*/, util_1.default.listSubplebbits(this.dataPath)];
             });
         });
     };

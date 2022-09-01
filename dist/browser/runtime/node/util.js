@@ -39,31 +39,34 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isRuntimeNode = exports.listSubplebbits = exports.getDefaultDataPath = void 0;
+exports.isRuntimeNode = exports.mkdir = exports.listSubplebbits = exports.getDefaultDataPath = void 0;
 var path_1 = __importDefault(require("path"));
 var fs_1 = require("fs");
 var plebbit_1 = require("../../plebbit");
 var assert_1 = __importDefault(require("assert"));
 var getDefaultDataPath = function () { return path_1.default.join(process.cwd(), ".plebbit"); };
 exports.getDefaultDataPath = getDefaultDataPath;
-var listSubplebbits = function (plebbit) { return __awaiter(void 0, void 0, void 0, function () {
-    var subplebbitsPath, addresses;
+var listSubplebbits = function (dataPath) { return __awaiter(void 0, void 0, void 0, function () {
+    var stat, subplebbitsPath, addresses;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0:
-                (0, assert_1.default)(plebbit.dataPath, "plebbit.dataPath is needed to list subplebbits");
-                subplebbitsPath = path_1.default.join(plebbit.dataPath, "subplebbits");
-                return [4 /*yield*/, fs_1.promises.mkdir(subplebbitsPath, { recursive: true })];
+            case 0: return [4 /*yield*/, fs_1.promises.lstat(dataPath)];
             case 1:
+                stat = _a.sent();
+                (0, assert_1.default)(stat.isDirectory(), "dataPath (".concat(dataPath, ") is not a directory"));
+                subplebbitsPath = path_1.default.join(dataPath, "subplebbits");
+                return [4 /*yield*/, fs_1.promises.mkdir(subplebbitsPath, { recursive: true })];
+            case 2:
                 _a.sent();
                 return [4 /*yield*/, fs_1.promises.readdir(subplebbitsPath)];
-            case 2:
+            case 3:
                 addresses = (_a.sent()).filter(function (address) { return !Boolean(plebbit_1.pendingSubplebbitCreations[address]) && !address.includes("journal"); });
                 return [2 /*return*/, addresses];
         }
     });
 }); };
 exports.listSubplebbits = listSubplebbits;
+exports.mkdir = fs_1.promises.mkdir;
 exports.isRuntimeNode = true;
 exports.default = {
     getDefaultDataPath: exports.getDefaultDataPath,

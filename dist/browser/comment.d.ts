@@ -19,7 +19,7 @@ export declare class Comment extends Publication implements CommentType {
     downvoteCount?: number;
     replyCount?: number;
     updatedAt?: number;
-    replies?: Pages;
+    replies: Pages;
     authorEdit?: AuthorCommentEdit;
     flair?: Flair;
     deleted?: boolean;

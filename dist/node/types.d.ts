@@ -26,9 +26,9 @@ export interface PageType {
     nextCid?: string;
 }
 export interface PagesType {
-    pages: Partial<Record<PostSortName | ReplySortName, PageType>>;
-    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
-    subplebbit: Subplebbit;
+    pages?: Partial<Record<PostSortName | ReplySortName, PageType>>;
+    pageCids?: Partial<Record<PostSortName | ReplySortName, string>>;
+    subplebbit: Pick<Subplebbit, "address" | "plebbit">;
 }
 export interface SignerType {
     type: "rsa";
@@ -199,6 +199,7 @@ export interface SubplebbitType extends CreateSubplebbitOptions {
     pubsubTopic: string;
     metricsCid?: string;
     protocolVersion: ProtocolVersion;
+    posts: Pages;
 }
 export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     createdAt?: number;
@@ -239,7 +240,7 @@ export interface CommentUpdate {
     downvoteCount: number;
     replyCount: number;
     authorEdit?: AuthorCommentEdit;
-    replies?: Pages;
+    replies: Pages;
     flair?: Flair;
     spoiler?: boolean;
     pinned?: boolean;

@@ -142,9 +142,9 @@ var Subplebbit = /** @class */ (function (_super) {
         this.signer = mergedProps.signer;
         this.encryption = mergedProps.encryption;
         this.posts =
-            mergedProps["posts"] instanceof Object
-                ? new pages_1.Pages(__assign(__assign({}, mergedProps["posts"]), { subplebbit: this }))
-                : mergedProps["posts"];
+            mergedProps.posts instanceof pages_1.Pages
+                ? mergedProps.posts
+                : new pages_1.Pages(__assign(__assign({}, (mergedProps.posts instanceof Object ? mergedProps.posts : {})), { subplebbit: this }));
         this.roles = mergedProps.roles;
         this.features = mergedProps.features;
         this.suggested = mergedProps.suggested;

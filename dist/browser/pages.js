@@ -46,12 +46,12 @@ var assert_1 = __importDefault(require("assert"));
 var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
+var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var Pages = /** @class */ (function () {
     function Pages(props) {
         this.pages = props.pages;
         this.pageCids = props.pageCids;
         this.subplebbit = props.subplebbit;
-        (0, assert_1.default)(this.subplebbit.address, "Address of subplebbit is needed to verify pages");
     }
     Pages.prototype.getPage = function (pageCid) {
         return __awaiter(this, void 0, void 0, function () {
@@ -61,6 +61,11 @@ var Pages = /** @class */ (function () {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:pages:getPage");
+                        if (!is_ipfs_1.default.cid(pageCid))
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.codes.ERR_CID_IS_INVALID, {
+                                details: "getPage: cid (".concat(pageCid, ") is invalid as a CID")
+                            });
+                        (0, assert_1.default)(this.subplebbit.address, "Address of subplebbit is needed to load pages");
                         _a = Page.bind;
                         return [4 /*yield*/, (0, util_1.loadIpfsFileAsJson)(pageCid, this.subplebbit.plebbit)];
                     case 1:
