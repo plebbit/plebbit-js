@@ -242,6 +242,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
 
     async listSubplebbits(): Promise<string[]> {
         if (!isRuntimeNode) return [];
-        return plebbitUtil.listSubplebbits(this);
+        assert(this.dataPath, "Data path must exist in plebbit before calling listSubplebbits");
+        return plebbitUtil.listSubplebbits(this.dataPath);
     }
 }
