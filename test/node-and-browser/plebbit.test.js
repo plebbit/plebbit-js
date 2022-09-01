@@ -113,7 +113,7 @@ describe("plebbit (node and browser)", () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             await subplebbit.update(updateInterval);
             await subplebbit.stop();
-            const comment = subplebbit?.posts?.pages?.hot?.comments.filter((comment) => comment.replies)[0]?.replies?.pages?.topAll
+            const comment = subplebbit?.posts?.pages?.hot?.comments.filter((comment) => comment.replyCount > 0)[0]?.replies?.pages?.topAll
                 ?.comments[0];
             expect(comment).to.exist;
             const expectedCommentProps = await loadIpfsFileAsJson(comment.cid, plebbit);
