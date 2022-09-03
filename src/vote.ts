@@ -8,8 +8,8 @@ class Vote extends Publication implements VoteType {
 
     constructor(props: VoteType, subplebbit: any) {
         super(props, subplebbit);
-        this.commentCid = props["commentCid"];
-        this.vote = props["vote"]; // Either 1, 0, -1 (upvote, cancel vote, downvote)
+        this.commentCid = props.commentCid;
+        this.vote = props.vote; // Either 1, 0, -1 (upvote, cancel vote, downvote)
     }
 
     toJSON(): VoteType {
@@ -37,8 +37,6 @@ class Vote extends Publication implements VoteType {
 
     async publish(userOptions): Promise<void> {
         assert([-1, 0, 1].includes(this.vote) && this.commentCid, "Need vote and commentCid to be defined to publish Vote");
-        assert(this.timestamp, "Need timestamp field to publish comment");
-        assert(this.author, "Need author to publish comment");
         return super.publish(userOptions);
     }
 }
