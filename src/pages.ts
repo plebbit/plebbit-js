@@ -28,6 +28,8 @@ export class Pages implements PagesType {
 
         assert(this.subplebbit.address, "Address of subplebbit is needed to load pages");
 
+        // TODO should cache pages after loading them
+
         const page = new Page(await loadIpfsFileAsJson(pageCid, this.subplebbit.plebbit));
         const verifyComment = async (comment: CommentType, parentComment?: CommentType) => {
             assert(typeof comment.upvoteCount === "number" && typeof comment.downvoteCount === "number");

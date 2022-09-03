@@ -6,17 +6,17 @@ import {
     CreateSignerOptions,
     CreateSubplebbitOptions,
     CreateVoteOptions,
+    NativeFunctions,
     PlebbitOptions,
     PostType,
     VoteType
 } from "./types";
-import plebbitUtil, { isRuntimeNode, mkdir } from "./runtime/node/util";
+import plebbitUtil, { isRuntimeNode, nativeFunctions, setNativeFunctions } from "./runtime/node/util";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
 import { getProtocolVersion, loadIpfsFileAsJson, loadIpnsAsJson, timestamp } from "./util";
 import Vote from "./vote";
-import { create as createIpfsClient, IPFSHTTPClient, Options } from "ipfs-http-client";
 import assert from "assert";
 import { createSigner, Signer, signPublication, verifyPublication } from "./signer";
 import { Resolver } from "./resolver";
@@ -32,28 +32,28 @@ import Logger from "@plebbit/plebbit-logger";
 export const pendingSubplebbitCreations: Record<string, boolean> = {};
 
 export class Plebbit extends EventEmitter implements PlebbitOptions {
-    ipfsClient?: IPFSHTTPClient;
-    pubsubIpfsClient: IPFSHTTPClient;
+    ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
+    pubsubIpfsClient: ReturnType<NativeFunctions["createIpfsClient"]>;
     resolver: Resolver;
     _memCache: TinyCache;
     ipfsGatewayUrl: string;
-    ipfsHttpClientOptions?: Options;
-    pubsubHttpClientOptions?: Options;
+    ipfsHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0];
+    pubsubHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0];
     dataPath?: string;
     blockchainProviders?: { [chainTicker: string]: BlockchainProvider };
     resolveAuthorAddresses?: boolean;
 
     constructor(options: PlebbitOptions = {}) {
         super();
-        this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        this.ipfsClient = this.ipfsHttpClientOptions ? createIpfsClient(this.ipfsHttpClientOptions) : undefined;
-        this.pubsubHttpClientOptions = options["pubsubHttpClientOptions"] || { url: "https://pubsubprovider.xyz/api/v0" };
-        this.pubsubIpfsClient = options["pubsubHttpClientOptions"]
-            ? createIpfsClient(options["pubsubHttpClientOptions"])
+        this.ipfsHttpClientOptions = options.ipfsHttpClientOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
+        this.ipfsClient = this.ipfsHttpClientOptions ? nativeFunctions.createIpfsClient(this.ipfsHttpClientOptions) : undefined;
+        this.pubsubHttpClientOptions = options.pubsubHttpClientOptions || { url: "https://pubsubprovider.xyz/api/v0" };
+        this.pubsubIpfsClient = options.pubsubHttpClientOptions
+            ? nativeFunctions.createIpfsClient(options.pubsubHttpClientOptions)
             : this.ipfsClient
             ? this.ipfsClient
-            : createIpfsClient(this.pubsubHttpClientOptions);
-        this.dataPath = options["dataPath"] || plebbitUtil.getDefaultDataPath();
+            : nativeFunctions.createIpfsClient(this.pubsubHttpClientOptions);
+        this.dataPath = options.dataPath || plebbitUtil.getDefaultDataPath();
         this.blockchainProviders = options.blockchainProviders || {
             avax: {
                 url: "https://api.avax.network/ext/bc/C/rpc",
@@ -75,7 +75,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         if (options["ipfsGatewayUrl"]) this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
         else {
             try {
-                let gatewayFromNode = await this.ipfsClient.config.get("Addresses.Gateway");
+                let gatewayFromNode = await this.ipfsClient.getConfig("Addresses.Gateway");
                 if (Array.isArray(gatewayFromNode)) gatewayFromNode = gatewayFromNode[0];
 
                 const splits = gatewayFromNode.toString().split("/");
@@ -86,8 +86,6 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
                 log(`${e.msg}: Failed to retrieve gateway url from ipfs node, will default to ${this.ipfsGatewayUrl}`);
             }
         }
-
-        if (this.dataPath && isRuntimeNode) await mkdir(this.dataPath, { recursive: true });
     }
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
@@ -215,7 +213,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     async createCommentEdit(options: CreateCommentEditOptions): Promise<CommentEdit> {
-        const log = Logger("plebbit-js:plebbit:createVote");
+        const log = Logger("plebbit-js:plebbit:createCommentEdit");
 
         const subplebbitObj = { plebbit: this, address: options.subplebbitAddress };
         if (!options.signer) return new CommentEdit(options, subplebbitObj); // User just wants to instantiate a CommentEdit object, not publish
@@ -243,8 +241,11 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     async listSubplebbits(): Promise<string[]> {
-        if (!isRuntimeNode) return [];
         assert(this.dataPath, "Data path must exist in plebbit before calling listSubplebbits");
-        return plebbitUtil.listSubplebbits(this.dataPath);
+        return nativeFunctions.listSubplebbits(this.dataPath);
+    }
+
+    static setNativeFunctions(funcs: NativeFunctions) {
+        setNativeFunctions(funcs);
     }
 }

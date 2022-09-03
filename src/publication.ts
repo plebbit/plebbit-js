@@ -96,7 +96,7 @@ class Publication extends EventEmitter implements PublicationType {
                 this._initProps(decryptedPublication);
             }
             this.emit("challengeverification", { ...msgParsed, publication: decryptedPublication }, this);
-            await this.subplebbit.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic);
+            await this.subplebbit.plebbit.pubsubIpfsClient.pubsubUnsubscribe(this.subplebbit.pubsubTopic);
         }
     }
 
@@ -109,7 +109,7 @@ class Publication extends EventEmitter implements PublicationType {
             challengeAnswerId: uuidv4(),
             challengeAnswers: challengeAnswers
         });
-        await this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(
+        await this.subplebbit.plebbit.pubsubIpfsClient.pubsubPublish(
             this.subplebbit.pubsubTopic,
             uint8ArrayFromString(JSON.stringify(challengeAnswer))
         );
@@ -165,11 +165,11 @@ class Publication extends EventEmitter implements PublicationType {
         log.trace(`Attempting to publish ${this.getType()} with options (${JSON.stringify(options)})`);
 
         await Promise.all([
-            this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(
+            this.subplebbit.plebbit.pubsubIpfsClient.pubsubPublish(
                 this.subplebbit.pubsubTopic,
                 uint8ArrayFromString(JSON.stringify(this.challenge))
             ),
-            this.subplebbit.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this))
+            this.subplebbit.plebbit.pubsubIpfsClient.pubsubSubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this))
         ]);
         log(`Sent a challenge request (${this.challenge.challengeRequestId})`);
         this.emit("challengerequest", this.challenge);

@@ -2,6 +2,7 @@ import path from "path";
 import { promises as fs } from "fs";
 import { pendingSubplebbitCreations } from "../../plebbit";
 import assert from "assert";
+import { NativeFunctions } from "../../types";
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
@@ -23,8 +24,13 @@ export const mkdir = fs.mkdir;
 
 export const isRuntimeNode = true;
 
+export let nativeFunctions: NativeFunctions;
+export const setNativeFunctions = (pNativeFunctions) => (nativeFunctions = pNativeFunctions);
+
 export default {
     getDefaultDataPath,
     listSubplebbits,
-    isRuntimeNode
+    isRuntimeNode,
+    nativeFunctions,
+    setNativeFunctions
 };

@@ -2,14 +2,12 @@ import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import all from "it-all";
 import last from "it-last";
-import fetch from "node-fetch";
 import FormData from "form-data";
 import assert from "assert";
 import { Plebbit } from "./plebbit";
 import { CommentType, ProtocolVersion, Timeframe } from "./types";
-import { isRuntimeNode } from "./runtime/node/util";
+import { nativeFunctions } from "./runtime/node/util";
 import { Signer } from "./signer";
-import Logger from "@plebbit/plebbit-logger";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -24,23 +22,8 @@ const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
 async function fetchWithLimit(url: string, options?) {
     // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
-    const res = await fetch(url, options);
-    if (isRuntimeNode) return res; // No need to process stream for Node
-
-    const originalRes = res.clone();
-    // @ts-ignore
-    const reader = res.body.getReader();
-    let currentChunk: any = undefined,
-        totalBytesRead = 0;
-
-    while (true) {
-        currentChunk = await reader.read();
-        const { done, value } = currentChunk;
-        if (done || !value) break;
-        if (value.length + totalBytesRead > options.size) throw new Error(`content size at ${url} over limit: ${options.size}`);
-        totalBytesRead += value.length;
-    }
-    return originalRes;
+    const res = await nativeFunctions.fetch(url, options);
+    return res; // No need to process stream for Node-fetch
 }
 
 export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultOptions = { timeout: 60000 }) {
@@ -73,7 +56,7 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
     } else {
         let cid, error;
         try {
-            cid = await last(plebbit.ipfsClient.name.resolve(ipns));
+            cid = await last(plebbit.ipfsClient.resolveName(ipns));
         } catch (e) {
             error = e;
         }
@@ -227,7 +210,7 @@ export async function ipfsImportKey(signer: Signer, plebbit, password = "") {
     const nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
     if (!nodeUrl) throw new Error("Can't figure out ipfs node URL");
     const url = `${nodeUrl}/key/import?arg=${signer.ipnsKeyName}`;
-    const res = await fetch(url, {
+    const res = await nativeFunctions.fetch(url, {
         method: "POST",
         body: data,
         headers: plebbit.ipfsHttpClientOptions?.headers
