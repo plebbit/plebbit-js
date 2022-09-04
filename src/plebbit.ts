@@ -11,7 +11,7 @@ import {
     PostType,
     VoteType
 } from "./types";
-import plebbitUtil, { isRuntimeNode, nativeFunctions, setNativeFunctions } from "./runtime/node/util";
+import plebbitUtil, { isRuntimeNode, nativeFunctions, setNativeFunctions as utilSetNativeFunctions } from "./runtime/node/util";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
@@ -30,6 +30,8 @@ import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 
 export const pendingSubplebbitCreations: Record<string, boolean> = {};
+
+export const setNativeFunctions = utilSetNativeFunctions;
 
 export class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
@@ -243,9 +245,5 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     async listSubplebbits(): Promise<string[]> {
         assert(this.dataPath, "Data path must exist in plebbit before calling listSubplebbits");
         return nativeFunctions.listSubplebbits(this.dataPath);
-    }
-
-    static setNativeFunctions(funcs: NativeFunctions) {
-        setNativeFunctions(funcs);
     }
 }

@@ -6,7 +6,7 @@ import FormData from "form-data";
 import assert from "assert";
 import { Plebbit } from "./plebbit";
 import { CommentType, ProtocolVersion, Timeframe } from "./types";
-import { nativeFunctions } from "./runtime/node/util";
+import { isRuntimeNode, nativeFunctions } from "./runtime/node/util";
 import { Signer } from "./signer";
 
 //This is temp. TODO replace this with accurate mapping
@@ -22,8 +22,23 @@ const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
 async function fetchWithLimit(url: string, options?) {
     // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
-    const res = await nativeFunctions.fetch(url, options);
-    return res; // No need to process stream for Node-fetch
+    const res = await (nativeFunctions.fetch || fetch)(url, options);
+    if (isRuntimeNode) return res; // No need to process stream for Node
+
+    const originalRes = res.clone();
+    // @ts-ignore
+    const reader = res.body.getReader();
+    let currentChunk: any = undefined,
+        totalBytesRead = 0;
+
+    while (true) {
+        currentChunk = await reader.read();
+        const { done, value } = currentChunk;
+        if (done || !value) break;
+        if (value.length + totalBytesRead > options.size) throw new Error(`content size at ${url} over limit: ${options.size}`);
+        totalBytesRead += value.length;
+    }
+    return originalRes;
 }
 
 export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultOptions = { timeout: 60000 }) {
@@ -210,8 +225,9 @@ export async function ipfsImportKey(signer: Signer, plebbit, password = "") {
     const nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
     if (!nodeUrl) throw new Error("Can't figure out ipfs node URL");
     const url = `${nodeUrl}/key/import?arg=${signer.ipnsKeyName}`;
-    const res = await nativeFunctions.fetch(url, {
+    const res = await (nativeFunctions.fetch || fetch)(url, {
         method: "POST",
+        // @ts-ignore
         body: data,
         headers: plebbit.ipfsHttpClientOptions?.headers
     });
