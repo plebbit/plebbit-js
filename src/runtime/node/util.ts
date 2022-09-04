@@ -3,7 +3,11 @@ import { promises as fs } from "fs";
 import { default as nodeNativeFunctions } from "./native-functions";
 import { NativeFunctions } from "../../types";
 
-export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
+export const getDefaultDataPath = async (): Promise<string> => {
+    const defaultPath = path.join(process.cwd(), ".plebbit");
+    await fs.mkdir(defaultPath);
+    return defaultPath;
+};
 
 export const mkdir = fs.mkdir;
 

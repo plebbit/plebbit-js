@@ -55,7 +55,6 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             : this.ipfsClient
             ? this.ipfsClient
             : nativeFunctions.createIpfsClient(this.pubsubHttpClientOptions);
-        this.dataPath = options.dataPath || plebbitUtil.getDefaultDataPath();
         this.blockchainProviders = options.blockchainProviders || {
             avax: {
                 url: "https://api.avax.network/ext/bc/C/rpc",
@@ -74,6 +73,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     async _init(options: PlebbitOptions) {
         const log = Logger("plebbit-js:plebbit:_init");
 
+        this.dataPath = options.dataPath || (await plebbitUtil.getDefaultDataPath());
         if (options["ipfsGatewayUrl"]) this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
         else {
             try {
