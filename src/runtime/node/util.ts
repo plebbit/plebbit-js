@@ -5,7 +5,7 @@ import { NativeFunctions } from "../../types";
 
 export const getDefaultDataPath = async (): Promise<string> => {
     const defaultPath = path.join(process.cwd(), ".plebbit");
-    await fs.mkdir(defaultPath);
+    await fs.mkdir(defaultPath, { recursive: true });
     return defaultPath;
 };
 
