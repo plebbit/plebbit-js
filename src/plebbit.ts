@@ -11,7 +11,7 @@ import {
     PostType,
     VoteType
 } from "./types";
-import plebbitUtil, { isRuntimeNode, nativeFunctions, setNativeFunctions as utilSetNativeFunctions } from "./runtime/node/util";
+import plebbitUtil, { isRuntimeNode, mkdir, nativeFunctions, setNativeFunctions as utilSetNativeFunctions } from "./runtime/node/util";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
@@ -73,7 +73,8 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     async _init(options: PlebbitOptions) {
         const log = Logger("plebbit-js:plebbit:_init");
 
-        this.dataPath = options.dataPath || (await plebbitUtil.getDefaultDataPath());
+        this.dataPath = options.dataPath || plebbitUtil.getDefaultDataPath();
+        if (isRuntimeNode && this.dataPath) await mkdir(this.dataPath, { recursive: true });
         if (options["ipfsGatewayUrl"]) this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
         else {
             try {
