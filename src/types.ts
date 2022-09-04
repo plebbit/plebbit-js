@@ -340,19 +340,21 @@ type FunctionPropertyOf<T> = {
 }[keyof T];
 
 export type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHandler>>;
+
+export type IpfsHttpClientPublicAPI = {
+    add: IPFSHTTPClient["add"];
+    cat: IPFSHTTPClient["cat"];
+    pubsubSubscribe: IPFSHTTPClient["pubsub"]["subscribe"];
+    pubsubUnsubscribe: IPFSHTTPClient["pubsub"]["unsubscribe"];
+    pubsubPublish: IPFSHTTPClient["pubsub"]["publish"];
+    resolveName: IPFSHTTPClient["name"]["resolve"];
+    publishName: IPFSHTTPClient["name"]["publish"];
+    getConfig: IPFSHTTPClient["config"]["get"];
+    listKeys: IPFSHTTPClient["key"]["list"];
+};
 export type NativeFunctions = {
-    listSubplebbits: (dataPath: string) => string[];
+    listSubplebbits: (dataPath: string) => Promise<string[]>;
     createDbHandler: (subplebbit: SubplebbitType) => DbHandlerPublicAPI;
     fetch: typeof fetch;
-    createIpfsClient: (options: Options) => {
-        add: IPFSHTTPClient["add"];
-        cat: IPFSHTTPClient["cat"];
-        pubsubSubscribe: IPFSHTTPClient["pubsub"]["subscribe"];
-        pubsubUnsubscribe: IPFSHTTPClient["pubsub"]["unsubscribe"];
-        pubsubPublish: IPFSHTTPClient["pubsub"]["publish"];
-        resolveName: IPFSHTTPClient["name"]["resolve"];
-        publishName: IPFSHTTPClient["name"]["publish"];
-        getConfig: IPFSHTTPClient["config"]["get"];
-        listKeys: IPFSHTTPClient["key"]["list"];
-    };
+    createIpfsClient: (options: Options) => IpfsHttpClientPublicAPI;
 };
