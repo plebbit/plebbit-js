@@ -22,7 +22,7 @@ const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
 async function fetchWithLimit(url: string, options?) {
     // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
-    const res = await (nativeFunctions.fetch || fetch)(url, options);
+    const res = await nativeFunctions.fetch(url, options);
     if (isRuntimeNode) return res; // No need to process stream for Node
 
     const originalRes = res.clone();
@@ -225,7 +225,7 @@ export async function ipfsImportKey(signer: Signer, plebbit, password = "") {
     const nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
     if (!nodeUrl) throw new Error("Can't figure out ipfs node URL");
     const url = `${nodeUrl}/key/import?arg=${signer.ipnsKeyName}`;
-    const res = await (nativeFunctions.fetch || fetch)(url, {
+    const res = await nativeFunctions.fetch(url, {
         method: "POST",
         // @ts-ignore
         body: data,

@@ -1,6 +1,5 @@
 import { IpfsHttpClientPublicAPI, NativeFunctions } from "../../types";
 
-import { default as nodeFetch } from "node-fetch";
 import { create } from "ipfs-http-client";
 
 const nativeFunctions: NativeFunctions = {
@@ -13,7 +12,7 @@ const nativeFunctions: NativeFunctions = {
     },
 
     //@ts-ignore
-    fetch: nodeFetch,
+    fetch: (...args) => window.fetch(...args),
     createIpfsClient: (ipfsHttpClientOptions): IpfsHttpClientPublicAPI => {
         const ipfsClient = create(ipfsHttpClientOptions);
         return {
