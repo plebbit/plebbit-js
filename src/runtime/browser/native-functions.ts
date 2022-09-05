@@ -4,7 +4,7 @@ import { create } from "ipfs-http-client";
 
 const nativeFunctions: NativeFunctions = {
     listSubplebbits: async (dataPath: string): Promise<string[]> => {
-        throw new Error("Shouldn't call listSubplebbits over native-functions of browser");
+        return [];
     },
 
     createDbHandler: (subplebbit) => {
