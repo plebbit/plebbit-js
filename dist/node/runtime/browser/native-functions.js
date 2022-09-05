@@ -40,7 +40,7 @@ var ipfs_http_client_1 = require("ipfs-http-client");
 var nativeFunctions = {
     listSubplebbits: function (dataPath) { return __awaiter(void 0, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            throw new Error("Shouldn't call listSubplebbits over native-functions of browser");
+            return [2 /*return*/, []];
         });
     }); },
     createDbHandler: function (subplebbit) {
