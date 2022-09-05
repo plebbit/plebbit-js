@@ -1,7 +1,9 @@
-import { Options } from "ipfs-http-client";
+import { IPFSHTTPClient, Options } from "ipfs-http-client";
 import { Knex } from "knex";
 import { Pages } from "./pages";
+import { DbHandler } from "./runtime/browser/db-handler";
 import { Subplebbit } from "./subplebbit";
+import fetch from "node-fetch";
 export declare type ProtocolVersion = "1.0.0";
 export declare type BlockchainProvider = {
     url: string;
@@ -282,4 +284,25 @@ export declare type CommentUpdatedSignedPropertyNames = (keyof Omit<CommentUpdat
 export declare type VoteSignedPropertyNames = (keyof Omit<CreateVoteOptions, "signer" | "protocolVersion">)[];
 export declare type SubplebbitSignedPropertyNames = (keyof Omit<SubplebbitType, "signer" | "signature" | "protocolVersion">)[];
 export declare type SignedPropertyNames = CommentSignedPropertyNames | CommentEditSignedPropertyNames | VoteSignedPropertyNames | SubplebbitSignedPropertyNames | CommentUpdatedSignedPropertyNames;
+declare type FunctionPropertyOf<T> = {
+    [P in keyof T]: T[P] extends Function ? P : never;
+}[keyof T];
+export declare type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHandler>>;
+export declare type IpfsHttpClientPublicAPI = {
+    add: IPFSHTTPClient["add"];
+    cat: IPFSHTTPClient["cat"];
+    pubsubSubscribe: IPFSHTTPClient["pubsub"]["subscribe"];
+    pubsubUnsubscribe: IPFSHTTPClient["pubsub"]["unsubscribe"];
+    pubsubPublish: IPFSHTTPClient["pubsub"]["publish"];
+    resolveName: IPFSHTTPClient["name"]["resolve"];
+    publishName: IPFSHTTPClient["name"]["publish"];
+    getConfig: IPFSHTTPClient["config"]["get"];
+    listKeys: IPFSHTTPClient["key"]["list"];
+};
+export declare type NativeFunctions = {
+    listSubplebbits: (dataPath: string) => Promise<string[]>;
+    createDbHandler: (subplebbit: SubplebbitType) => DbHandlerPublicAPI;
+    fetch: typeof fetch;
+    createIpfsClient: (options: Options) => IpfsHttpClientPublicAPI;
+};
 export {};

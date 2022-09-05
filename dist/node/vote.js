@@ -71,8 +71,8 @@ var Vote = /** @class */ (function (_super) {
     __extends(Vote, _super);
     function Vote(props, subplebbit) {
         var _this = _super.call(this, props, subplebbit) || this;
-        _this.commentCid = props["commentCid"];
-        _this.vote = props["vote"]; // Either 1, 0, -1 (upvote, cancel vote, downvote)
+        _this.commentCid = props.commentCid;
+        _this.vote = props.vote; // Either 1, 0, -1 (upvote, cancel vote, downvote)
         return _this;
     }
     Vote.prototype.toJSON = function () {
@@ -96,8 +96,6 @@ var Vote = /** @class */ (function (_super) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 (0, assert_1.default)([-1, 0, 1].includes(this.vote) && this.commentCid, "Need vote and commentCid to be defined to publish Vote");
-                (0, assert_1.default)(this.timestamp, "Need timestamp field to publish comment");
-                (0, assert_1.default)(this.author, "Need author to publish comment");
                 return [2 /*return*/, _super.prototype.publish.call(this, userOptions)];
             });
         });

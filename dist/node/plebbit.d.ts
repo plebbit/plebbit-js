@@ -1,24 +1,30 @@
+/// <reference types="node-fetch" />
 /// <reference types="node" />
-import { BlockchainProvider, CommentType, CreateCommentEditOptions, CreateCommentOptions, CreateSignerOptions, CreateSubplebbitOptions, CreateVoteOptions, PlebbitOptions, VoteType } from "./types";
+import { BlockchainProvider, CommentType, CreateCommentEditOptions, CreateCommentOptions, CreateSignerOptions, CreateSubplebbitOptions, CreateVoteOptions, NativeFunctions, PlebbitOptions, VoteType } from "./types";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
 import Vote from "./vote";
-import { IPFSHTTPClient, Options } from "ipfs-http-client";
 import { Signer } from "./signer";
 import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
 import EventEmitter from "events";
 export declare const pendingSubplebbitCreations: Record<string, boolean>;
+export declare const setNativeFunctions: (pNativeFunctions: Partial<NativeFunctions>) => {
+    listSubplebbits: (dataPath: string) => Promise<string[]>;
+    createDbHandler: (subplebbit: import("./types").SubplebbitType) => import("./types").DbHandlerPublicAPI;
+    fetch: typeof import("node-fetch").default;
+    createIpfsClient: (options: import("ipfs-http-client/types/src/types").Options) => import("./types").IpfsHttpClientPublicAPI;
+};
 export declare class Plebbit extends EventEmitter implements PlebbitOptions {
-    ipfsClient?: IPFSHTTPClient;
-    pubsubIpfsClient: IPFSHTTPClient;
+    ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
+    pubsubIpfsClient: ReturnType<NativeFunctions["createIpfsClient"]>;
     resolver: Resolver;
     _memCache: TinyCache;
     ipfsGatewayUrl: string;
-    ipfsHttpClientOptions?: Options;
-    pubsubHttpClientOptions?: Options;
+    ipfsHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0];
+    pubsubHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0];
     dataPath?: string;
     blockchainProviders?: {
         [chainTicker: string]: BlockchainProvider;

@@ -55,7 +55,6 @@ var concat_1 = require("uint8arrays/concat");
 var to_string_1 = require("uint8arrays/to-string");
 var it_all_1 = __importDefault(require("it-all"));
 var it_last_1 = __importDefault(require("it-last"));
-var node_fetch_1 = __importDefault(require("node-fetch"));
 var form_data_1 = __importDefault(require("form-data"));
 var assert_1 = __importDefault(require("assert"));
 var util_1 = require("./runtime/browser/util");
@@ -74,7 +73,7 @@ function fetchWithLimit(url, options) {
         var res, originalRes, reader, currentChunk, totalBytesRead, done, value;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, (0, node_fetch_1.default)(url, options)];
+                case 0: return [4 /*yield*/, util_1.nativeFunctions.fetch(url, options)];
                 case 1:
                     res = _a.sent();
                     if (util_1.isRuntimeNode)
@@ -166,7 +165,7 @@ function loadIpnsAsJson(ipns, plebbit) {
                     _a.label = 6;
                 case 6:
                     _a.trys.push([6, 8, , 9]);
-                    return [4 /*yield*/, (0, it_last_1.default)(plebbit.ipfsClient.name.resolve(ipns))];
+                    return [4 /*yield*/, (0, it_last_1.default)(plebbit.ipfsClient.resolveName(ipns))];
                 case 7:
                     cid = _a.sent();
                     return [3 /*break*/, 9];
@@ -372,8 +371,9 @@ function ipfsImportKey(signer, plebbit, password) {
                     if (!nodeUrl)
                         throw new Error("Can't figure out ipfs node URL");
                     url = "".concat(nodeUrl, "/key/import?arg=").concat(signer.ipnsKeyName);
-                    return [4 /*yield*/, (0, node_fetch_1.default)(url, {
+                    return [4 /*yield*/, util_1.nativeFunctions.fetch(url, {
                             method: "POST",
+                            // @ts-ignore
                             body: data,
                             headers: (_a = plebbit.ipfsHttpClientOptions) === null || _a === void 0 ? void 0 : _a.headers
                         })];
