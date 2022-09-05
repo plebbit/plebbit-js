@@ -1,11 +1,10 @@
 /// <reference types="node" />
 import EventEmitter from "events";
 import { Challenge, ChallengeAnswerMessage, ChallengeRequestMessage } from "./challenge";
-import { DbHandler } from "./runtime/browser/db-handler";
 import { Signer, Signature } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
-import { ChallengeType, CreateSubplebbitOptions, Flair, FlairOwner, ProtocolVersion, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitMetrics, SubplebbitRole, SubplebbitSuggested, SubplebbitType } from "./types";
+import { ChallengeType, CreateSubplebbitOptions, DbHandlerPublicAPI, Flair, FlairOwner, ProtocolVersion, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitMetrics, SubplebbitRole, SubplebbitSuggested, SubplebbitType } from "./types";
 import { Comment } from "./comment";
 import Vote from "./vote";
 import Publication from "./publication";
@@ -35,7 +34,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     signature: Signature;
     rules?: string[];
     plebbit: Plebbit;
-    dbHandler?: DbHandler;
+    dbHandler?: DbHandlerPublicAPI;
     _keyv: any;
     dbConfig: any;
     private _challengeToSolution;

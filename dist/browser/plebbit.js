@@ -88,14 +88,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Plebbit = exports.pendingSubplebbitCreations = void 0;
+exports.Plebbit = exports.setNativeFunctions = exports.pendingSubplebbitCreations = void 0;
 var util_1 = __importStar(require("./runtime/browser/util"));
 var comment_1 = require("./comment");
 var post_1 = __importDefault(require("./post"));
 var subplebbit_1 = require("./subplebbit");
 var util_2 = require("./util");
 var vote_1 = __importDefault(require("./vote"));
-var ipfs_http_client_1 = require("ipfs-http-client");
 var assert_1 = __importDefault(require("assert"));
 var signer_1 = require("./signer");
 var resolver_1 = require("./resolver");
@@ -108,20 +107,20 @@ var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 exports.pendingSubplebbitCreations = {};
+exports.setNativeFunctions = util_1.setNativeFunctions;
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
     function Plebbit(options) {
         if (options === void 0) { options = {}; }
         var _this = _super.call(this) || this;
-        _this.ipfsHttpClientOptions = options["ipfsHttpClientOptions"]; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        _this.ipfsClient = _this.ipfsHttpClientOptions ? (0, ipfs_http_client_1.create)(_this.ipfsHttpClientOptions) : undefined;
-        _this.pubsubHttpClientOptions = options["pubsubHttpClientOptions"] || { url: "https://pubsubprovider.xyz/api/v0" };
-        _this.pubsubIpfsClient = options["pubsubHttpClientOptions"]
-            ? (0, ipfs_http_client_1.create)(options["pubsubHttpClientOptions"])
+        _this.ipfsHttpClientOptions = options.ipfsHttpClientOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
+        _this.ipfsClient = _this.ipfsHttpClientOptions ? util_1.nativeFunctions.createIpfsClient(_this.ipfsHttpClientOptions) : undefined;
+        _this.pubsubHttpClientOptions = options.pubsubHttpClientOptions || { url: "https://pubsubprovider.xyz/api/v0" };
+        _this.pubsubIpfsClient = options.pubsubHttpClientOptions
+            ? util_1.nativeFunctions.createIpfsClient(options.pubsubHttpClientOptions)
             : _this.ipfsClient
                 ? _this.ipfsClient
-                : (0, ipfs_http_client_1.create)(_this.pubsubHttpClientOptions);
-        _this.dataPath = options["dataPath"] || util_1.default.getDefaultDataPath();
+                : util_1.nativeFunctions.createIpfsClient(_this.pubsubHttpClientOptions);
         _this.blockchainProviders = options.blockchainProviders || {
             avax: {
                 url: "https://api.avax.network/ext/bc/C/rpc",
@@ -144,31 +143,32 @@ var Plebbit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:_init");
-                        if (!options["ipfsGatewayUrl"]) return [3 /*break*/, 1];
-                        this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
-                        return [3 /*break*/, 4];
+                        this.dataPath = options.dataPath || util_1.default.getDefaultDataPath();
+                        if (!(util_1.isRuntimeNode && this.dataPath)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, (0, util_1.mkdir)(this.dataPath, { recursive: true })];
                     case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, this.ipfsClient.config.get("Addresses.Gateway")];
+                        _a.sent();
+                        _a.label = 2;
                     case 2:
+                        if (!options["ipfsGatewayUrl"]) return [3 /*break*/, 3];
+                        this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
+                        return [3 /*break*/, 6];
+                    case 3:
+                        _a.trys.push([3, 5, , 6]);
+                        return [4 /*yield*/, this.ipfsClient.getConfig("Addresses.Gateway")];
+                    case 4:
                         gatewayFromNode = _a.sent();
                         if (Array.isArray(gatewayFromNode))
                             gatewayFromNode = gatewayFromNode[0];
                         splits = gatewayFromNode.toString().split("/");
                         this.ipfsGatewayUrl = "http://".concat(splits[2], ":").concat(splits[4]);
                         log.trace("plebbit.ipfsGatewayUrl retrieved from IPFS node: ".concat(this.ipfsGatewayUrl));
-                        return [3 /*break*/, 4];
-                    case 3:
+                        return [3 /*break*/, 6];
+                    case 5:
                         e_1 = _a.sent();
                         this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
                         log("".concat(e_1.msg, ": Failed to retrieve gateway url from ipfs node, will default to ").concat(this.ipfsGatewayUrl));
-                        return [3 /*break*/, 4];
-                    case 4:
-                        if (!(this.dataPath && util_1.isRuntimeNode)) return [3 /*break*/, 6];
-                        return [4 /*yield*/, (0, util_1.mkdir)(this.dataPath, { recursive: true })];
-                    case 5:
-                        _a.sent();
-                        _a.label = 6;
+                        return [3 /*break*/, 6];
                     case 6: return [2 /*return*/];
                 }
             });
@@ -376,7 +376,7 @@ var Plebbit = /** @class */ (function (_super) {
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createVote");
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createCommentEdit");
                         subplebbitObj = { plebbit: this, address: options.subplebbitAddress };
                         if (!options.signer)
                             return [2 /*return*/, new comment_edit_1.CommentEdit(options, subplebbitObj)]; // User just wants to instantiate a CommentEdit object, not publish
@@ -407,7 +407,7 @@ var Plebbit = /** @class */ (function (_super) {
                 if (!util_1.isRuntimeNode)
                     return [2 /*return*/, []];
                 (0, assert_1.default)(this.dataPath, "Data path must exist in plebbit before calling listSubplebbits");
-                return [2 /*return*/, util_1.default.listSubplebbits(this.dataPath)];
+                return [2 /*return*/, util_1.nativeFunctions.listSubplebbits(this.dataPath)];
             });
         });
     };

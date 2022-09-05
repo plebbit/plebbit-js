@@ -262,7 +262,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _b.label = 5;
                     case 5:
                         _b.trys.push([5, 7, , 8]);
-                        return [4 /*yield*/, this.plebbit.ipfsClient.key.list()];
+                        return [4 /*yield*/, this.plebbit.ipfsClient.listKeys()];
                     case 6:
                         subplebbitIpfsNodeKey = (_b.sent()).filter(function (key) { return key.name === _this.signer.address; })[0];
                         return [3 /*break*/, 8];
@@ -424,7 +424,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this.removeAllListeners();
                         this._sync = false;
                         this._syncInterval = clearInterval(this._syncInterval);
-                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic)];
+                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsubUnsubscribe(this.pubsubTopic)];
                     case 1:
                         _c.sent();
                         (_b = this.dbHandler) === null || _b === void 0 ? void 0 : _b.destoryConnection();
@@ -505,7 +505,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(this.toJSON()))];
                     case 11:
                         file = _d.sent();
-                        return [4 /*yield*/, this.plebbit.ipfsClient.name.publish(file["cid"], {
+                        return [4 /*yield*/, this.plebbit.ipfsClient.publishName(file["cid"], {
                                 lifetime: "72h",
                                 key: this.ipnsKeyName,
                                 allowOffline: true
@@ -863,7 +863,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         challengeVerification = new challenge_1.ChallengeVerificationMessage(__assign({ reason: reasonForSkippingCaptcha, challengeSuccess: publishedPublication.reason ? false : Boolean(publishedPublication.publication), challengeAnswerId: request.challengeAnswerId, challengeErrors: undefined, challengeRequestId: request.challengeRequestId }, restOfMsg));
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.upsertChallenge(challengeVerification, undefined),
-                                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeVerification)))
+                                this.plebbit.pubsubIpfsClient.pubsubPublish(this.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeVerification)))
                             ])];
                     case 8:
                         _f.sent();
@@ -878,7 +878,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         });
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.upsertChallenge(challengeMessage, undefined),
-                                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeMessage)))
+                                this.plebbit.pubsubIpfsClient.pubsubPublish(this.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeMessage)))
                             ])];
                     case 10:
                         _f.sent();
@@ -926,7 +926,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         challengeVerification = new challenge_1.ChallengeVerificationMessage(__assign({ challengeRequestId: challengeAnswer.challengeRequestId, challengeAnswerId: challengeAnswer.challengeAnswerId, challengeSuccess: publishedPublication.reason ? false : challengeSuccess, challengeErrors: challengeErrors }, restOfMsg));
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.upsertChallenge(challengeVerification, undefined),
-                                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeVerification)))
+                                this.plebbit.pubsubIpfsClient.pubsubPublish(this.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeVerification)))
                             ])];
                     case 7:
                         _d.sent();
@@ -943,7 +943,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         });
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.upsertChallenge(challengeVerification, undefined),
-                                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeVerification)))
+                                this.plebbit.pubsubIpfsClient.pubsubPublish(this.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeVerification)))
                             ])];
                     case 9:
                         _d.sent();
@@ -1178,7 +1178,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             this.provideCaptchaCallback = this.defaultProvideCaptcha;
                             this.validateCaptchaAnswerCallback = this.defaultValidateCaptcha;
                         }
-                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, function (pubsubMessage) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsubSubscribe(this.pubsubTopic, function (pubsubMessage) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0: return [4 /*yield*/, this.handleChallengeExchange(pubsubMessage)];
                                     case 1: return [2 /*return*/, _a.sent()];
