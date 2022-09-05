@@ -512,7 +512,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             })];
                     case 12:
                         _d.sent();
-                        log("Published a new IPNS record for sub(".concat(this.address, ")"));
+                        log.trace("Published a new IPNS record for sub(".concat(this.address, ")"));
                         _d.label = 13;
                     case 13: return [2 /*return*/];
                 }
