@@ -398,7 +398,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 key: this.ipnsKeyName,
                 allowOffline: true
             });
-            log(`Published a new IPNS record for sub(${this.address})`);
+            log.trace(`Published a new IPNS record for sub(${this.address})`);
         }
     }
 
