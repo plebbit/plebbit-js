@@ -404,9 +404,6 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.listSubplebbits = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                if (!util_1.isRuntimeNode)
-                    return [2 /*return*/, []];
-                (0, assert_1.default)(this.dataPath, "Data path must exist in plebbit before calling listSubplebbits");
                 return [2 /*return*/, util_1.nativeFunctions.listSubplebbits(this.dataPath)];
             });
         });
