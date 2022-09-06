@@ -634,6 +634,7 @@ export class DbHandler {
         }
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbFileName });
         await fs.promises.mkdir(path.dirname(newPath), { recursive: true });
+        await this._knex.destroy();
         await fs.promises.rename(oldPathString, newPath);
         this._subplebbit.dbConfig = {
             ...this._subplebbit.dbConfig,
