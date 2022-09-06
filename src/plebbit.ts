@@ -31,7 +31,10 @@ import Logger from "@plebbit/plebbit-logger";
 
 export const pendingSubplebbitCreations: Record<string, boolean> = {};
 
-export const setNativeFunctions = utilSetNativeFunctions;
+export const setNativeFunctions = (pNativeFunctions: NativeFunctions) => {
+    assert(pNativeFunctions, "User tried to pass undefined to setNativeFunctions");
+    utilSetNativeFunctions(pNativeFunctions);
+};
 
 export class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;

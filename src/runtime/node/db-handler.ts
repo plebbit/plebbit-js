@@ -216,6 +216,7 @@ export class DbHandler {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded");
 
         let dbVersion = await this.getDbVersion();
+        log.trace(`db version: ${dbVersion}`);
         const needToMigrate = dbVersion !== currentDbVersion;
         const createTableFunctions = [
             this._createCommentsTable,
@@ -231,8 +232,10 @@ export class DbHandler {
             tables.map(async (table) => {
                 const i = tables.indexOf(table);
                 const tableExists = await this._knex.schema.hasTable(table);
-                if (!tableExists) await createTableFunctions[i].bind(this)(table);
-                else if (tableExists && needToMigrate) {
+                if (!tableExists) {
+                    log(`Table ${table} does not exist. Will create schema`);
+                    await createTableFunctions[i].bind(this)(table);
+                } else if (tableExists && needToMigrate) {
                     log(`Migrating table ${table} to new schema`);
                     await this._knex.raw("PRAGMA foreign_keys = OFF");
                     const tempTableName = `${table}${currentDbVersion}`;
