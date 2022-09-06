@@ -10,6 +10,11 @@ import { Subplebbit } from "../../subplebbit";
 import fetch from "node-fetch";
 import { create } from "ipfs-http-client";
 
+import all from "it-all";
+import last from "it-last";
+import { concat as uint8ArrayConcat } from "uint8arrays/concat";
+import { toString as uint8ArrayToString } from "uint8arrays/to-string";
+
 const nativeFunctions: NativeFunctions = {
     listSubplebbits: async (dataPath: string): Promise<string[]> => {
         const stat = await fs.lstat(dataPath);
@@ -42,14 +47,24 @@ const nativeFunctions: NativeFunctions = {
     createIpfsClient: (ipfsHttpClientOptions): IpfsHttpClientPublicAPI => {
         const ipfsClient = create(ipfsHttpClientOptions);
 
+        const cat = async (...args: Parameters<IpfsHttpClientPublicAPI["cat"]>): Promise<string | undefined> => {
+            const rawData = await all(ipfsClient.cat(...args));
+            const data = uint8ArrayConcat(rawData);
+            return uint8ArrayToString(data);
+        };
+
+        const resolveName = async (...args: Parameters<IpfsHttpClientPublicAPI["resolveName"]>): Promise<string | undefined> => {
+            return last(ipfsClient.name.resolve(...args));
+        };
+
         return {
             add: ipfsClient.add,
-            cat: ipfsClient.cat,
+            cat: cat,
             pubsubSubscribe: ipfsClient.pubsub.subscribe,
             pubsubUnsubscribe: ipfsClient.pubsub.unsubscribe,
             pubsubPublish: ipfsClient.pubsub.publish,
             publishName: ipfsClient.name.publish,
-            resolveName: ipfsClient.name.resolve,
+            resolveName: resolveName,
             getConfig: ipfsClient.config.get,
             listKeys: ipfsClient.key.list
         };
