@@ -46,8 +46,8 @@ const anotherOfflineNodeArgs = {
     daemonArgs: "--offline"
 };
 
-const numOfCommentsToPublish = 6;
-const votesPerCommentToPublish = 6;
+const numOfCommentsToPublish = 7;
+const votesPerCommentToPublish = 7;
 
 const syncInterval = 100;
 const databaseConfig = {
@@ -129,7 +129,6 @@ const mockPlebbit = async () => {
 
 const startMathCliSubplebbit = async () => {
     const plebbit = await mockPlebbit();
-
     const signer = await plebbit.createSigner(signers[1]);
     const subplebbit = await plebbit.createSubplebbit({ signer: signer, database: databaseConfig });
     subplebbit.setProvideCaptchaCallback((challengeRequestMessage) => {
