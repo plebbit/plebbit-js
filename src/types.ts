@@ -354,6 +354,7 @@ export type IpfsHttpClientPublicAPI = {
 };
 export type NativeFunctions = {
     listSubplebbits: (dataPath: string) => Promise<string[]>;
+    getDefaultDataPath: () => string | undefined;
     createDbHandler: (subplebbit: SubplebbitType) => DbHandlerPublicAPI;
     fetch: typeof fetch;
     createIpfsClient: (options: Options) => IpfsHttpClientPublicAPI;

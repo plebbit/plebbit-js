@@ -11,7 +11,7 @@ import {
     PostType,
     VoteType
 } from "./types";
-import plebbitUtil, { isRuntimeNode, mkdir, nativeFunctions, setNativeFunctions as utilSetNativeFunctions } from "./runtime/node/util";
+import { isRuntimeNode, mkdir, nativeFunctions, setNativeFunctions as utilSetNativeFunctions } from "./runtime/node/util";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
@@ -71,12 +71,12 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         this.resolver = new Resolver({ plebbit: this, blockchainProviders: this.blockchainProviders });
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         this._memCache = new TinyCache();
+        this.dataPath = options.dataPath || nativeFunctions.getDefaultDataPath();
     }
 
     async _init(options: PlebbitOptions) {
         const log = Logger("plebbit-js:plebbit:_init");
 
-        this.dataPath = options.dataPath || plebbitUtil.getDefaultDataPath();
         if (isRuntimeNode && this.dataPath) await mkdir(this.dataPath, { recursive: true });
         if (options["ipfsGatewayUrl"]) this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
         else {

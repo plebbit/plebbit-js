@@ -12,6 +12,8 @@ const nativeFunctions: NativeFunctions = {
         return [];
     },
 
+    getDefaultDataPath: () => undefined,
+
     createDbHandler: (subplebbit) => {
         throw new Error("Shouldn't call createDbHandler over native-functions of browser");
     },
