@@ -35,14 +35,22 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var ipfs_http_client_1 = require("ipfs-http-client");
+var it_all_1 = __importDefault(require("it-all"));
+var it_last_1 = __importDefault(require("it-last"));
+var concat_1 = require("uint8arrays/concat");
+var to_string_1 = require("uint8arrays/to-string");
 var nativeFunctions = {
     listSubplebbits: function (dataPath) { return __awaiter(void 0, void 0, void 0, function () {
         return __generator(this, function (_a) {
             return [2 /*return*/, []];
         });
     }); },
+    getDefaultDataPath: function () { return undefined; },
     createDbHandler: function (subplebbit) {
         throw new Error("Shouldn't call createDbHandler over native-functions of browser");
     },
@@ -56,16 +64,46 @@ var nativeFunctions = {
     },
     createIpfsClient: function (ipfsHttpClientOptions) {
         var ipfsClient = (0, ipfs_http_client_1.create)(ipfsHttpClientOptions);
+        var cat = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return __awaiter(void 0, void 0, void 0, function () {
+                var rawData, data;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, (0, it_all_1.default)(ipfsClient.cat.apply(ipfsClient, args))];
+                        case 1:
+                            rawData = _a.sent();
+                            data = (0, concat_1.concat)(rawData);
+                            return [2 /*return*/, (0, to_string_1.toString)(data)];
+                    }
+                });
+            });
+        };
+        var resolveName = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return __awaiter(void 0, void 0, void 0, function () {
+                var _a;
+                return __generator(this, function (_b) {
+                    return [2 /*return*/, (0, it_last_1.default)((_a = ipfsClient.name).resolve.apply(_a, args))];
+                });
+            });
+        };
         return {
             add: ipfsClient.add,
-            cat: ipfsClient.cat,
             pubsubSubscribe: ipfsClient.pubsub.subscribe,
             pubsubUnsubscribe: ipfsClient.pubsub.unsubscribe,
             pubsubPublish: ipfsClient.pubsub.publish,
             publishName: ipfsClient.name.publish,
-            resolveName: ipfsClient.name.resolve,
             getConfig: ipfsClient.config.get,
-            listKeys: ipfsClient.key.list
+            listKeys: ipfsClient.key.list,
+            cat: cat,
+            resolveName: resolveName
         };
     }
 };

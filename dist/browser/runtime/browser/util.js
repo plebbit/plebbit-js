@@ -14,11 +14,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setNativeFunctions = exports.nativeFunctions = exports.isRuntimeNode = exports.getDefaultDataPath = void 0;
+exports.setNativeFunctions = exports.nativeFunctions = exports.isRuntimeNode = void 0;
 var native_functions_1 = __importDefault(require("./native-functions"));
-// the browser has no data path
-var getDefaultDataPath = function () { return undefined; };
-exports.getDefaultDataPath = getDefaultDataPath;
 exports.isRuntimeNode = false;
 exports.nativeFunctions = native_functions_1.default;
 var setNativeFunctions = function (pNativeFunctions) {
@@ -26,7 +23,6 @@ var setNativeFunctions = function (pNativeFunctions) {
 };
 exports.setNativeFunctions = setNativeFunctions;
 exports.default = {
-    getDefaultDataPath: exports.getDefaultDataPath,
     isRuntimeNode: exports.isRuntimeNode,
     setNativeFunctions: exports.setNativeFunctions,
     nativeFunctions: exports.nativeFunctions

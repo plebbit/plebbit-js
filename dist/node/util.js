@@ -51,10 +51,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getProtocolVersion = exports.randomElement = exports.ipfsImportKey = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.waitTillCommentsUpdate = exports.waitTillPublicationsArePublished = exports.shallowEqual = exports.replaceXWithY = exports.removeKeys = exports.keepKeys = exports.timestamp = exports.parseJsonIfString = exports.round = exports.chunks = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.TIMEFRAMES_TO_SECONDS = void 0;
-var concat_1 = require("uint8arrays/concat");
-var to_string_1 = require("uint8arrays/to-string");
-var it_all_1 = __importDefault(require("it-all"));
-var it_last_1 = __importDefault(require("it-last"));
 var form_data_1 = __importDefault(require("form-data"));
 var assert_1 = __importDefault(require("assert"));
 var util_1 = require("./runtime/node/util");
@@ -102,7 +98,7 @@ function fetchWithLimit(url, options) {
 function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
     if (defaultOptions === void 0) { defaultOptions = { timeout: 60000 }; }
     return __awaiter(this, void 0, void 0, function () {
-        var url, res, rawData, error, e_1, data;
+        var url, res, fileContent, error, e_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -118,25 +114,21 @@ function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
                         throw new Error("Failed to load IPFS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText));
                     return [3 /*break*/, 7];
                 case 2:
-                    rawData = void 0, error = void 0;
+                    fileContent = void 0, error = void 0;
                     _a.label = 3;
                 case 3:
                     _a.trys.push([3, 5, , 6]);
-                    return [4 /*yield*/, (0, it_all_1.default)(plebbit.ipfsClient.cat(cid, __assign(__assign({}, defaultOptions), { length: DOWNLOAD_LIMIT_BYTES })))];
+                    return [4 /*yield*/, plebbit.ipfsClient.cat(cid, __assign(__assign({}, defaultOptions), { length: DOWNLOAD_LIMIT_BYTES }))];
                 case 4:
-                    rawData = _a.sent(); // Limit is 1mb files
+                    fileContent = _a.sent(); // Limit is 1mb files
                     return [3 /*break*/, 6];
                 case 5:
                     e_1 = _a.sent();
                     error = e_1;
                     return [3 /*break*/, 6];
                 case 6:
-                    data = (0, concat_1.concat)(rawData);
-                    if (!data)
-                        throw new Error("Was not able to load IPFS (".concat(cid, ") due to error: ").concat(error));
-                    else
-                        return [2 /*return*/, JSON.parse((0, to_string_1.toString)(data))];
-                    _a.label = 7;
+                    (0, assert_1.default)(typeof fileContent === "string", "Was not able to load IPFS (".concat(cid, ") due to error: ").concat(error));
+                    return [2 /*return*/, JSON.parse(fileContent)];
                 case 7: return [2 /*return*/];
             }
         });
@@ -165,7 +157,7 @@ function loadIpnsAsJson(ipns, plebbit) {
                     _a.label = 6;
                 case 6:
                     _a.trys.push([6, 8, , 9]);
-                    return [4 /*yield*/, (0, it_last_1.default)(plebbit.ipfsClient.resolveName(ipns))];
+                    return [4 /*yield*/, plebbit.ipfsClient.resolveName(ipns)];
                 case 7:
                     cid = _a.sent();
                     return [3 /*break*/, 9];

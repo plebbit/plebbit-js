@@ -14,12 +14,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setNativeFunctions = exports.nativeFunctions = exports.isRuntimeNode = exports.mkdir = exports.getDefaultDataPath = void 0;
-var path_1 = __importDefault(require("path"));
+exports.setNativeFunctions = exports.nativeFunctions = exports.isRuntimeNode = exports.mkdir = void 0;
 var fs_1 = require("fs");
 var native_functions_1 = __importDefault(require("./native-functions"));
-var getDefaultDataPath = function () { return path_1.default.join(process.cwd(), ".plebbit"); };
-exports.getDefaultDataPath = getDefaultDataPath;
 exports.mkdir = fs_1.promises.mkdir;
 exports.isRuntimeNode = true;
 exports.nativeFunctions = native_functions_1.default;
@@ -28,7 +25,6 @@ var setNativeFunctions = function (pNativeFunctions) {
 };
 exports.setNativeFunctions = setNativeFunctions;
 exports.default = {
-    getDefaultDataPath: exports.getDefaultDataPath,
     isRuntimeNode: exports.isRuntimeNode,
     nativeFunctions: exports.nativeFunctions,
     setNativeFunctions: exports.setNativeFunctions

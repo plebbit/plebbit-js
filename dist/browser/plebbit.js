@@ -25,29 +25,6 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -89,7 +66,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Plebbit = exports.setNativeFunctions = exports.pendingSubplebbitCreations = void 0;
-var util_1 = __importStar(require("./runtime/browser/util"));
+var util_1 = require("./runtime/browser/util");
 var comment_1 = require("./comment");
 var post_1 = __importDefault(require("./post"));
 var subplebbit_1 = require("./subplebbit");
@@ -107,7 +84,11 @@ var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 exports.pendingSubplebbitCreations = {};
-exports.setNativeFunctions = util_1.setNativeFunctions;
+var setNativeFunctions = function (pNativeFunctions) {
+    (0, assert_1.default)(pNativeFunctions, "User tried to pass undefined to setNativeFunctions");
+    (0, util_1.setNativeFunctions)(pNativeFunctions);
+};
+exports.setNativeFunctions = setNativeFunctions;
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
     function Plebbit(options) {
@@ -134,6 +115,7 @@ var Plebbit = /** @class */ (function (_super) {
         _this.resolver = new resolver_1.Resolver({ plebbit: _this, blockchainProviders: _this.blockchainProviders });
         _this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         _this._memCache = new tinycache_1.default();
+        _this.dataPath = options.dataPath || util_1.nativeFunctions.getDefaultDataPath();
         return _this;
     }
     Plebbit.prototype._init = function (options) {
@@ -143,7 +125,6 @@ var Plebbit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:_init");
-                        this.dataPath = options.dataPath || util_1.default.getDefaultDataPath();
                         if (!(util_1.isRuntimeNode && this.dataPath)) return [3 /*break*/, 2];
                         return [4 /*yield*/, (0, util_1.mkdir)(this.dataPath, { recursive: true })];
                     case 1:

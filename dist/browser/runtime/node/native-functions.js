@@ -46,12 +46,18 @@ var plebbit_1 = require("../../plebbit");
 var db_handler_1 = require("./db-handler");
 var node_fetch_1 = __importDefault(require("node-fetch"));
 var ipfs_http_client_1 = require("ipfs-http-client");
+var it_all_1 = __importDefault(require("it-all"));
+var it_last_1 = __importDefault(require("it-last"));
+var concat_1 = require("uint8arrays/concat");
+var to_string_1 = require("uint8arrays/to-string");
 var nativeFunctions = {
     listSubplebbits: function (dataPath) { return __awaiter(void 0, void 0, void 0, function () {
         var stat, subplebbitsPath, addresses;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, fs_1.promises.lstat(dataPath)];
+                case 0:
+                    (0, assert_1.default)(typeof dataPath === "string", "Data path is not defined");
+                    return [4 /*yield*/, fs_1.promises.lstat(dataPath)];
                 case 1:
                     stat = _a.sent();
                     (0, assert_1.default)(stat.isDirectory(), "dataPath (".concat(dataPath, ") is not a directory"));
@@ -66,6 +72,7 @@ var nativeFunctions = {
             }
         });
     }); },
+    getDefaultDataPath: function () { return path_1.default.join(process.cwd(), ".plebbit"); },
     createDbHandler: function (subplebbit) {
         var dbHandler = new db_handler_1.DbHandler(subplebbit);
         var dbApi = {};
@@ -78,14 +85,44 @@ var nativeFunctions = {
     fetch: node_fetch_1.default,
     createIpfsClient: function (ipfsHttpClientOptions) {
         var ipfsClient = (0, ipfs_http_client_1.create)(ipfsHttpClientOptions);
+        var cat = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return __awaiter(void 0, void 0, void 0, function () {
+                var rawData, data;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, (0, it_all_1.default)(ipfsClient.cat.apply(ipfsClient, args))];
+                        case 1:
+                            rawData = _a.sent();
+                            data = (0, concat_1.concat)(rawData);
+                            return [2 /*return*/, (0, to_string_1.toString)(data)];
+                    }
+                });
+            });
+        };
+        var resolveName = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return __awaiter(void 0, void 0, void 0, function () {
+                var _a;
+                return __generator(this, function (_b) {
+                    return [2 /*return*/, (0, it_last_1.default)((_a = ipfsClient.name).resolve.apply(_a, args))];
+                });
+            });
+        };
         return {
             add: ipfsClient.add,
-            cat: ipfsClient.cat,
+            cat: cat,
             pubsubSubscribe: ipfsClient.pubsub.subscribe,
             pubsubUnsubscribe: ipfsClient.pubsub.unsubscribe,
             pubsubPublish: ipfsClient.pubsub.publish,
             publishName: ipfsClient.name.publish,
-            resolveName: ipfsClient.name.resolve,
+            resolveName: resolveName,
             getConfig: ipfsClient.config.get,
             listKeys: ipfsClient.key.list
         };

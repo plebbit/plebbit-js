@@ -1,4 +1,3 @@
-/// <reference types="node-fetch" />
 /// <reference types="node" />
 import { BlockchainProvider, CommentType, CreateCommentEditOptions, CreateCommentOptions, CreateSignerOptions, CreateSubplebbitOptions, CreateVoteOptions, NativeFunctions, PlebbitOptions, VoteType } from "./types";
 import { Comment } from "./comment";
@@ -11,12 +10,7 @@ import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
 import EventEmitter from "events";
 export declare const pendingSubplebbitCreations: Record<string, boolean>;
-export declare const setNativeFunctions: (pNativeFunctions: Partial<NativeFunctions>) => {
-    listSubplebbits: (dataPath: string) => Promise<string[]>;
-    createDbHandler: (subplebbit: import("./types").SubplebbitType) => import("./types").DbHandlerPublicAPI;
-    fetch: typeof import("node-fetch").default;
-    createIpfsClient: (options: import("ipfs-http-client/types/src/types").Options) => import("./types").IpfsHttpClientPublicAPI;
-};
+export declare const setNativeFunctions: (pNativeFunctions: NativeFunctions) => void;
 export declare class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
     pubsubIpfsClient: ReturnType<NativeFunctions["createIpfsClient"]>;

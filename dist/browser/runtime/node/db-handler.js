@@ -351,6 +351,7 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, this.getDbVersion()];
                     case 1:
                         dbVersion = _a.sent();
+                        log.trace("db version: ".concat(dbVersion));
                         needToMigrate = dbVersion !== currentDbVersion;
                         createTableFunctions = [
                             this._createCommentsTable,
@@ -371,6 +372,7 @@ var DbHandler = /** @class */ (function () {
                                         case 1:
                                             tableExists = _a.sent();
                                             if (!!tableExists) return [3 /*break*/, 3];
+                                            log("Table ".concat(table, " does not exist. Will create schema"));
                                             return [4 /*yield*/, createTableFunctions[i].bind(this)(table)];
                                         case 2:
                                             _a.sent();
@@ -1090,8 +1092,11 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, fs_1.default.promises.mkdir(path_1.default.dirname(newPath), { recursive: true })];
                     case 1:
                         _d.sent();
-                        return [4 /*yield*/, fs_1.default.promises.rename(oldPathString, newPath)];
+                        return [4 /*yield*/, this._knex.destroy()];
                     case 2:
+                        _d.sent();
+                        return [4 /*yield*/, fs_1.default.promises.rename(oldPathString, newPath)];
+                    case 3:
                         _d.sent();
                         this._subplebbit.dbConfig = __assign(__assign({}, this._subplebbit.dbConfig), { connection: {
                                 filename: newPath
