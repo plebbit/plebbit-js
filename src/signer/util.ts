@@ -1,10 +1,7 @@
 const libp2pCrypto = require("libp2p-crypto");
-const cborg = require("cborg");
 const PeerId = require("peer-id");
 const jose = require("jose");
 const assert = require("assert");
-const { fromString: uint8ArrayFromString } = require("uint8arrays/from-string");
-const { toString: uint8ArrayToString } = require("uint8arrays/to-string");
 
 export const generatePrivateKeyPem = async (): Promise<string> => {
     const keyPair = await generateKeyPair();

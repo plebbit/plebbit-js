@@ -85,9 +85,6 @@ export class Comment extends Publication implements CommentType {
     }
 
     _mergeFields(props: CommentType) {
-        // TODO merge flairs, deleted, content, author here
-        // TODO move original author and content to comment.original if needed
-
         const original = {};
         original["content"] =
             props.original?.content || this.original?.content || (props.content && props.authorEdit?.content ? this.content : undefined);
