@@ -55,7 +55,7 @@ var Pages = /** @class */ (function () {
     }
     Pages.prototype.getPage = function (pageCid) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, page, _a, verifyComment;
+            var log, cachedResponse, page, _a, verifyComment;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -66,6 +66,11 @@ var Pages = /** @class */ (function () {
                                 details: "getPage: cid (".concat(pageCid, ") is invalid as a CID")
                             });
                         (0, assert_1.default)(this.subplebbit.address, "Address of subplebbit is needed to load pages");
+                        cachedResponse = this.subplebbit.plebbit._memCache.get(pageCid);
+                        if (cachedResponse && JSON.stringify(cachedResponse) !== "{}") {
+                            log.trace("page (".concat(pageCid, ") is already cached. Returning cached page"));
+                            return [2 /*return*/, new Page(cachedResponse)];
+                        }
                         _a = Page.bind;
                         return [4 /*yield*/, (0, util_1.loadIpfsFileAsJson)(pageCid, this.subplebbit.plebbit)];
                     case 1:
@@ -115,6 +120,8 @@ var Pages = /** @class */ (function () {
                             }); }))];
                     case 2:
                         _b.sent();
+                        // set cache
+                        this.subplebbit.plebbit._memCache.put(pageCid, page.toJSON());
                         return [2 /*return*/, page];
                 }
             });

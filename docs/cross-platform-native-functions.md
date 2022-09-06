@@ -7,8 +7,7 @@ import Plebbit from '@plebbit/plebbit-js`
 
 const nativeFunctions = {
   fetch: async () => {},
-  mkdirp: async () => {},
-  ls: async () => {}
+  listSubplebbits: async () => {},
 }
 
 Plebbit.setNativeFunctions(nativeFunctions)
@@ -17,9 +16,5 @@ Plebbit.setNativeFunctions(nativeFunctions)
 # NativeFunctions API
 
 - `nativeFunctions.fetch(url: string, fetchOptions: FetchOptions)`
-- `nativeFunctions.mkdirp(path: string)`
-- `nativeFunctions.ls(path: string)`
-- `nativeFunctions.sqlQuery({dbPath: string, sqlQuery: string})`
-- `nativeFunctions.createCaptcha(captchaType: string)`
-- `nativeFunctions.ipfsHttpRequest({url: string, arguments: any})`
-- TODO ...
+- `nativeFunctions.listSubplebbits()`
+- `nativeFunctions.createIpfsClient(ipfsHttpClientOptions: IpfsHttpClientOptions)`
