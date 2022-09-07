@@ -234,7 +234,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         let subplebbitIpfsNodeKey, error;
         try {
-            subplebbitIpfsNodeKey = (await this.plebbit.ipfsClient.listKeys()).filter((key) => key.name === this.signer.address)[0];
+            subplebbitIpfsNodeKey = (await this.plebbit.ipfsClient.key.list()).filter((key) => key.name === this.signer.address)[0];
         } catch (e) {
             error = e;
         }
@@ -338,7 +338,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
             this._syncInterval = clearInterval(this._syncInterval);
 
-            await this.plebbit.pubsubIpfsClient.pubsubUnsubscribe(this.pubsubTopic);
+            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic);
             this.dbHandler?.destoryConnection();
             this.dbHandler = undefined;
             RUNNING_SUBPLEBBITS[this.signer.address] = false;
@@ -393,7 +393,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (!currentIpns || JSON.stringify(currentIpns) !== JSON.stringify(this.toJSON()) || lastPublishOverTwentyMinutes) {
             this.updatedAt = timestamp();
             const file = await this.plebbit.ipfsClient.add(JSON.stringify(this.toJSON()));
-            await this.plebbit.ipfsClient.publishName(file["cid"], {
+            await this.plebbit.ipfsClient.name.publish(file.cid, {
                 lifetime: "72h", // TODO decide on optimal time later
                 key: this.ipnsKeyName,
                 allowOffline: true
@@ -676,7 +676,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
             await Promise.all([
                 this.dbHandler.upsertChallenge(challengeVerification, undefined),
-                this.plebbit.pubsubIpfsClient.pubsubPublish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
+                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
             ]);
             log.trace(`Published ${challengeVerification.type} over pubsub for challenge (${challengeVerification.challengeRequestId})`);
             this.emit("challengeverification", challengeVerification);
@@ -688,7 +688,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
             await Promise.all([
                 this.dbHandler.upsertChallenge(challengeMessage, undefined),
-                this.plebbit.pubsubIpfsClient.pubsubPublish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeMessage)))
+                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeMessage)))
             ]);
             this.emit("challengemessage", challengeMessage);
             log.trace(`Published ${challengeMessage.type} (${challengeMessage.challengeRequestId}) over pubsub`);
@@ -724,7 +724,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
             await Promise.all([
                 this.dbHandler.upsertChallenge(challengeVerification, undefined),
-                this.plebbit.pubsubIpfsClient.pubsubPublish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
+                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
             ]);
             log(
                 `Published ${challengeVerification.type} over pubsub: ${JSON.stringify(
@@ -742,7 +742,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
             await Promise.all([
                 this.dbHandler.upsertChallenge(challengeVerification, undefined),
-                this.plebbit.pubsubIpfsClient.pubsubPublish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
+                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
             ]);
             log(`Published failed ${challengeVerification.type} (${challengeVerification.challengeRequestId})`);
             this.emit("challengeverification", challengeVerification);
@@ -876,7 +876,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.provideCaptchaCallback = this.defaultProvideCaptcha;
             this.validateCaptchaAnswerCallback = this.defaultValidateCaptcha;
         }
-        await this.plebbit.pubsubIpfsClient.pubsubSubscribe(
+        await this.plebbit.pubsubIpfsClient.pubsub.subscribe(
             this.pubsubTopic,
             async (pubsubMessage) => await this.handleChallengeExchange(pubsubMessage)
         );

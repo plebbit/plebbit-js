@@ -23,25 +23,24 @@ const nativeFunctions: NativeFunctions = {
     createIpfsClient: (ipfsHttpClientOptions): IpfsHttpClientPublicAPI => {
         const ipfsClient = create(ipfsHttpClientOptions);
 
-        const cat = async (...args: Parameters<IpfsHttpClientPublicAPI["cat"]>): Promise<string | undefined> => {
-            const rawData = await all(ipfsClient.cat(...args));
-            const data = uint8ArrayConcat(rawData);
-            return uint8ArrayToString(data);
-        };
-
-        const resolveName = async (...args: Parameters<IpfsHttpClientPublicAPI["resolveName"]>) => {
-            return last(ipfsClient.name.resolve(...args));
-        };
         return {
             add: ipfsClient.add,
-            pubsubSubscribe: ipfsClient.pubsub.subscribe,
-            pubsubUnsubscribe: ipfsClient.pubsub.unsubscribe,
-            pubsubPublish: ipfsClient.pubsub.publish,
-            publishName: ipfsClient.name.publish,
-            getConfig: ipfsClient.config.get,
-            listKeys: ipfsClient.key.list,
-            cat,
-            resolveName
+            cat: ipfsClient.cat,
+            pubsub: {
+                subscribe: ipfsClient.pubsub.subscribe,
+                unsubscribe: ipfsClient.pubsub.unsubscribe,
+                publish: ipfsClient.pubsub.publish
+            },
+            name: {
+                publish: ipfsClient.name.publish,
+                resolve: ipfsClient.name.resolve
+            },
+            config: {
+                get: ipfsClient.config.get
+            },
+            key: {
+                list: ipfsClient.key.list
+            }
         };
     }
 };

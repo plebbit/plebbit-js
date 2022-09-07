@@ -81,7 +81,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         if (options["ipfsGatewayUrl"]) this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
         else {
             try {
-                let gatewayFromNode = await this.ipfsClient.getConfig("Addresses.Gateway");
+                let gatewayFromNode = await this.ipfsClient.config.get("Addresses.Gateway");
                 if (Array.isArray(gatewayFromNode)) gatewayFromNode = gatewayFromNode[0];
 
                 const splits = gatewayFromNode.toString().split("/");

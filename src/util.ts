@@ -49,14 +49,15 @@ export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultO
         if (res.status === 200) return res.json();
         else throw new Error(`Failed to load IPFS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
     } else {
-        let fileContent: string | undefined, error;
+        let fileContent, error;
         try {
-            fileContent = await plebbit.ipfsClient.cat(cid, { ...defaultOptions, length: DOWNLOAD_LIMIT_BYTES }); // Limit is 1mb files
+            fileContent = await all(plebbit.ipfsClient.cat(cid, { ...defaultOptions, length: DOWNLOAD_LIMIT_BYTES })); // // Limit is 1mb files
         } catch (e) {
             error = e;
         }
-        assert(typeof fileContent === "string", `Was not able to load IPFS (${cid}) due to error: ${error}`);
-        return JSON.parse(fileContent);
+        const data = uint8ArrayConcat(fileContent);
+        if (!data) throw new Error(`Was not able to load IPFS (${cid}) due to error: ${error}`);
+        else return JSON.parse(uint8ArrayToString(data));
     }
 }
 
@@ -70,7 +71,7 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
     } else {
         let cid: string | undefined, error;
         try {
-            cid = await plebbit.ipfsClient.resolveName(ipns);
+            cid = await last(plebbit.ipfsClient.name.resolve(ipns));
         } catch (e) {
             error = e;
         }

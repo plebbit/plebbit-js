@@ -343,14 +343,11 @@ export type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHandler>>;
 
 export type IpfsHttpClientPublicAPI = {
     add: IPFSHTTPClient["add"];
-    cat: (...p: Parameters<IPFSHTTPClient["cat"]>) => Promise<string | undefined>;
-    pubsubSubscribe: IPFSHTTPClient["pubsub"]["subscribe"];
-    pubsubUnsubscribe: IPFSHTTPClient["pubsub"]["unsubscribe"];
-    pubsubPublish: IPFSHTTPClient["pubsub"]["publish"];
-    resolveName: (...p: Parameters<IPFSHTTPClient["name"]["resolve"]>) => Promise<string | undefined>;
-    publishName: IPFSHTTPClient["name"]["publish"];
-    getConfig: IPFSHTTPClient["config"]["get"];
-    listKeys: IPFSHTTPClient["key"]["list"];
+    cat: IPFSHTTPClient["cat"];
+    pubsub: Pick<IPFSHTTPClient["pubsub"], "subscribe" | "unsubscribe" | "publish">;
+    name: Pick<IPFSHTTPClient["name"], "resolve" | "publish">;
+    config: Pick<IPFSHTTPClient["config"], "get">;
+    key: Pick<IPFSHTTPClient["key"], "list">;
 };
 export type NativeFunctions = {
     listSubplebbits: (dataPath: string) => Promise<string[]>;

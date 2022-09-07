@@ -57,7 +57,7 @@ describe("Test util functions", async () => {
         it("Loads an IPNS file as JSON correctly", async () => {
             const jsonFileTest = { 1234: "1234" };
             const cid = (await plebbit.ipfsClient.add(JSON.stringify(jsonFileTest))).path;
-            const jsonFileAsIpns = await plebbit.ipfsClient.publishName(cid, { allowOffline: true });
+            const jsonFileAsIpns = await plebbit.ipfsClient.name.publish(cid, { allowOffline: true });
             let jsonFileLoaded = await loadIpnsAsJson(jsonFileAsIpns.name, plebbit);
             expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
             jsonFileLoaded = await loadIpnsAsJson(jsonFileAsIpns.name, gatewayPlebbit);
@@ -70,7 +70,7 @@ describe("Test util functions", async () => {
             const cid = (await plebbit.ipfsClient.add(JSON.stringify(twoMbObject))).path; // Cid of a file with over 1mb size
 
             const ipns = (
-                await plebbit.ipfsClient.publishName(cid, {
+                await plebbit.ipfsClient.name.publish(cid, {
                     lifetime: "5m",
                     allowOffline: true
                 })
