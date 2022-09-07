@@ -49,15 +49,14 @@ export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultO
         if (res.status === 200) return res.json();
         else throw new Error(`Failed to load IPFS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
     } else {
-        let fileContent, error;
+        let fileContent: string | undefined, error;
         try {
-            fileContent = await all(plebbit.ipfsClient.cat(cid, { ...defaultOptions, length: DOWNLOAD_LIMIT_BYTES })); // // Limit is 1mb files
+            fileContent = await plebbit.ipfsClient.cat(cid, { ...defaultOptions, length: DOWNLOAD_LIMIT_BYTES }); // // Limit is 1mb files
         } catch (e) {
             error = e;
         }
-        const data = uint8ArrayConcat(fileContent);
-        if (!data) throw new Error(`Was not able to load IPFS (${cid}) due to error: ${error}`);
-        else return JSON.parse(uint8ArrayToString(data));
+        assert(typeof fileContent === "string", `Was not able to load IPFS (${cid}) due to error: ${error}`);
+        return JSON.parse(fileContent);
     }
 }
 
@@ -71,12 +70,11 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
     } else {
         let cid: string | undefined, error;
         try {
-            cid = await last(plebbit.ipfsClient.name.resolve(ipns));
+            cid = await plebbit.ipfsClient.name.resolve(ipns);
         } catch (e) {
             error = e;
         }
-        if (!cid) throw new Error(`IPNS (${ipns}) resolves to undefined due to error: ${error}`);
-        assert(typeof cid === "string", "CID has to be a string");
+        assert(typeof cid === "string", `ipns (${ipns}) resolves to undefined due to error ${error}`);
         return loadIpfsFileAsJson(cid, plebbit);
     }
 }

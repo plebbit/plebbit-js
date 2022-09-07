@@ -343,9 +343,12 @@ export type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHandler>>;
 
 export type IpfsHttpClientPublicAPI = {
     add: IPFSHTTPClient["add"];
-    cat: IPFSHTTPClient["cat"];
+    cat: (...p: Parameters<IPFSHTTPClient["cat"]>) => Promise<string | undefined>;
     pubsub: Pick<IPFSHTTPClient["pubsub"], "subscribe" | "unsubscribe" | "publish">;
-    name: Pick<IPFSHTTPClient["name"], "resolve" | "publish">;
+    name: {
+        resolve: (...p: Parameters<IPFSHTTPClient["name"]["resolve"]>) => Promise<string | undefined>;
+        publish: IPFSHTTPClient["name"]["publish"];
+    };
     config: Pick<IPFSHTTPClient["config"], "get">;
     key: Pick<IPFSHTTPClient["key"], "list">;
 };

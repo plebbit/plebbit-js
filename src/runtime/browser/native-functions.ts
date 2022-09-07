@@ -23,9 +23,19 @@ const nativeFunctions: NativeFunctions = {
     createIpfsClient: (ipfsHttpClientOptions): IpfsHttpClientPublicAPI => {
         const ipfsClient = create(ipfsHttpClientOptions);
 
+        const cat = async (...args: Parameters<IpfsHttpClientPublicAPI["cat"]>): Promise<string | undefined> => {
+            const rawData = await all(ipfsClient.cat(...args));
+            const data = uint8ArrayConcat(rawData);
+            return uint8ArrayToString(data);
+        };
+
+        const resolveName = async (...args: Parameters<IpfsHttpClientPublicAPI["name"]["resolve"]>) => {
+            return last(ipfsClient.name.resolve(...args));
+        };
+
         return {
             add: ipfsClient.add,
-            cat: ipfsClient.cat,
+            cat: cat,
             pubsub: {
                 subscribe: ipfsClient.pubsub.subscribe,
                 unsubscribe: ipfsClient.pubsub.unsubscribe,
@@ -33,7 +43,7 @@ const nativeFunctions: NativeFunctions = {
             },
             name: {
                 publish: ipfsClient.name.publish,
-                resolve: ipfsClient.name.resolve
+                resolve: resolveName
             },
             config: {
                 get: ipfsClient.config.get
