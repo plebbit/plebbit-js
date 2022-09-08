@@ -18,8 +18,6 @@ import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 const nativeFunctions: NativeFunctions = {
     listSubplebbits: async (dataPath: string): Promise<string[]> => {
         assert(typeof dataPath === "string", "Data path is not defined");
-        const stat = await fs.lstat(dataPath);
-        assert(stat.isDirectory(), `dataPath (${dataPath}) is not a directory`);
         const subplebbitsPath = path.join(dataPath, "subplebbits");
 
         await fs.mkdir(subplebbitsPath, { recursive: true });
