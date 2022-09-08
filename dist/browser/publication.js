@@ -142,7 +142,7 @@ var Publication = /** @class */ (function (_super) {
                         _c.label = 4;
                     case 4:
                         this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication }), this);
-                        return [4 /*yield*/, this.subplebbit.plebbit.pubsubIpfsClient.pubsubUnsubscribe(this.subplebbit.pubsubTopic)];
+                        return [4 /*yield*/, this.subplebbit.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic)];
                     case 5:
                         _c.sent();
                         _c.label = 6;
@@ -165,7 +165,7 @@ var Publication = /** @class */ (function (_super) {
                             challengeAnswerId: (0, uuid_1.v4)(),
                             challengeAnswers: challengeAnswers
                         });
-                        return [4 /*yield*/, this.subplebbit.plebbit.pubsubIpfsClient.pubsubPublish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeAnswer)))];
+                        return [4 /*yield*/, this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeAnswer)))];
                     case 1:
                         _a.sent();
                         log("Responded to challenge (".concat(challengeAnswer.challengeRequestId, ") with answers ").concat(JSON.stringify(challengeAnswers)));
@@ -221,8 +221,8 @@ var Publication = /** @class */ (function (_super) {
                         this.challenge = new challenge_1.ChallengeRequestMessage(__assign({ encryptedPublication: encryptedPublication, challengeRequestId: (0, uuid_1.v4)() }, options));
                         log.trace("Attempting to publish ".concat(this.getType(), " with options (").concat(JSON.stringify(options), ")"));
                         return [4 /*yield*/, Promise.all([
-                                this.subplebbit.plebbit.pubsubIpfsClient.pubsubPublish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(this.challenge))),
-                                this.subplebbit.plebbit.pubsubIpfsClient.pubsubSubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this))
+                                this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(this.challenge))),
+                                this.subplebbit.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this))
                             ])];
                     case 4:
                         _f.sent();

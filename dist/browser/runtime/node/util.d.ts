@@ -1,4 +1,5 @@
 /// <reference types="node" />
+/// <reference types="node-fetch" />
 import { promises as fs } from "fs";
 import { NativeFunctions } from "../../types";
 export declare const mkdir: typeof fs.mkdir;

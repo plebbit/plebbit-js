@@ -96,14 +96,22 @@ var nativeFunctions = {
         };
         return {
             add: ipfsClient.add,
-            pubsubSubscribe: ipfsClient.pubsub.subscribe,
-            pubsubUnsubscribe: ipfsClient.pubsub.unsubscribe,
-            pubsubPublish: ipfsClient.pubsub.publish,
-            publishName: ipfsClient.name.publish,
-            getConfig: ipfsClient.config.get,
-            listKeys: ipfsClient.key.list,
             cat: cat,
-            resolveName: resolveName
+            pubsub: {
+                subscribe: ipfsClient.pubsub.subscribe,
+                unsubscribe: ipfsClient.pubsub.unsubscribe,
+                publish: ipfsClient.pubsub.publish
+            },
+            name: {
+                publish: ipfsClient.name.publish,
+                resolve: resolveName
+            },
+            config: {
+                get: ipfsClient.config.get
+            },
+            key: {
+                list: ipfsClient.key.list
+            }
         };
     }
 };

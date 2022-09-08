@@ -117,8 +117,6 @@ var Comment = /** @class */ (function (_super) {
         this.protocolVersion = props.protocolVersion;
     };
     Comment.prototype._mergeFields = function (props) {
-        // TODO merge flairs, deleted, content, author here
-        // TODO move original author and content to comment.original if needed
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         var original = {};
         original["content"] =
@@ -289,7 +287,7 @@ var Comment = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(__assign(__assign({}, this.toJSONCommentUpdate()), { signature: options.signature })))];
                     case 2:
                         file = _b.sent();
-                        return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.publishName(file["cid"], {
+                        return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
                                 lifetime: "72h",
                                 key: this.ipnsKeyName,
                                 allowOffline: true
