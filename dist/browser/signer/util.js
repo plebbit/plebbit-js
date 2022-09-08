@@ -38,12 +38,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getPeerIdFromPublicKeyPem = exports.getKeyPairFromPrivateKeyPem = exports.getPublicKeyPemFromPrivateKeyPem = exports.getIpfsKeyFromPrivateKeyPem = exports.getPlebbitAddressFromPublicKeyPem = exports.getPlebbitAddressFromPrivateKeyPem = exports.generatePrivateKeyPem = void 0;
 var libp2pCrypto = require("libp2p-crypto");
-var cborg = require("cborg");
 var PeerId = require("peer-id");
 var jose = require("jose");
 var assert = require("assert");
-var uint8ArrayFromString = require("uint8arrays/from-string").fromString;
-var uint8ArrayToString = require("uint8arrays/to-string").toString;
 var generatePrivateKeyPem = function () { return __awaiter(void 0, void 0, void 0, function () {
     var keyPair, privateKeyPem;
     return __generator(this, function (_a) {

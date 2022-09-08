@@ -52,21 +52,17 @@ var concat_1 = require("uint8arrays/concat");
 var to_string_1 = require("uint8arrays/to-string");
 var nativeFunctions = {
     listSubplebbits: function (dataPath) { return __awaiter(void 0, void 0, void 0, function () {
-        var stat, subplebbitsPath, addresses;
+        var subplebbitsPath, addresses;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     (0, assert_1.default)(typeof dataPath === "string", "Data path is not defined");
-                    return [4 /*yield*/, fs_1.promises.lstat(dataPath)];
-                case 1:
-                    stat = _a.sent();
-                    (0, assert_1.default)(stat.isDirectory(), "dataPath (".concat(dataPath, ") is not a directory"));
                     subplebbitsPath = path_1.default.join(dataPath, "subplebbits");
                     return [4 /*yield*/, fs_1.promises.mkdir(subplebbitsPath, { recursive: true })];
-                case 2:
+                case 1:
                     _a.sent();
                     return [4 /*yield*/, fs_1.promises.readdir(subplebbitsPath)];
-                case 3:
+                case 2:
                     addresses = (_a.sent()).filter(function (address) { return !Boolean(plebbit_1.pendingSubplebbitCreations[address]) && !address.includes("journal"); });
                     return [2 /*return*/, addresses];
             }
@@ -118,13 +114,21 @@ var nativeFunctions = {
         return {
             add: ipfsClient.add,
             cat: cat,
-            pubsubSubscribe: ipfsClient.pubsub.subscribe,
-            pubsubUnsubscribe: ipfsClient.pubsub.unsubscribe,
-            pubsubPublish: ipfsClient.pubsub.publish,
-            publishName: ipfsClient.name.publish,
-            resolveName: resolveName,
-            getConfig: ipfsClient.config.get,
-            listKeys: ipfsClient.key.list
+            pubsub: {
+                subscribe: ipfsClient.pubsub.subscribe,
+                unsubscribe: ipfsClient.pubsub.unsubscribe,
+                publish: ipfsClient.pubsub.publish
+            },
+            name: {
+                publish: ipfsClient.name.publish,
+                resolve: resolveName
+            },
+            config: {
+                get: ipfsClient.config.get
+            },
+            key: {
+                list: ipfsClient.key.list
+            }
         };
     }
 };

@@ -136,7 +136,7 @@ var Plebbit = /** @class */ (function (_super) {
                         return [3 /*break*/, 6];
                     case 3:
                         _a.trys.push([3, 5, , 6]);
-                        return [4 /*yield*/, this.ipfsClient.getConfig("Addresses.Gateway")];
+                        return [4 /*yield*/, this.ipfsClient.config.get("Addresses.Gateway")];
                     case 4:
                         gatewayFromNode = _a.sent();
                         if (Array.isArray(gatewayFromNode))

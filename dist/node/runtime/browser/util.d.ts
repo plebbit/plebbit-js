@@ -1,3 +1,4 @@
+/// <reference types="node-fetch" />
 import { NativeFunctions } from "../../types";
 export declare const isRuntimeNode = false;
 export declare let nativeFunctions: NativeFunctions;

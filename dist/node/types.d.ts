@@ -291,13 +291,13 @@ export declare type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHa
 export declare type IpfsHttpClientPublicAPI = {
     add: IPFSHTTPClient["add"];
     cat: (...p: Parameters<IPFSHTTPClient["cat"]>) => Promise<string | undefined>;
-    pubsubSubscribe: IPFSHTTPClient["pubsub"]["subscribe"];
-    pubsubUnsubscribe: IPFSHTTPClient["pubsub"]["unsubscribe"];
-    pubsubPublish: IPFSHTTPClient["pubsub"]["publish"];
-    resolveName: (...p: Parameters<IPFSHTTPClient["name"]["resolve"]>) => Promise<string | undefined>;
-    publishName: IPFSHTTPClient["name"]["publish"];
-    getConfig: IPFSHTTPClient["config"]["get"];
-    listKeys: IPFSHTTPClient["key"]["list"];
+    pubsub: Pick<IPFSHTTPClient["pubsub"], "subscribe" | "unsubscribe" | "publish">;
+    name: {
+        resolve: (...p: Parameters<IPFSHTTPClient["name"]["resolve"]>) => Promise<string | undefined>;
+        publish: IPFSHTTPClient["name"]["publish"];
+    };
+    config: Pick<IPFSHTTPClient["config"], "get">;
+    key: Pick<IPFSHTTPClient["key"], "list">;
 };
 export declare type NativeFunctions = {
     listSubplebbits: (dataPath: string) => Promise<string[]>;

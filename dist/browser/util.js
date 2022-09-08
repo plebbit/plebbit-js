@@ -120,7 +120,7 @@ function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
                     _a.trys.push([3, 5, , 6]);
                     return [4 /*yield*/, plebbit.ipfsClient.cat(cid, __assign(__assign({}, defaultOptions), { length: DOWNLOAD_LIMIT_BYTES }))];
                 case 4:
-                    fileContent = _a.sent(); // Limit is 1mb files
+                    fileContent = _a.sent(); // // Limit is 1mb files
                     return [3 /*break*/, 6];
                 case 5:
                     e_1 = _a.sent();
@@ -157,7 +157,7 @@ function loadIpnsAsJson(ipns, plebbit) {
                     _a.label = 6;
                 case 6:
                     _a.trys.push([6, 8, , 9]);
-                    return [4 /*yield*/, plebbit.ipfsClient.resolveName(ipns)];
+                    return [4 /*yield*/, plebbit.ipfsClient.name.resolve(ipns)];
                 case 7:
                     cid = _a.sent();
                     return [3 /*break*/, 9];
@@ -166,9 +166,7 @@ function loadIpnsAsJson(ipns, plebbit) {
                     error = e_2;
                     return [3 /*break*/, 9];
                 case 9:
-                    if (!cid)
-                        throw new Error("IPNS (".concat(ipns, ") resolves to undefined due to error: ").concat(error));
-                    (0, assert_1.default)(typeof cid === "string", "CID has to be a string");
+                    (0, assert_1.default)(typeof cid === "string", "ipns (".concat(ipns, ") resolves to undefined due to error ").concat(error));
                     return [2 /*return*/, loadIpfsFileAsJson(cid, plebbit)];
                 case 10: return [2 /*return*/];
             }
