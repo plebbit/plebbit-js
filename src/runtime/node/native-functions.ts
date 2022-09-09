@@ -29,7 +29,6 @@ const nativeFunctions: NativeFunctions = {
         return addresses;
     },
 
-    getDefaultDataPath: () => path.join(process.cwd(), ".plebbit"),
     createDbHandler: (subplebbit: Subplebbit): DbHandlerPublicAPI => {
         const dbHandler = new DbHandler(subplebbit);
 
@@ -53,7 +52,7 @@ const nativeFunctions: NativeFunctions = {
             return uint8ArrayToString(data);
         };
 
-        const resolveName = async (...args: Parameters<IpfsHttpClientPublicAPI["name"]["resolve"]>) => {
+        const resolveName = async (...args: Parameters<IpfsHttpClientPublicAPI["name"]["resolve"]>): Promise<string | undefined> => {
             return last(ipfsClient.name.resolve(...args));
         };
 

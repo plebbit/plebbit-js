@@ -21,6 +21,9 @@ import Transaction = Knex.Transaction;
 import { AuthorType, SubplebbitMetrics } from "../../types";
 import { CommentEdit } from "../../comment-edit";
 import Logger from "@plebbit/plebbit-logger";
+import errcode from "err-code";
+
+import { codes, messages } from "../../errors";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -52,6 +55,10 @@ export class DbHandler {
     private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
 
     constructor(subplebbit: Subplebbit) {
+        if (!subplebbit.dbConfig)
+            throw errcode(Error(messages.ERR_SUB_HAS_NO_DB_CONFIG), codes.ERR_SUB_HAS_NO_DB_CONFIG, {
+                details: `dbHandler(constructor): subplebbit.dbConfig is undefined`
+            });
         this._knex = knex(subplebbit.dbConfig);
         this._subplebbit = subplebbit;
         this._currentTrxs = {};

@@ -11,7 +11,7 @@ import {
     PostType,
     VoteType
 } from "./types";
-import { isRuntimeNode, mkdir, nativeFunctions, setNativeFunctions as utilSetNativeFunctions } from "./runtime/node/util";
+import { getDefaultDataPath, mkdir, nativeFunctions, setNativeFunctions as utilSetNativeFunctions } from "./runtime/node/util";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
@@ -71,13 +71,13 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         this.resolver = new Resolver({ plebbit: this, blockchainProviders: this.blockchainProviders });
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         this._memCache = new TinyCache();
-        this.dataPath = options.dataPath || nativeFunctions.getDefaultDataPath();
+        this.dataPath = options.dataPath || getDefaultDataPath();
     }
 
     async _init(options: PlebbitOptions) {
         const log = Logger("plebbit-js:plebbit:_init");
 
-        if (isRuntimeNode && this.dataPath) await mkdir(this.dataPath, { recursive: true });
+        if (this.dataPath) await mkdir(this.dataPath, { recursive: true });
         if (options["ipfsGatewayUrl"]) this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
         else {
             try {
@@ -158,9 +158,18 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
 
     async createSubplebbit(options: CreateSubplebbitOptions = {}): Promise<Subplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
+        let canRunSub = false;
+        try {
+            //@ts-ignore
+            nativeFunctions.createDbHandler({});
+        } catch (e) {
+            if (e.code === codes.ERR_SUB_HAS_NO_DB_CONFIG)
+                // If this error is thrown it's because DbHandler is defined, and refuses to be instantiated without db config. Any other error mean we can't run a sub
+                canRunSub = true;
+        }
 
         const newSub = async () => {
-            assert(isRuntimeNode, "Runtime need to include node APIs to create a publishing subplebbit");
+            assert(canRunSub, "missing nativeFunctions required to create a subplebbit");
             const subplebbit = new Subplebbit(options, this);
             const key = subplebbit.address || subplebbit.signer.address;
             assert(typeof key === "string", "To create a subplebbit you need to either defined signer or address");
@@ -176,27 +185,27 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         };
 
         if (options.address && !options.signer) {
-            if (!isRuntimeNode) return remoteSub();
+            if (!canRunSub) return remoteSub();
             else {
                 const localSubs = await this.listSubplebbits();
                 if (localSubs.includes(options.address)) return newSub();
                 else return remoteSub();
             }
         } else if (!options.address && !options.signer) {
-            if (!isRuntimeNode) throw new Error(`Can't instantenate a publishing subplebbit without node API`);
+            if (!canRunSub) throw Error(`missing nativeFunctions required to create a subplebbit`);
             else {
                 options.signer = await this.createSigner();
                 log(`Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${options.signer.address})`);
                 return newSub();
             }
         } else if (!options.address && options.signer) {
-            if (!isRuntimeNode) throw new Error(`Can't instantenate a publishing subplebbit without node API`);
+            if (!canRunSub) throw Error(`missing nativeFunctions required to create a subplebbit`);
 
             const localSubs = await this.listSubplebbits();
             const derivedAddress = options.signer.address || (await getPlebbitAddressFromPrivateKeyPem(options.signer.privateKey));
             if (localSubs.includes(derivedAddress)) options.address = derivedAddress;
             return newSub();
-        } else if (!isRuntimeNode) return remoteSub();
+        } else if (!canRunSub) return remoteSub();
         else return newSub();
     }
 

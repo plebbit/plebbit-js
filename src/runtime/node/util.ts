@@ -1,17 +1,19 @@
 import { promises as fs } from "fs";
 import { default as nodeNativeFunctions } from "./native-functions";
 import { NativeFunctions } from "../../types";
+import path from "path";
 
 export const mkdir = fs.mkdir;
 
-export const isRuntimeNode = true;
+export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
 export let nativeFunctions: NativeFunctions = nodeNativeFunctions;
 export const setNativeFunctions = (pNativeFunctions: Partial<NativeFunctions>) =>
     (nativeFunctions = { ...nativeFunctions, ...pNativeFunctions });
 
 export default {
-    isRuntimeNode,
+    getDefaultDataPath,
     nativeFunctions,
-    setNativeFunctions
+    setNativeFunctions,
+    mkdir
 };

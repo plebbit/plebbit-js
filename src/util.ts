@@ -1,12 +1,8 @@
-import { concat as uint8ArrayConcat } from "uint8arrays/concat";
-import { toString as uint8ArrayToString } from "uint8arrays/to-string";
-import all from "it-all";
-import last from "it-last";
 import FormData from "form-data";
 import assert from "assert";
 import { Plebbit } from "./plebbit";
 import { CommentType, ProtocolVersion, Timeframe } from "./types";
-import { isRuntimeNode, nativeFunctions } from "./runtime/node/util";
+import { nativeFunctions } from "./runtime/node/util";
 import { Signer } from "./signer";
 
 //This is temp. TODO replace this with accurate mapping
@@ -23,7 +19,10 @@ const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 async function fetchWithLimit(url: string, options?) {
     // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
     const res = await nativeFunctions.fetch(url, options);
-    if (isRuntimeNode) return res; // No need to process stream for Node
+    // @ts-ignore
+    if (res.body.getReader === undefined) return res; // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
+
+    console.log(nativeFunctions.fetch);
 
     const originalRes = res.clone();
     // @ts-ignore
