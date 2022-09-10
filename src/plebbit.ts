@@ -163,7 +163,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             //@ts-ignore
             nativeFunctions.createDbHandler({});
         } catch (e) {
-            if (e.code === codes.ERR_SUB_HAS_NO_DB_CONFIG)
+            if (e.toString().includes("db config"))
                 // If this error is thrown it's because DbHandler is defined, and refuses to be instantiated without db config. Any other error mean we can't run a sub
                 canRunSub = true;
         }
