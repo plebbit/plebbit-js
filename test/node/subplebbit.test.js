@@ -219,7 +219,7 @@ describe("subplebbit", async () => {
             interval = setInterval(loop, 50);
         }));
 
-    it(`DB get migrated successfully`, async () => {
+    it.skip(`DB get migrated successfully`, async () => {
         // TODO this test is not through at all. Rewrite it at some point
         const originalDbVersion = await subplebbit.dbHandler.getDbVersion();
         await subplebbit.dbHandler._knex.raw("PRAGMA user_version = 999999"); // Force a migrate

@@ -196,10 +196,10 @@ export class SortHandler {
         if (comment && (comment.replyCount === undefined || comment.replyCount === null))
             throw new Error(`Comment has not defined replyCount (${comment.replyCount}): ${JSON.stringify(comment)}`);
         const key = comment?.cid || "subplebbit"; // If comment is undefined then we're generating page for subplebbit
-        if (await this.subplebbit._keyv.has(key)) {
-            const cachedPageJson = await this.subplebbit._keyv.get(key);
+        if (await this.subplebbit.dbHandler?.getKeyv().has(key)) {
+            const cachedPageJson = await this.subplebbit.dbHandler?.getKeyv().get(key);
             if (!cachedPageJson || JSON.stringify(cachedPageJson) === "{}") {
-                await this.subplebbit._keyv.delete(key);
+                await this.subplebbit.dbHandler?.getKeyv().delete(key);
             } else {
                 const cachedPage = new Pages({ ...cachedPageJson, subplebbit: this.subplebbit });
                 assert(cachedPage.toJSON && JSON.stringify(cachedPage.toJSON()) !== "{}", "Cache returns empty pages");
@@ -249,7 +249,7 @@ export class SortHandler {
             assert(sortPage.comments.every((comment) => typeof comment.upvoteCount === "number"));
         });
 
-        await this.subplebbit._keyv.set(key, pages.toJSON());
+        await this.subplebbit.dbHandler?.getKeyv().set(key, pages.toJSON());
 
         return pages;
     }
@@ -264,6 +264,6 @@ export class SortHandler {
             "subplebbit"
         ];
         log.trace(`Caches to delete: ${cachesToDelete}`);
-        await Promise.all(cachesToDelete.map(async (cacheKey) => this.subplebbit._keyv.delete(cacheKey)));
+        await Promise.all(cachesToDelete.map(async (cacheKey) => this.subplebbit.dbHandler?.getKeyv().delete(cacheKey)));
     }
 }

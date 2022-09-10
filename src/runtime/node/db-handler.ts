@@ -21,9 +21,7 @@ import Transaction = Knex.Transaction;
 import { AuthorType, SubplebbitMetrics } from "../../types";
 import { CommentEdit } from "../../comment-edit";
 import Logger from "@plebbit/plebbit-logger";
-import errcode from "err-code";
-
-import { codes, messages } from "../../errors";
+import { getDefaultSubplebbitDbConfig } from "./util";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -53,21 +51,32 @@ export class DbHandler {
     private _knex: Knex;
     private _subplebbit: Subplebbit;
     private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
+    private _dbConfig: any;
+    private _userDbConfig?: Knex.Config;
+    private _keyv: Keyv; // Don't change any here to Keyv since it will crash for browsers
+    private _createdTables: boolean;
 
-    constructor(subplebbit: Subplebbit) {
-        if (!subplebbit.dbConfig)
-            throw errcode(Error(messages.ERR_SUB_HAS_NO_DB_CONFIG), codes.ERR_SUB_HAS_NO_DB_CONFIG, {
-                details: `dbHandler(constructor): subplebbit.dbConfig is undefined`
-            });
-        this._knex = knex(subplebbit.dbConfig);
+    constructor(subplebbit: Subplebbit, userDbConfig?: Knex.Config) {
+        this._userDbConfig = userDbConfig;
         this._subplebbit = subplebbit;
         this._currentTrxs = {};
+        this._createdTables = false;
     }
 
     async initDbIfNeeded() {
-        await this.createTablesIfNeeded();
-        await this._subplebbit.initSignerIfNeeded();
-        this._subplebbit._keyv = new Keyv(`sqlite://${this._subplebbit.dbConfig.connection.filename}`); // TODO make this work with DBs other than sqlite
+        assert(this._subplebbit.address, "subplebbit.address is not defined");
+        this._dbConfig = this._dbConfig || this._userDbConfig || (await getDefaultSubplebbitDbConfig(this._subplebbit));
+        if (!this._knex) this._knex = knex(this._dbConfig);
+        if (!this._createdTables) await this.createTablesIfNeeded();
+        if (!this._keyv) this._keyv = new Keyv(`sqlite://${this._dbConfig?.connection?.filename}`); // TODO make this work with DBs other than sqlite
+    }
+
+    getDbConfig(): Knex.Config {
+        return this._dbConfig;
+    }
+
+    getKeyv(): Keyv {
+        return this._keyv;
     }
 
     async destoryConnection() {
@@ -264,6 +273,7 @@ export class DbHandler {
         await this._knex.raw(`PRAGMA user_version = ${currentDbVersion}`);
         dbVersion = await this.getDbVersion();
         assert.equal(dbVersion, currentDbVersion);
+        this._createdTables = true;
     }
 
     private async _copyTable(srcTable: string, dstTable: string) {
@@ -639,7 +649,7 @@ export class DbHandler {
     async changeDbFilename(newDbFileName: string) {
         const log = Logger("plebbit-js:db-handler:changeDbFilename");
 
-        const oldPathString = this._subplebbit?.dbConfig?.connection?.filename;
+        const oldPathString = this._dbConfig?.connection?.filename;
         assert.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
         if (oldPathString === ":memory:") {
             log.trace(`No need to change file name of db since it's in memory`);
@@ -647,16 +657,17 @@ export class DbHandler {
         }
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbFileName });
         await fs.promises.mkdir(path.dirname(newPath), { recursive: true });
-        await this._knex.destroy();
+        //@ts-ignore
+        this._knex = this._keyv = undefined;
+        this._currentTrxs = {};
         await fs.promises.rename(oldPathString, newPath);
-        this._subplebbit.dbConfig = {
-            ...this._subplebbit.dbConfig,
+        this._dbConfig = {
+            ...this._dbConfig,
             connection: {
                 filename: newPath
             }
         };
-        this._subplebbit.dbHandler = new DbHandler(this._subplebbit);
-        this._subplebbit._keyv = new Keyv(`sqlite://${this._subplebbit.dbConfig.connection.filename}`);
+        await this.initDbIfNeeded();
         log(`Changed db path from (${oldPathString}) to (${newPath})`);
     }
 }

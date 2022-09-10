@@ -45,8 +45,7 @@ import { AUTHOR_EDIT_FIELDS, CommentEdit, MOD_EDIT_FIELDS } from "./comment-edit
 import errcode from "err-code";
 import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
-import { DbHandler } from "./runtime/node/db-handler";
-import { getDefaultSubplebbitDbConfig } from "./runtime/node/util";
+import { nativeFunctions } from "./runtime/node/util";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 5 minutes
@@ -78,8 +77,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     plebbit: Plebbit;
     dbHandler?: DbHandlerPublicAPI;
-    _keyv: any; // Don't change any here to Keyv since it will crash for browsers
-    dbConfig: any;
+    private _database?: any;
 
     // private
 
@@ -118,7 +116,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.title = mergedProps.title;
         this.description = mergedProps.description;
         this.lastPostCid = mergedProps.lastPostCid;
-        this.dbConfig = mergedProps.database;
+        this._database = mergedProps.database;
         this.address = mergedProps.address;
         this.ipnsKeyName = mergedProps.ipnsKeyName;
         this.pubsubTopic = mergedProps.pubsubTopic;
@@ -172,15 +170,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async initDbIfNeeded() {
-        const log = Logger("plebbit-js:subplebbit:initDbIfNeeded");
-        if (!this.dbConfig) {
-            this.dbConfig = await getDefaultSubplebbitDbConfig(this);
-            log(`User has not provided a DB config. Defaulted to ${this.dbConfig}`);
-        }
-
-        if (!this.dbHandler) this.dbHandler = new DbHandler(this);
-        await this.dbHandler.initDbIfNeeded();
-        this.sortHandler = new SortHandler(this);
+        if (!this.dbHandler) this.dbHandler = await nativeFunctions.createDbHandler(this);
+        else await this.dbHandler.initDbIfNeeded();
+        if (!this.sortHandler) this.sortHandler = new SortHandler(this);
+        await this.initSignerIfNeeded();
     }
 
     setProvideCaptchaCallback(newCallback: (request: ChallengeRequestMessage) => Promise<[Challenge[], string | undefined]>) {
@@ -195,7 +188,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         return {
             ...this.toJSON(),
             ipnsKeyName: this.ipnsKeyName,
-            database: this.dbConfig,
+            database: this._database,
             signer: this.signer
         };
     }
@@ -230,10 +223,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         // Initialize db (needs address)
         const log = Logger("plebbit-js:subplebbit:prePublish");
 
-        if (!this.signer && this.address) {
-            // Load signer from DB
-            await this.initDbIfNeeded();
-        } else if (!this.address && this.signer?.address) this.address = this.signer.address;
+        if (!this.address && this.signer?.address) this.address = this.signer.address;
         await this.initDbIfNeeded();
         assert(this.address && this.signer, "Both address and signer need to be defined at this point");
         if (!this.pubsubTopic) this.pubsubTopic = this.address;
@@ -260,10 +250,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             "These fields are needed to run the subplebbit"
         );
 
-        const cachedSubplebbit: SubplebbitType | undefined = await this._keyv.get(this.address);
+        const cachedSubplebbit: SubplebbitType | undefined = await this.dbHandler?.getKeyv().get(this.address);
         if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")
             this.initSubplebbit(cachedSubplebbit); // Init subplebbit fields from DB
-        else await this._keyv.set(this.address, this.toJSON()); // If subplebbit is not cached, then create a cache
+        else await this.dbHandler?.getKeyv().set(this.address, this.toJSON()); // If subplebbit is not cached, then create a cache
     }
 
     async assertDomainResolvesCorrectly(domain: string) {
@@ -297,7 +287,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.initSubplebbit(newSubplebbitOptions);
 
         log(`Subplebbit (${this.address}) props (${Object.keys(newSubplebbitOptions)}) has been edited`);
-        await this._keyv.set(this.address, this.toJSON());
+        await this.dbHandler.getKeyv().set(this.address, this.toJSON());
         return this;
     }
 
@@ -500,9 +490,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             log(`Author (${newVote.author.address}) has duplicated their vote for comment ${newVote.commentCid}`);
             return { reason: "User duplicated their vote" };
         } else {
-            const trx = await this.dbHandler.createTransaction(challengeRequestId);
-            await this.dbHandler.upsertVote(newVote, challengeRequestId, trx);
-            await this.dbHandler?.commitTransaction(challengeRequestId);
+            await this.dbHandler.upsertVote(newVote, challengeRequestId, undefined);
             log.trace(`Upserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
         }
     }
@@ -616,12 +604,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             if (postOrCommentOrVote instanceof Post) {
                 const trx = await this.dbHandler.createTransaction(challengeRequestId);
                 postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPost(trx))?.cid);
+                await this.dbHandler.commitTransaction(challengeRequestId);
                 postOrCommentOrVote.setDepth(0);
                 const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
                 postOrCommentOrVote.setPostCid(file.path);
                 postOrCommentOrVote.setCid(file.path);
-                await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
-                await this.dbHandler.commitTransaction(challengeRequestId);
+                await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, undefined);
 
                 log(`New post with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
             } else if (postOrCommentOrVote instanceof Comment) {
@@ -631,14 +619,14 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx),
                     this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)
                 ]);
+                await this.dbHandler.commitTransaction(challengeRequestId);
 
                 postOrCommentOrVote.setPreviousCid(commentsUnderParent[0]?.cid);
                 postOrCommentOrVote.setDepth(parent.depth + 1);
                 const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
                 postOrCommentOrVote.setCid(file.path);
                 postOrCommentOrVote.setPostCid(parent.postCid);
-                await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, trx);
-                await this.dbHandler.commitTransaction(challengeRequestId);
+                await this.dbHandler.upsertComment(postOrCommentOrVote, challengeRequestId, undefined);
 
                 log(`New comment with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
             }
@@ -848,7 +836,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.sortHandler.cacheCommentsPages();
             const dbComments = await this.dbHandler.queryComments();
             await Promise.all([...dbComments.map(async (comment: Comment) => this.syncComment(comment)), this.updateSubplebbitIpns()]);
-            await this._keyv.set(this.address, this.toJSON());
+            await this.dbHandler.getKeyv().set(this.address, this.toJSON());
             RUNNING_SUBPLEBBITS[this.signer.address] = true;
         } catch (e) {
             log.error(`Failed to sync due to error: ${e}`);

@@ -4,12 +4,13 @@ import { NativeFunctions } from "../../types";
 import path from "path";
 import { Subplebbit } from "../../subplebbit";
 import assert from "assert";
+import { Knex } from "knex";
 
 export const mkdir = fs.mkdir;
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
-export const getDefaultSubplebbitDbConfig = async (subplebbit: Subplebbit) => {
+export const getDefaultSubplebbitDbConfig = async (subplebbit: Subplebbit): Promise<Knex.Config<any>> => {
     assert(typeof subplebbit.plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get deafult subplebbit db config");
     const dbPath = path.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
     const dir = path.dirname(dbPath);
