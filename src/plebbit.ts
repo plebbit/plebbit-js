@@ -161,10 +161,10 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         let canRunSub = false;
         try {
             //@ts-ignore
-            nativeFunctions.createDbHandler({});
+            await nativeFunctions.createDbHandler({});
         } catch (e) {
-            if (e.toString().includes("db config"))
-                // If this error is thrown it's because DbHandler is defined, and refuses to be instantiated without db config. Any other error mean we can't run a sub
+            if (!e.toString().includes("native-functions of browser"))
+                // If this error is thrown it's because we're using browser native functions, and as of now any native functions other than browser can run a sub
                 canRunSub = true;
         }
 
