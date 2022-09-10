@@ -5,10 +5,10 @@ export const getDefaultDataPath = () => undefined;
 
 export const mkdir = () => undefined;
 
-export let nativeFunctions: NativeFunctions = browserNativeFunctions;
-export const setNativeFunctions = (pNativeFunctions: Partial<NativeFunctions>) =>
-    (nativeFunctions = { ...nativeFunctions, ...pNativeFunctions });
-
+export const nativeFunctions: NativeFunctions = browserNativeFunctions;
+export const setNativeFunctions = (newNativeFunctions: Partial<NativeFunctions>) => {
+    for (const i in newNativeFunctions) nativeFunctions[i] = newNativeFunctions[i];
+};
 export default {
     getDefaultDataPath,
     setNativeFunctions,

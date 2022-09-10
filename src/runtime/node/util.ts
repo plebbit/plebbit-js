@@ -7,9 +7,10 @@ export const mkdir = fs.mkdir;
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
-export let nativeFunctions: NativeFunctions = nodeNativeFunctions;
-export const setNativeFunctions = (pNativeFunctions: Partial<NativeFunctions>) =>
-    (nativeFunctions = { ...nativeFunctions, ...pNativeFunctions });
+export const nativeFunctions: NativeFunctions = nodeNativeFunctions;
+export const setNativeFunctions = (newNativeFunctions: Partial<NativeFunctions>) => {
+    for (const i in newNativeFunctions) nativeFunctions[i] = newNativeFunctions[i];
+};
 
 export default {
     getDefaultDataPath,
