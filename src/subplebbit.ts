@@ -12,7 +12,6 @@ import {
     PUBSUB_MESSAGE_TYPES
 } from "./challenge";
 import assert from "assert";
-import { subplebbitInitDbIfNeeded } from "./runtime/node/db-handler";
 import { createCaptcha } from "./runtime/node/captcha";
 import { SortHandler } from "./sort-handler";
 import { ipfsImportKey, loadIpnsAsJson, removeKeys, removeKeysWithUndefinedValues, shallowEqual, timestamp } from "./util";
@@ -46,6 +45,8 @@ import { AUTHOR_EDIT_FIELDS, CommentEdit, MOD_EDIT_FIELDS } from "./comment-edit
 import errcode from "err-code";
 import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
+import { DbHandler } from "./runtime/node/db-handler";
+import { getDefaultSubplebbitDbConfig } from "./runtime/node/util";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 5 minutes
@@ -171,7 +172,14 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async initDbIfNeeded() {
-        await subplebbitInitDbIfNeeded(this);
+        const log = Logger("plebbit-js:subplebbit:initDbIfNeeded");
+        if (!this.dbConfig) {
+            this.dbConfig = await getDefaultSubplebbitDbConfig(this);
+            log(`User has not provided a DB config. Defaulted to ${this.dbConfig}`);
+        }
+
+        if (!this.dbHandler) this.dbHandler = new DbHandler(this);
+        await this.dbHandler.initDbIfNeeded();
         this.sortHandler = new SortHandler(this);
     }
 

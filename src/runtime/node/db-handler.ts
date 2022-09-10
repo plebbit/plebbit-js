@@ -64,6 +64,12 @@ export class DbHandler {
         this._currentTrxs = {};
     }
 
+    async initDbIfNeeded() {
+        await this.createTablesIfNeeded();
+        await this._subplebbit.initSignerIfNeeded();
+        this._subplebbit._keyv = new Keyv(`sqlite://${this._subplebbit.dbConfig.connection.filename}`); // TODO make this work with DBs other than sqlite
+    }
+
     async destoryConnection() {
         if (this._knex) await this._knex.destroy();
     }
@@ -654,29 +660,3 @@ export class DbHandler {
         log(`Changed db path from (${oldPathString}) to (${newPath})`);
     }
 }
-
-export const subplebbitInitDbIfNeeded = async (subplebbit: Subplebbit) => {
-    const log = Logger("plebbit-js:db-handler:subplebbitInitDbIfNeeded");
-
-    if (subplebbit.dbHandler) return;
-    if (!subplebbit.dbConfig) {
-        assert(subplebbit.address, "Need subplebbit address to initialize a DB connection");
-        const dbPath = path.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
-        log(`User has not provided a DB config. Will initialize DB in ${dbPath}`);
-        subplebbit.dbConfig = {
-            client: "sqlite3",
-            connection: {
-                filename: dbPath
-            },
-            useNullAsDefault: true,
-            acquireConnectionTimeout: 120000
-        };
-    } else log.trace(`User provided a DB config of ${JSON.stringify(subplebbit.dbConfig)}`);
-
-    const dir = path.dirname(subplebbit.dbConfig.connection.filename);
-    await fs.promises.mkdir(dir, { recursive: true });
-    subplebbit.dbHandler = new DbHandler(subplebbit);
-    await subplebbit.dbHandler.createTablesIfNeeded();
-    await subplebbit.initSignerIfNeeded();
-    subplebbit._keyv = new Keyv(`sqlite://${subplebbit.dbConfig.connection.filename}`); // TODO make this work with DBs other than sqlite
-};
