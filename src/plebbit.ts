@@ -170,6 +170,10 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
 
         const newSub = async () => {
             assert(canRunSub, "missing nativeFunctions required to create a subplebbit");
+            if (canRunSub && !this.dataPath)
+                throw errcode(Error(messages.ERR_DATA_PATH_IS_NOT_DEFINED), codes.ERR_DATA_PATH_IS_NOT_DEFINED, {
+                    details: `createSubplebbit: canRunSub=${canRunSub}, plebbitOptions.dataPath=${this.dataPath}`
+                });
             const subplebbit = new Subplebbit(options, this);
             const key = subplebbit.address || subplebbit.signer.address;
             assert(typeof key === "string", "To create a subplebbit you need to either defined signer or address");
