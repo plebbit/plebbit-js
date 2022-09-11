@@ -1,9 +1,10 @@
-import FormData from "form-data";
+import { default as NodeFormData } from "form-data";
 import assert from "assert";
 import { Plebbit } from "./plebbit";
 import { CommentType, ProtocolVersion, Timeframe } from "./types";
 import { nativeFunctions } from "./runtime/node/util";
 import { Signer } from "./signer";
+import { Buffer } from "buffer";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -217,14 +218,20 @@ export function removeKeysWithUndefinedValues(object) {
 
 // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
 export async function ipfsImportKey(signer: Signer, plebbit, password = "") {
-    const data = new FormData();
-    data.append("file", Buffer.from(signer.ipfsKey));
+    const data = globalThis["FormData"] ? new FormData() : new NodeFormData();
+
+    assert(signer.ipnsKeyName, "Signer.ipnsKeyName needs to be defined before importing key into IPFS node");
+    assert(signer.ipfsKey, "Signer.ipfsKey needs to be defined before importing key into IPFS node");
+    const ipfsKeyFile = globalThis["Buffer"] ? Buffer.from(signer.ipfsKey) : new File([signer.ipfsKey], "myfile");
+
+    //@ts-ignore
+    data.append("file", ipfsKeyFile);
     const nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
     if (!nodeUrl) throw new Error("Can't figure out ipfs node URL");
     const url = `${nodeUrl}/key/import?arg=${signer.ipnsKeyName}`;
-    const res = await nativeFunctions.fetch(url, {
+    const res = await (globalThis["window"] ? window.fetch : nativeFunctions.fetch)(url, {
         method: "POST",
-        // @ts-ignore
+        //@ts-ignore
         body: data,
         headers: plebbit.ipfsHttpClientOptions?.headers
     });
