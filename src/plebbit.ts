@@ -156,8 +156,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         return finalProps.title ? new Post(finalProps, commentSubplebbit) : new Comment(finalProps, commentSubplebbit);
     }
 
-    async createSubplebbit(options: CreateSubplebbitOptions = {}): Promise<Subplebbit> {
-        const log = Logger("plebbit-js:plebbit:createSubplebbit");
+    async _canRunSub(): Promise<boolean> {
         let canRunSub = false;
         try {
             //@ts-ignore
@@ -167,6 +166,12 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
                 // If this error is thrown it's because we're using browser native functions, and as of now any native functions other than browser can run a sub
                 canRunSub = true;
         }
+        return canRunSub;
+    }
+
+    async createSubplebbit(options: CreateSubplebbitOptions = {}): Promise<Subplebbit> {
+        const log = Logger("plebbit-js:plebbit:createSubplebbit");
+        const canRunSub = await this._canRunSub();
 
         const newSub = async () => {
             assert(canRunSub, "missing nativeFunctions required to create a subplebbit");
@@ -260,6 +265,11 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     async listSubplebbits(): Promise<string[]> {
+        const canRunSub = await this._canRunSub();
+        if (canRunSub && !this.dataPath)
+            throw errcode(Error(messages.ERR_DATA_PATH_IS_NOT_DEFINED), codes.ERR_DATA_PATH_IS_NOT_DEFINED, {
+                details: `listSubplebbits: canRunSub=${canRunSub}, plebbitOptions.dataPath=${this.dataPath}`
+            });
         return nativeFunctions.listSubplebbits(this.dataPath);
     }
 }
