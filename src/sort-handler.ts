@@ -2,9 +2,7 @@ import { chunks, controversialScore, hotScore, TIMEFRAMES_TO_SECONDS, timestamp 
 import { Page, Pages } from "./pages";
 import { Subplebbit } from "./subplebbit";
 import assert from "assert";
-import { Knex } from "knex";
 import { Comment } from "./comment";
-import Transaction = Knex.Transaction;
 import { PostSort, PostSortName, ReplySort, ReplySortName, SortProps, Timeframe } from "./types";
 import Logger from "@plebbit/plebbit-logger";
 
@@ -108,13 +106,13 @@ export class SortHandler {
         return [{ [sortName]: listOfPage[0] }, cids[0]];
     }
 
-    async sortCommentsByHot(parentCid?: string, trx?: Transaction) {
+    async sortCommentsByHot(parentCid?: string, trx?) {
         const comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(parentCid, trx);
         if (comments.length === 0) return [undefined, undefined];
         return this.sortComments(comments, "hot");
     }
 
-    async sortCommentsByTop(parentCid: string | undefined, sortName: PostSortName | ReplySortName, trx?: Transaction) {
+    async sortCommentsByTop(parentCid: string | undefined, sortName: PostSortName | ReplySortName, trx?) {
         const sortProps: SortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
         assert(sortProps.timeframe, "Need timeframe to sort top");
         const comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(
@@ -127,7 +125,7 @@ export class SortHandler {
         return this.sortComments(comments, sortName);
     }
 
-    async sortCommentsByControversial(parentCid: string | undefined, sortName: PostSortName | ReplySortName, trx?: Transaction) {
+    async sortCommentsByControversial(parentCid: string | undefined, sortName: PostSortName | ReplySortName, trx?) {
         const sortProps: SortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
         assert(sortProps.timeframe, "Need timeframe to sort controversial");
         const comments = await this.subplebbit.dbHandler.queryCommentsBetweenTimestampRange(
@@ -140,13 +138,13 @@ export class SortHandler {
         return this.sortComments(comments, sortName);
     }
 
-    async sortCommentsByNew(parentCid?: string, trx?: Transaction) {
+    async sortCommentsByNew(parentCid?: string, trx?) {
         const comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, "desc", trx);
         if (comments.length === 0) return [undefined, undefined];
         return this.sortComments(comments, "new");
     }
 
-    getSortPromises(comment?: Comment, trx?: Transaction) {
+    getSortPromises(comment?: Comment, trx?) {
         if (!comment) {
             // Sorting posts on a subplebbit level
             const sortPromises = [this.sortCommentsByHot(undefined, trx), this.sortCommentsByNew(undefined, trx)];
@@ -183,7 +181,7 @@ export class SortHandler {
         }
     }
 
-    async cacheCommentsPages(trx?: Transaction) {
+    async cacheCommentsPages(trx?) {
         const commentLevels: Comment[][] = await this.subplebbit.dbHandler.queryCommentsGroupByDepth(trx);
         for (let i = commentLevels.length - 1; i >= 0; i--)
             await Promise.all(commentLevels[i].map((comment) => this.generatePagesUnderComment(comment, trx)));
@@ -191,20 +189,18 @@ export class SortHandler {
         await this.generatePagesUnderComment(undefined, trx);
     }
 
-    async generatePagesUnderComment(comment?: Comment, trx?: Transaction): Promise<Pages | undefined> {
+    async generatePagesUnderComment(comment?: Comment, trx?): Promise<Pages | undefined> {
         if (comment?.replyCount === 0) return undefined;
         if (comment && (comment.replyCount === undefined || comment.replyCount === null))
             throw new Error(`Comment has not defined replyCount (${comment.replyCount}): ${JSON.stringify(comment)}`);
         const key = comment?.cid || "subplebbit"; // If comment is undefined then we're generating page for subplebbit
-        if (await this.subplebbit.dbHandler?.getKeyv().has(key)) {
-            const cachedPageJson = await this.subplebbit.dbHandler?.getKeyv().get(key);
-            if (!cachedPageJson || JSON.stringify(cachedPageJson) === "{}") {
-                await this.subplebbit.dbHandler?.getKeyv().delete(key);
-            } else {
-                const cachedPage = new Pages({ ...cachedPageJson, subplebbit: this.subplebbit });
-                assert(cachedPage.toJSON && JSON.stringify(cachedPage.toJSON()) !== "{}", "Cache returns empty pages");
-                return cachedPage;
-            }
+        const cachedPageJson = await this.subplebbit.dbHandler?.keyvGet(key);
+        if (!cachedPageJson || JSON.stringify(cachedPageJson) === "{}") {
+            await this.subplebbit.dbHandler?.keyvDelete(key);
+        } else {
+            const cachedPage = new Pages({ ...cachedPageJson, subplebbit: this.subplebbit });
+            assert(cachedPage.toJSON && JSON.stringify(cachedPage.toJSON()) !== "{}", "Cache returns empty pages");
+            return cachedPage;
         }
 
         const subplebbitPostCount = key === "subplebbit" && (await this.subplebbit.dbHandler?.queryCountOfPosts(trx));
@@ -249,7 +245,7 @@ export class SortHandler {
             assert(sortPage.comments.every((comment) => typeof comment.upvoteCount === "number"));
         });
 
-        await this.subplebbit.dbHandler?.getKeyv().set(key, pages.toJSON());
+        await this.subplebbit.dbHandler?.keyvSet(key, pages.toJSON());
 
         return pages;
     }
@@ -264,6 +260,6 @@ export class SortHandler {
             "subplebbit"
         ];
         log.trace(`Caches to delete: ${cachesToDelete}`);
-        await Promise.all(cachesToDelete.map(async (cacheKey) => this.subplebbit.dbHandler?.getKeyv().delete(cacheKey)));
+        await Promise.all(cachesToDelete.map(async (cacheKey) => this.subplebbit.dbHandler?.keyvDelete(cacheKey)));
     }
 }

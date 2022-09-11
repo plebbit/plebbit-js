@@ -250,10 +250,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             "These fields are needed to run the subplebbit"
         );
 
-        const cachedSubplebbit: SubplebbitType | undefined = await this.dbHandler?.getKeyv().get(this.address);
+        const cachedSubplebbit: SubplebbitType | undefined = await this.dbHandler?.keyvGet(this.address);
         if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")
             this.initSubplebbit(cachedSubplebbit); // Init subplebbit fields from DB
-        else await this.dbHandler?.getKeyv().set(this.address, this.toJSON()); // If subplebbit is not cached, then create a cache
+        else await this.dbHandler?.keyvSet(this.address, this.toJSON()); // If subplebbit is not cached, then create a cache
     }
 
     async assertDomainResolvesCorrectly(domain: string) {
@@ -287,7 +287,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.initSubplebbit(newSubplebbitOptions);
 
         log(`Subplebbit (${this.address}) props (${Object.keys(newSubplebbitOptions)}) has been edited`);
-        await this.dbHandler.getKeyv().set(this.address, this.toJSON());
+        await this.dbHandler.keyvSet(this.address, this.toJSON());
         return this;
     }
 
@@ -836,7 +836,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.sortHandler.cacheCommentsPages();
             const dbComments = await this.dbHandler.queryComments();
             await Promise.all([...dbComments.map(async (comment: Comment) => this.syncComment(comment)), this.updateSubplebbitIpns()]);
-            await this.dbHandler.getKeyv().set(this.address, this.toJSON());
+            await this.dbHandler.keyvSet(this.address, this.toJSON());
             RUNNING_SUBPLEBBITS[this.signer.address] = true;
         } catch (e) {
             log.error(`Failed to sync due to error: ${e}`);

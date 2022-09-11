@@ -75,8 +75,16 @@ export class DbHandler {
         return this._dbConfig;
     }
 
-    getKeyv(): Keyv {
-        return this._keyv;
+    async keyvGet(key) {
+        return this._keyv.get(key);
+    }
+
+    async keyvSet(key, value, ttl?: number) {
+        return this._keyv.set(key, value, ttl);
+    }
+
+    keyvDelete(key) {
+        return this._keyv.delete(key);
     }
 
     async destoryConnection() {
