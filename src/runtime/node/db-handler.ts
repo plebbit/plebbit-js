@@ -75,16 +75,24 @@ export class DbHandler {
         return this._dbConfig;
     }
 
-    async keyvGet(key) {
-        return this._keyv.get(key);
+    async keyvGet(key: string, options?: { raw?: false }) {
+        const res = await this._keyv.get(key, options);
+        return res;
     }
 
-    async keyvSet(key, value, ttl?: number) {
-        return this._keyv.set(key, value, ttl);
+    async keyvSet(key: string, value: any, ttl?: number) {
+        const res = await this._keyv.set(key, value, ttl);
+        return res;
     }
 
-    keyvDelete(key) {
-        return this._keyv.delete(key);
+    async keyvDelete(key: string | string[]) {
+        const res = await this._keyv.delete(key);
+        return res;
+    }
+
+    async keyvHas(key: string) {
+        const res = await this._keyv.has(key);
+        return res;
     }
 
     async destoryConnection() {
