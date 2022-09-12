@@ -23,8 +23,6 @@ async function fetchWithLimit(url: string, options?) {
     // @ts-ignore
     if (res.body.getReader === undefined) return res; // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
 
-    console.log(nativeFunctions.fetch);
-
     const originalRes = res.clone();
     // @ts-ignore
     const reader = res.body.getReader();
