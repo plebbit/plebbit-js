@@ -253,7 +253,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const cachedSubplebbit: SubplebbitType | undefined = await this.dbHandler?.keyvGet(this.address);
         if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")
             this.initSubplebbit(cachedSubplebbit); // Init subplebbit fields from DB
-        else await this.dbHandler?.keyvSet(this.address, this.toJSON()); // If subplebbit is not cached, then create a cache
+        else this.dbHandler?.keyvSet(this.address, this.toJSON()); // If subplebbit is not cached, then create a cache
     }
 
     async assertDomainResolvesCorrectly(domain: string) {
