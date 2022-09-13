@@ -64,7 +64,10 @@ export class DbHandler {
     }
 
     async initDbIfNeeded() {
-        assert(this._subplebbit.address, "subplebbit.address is not defined");
+        assert(
+            typeof this._subplebbit.address === "string" && this._subplebbit.address.length > 0,
+            `DbHandler needs to be an instantiated with a Subplebbit that has a valid address, (${this._subplebbit.address}) was provided`
+        );
         this._dbConfig = this._dbConfig || this._userDbConfig || (await getDefaultSubplebbitDbConfig(this._subplebbit));
         if (!this._knex) this._knex = knex(this._dbConfig);
         if (!this._createdTables) await this.createTablesIfNeeded();

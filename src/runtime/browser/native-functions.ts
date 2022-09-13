@@ -13,7 +13,7 @@ const nativeFunctions: NativeFunctions = {
     },
 
     createDbHandler: (subplebbit) => {
-        throw new Error("Shouldn't call createDbHandler over native-functions of browser");
+        throw Error("Shouldn't call createDbHandler over native-functions of browser");
     },
 
     //@ts-ignore
