@@ -390,6 +390,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         if (!currentIpns || JSON.stringify(currentIpns) !== JSON.stringify(this.toJSON()) || lastPublishOverTwentyMinutes) {
             this.updatedAt = timestamp();
+            this.dbHandler.keyvSet(this.address, this.toJSON());
             const file = await this.plebbit.ipfsClient.add(JSON.stringify(this.toJSON()));
             await this.plebbit.ipfsClient.name.publish(file.path, {
                 lifetime: "72h", // TODO decide on optimal time later
@@ -836,7 +837,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.sortHandler.cacheCommentsPages();
             const dbComments = await this.dbHandler.queryComments();
             await Promise.all([...dbComments.map(async (comment: Comment) => this.syncComment(comment)), this.updateSubplebbitIpns()]);
-            await this.dbHandler.keyvSet(this.address, this.toJSON());
             RUNNING_SUBPLEBBITS[this.signer.address] = true;
         } catch (e) {
             log.error(`Failed to sync due to error: ${e}`);
