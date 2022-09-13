@@ -29,7 +29,7 @@ const nativeFunctions: NativeFunctions = {
         return addresses;
     },
 
-    createDbHandler: async (subplebbit: Subplebbit): Promise<DbHandlerPublicAPI> => {
+    createDbHandler: (subplebbit: Subplebbit): DbHandlerPublicAPI => {
         const dbHandler = new DbHandler(subplebbit);
 
         const dbApi = {};
@@ -38,7 +38,6 @@ const nativeFunctions: NativeFunctions = {
             if (typeof dbHandler[property] === "function" && !property.startsWith("_"))
                 dbApi[property] = dbHandler[property].bind(dbHandler);
 
-        await dbHandler.initDbIfNeeded();
         //@ts-ignore
         return dbApi;
     },
