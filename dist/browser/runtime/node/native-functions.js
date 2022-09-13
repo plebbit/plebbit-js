@@ -68,7 +68,6 @@ var nativeFunctions = {
             }
         });
     }); },
-    getDefaultDataPath: function () { return path_1.default.join(process.cwd(), ".plebbit"); },
     createDbHandler: function (subplebbit) {
         var dbHandler = new db_handler_1.DbHandler(subplebbit);
         var dbApi = {};

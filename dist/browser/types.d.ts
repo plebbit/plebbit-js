@@ -201,7 +201,7 @@ export interface SubplebbitType extends CreateSubplebbitOptions {
     pubsubTopic: string;
     metricsCid?: string;
     protocolVersion: ProtocolVersion;
-    posts: Pages;
+    posts: Pages | Pick<Pages, "pages" | "pageCids">;
 }
 export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     createdAt?: number;
@@ -219,7 +219,7 @@ export interface SubplebbitEditOptions {
     };
     rules?: string[];
     lastPostCid?: string;
-    posts?: Pages;
+    posts?: Pages | Pick<Pages, "pages" | "pageCids">;
     pubsubTopic?: string;
     challengeTypes?: ChallengeType[];
     metrics?: SubplebbitMetrics;
@@ -301,7 +301,6 @@ export declare type IpfsHttpClientPublicAPI = {
 };
 export declare type NativeFunctions = {
     listSubplebbits: (dataPath: string) => Promise<string[]>;
-    getDefaultDataPath: () => string | undefined;
     createDbHandler: (subplebbit: SubplebbitType) => DbHandlerPublicAPI;
     fetch: typeof fetch;
     createIpfsClient: (options: Options) => IpfsHttpClientPublicAPI;

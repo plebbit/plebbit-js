@@ -13,7 +13,19 @@ export declare class DbHandler {
     private _knex;
     private _subplebbit;
     private _currentTrxs;
-    constructor(subplebbit: Subplebbit);
+    private _dbConfig;
+    private _userDbConfig?;
+    private _keyv;
+    private _createdTables;
+    constructor(subplebbit: Subplebbit, userDbConfig?: Knex.Config);
+    initDbIfNeeded(): Promise<void>;
+    getDbConfig(): Knex.Config;
+    keyvGet(key: string, options?: {
+        raw?: false;
+    }): Promise<any>;
+    keyvSet(key: string, value: any, ttl?: number): Promise<true>;
+    keyvDelete(key: string | string[]): Promise<boolean>;
+    keyvHas(key: string): Promise<boolean>;
     destoryConnection(): Promise<void>;
     createTransaction(transactionId: string): Promise<Transaction>;
     commitTransaction(transactionId: string): Promise<void>;
@@ -58,4 +70,3 @@ export declare class DbHandler {
     queryCountOfPosts(trx?: Knex.Transaction): Promise<number>;
     changeDbFilename(newDbFileName: string): Promise<void>;
 }
-export declare const subplebbitInitDbIfNeeded: (subplebbit: Subplebbit) => Promise<void>;

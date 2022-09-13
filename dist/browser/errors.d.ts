@@ -11,7 +11,9 @@ export declare enum messages {
     ERR_SUBPLEBBIT_MISSING_FIELD = "Subplebbit is missing field needed for publishing",
     ERR_INVALID_SUBPLEBBIT_ADDRESS = "Subplebbit address is incorrect. Address should be either a domain or CID",
     ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID = "subplebbit-address resolves to an invalid CID",
-    ERR_CID_IS_INVALID = "CID is invalid"
+    ERR_CID_IS_INVALID = "CID is invalid",
+    ERR_SUB_HAS_NO_DB_CONFIG = "Subplebbit has no db config",
+    ERR_DATA_PATH_IS_NOT_DEFINED = "plebbitOptions.dataPath needs to be defined with native functions"
 }
 export declare enum codes {
     ERR_ENS_RESOLVER_NOT_FOUND = "ERR_ENS_RESOLVER_NOT_FOUND",
@@ -26,5 +28,7 @@ export declare enum codes {
     ERR_SUBPLEBBIT_MISSING_FIELD = "ERR_SUBPLEBBIT_MISSING_FIELD",
     ERR_INVALID_SUBPLEBBIT_ADDRESS = "ERR_INVALID_SUBPLEBBIT_ADDRESS",
     ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID = "ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID",
-    ERR_CID_IS_INVALID = "ERR_CID_IS_INVALID"
+    ERR_CID_IS_INVALID = "ERR_CID_IS_INVALID",
+    ERR_SUB_HAS_NO_DB_CONFIG = "ERR_SUB_HAS_NO_DB_CONFIG",
+    ERR_DATA_PATH_IS_NOT_DEFINED = "ERR_DATA_PATH_IS_NOT_DEFINED"
 }

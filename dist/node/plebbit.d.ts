@@ -13,7 +13,7 @@ export declare const pendingSubplebbitCreations: Record<string, boolean>;
 export declare const setNativeFunctions: (pNativeFunctions: NativeFunctions) => void;
 export declare class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
-    pubsubIpfsClient: ReturnType<NativeFunctions["createIpfsClient"]>;
+    pubsubIpfsClient: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">;
     resolver: Resolver;
     _memCache: TinyCache;
     ipfsGatewayUrl: string;
@@ -29,6 +29,7 @@ export declare class Plebbit extends EventEmitter implements PlebbitOptions {
     getSubplebbit(subplebbitAddress: string): Promise<Subplebbit>;
     getComment(cid: string): Promise<Comment | Post>;
     createComment(options: CreateCommentOptions | CommentType): Promise<Comment | Post>;
+    _canRunSub(): boolean;
     createSubplebbit(options?: CreateSubplebbitOptions): Promise<Subplebbit>;
     createVote(options: CreateVoteOptions | VoteType): Promise<Vote>;
     createCommentEdit(options: CreateCommentEditOptions): Promise<CommentEdit>;

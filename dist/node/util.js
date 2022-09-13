@@ -54,6 +54,7 @@ exports.getProtocolVersion = exports.randomElement = exports.ipfsImportKey = exp
 var form_data_1 = __importDefault(require("form-data"));
 var assert_1 = __importDefault(require("assert"));
 var util_1 = require("./runtime/node/util");
+var buffer_1 = require("buffer");
 //This is temp. TODO replace this with accurate mapping
 exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -72,8 +73,9 @@ function fetchWithLimit(url, options) {
                 case 0: return [4 /*yield*/, util_1.nativeFunctions.fetch(url, options)];
                 case 1:
                     res = _a.sent();
-                    if (util_1.isRuntimeNode)
-                        return [2 /*return*/, res]; // No need to process stream for Node
+                    // @ts-ignore
+                    if (res.body.getReader === undefined)
+                        return [2 /*return*/, res]; // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
                     originalRes = res.clone();
                     reader = res.body.getReader();
                     currentChunk = undefined, totalBytesRead = 0;
@@ -351,19 +353,23 @@ function ipfsImportKey(signer, plebbit, password) {
     var _a;
     if (password === void 0) { password = ""; }
     return __awaiter(this, void 0, void 0, function () {
-        var data, nodeUrl, url, res;
+        var data, ipfsKeyFile, nodeUrl, url, res;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    data = new form_data_1.default();
-                    data.append("file", Buffer.from(signer.ipfsKey));
+                    data = globalThis["FormData"] ? new FormData() : new form_data_1.default();
+                    (0, assert_1.default)(signer.ipnsKeyName, "Signer.ipnsKeyName needs to be defined before importing key into IPFS node");
+                    (0, assert_1.default)(signer.ipfsKey, "Signer.ipfsKey needs to be defined before importing key into IPFS node");
+                    ipfsKeyFile = globalThis["Buffer"] ? buffer_1.Buffer.from(signer.ipfsKey) : new File([signer.ipfsKey], "myfile");
+                    //@ts-ignore
+                    data.append("file", ipfsKeyFile);
                     nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
                     if (!nodeUrl)
                         throw new Error("Can't figure out ipfs node URL");
                     url = "".concat(nodeUrl, "/key/import?arg=").concat(signer.ipnsKeyName);
-                    return [4 /*yield*/, util_1.nativeFunctions.fetch(url, {
+                    return [4 /*yield*/, (globalThis["window"] ? window.fetch : util_1.nativeFunctions.fetch)(url, {
                             method: "POST",
-                            // @ts-ignore
+                            //@ts-ignore
                             body: data,
                             headers: (_a = plebbit.ipfsHttpClientOptions) === null || _a === void 0 ? void 0 : _a.headers
                         })];

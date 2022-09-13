@@ -35,8 +35,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     rules?: string[];
     plebbit: Plebbit;
     dbHandler?: DbHandlerPublicAPI;
-    _keyv: any;
-    dbConfig: any;
+    private _database?;
     private _challengeToSolution;
     private _challengeToPublication;
     private provideCaptchaCallback?;
@@ -64,7 +63,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
         pubsubTopic: string;
         metricsCid?: string;
         protocolVersion: "1.0.0";
-        posts: Pages;
+        posts: Pages | Pick<Pages, "pageCids" | "pages">;
         title?: string;
         description?: string;
         roles?: {

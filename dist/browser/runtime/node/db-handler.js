@@ -59,7 +59,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.subplebbitInitDbIfNeeded = exports.DbHandler = void 0;
+exports.DbHandler = void 0;
 var challenge_1 = require("../../challenge");
 var post_1 = __importDefault(require("../../post"));
 var author_1 = __importDefault(require("../../author"));
@@ -70,6 +70,7 @@ var assert_1 = __importDefault(require("assert"));
 var fs_1 = __importDefault(require("fs"));
 var keyv_1 = __importDefault(require("keyv"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
+var util_2 = require("./util");
 var TABLES = Object.freeze({
     COMMENTS: "comments",
     VOTES: "votes",
@@ -92,11 +93,99 @@ var jsonFields = [
 ];
 var currentDbVersion = 1;
 var DbHandler = /** @class */ (function () {
-    function DbHandler(subplebbit) {
-        this._knex = (0, knex_1.default)(subplebbit.dbConfig);
+    function DbHandler(subplebbit, userDbConfig) {
+        this._userDbConfig = userDbConfig;
         this._subplebbit = subplebbit;
         this._currentTrxs = {};
+        this._createdTables = false;
     }
+    DbHandler.prototype.initDbIfNeeded = function () {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function () {
+            var _c, _d;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
+                    case 0:
+                        (0, assert_1.default)(typeof this._subplebbit.address === "string" && this._subplebbit.address.length > 0, "DbHandler needs to be an instantiated with a Subplebbit that has a valid address, (".concat(this._subplebbit.address, ") was provided"));
+                        _c = this;
+                        _d = this._dbConfig || this._userDbConfig;
+                        if (_d) return [3 /*break*/, 2];
+                        return [4 /*yield*/, (0, util_2.getDefaultSubplebbitDbConfig)(this._subplebbit)];
+                    case 1:
+                        _d = (_e.sent());
+                        _e.label = 2;
+                    case 2:
+                        _c._dbConfig = _d;
+                        if (!this._knex)
+                            this._knex = (0, knex_1.default)(this._dbConfig);
+                        if (!!this._createdTables) return [3 /*break*/, 4];
+                        return [4 /*yield*/, this.createTablesIfNeeded()];
+                    case 3:
+                        _e.sent();
+                        _e.label = 4;
+                    case 4:
+                        if (!this._keyv)
+                            this._keyv = new keyv_1.default("sqlite://".concat((_b = (_a = this._dbConfig) === null || _a === void 0 ? void 0 : _a.connection) === null || _b === void 0 ? void 0 : _b.filename)); // TODO make this work with DBs other than sqlite
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.getDbConfig = function () {
+        return this._dbConfig;
+    };
+    DbHandler.prototype.keyvGet = function (key, options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var res;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._keyv.get(key, options)];
+                    case 1:
+                        res = _a.sent();
+                        return [2 /*return*/, res];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.keyvSet = function (key, value, ttl) {
+        return __awaiter(this, void 0, void 0, function () {
+            var res;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._keyv.set(key, value, ttl)];
+                    case 1:
+                        res = _a.sent();
+                        return [2 /*return*/, res];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.keyvDelete = function (key) {
+        return __awaiter(this, void 0, void 0, function () {
+            var res;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._keyv.delete(key)];
+                    case 1:
+                        res = _a.sent();
+                        return [2 /*return*/, res];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.keyvHas = function (key) {
+        return __awaiter(this, void 0, void 0, function () {
+            var res;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._keyv.has(key)];
+                    case 1:
+                        res = _a.sent();
+                        return [2 /*return*/, res];
+                }
+            });
+        });
+    };
     DbHandler.prototype.destoryConnection = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -413,6 +502,7 @@ var DbHandler = /** @class */ (function () {
                     case 5:
                         dbVersion = _a.sent();
                         assert_1.default.equal(dbVersion, currentDbVersion);
+                        this._createdTables = true;
                         return [2 /*return*/];
                 }
             });
@@ -1075,14 +1165,14 @@ var DbHandler = /** @class */ (function () {
         });
     };
     DbHandler.prototype.changeDbFilename = function (newDbFileName) {
-        var _a, _b, _c;
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
             var log, oldPathString, newPath;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:changeDbFilename");
-                        oldPathString = (_c = (_b = (_a = this._subplebbit) === null || _a === void 0 ? void 0 : _a.dbConfig) === null || _b === void 0 ? void 0 : _b.connection) === null || _c === void 0 ? void 0 : _c.filename;
+                        oldPathString = (_b = (_a = this._dbConfig) === null || _a === void 0 ? void 0 : _a.connection) === null || _b === void 0 ? void 0 : _b.filename;
                         assert_1.default.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
                         if (oldPathString === ":memory:") {
                             log.trace("No need to change file name of db since it's in memory");
@@ -1091,18 +1181,19 @@ var DbHandler = /** @class */ (function () {
                         newPath = path_1.default.format({ dir: path_1.default.dirname(oldPathString), base: newDbFileName });
                         return [4 /*yield*/, fs_1.default.promises.mkdir(path_1.default.dirname(newPath), { recursive: true })];
                     case 1:
-                        _d.sent();
-                        return [4 /*yield*/, this._knex.destroy()];
-                    case 2:
-                        _d.sent();
+                        _c.sent();
+                        //@ts-ignore
+                        this._knex = this._keyv = undefined;
+                        this._currentTrxs = {};
                         return [4 /*yield*/, fs_1.default.promises.rename(oldPathString, newPath)];
-                    case 3:
-                        _d.sent();
-                        this._subplebbit.dbConfig = __assign(__assign({}, this._subplebbit.dbConfig), { connection: {
+                    case 2:
+                        _c.sent();
+                        this._dbConfig = __assign(__assign({}, this._dbConfig), { connection: {
                                 filename: newPath
                             } });
-                        this._subplebbit.dbHandler = new DbHandler(this._subplebbit);
-                        this._subplebbit._keyv = new keyv_1.default("sqlite://".concat(this._subplebbit.dbConfig.connection.filename));
+                        return [4 /*yield*/, this.initDbIfNeeded()];
+                    case 3:
+                        _c.sent();
                         log("Changed db path from (".concat(oldPathString, ") to (").concat(newPath, ")"));
                         return [2 /*return*/];
                 }
@@ -1112,43 +1203,3 @@ var DbHandler = /** @class */ (function () {
     return DbHandler;
 }());
 exports.DbHandler = DbHandler;
-var subplebbitInitDbIfNeeded = function (subplebbit) { return __awaiter(void 0, void 0, void 0, function () {
-    var log, dbPath, dir;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:subplebbitInitDbIfNeeded");
-                if (subplebbit.dbHandler)
-                    return [2 /*return*/];
-                if (!subplebbit.dbConfig) {
-                    (0, assert_1.default)(subplebbit.address, "Need subplebbit address to initialize a DB connection");
-                    dbPath = path_1.default.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
-                    log("User has not provided a DB config. Will initialize DB in ".concat(dbPath));
-                    subplebbit.dbConfig = {
-                        client: "sqlite3",
-                        connection: {
-                            filename: dbPath
-                        },
-                        useNullAsDefault: true,
-                        acquireConnectionTimeout: 120000
-                    };
-                }
-                else
-                    log.trace("User provided a DB config of ".concat(JSON.stringify(subplebbit.dbConfig)));
-                dir = path_1.default.dirname(subplebbit.dbConfig.connection.filename);
-                return [4 /*yield*/, fs_1.default.promises.mkdir(dir, { recursive: true })];
-            case 1:
-                _a.sent();
-                subplebbit.dbHandler = new DbHandler(subplebbit);
-                return [4 /*yield*/, subplebbit.dbHandler.createTablesIfNeeded()];
-            case 2:
-                _a.sent();
-                return [4 /*yield*/, subplebbit.initSignerIfNeeded()];
-            case 3:
-                _a.sent();
-                subplebbit._keyv = new keyv_1.default("sqlite://".concat(subplebbit.dbConfig.connection.filename)); // TODO make this work with DBs other than sqlite
-                return [2 /*return*/];
-        }
-    });
-}); };
-exports.subplebbitInitDbIfNeeded = subplebbitInitDbIfNeeded;

@@ -115,7 +115,7 @@ var Plebbit = /** @class */ (function (_super) {
         _this.resolver = new resolver_1.Resolver({ plebbit: _this, blockchainProviders: _this.blockchainProviders });
         _this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         _this._memCache = new tinycache_1.default();
-        _this.dataPath = options.dataPath || util_1.nativeFunctions.getDefaultDataPath();
+        _this.dataPath = options.dataPath || (0, util_1.getDefaultDataPath)();
         return _this;
     }
     Plebbit.prototype._init = function (options) {
@@ -125,7 +125,7 @@ var Plebbit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:_init");
-                        if (!(util_1.isRuntimeNode && this.dataPath)) return [3 /*break*/, 2];
+                        if (!this.dataPath) return [3 /*break*/, 2];
                         return [4 /*yield*/, (0, util_1.mkdir)(this.dataPath, { recursive: true })];
                     case 1:
                         _a.sent();
@@ -235,21 +235,40 @@ var Plebbit = /** @class */ (function (_super) {
             });
         });
     };
+    Plebbit.prototype._canRunSub = function () {
+        var canRunSub = false;
+        try {
+            //@ts-ignore
+            util_1.nativeFunctions.createDbHandler({ address: "", plebbit: this });
+            canRunSub = true;
+        }
+        catch (e) {
+            if (!e.toString().includes("native-functions of browser"))
+                // If this error is thrown it's because we're using browser native functions, and as of now any native functions other than browser can run a sub
+                canRunSub = true;
+        }
+        return canRunSub;
+    };
     Plebbit.prototype.createSubplebbit = function (options) {
         if (options === void 0) { options = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, newSub, remoteSub, localSubs, _a, localSubs, derivedAddress, _b;
+            var log, canRunSub, newSub, remoteSub, localSubs, _a, localSubs, derivedAddress, _b;
             var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
+                        canRunSub = this._canRunSub();
                         newSub = function () { return __awaiter(_this, void 0, void 0, function () {
                             var subplebbit, key;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
-                                        (0, assert_1.default)(util_1.isRuntimeNode, "Runtime need to include node APIs to create a publishing subplebbit");
+                                        (0, assert_1.default)(canRunSub, "missing nativeFunctions required to create a subplebbit");
+                                        if (canRunSub && !this.dataPath)
+                                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_DATA_PATH_IS_NOT_DEFINED), errors_1.codes.ERR_DATA_PATH_IS_NOT_DEFINED, {
+                                                details: "createSubplebbit: canRunSub=".concat(canRunSub, ", plebbitOptions.dataPath=").concat(this.dataPath)
+                                            });
                                         subplebbit = new subplebbit_1.Subplebbit(options, this);
                                         key = subplebbit.address || subplebbit.signer.address;
                                         (0, assert_1.default)(typeof key === "string", "To create a subplebbit you need to either defined signer or address");
@@ -259,6 +278,7 @@ var Plebbit = /** @class */ (function (_super) {
                                     case 1:
                                         _a.sent();
                                         exports.pendingSubplebbitCreations[key] = false;
+                                        log("Created subplebbit (".concat(subplebbit.address, ") with options (").concat(JSON.stringify(subplebbit.toJSON()), ")"));
                                         return [2 /*return*/, subplebbit];
                                 }
                             });
@@ -269,7 +289,7 @@ var Plebbit = /** @class */ (function (_super) {
                             });
                         }); };
                         if (!(options.address && !options.signer)) return [3 /*break*/, 4];
-                        if (!!util_1.isRuntimeNode) return [3 /*break*/, 1];
+                        if (!!canRunSub) return [3 /*break*/, 1];
                         return [2 /*return*/, remoteSub()];
                     case 1: return [4 /*yield*/, this.listSubplebbits()];
                     case 2:
@@ -282,8 +302,8 @@ var Plebbit = /** @class */ (function (_super) {
                     case 3: return [3 /*break*/, 13];
                     case 4:
                         if (!(!options.address && !options.signer)) return [3 /*break*/, 8];
-                        if (!!util_1.isRuntimeNode) return [3 /*break*/, 5];
-                        throw new Error("Can't instantenate a publishing subplebbit without node API");
+                        if (!!canRunSub) return [3 /*break*/, 5];
+                        throw Error("missing nativeFunctions required to create a subplebbit");
                     case 5:
                         _a = options;
                         return [4 /*yield*/, this.createSigner()];
@@ -294,8 +314,8 @@ var Plebbit = /** @class */ (function (_super) {
                     case 7: return [3 /*break*/, 13];
                     case 8:
                         if (!(!options.address && options.signer)) return [3 /*break*/, 12];
-                        if (!util_1.isRuntimeNode)
-                            throw new Error("Can't instantenate a publishing subplebbit without node API");
+                        if (!canRunSub)
+                            throw Error("missing nativeFunctions required to create a subplebbit");
                         return [4 /*yield*/, this.listSubplebbits()];
                     case 9:
                         localSubs = _c.sent();
@@ -311,7 +331,7 @@ var Plebbit = /** @class */ (function (_super) {
                             options.address = derivedAddress;
                         return [2 /*return*/, newSub()];
                     case 12:
-                        if (!util_1.isRuntimeNode)
+                        if (!canRunSub)
                             return [2 /*return*/, remoteSub()];
                         else
                             return [2 /*return*/, newSub()];
@@ -384,8 +404,18 @@ var Plebbit = /** @class */ (function (_super) {
     };
     Plebbit.prototype.listSubplebbits = function () {
         return __awaiter(this, void 0, void 0, function () {
+            var canRunSub;
             return __generator(this, function (_a) {
-                return [2 /*return*/, util_1.nativeFunctions.listSubplebbits(this.dataPath)];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._canRunSub()];
+                    case 1:
+                        canRunSub = _a.sent();
+                        if (canRunSub && !this.dataPath)
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_DATA_PATH_IS_NOT_DEFINED), errors_1.codes.ERR_DATA_PATH_IS_NOT_DEFINED, {
+                                details: "listSubplebbits: canRunSub=".concat(canRunSub, ", plebbitOptions.dataPath=").concat(this.dataPath)
+                            });
+                        return [2 /*return*/, util_1.nativeFunctions.listSubplebbits(this.dataPath)];
+                }
             });
         });
     };

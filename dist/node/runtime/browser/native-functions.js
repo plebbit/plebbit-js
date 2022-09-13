@@ -50,9 +50,8 @@ var nativeFunctions = {
             return [2 /*return*/, []];
         });
     }); },
-    getDefaultDataPath: function () { return undefined; },
     createDbHandler: function (subplebbit) {
-        throw new Error("Shouldn't call createDbHandler over native-functions of browser");
+        throw Error("Shouldn't call createDbHandler over native-functions of browser");
     },
     //@ts-ignore
     fetch: function () {

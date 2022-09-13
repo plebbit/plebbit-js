@@ -1,26 +1,17 @@
 /// <reference types="node" />
-/// <reference types="node-fetch" />
 import { promises as fs } from "fs";
 import { NativeFunctions } from "../../types";
+import { Subplebbit } from "../../subplebbit";
+import { Knex } from "knex";
 export declare const mkdir: typeof fs.mkdir;
-export declare const isRuntimeNode = true;
-export declare let nativeFunctions: NativeFunctions;
-export declare const setNativeFunctions: (pNativeFunctions: Partial<NativeFunctions>) => {
-    listSubplebbits: (dataPath: string) => Promise<string[]>;
-    getDefaultDataPath: () => string;
-    createDbHandler: (subplebbit: import("../../types").SubplebbitType) => import("../../types").DbHandlerPublicAPI;
-    fetch: typeof import("node-fetch").default;
-    createIpfsClient: (options: import("ipfs-http-client/types/src/types").Options) => import("../../types").IpfsHttpClientPublicAPI;
-};
+export declare const getDefaultDataPath: () => string;
+export declare const getDefaultSubplebbitDbConfig: (subplebbit: Subplebbit) => Promise<Knex.Config<any>>;
+export declare const nativeFunctions: NativeFunctions;
+export declare const setNativeFunctions: (newNativeFunctions: Partial<NativeFunctions>) => void;
 declare const _default: {
-    isRuntimeNode: boolean;
+    getDefaultDataPath: () => string;
     nativeFunctions: NativeFunctions;
-    setNativeFunctions: (pNativeFunctions: Partial<NativeFunctions>) => {
-        listSubplebbits: (dataPath: string) => Promise<string[]>;
-        getDefaultDataPath: () => string;
-        createDbHandler: (subplebbit: import("../../types").SubplebbitType) => import("../../types").DbHandlerPublicAPI;
-        fetch: typeof import("node-fetch").default;
-        createIpfsClient: (options: import("ipfs-http-client/types/src/types").Options) => import("../../types").IpfsHttpClientPublicAPI;
-    };
+    setNativeFunctions: (newNativeFunctions: Partial<NativeFunctions>) => void;
+    mkdir: typeof fs.mkdir;
 };
 export default _default;
