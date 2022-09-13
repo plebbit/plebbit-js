@@ -38,7 +38,7 @@ export const setNativeFunctions = (pNativeFunctions: NativeFunctions) => {
 
 export class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
-    pubsubIpfsClient: ReturnType<NativeFunctions["createIpfsClient"]>;
+    pubsubIpfsClient: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">;
     resolver: Resolver;
     _memCache: TinyCache;
     ipfsGatewayUrl: string;
@@ -156,11 +156,12 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         return finalProps.title ? new Post(finalProps, commentSubplebbit) : new Comment(finalProps, commentSubplebbit);
     }
 
-    async _canRunSub(): Promise<boolean> {
+    _canRunSub(): boolean {
         let canRunSub = false;
         try {
             //@ts-ignore
-            await nativeFunctions.createDbHandler({});
+            nativeFunctions.createDbHandler({ address: "", plebbit: this });
+            canRunSub = true;
         } catch (e) {
             if (!e.toString().includes("native-functions of browser"))
                 // If this error is thrown it's because we're using browser native functions, and as of now any native functions other than browser can run a sub
@@ -171,7 +172,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
 
     async createSubplebbit(options: CreateSubplebbitOptions = {}): Promise<Subplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
-        const canRunSub = await this._canRunSub();
+        const canRunSub = this._canRunSub();
 
         const newSub = async () => {
             assert(canRunSub, "missing nativeFunctions required to create a subplebbit");
@@ -186,6 +187,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             pendingSubplebbitCreations[key] = true;
             await subplebbit.prePublish();
             pendingSubplebbitCreations[key] = false;
+            log(`Created subplebbit (${subplebbit.address}) with options (${JSON.stringify(subplebbit.toJSON())})`);
             return subplebbit;
         };
 
