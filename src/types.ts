@@ -216,7 +216,7 @@ export interface SubplebbitType extends CreateSubplebbitOptions {
     pubsubTopic: string;
     metricsCid?: string;
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
-    posts: Pages;
+    posts: Pages | Pick<Pages, "pages" | "pageCids">;
 }
 export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     createdAt?: number;
@@ -234,7 +234,7 @@ export interface SubplebbitEditOptions {
     roles?: { [authorAddress: string]: SubplebbitRole };
     rules?: string[];
     lastPostCid?: string;
-    posts?: Pages;
+    posts?: Pages | Pick<Pages, "pages" | "pageCids">;
     pubsubTopic?: string;
     challengeTypes?: ChallengeType[];
     metrics?: SubplebbitMetrics;
@@ -354,7 +354,7 @@ export type IpfsHttpClientPublicAPI = {
 };
 export type NativeFunctions = {
     listSubplebbits: (dataPath: string) => Promise<string[]>;
-    createDbHandler: (subplebbit: SubplebbitType) => Promise<DbHandlerPublicAPI>;
+    createDbHandler: (subplebbit: SubplebbitType) => DbHandlerPublicAPI;
     fetch: typeof fetch;
     createIpfsClient: (options: Options) => IpfsHttpClientPublicAPI;
 };

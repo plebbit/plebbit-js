@@ -170,8 +170,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async initDbIfNeeded() {
-        if (!this.dbHandler) this.dbHandler = await nativeFunctions.createDbHandler(this);
-        else await this.dbHandler.initDbIfNeeded();
+        if (!this.dbHandler) this.dbHandler = nativeFunctions.createDbHandler(this);
+        await this.dbHandler.initDbIfNeeded();
         if (!this.sortHandler) this.sortHandler = new SortHandler(this);
         await this.initSignerIfNeeded();
     }
@@ -200,7 +200,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             lastPostCid: this.lastPostCid,
             pubsubTopic: this.pubsubTopic,
             address: this.address,
-            posts: this.posts,
+            posts: this.posts?.toJSON ? this.posts.toJSON() : this.posts,
             challengeTypes: this.challengeTypes,
             metricsCid: this.metricsCid,
             createdAt: this.createdAt,
