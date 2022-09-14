@@ -10,8 +10,8 @@ export type ProtocolVersion = "1.0.0";
 export type BlockchainProvider = { url: string; chainId: number };
 export interface PlebbitOptions {
     ipfsGatewayUrl?: string;
-    ipfsHttpClientOptions?: Options;
-    pubsubHttpClientOptions?: Options;
+    ipfsHttpClientOptions?: Options | string;
+    pubsubHttpClientOptions?: Options | string;
     dataPath?: string;
     blockchainProviders?: { [chainTicker: string]: BlockchainProvider };
     resolveAuthorAddresses?: boolean;

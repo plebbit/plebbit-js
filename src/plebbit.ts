@@ -42,8 +42,8 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     resolver: Resolver;
     _memCache: TinyCache;
     ipfsGatewayUrl: string;
-    ipfsHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0];
-    pubsubHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0];
+    ipfsHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0] | string;
+    pubsubHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0] | string;
     dataPath?: string;
     blockchainProviders?: { [chainTicker: string]: BlockchainProvider };
     resolveAuthorAddresses?: boolean;
@@ -51,13 +51,15 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     constructor(options: PlebbitOptions = {}) {
         super();
         this.ipfsHttpClientOptions = options.ipfsHttpClientOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        this.ipfsClient = this.ipfsHttpClientOptions ? nativeFunctions.createIpfsClient(this.ipfsHttpClientOptions) : undefined;
+        this.ipfsClient = this.ipfsHttpClientOptions
+            ? nativeFunctions.createIpfsClient(<Parameters<NativeFunctions["createIpfsClient"]>[0]>this.ipfsHttpClientOptions)
+            : undefined;
         this.pubsubHttpClientOptions = options.pubsubHttpClientOptions || { url: "https://pubsubprovider.xyz/api/v0" };
         this.pubsubIpfsClient = options.pubsubHttpClientOptions
-            ? nativeFunctions.createIpfsClient(options.pubsubHttpClientOptions)
+            ? nativeFunctions.createIpfsClient(<Parameters<NativeFunctions["createIpfsClient"]>[0]>options.pubsubHttpClientOptions)
             : this.ipfsClient
             ? this.ipfsClient
-            : nativeFunctions.createIpfsClient(this.pubsubHttpClientOptions);
+            : nativeFunctions.createIpfsClient(<Parameters<NativeFunctions["createIpfsClient"]>[0]>this.pubsubHttpClientOptions);
         this.blockchainProviders = options.blockchainProviders || {
             avax: {
                 url: "https://api.avax.network/ext/bc/C/rpc",
