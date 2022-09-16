@@ -50,7 +50,7 @@ describe("Test upvote", async () => {
         });
     });
 
-    it("Throws an error when vote is duplicated", async () => {
+    it("Does not throw an error when vote is duplicated", async () => {
         return new Promise(async (resolve, reject) => {
             const vote = await plebbit.createVote({
                 ...previousVotes[0].toJSON(),
@@ -59,8 +59,8 @@ describe("Test upvote", async () => {
             });
             await vote.publish();
             vote.once("challengeverification", async (challengeVerificationMsg, updatedVote) => {
-                expect(challengeVerificationMsg.challengeSuccess).to.be.false;
-                expect(challengeVerificationMsg.reason).to.be.a("string").with.length.at.least(1);
+                expect(challengeVerificationMsg.challengeSuccess).to.be.true;
+                expect(challengeVerificationMsg.reason).to.be.null;
                 resolve();
             });
         });

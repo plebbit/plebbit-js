@@ -480,16 +480,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             return {
                 reason: `Author (${newVote.author.address}) attempted to change vote on  ${newVote.commentCid} without having correct credentials`
             };
-        } else if (shallowEqual(newVote.signature, lastVote?.signature)) {
-            log(
-                `Rejecting vote because signature of vote is identical to a vote that has been recorded before on comment (${newVote.commentCid})`
-            );
-            return {
-                reason: `Signature of Vote is identical to original Vote (${newVote.commentCid}) by author ${newVote.author.address}`
-            };
-        } else if (lastVote?.vote === newVote.vote) {
-            log(`Author (${newVote.author.address}) has duplicated their vote for comment ${newVote.commentCid}`);
-            return { reason: "User duplicated their vote" };
         } else {
             await this.dbHandler.upsertVote(newVote, challengeRequestId, undefined);
             log.trace(`Upserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
