@@ -42,7 +42,7 @@ const preloadJs = `
 // expose plebbit-js native functions into electron's renderer
 const {contextBridge} = require('electron')
 const path = require ('path')
-contextBridge.exposeInMainWorld('plebbitJsNativeFunctions', require('@plebbit/plebbit-js/dist/node/runtime/node/native-functions').default)
+contextBridge.exposeInMainWorld('plebbitJsNativeFunctions', require(path.join(process.cwd(), 'dist/node/runtime/node/native-functions')).default)
 contextBridge.exposeInMainWorld('plebbitDataPath', path.join(process.cwd(), '.plebbit'))
 console.log('electron preload.js contextBridge.exposeInMainWorld plebbitJsNativeFunctions')
 `;
@@ -75,8 +75,8 @@ module.exports = function (config) {
             // the tests are first compiled from typescript to dist/node/test
             // then they are compiled to browser with webpack to dist/browser/test
             // you must run `npm run tsc:watch` and `npm run webpack:watch` to use the karma tests
-            // 'test-karma-webpack/test/*/**/*.test.js',
-            "test/node/*.test.js"
+            "test-karma-webpack/test/browser/root-hook-karma.util.js", // To load root hook in karma
+            "test-karma-webpack/test/node/*.test.js"
         ],
         exclude: [],
 

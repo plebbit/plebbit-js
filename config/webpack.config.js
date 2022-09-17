@@ -11,7 +11,7 @@ const testFolder = path.resolve(rootFolder, "test");
 const lockFile = path.resolve(rootFolder, "package-lock.json");
 
 // all our test files
-const testGlob = testFolder + "/{browser,node-and-browser}/**/*.test.js";
+const testGlob = testFolder + "/{browser,node-and-browser,node}/**/*.{test,util}.js";
 
 // find all the browser test files and assign them to their own name, don't bundle them
 const testFiles = glob.sync(testGlob).sort();

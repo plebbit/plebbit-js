@@ -1,7 +1,5 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { rm } = require("fs");
-const path = require("path");
 const { generateMockPost } = require("../../dist/node/test-util");
 const { timestamp } = require("../../dist/node/util");
 const { messages, codes } = require("../../dist/node/errors");
@@ -14,11 +12,25 @@ let plebbit;
 let subplebbit;
 let subplebbitSigner;
 
+const setupNativeFunction = () => {
+    const isElectron = navigator?.userAgent?.includes("Electron");
+    if (isElectron) {
+        // If in electron env, set native functiosn
+        console.log(`subplebbit.test.js: Detected Electron env. Will set native functions`);
+        console.log(window.plebbitJsNativeFunctions);
+        Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
+    } else {
+        console.log(`subplebbit.test.js: Detected non native Electron env`);
+    }
+};
+
 describe("subplebbit", async () => {
     before(async () => {
+        setupNativeFunction();
         plebbit = await Plebbit({
             ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
+            pubsubHttpClientOptions: `http://localhost:5002/api/v0`,
+            dataPath: globalThis["window"]?.plebbitDataPath
         });
         plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
             if (authorAddress === "plebbit.eth") return signers[6].address;
@@ -29,7 +41,6 @@ describe("subplebbit", async () => {
     after(async () => {
         // Delete DB
         await subplebbit.stop();
-        rm(path.join(plebbit.dataPath, "subplebbits", subplebbit.address), () => console.log(`Deleted generated DB`));
     });
 
     [{}, { title: `Test title - ${Date.now()}` }].map((subArgs) =>
@@ -40,16 +51,14 @@ describe("subplebbit", async () => {
             const subplebbitIpns = await plebbit.getSubplebbit(newSubplebbit.address);
             expect(subplebbitIpns.address).to.equal(newSubplebbit.signer.address);
             await newSubplebbit.stop();
-            rm(path.join(plebbit.dataPath, "subplebbits", newSubplebbit.address), () =>
-                console.log(`Deleted subplebbit (${newSubplebbit.address}) DB`)
-            );
         })
     );
 
     it(`createSubplebbit on IPFS node doesn't take more than 10s`, async () => {
         const onlinePlebbit = await Plebbit({
             ipfsHttpClientOptions: "http://localhost:5003/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5003/api/v0`
+            pubsubHttpClientOptions: `http://localhost:5003/api/v0`,
+            dataPath: globalThis["window"]?.plebbitDataPath
         });
         const startTime = timestamp();
 
@@ -62,9 +71,6 @@ describe("subplebbit", async () => {
         await createdSub.stop();
 
         expect(endTime).to.be.lessThanOrEqual(startTime + 10, "createSubplebbit took more than 10s in an online ipfs node");
-        rm(path.join(plebbit.dataPath, "subplebbits", createdSub.address), () =>
-            console.log(`Deleted subplebbit DB (${createdSub.address})`)
-        );
     });
 
     it("create new subplebbit", async function () {
@@ -86,9 +92,6 @@ describe("subplebbit", async () => {
         const createdSub = await plebbit.createSubplebbit(await plebbit.createSubplebbit(props));
         expect(createdSub.title).to.equal(props.title);
         expect(createdSub.signer.address).to.be.a("string");
-        rm(path.join(plebbit.dataPath, "subplebbits", createdSub.address), () =>
-            console.log(`Deleted subplebbit DB (${createdSub.address})`)
-        );
     });
 
     it("subplebbit.edit", async () =>
@@ -181,7 +184,8 @@ describe("subplebbit", async () => {
         await assert.isRejected(sameSubplebbit.start(), messages.ERR_SUB_ALREADY_STARTED);
         const anotherPlebbit = await Plebbit({
             ipfsHttpClientOptions: "http://localhost:5004/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
+            pubsubHttpClientOptions: `http://localhost:5002/api/v0`,
+            dataPath: globalThis["window"]?.plebbitDataPath
         });
         anotherPlebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
             if (authorAddress === "plebbit.eth") return signers[6].address;
@@ -207,9 +211,6 @@ describe("subplebbit", async () => {
                     expect(createdSubplebbit.address).to.equal(subplebbitSigner.address);
                     expect(createdSubplebbit.title).to.equal(title);
                     await createdSubplebbit.stop();
-                    rm(path.join(plebbit.dataPath, "subplebbits", createdSubplebbit.address), () =>
-                        console.log(`Deleted subplebbit DB (${createdSubplebbit.address})`)
-                    );
 
                     clearInterval(interval);
                     resolve();

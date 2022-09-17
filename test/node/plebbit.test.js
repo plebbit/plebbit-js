@@ -1,7 +1,5 @@
 const Plebbit = require("../../dist/node");
 const { expect } = require("chai");
-const fs = require("fs/promises");
-const path = require("path");
 
 // example of node only tests
 
@@ -9,7 +7,7 @@ describe("plebbit", () => {
     let plebbit;
 
     before(async () => {
-        plebbit = await Plebbit();
+        plebbit = await Plebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
 
     it("has default plebbit options", async () => {
@@ -28,12 +26,13 @@ describe("plebbit", () => {
             else if (authorAddress === "testgibbreish.eth") return undefined;
             return authorAddress;
         };
-        const newSubplebbit = await plebbit.createSubplebbit({ signer: await plebbit.createSigner() });
+        const newSubplebbit = await plebbit.createSubplebbit({
+            signer: await plebbit.createSigner()
+        });
         await newSubplebbit.start();
         // A new subplebbit should be created, and its SQLite db file be listed under plebbit.dataPath/subplebbits
         const listedSubplebbits = await plebbit.listSubplebbits();
         expect(listedSubplebbits).to.include(newSubplebbit.address);
         await newSubplebbit.stop();
-        await fs.rm(path.join(plebbit.dataPath, "subplebbits", newSubplebbit.address)); // Cleanup subplebbit
     });
 });

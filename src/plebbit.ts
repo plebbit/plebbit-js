@@ -154,17 +154,13 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     _canRunSub(): boolean {
-        let canRunSub = false;
         try {
             //@ts-ignore
             nativeFunctions.createDbHandler({ address: "", plebbit: this });
-            canRunSub = true;
-        } catch (e) {
-            if (!e.toString().includes("native-functions of browser"))
-                // If this error is thrown it's because we're using browser native functions, and as of now any native functions other than browser can run a sub
-                canRunSub = true;
-        }
-        return canRunSub;
+            return true;
+        } catch {}
+
+        return false;
     }
 
     async createSubplebbit(options: CreateSubplebbitOptions = {}): Promise<Subplebbit> {
