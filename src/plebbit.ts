@@ -11,7 +11,7 @@ import {
     PostType,
     VoteType
 } from "./types";
-import { getDefaultDataPath, mkdir, nativeFunctions, setNativeFunctions as utilSetNativeFunctions } from "./runtime/node/util";
+import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
@@ -30,11 +30,6 @@ import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 
 export const pendingSubplebbitCreations: Record<string, boolean> = {};
-
-export const setNativeFunctions = (pNativeFunctions: NativeFunctions) => {
-    assert(pNativeFunctions, "User tried to pass undefined to setNativeFunctions");
-    utilSetNativeFunctions(pNativeFunctions);
-};
 
 export class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
@@ -91,7 +86,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
                 log.trace(`plebbit.ipfsGatewayUrl retrieved from IPFS node: ${this.ipfsGatewayUrl}`);
             } catch (e) {
                 this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
-                log(`${e.msg}: Failed to retrieve gateway url from ipfs node, will default to ${this.ipfsGatewayUrl}`);
+                log(`${e}: Failed to retrieve gateway url from ipfs node, will default to ${this.ipfsGatewayUrl}`);
             }
         }
     }
@@ -269,7 +264,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     async listSubplebbits(): Promise<string[]> {
-        const canRunSub = await this._canRunSub();
+        const canRunSub = this._canRunSub();
         if (canRunSub && !this.dataPath)
             throw errcode(Error(messages.ERR_DATA_PATH_IS_NOT_DEFINED), codes.ERR_DATA_PATH_IS_NOT_DEFINED, {
                 details: `listSubplebbits: canRunSub=${canRunSub}, plebbitOptions.dataPath=${this.dataPath}`
