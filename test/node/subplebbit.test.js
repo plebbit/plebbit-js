@@ -13,7 +13,7 @@ let subplebbit;
 let subplebbitSigner;
 
 const setupNativeFunction = () => {
-    const isElectron = navigator?.userAgent?.includes("Electron");
+    const isElectron = globalThis["navigator"]?.userAgent?.includes("Electron");
     if (isElectron) {
         // If in electron env, set native functiosn
         console.log(`subplebbit.test.js: Detected Electron env. Will set native functions`);
@@ -133,10 +133,12 @@ describe("subplebbit", async () => {
         });
     });
     it(`Can edit subplebbit.address to a new domain if subplebbit-address record does not exist or does not match signer.address`, async () => {
+        // Has no subplebbit-address
         await subplebbit.edit({ address: "testgibbreish.eth" });
 
         expect(subplebbit.address).to.equal("testgibbreish.eth");
 
+        // Should not match signer.address
         await subplebbit.edit({ address: "plebbit2.eth" });
 
         expect(subplebbit.address).to.equal("plebbit2.eth");
