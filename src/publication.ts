@@ -1,10 +1,4 @@
-import {
-    ChallengeAnswerMessage,
-    ChallengeMessage,
-    ChallengeRequestMessage,
-    ChallengeVerificationMessage,
-    PUBSUB_MESSAGE_TYPES
-} from "./challenge";
+import { ChallengeAnswerMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { v4 as uuidv4 } from "uuid";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
@@ -14,7 +8,15 @@ import Author from "./author";
 import assert from "assert";
 import { Subplebbit } from "./subplebbit";
 import { decrypt, encrypt, Signature, Signer, verifyPublication } from "./signer";
-import { ProtocolVersion, PublicationType, PublicationTypeName } from "./types";
+import {
+    ChallengeMessageType,
+    ChallengeType,
+    ChallengeVerificationMessageType,
+    DecryptedChallengeMessageType,
+    ProtocolVersion,
+    PublicationType,
+    PublicationTypeName
+} from "./types";
 import errcode from "err-code";
 import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
@@ -41,9 +43,9 @@ class Publication extends EventEmitter implements PublicationType {
         this.subplebbitAddress = props["subplebbitAddress"];
         this.timestamp = props["timestamp"];
         this.signer = this.signer || props["signer"];
-        this.signature = parseJsonIfString(props["signature"]);
+        this.signature = parseJsonIfString(props.signature);
         assert(props.author?.address, "publication.author.address need to be defined");
-        this.author = new Author(parseJsonIfString(props["author"]));
+        this.author = new Author(parseJsonIfString(props.author));
         this.protocolVersion = props.protocolVersion;
     }
     getType(): PublicationTypeName {
@@ -67,12 +69,18 @@ class Publication extends EventEmitter implements PublicationType {
     async handleChallengeExchange(pubsubMsg) {
         const log = Logger("plebbit-js:publication:handleChallengeExchange");
 
-        const msgParsed: ChallengeMessage | ChallengeVerificationMessage = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
+        const msgParsed: ChallengeMessageType | ChallengeVerificationMessageType = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
         if (msgParsed?.challengeRequestId !== this.challenge.challengeRequestId) return; // Process only this publication's challenge
-        if (msgParsed?.type === PUBSUB_MESSAGE_TYPES.CHALLENGE) {
-            log(`Received challenges, will emit them and wait for user to solve them and call publishChallengeAnswers`);
-            this.emit("challenge", msgParsed);
-        } else if (msgParsed?.type === PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION) {
+        if (msgParsed?.type === "CHALLENGE") {
+            log(
+                `Received encrypted challenges.  Will decrypt and emit them on "challenge". User shoud publish solution by calling publishChallengeAnswers`
+            );
+            const decryptedChallenges: ChallengeType[] = JSON.parse(
+                await decrypt(msgParsed.encryptedChallenges.encrypted, msgParsed.encryptedChallenges.encryptedKey, this.signer.privateKey)
+            );
+            const decryptedChallenge: DecryptedChallengeMessageType = { ...msgParsed, challenges: decryptedChallenges };
+            this.emit("challenge", decryptedChallenge);
+        } else if (msgParsed?.type === "CHALLENGEVERIFICATION") {
             let decryptedPublication: PublicationType | undefined;
             if (!(<ChallengeVerificationMessage>msgParsed).challengeSuccess)
                 log.error(
@@ -104,10 +112,14 @@ class Publication extends EventEmitter implements PublicationType {
         const log = Logger("plebbit-js:publication:publishChallengeAnswers");
 
         if (!Array.isArray(challengeAnswers)) challengeAnswers = [challengeAnswers];
+
+        // Encrypt challenges here
+        const encryptedChallengeAnswers = await encrypt(JSON.stringify(challengeAnswers), this.subplebbit.encryption.publicKey);
+
         const challengeAnswer = new ChallengeAnswerMessage({
             challengeRequestId: this.challenge.challengeRequestId,
             challengeAnswerId: uuidv4(),
-            challengeAnswers: challengeAnswers
+            encryptedChallengeAnswers: encryptedChallengeAnswers
         });
         await this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(
             this.subplebbit.pubsubTopic,

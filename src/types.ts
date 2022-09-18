@@ -142,9 +142,58 @@ export interface CreateCommentEditOptions extends AuthorCommentEdit, ModeratorCo
 
 export type Nft = { chainTicker: string; id: string; address: string; signature: string };
 export type SubplebbitRole = { role: "owner" | "admin" | "moderator" };
-export type ChallengeType = {
+
+interface ChallengeBaseType {
+    type: "CHALLENGEREQUEST" | "CHALLENGE" | "CHALLENGEANSWER" | "CHALLENGEVERIFICATION";
+    challengeRequestId: string;
+}
+
+export interface ChallengeType {
+    challenge: string;
     type: "image" | "text" | "video" | "audio" | "html";
-};
+}
+
+export interface ChallengeRequestMessageType extends ChallengeBaseType {
+    type: "CHALLENGEREQUEST";
+    encryptedPublication: Encrypted;
+    acceptedChallengeTypes?: string[];
+}
+
+export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType {
+    publication: PublicationType;
+}
+
+export interface ChallengeMessageType extends ChallengeBaseType {
+    type: "CHALLENGE";
+    encryptedChallenges: Encrypted;
+}
+
+export interface DecryptedChallengeMessageType extends ChallengeMessageType {
+    challenges: ChallengeType[];
+}
+
+export interface ChallengeAnswerMessageType extends ChallengeBaseType {
+    type: "CHALLENGEANSWER";
+    challengeAnswerId: string;
+    encryptedChallengeAnswers: Encrypted;
+}
+
+export interface DecryptedChallengeAnswerMessageType extends ChallengeAnswerMessageType {
+    challengeAnswers: string[];
+}
+
+export interface ChallengeVerificationMessageType extends ChallengeBaseType {
+    type: "CHALLENGEVERIFICATION";
+    challengeAnswerId: string;
+    challengeSuccess: boolean;
+    challengeErrors?: (string | undefined)[];
+    reason?: string;
+    encryptedPublication?: Encrypted;
+}
+
+export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType {
+    publication?: PublicationType;
+}
 
 export type SubplebbitMetrics = {
     hourActiveUserCount: number;

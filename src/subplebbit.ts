@@ -4,7 +4,6 @@ import { sha256 } from "js-sha256";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import {
     Challenge,
-    CHALLENGE_TYPES,
     ChallengeAnswerMessage,
     ChallengeMessage,
     ChallengeRequestMessage,
@@ -20,10 +19,14 @@ import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
 import {
     AuthorType,
+    ChallengeRequestMessageType,
     ChallengeType,
     CommentUpdate,
     CreateSubplebbitOptions,
     DbHandlerPublicAPI,
+    DecryptedChallengeAnswerMessageType,
+    DecryptedChallengeMessageType,
+    DecryptedChallengeRequestMessageType,
     Flair,
     FlairOwner,
     ProtocolVersion,
@@ -83,8 +86,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     private _challengeToSolution: any;
     private _challengeToPublication: any;
-    private provideCaptchaCallback?: (request: ChallengeRequestMessage) => Promise<[Challenge[], string | undefined]>;
-    private validateCaptchaAnswerCallback?: (answerMessage: ChallengeAnswerMessage) => Promise<[boolean, string[] | undefined]>;
+    private provideCaptchaCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[Challenge[], string | undefined]>;
+    private validateCaptchaAnswerCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>;
     private ipnsKeyName?: string;
     private sortHandler: SortHandler;
     private _updateInterval?: any;
@@ -176,11 +179,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         await this.initSignerIfNeeded();
     }
 
-    setProvideCaptchaCallback(newCallback: (request: ChallengeRequestMessage) => Promise<[Challenge[], string | undefined]>) {
+    setProvideCaptchaCallback(newCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[Challenge[], string | undefined]>) {
         this.provideCaptchaCallback = newCallback;
     }
 
-    setValidateCaptchaAnswerCallback(newCallback: (answerMessage: ChallengeAnswerMessage) => Promise<[boolean, string[] | undefined]>) {
+    setValidateCaptchaAnswerCallback(
+        newCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>
+    ) {
         this.validateCaptchaAnswerCallback = newCallback;
     }
 
@@ -275,19 +280,22 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         assert(this.dbHandler, "dbHandler is needed to edit");
         const log = Logger("plebbit-js:subplebbit:edit");
 
-        if (newSubplebbitOptions.address) {
+        if (newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address) {
             this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch((err) => {
                 const editError = errcode(err, err.code, { details: `subplebbit.edit: ${err.details}` });
                 log.error(editError);
                 this.emit("error", editError);
             });
             log.trace(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
-            await this.dbHandler.changeDbFilename(newSubplebbitOptions.address);
+            this.initSubplebbit(newSubplebbitOptions);
+            await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, this);
         }
+
         this.initSubplebbit(newSubplebbitOptions);
 
         log(`Subplebbit (${this.address}) props (${Object.keys(newSubplebbitOptions)}) has been edited`);
         await this.dbHandler.keyvSet(this.address, this.toJSON());
+
         return this;
     }
 
@@ -629,11 +637,15 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async handleChallengeRequest(request: ChallengeRequestMessage) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeRequest");
 
-        this.emit("challengerequest", request);
-        const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(request);
         const decryptedPublication = JSON.parse(
             await decrypt(request.encryptedPublication.encrypted, request.encryptedPublication.encryptedKey, this.signer.privateKey)
         );
+        const requestWithDecryptedPublication: DecryptedChallengeRequestMessageType = {
+            ...request,
+            publication: decryptedPublication
+        };
+        this.emit("challengerequest", requestWithDecryptedPublication);
+        const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(requestWithDecryptedPublication);
         this._challengeToPublication[request.challengeRequestId] = decryptedPublication;
         log(`Received a request to a challenge (${request.challengeRequestId})`);
         if (!providedChallenges) {
@@ -641,7 +653,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             log.trace(
                 `Skipping challenge for ${request.challengeRequestId}, add publication to IPFS and respond with challengeVerificationMessage right away`
             );
-            await this.dbHandler.upsertChallenge(request, undefined);
+            const RequestWithoutPublication: Omit<ChallengeRequestMessageType, "encryptedPublication"> = {
+                type: request.type,
+                challengeRequestId: request.challengeRequestId,
+                acceptedChallengeTypes: request.acceptedChallengeTypes
+            };
+            await this.dbHandler.upsertChallenge(RequestWithoutPublication, undefined);
 
             const publishedPublication: any = await this.storePublicationIfValid(decryptedPublication, request.challengeRequestId);
             const restOfMsg =
@@ -656,25 +673,37 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const challengeVerification = new ChallengeVerificationMessage({
                 reason: reasonForSkippingCaptcha,
                 challengeSuccess: publishedPublication.reason ? false : Boolean(publishedPublication.publication), // If no publication, this will be false
-                challengeAnswerId: request.challengeAnswerId,
+                challengeAnswerId: undefined,
                 challengeErrors: undefined,
                 challengeRequestId: request.challengeRequestId,
                 ...restOfMsg
             });
+            const verificationWithoutEncryptedPublication = challengeVerification.toJSON();
+            delete verificationWithoutEncryptedPublication.encryptedPublication;
+
             await Promise.all([
-                this.dbHandler.upsertChallenge(challengeVerification, undefined),
+                this.dbHandler.upsertChallenge(verificationWithoutEncryptedPublication, undefined),
                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
             ]);
             log.trace(`Published ${challengeVerification.type} over pubsub for challenge (${challengeVerification.challengeRequestId})`);
             this.emit("challengeverification", challengeVerification);
         } else {
+            const encryptedChallenges = await encrypt(
+                JSON.stringify(providedChallenges),
+                (decryptedPublication.signature || decryptedPublication.editSignature).publicKey
+            );
             const challengeMessage = new ChallengeMessage({
                 challengeRequestId: request.challengeRequestId,
-                challenges: providedChallenges,
-                challengeAnswerId: request.challengeAnswerId
+                encryptedChallenges: encryptedChallenges
             });
+
+            const decryptedChallengeMessage: Omit<DecryptedChallengeMessageType, "encryptedChallenges"> = {
+                challengeRequestId: request.challengeRequestId,
+                challenges: providedChallenges,
+                type: challengeMessage.type
+            };
             await Promise.all([
-                this.dbHandler.upsertChallenge(challengeMessage, undefined),
+                this.dbHandler.upsertChallenge(decryptedChallengeMessage, undefined),
                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeMessage)))
             ]);
             this.emit("challengemessage", challengeMessage);
@@ -685,13 +714,33 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeAnswer");
 
+        const decryptedAnswers = JSON.parse(
+            await decrypt(
+                challengeAnswer.encryptedChallengeAnswers.encrypted,
+                challengeAnswer.encryptedChallengeAnswers.encryptedKey,
+                this.signer?.privateKey
+            )
+        );
+
+        const decryptedChallengeAnswer: DecryptedChallengeAnswerMessageType = { ...challengeAnswer, challengeAnswers: decryptedAnswers };
+
         this.emit("challengeanswer", challengeAnswer);
 
-        const [challengeSuccess, challengeErrors] = await this.validateCaptchaAnswerCallback(challengeAnswer);
+        const [challengeSuccess, challengeErrors] = await this.validateCaptchaAnswerCallback(decryptedChallengeAnswer);
         if (challengeSuccess) {
             log.trace(`Challenge (${challengeAnswer.challengeRequestId}) has been answered correctly`);
             const storedPublication = this._challengeToPublication[challengeAnswer.challengeRequestId];
-            await this.dbHandler.upsertChallenge(new ChallengeAnswerMessage(challengeAnswer), undefined);
+            const decryptedChallengeAnswerWithoutEncryptedPublication: Omit<
+                DecryptedChallengeAnswerMessageType,
+                "encryptedChallengeAnswers"
+            > = {
+                type: decryptedChallengeAnswer.type,
+                challengeAnswerId: decryptedChallengeAnswer.challengeAnswerId,
+                challengeRequestId: decryptedChallengeAnswer.challengeRequestId,
+                challengeAnswers: decryptedChallengeAnswer.challengeAnswers
+            };
+
+            await this.dbHandler.upsertChallenge(decryptedChallengeAnswerWithoutEncryptedPublication, undefined);
             const publishedPublication = await this.storePublicationIfValid(storedPublication, challengeAnswer.challengeRequestId); // could contain "publication" or "reason"
             const restOfMsg =
                 "publication" in publishedPublication
@@ -709,8 +758,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 challengeErrors: challengeErrors,
                 ...restOfMsg
             });
+            const verificationWithoutEncryptedPublication = challengeVerification.toJSON();
+            delete verificationWithoutEncryptedPublication.encryptedPublication;
+
             await Promise.all([
-                this.dbHandler.upsertChallenge(challengeVerification, undefined),
+                this.dbHandler.upsertChallenge(verificationWithoutEncryptedPublication, undefined),
                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
             ]);
             log(
@@ -727,8 +779,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 challengeSuccess: challengeSuccess,
                 challengeErrors: challengeErrors
             });
+            const verificationWithoutEncryptedPublication = challengeVerification.toJSON();
+
+            delete verificationWithoutEncryptedPublication.encryptedPublication;
+
             await Promise.all([
-                this.dbHandler.upsertChallenge(challengeVerification, undefined),
+                this.dbHandler.upsertChallenge(verificationWithoutEncryptedPublication, undefined),
                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
             ]);
             log(`Published failed ${challengeVerification.type} (${challengeVerification.challengeRequestId})`);
@@ -755,7 +811,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    async defaultProvideCaptcha(request: ChallengeRequestMessage): Promise<[Challenge[], string | undefined]> {
+    async defaultProvideCaptcha(request: DecryptedChallengeRequestMessageType): Promise<[Challenge[], string | undefined]> {
         // Return question, type
         // Expected return is:
         // captcha, reason for skipping captcha (if it's skipped by nullifying captcha)
@@ -766,14 +822,14 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             [
                 new Challenge({
                     challenge: imageBuffer,
-                    type: CHALLENGE_TYPES.IMAGE
+                    type: "image"
                 })
             ],
             undefined
         ];
     }
 
-    async defaultValidateCaptcha(answerMessage: ChallengeAnswerMessage): Promise<[boolean, string[] | undefined]> {
+    async defaultValidateCaptcha(answerMessage: DecryptedChallengeAnswerMessageType): Promise<[boolean, string[] | undefined]> {
         const log = Logger("plebbit-js:subplebbit:validateCaptcha");
 
         const actualSolution = this._challengeToSolution[answerMessage.challengeRequestId];
@@ -823,6 +879,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         assert(this.dbHandler, "DbHandler need to be defined before syncing");
         assert(this.signer?.address, "Signer is needed to sync");
         log.trace("Starting to sync IPNS with DB");
+        await this.prePublish();
         try {
             await this.sortHandler.cacheCommentsPages();
             const dbComments = await this.dbHandler.queryComments();
@@ -876,8 +933,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const log = Logger("plebbit-js:subplebbit:_addPublicationToDb");
         log(`Adding ${publication.getType()} with author (${JSON.stringify(publication.author)}) to DB directly`);
         const randomUUID = uuidv4();
-        //@ts-ignore
-        await this.dbHandler.upsertChallenge(new ChallengeRequestMessage({ challengeRequestId: randomUUID }));
+        const decryptedRequestType: Omit<ChallengeRequestMessageType, "encryptedPublication"> = {
+            type: "CHALLENGEREQUEST",
+            challengeRequestId: randomUUID
+        };
+
+        await this.dbHandler.upsertChallenge(decryptedRequestType);
         return (await this.storePublicationIfValid(publication, randomUUID)).publication;
     }
 }

@@ -1,5 +1,12 @@
 import { parseJsonIfString } from "./util";
-import { Encrypted } from "./types";
+import {
+    ChallengeAnswerMessageType,
+    ChallengeMessageType,
+    ChallengeRequestMessageType,
+    ChallengeType,
+    ChallengeVerificationMessageType,
+    Encrypted
+} from "./types";
 
 export const PUBSUB_MESSAGE_TYPES = Object.freeze({
     CHALLENGEREQUEST: "CHALLENGEREQUEST",
@@ -8,92 +15,97 @@ export const PUBSUB_MESSAGE_TYPES = Object.freeze({
     CHALLENGEVERIFICATION: "CHALLENGEVERIFICATION"
 });
 
-export const CHALLENGE_TYPES = Object.freeze({
-    IMAGE: "image",
-    TEXT: "text",
-    VIDEO: "video",
-    AUDIO: "audio",
-    HTML: "html"
-});
-
-export class Challenge {
-    challenge: any;
-    type: string;
-    constructor(props: Challenge) {
+export class Challenge implements ChallengeType {
+    challenge: string;
+    type: "image" | "text" | "video" | "audio" | "html";
+    constructor(props: ChallengeType) {
         this.challenge = props.challenge;
-        this.type = props.type; // will be dozens of challenge types, like holding a certain amount of a token
+        this.type = props.type;
+    }
+
+    toJSON(): ChallengeType {
+        return {
+            challenge: this.challenge,
+            type: this.type
+        };
     }
 }
 
-class ChallengeBase {
-    type: string;
+export class ChallengeRequestMessage implements ChallengeRequestMessageType {
+    encryptedPublication: Encrypted;
+    type: "CHALLENGEREQUEST";
     challengeRequestId: string;
     acceptedChallengeTypes?: string[];
-    encryptedPublication?: Encrypted;
-    challengeAnswerId: string;
-
-    toJSONForDb?() {
-        const obj = JSON.parse(JSON.stringify(this));
-        delete obj.encryptedPublication;
-        return obj;
-    }
-}
-
-export class ChallengeRequestMessage extends ChallengeBase {
-    encryptedPublication: Encrypted;
-    constructor(props: Omit<ChallengeRequestMessage, "type">) {
-        super();
-        this.type = PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST; // One of CHALLENGE_STAGES
+    constructor(props: Omit<ChallengeRequestMessageType, "type">) {
+        this.type = "CHALLENGEREQUEST";
         this.challengeRequestId = props.challengeRequestId;
         this.acceptedChallengeTypes = parseJsonIfString(props.acceptedChallengeTypes);
         this.encryptedPublication = props.encryptedPublication;
     }
 
-    toJSONForDb?() {
-        return { ...super.toJSONForDb(), acceptedChallengeTypes: JSON.stringify(this.acceptedChallengeTypes) };
+    toJSON(): ChallengeRequestMessageType {
+        return {
+            type: this.type,
+            challengeRequestId: this.challengeRequestId,
+            acceptedChallengeTypes: this.acceptedChallengeTypes,
+            encryptedPublication: this.encryptedPublication
+        };
     }
 }
 
-export class ChallengeMessage extends ChallengeBase {
-    challenges: Challenge[];
+export class ChallengeMessage implements ChallengeMessageType {
+    encryptedChallenges: Encrypted;
+    type: "CHALLENGE";
+    challengeRequestId: string;
 
-    constructor(props: Omit<ChallengeMessage, "type">) {
-        super();
-        this.type = PUBSUB_MESSAGE_TYPES.CHALLENGE;
+    constructor(props: Omit<ChallengeMessageType, "type">) {
+        this.type = "CHALLENGE";
         this.challengeRequestId = props.challengeRequestId;
-        this.challenges = parseJsonIfString(props.challenges);
+        this.encryptedChallenges = props.encryptedChallenges;
     }
 
-    toJSONForDb?() {
-        return { ...super.toJSONForDb(), challenges: JSON.stringify(this.challenges) };
+    toJSON(): ChallengeMessageType {
+        return {
+            encryptedChallenges: this.encryptedChallenges,
+            type: this.type,
+            challengeRequestId: this.challengeRequestId
+        };
     }
 }
 
-export class ChallengeAnswerMessage extends ChallengeBase {
-    challengeAnswers: string[];
-
-    constructor(props: Omit<ChallengeAnswerMessage, "type">) {
-        super();
-        this.type = PUBSUB_MESSAGE_TYPES.CHALLENGEANSWER;
+export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
+    type: "CHALLENGEANSWER";
+    challengeAnswerId: string;
+    encryptedChallengeAnswers: Encrypted;
+    challengeRequestId: string;
+    constructor(props: Omit<ChallengeAnswerMessageType, "type">) {
+        this.type = "CHALLENGEANSWER";
         this.challengeRequestId = props.challengeRequestId;
         this.challengeAnswerId = props.challengeAnswerId;
-        this.challengeAnswers = parseJsonIfString(props.challengeAnswers);
+        this.encryptedChallengeAnswers = props.encryptedChallengeAnswers;
     }
 
-    toJSONForDb?() {
-        return { ...super.toJSONForDb(), challengeAnswers: JSON.stringify(this.challengeAnswers) };
+    toJSON(): ChallengeAnswerMessageType {
+        return {
+            type: this.type,
+            challengeRequestId: this.challengeRequestId,
+            challengeAnswerId: this.challengeAnswerId,
+            encryptedChallengeAnswers: this.encryptedChallengeAnswers
+        };
     }
 }
 
-export class ChallengeVerificationMessage extends ChallengeBase {
+export class ChallengeVerificationMessage implements ChallengeVerificationMessageType {
+    type: "CHALLENGEVERIFICATION";
+    challengeRequestId: string;
+    challengeAnswerId: string;
     challengeSuccess: boolean;
-    challengeErrors: string[] | undefined;
-    encryptedPublication?: Encrypted;
+    challengeErrors?: (string | undefined)[];
     reason?: string;
+    encryptedPublication?: Encrypted;
 
-    constructor(props: Omit<ChallengeVerificationMessage, "type">) {
-        super();
-        this.type = PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION;
+    constructor(props: Omit<ChallengeVerificationMessageType, "type">) {
+        this.type = "CHALLENGEVERIFICATION";
         this.challengeRequestId = props.challengeRequestId;
         this.challengeAnswerId = props.challengeAnswerId;
         this.challengeSuccess = props.challengeSuccess;
@@ -102,7 +114,15 @@ export class ChallengeVerificationMessage extends ChallengeBase {
         this.encryptedPublication = props.encryptedPublication;
     }
 
-    toJSONForDb?() {
-        return { ...super.toJSONForDb(), challengeErrors: JSON.stringify(this.challengeErrors) };
+    toJSON(): ChallengeVerificationMessageType {
+        return {
+            type: this.type,
+            challengeRequestId: this.challengeRequestId,
+            challengeAnswerId: this.challengeAnswerId,
+            challengeSuccess: this.challengeSuccess,
+            challengeErrors: this.challengeErrors,
+            reason: this.reason,
+            encryptedPublication: this.encryptedPublication
+        };
     }
 }

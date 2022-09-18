@@ -1,12 +1,10 @@
-import Debug from "debug";
 import forge from "node-forge";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { getPeerIdFromPublicKeyPem, getKeyPairFromPrivateKeyPem } from "./util";
 import assert from "assert";
 import libp2pCrypto from "libp2p-crypto";
-
-const debug = Debug("plebbit-js:signer:encryption");
+import { Encrypted } from "../types";
 
 const validateArgumentNotEmptyString = (value, propertyName, functionName) => {
     assert(typeof value === "string", `function '${functionName}' argument '${propertyName}': '${value}' not a string`);
@@ -61,7 +59,7 @@ export const decryptBufferRsa = async (encryptedStringBase64, privateKeyPem, pri
     return decrypted;
 };
 
-export const encrypt = async (stringToEncrypt, publicKeyPem) => {
+export const encrypt = async (stringToEncrypt, publicKeyPem): Promise<Encrypted> => {
     validateArgumentNotEmptyString(stringToEncrypt, "stringToEncrypt", "encrypt");
     validateArgumentNotEmptyString(publicKeyPem, "publicKeyPem", "encrypt");
 

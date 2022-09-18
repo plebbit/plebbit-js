@@ -1,10 +1,4 @@
-import {
-    ChallengeMessage,
-    ChallengeRequestMessage,
-    ChallengeAnswerMessage,
-    ChallengeVerificationMessage,
-    PUBSUB_MESSAGE_TYPES
-} from "../../challenge";
+import { PUBSUB_MESSAGE_TYPES } from "../../challenge";
 import Post from "../../post";
 import Author from "../../author";
 import { Comment } from "../../comment";
@@ -18,7 +12,14 @@ import fs from "fs";
 import Keyv from "keyv";
 import { Signer } from "../../signer";
 import Transaction = Knex.Transaction;
-import { AuthorType, SubplebbitMetrics } from "../../types";
+import {
+    AuthorType,
+    ChallengeRequestMessageType,
+    ChallengeVerificationMessageType,
+    DecryptedChallengeAnswerMessageType,
+    DecryptedChallengeMessageType,
+    SubplebbitMetrics
+} from "../../types";
 import { CommentEdit } from "../../comment-edit";
 import Logger from "@plebbit/plebbit-logger";
 import { getDefaultSubplebbitDbConfig } from "./util";
@@ -69,9 +70,15 @@ export class DbHandler {
             `DbHandler needs to be an instantiated with a Subplebbit that has a valid address, (${this._subplebbit.address}) was provided`
         );
         this._dbConfig = this._dbConfig || this._userDbConfig || (await getDefaultSubplebbitDbConfig(this._subplebbit));
-        if (!this._knex) this._knex = knex(this._dbConfig);
+        if (!this._knex) {
+            this._knex = knex(this._dbConfig);
+            console.log(`Initialized knex in dbHandler for sub (${this._subplebbit.address})`);
+        }
         if (!this._createdTables) await this.createTablesIfNeeded();
-        if (!this._keyv) this._keyv = new Keyv(`sqlite://${this._dbConfig?.connection?.filename}`); // TODO make this work with DBs other than sqlite
+        if (!this._keyv) {
+            this._keyv = new Keyv(`sqlite://${this._dbConfig?.connection?.filename}`);
+            console.log(`Initialized keyv in dbHandler for sub (${this._subplebbit.address})`);
+        } // TODO make this work with DBs other than sqlite
     }
 
     getDbConfig(): Knex.Config {
@@ -424,16 +431,18 @@ export class DbHandler {
     }
 
     async upsertChallenge(
-        challenge: ChallengeRequestMessage | ChallengeMessage | ChallengeAnswerMessage | ChallengeVerificationMessage,
+        challenge:
+            | Omit<ChallengeRequestMessageType, "encryptedPublication">
+            | Omit<DecryptedChallengeMessageType, "encryptedChallenges">
+            | Omit<DecryptedChallengeAnswerMessageType, "encryptedChallengeAnswers">
+            | Omit<ChallengeVerificationMessageType, "encryptedPublication">,
         trx?: Transaction
     ) {
         const existingChallenge = await this._baseTransaction(trx)(TABLES.CHALLENGES)
             .where({ challengeRequestId: challenge.challengeRequestId })
             .first();
-        const dbObject = {
-            ...existingChallenge,
-            ...challenge.toJSONForDb()
-        };
+        assert(challenge instanceof Object);
+        const dbObject = { ...existingChallenge, ...challenge };
         await this._baseTransaction(trx)(TABLES.CHALLENGES).insert(dbObject).onConflict("challengeRequestId").merge();
     }
 
@@ -665,7 +674,7 @@ export class DbHandler {
         return Number(obj["count(*)"]);
     }
 
-    async changeDbFilename(newDbFileName: string) {
+    async changeDbFilename(newDbFileName: string, newSubplebbit: Subplebbit) {
         const log = Logger("plebbit-js:db-handler:changeDbFilename");
 
         const oldPathString = this._dbConfig?.connection?.filename;
@@ -679,10 +688,12 @@ export class DbHandler {
         //@ts-ignore
         this._knex = this._keyv = undefined;
         this._currentTrxs = {};
+        this._subplebbit = newSubplebbit;
         await fs.promises.rename(oldPathString, newPath);
         this._dbConfig = {
             ...this._dbConfig,
             connection: {
+                ...this._dbConfig.connection,
                 filename: newPath
             }
         };
