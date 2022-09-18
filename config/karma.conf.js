@@ -55,7 +55,8 @@ module.exports = function (config) {
             // the tests are first compiled from typescript to dist/node/test
             // then they are compiled to browser with webpack to dist/browser/test
             // you must run `npm run tsc:watch` and `npm run webpack:watch` to use the karma tests
-            "test-karma-webpack/**/*.test.js"
+            "test-karma-webpack/test/browser/root-hook-karma.util.js", // To load root hook in karma
+            "test-karma-webpack/test/*browser/*.test.js"
         ],
         exclude: [],
 
