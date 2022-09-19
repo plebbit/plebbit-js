@@ -14,7 +14,6 @@ const { generateMockComment, generateMockVote, generateMockPost } = require("../
 
 const path = require("path");
 const http = require("http");
-const { Challenge, CHALLENGE_TYPES } = require("../dist/node/challenge");
 // allow * origin on ipfs api to bypass cors browser error
 // very insecure do not do this in production
 const offlineNodeArgs = {
@@ -134,7 +133,7 @@ const startMathCliSubplebbit = async () => {
     subplebbit.setProvideCaptchaCallback((challengeRequestMessage) => {
         // Expected return is:
         // Challenge[], reason for skipping captcha (if it's skipped by nullifying Challenge[])
-        return [[new Challenge({ challenge: "1+1=?", type: CHALLENGE_TYPES.TEXT })]];
+        return [[{ challenge: "1+1=?", type: "text" }]];
     });
 
     subplebbit.setValidateCaptchaAnswerCallback((challengeAnswerMessage) => {
