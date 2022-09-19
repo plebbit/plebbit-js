@@ -71,6 +71,7 @@ var fs_1 = __importDefault(require("fs"));
 var keyv_1 = __importDefault(require("keyv"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var util_2 = require("./util");
+var version_1 = __importDefault(require("../../version"));
 var TABLES = Object.freeze({
     COMMENTS: "comments",
     VOTES: "votes",
@@ -91,7 +92,6 @@ var jsonFields = [
     "challengeAnswers",
     "challengeErrors"
 ];
-var currentDbVersion = 1;
 var DbHandler = /** @class */ (function () {
     function DbHandler(subplebbit, userDbConfig) {
         this._userDbConfig = userDbConfig;
@@ -116,16 +116,20 @@ var DbHandler = /** @class */ (function () {
                         _e.label = 2;
                     case 2:
                         _c._dbConfig = _d;
-                        if (!this._knex)
+                        if (!this._knex) {
                             this._knex = (0, knex_1.default)(this._dbConfig);
+                            console.log("Initialized knex in dbHandler for sub (".concat(this._subplebbit.address, ")"));
+                        }
                         if (!!this._createdTables) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.createTablesIfNeeded()];
                     case 3:
                         _e.sent();
                         _e.label = 4;
                     case 4:
-                        if (!this._keyv)
-                            this._keyv = new keyv_1.default("sqlite://".concat((_b = (_a = this._dbConfig) === null || _a === void 0 ? void 0 : _a.connection) === null || _b === void 0 ? void 0 : _b.filename)); // TODO make this work with DBs other than sqlite
+                        if (!this._keyv) {
+                            this._keyv = new keyv_1.default("sqlite://".concat((_b = (_a = this._dbConfig) === null || _a === void 0 ? void 0 : _a.connection) === null || _b === void 0 ? void 0 : _b.filename));
+                            console.log("Initialized keyv in dbHandler for sub (".concat(this._subplebbit.address, ")"));
+                        } // TODO make this work with DBs other than sqlite
                         return [2 /*return*/];
                 }
             });
@@ -348,6 +352,8 @@ var DbHandler = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
                             table.uuid("challengeRequestId").notNullable().primary().unique();
                             table.enum("type", Object.values(challenge_1.PUBSUB_MESSAGE_TYPES)).notNullable();
+                            table.text("userAgent");
+                            table.text("protocolVersion");
                             table.json("acceptedChallengeTypes").nullable().defaultTo(null);
                             table.json("challenges").nullable();
                             table.uuid("challengeAnswerId").nullable();
@@ -441,7 +447,7 @@ var DbHandler = /** @class */ (function () {
                     case 1:
                         dbVersion = _a.sent();
                         log.trace("db version: ".concat(dbVersion));
-                        needToMigrate = dbVersion !== currentDbVersion;
+                        needToMigrate = dbVersion !== version_1.default.DB_VERSION;
                         createTableFunctions = [
                             this._createCommentsTable,
                             this._createVotesTable,
@@ -472,7 +478,7 @@ var DbHandler = /** @class */ (function () {
                                             return [4 /*yield*/, this._knex.raw("PRAGMA foreign_keys = OFF")];
                                         case 4:
                                             _a.sent();
-                                            tempTableName = "".concat(table).concat(currentDbVersion);
+                                            tempTableName = "".concat(table).concat(version_1.default.DB_VERSION);
                                             return [4 /*yield*/, createTableFunctions[i].bind(this)(tempTableName)];
                                         case 5:
                                             _a.sent();
@@ -495,13 +501,13 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, this._knex.raw("PRAGMA foreign_keys = ON")];
                     case 3:
                         _a.sent();
-                        return [4 /*yield*/, this._knex.raw("PRAGMA user_version = ".concat(currentDbVersion))];
+                        return [4 /*yield*/, this._knex.raw("PRAGMA user_version = ".concat(version_1.default.DB_VERSION))];
                     case 4:
                         _a.sent();
                         return [4 /*yield*/, this.getDbVersion()];
                     case 5:
                         dbVersion = _a.sent();
-                        assert_1.default.equal(dbVersion, currentDbVersion);
+                        assert_1.default.equal(dbVersion, version_1.default.DB_VERSION);
                         this._createdTables = true;
                         return [2 /*return*/];
                 }
@@ -760,7 +766,8 @@ var DbHandler = /** @class */ (function () {
                             .first()];
                     case 1:
                         existingChallenge = _a.sent();
-                        dbObject = __assign(__assign({}, existingChallenge), challenge.toJSONForDb());
+                        (0, assert_1.default)(challenge instanceof Object);
+                        dbObject = __assign(__assign({}, existingChallenge), challenge);
                         return [4 /*yield*/, this._baseTransaction(trx)(TABLES.CHALLENGES).insert(dbObject).onConflict("challengeRequestId").merge()];
                     case 2:
                         _a.sent();
@@ -1164,7 +1171,7 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.changeDbFilename = function (newDbFileName) {
+    DbHandler.prototype.changeDbFilename = function (newDbFileName, newSubplebbit) {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
             var log, oldPathString, newPath;
@@ -1185,12 +1192,11 @@ var DbHandler = /** @class */ (function () {
                         //@ts-ignore
                         this._knex = this._keyv = undefined;
                         this._currentTrxs = {};
+                        this._subplebbit = newSubplebbit;
                         return [4 /*yield*/, fs_1.default.promises.rename(oldPathString, newPath)];
                     case 2:
                         _c.sent();
-                        this._dbConfig = __assign(__assign({}, this._dbConfig), { connection: {
-                                filename: newPath
-                            } });
+                        this._dbConfig = __assign(__assign({}, this._dbConfig), { connection: __assign(__assign({}, this._dbConfig.connection), { filename: newPath }) });
                         return [4 /*yield*/, this.initDbIfNeeded()];
                     case 3:
                         _c.sent();

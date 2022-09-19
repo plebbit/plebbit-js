@@ -1,32 +1,6 @@
 "use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ChallengeVerificationMessage = exports.ChallengeAnswerMessage = exports.ChallengeMessage = exports.ChallengeRequestMessage = exports.Challenge = exports.CHALLENGE_TYPES = exports.PUBSUB_MESSAGE_TYPES = void 0;
+exports.ChallengeVerificationMessage = exports.ChallengeAnswerMessage = exports.ChallengeMessage = exports.ChallengeRequestMessage = exports.Challenge = exports.PUBSUB_MESSAGE_TYPES = void 0;
 var util_1 = require("./util");
 exports.PUBSUB_MESSAGE_TYPES = Object.freeze({
     CHALLENGEREQUEST: "CHALLENGEREQUEST",
@@ -34,94 +8,155 @@ exports.PUBSUB_MESSAGE_TYPES = Object.freeze({
     CHALLENGEANSWER: "CHALLENGEANSWER",
     CHALLENGEVERIFICATION: "CHALLENGEVERIFICATION"
 });
-exports.CHALLENGE_TYPES = Object.freeze({
-    IMAGE: "image",
-    TEXT: "text",
-    VIDEO: "video",
-    AUDIO: "audio",
-    HTML: "html"
-});
 var Challenge = /** @class */ (function () {
     function Challenge(props) {
         this.challenge = props.challenge;
-        this.type = props.type; // will be dozens of challenge types, like holding a certain amount of a token
+        this.type = props.type;
     }
+    Challenge.prototype.toJSON = function () {
+        return {
+            challenge: this.challenge,
+            type: this.type
+        };
+    };
     return Challenge;
 }());
 exports.Challenge = Challenge;
-var ChallengeBase = /** @class */ (function () {
-    function ChallengeBase() {
-    }
-    ChallengeBase.prototype.toJSONForDb = function () {
-        var obj = JSON.parse(JSON.stringify(this));
-        delete obj.encryptedPublication;
-        return obj;
-    };
-    return ChallengeBase;
-}());
-var ChallengeRequestMessage = /** @class */ (function (_super) {
-    __extends(ChallengeRequestMessage, _super);
+var ChallengeRequestMessage = /** @class */ (function () {
     function ChallengeRequestMessage(props) {
-        var _this = _super.call(this) || this;
-        _this.type = exports.PUBSUB_MESSAGE_TYPES.CHALLENGEREQUEST; // One of CHALLENGE_STAGES
-        _this.challengeRequestId = props.challengeRequestId;
-        _this.acceptedChallengeTypes = (0, util_1.parseJsonIfString)(props.acceptedChallengeTypes);
-        _this.encryptedPublication = props.encryptedPublication;
-        return _this;
+        this.type = "CHALLENGEREQUEST";
+        this.challengeRequestId = props.challengeRequestId;
+        this.acceptedChallengeTypes = (0, util_1.parseJsonIfString)(props.acceptedChallengeTypes);
+        this.encryptedPublication = props.encryptedPublication;
+        this.signature = (0, util_1.parseJsonIfString)(props.signature);
+        this.protocolVersion = props.protocolVersion;
+        this.userAgent = props.userAgent;
     }
+    ChallengeRequestMessage.prototype.toJSON = function () {
+        return {
+            type: this.type,
+            challengeRequestId: this.challengeRequestId,
+            acceptedChallengeTypes: this.acceptedChallengeTypes,
+            encryptedPublication: this.encryptedPublication,
+            signature: this.signature,
+            userAgent: this.userAgent,
+            protocolVersion: this.protocolVersion
+        };
+    };
     ChallengeRequestMessage.prototype.toJSONForDb = function () {
-        return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), { acceptedChallengeTypes: JSON.stringify(this.acceptedChallengeTypes) });
+        return {
+            type: this.type,
+            challengeRequestId: this.challengeRequestId,
+            acceptedChallengeTypes: this.acceptedChallengeTypes,
+            userAgent: this.userAgent,
+            protocolVersion: this.protocolVersion
+        };
     };
     return ChallengeRequestMessage;
-}(ChallengeBase));
+}());
 exports.ChallengeRequestMessage = ChallengeRequestMessage;
-var ChallengeMessage = /** @class */ (function (_super) {
-    __extends(ChallengeMessage, _super);
+var ChallengeMessage = /** @class */ (function () {
     function ChallengeMessage(props) {
-        var _this = _super.call(this) || this;
-        _this.type = exports.PUBSUB_MESSAGE_TYPES.CHALLENGE;
-        _this.challengeRequestId = props.challengeRequestId;
-        _this.challenges = (0, util_1.parseJsonIfString)(props.challenges);
-        return _this;
+        this.type = "CHALLENGE";
+        this.challengeRequestId = props.challengeRequestId;
+        this.encryptedChallenges = props.encryptedChallenges;
+        this.signature = (0, util_1.parseJsonIfString)(props.signature);
+        this.protocolVersion = props.protocolVersion;
+        this.userAgent = props.userAgent;
     }
+    ChallengeMessage.prototype.toJSON = function () {
+        return {
+            encryptedChallenges: this.encryptedChallenges,
+            type: this.type,
+            challengeRequestId: this.challengeRequestId,
+            signature: this.signature,
+            userAgent: this.userAgent,
+            protocolVersion: this.protocolVersion
+        };
+    };
     ChallengeMessage.prototype.toJSONForDb = function () {
-        return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), { challenges: JSON.stringify(this.challenges) });
+        return {
+            type: this.type,
+            challengeRequestId: this.challengeRequestId,
+            userAgent: this.userAgent,
+            protocolVersion: this.protocolVersion
+        };
     };
     return ChallengeMessage;
-}(ChallengeBase));
+}());
 exports.ChallengeMessage = ChallengeMessage;
-var ChallengeAnswerMessage = /** @class */ (function (_super) {
-    __extends(ChallengeAnswerMessage, _super);
+var ChallengeAnswerMessage = /** @class */ (function () {
     function ChallengeAnswerMessage(props) {
-        var _this = _super.call(this) || this;
-        _this.type = exports.PUBSUB_MESSAGE_TYPES.CHALLENGEANSWER;
-        _this.challengeRequestId = props.challengeRequestId;
-        _this.challengeAnswerId = props.challengeAnswerId;
-        _this.challengeAnswers = (0, util_1.parseJsonIfString)(props.challengeAnswers);
-        return _this;
+        this.type = "CHALLENGEANSWER";
+        this.challengeAnswerId = props.challengeAnswerId;
+        this.encryptedChallengeAnswers = props.encryptedChallengeAnswers;
+        this.challengeRequestId = props.challengeRequestId;
+        this.signature = (0, util_1.parseJsonIfString)(props.signature);
+        this.protocolVersion = props.protocolVersion;
+        this.userAgent = props.userAgent;
     }
+    ChallengeAnswerMessage.prototype.toJSON = function () {
+        return {
+            type: this.type,
+            challengeRequestId: this.challengeRequestId,
+            challengeAnswerId: this.challengeAnswerId,
+            encryptedChallengeAnswers: this.encryptedChallengeAnswers,
+            signature: this.signature,
+            protocolVersion: this.protocolVersion,
+            userAgent: this.userAgent
+        };
+    };
     ChallengeAnswerMessage.prototype.toJSONForDb = function () {
-        return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), { challengeAnswers: JSON.stringify(this.challengeAnswers) });
+        return {
+            type: this.type,
+            challengeRequestId: this.challengeRequestId,
+            challengeAnswerId: this.challengeAnswerId,
+            protocolVersion: this.protocolVersion,
+            userAgent: this.userAgent
+        };
     };
     return ChallengeAnswerMessage;
-}(ChallengeBase));
+}());
 exports.ChallengeAnswerMessage = ChallengeAnswerMessage;
-var ChallengeVerificationMessage = /** @class */ (function (_super) {
-    __extends(ChallengeVerificationMessage, _super);
+var ChallengeVerificationMessage = /** @class */ (function () {
     function ChallengeVerificationMessage(props) {
-        var _this = _super.call(this) || this;
-        _this.type = exports.PUBSUB_MESSAGE_TYPES.CHALLENGEVERIFICATION;
-        _this.challengeRequestId = props.challengeRequestId;
-        _this.challengeAnswerId = props.challengeAnswerId;
-        _this.challengeSuccess = props.challengeSuccess;
-        _this.challengeErrors = (0, util_1.parseJsonIfString)(props.challengeErrors);
-        _this.reason = props.reason;
-        _this.encryptedPublication = props.encryptedPublication;
-        return _this;
+        this.type = "CHALLENGEVERIFICATION";
+        this.challengeRequestId = props.challengeRequestId;
+        this.challengeAnswerId = props.challengeAnswerId;
+        this.challengeSuccess = props.challengeSuccess;
+        this.challengeErrors = (0, util_1.parseJsonIfString)(props.challengeErrors);
+        this.reason = props.reason;
+        this.encryptedPublication = props.encryptedPublication;
+        this.signature = props.signature;
+        this.protocolVersion = props.protocolVersion;
+        this.userAgent = props.userAgent;
     }
+    ChallengeVerificationMessage.prototype.toJSON = function () {
+        return {
+            type: this.type,
+            challengeRequestId: this.challengeRequestId,
+            challengeAnswerId: this.challengeAnswerId,
+            challengeSuccess: this.challengeSuccess,
+            challengeErrors: this.challengeErrors,
+            reason: this.reason,
+            encryptedPublication: this.encryptedPublication,
+            signature: this.signature,
+            protocolVersion: this.protocolVersion,
+            userAgent: this.userAgent
+        };
+    };
     ChallengeVerificationMessage.prototype.toJSONForDb = function () {
-        return __assign(__assign({}, _super.prototype.toJSONForDb.call(this)), { challengeErrors: JSON.stringify(this.challengeErrors) });
+        return {
+            type: this.type,
+            challengeRequestId: this.challengeRequestId,
+            challengeAnswerId: this.challengeAnswerId,
+            challengeSuccess: this.challengeSuccess,
+            challengeErrors: this.challengeErrors,
+            reason: this.reason,
+            protocolVersion: this.protocolVersion,
+            userAgent: this.userAgent
+        };
     };
     return ChallengeVerificationMessage;
-}(ChallengeBase));
+}());
 exports.ChallengeVerificationMessage = ChallengeVerificationMessage;

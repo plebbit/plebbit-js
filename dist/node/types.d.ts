@@ -4,6 +4,7 @@ import { Pages } from "./pages";
 import { DbHandler } from "./runtime/node/db-handler";
 import { Subplebbit } from "./subplebbit";
 import fetch from "node-fetch";
+import { Signature } from "./signer/signatures";
 export declare type ProtocolVersion = "1.0.0";
 export declare type BlockchainProvider = {
     url: string;
@@ -11,8 +12,8 @@ export declare type BlockchainProvider = {
 };
 export interface PlebbitOptions {
     ipfsGatewayUrl?: string;
-    ipfsHttpClientOptions?: Options;
-    pubsubHttpClientOptions?: Options;
+    ipfsHttpClientOptions?: Options | string;
+    pubsubHttpClientOptions?: Options | string;
     dataPath?: string;
     blockchainProviders?: {
         [chainTicker: string]: BlockchainProvider;
@@ -136,9 +137,54 @@ export declare type Nft = {
 export declare type SubplebbitRole = {
     role: "owner" | "admin" | "moderator";
 };
-export declare type ChallengeType = {
+interface PubsubMessage {
+    type: "CHALLENGEREQUEST" | "CHALLENGE" | "CHALLENGEANSWER" | "CHALLENGEVERIFICATION";
+    signature: Signature;
+    protocolVersion: ProtocolVersion;
+    userAgent: string;
+}
+export interface ChallengeType {
+    challenge: string;
     type: "image" | "text" | "video" | "audio" | "html";
-};
+}
+export interface ChallengeRequestMessageType extends PubsubMessage {
+    challengeRequestId: string;
+    type: "CHALLENGEREQUEST";
+    encryptedPublication: Encrypted;
+    acceptedChallengeTypes?: string[];
+}
+export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType {
+    publication: PublicationType;
+}
+export interface ChallengeMessageType extends PubsubMessage {
+    challengeRequestId: string;
+    type: "CHALLENGE";
+    encryptedChallenges: Encrypted;
+}
+export interface DecryptedChallengeMessageType extends ChallengeMessageType {
+    challenges: ChallengeType[];
+}
+export interface ChallengeAnswerMessageType extends PubsubMessage {
+    challengeRequestId: string;
+    type: "CHALLENGEANSWER";
+    challengeAnswerId: string;
+    encryptedChallengeAnswers: Encrypted;
+}
+export interface DecryptedChallengeAnswerMessageType extends ChallengeAnswerMessageType {
+    challengeAnswers: string[];
+}
+export interface ChallengeVerificationMessageType extends PubsubMessage {
+    challengeRequestId: string;
+    type: "CHALLENGEVERIFICATION";
+    challengeAnswerId: string;
+    challengeSuccess: boolean;
+    challengeErrors?: (string | undefined)[];
+    reason?: string;
+    encryptedPublication?: Encrypted;
+}
+export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType {
+    publication?: PublicationType;
+}
 export declare type SubplebbitMetrics = {
     hourActiveUserCount: number;
     dayActiveUserCount: number;
@@ -278,12 +324,17 @@ export interface CommentEditType extends PublicationType, Omit<CreateCommentEdit
     signer?: SignerType;
 }
 export declare type PublicationTypeName = "comment" | "vote" | "commentedit" | "commentupdate" | "subplebbit";
+export declare type SignatureTypes = PublicationTypeName | "challengerequestmessage" | "challengemessage" | "challengeanswermessage" | "challengeverificationmessage";
 export declare type CommentSignedPropertyNames = (keyof Pick<CreateCommentOptions, "subplebbitAddress" | "author" | "timestamp" | "content" | "title" | "link" | "parentCid">)[];
 export declare type CommentEditSignedPropertyNames = (keyof Omit<CreateCommentEditOptions, "signer" | "signature" | "protocolVersion">)[];
 export declare type CommentUpdatedSignedPropertyNames = (keyof Omit<CommentUpdate, "signature" | "protocolVersion">)[];
 export declare type VoteSignedPropertyNames = (keyof Omit<CreateVoteOptions, "signer" | "protocolVersion">)[];
 export declare type SubplebbitSignedPropertyNames = (keyof Omit<SubplebbitType, "signer" | "signature" | "protocolVersion">)[];
-export declare type SignedPropertyNames = CommentSignedPropertyNames | CommentEditSignedPropertyNames | VoteSignedPropertyNames | SubplebbitSignedPropertyNames | CommentUpdatedSignedPropertyNames;
+export declare type ChallengeRequestMessageSignedPropertyNames = (keyof Omit<ChallengeRequestMessageType, "signature" | "protocolVersion" | "userAgent">)[];
+export declare type ChallengeMessageSignedPropertyNames = (keyof Omit<ChallengeMessageType, "signature" | "protocolVersion" | "userAgent">)[];
+export declare type ChallengeAnswerMessageSignedPropertyNames = (keyof Omit<ChallengeAnswerMessageType, "signature" | "protocolVersion" | "userAgent">)[];
+export declare type ChallengeVerificationMessageSignedPropertyNames = (keyof Omit<ChallengeVerificationMessageType, "signature" | "protocolVersion" | "userAgent">)[];
+export declare type SignedPropertyNames = CommentSignedPropertyNames | CommentEditSignedPropertyNames | VoteSignedPropertyNames | SubplebbitSignedPropertyNames | CommentUpdatedSignedPropertyNames | ChallengeRequestMessageSignedPropertyNames | ChallengeMessageSignedPropertyNames | ChallengeAnswerMessageSignedPropertyNames | ChallengeVerificationMessageSignedPropertyNames;
 declare type FunctionPropertyOf<T> = {
     [P in keyof T]: T[P] extends Function ? P : never;
 }[keyof T];

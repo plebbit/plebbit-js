@@ -1,12 +1,13 @@
 /// <reference types="node" />
 import EventEmitter from "events";
 import { Challenge, ChallengeAnswerMessage, ChallengeRequestMessage } from "./challenge";
-import { Signer, Signature } from "./signer";
+import { Signer } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
-import { ChallengeType, CreateSubplebbitOptions, DbHandlerPublicAPI, Flair, FlairOwner, ProtocolVersion, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitMetrics, SubplebbitRole, SubplebbitSuggested, SubplebbitType } from "./types";
+import { ChallengeType, CreateSubplebbitOptions, DbHandlerPublicAPI, DecryptedChallengeAnswerMessageType, DecryptedChallengeRequestMessageType, Flair, FlairOwner, ProtocolVersion, SignatureType, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitMetrics, SubplebbitRole, SubplebbitSuggested, SubplebbitType } from "./types";
 import { Comment } from "./comment";
 import Vote from "./vote";
+import Post from "./post";
 import Publication from "./publication";
 import { CommentEdit } from "./comment-edit";
 export declare const RUNNING_SUBPLEBBITS: Record<string, boolean>;
@@ -31,15 +32,15 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     signer?: Signer;
     encryption: SubplebbitEncryption;
     protocolVersion: ProtocolVersion;
-    signature: Signature;
+    signature: SignatureType;
     rules?: string[];
     plebbit: Plebbit;
     dbHandler?: DbHandlerPublicAPI;
     private _database?;
     private _challengeToSolution;
     private _challengeToPublication;
-    private provideCaptchaCallback?;
-    private validateCaptchaAnswerCallback?;
+    private provideCaptchaCallback;
+    private validateCaptchaAnswerCallback;
     private ipnsKeyName?;
     private sortHandler;
     private _updateInterval?;
@@ -49,13 +50,13 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     initSubplebbit(newProps: SubplebbitType | SubplebbitEditOptions): void;
     initSignerIfNeeded(): Promise<void>;
     initDbIfNeeded(): Promise<void>;
-    setProvideCaptchaCallback(newCallback: (request: ChallengeRequestMessage) => Promise<[Challenge[], string | undefined]>): void;
-    setValidateCaptchaAnswerCallback(newCallback: (answerMessage: ChallengeAnswerMessage) => Promise<[boolean, string[] | undefined]>): void;
+    setProvideCaptchaCallback(newCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[Challenge[], string | undefined]>): void;
+    setValidateCaptchaAnswerCallback(newCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>): void;
     toJSONInternal(): {
         ipnsKeyName: string;
         database: any;
         signer: Signer;
-        signature: import("./types").SignatureType;
+        signature: SignatureType;
         encryption: SubplebbitEncryption;
         address: string;
         createdAt: number;
@@ -85,21 +86,18 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     update(updateIntervalMs?: number): Promise<this>;
     stop(): Promise<void>;
     updateSubplebbitIpns(): Promise<void>;
-    handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string): Promise<{
-        reason: string;
-    }>;
-    handleVote(newVote: Vote, challengeRequestId: string): Promise<{
-        reason: string;
-    }>;
-    storePublicationIfValid(publication: any, challengeRequestId: string): Promise<any>;
+    handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string): Promise<string>;
+    handleVote(newVote: Vote, challengeRequestId: string): Promise<string>;
+    storePublicationIfValid(publication: any, challengeRequestId: string): Promise<Vote | CommentEdit | Post | Comment | string>;
     handleChallengeRequest(request: ChallengeRequestMessage): Promise<void>;
     handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage): Promise<void>;
+    private _verifyPubsubMsgSignature;
     handleChallengeExchange(pubsubMsg: any): Promise<void>;
-    defaultProvideCaptcha(request: ChallengeRequestMessage): Promise<[Challenge[], string | undefined]>;
-    defaultValidateCaptcha(answerMessage: ChallengeAnswerMessage): Promise<[boolean, string[] | undefined]>;
+    defaultProvideCaptcha(request: DecryptedChallengeRequestMessageType): Promise<[Challenge[], string | undefined]>;
+    defaultValidateCaptcha(answerMessage: DecryptedChallengeAnswerMessageType): Promise<[boolean, string[] | undefined]>;
     syncComment(dbComment: Comment): Promise<void>;
     syncIpnsWithDb(): Promise<void>;
     _syncLoop(syncIntervalMs: number): Promise<void>;
     start(syncIntervalMs?: number): Promise<void>;
-    _addPublicationToDb(publication: Publication): Promise<any>;
+    _addPublicationToDb(publication: Publication): Promise<string | Comment | Post | Vote | CommentEdit>;
 }

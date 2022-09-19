@@ -65,7 +65,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Plebbit = exports.setNativeFunctions = exports.pendingSubplebbitCreations = void 0;
+exports.Plebbit = exports.pendingSubplebbitCreations = void 0;
 var util_1 = require("./runtime/node/util");
 var comment_1 = require("./comment");
 var post_1 = __importDefault(require("./post"));
@@ -83,19 +83,17 @@ var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
+var version_1 = __importDefault(require("./version"));
 exports.pendingSubplebbitCreations = {};
-var setNativeFunctions = function (pNativeFunctions) {
-    (0, assert_1.default)(pNativeFunctions, "User tried to pass undefined to setNativeFunctions");
-    (0, util_1.setNativeFunctions)(pNativeFunctions);
-};
-exports.setNativeFunctions = setNativeFunctions;
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
     function Plebbit(options) {
         if (options === void 0) { options = {}; }
         var _this = _super.call(this) || this;
         _this.ipfsHttpClientOptions = options.ipfsHttpClientOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        _this.ipfsClient = _this.ipfsHttpClientOptions ? util_1.nativeFunctions.createIpfsClient(_this.ipfsHttpClientOptions) : undefined;
+        _this.ipfsClient = _this.ipfsHttpClientOptions
+            ? util_1.nativeFunctions.createIpfsClient(_this.ipfsHttpClientOptions)
+            : undefined;
         _this.pubsubHttpClientOptions = options.pubsubHttpClientOptions || { url: "https://pubsubprovider.xyz/api/v0" };
         _this.pubsubIpfsClient = options.pubsubHttpClientOptions
             ? util_1.nativeFunctions.createIpfsClient(options.pubsubHttpClientOptions)
@@ -148,7 +146,7 @@ var Plebbit = /** @class */ (function (_super) {
                     case 5:
                         e_1 = _a.sent();
                         this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
-                        log("".concat(e_1.msg, ": Failed to retrieve gateway url from ipfs node, will default to ").concat(this.ipfsGatewayUrl));
+                        log("".concat(e_1, ": Failed to retrieve gateway url from ipfs node, will default to ").concat(this.ipfsGatewayUrl));
                         return [3 /*break*/, 6];
                     case 6: return [2 /*return*/];
                 }
@@ -157,9 +155,9 @@ var Plebbit = /** @class */ (function (_super) {
     };
     Plebbit.prototype.getSubplebbit = function (subplebbitAddress) {
         return __awaiter(this, void 0, void 0, function () {
-            var resolvedSubplebbitAddress, subplebbitJson;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var resolvedSubplebbitAddress, subplebbitJson, _a, signatureIsVerified, failedVerificationReason;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         if (!this.resolver.isDomain(subplebbitAddress) && !is_ipfs_1.default.cid(subplebbitAddress))
                             throw (0, err_code_1.default)(Error(errors_1.messages.ERR_INVALID_SUBPLEBBIT_ADDRESS), errors_1.codes.ERR_INVALID_SUBPLEBBIT_ADDRESS, {
@@ -167,10 +165,17 @@ var Plebbit = /** @class */ (function (_super) {
                             });
                         return [4 /*yield*/, this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
                     case 1:
-                        resolvedSubplebbitAddress = _a.sent();
+                        resolvedSubplebbitAddress = _b.sent();
                         return [4 /*yield*/, (0, util_2.loadIpnsAsJson)(resolvedSubplebbitAddress, this)];
                     case 2:
-                        subplebbitJson = _a.sent();
+                        subplebbitJson = _b.sent();
+                        return [4 /*yield*/, (0, signer_1.verifyPublication)(subplebbitJson, this, "subplebbit")];
+                    case 3:
+                        _a = _b.sent(), signatureIsVerified = _a[0], failedVerificationReason = _a[1];
+                        if (!signatureIsVerified)
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+                                details: "getSubplebbit: Failed verification reason: ".concat(failedVerificationReason)
+                            });
                         return [2 /*return*/, new subplebbit_1.Subplebbit(subplebbitJson, this)];
                 }
             });
@@ -229,25 +234,20 @@ var Plebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signer_1.signPublication)(options, options.signer, this, "comment")];
                     case 1:
                         commentSignature = _b.sent();
-                        finalProps = __assign(__assign({}, options), { signature: commentSignature, protocolVersion: (0, util_2.getProtocolVersion)() });
+                        finalProps = __assign(__assign({}, options), { signature: commentSignature, protocolVersion: version_1.default.PROTOCOL_VERSION });
                         return [2 /*return*/, finalProps.title ? new post_1.default(finalProps, commentSubplebbit) : new comment_1.Comment(finalProps, commentSubplebbit)];
                 }
             });
         });
     };
     Plebbit.prototype._canRunSub = function () {
-        var canRunSub = false;
         try {
             //@ts-ignore
             util_1.nativeFunctions.createDbHandler({ address: "", plebbit: this });
-            canRunSub = true;
+            return true;
         }
-        catch (e) {
-            if (!e.toString().includes("native-functions of browser"))
-                // If this error is thrown it's because we're using browser native functions, and as of now any native functions other than browser can run a sub
-                canRunSub = true;
-        }
-        return canRunSub;
+        catch (_a) { }
+        return false;
     };
     Plebbit.prototype.createSubplebbit = function (options) {
         if (options === void 0) { options = {}; }
@@ -363,7 +363,7 @@ var Plebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signer_1.signPublication)(options, options.signer, this, "vote")];
                     case 1:
                         voteSignature = _b.sent();
-                        voteProps = __assign(__assign({}, options), { signature: voteSignature, protocolVersion: (0, util_2.getProtocolVersion)() });
+                        voteProps = __assign(__assign({}, options), { signature: voteSignature, protocolVersion: version_1.default.PROTOCOL_VERSION });
                         return [2 /*return*/, new vote_1.default(voteProps, subplebbit)];
                 }
             });
@@ -393,7 +393,7 @@ var Plebbit = /** @class */ (function (_super) {
                         _c = {};
                         return [4 /*yield*/, (0, signer_1.signPublication)(options, options.signer, this, "commentedit")];
                     case 1:
-                        commentEditProps = __assign.apply(void 0, _b.concat([(_c.signature = _d.sent(), _c.protocolVersion = (0, util_2.getProtocolVersion)(), _c)]));
+                        commentEditProps = __assign.apply(void 0, _b.concat([(_c.signature = _d.sent(), _c.protocolVersion = version_1.default.PROTOCOL_VERSION, _c)]));
                         return [2 /*return*/, new comment_edit_1.CommentEdit(commentEditProps, subplebbitObj)];
                 }
             });
@@ -406,16 +406,12 @@ var Plebbit = /** @class */ (function (_super) {
         return __awaiter(this, void 0, void 0, function () {
             var canRunSub;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._canRunSub()];
-                    case 1:
-                        canRunSub = _a.sent();
-                        if (canRunSub && !this.dataPath)
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_DATA_PATH_IS_NOT_DEFINED), errors_1.codes.ERR_DATA_PATH_IS_NOT_DEFINED, {
-                                details: "listSubplebbits: canRunSub=".concat(canRunSub, ", plebbitOptions.dataPath=").concat(this.dataPath)
-                            });
-                        return [2 /*return*/, util_1.nativeFunctions.listSubplebbits(this.dataPath)];
-                }
+                canRunSub = this._canRunSub();
+                if (canRunSub && !this.dataPath)
+                    throw (0, err_code_1.default)(Error(errors_1.messages.ERR_DATA_PATH_IS_NOT_DEFINED), errors_1.codes.ERR_DATA_PATH_IS_NOT_DEFINED, {
+                        details: "listSubplebbits: canRunSub=".concat(canRunSub, ", plebbitOptions.dataPath=").concat(this.dataPath)
+                    });
+                return [2 /*return*/, util_1.nativeFunctions.listSubplebbits(this.dataPath)];
             });
         });
     };

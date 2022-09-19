@@ -64,7 +64,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 var polyfill_1 = __importDefault(require("./runtime/node/polyfill"));
 (0, polyfill_1.default)();
 var PlebbitClass = __importStar(require("./plebbit"));
-module.exports = function Plebbit(plebbitOptions) {
+var util_1 = require("./runtime/node/util");
+var Plebbit = function Plebbit(plebbitOptions) {
     if (plebbitOptions === void 0) { plebbitOptions = {}; }
     return __awaiter(this, void 0, void 0, function () {
         var plebbit;
@@ -80,3 +81,5 @@ module.exports = function Plebbit(plebbitOptions) {
         });
     });
 };
+Plebbit.setNativeFunctions = util_1.setNativeFunctions;
+module.exports = Plebbit;

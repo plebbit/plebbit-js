@@ -40,14 +40,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.decrypt = exports.encrypt = exports.decryptBufferRsa = exports.encryptBufferRsa = exports.decryptStringAesCbc = exports.encryptStringAesCbc = exports.generateKeyAesCbc = void 0;
-var debug_1 = __importDefault(require("debug"));
 var node_forge_1 = __importDefault(require("node-forge"));
 var to_string_1 = require("uint8arrays/to-string");
 var from_string_1 = require("uint8arrays/from-string");
 var util_1 = require("./util");
 var assert_1 = __importDefault(require("assert"));
 var libp2p_crypto_1 = __importDefault(require("libp2p-crypto"));
-var debug = (0, debug_1.default)("plebbit-js:signer:encryption");
 var validateArgumentNotEmptyString = function (value, propertyName, functionName) {
     (0, assert_1.default)(typeof value === "string", "function '".concat(functionName, "' argument '").concat(propertyName, "': '").concat(value, "' not a string"));
     (0, assert_1.default)(value.length > 0, "function '".concat(functionName, "' argument '").concat(propertyName, "': '").concat(value, "' empty string"));

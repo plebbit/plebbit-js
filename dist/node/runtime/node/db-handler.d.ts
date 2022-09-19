@@ -1,4 +1,3 @@
-import { ChallengeMessage, ChallengeRequestMessage, ChallengeAnswerMessage, ChallengeVerificationMessage } from "../../challenge";
 import Post from "../../post";
 import Author from "../../author";
 import { Comment } from "../../comment";
@@ -7,7 +6,7 @@ import { Knex } from "knex";
 import { Subplebbit } from "../../subplebbit";
 import { Signer } from "../../signer";
 import Transaction = Knex.Transaction;
-import { AuthorType, SubplebbitMetrics } from "../../types";
+import { AuthorType, ChallengeRequestMessageType, ChallengeVerificationMessageType, DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, SubplebbitMetrics } from "../../types";
 import { CommentEdit } from "../../comment-edit";
 export declare class DbHandler {
     private _knex;
@@ -48,7 +47,7 @@ export declare class DbHandler {
     insertEdit(edit: CommentEdit, challengeRequestId: string, trx?: Transaction): Promise<void>;
     queryEditsSorted(commentCid: string, editor?: "author" | "mod", trx?: Transaction): Promise<CommentEdit[]>;
     editComment(edit: CommentEdit, challengeRequestId: string, trx?: Transaction): Promise<void>;
-    upsertChallenge(challenge: ChallengeRequestMessage | ChallengeMessage | ChallengeAnswerMessage | ChallengeVerificationMessage, trx?: Transaction): Promise<void>;
+    upsertChallenge(challenge: Omit<ChallengeRequestMessageType, "encryptedPublication" | "signature"> | Omit<DecryptedChallengeMessageType, "encryptedChallenges" | "signature"> | Omit<DecryptedChallengeAnswerMessageType, "encryptedChallengeAnswers" | "signature"> | Omit<ChallengeVerificationMessageType, "encryptedPublication" | "signature">, trx?: Transaction): Promise<void>;
     getLastVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<Vote | undefined>;
     private _baseCommentQuery;
     private _createCommentsFromRows;
@@ -68,5 +67,5 @@ export declare class DbHandler {
     querySigner(ipnsKeyName: string, trx?: Transaction): Promise<Signer | undefined>;
     queryCommentsGroupByDepth(trx?: Knex.Transaction): Promise<Comment[][]>;
     queryCountOfPosts(trx?: Knex.Transaction): Promise<number>;
-    changeDbFilename(newDbFileName: string): Promise<void>;
+    changeDbFilename(newDbFileName: string, newSubplebbit: Subplebbit): Promise<void>;
 }

@@ -10,15 +10,14 @@ import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
 import EventEmitter from "events";
 export declare const pendingSubplebbitCreations: Record<string, boolean>;
-export declare const setNativeFunctions: (pNativeFunctions: NativeFunctions) => void;
 export declare class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
     pubsubIpfsClient: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">;
     resolver: Resolver;
     _memCache: TinyCache;
     ipfsGatewayUrl: string;
-    ipfsHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0];
-    pubsubHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0];
+    ipfsHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0] | string;
+    pubsubHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0] | string;
     dataPath?: string;
     blockchainProviders?: {
         [chainTicker: string]: BlockchainProvider;
