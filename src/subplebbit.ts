@@ -671,7 +671,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
             ]);
             log.trace(`Published ${challengeVerification.type} over pubsub for challenge (${challengeVerification.challengeRequestId})`);
-            this.emit("challengeverification", challengeVerification);
+            this.emit("challengeverification", { ...challengeVerification, publication: decryptedPublication });
         } else {
             const encryptedChallenges = await encrypt(
                 JSON.stringify(providedChallenges),
@@ -693,7 +693,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 this.dbHandler.upsertChallenge({ ...challengeMessage.toJSONForDb(), challenges: providedChallenges }, undefined),
                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeMessage)))
             ]);
-            this.emit("challengemessage", challengeMessage);
+            this.emit("challengemessage", { ...challengeMessage, challenges: providedChallenges });
             log.trace(`Published ${challengeMessage.type} (${challengeMessage.challengeRequestId}) over pubsub`);
         }
     }
@@ -712,7 +712,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         const decryptedChallengeAnswer: DecryptedChallengeAnswerMessageType = { ...challengeAnswer, challengeAnswers: decryptedAnswers };
 
-        this.emit("challengeanswer", challengeAnswer);
+        this.emit("challengeanswer", decryptedChallengeAnswer);
 
         const [challengeSuccess, challengeErrors] = await this.validateCaptchaAnswerCallback(decryptedChallengeAnswer);
         if (challengeSuccess) {
@@ -757,7 +757,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     removeKeys(challengeVerification, ["publication", "encryptedPublication"])
                 )}`
             );
-            this.emit("challengeverification", challengeVerification);
+            this.emit("challengeverification", {
+                ...challengeVerification,
+                publication: encryptedPublication ? publicationOrReason : undefined
+            });
         } else {
             log.trace(`Challenge (${challengeAnswer.challengeRequestId}) has been answered incorrectly`);
             const toSignVerification: Omit<ChallengeVerificationMessageType, "signature"> = {
