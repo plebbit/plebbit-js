@@ -23,6 +23,7 @@ import {
 import { CommentEdit } from "../../comment-edit";
 import Logger from "@plebbit/plebbit-logger";
 import { getDefaultSubplebbitDbConfig } from "./util";
+import env from "../../version";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -45,8 +46,6 @@ const jsonFields = [
     "challengeAnswers",
     "challengeErrors"
 ];
-
-const currentDbVersion = 1;
 
 export class DbHandler {
     private _knex: Knex;
@@ -207,6 +206,8 @@ export class DbHandler {
         await this._knex.schema.createTable(tableName, (table) => {
             table.uuid("challengeRequestId").notNullable().primary().unique();
             table.enum("type", Object.values(PUBSUB_MESSAGE_TYPES)).notNullable();
+            table.text("userAgent");
+            table.text("protocolVersion");
             table.json("acceptedChallengeTypes").nullable().defaultTo(null);
             table.json("challenges").nullable();
             table.uuid("challengeAnswerId").nullable();
@@ -265,7 +266,7 @@ export class DbHandler {
 
         let dbVersion = await this.getDbVersion();
         log.trace(`db version: ${dbVersion}`);
-        const needToMigrate = dbVersion !== currentDbVersion;
+        const needToMigrate = dbVersion !== env.DB_VERSION;
         const createTableFunctions = [
             this._createCommentsTable,
             this._createVotesTable,
@@ -286,7 +287,7 @@ export class DbHandler {
                 } else if (tableExists && needToMigrate) {
                     log(`Migrating table ${table} to new schema`);
                     await this._knex.raw("PRAGMA foreign_keys = OFF");
-                    const tempTableName = `${table}${currentDbVersion}`;
+                    const tempTableName = `${table}${env.DB_VERSION}`;
                     await createTableFunctions[i].bind(this)(tempTableName);
                     await this._copyTable(table, tempTableName);
                     await this._knex.schema.dropTable(table);
@@ -296,9 +297,9 @@ export class DbHandler {
         );
 
         await this._knex.raw("PRAGMA foreign_keys = ON");
-        await this._knex.raw(`PRAGMA user_version = ${currentDbVersion}`);
+        await this._knex.raw(`PRAGMA user_version = ${env.DB_VERSION}`);
         dbVersion = await this.getDbVersion();
-        assert.equal(dbVersion, currentDbVersion);
+        assert.equal(dbVersion, env.DB_VERSION);
         this._createdTables = true;
     }
 
@@ -432,10 +433,10 @@ export class DbHandler {
 
     async upsertChallenge(
         challenge:
-            | Omit<ChallengeRequestMessageType, "encryptedPublication">
-            | Omit<DecryptedChallengeMessageType, "encryptedChallenges">
-            | Omit<DecryptedChallengeAnswerMessageType, "encryptedChallengeAnswers">
-            | Omit<ChallengeVerificationMessageType, "encryptedPublication">,
+            | Omit<ChallengeRequestMessageType, "encryptedPublication" | "signature">
+            | Omit<DecryptedChallengeMessageType, "encryptedChallenges" | "signature">
+            | Omit<DecryptedChallengeAnswerMessageType, "encryptedChallengeAnswers" | "signature">
+            | Omit<ChallengeVerificationMessageType, "encryptedPublication" | "signature">,
         trx?: Transaction
     ) {
         const existingChallenge = await this._baseTransaction(trx)(TABLES.CHALLENGES)

@@ -4,7 +4,7 @@ import {
     getPlebbitAddressFromPrivateKeyPem,
     getPlebbitAddressFromPublicKeyPem
 } from "./util";
-import { encode } from "cborg";
+import * as cborg from "cborg";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import assert from "assert";
@@ -12,11 +12,11 @@ import PeerId from "peer-id";
 import { keepKeys, removeKeys, removeKeysWithUndefinedValues } from "../util";
 import { Plebbit } from "../plebbit";
 import { Signer } from ".";
-import { AuthorType, PublicationTypeName, SignatureType, SignedPropertyNames } from "../types";
+import { AuthorType, SignatureType, SignatureTypes, SignedPropertyNames } from "../types";
 import { sha256 } from "js-sha256";
 import Logger from "@plebbit/plebbit-logger";
 
-export const SIGNED_PROPERTY_NAMES: Record<PublicationTypeName, SignedPropertyNames> = Object.freeze({
+export const SIGNED_PROPERTY_NAMES: Record<SignatureTypes, SignedPropertyNames> = Object.freeze({
     comment: ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"],
     commentedit: [
         "author",
@@ -67,6 +67,18 @@ export const SIGNED_PROPERTY_NAMES: Record<PublicationTypeName, SignedPropertyNa
         "address",
         "flairs",
         "encryption"
+    ],
+    challengerequestmessage: ["type", "challengeRequestId", "encryptedPublication", "acceptedChallengeTypes"],
+    challengemessage: ["type", "challengeRequestId", "encryptedChallenges"],
+    challengeanswermessage: ["type", "challengeRequestId", "challengeAnswerId", "encryptedChallengeAnswers"],
+    challengeverificationmessage: [
+        "reason",
+        "type",
+        "challengeRequestId",
+        "encryptedPublication",
+        "challengeAnswerId",
+        "challengeSuccess",
+        "challengeErrors"
     ]
 });
 
@@ -109,14 +121,9 @@ export const verifyBufferRsa = async (bufferToSign, bufferSignature, publicKeyPe
     return await peerId.pubKey.verify(bufferToSign, bufferSignature);
 };
 
-export async function signPublication(
-    publication,
-    signer: Signer,
-    plebbit: Plebbit,
-    publicationType: PublicationTypeName
-): Promise<Signature> {
+export async function signPublication(publication, signer: Signer, plebbit: Plebbit, signatureType: SignatureTypes): Promise<Signature> {
     assert(signer.publicKey);
-    assert(Object.keys(SIGNED_PROPERTY_NAMES).includes(publicationType));
+    assert(Object.keys(SIGNED_PROPERTY_NAMES).includes(signatureType));
     const log = Logger("plebbit-js:signatures:signPublication");
 
     publication = removeKeysWithUndefinedValues(publication);
@@ -130,12 +137,12 @@ export async function signPublication(
         );
     }
 
-    const signedPropertyNames = SIGNED_PROPERTY_NAMES[publicationType];
+    const signedPropertyNames = SIGNED_PROPERTY_NAMES[signatureType];
 
     log.trace(`Fields to sign: ${JSON.stringify(signedPropertyNames)}. Publication object to sign:  ${JSON.stringify(publication)}`);
 
     const fieldsToSign = keepKeys(publication, signedPropertyNames);
-    const commentEncoded = encode(fieldsToSign); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    const commentEncoded = cborg.encode(fieldsToSign); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
     const signatureData = uint8ArrayToString(await signBufferRsa(commentEncoded, signer.privateKey), "base64");
     log.trace(`Publication been signed, signature data is (${signatureData})`);
     return new Signature({
@@ -150,14 +157,14 @@ export async function signPublication(
 export async function verifyPublication(
     publication,
     plebbit: Plebbit,
-    publicationType: PublicationTypeName,
+    signatureType: SignatureTypes,
     overrideAuthorAddressIfInvalid = true
 ): Promise<[boolean, string | undefined]> {
-    assert(Object.keys(SIGNED_PROPERTY_NAMES).includes(publicationType));
+    assert(Object.keys(SIGNED_PROPERTY_NAMES).includes(signatureType));
     const log = Logger("plebbit-js:signatures:verifyPublication");
 
     const publicationJson = removeKeysWithUndefinedValues(publication);
-    const cachedResult: [boolean, string] = plebbit._memCache.get(sha256(JSON.stringify(publicationJson) + publicationType));
+    const cachedResult: [boolean, string] = plebbit._memCache.get(sha256(JSON.stringify(publicationJson) + signatureType));
     if (Array.isArray(cachedResult)) return cachedResult;
 
     const verifyAuthor = async (signature: Signature, author: AuthorType) => {
@@ -189,7 +196,7 @@ export async function verifyPublication(
     };
     const verifyPublicationSignature = async (signature: Signature, publicationToBeVerified) => {
         const commentWithFieldsToSign = keepKeys(publicationToBeVerified, signature.signedPropertyNames);
-        const commentEncoded = encode(commentWithFieldsToSign);
+        const commentEncoded = cborg.encode(commentWithFieldsToSign);
         const signatureIsValid = await verifyBufferRsa(
             commentEncoded,
             uint8ArrayFromString(signature.signature, "base64"),
@@ -200,7 +207,7 @@ export async function verifyPublication(
 
     try {
         // Need to verify comment.signature (of original comment) and authorEdit (latest edit by author, if exists)
-        log.trace(`Attempting to verify a ${publicationType}`);
+        log.trace(`Attempting to verify a ${signatureType}`);
 
         if (publicationJson.original) {
             // Means comment has been edited, verify both comment.signature and comment.authorEdit.signature
@@ -211,14 +218,14 @@ export async function verifyPublication(
                 "comment",
                 overrideAuthorAddressIfInvalid
             );
-            if (!verified) return [false, `Failed to verify ${publicationType}.original due to: ${failedVerificationReason}`];
+            if (!verified) return [false, `Failed to verify ${signatureType}.original due to: ${failedVerificationReason}`];
             [verified, failedVerificationReason] = await verifyPublication(
                 publicationJson.authorEdit,
                 plebbit,
                 "commentedit",
                 overrideAuthorAddressIfInvalid
             );
-            if (!verified) return [false, `Failed to verify ${publicationType}.authorEdit due to: ${failedVerificationReason}`];
+            if (!verified) return [false, `Failed to verify ${signatureType}.authorEdit due to: ${failedVerificationReason}`];
         } else {
             await verifyPublicationSignature(publicationJson.signature, publicationJson);
             // Verify author at the end since we might change author.address which will fail signature verification
@@ -227,12 +234,12 @@ export async function verifyPublication(
         }
 
         const res: [boolean, string | undefined] = [true, undefined];
-        plebbit._memCache.put(sha256(JSON.stringify(publicationJson) + publicationType), res);
+        plebbit._memCache.put(sha256(JSON.stringify(publicationJson) + signatureType), res);
         return res;
     } catch (e) {
-        log(`Failed to verify ${publicationType} due to error: ${e}\nPublication: ${JSON.stringify(publicationJson)}`);
+        log(`Failed to verify ${signatureType} due to error: ${e}\nPublication: ${JSON.stringify(publicationJson)}`);
         const res: [boolean, string | undefined] = [false, String(e)];
-        plebbit._memCache.put(sha256(JSON.stringify(publicationJson) + publicationType), res);
+        plebbit._memCache.put(sha256(JSON.stringify(publicationJson) + signatureType), res);
 
         return res;
     }

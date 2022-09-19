@@ -15,7 +15,7 @@ import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util"
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
-import { getProtocolVersion, loadIpfsFileAsJson, loadIpnsAsJson, timestamp } from "./util";
+import { loadIpfsFileAsJson, loadIpnsAsJson, timestamp } from "./util";
 import Vote from "./vote";
 import assert from "assert";
 import { createSigner, Signer, signPublication, verifyPublication } from "./signer";
@@ -28,6 +28,7 @@ import isIPFS from "is-ipfs";
 import errcode from "err-code";
 import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
+import env from "./version";
 
 export const pendingSubplebbitCreations: Record<string, boolean> = {};
 
@@ -227,7 +228,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             log.trace(`CreateVoteOptions did not provide author.address, will define it to signer.address (${options.signer.address})`);
         }
         const voteSignature = await signPublication(options, options.signer, this, "vote");
-        const voteProps: VoteType = <VoteType>{ ...options, signature: voteSignature, protocolVersion: getProtocolVersion() }; // TODO remove cast here
+        const voteProps: VoteType = <VoteType>{ ...options, signature: voteSignature, protocolVersion: env.PROTOCOL_VERSION }; // TODO remove cast here
         return new Vote(voteProps, subplebbit);
     }
 
@@ -250,7 +251,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         const commentEditProps = {
             ...options,
             signature: await signPublication(options, options.signer, this, "commentedit"),
-            protocolVersion: getProtocolVersion()
+            protocolVersion: env.PROTOCOL_VERSION
         };
         return new CommentEdit(commentEditProps, subplebbitObj);
     }

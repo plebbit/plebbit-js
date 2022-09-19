@@ -240,7 +240,3 @@ export async function ipfsImportKey(signer: Signer, plebbit, password = "") {
 export function randomElement<T>(array: Array<T>): T {
     return array[Math.floor(Math.random() * array.length)];
 }
-
-export function getProtocolVersion(): ProtocolVersion {
-    return "1.0.0";
-}

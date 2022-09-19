@@ -4,6 +4,7 @@ import { Pages } from "./pages";
 import { DbHandler } from "./runtime/node/db-handler";
 import { Subplebbit } from "./subplebbit";
 import fetch from "node-fetch";
+import { Signature } from "./signer/signatures";
 
 export type ProtocolVersion = "1.0.0";
 
@@ -143,9 +144,11 @@ export interface CreateCommentEditOptions extends AuthorCommentEdit, ModeratorCo
 export type Nft = { chainTicker: string; id: string; address: string; signature: string };
 export type SubplebbitRole = { role: "owner" | "admin" | "moderator" };
 
-interface ChallengeBaseType {
+interface PubsubMessage {
     type: "CHALLENGEREQUEST" | "CHALLENGE" | "CHALLENGEANSWER" | "CHALLENGEVERIFICATION";
-    challengeRequestId: string;
+    signature: Signature;
+    protocolVersion: ProtocolVersion;
+    userAgent: string;
 }
 
 export interface ChallengeType {
@@ -153,7 +156,8 @@ export interface ChallengeType {
     type: "image" | "text" | "video" | "audio" | "html";
 }
 
-export interface ChallengeRequestMessageType extends ChallengeBaseType {
+export interface ChallengeRequestMessageType extends PubsubMessage {
+    challengeRequestId: string;
     type: "CHALLENGEREQUEST";
     encryptedPublication: Encrypted;
     acceptedChallengeTypes?: string[];
@@ -163,7 +167,8 @@ export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMe
     publication: PublicationType;
 }
 
-export interface ChallengeMessageType extends ChallengeBaseType {
+export interface ChallengeMessageType extends PubsubMessage {
+    challengeRequestId: string;
     type: "CHALLENGE";
     encryptedChallenges: Encrypted;
 }
@@ -172,7 +177,8 @@ export interface DecryptedChallengeMessageType extends ChallengeMessageType {
     challenges: ChallengeType[];
 }
 
-export interface ChallengeAnswerMessageType extends ChallengeBaseType {
+export interface ChallengeAnswerMessageType extends PubsubMessage {
+    challengeRequestId: string;
     type: "CHALLENGEANSWER";
     challengeAnswerId: string;
     encryptedChallengeAnswers: Encrypted;
@@ -182,7 +188,8 @@ export interface DecryptedChallengeAnswerMessageType extends ChallengeAnswerMess
     challengeAnswers: string[];
 }
 
-export interface ChallengeVerificationMessageType extends ChallengeBaseType {
+export interface ChallengeVerificationMessageType extends PubsubMessage {
+    challengeRequestId: string;
     type: "CHALLENGEVERIFICATION";
     challengeAnswerId: string;
     challengeSuccess: boolean;
@@ -364,6 +371,13 @@ export interface CommentEditType extends PublicationType, Omit<CreateCommentEdit
 
 export type PublicationTypeName = "comment" | "vote" | "commentedit" | "commentupdate" | "subplebbit";
 
+export type SignatureTypes =
+    | PublicationTypeName
+    | "challengerequestmessage"
+    | "challengemessage"
+    | "challengeanswermessage"
+    | "challengeverificationmessage";
+
 export type CommentSignedPropertyNames = (keyof Pick<
     CreateCommentOptions,
     "subplebbitAddress" | "author" | "timestamp" | "content" | "title" | "link" | "parentCid"
@@ -373,6 +387,19 @@ export type CommentEditSignedPropertyNames = (keyof Omit<CreateCommentEditOption
 export type CommentUpdatedSignedPropertyNames = (keyof Omit<CommentUpdate, "signature" | "protocolVersion">)[];
 export type VoteSignedPropertyNames = (keyof Omit<CreateVoteOptions, "signer" | "protocolVersion">)[];
 export type SubplebbitSignedPropertyNames = (keyof Omit<SubplebbitType, "signer" | "signature" | "protocolVersion">)[];
+export type ChallengeRequestMessageSignedPropertyNames = (keyof Omit<
+    ChallengeRequestMessageType,
+    "signature" | "protocolVersion" | "userAgent"
+>)[];
+export type ChallengeMessageSignedPropertyNames = (keyof Omit<ChallengeMessageType, "signature" | "protocolVersion" | "userAgent">)[];
+export type ChallengeAnswerMessageSignedPropertyNames = (keyof Omit<
+    ChallengeAnswerMessageType,
+    "signature" | "protocolVersion" | "userAgent"
+>)[];
+export type ChallengeVerificationMessageSignedPropertyNames = (keyof Omit<
+    ChallengeVerificationMessageType,
+    "signature" | "protocolVersion" | "userAgent"
+>)[];
 // MultisubSignedPropertyNames: // TODO
 
 // the fields that were signed as part of the signature, client should require that certain fields be signed or reject the publication
@@ -381,7 +408,11 @@ export type SignedPropertyNames =
     | CommentEditSignedPropertyNames
     | VoteSignedPropertyNames
     | SubplebbitSignedPropertyNames
-    | CommentUpdatedSignedPropertyNames;
+    | CommentUpdatedSignedPropertyNames
+    | ChallengeRequestMessageSignedPropertyNames
+    | ChallengeMessageSignedPropertyNames
+    | ChallengeAnswerMessageSignedPropertyNames
+    | ChallengeVerificationMessageSignedPropertyNames;
 // | MultisubSignedPropertyNames;
 
 type FunctionPropertyOf<T> = {
