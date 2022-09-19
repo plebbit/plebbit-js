@@ -99,6 +99,12 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             });
         const resolvedSubplebbitAddress = await this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
         const subplebbitJson = await loadIpnsAsJson(resolvedSubplebbitAddress, this);
+        const [signatureIsVerified, failedVerificationReason] = await verifyPublication(subplebbitJson, this, "subplebbit");
+        if (!signatureIsVerified)
+            throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+                details: `getSubplebbit: Failed verification reason: ${failedVerificationReason}`
+            });
+
         return new Subplebbit(subplebbitJson, this);
     }
 
@@ -149,7 +155,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         const finalProps: CommentType | PostType = {
             ...(<CommentType>options), // TODO Take out cast later
             signature: commentSignature,
-            protocolVersion: getProtocolVersion()
+            protocolVersion: env.PROTOCOL_VERSION
         };
         return finalProps.title ? new Post(finalProps, commentSubplebbit) : new Comment(finalProps, commentSubplebbit);
     }

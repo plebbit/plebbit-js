@@ -81,25 +81,26 @@ describe("publishing", async () => {
             });
         }));
 
-    it(`Publish a post with spoiler`, async () => {
-        const post = await plebbit.createComment({
-            title: "Post with link" + Date.now(),
-            spoiler: true,
-            subplebbitAddress: subplebbitAddress,
-            signer: await plebbit.createSigner()
-        });
+    it(`Publish a post with spoiler`, async () =>
+        new Promise(async (resolve) => {
+            const post = await plebbit.createComment({
+                title: "Post with link" + Date.now(),
+                spoiler: true,
+                subplebbitAddress: subplebbitAddress,
+                signer: await plebbit.createSigner()
+            });
 
-        expect(post.spoiler).to.be.true;
+            expect(post.spoiler).to.be.true;
 
-        await post.publish();
+            await post.publish();
 
-        post.once("challengeverification", (challengeVerificationMessage, updatedComment) => {
-            expect(challengeVerificationMessage.challengeSuccess).to.be.true;
-            expect(challengeVerificationMessage.reason).to.not.be.a("string");
-            expect(updatedComment.spoiler).to.be.true;
-            resolve();
-        });
-    });
+            post.once("challengeverification", (challengeVerificationMessage, updatedComment) => {
+                expect(challengeVerificationMessage.challengeSuccess).to.be.true;
+                expect(challengeVerificationMessage.reason).to.not.be.a("string");
+                expect(updatedComment.spoiler).to.be.true;
+                resolve();
+            });
+        }));
 
     [1, 2].map((depth) =>
         it(`Can publish comment with depth = ${depth}`, async () => {

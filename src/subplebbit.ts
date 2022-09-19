@@ -7,7 +7,7 @@ import assert from "assert";
 import { createCaptcha } from "./runtime/node/captcha";
 import { SortHandler } from "./sort-handler";
 import { ipfsImportKey, loadIpnsAsJson, removeKeys, removeKeysWithUndefinedValues, shallowEqual, timestamp } from "./util";
-import { decrypt, encrypt, verifyPublication, Signer, Signature, signPublication } from "./signer";
+import { decrypt, encrypt, verifyPublication, Signer, signPublication } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
 import {
@@ -25,6 +25,7 @@ import {
     Flair,
     FlairOwner,
     ProtocolVersion,
+    SignatureType,
     SubplebbitEditOptions,
     SubplebbitEncryption,
     SubplebbitFeatures,
@@ -71,7 +72,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     signer?: Signer;
     encryption: SubplebbitEncryption;
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
-    signature: Signature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
+    signature: SignatureType; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
     rules?: string[];
 
     plebbit: Plebbit;
@@ -136,6 +137,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.suggested = mergedProps.suggested;
         this.rules = mergedProps.rules;
         this.flairs = mergedProps.flairs;
+        this.signature = mergedProps.signature;
     }
 
     async initSignerIfNeeded() {
@@ -311,6 +313,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const ipnsAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
         try {
             const subplebbitIpns: SubplebbitType = await loadIpnsAsJson(ipnsAddress, this.plebbit);
+            const [verified, failedVerificationReason] = await verifyPublication(subplebbitIpns, this.plebbit, "subplebbit");
+            if (!verified)
+                throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+                    details: `subplebbit.update: Subplebbit (${this.address}) IPNS (${ipnsAddress}) signature is invalid. Will not update: ${failedVerificationReason}`
+                });
             if (JSON.stringify(this.toJSON()) !== JSON.stringify(subplebbitIpns)) {
                 this.initSubplebbit(subplebbitIpns);
                 log(`Subplebbit received a new update. Will emit an update event`);
@@ -319,6 +326,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             return this;
         } catch (e) {
             log.error(`Failed to update subplebbit IPNS, error: ${e}`);
+            this.emit("error", e);
         }
     }
 
@@ -392,6 +400,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         if (!currentIpns || JSON.stringify(currentIpns) !== JSON.stringify(this.toJSON()) || lastPublishOverTwentyMinutes) {
             this.updatedAt = timestamp();
+            this.signature = await signPublication(this.toJSON(), this.signer, this.plebbit, "subplebbit");
             this.dbHandler.keyvSet(this.address, this.toJSON());
             const file = await this.plebbit.ipfsClient.add(JSON.stringify(this.toJSON()));
             await this.plebbit.ipfsClient.name.publish(file.path, {
@@ -584,8 +593,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             } catch (e) {
                 const msg = `Failed to insert ${
                     postOrCommentOrVote.constructor.name
-                } due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?): ${e}`;
-                log(msg);
+                } due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`;
+                log(`${msg}: ${e}`);
                 return msg;
             }
             if (postOrCommentOrVote instanceof Post) {

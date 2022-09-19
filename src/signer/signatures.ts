@@ -226,6 +226,18 @@ export async function verifyPublication(
                 overrideAuthorAddressIfInvalid
             );
             if (!verified) return [false, `Failed to verify ${signatureType}.authorEdit due to: ${failedVerificationReason}`];
+        } else if (signatureType === "subplebbit") {
+            await verifyPublicationSignature(publicationJson.signature, publicationJson);
+            const resolvedSubAddress: string = plebbit.resolver.isDomain(publicationJson.address)
+                ? await plebbit.resolver.resolveSubplebbitAddressIfNeeded(publicationJson.address)
+                : publicationJson.address;
+            const subPeerId = PeerId.createFromB58String(resolvedSubAddress);
+            const signaturePeerId = await getPeerIdFromPublicKeyPem(publicationJson.signature.publicKey);
+            assert.equal(
+                subPeerId.equals(signaturePeerId),
+                true,
+                "subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey"
+            );
         } else {
             await verifyPublicationSignature(publicationJson.signature, publicationJson);
             // Verify author at the end since we might change author.address which will fail signature verification

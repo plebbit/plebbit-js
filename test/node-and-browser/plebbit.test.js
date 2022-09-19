@@ -139,7 +139,10 @@ describe("plebbit (node and browser)", () => {
 
         it("Throws an error when subplebbit address is incorrect", async () => {
             const gibbreishAddress = "0xdeadbeef";
-            await assert.isRejected(plebbit.getSubplebbit(gibbreishAddress));
+            await assert.isRejected(
+                plebbit.getSubplebbit(gibbreishAddress),
+                "Subplebbit address is incorrect. Address should be either a domain or CID"
+            );
         });
 
         it("can load subplebbit with ENS domain via plebbit.getSubplebbit", async () => {

@@ -160,7 +160,7 @@ class Publication extends EventEmitter implements PublicationType {
     async publish(userOptions) {
         const log = Logger("plebbit-js:publication:publish");
 
-        if (typeof this.timestamp !== "number" || this.timestamp <= 0)
+        if (typeof this.timestamp !== "number" || this.timestamp < 0)
             throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), codes.ERR_PUBLICATION_MISSING_FIELD, {
                 details: `${this.getType()}.publish: timestamp should be a number`
             });
