@@ -54,6 +54,18 @@ describe("subplebbit", async () => {
         })
     );
 
+    it(`Can customize database config for subplebbit`, async () => {
+        const databaseConfig = {
+            client: "sqlite3",
+            connection: {
+                filename: ":memory:"
+            },
+            useNullAsDefault: true
+        };
+        const subWithDbConfig = await plebbit.createSubplebbit({ database: databaseConfig });
+        expect(subWithDbConfig.dbHandler.getDbConfig()).to.deep.equal(databaseConfig);
+    });
+
     it(`createSubplebbit on IPFS node doesn't take more than 10s`, async () => {
         const onlinePlebbit = await Plebbit({
             ipfsHttpClientOptions: "http://localhost:5003/api/v0",
