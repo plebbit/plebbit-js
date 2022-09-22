@@ -1,8 +1,10 @@
 import assert from "assert";
+import { Plebbit } from "./plebbit";
 import Publication from "./publication";
 import {
     AuthorCommentEdit,
     CommentAuthorEditOptions,
+    CommentEditForDbType,
     CommentEditType,
     Flair,
     ModeratorCommentEdit,
@@ -54,6 +56,10 @@ export class CommentEdit extends Publication implements CommentEditType {
     moderatorReason?: string;
     commentAuthor?: CommentAuthorEditOptions;
 
+    constructor(props: CommentEditType, plebbit: Plebbit) {
+        super(props, plebbit);
+    }
+
     _initProps(props: CommentEditType) {
         super._initProps(props);
         this.commentCid = props.commentCid;
@@ -86,11 +92,12 @@ export class CommentEdit extends Publication implements CommentEditType {
         };
     }
 
-    toJSONForDb(challengeRequestId: string) {
-        const json = this.toJSON();
-        json["authorAddress"] = this.author.address;
-        json["challengeRequestId"] = challengeRequestId;
-        return removeKeysWithUndefinedValues(json);
+    toJSONForDb(challengeRequestId: string): CommentEditForDbType {
+        return removeKeysWithUndefinedValues({
+            ...this.toJSON(),
+            authorAddress: this.author.address,
+            challengeRequestId: challengeRequestId
+        });
     }
 
     getType(): PublicationTypeName {

@@ -1,14 +1,25 @@
 import assert from "assert";
-import { loadIpnsAsJson, removeKeysWithUndefinedValues, shallowEqual } from "./util";
+import { loadIpnsAsJson, removeKeys, removeKeysWithUndefinedValues, shallowEqual } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
 import { verifyPublication } from "./signer";
-import { AuthorCommentEdit, CommentType, CommentUpdate, Flair, ProtocolVersion, PublicationTypeName } from "./types";
+import {
+    AuthorCommentEdit,
+    CommentForDbType,
+    CommentIpfsType,
+    CommentType,
+    CommentUpdate,
+    Flair,
+    PagesType,
+    ProtocolVersion,
+    PublicationTypeName
+} from "./types";
 import Author from "./author";
 import errcode from "err-code";
 import { codes, messages } from "./errors";
 
 import Logger from "@plebbit/plebbit-logger";
+import { Plebbit } from "./plebbit";
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
 export class Comment extends Publication implements CommentType {
@@ -45,6 +56,10 @@ export class Comment extends Publication implements CommentType {
 
     // private
     private _updateInterval?: any;
+
+    constructor(props: CommentType, plebbit: Plebbit) {
+        super(props, plebbit);
+    }
 
     _initProps(props: CommentType) {
         super._initProps(props);
@@ -110,11 +125,17 @@ export class Comment extends Publication implements CommentType {
 
     toJSON(): CommentType {
         return {
-            ...this.toJSONIpfs(),
+            ...this.toJSONSkeleton(),
             ...(typeof this.updatedAt === "number" ? this.toJSONCommentUpdate() : undefined),
             cid: this.cid,
             original: this.original,
-            author: this.author.toJSON()
+            author: this.author.toJSON(),
+            previousCid: this.previousCid,
+            ipnsName: this.ipnsName,
+            postCid: this.postCid,
+            depth: this.depth,
+            thumbnailUrl: this.thumbnailUrl,
+            ipnsKeyName: this.ipnsKeyName
         };
     }
 
@@ -126,7 +147,9 @@ export class Comment extends Publication implements CommentType {
         };
     }
 
-    toJSONIpfs() {
+    toJSONIpfs(): CommentIpfsType {
+        assert(typeof this.depth === "number");
+        assert(typeof this.ipnsName === "string", `this.ipnsName (${this.ipnsName}) is not a string`);
         return {
             ...this.toJSONSkeleton(),
             previousCid: this.previousCid,
@@ -148,15 +171,15 @@ export class Comment extends Publication implements CommentType {
         };
     }
 
-    toJSONForDb(challengeRequestId: string) {
-        const json = this.toJSON();
-        ["replyCount", "upvoteCount", "downvoteCount", "replies"].forEach((key) => delete json[key]);
-        json["authorAddress"] = this?.author?.address;
-        json["challengeRequestId"] = challengeRequestId;
-        json["ipnsKeyName"] = this.ipnsKeyName;
-        // @ts-ignore
-        json["signature"] = JSON.stringify(this.signature);
-        return removeKeysWithUndefinedValues(json);
+    toJSONForDb(challengeRequestId?: string): CommentForDbType {
+        assert(this.ipnsKeyName);
+        return removeKeysWithUndefinedValues({
+            ...removeKeys(this.toJSON(), ["replyCount", "upvoteCount", "downvoteCount", "replies"]),
+            authorAddress: this.author.address,
+            challengeRequestId: challengeRequestId,
+            ipnsKeyName: this.ipnsKeyName,
+            signature: JSON.stringify(this.signature)
+        });
     }
 
     toJSONCommentUpdate(skipAssert = false): Omit<CommentUpdate, "signature"> {
@@ -173,7 +196,7 @@ export class Comment extends Publication implements CommentType {
             downvoteCount: this.downvoteCount,
             replyCount: this.replyCount,
             authorEdit: this.authorEdit,
-            replies: this.replies,
+            replies: this.replies.toJSON(),
             flair: this.flair, // Not sure this fits here
             spoiler: this.spoiler,
             pinned: this.pinned,
@@ -212,26 +235,26 @@ export class Comment extends Publication implements CommentType {
         this.updatedAt = newUpdatedAt;
     }
 
-    setReplies(replies?: Pages) {
+    setReplies(replies?: Pages | PagesType) {
         this.replies = new Pages({
             pages: { topAll: replies?.pages?.topAll },
             pageCids: replies?.pageCids,
-            subplebbit: this.subplebbit
+            subplebbit: { plebbit: this.plebbit, address: this.subplebbitAddress }
         });
     }
 
     async updateOnce() {
         const log = Logger("plebbit-js:comment:update");
-        let res;
+        let res: CommentUpdate | undefined;
         try {
-            res = await loadIpnsAsJson(this.ipnsName, this.subplebbit.plebbit);
+            res = await loadIpnsAsJson(this.ipnsName, this.plebbit);
         } catch (e) {
             log.error(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error = ${e.message}`);
             return;
         }
         if (res && (!this.updatedAt || !shallowEqual(this.toJSONCommentUpdate(), res, ["signature"]))) {
             log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
-            const [verified, failedVerificationReason] = await verifyPublication(res, this.subplebbit.plebbit, "commentupdate");
+            const [verified, failedVerificationReason] = await verifyPublication(res, this.plebbit, "commentupdate");
             if (!verified) {
                 log.error(
                     `Comment (${this.cid}) IPNS (${this.ipnsName}) signature is invalid. Will not update: ${failedVerificationReason}`
@@ -263,18 +286,16 @@ export class Comment extends Publication implements CommentType {
 
     async edit(options: CommentUpdate) {
         const log = Logger("plebbit-js:comment:edit");
-        assert(this.ipnsKeyName && this.subplebbit.plebbit.ipfsClient, "You need to have commentUpdate and ipfs client defined");
-        const [validSignature, failedVerificationReason] = await verifyPublication(options, this.subplebbit.plebbit, "commentupdate");
+        assert(this.ipnsKeyName && this.plebbit.ipfsClient, "You need to have commentUpdate and ipfs client defined");
+        const [validSignature, failedVerificationReason] = await verifyPublication(options, this.plebbit, "commentupdate");
         if (!validSignature)
             throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
                 details: `comment.edit: Failed verification reason: ${failedVerificationReason}, editOptions: ${JSON.stringify(options)}`
             });
         this._initCommentUpdate(options);
         this._mergeFields(this.toJSON());
-        const file = await this.subplebbit.plebbit.ipfsClient.add(
-            JSON.stringify({ ...this.toJSONCommentUpdate(), signature: options.signature })
-        );
-        await this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
+        const file = await this.plebbit.ipfsClient.add(JSON.stringify({ ...this.toJSONCommentUpdate(), signature: options.signature }));
+        await this.plebbit.ipfsClient.name.publish(file["cid"], {
             lifetime: "72h",
             key: this.ipnsKeyName,
             allowOffline: true

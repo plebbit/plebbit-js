@@ -2,6 +2,7 @@ import { Comment } from "./comment";
 import { PostType } from "./types";
 import errcode from "err-code";
 import { codes, messages } from "./errors";
+import { Plebbit } from "./plebbit";
 
 class Post extends Comment implements PostType {
     thumbnailUrl?: string;
@@ -10,7 +11,11 @@ class Post extends Comment implements PostType {
     depth: 0;
     link?: string;
 
-    _initProps(props: PostType) {
+    constructor(props: Omit<PostType, "depth" | "parentCid">, plebbit: Plebbit) {
+        super(props, plebbit);
+    }
+
+    _initProps(props: Omit<PostType, "depth" | "parentCid">) {
         super._initProps(props);
         this.thumbnailUrl = props.thumbnailUrl;
         this.title = props.title;

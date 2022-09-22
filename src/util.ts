@@ -1,7 +1,7 @@
 import { default as NodeFormData } from "form-data";
 import assert from "assert";
 import { Plebbit } from "./plebbit";
-import { CommentType, ProtocolVersion, Timeframe } from "./types";
+import { CommentType, OnlyDefinedProperties, Timeframe } from "./types";
 import { nativeFunctions } from "./runtime/node/util";
 import { Signer } from "./signer";
 import { Buffer } from "buffer";
@@ -98,14 +98,15 @@ export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
 
-export function keepKeys(obj: Object, keys: any[]) {
-    const newObj = {};
-    keys.forEach((key) => (newObj[key] = undefined));
-    for (const key of Object.keys(obj)) if (keys.includes(key)) newObj[key] = obj[key];
-    return newObj;
+export function keepKeys<T extends Record<string, any>, V extends string>(obj: T, keys: V[]): Pick<T, V> {
+    return Object.assign(
+        {},
+        ...keys.map((key) => ({ [key]: undefined })),
+        ...Object.entries(obj).map(([key, value]) => ((<string[]>keys).includes(key) ? { [key]: value } : undefined))
+    );
 }
 
-export function removeKeys(object1: Object, keys: any[]): Object {
+export function removeKeys<T extends Record<string, any>, V extends string>(object1: T, keys: V[]): Omit<T, V> {
     const newObject = { ...object1 };
     keys.forEach((key) => delete newObject[key]);
     return newObject;
@@ -125,7 +126,7 @@ export function replaceXWithY(obj: Object, x: any, y: any): any {
     return newObj;
 }
 
-export function shallowEqual(object1, object2, excludeKeys = []) {
+export function shallowEqual(object1: Object, object2: Object, excludeKeys: any[] = []) {
     object1 = removeKeys(object1 || {}, excludeKeys);
     object1 = removeKeysWithUndefinedValues(object1); // To get rid of keys with undefined value
     object2 = removeKeys(object2 || {}, excludeKeys);
@@ -210,7 +211,7 @@ export function oldScore(comment: CommentType) {
     return -comment.timestamp;
 }
 
-export function removeKeysWithUndefinedValues(object) {
+export function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T> {
     return JSON.parse(JSON.stringify(object));
 }
 

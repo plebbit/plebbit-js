@@ -8,12 +8,13 @@ import errcode from "err-code";
 import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 import isIPFS from "is-ipfs";
+import { Plebbit } from "./plebbit";
 
 export class Pages implements PagesType {
     pages?: Partial<Record<PostSortName | ReplySortName, PageType>>;
     pageCids?: Partial<Record<PostSortName | ReplySortName, string>>;
     subplebbit: Pick<Subplebbit, "address" | "plebbit">;
-    constructor(props: PagesType) {
+    constructor(props: PagesType & { subplebbit: { plebbit: Plebbit; address: string } }) {
         this.pages = props.pages;
         this.pageCids = props.pageCids;
         this.subplebbit = props.subplebbit;
@@ -74,8 +75,12 @@ export class Pages implements PagesType {
         return page;
     }
 
-    toJSON() {
-        return { pages: this.pages, pageCids: this.pageCids };
+    toJSON(): PagesType {
+        return {
+            pages: this.pages,
+            pageCids: this.pageCids,
+            subplebbit: { address: this.subplebbit.address }
+        };
     }
 }
 

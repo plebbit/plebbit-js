@@ -6,9 +6,9 @@ import {
     ChallengeType,
     ChallengeVerificationMessageType,
     Encrypted,
-    ProtocolVersion
+    ProtocolVersion,
+    SignatureType
 } from "./types";
-import { Signature } from "./signer/signatures";
 
 export const PUBSUB_MESSAGE_TYPES = Object.freeze({
     CHALLENGEREQUEST: "CHALLENGEREQUEST",
@@ -38,7 +38,7 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
     type: "CHALLENGEREQUEST";
     challengeRequestId: string;
     acceptedChallengeTypes?: string[];
-    signature: Signature;
+    signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
     constructor(props: Omit<ChallengeRequestMessageType, "type">) {
@@ -78,7 +78,7 @@ export class ChallengeMessage implements ChallengeMessageType {
     encryptedChallenges: Encrypted;
     type: "CHALLENGE";
     challengeRequestId: string;
-    signature: Signature;
+    signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
 
@@ -117,7 +117,7 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
     challengeAnswerId: string;
     encryptedChallengeAnswers: Encrypted;
     challengeRequestId: string;
-    signature: Signature;
+    signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
     constructor(props: Omit<ChallengeAnswerMessageType, "type">) {
@@ -161,7 +161,7 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
     challengeErrors?: (string | undefined)[];
     reason?: string;
     encryptedPublication?: Encrypted;
-    signature: Signature;
+    signature: SignatureType;
     protocolVersion: "1.0.0";
     userAgent: string;
 

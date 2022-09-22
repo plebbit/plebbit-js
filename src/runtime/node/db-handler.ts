@@ -13,12 +13,18 @@ import Keyv from "keyv";
 import { Signer } from "../../signer";
 import Transaction = Knex.Transaction;
 import {
+    AuthorDbType,
     AuthorType,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
+    CommentEditForDbType,
+    CommentForDbType,
+    CommentType,
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
-    SubplebbitMetrics
+    SignerType,
+    SubplebbitMetrics,
+    VoteForDbType
 } from "../../types";
 import { CommentEdit } from "../../comment-edit";
 import Logger from "@plebbit/plebbit-logger";
@@ -56,19 +62,24 @@ export class DbHandler {
     private _keyv: Keyv; // Don't change any here to Keyv since it will crash for browsers
     private _createdTables: boolean;
 
-    constructor(subplebbit: Subplebbit, userDbConfig?: Knex.Config) {
-        this._userDbConfig = userDbConfig;
+    constructor(subplebbit: Subplebbit) {
+        this._userDbConfig = subplebbit.database;
         this._subplebbit = subplebbit;
         this._currentTrxs = {};
         this._createdTables = false;
     }
 
     async initDbIfNeeded() {
+        const log = Logger("plebbit-js:db-handler:initDbIfNeeded");
         assert(
             typeof this._subplebbit.address === "string" && this._subplebbit.address.length > 0,
             `DbHandler needs to be an instantiated with a Subplebbit that has a valid address, (${this._subplebbit.address}) was provided`
         );
-        this._dbConfig = this._dbConfig || this._userDbConfig || (await getDefaultSubplebbitDbConfig(this._subplebbit));
+        this._dbConfig = this._dbConfig || this._userDbConfig;
+        if (!this._dbConfig) {
+            this._dbConfig = await getDefaultSubplebbitDbConfig(this._subplebbit);
+            log(`User did provide a database config. Defaulting to ${JSON.stringify(this._dbConfig)}`);
+        }
         if (!this._knex) {
             this._knex = knex(this._dbConfig);
             console.log(`Initialized knex in dbHandler for sub (${this._subplebbit.address})`);
@@ -312,9 +323,10 @@ export class DbHandler {
         log(`copied table ${srcTable} to table ${dstTable}`);
     }
 
-    private async _upsertAuthor(author: Author | AuthorType, trx?: Transaction, upsertOnlyWhenNew = true) {
+    private async _upsertAuthor(author: AuthorDbType, trx?: Transaction, upsertOnlyWhenNew = true) {
+        assert(author instanceof Object);
         assert(JSON.stringify(author) !== "{}");
-        let existingDbObject = author.address
+        let existingDbObject: AuthorDbType | undefined = author.address
             ? await this._baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first()
             : undefined;
         if (existingDbObject && upsertOnlyWhenNew) return;
@@ -324,8 +336,9 @@ export class DbHandler {
         await this._baseTransaction(trx)(TABLES.AUTHORS).insert(mergedDbObject).onConflict(["address"]).merge();
     }
 
-    async updateAuthor(newAuthorProps: AuthorType, updateCommentsAuthor = true, trx?: Transaction) {
-        const onlyNewProps = removeKeysWithUndefinedValues(removeKeys(newAuthorProps, ["address"]));
+    async updateAuthor(newAuthorProps: AuthorDbType, updateCommentsAuthor = true, trx?: Transaction) {
+        const onlyNewProps: Omit<AuthorDbType, "address"> = removeKeysWithUndefinedValues(removeKeys(newAuthorProps, ["address"]));
+
         await this._baseTransaction(trx)(TABLES.AUTHORS).update(onlyNewProps).where("address", newAuthorProps.address);
         if (updateCommentsAuthor) {
             const commentsWithAuthor: Comment[] = await this._createCommentsFromRows(
@@ -348,40 +361,37 @@ export class DbHandler {
         if (authorProps) return new Author(authorProps);
     }
 
-    async upsertVote(vote: Vote, challengeRequestId: string, trx?: Transaction) {
-        await this._upsertAuthor(vote.author, trx, true);
-        const dbObject = vote.toJSONForDb(challengeRequestId);
-        await this._baseTransaction(trx)(TABLES.VOTES).insert(dbObject).onConflict(["commentCid", "authorAddress"]).merge();
+    async upsertVote(vote: VoteForDbType, author: AuthorDbType, trx?: Transaction) {
+        await this._upsertAuthor(author, trx, true);
+        await this._baseTransaction(trx)(TABLES.VOTES).insert(vote).onConflict(["commentCid", "authorAddress"]).merge();
     }
 
-    async upsertComment(postOrComment: Post | Comment, challengeRequestId?: string, trx?: Transaction) {
-        assert(postOrComment.cid, "Comment need to have a cid before upserting");
+    async upsertComment(comment: CommentForDbType, author: AuthorDbType, trx?: Transaction) {
+        assert(comment.cid, "Comment need to have a cid before upserting");
+        assert(comment instanceof Object);
 
-        if (postOrComment.author)
+        if (author)
             // Skip adding author (For CommentEdit)
-            await this._upsertAuthor(postOrComment.author, trx, true);
+            await this._upsertAuthor(author, trx, true);
 
-        if (!challengeRequestId)
-            challengeRequestId = (
+        const challengeRequestId: string | undefined =
+            comment.challengeRequestId ||
+            (
                 await this._baseTransaction(trx)(TABLES.COMMENTS)
                     .where({
-                        cid: postOrComment.cid
+                        cid: comment.cid
                     })
                     .first()
             ).challengeRequestId;
+
         assert(challengeRequestId, "Need to have challengeRequestId before upserting");
-        const originalComment = await this.queryComment(postOrComment.cid, trx);
-        const dbObject = originalComment
-            ? {
-                  ...removeKeysWithUndefinedValues(originalComment.toJSONForDb(challengeRequestId)),
-                  ...removeKeysWithUndefinedValues(postOrComment.toJSONForDb(challengeRequestId))
-              }
-            : postOrComment.toJSONForDb(challengeRequestId);
+        const originalComment = await this.queryComment(comment.cid, trx);
+        const dbObject = originalComment ? { ...originalComment.toJSONForDb(challengeRequestId), ...comment } : comment;
         await this._baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge();
     }
 
-    async insertEdit(edit: CommentEdit, challengeRequestId: string, trx?: Transaction) {
-        await this._baseTransaction(trx)(TABLES.EDITS).insert(edit.toJSONForDb(challengeRequestId));
+    async insertEdit(edit: CommentEditForDbType, trx?: Transaction) {
+        await this._baseTransaction(trx)(TABLES.EDITS).insert(edit);
     }
 
     async queryEditsSorted(commentCid: string, editor?: "author" | "mod", trx?: Transaction): Promise<CommentEdit[]> {
@@ -402,7 +412,7 @@ export class DbHandler {
         }
     }
 
-    async editComment(edit: CommentEdit, challengeRequestId: string, trx?: Transaction) {
+    async editComment(edit: CommentEditForDbType, trx?: Transaction) {
         // Fields that need to be merged
         // flair
         assert(edit.commentCid);
@@ -417,13 +427,13 @@ export class DbHandler {
             const flairIfNeeded = hasModEditedCommentFlairBefore || !edit.flair ? undefined : { flair: JSON.stringify(edit.flair) };
 
             newProps = removeKeysWithUndefinedValues({
-                authorEdit: JSON.stringify(edit.toJSONForDb(challengeRequestId)),
+                authorEdit: JSON.stringify(edit),
                 original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()),
                 ...flairIfNeeded
             });
         } else {
             newProps = {
-                ...edit.toJSONForDb(challengeRequestId),
+                ...edit,
                 original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton())
             };
         }
@@ -580,7 +590,7 @@ export class DbHandler {
         return await this._createCommentsFromRows(commentsObjs);
     }
 
-    async queryParentsOfComment(comment: Comment, trx?: Transaction): Promise<Comment[]> {
+    async queryParentsOfComment(comment: CommentType, trx?: Transaction): Promise<Comment[]> {
         const parents: Comment[] = [];
         let curParentCid = comment.parentCid;
         while (curParentCid) {
@@ -643,7 +653,7 @@ export class DbHandler {
         return post;
     }
 
-    async insertSigner(signer: Signer, trx?: Transaction) {
+    async insertSigner(signer: SignerType, trx?: Transaction) {
         await this._baseTransaction(trx)(TABLES.SIGNERS).insert(signer);
     }
 

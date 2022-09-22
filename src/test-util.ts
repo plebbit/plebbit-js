@@ -1,5 +1,5 @@
 import { TIMEFRAMES_TO_SECONDS, timestamp } from "./util";
-import { Signer } from "./signer";
+import { Signer, verifyPublication } from "./signer";
 import { Comment } from "./comment";
 import Post from "./post";
 import assert from "assert";
@@ -8,6 +8,8 @@ import Vote from "./vote";
 import { Pages } from "./pages";
 import { Subplebbit } from "./subplebbit";
 import { CommentType } from "./types";
+import errcode from "err-code";
+import { codes, messages } from "./errors";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [parentTimestamp || 0, timestamp()];
@@ -43,8 +45,14 @@ export async function generateMockPost(
     });
     assert.equal(post.constructor.name, "Post", "createComment should return Post if title is provided");
     post.once("challenge", (challengeMsg) => {
-        post.publishChallengeAnswers(undefined);
+        post.publishChallengeAnswers([]);
     });
+
+    const [validSignature, failedVerificationReason] = await verifyPublication(post, plebbit, post.getType());
+    if (!validSignature)
+        throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+            details: `generateMockPost: Failed verification reason: ${failedVerificationReason}`
+        });
     return post;
 }
 
@@ -59,7 +67,7 @@ export async function generateMockComment(
     const commentTimestamp = (randomTimestamp && generateRandomTimestamp(parentPostOrComment.timestamp)) || timestamp();
     const commentTime = Date.now() / 1000 + Math.random();
     signer = signer || (await plebbit.createSigner());
-    const comment = await plebbit.createComment({
+    const comment: Comment = await plebbit.createComment({
         author: { displayName: `Mock Author - ${commentTime}` },
         signer: signer,
         content: `Mock comment - ${commentTime}`,
@@ -69,8 +77,13 @@ export async function generateMockComment(
         ...commentProps
     });
     comment.once("challenge", (challengeMsg) => {
-        comment.publishChallengeAnswers(undefined);
+        comment.publishChallengeAnswers([]);
     });
+    const [validSignature, failedVerificationReason] = await verifyPublication(comment, plebbit, comment.getType());
+    if (!validSignature)
+        throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+            details: `generateMockComment: Failed verification reason: ${failedVerificationReason}`
+        });
     return comment;
 }
 
@@ -93,8 +106,14 @@ export async function generateMockVote(
         subplebbitAddress: parentPostOrComment.subplebbitAddress
     });
     voteObj.once("challenge", (challengeMsg) => {
-        voteObj.publishChallengeAnswers(undefined);
+        voteObj.publishChallengeAnswers([]);
     });
+
+    const [validSignature, failedVerificationReason] = await verifyPublication(voteObj, plebbit, voteObj.getType());
+    if (!validSignature)
+        throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+            details: `generateMockVote: Failed verification reason: ${failedVerificationReason}`
+        });
     return voteObj;
 }
 

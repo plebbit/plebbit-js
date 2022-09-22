@@ -1,4 +1,4 @@
-import { AuthorType, Flair, Nft, Wallet } from "./types";
+import { AuthorDbType, AuthorType, Flair, Nft, Wallet } from "./types";
 import { parseJsonIfString } from "./util";
 
 class Author implements AuthorType {
@@ -32,7 +32,7 @@ class Author implements AuthorType {
         };
     }
 
-    toJSONForDb() {
+    toJSONForDb(): AuthorDbType {
         return { address: this.address, banExpiresAt: this.banExpiresAt, flair: this.flair };
     }
 }

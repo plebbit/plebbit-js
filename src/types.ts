@@ -4,7 +4,6 @@ import { Pages } from "./pages";
 import { DbHandler } from "./runtime/node/db-handler";
 import { Subplebbit } from "./subplebbit";
 import fetch from "node-fetch";
-import { Signature } from "./signer/signatures";
 
 export type ProtocolVersion = "1.0.0";
 
@@ -30,7 +29,7 @@ export interface PageType {
 export interface PagesType {
     pages?: Partial<Record<PostSortName | ReplySortName, PageType>>;
     pageCids?: Partial<Record<PostSortName | ReplySortName, string>>;
-    subplebbit: Pick<Subplebbit, "address" | "plebbit">; // We don't need full Subplebbit, just these two
+    subplebbit: Pick<Subplebbit, "address">; // We don't need full Subplebbit, just these two
 }
 export interface SignerType {
     type: "rsa";
@@ -59,8 +58,6 @@ export interface CreateCommentOptions extends CreatePublicationOptions {
     link?: string; // If comment is a post, it might be a link post
     spoiler?: boolean; // Hide the comment thumbnail behind spoiler warning
     flair?: Flair; // Author or mod chosen colored label for the comment
-    cid?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
-    ipnsName?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
 }
 
 export interface CreateVoteOptions extends CreatePublicationOptions {
@@ -146,7 +143,7 @@ export type SubplebbitRole = { role: "owner" | "admin" | "moderator" };
 
 interface PubsubMessage {
     type: "CHALLENGEREQUEST" | "CHALLENGE" | "CHALLENGEANSWER" | "CHALLENGEVERIFICATION";
-    signature: Signature;
+    signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
 }
@@ -164,7 +161,7 @@ export interface ChallengeRequestMessageType extends PubsubMessage {
 }
 
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType {
-    publication: PublicationType;
+    publication: VoteType | CommentEditType | CommentType | PostType;
 }
 
 export interface ChallengeMessageType extends PubsubMessage {
@@ -199,7 +196,7 @@ export interface ChallengeVerificationMessageType extends PubsubMessage {
 }
 
 export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType {
-    publication?: PublicationType;
+    publication?: DecryptedChallengeRequestMessageType["publication"];
 }
 
 export type SubplebbitMetrics = {
@@ -330,7 +327,7 @@ export interface CommentUpdate {
     downvoteCount: number;
     replyCount: number;
     authorEdit?: AuthorCommentEdit; // most recent edit by comment author, merge authorEdit.content, authorEdit.deleted, authorEdit.flair with comment. Validate authorEdit.signature
-    replies: Pages; // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
+    replies: PagesType; // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
     flair?: Flair; // arbitrary colored strings added by the author or mods to describe the author or comment
     spoiler?: boolean;
     pinned?: boolean;
@@ -355,12 +352,20 @@ export interface CommentType extends Partial<CommentUpdate>, Omit<CreateCommentO
     signer?: SignerType;
     original?: Pick<Partial<CommentType>, "author" | "content" | "flair">;
     thumbnailUrl?: string;
+    cid?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
+    ipnsName?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
 }
 
-export interface PostType extends CommentType {
+export interface CommentIpfsType
+    extends Omit<CreateCommentOptions, "signer" | "timestamp" | "author">,
+        PublicationType,
+        Pick<CommentType, "previousCid" | "postCid" | "thumbnailUrl">,
+        Pick<Required<CommentType>, "depth" | "ipnsName"> {}
+
+export interface PostType extends Omit<CommentType, "parentCid" | "depth"> {
+    depth: 0;
     parentCid: undefined;
     title: string;
-    depth: 0;
     link?: string;
     thumbnailUrl?: string; // fetched by subplebbit owner, not author, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
 }
@@ -438,3 +443,56 @@ export type NativeFunctions = {
     fetch: typeof fetch;
     createIpfsClient: (options: Options) => IpfsHttpClientPublicAPI;
 };
+
+export type OnlyDefinedProperties<T> = Pick<
+    T,
+    {
+        [Prop in keyof T]: T[Prop] extends undefined ? never : Prop;
+    }[keyof T]
+>;
+
+// These types are for DB handler
+
+export type CommentEditForDbType = OnlyDefinedProperties<CommentEditType & { authorAddress: string; challengeRequestId: string }>;
+
+export type CommentForDbType = OnlyDefinedProperties<
+    Omit<CommentType, "replyCount" | "upvoteCount" | "downvoteCount" | "replies" | "signature"> & {
+        authorAddress: string;
+        challengeRequestId?: string;
+        ipnsKeyName: string;
+        signature: string;
+    }
+>;
+
+export type VoteForDbType = Omit<VoteType, "author" | "signature"> & {
+    author: string;
+    authorAddress: string;
+    challengeRequestId: string;
+    signature: string;
+};
+
+export type AuthorDbType = Pick<AuthorType, "address" | "banExpiresAt" | "flair">;
+
+// Signatures
+export type PublicationToVerify =
+    | CommentEditType
+    | VoteType
+    | CommentType
+    | PostType
+    | CommentUpdate
+    | SubplebbitType
+    | ChallengeRequestMessageType
+    | ChallengeMessageType
+    | ChallengeAnswerMessageType
+    | ChallengeVerificationMessageType;
+
+export type PublicationsToSign =
+    | CreateCommentEditOptions
+    | CreateVoteOptions
+    | CreateCommentOptions
+    | Omit<CommentUpdate, "signature">
+    | Omit<SubplebbitType, "signature">
+    | Omit<ChallengeAnswerMessageType, "signature">
+    | Omit<ChallengeRequestMessageType, "signature">
+    | Omit<ChallengeVerificationMessageType, "signature">
+    | Omit<ChallengeMessageType, "signature">;

@@ -1,13 +1,14 @@
 import Publication from "./publication";
 import assert from "assert";
-import { PublicationTypeName, VoteType } from "./types";
+import { PublicationTypeName, VoteForDbType, VoteType } from "./types";
+import { Plebbit } from "./plebbit";
 
 class Vote extends Publication implements VoteType {
     commentCid: string;
     vote: 1 | 0 | -1;
 
-    constructor(props: VoteType, subplebbit: any) {
-        super(props, subplebbit);
+    constructor(props: VoteType, plebbit: Plebbit) {
+        super(props, plebbit);
         this.commentCid = props.commentCid;
         this.vote = props.vote; // Either 1, 0, -1 (upvote, cancel vote, downvote)
     }
@@ -24,15 +25,14 @@ class Vote extends Publication implements VoteType {
         return "vote";
     }
 
-    toJSONForDb(challengeRequestId: string) {
-        const json = this.toJSON();
-        // @ts-ignore
-        json["author"] = JSON.stringify(this.author);
-        json["authorAddress"] = this?.author?.address;
-        json["challengeRequestId"] = challengeRequestId;
-        // @ts-ignore
-        json["signature"] = JSON.stringify(this.signature);
-        return json;
+    toJSONForDb(challengeRequestId: string): VoteForDbType {
+        return {
+            ...this.toJSON(),
+            author: JSON.stringify(this.author),
+            authorAddress: this.author.address,
+            challengeRequestId: challengeRequestId,
+            signature: JSON.stringify(this.signature)
+        };
     }
 
     async publish(userOptions): Promise<void> {
