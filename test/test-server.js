@@ -14,6 +14,8 @@ const { generateMockComment, generateMockVote, generateMockPost } = require("../
 
 const path = require("path");
 const http = require("http");
+const fs = require("fs");
+
 // allow * origin on ipfs api to bypass cors browser error
 // very insecure do not do this in production
 const offlineNodeArgs = {
@@ -120,7 +122,7 @@ const mockPlebbit = async () => {
     };
     plebbit.resolver.resolveSubplebbitAddressIfNeeded = async (subplebbitAddress) => {
         if (subplebbitAddress === "plebbit.eth") return signers[3].address;
-        else if (plebbit.resolver.isDomain(subplebbitAddress)) throw new Error(`${subplebbitAddress} has no subplebbit-address`);
+        else if (plebbit.resolver.isDomain(subplebbitAddress)) throw Error(`${subplebbitAddress} has no subplebbit-address`);
         return subplebbitAddress;
     };
     return plebbit;
@@ -233,6 +235,9 @@ const populateSubplebbit = async (subplebbit) => {
 
 (async () => {
     // do more stuff here, like start some subplebbits
+    await fs.promises.rm(path.join(process.cwd(), ".plebbit"), { recursive: true, force: true });
+    await fs.promises.rm(path.join(process.cwd(), ".plebbit2"), { recursive: true, force: true });
+
     await startIpfsNodes();
     const plebbit = await mockPlebbit();
 
