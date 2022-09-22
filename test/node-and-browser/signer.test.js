@@ -73,20 +73,51 @@ describe("signer (node and browser)", async () => {
 
     describe("sign and verify publication", () => {
         let authorSignature, signedPublication;
+        const expectedAuthorSignature = {
+            signature:
+                "IMff4G8CPJPS3O3zRYkqh160BU3dLCd9Is6F348yNkUBzMEstH2u6+PMfyULQeJQzspz+bEU6iq/b7QwRAvQKClV6kHXK0R5Yzfop7cDHD3v0uqTVwxbtbINOm6dbjO1iThOeP7ULSXzLEP0obVyy51v3xBqKfrdG8NMQd/VuU6rtxmRJQwJdPHEhjDFQ3QxtoOUnrGTUVED0eX22gORjxb1uW5vJ+T/63frIJ9gBgCYRA8luCmTt59hZRusmh0n21zIQmxIdRebmdwR15wI7hmrppqcH1e5Fm+MCVRu7JLySsP4r5DJ2PECw9gobq1am6F4SuUXZBbQaxq36QZk9Q",
+            publicKey: authorSignerFixture.publicKey,
+            type: "rsa",
+            signedPropertyNames: SIGNED_PROPERTY_NAMES.comment
+        };
 
         before(async () => {
             authorSignature = await signPublication(fixtureComment, authorSigner, plebbit, "comment");
             signedPublication = { ...fixtureComment, signature: authorSignature };
         });
 
-        it("signPublication author signature is correct", async () => {
-            const expectedAuthorSignature = {
-                signature:
-                    "IMff4G8CPJPS3O3zRYkqh160BU3dLCd9Is6F348yNkUBzMEstH2u6+PMfyULQeJQzspz+bEU6iq/b7QwRAvQKClV6kHXK0R5Yzfop7cDHD3v0uqTVwxbtbINOm6dbjO1iThOeP7ULSXzLEP0obVyy51v3xBqKfrdG8NMQd/VuU6rtxmRJQwJdPHEhjDFQ3QxtoOUnrGTUVED0eX22gORjxb1uW5vJ+T/63frIJ9gBgCYRA8luCmTt59hZRusmh0n21zIQmxIdRebmdwR15wI7hmrppqcH1e5Fm+MCVRu7JLySsP4r5DJ2PECw9gobq1am6F4SuUXZBbQaxq36QZk9Q",
-                publicKey: authorSignerFixture.publicKey,
-                type: "rsa",
-                signedPropertyNames: SIGNED_PROPERTY_NAMES.comment
+        it(`Comment from previous version can be verified`, async () => {
+            // CID: QmSC6fG7CPfVVif2fsKS1i4zi2DYpSkSrMksyCyZJZW8X8
+            const comment = {
+                subplebbitAddress: "QmRcyUK7jUhFyPTEvwWyfGZEAaSoDugNJ8PZSC4PWRjUqd",
+                timestamp: 1661902265,
+                signature: {
+                    signature:
+                        "js6v39xc7y8yiFlj7DuBVIXiEgdNQcEdD3EXElOjX4ZkQP/b9TbqPulpfQ+EeGLq8UFnhfd2lJXDYvDx25ku8fyKR4fIFTMY9WDId3bHuDiWgbtgfA6+RRTL4eV9Ld2FVNLdsR2DCSxlcAvCc+M2rzzGDEQCZ85GbkCNBZ9jOypOEO1dW626jc41Q/6ddmI8nSV5iFDfw1jyvNE8JElWs5v7S58YcYO3CN0PlHEZgZ9dnfBkO9FihaFp25QDZgZJrXxCmPwQFRiNMe9Wlz7IeEEzop3TZ+PyExpbEG50rcyltkYUJ3LVxJfEQD/ZZ/Im3gTESLadz3aRWfjgfZ/L3A",
+                    publicKey:
+                        "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxJS1ZMx9uqCFdiauIH5e\nJho2CtarYP3zAFzqvbPm1pBLm738I4DotkzvVIbgFHRu7a2wgq0+bUjwg4yX3z7N\nFjetiBaT+hEIMFYKyobsv65ebInsqMYIPNVbn380xLzb5zMyPEL6pBuvGdmQZlRD\ngXDuHiCh66IPLizd8KGWJMSQXOcAhLt+NRcdHSSCLkibcQOHs52dKc0qYvGHd25h\nKPs+dE4d/A86aLRSD5w/yGwiJA8Jn+nLFbOLiEf775L6tOO35OF6PHiXo21BTl0o\nS4Eh9DIlPT7fNhEg+HhQFoQ7VHQLq76OVYpXBCnhIRUaPko5EgjNfrqwG6R1lPZF\nkwIDAQAB\n-----END PUBLIC KEY-----",
+                    type: "rsa",
+                    signedPropertyNames: ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"]
+                },
+                author: { address: "QmXGrdUi1PbSaApyDHbSoPdx2HkGsBAvTGFDTKoFrpuFxq" },
+                protocolVersion: "1.0.0",
+                content: "Check the title\n",
+                title: "I'll stick to reddit. Thank you very much.",
+                ipnsName: "k2k4r8nz40czmblfjgzo79tmex2wuo4y8zwi51843fac1rrx823g7lk8",
+                depth: 0
             };
+
+            const verification = await verifyPublication(comment, plebbit, "comment");
+            expect(verification).to.deep.equal([true, undefined]);
+        });
+
+        it(`Pre-defined signature is validated correctly`, async () => {
+            const fixtureWithSignature = { ...fixtureComment, signature: expectedAuthorSignature };
+            const verification = await verifyPublication(fixtureWithSignature, plebbit, "comment");
+            expect(verification).to.deep.equal([true, undefined], "Fixture with signature is not verified correctly");
+        });
+
+        it("signPublication author signature is correct", async () => {
             expect(authorSignature).not.to.equal(undefined);
             expect(authorSignature.signature).to.equal(expectedAuthorSignature.signature);
             expect(authorSignature.publicKey).to.equal(expectedAuthorSignature.publicKey);

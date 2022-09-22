@@ -1,5 +1,3 @@
-// const Debug = require('debug')
-// Debug.enable('plebbit-js:*')
 const Plebbit = require("../../dist/node");
 const fixtureSigner = require("../fixtures/signers")[0];
 const signers = require("../fixtures/signers");
@@ -163,19 +161,19 @@ describe("plebbit (node and browser)", () => {
         it(`subplebbit = await createSubplebbit(await getSubplebbit(address))`, async () => {
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
             const createdSubplebbit = await plebbit.createSubplebbit(loadedSubplebbit);
-            expect(JSON.stringify(loadedSubplebbit)).to.equal(JSON.stringify(createdSubplebbit));
+            expect(loadedSubplebbit.toJSON()).to.deep.equal(createdSubplebbit.toJSON());
         });
 
         it(`subplebbit = await createSubplebbit({...await getSubplebbit()})`, async () => {
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
             const createdSubplebbit = await plebbit.createSubplebbit({ ...loadedSubplebbit });
-            expect(JSON.stringify(loadedSubplebbit)).to.equal(JSON.stringify(createdSubplebbit));
+            expect(loadedSubplebbit.toJSON()).to.deep.equal(createdSubplebbit.toJSON());
         });
 
         it(`subplebbit = await createSubplebbit(JSON.parse(JSON.stringify(await getSubplebbit())))`, async () => {
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
             const createdSubplebbit = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(loadedSubplebbit)));
-            expect(JSON.stringify(loadedSubplebbit)).to.equal(JSON.stringify(createdSubplebbit));
+            expect(loadedSubplebbit.toJSON()).to.deep.equal(createdSubplebbit.toJSON());
         });
     });
 });
