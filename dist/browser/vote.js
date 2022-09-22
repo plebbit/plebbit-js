@@ -69,8 +69,8 @@ var publication_1 = __importDefault(require("./publication"));
 var assert_1 = __importDefault(require("assert"));
 var Vote = /** @class */ (function (_super) {
     __extends(Vote, _super);
-    function Vote(props, subplebbit) {
-        var _this = _super.call(this, props, subplebbit) || this;
+    function Vote(props, plebbit) {
+        var _this = _super.call(this, props, plebbit) || this;
         _this.commentCid = props.commentCid;
         _this.vote = props.vote; // Either 1, 0, -1 (upvote, cancel vote, downvote)
         return _this;
@@ -82,15 +82,7 @@ var Vote = /** @class */ (function (_super) {
         return "vote";
     };
     Vote.prototype.toJSONForDb = function (challengeRequestId) {
-        var _a;
-        var json = this.toJSON();
-        // @ts-ignore
-        json["author"] = JSON.stringify(this.author);
-        json["authorAddress"] = (_a = this === null || this === void 0 ? void 0 : this.author) === null || _a === void 0 ? void 0 : _a.address;
-        json["challengeRequestId"] = challengeRequestId;
-        // @ts-ignore
-        json["signature"] = JSON.stringify(this.signature);
-        return json;
+        return __assign(__assign({}, this.toJSON()), { author: JSON.stringify(this.author), authorAddress: this.author.address, challengeRequestId: challengeRequestId, signature: JSON.stringify(this.signature) });
     };
     Vote.prototype.publish = function (userOptions) {
         return __awaiter(this, void 0, void 0, function () {

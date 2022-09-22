@@ -8,7 +8,6 @@ import { ChallengeType, CreateSubplebbitOptions, DbHandlerPublicAPI, DecryptedCh
 import { Comment } from "./comment";
 import Vote from "./vote";
 import Post from "./post";
-import Publication from "./publication";
 import { CommentEdit } from "./comment-edit";
 export declare const RUNNING_SUBPLEBBITS: Record<string, boolean>;
 export declare class Subplebbit extends EventEmitter implements SubplebbitType {
@@ -36,7 +35,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     rules?: string[];
     plebbit: Plebbit;
     dbHandler?: DbHandlerPublicAPI;
-    private _database?;
+    database?: any;
     private _challengeToSolution;
     private _challengeToPublication;
     private provideCaptchaCallback;
@@ -88,7 +87,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     updateSubplebbitIpns(): Promise<void>;
     handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string): Promise<string>;
     handleVote(newVote: Vote, challengeRequestId: string): Promise<string>;
-    storePublicationIfValid(publication: any, challengeRequestId: string): Promise<Vote | CommentEdit | Post | Comment | string>;
+    storePublicationIfValid(publication: DecryptedChallengeRequestMessageType["publication"], challengeRequestId: string): Promise<Vote | CommentEdit | Post | Comment | string>;
     handleChallengeRequest(request: ChallengeRequestMessage): Promise<void>;
     handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage): Promise<void>;
     private _verifyPubsubMsgSignature;
@@ -99,5 +98,5 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     syncIpnsWithDb(): Promise<void>;
     _syncLoop(syncIntervalMs: number): Promise<void>;
     start(syncIntervalMs?: number): Promise<void>;
-    _addPublicationToDb(publication: Publication): Promise<string | Comment | Post | Vote | CommentEdit>;
+    _addPublicationToDb(publication: CommentEdit | Vote | Comment | Post): Promise<string | CommentEdit | Vote | Comment | Post>;
 }

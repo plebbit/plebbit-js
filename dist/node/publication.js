@@ -80,9 +80,9 @@ var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var version_1 = __importDefault(require("./version"));
 var Publication = /** @class */ (function (_super) {
     __extends(Publication, _super);
-    function Publication(props, subplebbit) {
+    function Publication(props, plebbit) {
         var _this = _super.call(this) || this;
-        _this.subplebbit = subplebbit;
+        _this.plebbit = plebbit;
         _this._initProps(props);
         return _this;
     }
@@ -122,7 +122,7 @@ var Publication = /** @class */ (function (_super) {
                         if ((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId) !== this.challenge.challengeRequestId)
                             return [2 /*return*/]; // Process only this publication's challenge
                         if (!((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.type) === "CHALLENGE")) return [3 /*break*/, 3];
-                        return [4 /*yield*/, (0, signer_1.verifyPublication)(msgParsed, this.subplebbit.plebbit, "challengemessage")];
+                        return [4 /*yield*/, (0, signer_1.verifyPublication)(msgParsed, this.plebbit, "challengemessage")];
                     case 1:
                         _a = _g.sent(), signatureIsVerified = _a[0], failedVerificationReason = _a[1];
                         if (!signatureIsVerified) {
@@ -139,7 +139,7 @@ var Publication = /** @class */ (function (_super) {
                         return [3 /*break*/, 9];
                     case 3:
                         if (!((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.type) === "CHALLENGEVERIFICATION")) return [3 /*break*/, 9];
-                        return [4 /*yield*/, (0, signer_1.verifyPublication)(msgParsed, this.subplebbit.plebbit, "challengeverificationmessage")];
+                        return [4 /*yield*/, (0, signer_1.verifyPublication)(msgParsed, this.plebbit, "challengeverificationmessage")];
                     case 4:
                         _d = _g.sent(), signatureIsVerified = _d[0], failedVerificationReason = _d[1];
                         if (!signatureIsVerified) {
@@ -161,7 +161,7 @@ var Publication = /** @class */ (function (_super) {
                         _g.label = 7;
                     case 7:
                         this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication }), this);
-                        return [4 /*yield*/, this.subplebbit.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic)];
+                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic)];
                     case 8:
                         _g.sent();
                         _g.label = 9;
@@ -177,6 +177,7 @@ var Publication = /** @class */ (function (_super) {
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
+                        (0, assert_1.default)(this.subplebbit, "Subplebbit is not defined");
                         log = (0, plebbit_logger_1.default)("plebbit-js:publication:publishChallengeAnswers");
                         if (!Array.isArray(challengeAnswers))
                             challengeAnswers = [challengeAnswers];
@@ -194,10 +195,10 @@ var Publication = /** @class */ (function (_super) {
                         _a = challenge_1.ChallengeAnswerMessage.bind;
                         _b = [__assign({}, toSignAnswer)];
                         _c = {};
-                        return [4 /*yield*/, (0, signer_1.signPublication)(toSignAnswer, this.signer, this.subplebbit.plebbit, "challengeanswermessage")];
+                        return [4 /*yield*/, (0, signer_1.signPublication)(toSignAnswer, this.signer, this.plebbit, "challengeanswermessage")];
                     case 2:
                         challengeAnswer = new (_a.apply(challenge_1.ChallengeAnswerMessage, [void 0, __assign.apply(void 0, _b.concat([(_c.signature = _d.sent(), _c)]))]))();
-                        return [4 /*yield*/, this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeAnswer)))];
+                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeAnswer)))];
                     case 3:
                         _d.sent();
                         log("Responded to challenge (".concat(challengeAnswer.challengeRequestId, ") with answers ").concat(JSON.stringify(challengeAnswers)));
@@ -227,7 +228,7 @@ var Publication = /** @class */ (function (_super) {
                             throw (0, err_code_1.default)(Error(errors_1.messages.ERR_PUBLICATION_MISSING_FIELD), errors_1.codes.ERR_PUBLICATION_MISSING_FIELD, {
                                 details: "".concat(this.getType(), ".publish: subplebbitAddress should be a string")
                             });
-                        return [4 /*yield*/, (0, signer_1.verifyPublication)(this, this.subplebbit.plebbit, this.getType())];
+                        return [4 /*yield*/, (0, signer_1.verifyPublication)(this, this.plebbit, this.getType())];
                     case 1:
                         _d = _f.sent(), isSignatureValid = _d[0], failedVerificationReason = _d[1];
                         if (!isSignatureValid)
@@ -236,7 +237,7 @@ var Publication = /** @class */ (function (_super) {
                             });
                         options = __assign({ acceptedChallengeTypes: [] }, userOptions);
                         _e = this;
-                        return [4 /*yield*/, this.subplebbit.plebbit.getSubplebbit(this.subplebbitAddress)];
+                        return [4 /*yield*/, this.plebbit.getSubplebbit(this.subplebbitAddress)];
                     case 2:
                         _e.subplebbit = _f.sent();
                         if (typeof ((_c = (_b = this.subplebbit) === null || _b === void 0 ? void 0 : _b.encryption) === null || _c === void 0 ? void 0 : _c.publicKey) !== "string")
@@ -258,14 +259,14 @@ var Publication = /** @class */ (function (_super) {
                             userAgent: version_1.default.USER_AGENT,
                             protocolVersion: version_1.default.PROTOCOL_VERSION
                         };
-                        return [4 /*yield*/, (0, signer_1.signPublication)(toSignMsg, this.signer, this.subplebbit.plebbit, "challengerequestmessage")];
+                        return [4 /*yield*/, (0, signer_1.signPublication)(toSignMsg, this.signer, this.plebbit, "challengerequestmessage")];
                     case 4:
                         pubsubMsgSignature = _f.sent();
                         this.challenge = new challenge_1.ChallengeRequestMessage(__assign(__assign({}, toSignMsg), { signature: pubsubMsgSignature }));
                         log.trace("Attempting to publish ".concat(this.getType(), " with options (").concat(JSON.stringify(options), ")"));
                         return [4 /*yield*/, Promise.all([
-                                this.subplebbit.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(this.challenge))),
-                                this.subplebbit.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this))
+                                this.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(this.challenge))),
+                                this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this))
                             ])];
                     case 5:
                         _f.sent();

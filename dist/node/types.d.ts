@@ -4,7 +4,6 @@ import { Pages } from "./pages";
 import { DbHandler } from "./runtime/node/db-handler";
 import { Subplebbit } from "./subplebbit";
 import fetch from "node-fetch";
-import { Signature } from "./signer/signatures";
 export declare type ProtocolVersion = "1.0.0";
 export declare type BlockchainProvider = {
     url: string;
@@ -31,7 +30,7 @@ export interface PageType {
 export interface PagesType {
     pages?: Partial<Record<PostSortName | ReplySortName, PageType>>;
     pageCids?: Partial<Record<PostSortName | ReplySortName, string>>;
-    subplebbit: Pick<Subplebbit, "address" | "plebbit">;
+    subplebbit: Pick<Subplebbit, "address">;
 }
 export interface SignerType {
     type: "rsa";
@@ -59,8 +58,6 @@ export interface CreateCommentOptions extends CreatePublicationOptions {
     link?: string;
     spoiler?: boolean;
     flair?: Flair;
-    cid?: string;
-    ipnsName?: string;
 }
 export interface CreateVoteOptions extends CreatePublicationOptions {
     commentCid: string;
@@ -139,7 +136,7 @@ export declare type SubplebbitRole = {
 };
 interface PubsubMessage {
     type: "CHALLENGEREQUEST" | "CHALLENGE" | "CHALLENGEANSWER" | "CHALLENGEVERIFICATION";
-    signature: Signature;
+    signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
 }
@@ -154,7 +151,7 @@ export interface ChallengeRequestMessageType extends PubsubMessage {
     acceptedChallengeTypes?: string[];
 }
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType {
-    publication: PublicationType;
+    publication: VoteType | CommentEditType | CommentType | PostType;
 }
 export interface ChallengeMessageType extends PubsubMessage {
     challengeRequestId: string;
@@ -183,7 +180,7 @@ export interface ChallengeVerificationMessageType extends PubsubMessage {
     encryptedPublication?: Encrypted;
 }
 export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType {
-    publication?: PublicationType;
+    publication?: DecryptedChallengeRequestMessageType["publication"];
 }
 export declare type SubplebbitMetrics = {
     hourActiveUserCount: number;
@@ -288,7 +285,7 @@ export interface CommentUpdate {
     downvoteCount: number;
     replyCount: number;
     authorEdit?: AuthorCommentEdit;
-    replies: Pages;
+    replies: PagesType;
     flair?: Flair;
     spoiler?: boolean;
     pinned?: boolean;
@@ -312,11 +309,15 @@ export interface CommentType extends Partial<CommentUpdate>, Omit<CreateCommentO
     signer?: SignerType;
     original?: Pick<Partial<CommentType>, "author" | "content" | "flair">;
     thumbnailUrl?: string;
+    cid?: string;
+    ipnsName?: string;
 }
-export interface PostType extends CommentType {
+export interface CommentIpfsType extends Omit<CreateCommentOptions, "signer" | "timestamp" | "author">, PublicationType, Pick<CommentType, "previousCid" | "postCid" | "thumbnailUrl">, Pick<Required<CommentType>, "depth" | "ipnsName"> {
+}
+export interface PostType extends Omit<CommentType, "parentCid" | "depth"> {
+    depth: 0;
     parentCid: undefined;
     title: string;
-    depth: 0;
     link?: string;
     thumbnailUrl?: string;
 }
@@ -356,4 +357,26 @@ export declare type NativeFunctions = {
     fetch: typeof fetch;
     createIpfsClient: (options: Options) => IpfsHttpClientPublicAPI;
 };
+export declare type OnlyDefinedProperties<T> = Pick<T, {
+    [Prop in keyof T]: T[Prop] extends undefined ? never : Prop;
+}[keyof T]>;
+export declare type CommentEditForDbType = OnlyDefinedProperties<CommentEditType & {
+    authorAddress: string;
+    challengeRequestId: string;
+}>;
+export declare type CommentForDbType = OnlyDefinedProperties<Omit<CommentType, "replyCount" | "upvoteCount" | "downvoteCount" | "replies" | "signature"> & {
+    authorAddress: string;
+    challengeRequestId?: string;
+    ipnsKeyName: string;
+    signature: string;
+}>;
+export declare type VoteForDbType = Omit<VoteType, "author" | "signature"> & {
+    author: string;
+    authorAddress: string;
+    challengeRequestId: string;
+    signature: string;
+};
+export declare type AuthorDbType = Pick<AuthorType, "address" | "banExpiresAt" | "flair">;
+export declare type PublicationToVerify = CommentEditType | VoteType | CommentType | PostType | CommentUpdate | SubplebbitType | ChallengeRequestMessageType | ChallengeMessageType | ChallengeAnswerMessageType | ChallengeVerificationMessageType;
+export declare type PublicationsToSign = CreateCommentEditOptions | CreateVoteOptions | CreateCommentOptions | Omit<CommentUpdate, "signature"> | Omit<SubplebbitType, "signature"> | Omit<ChallengeAnswerMessageType, "signature"> | Omit<ChallengeRequestMessageType, "signature"> | Omit<ChallengeVerificationMessageType, "signature"> | Omit<ChallengeMessageType, "signature">;
 export {};

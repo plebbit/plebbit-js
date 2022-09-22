@@ -1,15 +1,18 @@
 import { Subplebbit } from "./subplebbit";
 import { CommentType, PagesType, PageType, PostSortName, ReplySortName } from "./types";
+import { Plebbit } from "./plebbit";
 export declare class Pages implements PagesType {
     pages?: Partial<Record<PostSortName | ReplySortName, PageType>>;
     pageCids?: Partial<Record<PostSortName | ReplySortName, string>>;
     subplebbit: Pick<Subplebbit, "address" | "plebbit">;
-    constructor(props: PagesType);
+    constructor(props: PagesType & {
+        subplebbit: {
+            plebbit: Plebbit;
+            address: string;
+        };
+    });
     getPage(pageCid: string): Promise<Page>;
-    toJSON(): {
-        pages: Partial<Record<"new" | "hot" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "old", PageType>>;
-        pageCids: Partial<Record<"new" | "hot" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "old", string>>;
-    };
+    toJSON(): PagesType;
 }
 export declare class Page implements PageType {
     comments: CommentType[];

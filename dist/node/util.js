@@ -46,6 +46,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -199,14 +208,14 @@ function timestamp() {
 }
 exports.timestamp = timestamp;
 function keepKeys(obj, keys) {
-    var newObj = {};
-    keys.forEach(function (key) { return (newObj[key] = undefined); });
-    for (var _i = 0, _a = Object.keys(obj); _i < _a.length; _i++) {
-        var key = _a[_i];
-        if (keys.includes(key))
-            newObj[key] = obj[key];
-    }
-    return newObj;
+    return Object.assign.apply(Object, __spreadArray(__spreadArray([{}], keys.map(function (key) {
+        var _a;
+        return (_a = {}, _a[key] = undefined, _a);
+    }), false), Object.entries(obj).map(function (_a) {
+        var _b;
+        var key = _a[0], value = _a[1];
+        return (keys.includes(key) ? (_b = {}, _b[key] = value, _b) : undefined);
+    }), false));
 }
 exports.keepKeys = keepKeys;
 function removeKeys(object1, keys) {

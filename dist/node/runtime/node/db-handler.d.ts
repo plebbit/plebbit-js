@@ -6,7 +6,7 @@ import { Knex } from "knex";
 import { Subplebbit } from "../../subplebbit";
 import { Signer } from "../../signer";
 import Transaction = Knex.Transaction;
-import { AuthorType, ChallengeRequestMessageType, ChallengeVerificationMessageType, DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, SubplebbitMetrics } from "../../types";
+import { AuthorDbType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditForDbType, CommentForDbType, CommentType, DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, SignerType, SubplebbitMetrics, VoteForDbType } from "../../types";
 import { CommentEdit } from "../../comment-edit";
 export declare class DbHandler {
     private _knex;
@@ -16,7 +16,7 @@ export declare class DbHandler {
     private _userDbConfig?;
     private _keyv;
     private _createdTables;
-    constructor(subplebbit: Subplebbit, userDbConfig?: Knex.Config);
+    constructor(subplebbit: Subplebbit);
     initDbIfNeeded(): Promise<void>;
     getDbConfig(): Knex.Config;
     keyvGet(key: string, options?: {
@@ -40,13 +40,13 @@ export declare class DbHandler {
     createTablesIfNeeded(): Promise<void>;
     private _copyTable;
     private _upsertAuthor;
-    updateAuthor(newAuthorProps: AuthorType, updateCommentsAuthor?: boolean, trx?: Transaction): Promise<void>;
+    updateAuthor(newAuthorProps: AuthorDbType, updateCommentsAuthor?: boolean, trx?: Transaction): Promise<void>;
     queryAuthor(authorAddress: string, trx?: Transaction): Promise<Author | undefined>;
-    upsertVote(vote: Vote, challengeRequestId: string, trx?: Transaction): Promise<void>;
-    upsertComment(postOrComment: Post | Comment, challengeRequestId?: string, trx?: Transaction): Promise<void>;
-    insertEdit(edit: CommentEdit, challengeRequestId: string, trx?: Transaction): Promise<void>;
+    upsertVote(vote: VoteForDbType, author: AuthorDbType, trx?: Transaction): Promise<void>;
+    upsertComment(comment: CommentForDbType, author: AuthorDbType, trx?: Transaction): Promise<void>;
+    insertEdit(edit: CommentEditForDbType, trx?: Transaction): Promise<void>;
     queryEditsSorted(commentCid: string, editor?: "author" | "mod", trx?: Transaction): Promise<CommentEdit[]>;
-    editComment(edit: CommentEdit, challengeRequestId: string, trx?: Transaction): Promise<void>;
+    editComment(edit: CommentEditForDbType, trx?: Transaction): Promise<void>;
     upsertChallenge(challenge: Omit<ChallengeRequestMessageType, "encryptedPublication" | "signature"> | Omit<DecryptedChallengeMessageType, "encryptedChallenges" | "signature"> | Omit<DecryptedChallengeAnswerMessageType, "encryptedChallengeAnswers" | "signature"> | Omit<ChallengeVerificationMessageType, "encryptedPublication" | "signature">, trx?: Transaction): Promise<void>;
     getLastVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<Vote | undefined>;
     private _baseCommentQuery;
@@ -57,12 +57,12 @@ export declare class DbHandler {
     queryCommentsBetweenTimestampRange(parentCid: string | undefined | null, timestamp1: number, timestamp2: number, trx?: Transaction): Promise<Comment[] | Post[]>;
     queryTopCommentsBetweenTimestampRange(parentCid: string | undefined | null, timestamp1: number, timestamp2: number, trx?: Transaction): Promise<Comment[] | Post[]>;
     queryCommentsUnderComment(parentCid: string | undefined | null, trx?: Transaction): Promise<Comment[] | Post[]>;
-    queryParentsOfComment(comment: Comment, trx?: Transaction): Promise<Comment[]>;
+    queryParentsOfComment(comment: CommentType, trx?: Transaction): Promise<Comment[]>;
     queryComments(trx?: Transaction): Promise<Comment[] | Post[]>;
     querySubplebbitMetrics(trx?: Transaction): Promise<SubplebbitMetrics>;
     queryComment(cid: string, trx?: Transaction): Promise<Comment | Post | undefined>;
     queryLatestPost(trx?: Transaction): Promise<Post | undefined>;
-    insertSigner(signer: Signer, trx?: Transaction): Promise<void>;
+    insertSigner(signer: SignerType, trx?: Transaction): Promise<void>;
     querySubplebbitSigner(trx?: Transaction): Promise<Signer>;
     querySigner(ipnsKeyName: string, trx?: Transaction): Promise<Signer | undefined>;
     queryCommentsGroupByDepth(trx?: Knex.Transaction): Promise<Comment[][]>;

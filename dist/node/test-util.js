@@ -61,7 +61,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAllCommentsUnderSubplebbit = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
 var util_1 = require("./util");
+var signer_1 = require("./signer");
 var assert_1 = __importDefault(require("assert"));
+var err_code_1 = __importDefault(require("err-code"));
+var errors_1 = require("./errors");
 function generateRandomTimestamp(parentTimestamp) {
     var _a = [parentTimestamp || 0, (0, util_1.timestamp)()], lowerLimit = _a[0], upperLimit = _a[1];
     var randomTimestamp;
@@ -77,9 +80,9 @@ function generateMockPost(subplebbitAddress, plebbit, signer, randomTimestamp, p
     if (randomTimestamp === void 0) { randomTimestamp = false; }
     if (postProps === void 0) { postProps = {}; }
     return __awaiter(this, void 0, void 0, function () {
-        var postTimestamp, postStartTestTime, _a, post;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var postTimestamp, postStartTestTime, _a, post, _b, validSignature, failedVerificationReason;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
                     postTimestamp = (randomTimestamp && generateRandomTimestamp()) || (0, util_1.timestamp)();
                     postStartTestTime = Date.now() / 1000 + Math.random();
@@ -87,17 +90,24 @@ function generateMockPost(subplebbitAddress, plebbit, signer, randomTimestamp, p
                     if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, plebbit.createSigner()];
                 case 1:
-                    _a = (_b.sent());
-                    _b.label = 2;
+                    _a = (_c.sent());
+                    _c.label = 2;
                 case 2:
                     signer = _a;
                     return [4 /*yield*/, plebbit.createComment(__assign({ author: { displayName: "Mock Author - ".concat(postStartTestTime) }, signer: signer, title: "Mock Post - ".concat(postStartTestTime), content: "Mock content - ".concat(postStartTestTime), timestamp: postTimestamp, subplebbitAddress: subplebbitAddress }, postProps))];
                 case 3:
-                    post = _b.sent();
+                    post = _c.sent();
                     assert_1.default.equal(post.constructor.name, "Post", "createComment should return Post if title is provided");
                     post.once("challenge", function (challengeMsg) {
-                        post.publishChallengeAnswers(undefined);
+                        post.publishChallengeAnswers([]);
                     });
+                    return [4 /*yield*/, (0, signer_1.verifyPublication)(post, plebbit, post.getType())];
+                case 4:
+                    _b = _c.sent(), validSignature = _b[0], failedVerificationReason = _b[1];
+                    if (!validSignature)
+                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+                            details: "generateMockPost: Failed verification reason: ".concat(failedVerificationReason)
+                        });
                     return [2 /*return*/, post];
             }
         });
@@ -108,9 +118,9 @@ function generateMockComment(parentPostOrComment, plebbit, signer, randomTimesta
     if (randomTimestamp === void 0) { randomTimestamp = false; }
     if (commentProps === void 0) { commentProps = {}; }
     return __awaiter(this, void 0, void 0, function () {
-        var commentTimestamp, commentTime, _a, comment;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var commentTimestamp, commentTime, _a, comment, _b, validSignature, failedVerificationReason;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
                     (0, assert_1.default)(parentPostOrComment, "Need to have parentComment defined to generate mock comment");
                     commentTimestamp = (randomTimestamp && generateRandomTimestamp(parentPostOrComment.timestamp)) || (0, util_1.timestamp)();
@@ -119,16 +129,23 @@ function generateMockComment(parentPostOrComment, plebbit, signer, randomTimesta
                     if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, plebbit.createSigner()];
                 case 1:
-                    _a = (_b.sent());
-                    _b.label = 2;
+                    _a = (_c.sent());
+                    _c.label = 2;
                 case 2:
                     signer = _a;
                     return [4 /*yield*/, plebbit.createComment(__assign({ author: { displayName: "Mock Author - ".concat(commentTime) }, signer: signer, content: "Mock comment - ".concat(commentTime), parentCid: parentPostOrComment.cid, subplebbitAddress: parentPostOrComment.subplebbitAddress, timestamp: commentTimestamp }, commentProps))];
                 case 3:
-                    comment = _b.sent();
+                    comment = _c.sent();
                     comment.once("challenge", function (challengeMsg) {
-                        comment.publishChallengeAnswers(undefined);
+                        comment.publishChallengeAnswers([]);
                     });
+                    return [4 /*yield*/, (0, signer_1.verifyPublication)(comment, plebbit, comment.getType())];
+                case 4:
+                    _b = _c.sent(), validSignature = _b[0], failedVerificationReason = _b[1];
+                    if (!validSignature)
+                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+                            details: "generateMockComment: Failed verification reason: ".concat(failedVerificationReason)
+                        });
                     return [2 /*return*/, comment];
             }
         });
@@ -137,9 +154,9 @@ function generateMockComment(parentPostOrComment, plebbit, signer, randomTimesta
 exports.generateMockComment = generateMockComment;
 function generateMockVote(parentPostOrComment, vote, plebbit, signer) {
     return __awaiter(this, void 0, void 0, function () {
-        var voteTime, commentCid, _a, voteObj;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var voteTime, commentCid, _a, voteObj, _b, validSignature, failedVerificationReason;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
                     voteTime = Date.now() / 1000;
                     commentCid = parentPostOrComment.cid || parentPostOrComment.postCid;
@@ -148,8 +165,8 @@ function generateMockVote(parentPostOrComment, vote, plebbit, signer) {
                     if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, plebbit.createSigner()];
                 case 1:
-                    _a = (_b.sent());
-                    _b.label = 2;
+                    _a = (_c.sent());
+                    _c.label = 2;
                 case 2:
                     signer = _a;
                     return [4 /*yield*/, plebbit.createVote({
@@ -160,10 +177,17 @@ function generateMockVote(parentPostOrComment, vote, plebbit, signer) {
                             subplebbitAddress: parentPostOrComment.subplebbitAddress
                         })];
                 case 3:
-                    voteObj = _b.sent();
+                    voteObj = _c.sent();
                     voteObj.once("challenge", function (challengeMsg) {
-                        voteObj.publishChallengeAnswers(undefined);
+                        voteObj.publishChallengeAnswers([]);
                     });
+                    return [4 /*yield*/, (0, signer_1.verifyPublication)(voteObj, plebbit, voteObj.getType())];
+                case 4:
+                    _b = _c.sent(), validSignature = _b[0], failedVerificationReason = _b[1];
+                    if (!validSignature)
+                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+                            details: "generateMockVote: Failed verification reason: ".concat(failedVerificationReason)
+                        });
                     return [2 /*return*/, voteObj];
             }
         });
