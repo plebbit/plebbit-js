@@ -3,7 +3,7 @@ import { Page, Pages } from "./pages";
 import { Subplebbit } from "./subplebbit";
 import assert from "assert";
 import { Comment } from "./comment";
-import { PostSort, PostSortName, ReplySort, ReplySortName, SortProps, Timeframe } from "./types";
+import { CommentType, PostSort, PostSortName, ReplySort, ReplySortName, SortProps, Timeframe } from "./types";
 import Logger from "@plebbit/plebbit-logger";
 
 export const POSTS_SORT_TYPES: PostSort = {
@@ -39,15 +39,16 @@ export class SortHandler {
         this.subplebbit = subplebbit;
     }
 
-    async chunksToListOfPage(chunks: Comment[][]): Promise<[Page[], string[]]> {
+    async chunksToListOfPage(chunks: CommentType[][]): Promise<[Page[], string[]]> {
         assert(chunks.length > 0);
 
         const listOfPage: Page[] = new Array(chunks.length);
         const cids = new Array(chunks.length);
-        const chunksWithReplies = await Promise.all(
+        const chunksWithReplies: Comment[][] = await Promise.all(
             chunks.map(async (chunk) => {
                 return await Promise.all(
-                    chunk.map(async (comment: Comment) => {
+                    chunk.map(async (commentProps: CommentType) => {
+                        const comment = await this.subplebbit.plebbit.createComment(commentProps);
                         const repliesPages = await this.generatePagesUnderComment(comment, undefined);
                         comment.setReplies(repliesPages);
                         return comment;
@@ -71,12 +72,12 @@ export class SortHandler {
 
     // Resolves to sortedComments
     async sortComments(
-        comments: Comment[],
+        comments: CommentType[],
         sortName: PostSortName | ReplySortName,
         limit = SORTED_POSTS_PAGE_SIZE
     ): Promise<[Partial<Record<PostSortName | ReplySortName, Page>>, string]> {
         assert(comments.length > 0);
-        let commentsSorted: Comment[];
+        let commentsSorted: CommentType[];
         const sortProps: SortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
         assert(sortProps);
 
@@ -84,7 +85,7 @@ export class SortHandler {
         // If sort type has no score function, that means it already has been sorted by DB
         else
             commentsSorted = comments
-                .map((comment: Comment) => ({
+                .map((comment: CommentType) => ({
                     comment: comment,
                     score: sortProps.score(comment)
                 }))
@@ -144,7 +145,7 @@ export class SortHandler {
         return this.sortComments(comments, "new");
     }
 
-    getSortPromises(comment?: Comment, trx?) {
+    getSortPromises(comment?: Comment | CommentType, trx?) {
         if (!comment) {
             // Sorting posts on a subplebbit level
             const sortPromises = [this.sortCommentsByHot(undefined, trx), this.sortCommentsByNew(undefined, trx)];
@@ -161,7 +162,7 @@ export class SortHandler {
             return sortPromises;
         } else {
             return (Object.keys(REPLIES_SORT_TYPES) as Array<keyof typeof REPLIES_SORT_TYPES>).map(async (sortName: ReplySortName) => {
-                let comments: Comment[];
+                let comments: CommentType[];
                 assert(this.subplebbit?.dbHandler);
 
                 if (sortName === "topAll")
@@ -182,14 +183,14 @@ export class SortHandler {
     }
 
     async cacheCommentsPages(trx?) {
-        const commentLevels: Comment[][] = await this.subplebbit.dbHandler.queryCommentsGroupByDepth(trx);
+        const commentLevels: CommentType[][] = await this.subplebbit.dbHandler.queryCommentsGroupByDepth(trx);
         for (let i = commentLevels.length - 1; i >= 0; i--)
             await Promise.all(commentLevels[i].map((comment) => this.generatePagesUnderComment(comment, trx)));
 
         await this.generatePagesUnderComment(undefined, trx);
     }
 
-    async generatePagesUnderComment(comment?: Comment, trx?): Promise<Pages | undefined> {
+    async generatePagesUnderComment(comment?: Comment | CommentType, trx?): Promise<Pages | undefined> {
         if (comment?.replyCount === 0) return undefined;
         if (comment && (comment.replyCount === undefined || comment.replyCount === null))
             throw new Error(`Comment has not defined replyCount (${comment.replyCount}): ${JSON.stringify(comment)}`);

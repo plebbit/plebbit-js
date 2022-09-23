@@ -170,16 +170,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     async initDbIfNeeded() {
         if (!this.dbHandler) {
-            //@ts-ignore
-            this.sortHandler = undefined;
             this.dbHandler = nativeFunctions.createDbHandler({
                 address: this.address,
                 database: this.database,
                 plebbit: {
                     dataPath: this.plebbit.dataPath,
-                    createComment: this.plebbit.createComment.bind(this.plebbit),
-                    createVote: this.plebbit.createVote.bind(this.plebbit),
-                    createCommentEdit: this.plebbit.createCommentEdit.bind(this.plebbit)
+                    createComment: this.plebbit.createComment.bind(this.plebbit)
                 }
             });
         }
@@ -303,9 +299,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
             log.trace(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
             this.initSubplebbit(newSubplebbitOptions);
-            await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, this);
-            this.dbHandler = undefined;
-            await this.prePublish();
+            await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
+                address: this.address,
+                database: this.database,
+                plebbit: {
+                    dataPath: this.plebbit.dataPath,
+                    createComment: this.plebbit.createComment.bind(this.plebbit)
+                }
+            });
+
+            await this.initDbIfNeeded();
         }
 
         this.initSubplebbit(newSubplebbitOptions);
@@ -928,7 +931,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         try {
             await this.sortHandler.cacheCommentsPages();
             const dbComments = await this.dbHandler.queryComments();
-            await Promise.all([...dbComments.map(async (comment: Comment) => this.syncComment(comment)), this.updateSubplebbitIpns()]);
+            await Promise.all([
+                ...dbComments.map(async (commentProps: CommentType) => this.syncComment(await this.plebbit.createComment(commentProps))),
+                this.updateSubplebbitIpns()
+            ]);
             RUNNING_SUBPLEBBITS[this.signer.address] = true;
         } catch (e) {
             log.error(`Failed to sync due to error: ${e}`);
