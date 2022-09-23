@@ -110,9 +110,12 @@ var Plebbit = /** @class */ (function (_super) {
                 chainId: 137
             }
         };
-        _this.resolver = new resolver_1.Resolver({ plebbit: _this, blockchainProviders: _this.blockchainProviders });
         _this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         _this._memCache = new tinycache_1.default();
+        _this.resolver = new resolver_1.Resolver({
+            plebbit: { _memCache: _this._memCache, resolveAuthorAddresses: _this.resolveAuthorAddresses },
+            blockchainProviders: _this.blockchainProviders
+        });
         _this.dataPath = options.dataPath || (0, util_1.getDefaultDataPath)();
         return _this;
     }

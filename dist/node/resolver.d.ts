@@ -1,5 +1,4 @@
 import { ethers } from "ethers";
-import { Plebbit } from "./plebbit";
 import { BlockchainProvider } from "./types";
 export declare class Resolver {
     blockchainProviders: {
@@ -8,7 +7,7 @@ export declare class Resolver {
     private cachedBlockchainProviders;
     private plebbit;
     constructor(options: {
-        plebbit: Plebbit;
+        plebbit: Resolver["plebbit"];
         blockchainProviders: {
             [chainTicker: string]: BlockchainProvider;
         };

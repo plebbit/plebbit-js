@@ -16,7 +16,7 @@ export declare class DbHandler {
     private _userDbConfig?;
     private _keyv;
     private _createdTables;
-    constructor(subplebbit: Subplebbit);
+    constructor(subplebbit: DbHandler["_subplebbit"]);
     initDbIfNeeded(): Promise<void>;
     getDbConfig(): Knex.Config;
     keyvGet(key: string, options?: {

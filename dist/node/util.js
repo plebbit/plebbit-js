@@ -64,6 +64,9 @@ var form_data_1 = __importDefault(require("form-data"));
 var assert_1 = __importDefault(require("assert"));
 var util_1 = require("./runtime/node/util");
 var buffer_1 = require("buffer");
+var is_ipfs_1 = __importDefault(require("is-ipfs"));
+var errors_1 = require("./errors");
+var err_code_1 = __importDefault(require("err-code"));
 //This is temp. TODO replace this with accurate mapping
 exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -113,7 +116,10 @@ function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    assert_1.default.ok(cid, "Cid has to not be null to load");
+                    if (!is_ipfs_1.default.cid(cid) && !is_ipfs_1.default.path(cid))
+                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.codes.ERR_CID_IS_INVALID, {
+                            details: "loadIpfsFileAsJson: CID (".concat(cid, ") is invalid")
+                        });
                     if (!!plebbit.ipfsClient) return [3 /*break*/, 2];
                     url = "".concat(plebbit.ipfsGatewayUrl, "/ipfs/").concat(cid);
                     return [4 /*yield*/, fetchWithLimit(url, { cache: "force-cache", size: DOWNLOAD_LIMIT_BYTES })];
@@ -152,7 +158,10 @@ function loadIpnsAsJson(ipns, plebbit) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    assert_1.default.ok(ipns, "ipns has to be not null to load");
+                    if (typeof ipns !== "string")
+                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_IPNS_IS_INVALID), errors_1.codes.ERR_IPNS_IS_INVALID, {
+                            details: "loadIpnsAsJson: ipns (".concat(ipns, ") is invalid")
+                        });
                     if (!!plebbit.ipfsClient) return [3 /*break*/, 5];
                     url = "".concat(plebbit.ipfsGatewayUrl, "/ipns/").concat(ipns);
                     return [4 /*yield*/, fetchWithLimit(url, { cache: "no-store", size: DOWNLOAD_LIMIT_BYTES })];

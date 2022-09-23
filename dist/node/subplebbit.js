@@ -194,8 +194,20 @@ var Subplebbit = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!this.dbHandler)
-                            this.dbHandler = util_3.nativeFunctions.createDbHandler(this);
+                        if (!this.dbHandler) {
+                            //@ts-ignore
+                            this.sortHandler = undefined;
+                            this.dbHandler = util_3.nativeFunctions.createDbHandler({
+                                address: this.address,
+                                database: this.database,
+                                plebbit: {
+                                    dataPath: this.plebbit.dataPath,
+                                    createComment: this.plebbit.createComment.bind(this.plebbit),
+                                    createVote: this.plebbit.createVote.bind(this.plebbit),
+                                    createCommentEdit: this.plebbit.createCommentEdit.bind(this.plebbit)
+                                }
+                            });
+                        }
                         return [4 /*yield*/, this.dbHandler.initDbIfNeeded()];
                     case 1:
                         _a.sent();
@@ -345,7 +357,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 0:
                         (0, assert_1.default)(this.dbHandler, "dbHandler is needed to edit");
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:edit");
-                        if (!(newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address)) return [3 /*break*/, 2];
+                        if (!(newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address)) return [3 /*break*/, 3];
                         this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch(function (err) {
                             var editError = (0, err_code_1.default)(err, err.code, { details: "subplebbit.edit: ".concat(err.details) });
                             log.error(editError);
@@ -356,12 +368,16 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.dbHandler.changeDbFilename(newSubplebbitOptions.address, this)];
                     case 1:
                         _a.sent();
-                        _a.label = 2;
+                        this.dbHandler = undefined;
+                        return [4 /*yield*/, this.prePublish()];
                     case 2:
+                        _a.sent();
+                        _a.label = 3;
+                    case 3:
                         this.initSubplebbit(newSubplebbitOptions);
                         log("Subplebbit (".concat(this.address, ") props (").concat(Object.keys(newSubplebbitOptions), ") has been edited"));
                         return [4 /*yield*/, this.dbHandler.keyvSet(this.address, this.toJSON())];
-                    case 3:
+                    case 4:
                         _a.sent();
                         return [2 /*return*/, this];
                 }
@@ -498,7 +514,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 9:
                         if (subplebbitPosts) {
                             if (!((_a = subplebbitPosts === null || subplebbitPosts === void 0 ? void 0 : subplebbitPosts.pages) === null || _a === void 0 ? void 0 : _a.hot))
-                                throw new Error("Generated pages for subplebbit.posts is missing pages");
+                                throw Error("Generated pages for subplebbit.posts is missing pages");
                             this.posts = new pages_1.Pages({
                                 pages: {
                                     hot: subplebbitPosts.pages.hot
@@ -1169,27 +1185,30 @@ var Subplebbit = /** @class */ (function (_super) {
                         (0, assert_1.default)(this.dbHandler, "DbHandler need to be defined before syncing");
                         (0, assert_1.default)((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address, "Signer is needed to sync");
                         log.trace("Starting to sync IPNS with DB");
-                        _b.label = 1;
+                        return [4 /*yield*/, this.initDbIfNeeded()];
                     case 1:
-                        _b.trys.push([1, 5, , 6]);
-                        return [4 /*yield*/, this.sortHandler.cacheCommentsPages()];
+                        _b.sent();
+                        _b.label = 2;
                     case 2:
+                        _b.trys.push([2, 6, , 7]);
+                        return [4 /*yield*/, this.sortHandler.cacheCommentsPages()];
+                    case 3:
                         _b.sent();
                         return [4 /*yield*/, this.dbHandler.queryComments()];
-                    case 3:
+                    case 4:
                         dbComments = _b.sent();
                         return [4 /*yield*/, Promise.all(__spreadArray(__spreadArray([], dbComments.map(function (comment) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                                 return [2 /*return*/, this.syncComment(comment)];
                             }); }); }), true), [this.updateSubplebbitIpns()], false))];
-                    case 4:
+                    case 5:
                         _b.sent();
                         exports.RUNNING_SUBPLEBBITS[this.signer.address] = true;
-                        return [3 /*break*/, 6];
-                    case 5:
+                        return [3 /*break*/, 7];
+                    case 6:
                         e_8 = _b.sent();
                         log.error("Failed to sync due to error: ".concat(e_8));
-                        return [3 /*break*/, 6];
-                    case 6: return [2 /*return*/];
+                        return [3 /*break*/, 7];
+                    case 7: return [2 /*return*/];
                 }
             });
         });
