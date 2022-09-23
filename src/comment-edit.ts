@@ -95,6 +95,7 @@ export class CommentEdit extends Publication implements CommentEditType {
     toJSONForDb(challengeRequestId: string): CommentEditForDbType {
         return removeKeysWithUndefinedValues({
             ...this.toJSON(),
+            author: JSON.stringify(this.author),
             authorAddress: this.author.address,
             challengeRequestId: challengeRequestId
         });

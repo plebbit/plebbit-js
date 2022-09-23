@@ -175,6 +175,9 @@ export class Comment extends Publication implements CommentType {
         assert(this.ipnsKeyName);
         return removeKeysWithUndefinedValues({
             ...removeKeys(this.toJSON(), ["replyCount", "upvoteCount", "downvoteCount", "replies"]),
+            author: JSON.stringify(this.author),
+            authorEdit: JSON.stringify(this.authorEdit),
+            original: JSON.stringify(this.original),
             authorAddress: this.author.address,
             challengeRequestId: challengeRequestId,
             ipnsKeyName: this.ipnsKeyName,

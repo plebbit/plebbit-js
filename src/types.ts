@@ -453,10 +453,15 @@ export type OnlyDefinedProperties<T> = Pick<
 
 // These types are for DB handler
 
-export type CommentEditForDbType = OnlyDefinedProperties<CommentEditType & { authorAddress: string; challengeRequestId: string }>;
+export type CommentEditForDbType = OnlyDefinedProperties<
+    Omit<CommentEditType, "author"> & { author: string; authorAddress: string; challengeRequestId: string }
+>;
 
 export type CommentForDbType = OnlyDefinedProperties<
-    Omit<CommentType, "replyCount" | "upvoteCount" | "downvoteCount" | "replies" | "signature"> & {
+    Omit<CommentType, "replyCount" | "upvoteCount" | "downvoteCount" | "replies" | "signature" | "author" | "authorEdit"> & {
+        authorEdit: string;
+        original: string;
+        author: string;
         authorAddress: string;
         challengeRequestId?: string;
         ipnsKeyName: string;

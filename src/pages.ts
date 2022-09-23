@@ -29,12 +29,6 @@ export class Pages implements PagesType {
 
         assert(this.subplebbit.address, "Address of subplebbit is needed to load pages");
 
-        const cachedResponse: PageType = this.subplebbit.plebbit._memCache.get(pageCid);
-        if (cachedResponse && JSON.stringify(cachedResponse) !== "{}") {
-            log.trace(`page (${pageCid}) is already cached. Returning cached page`);
-            return new Page(cachedResponse);
-        }
-
         const page = new Page(await loadIpfsFileAsJson(pageCid, this.subplebbit.plebbit));
         const verifyComment = async (comment: CommentType, parentComment?: CommentType) => {
             assert(typeof comment.upvoteCount === "number" && typeof comment.downvoteCount === "number");
@@ -68,10 +62,6 @@ export class Pages implements PagesType {
                 await verifyComment(comment, undefined);
             })
         );
-
-        // set cache
-        this.subplebbit.plebbit._memCache.put(pageCid, page.toJSON());
-
         return page;
     }
 

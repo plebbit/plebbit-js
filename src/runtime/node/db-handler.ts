@@ -30,7 +30,6 @@ import Logger from "@plebbit/plebbit-logger";
 import { getDefaultSubplebbitDbConfig } from "./util";
 import env from "../../version";
 import { Plebbit } from "../../plebbit";
-import { Comment } from "../../comment";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -40,19 +39,6 @@ const TABLES = Object.freeze({
     SIGNERS: "signers", // To store private keys of subplebbit and comments' IPNS,
     EDITS: "edits"
 });
-
-const jsonFields = [
-    "signature",
-    "author",
-    "authorEdit",
-    "original",
-    "flair",
-    "commentAuthor",
-    "acceptedChallengeTypes",
-    "challenges",
-    "challengeAnswers",
-    "challengeErrors"
-];
 
 export class DbHandler {
     private _knex: Knex;
@@ -387,12 +373,10 @@ export class DbHandler {
             ).challengeRequestId;
 
         assert(challengeRequestId, "Need to have challengeRequestId before upserting");
-        const originalCommentProps = await this.queryComment(comment.cid, trx);
-        let originalComment: Comment | undefined;
-        if (originalCommentProps) originalComment = await this._subplebbit.plebbit.createComment(originalCommentProps);
 
-        const dbObject = originalComment ? { ...originalComment?.toJSONForDb(challengeRequestId), ...comment } : comment;
-        await this._baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge();
+        if (await this.queryComment(comment.cid))
+            await this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid: comment.cid }).update(comment);
+        else await this._baseTransaction(trx)(TABLES.COMMENTS).insert(comment);
     }
 
     async insertEdit(edit: CommentEditForDbType, trx?: Transaction) {
@@ -402,19 +386,16 @@ export class DbHandler {
     async queryEditsSorted(commentCid: string, editor?: "author" | "mod", trx?: Transaction): Promise<CommentEditType[]> {
         const authorAddress = (await this._baseTransaction(trx)(TABLES.COMMENTS).select("authorAddress").where("cid", commentCid).first())
             .authorAddress;
-        if (!editor) {
-            return this._createEditsFromRows(await this._baseTransaction(trx)(TABLES.EDITS).orderBy("id", "desc"));
-        } else if (editor === "author") {
+        if (!editor) return this._createEditsFromRows(await this._baseTransaction(trx)(TABLES.EDITS).orderBy("id", "desc"));
+        else if (editor === "author")
             return this._createEditsFromRows(
                 await this._baseTransaction(trx)(TABLES.EDITS).where("authorAddress", authorAddress).orderBy("id", "desc")
             );
-        } else if (editor === "mod") {
+        else if (editor === "mod")
             return this._createEditsFromRows(
                 await this._baseTransaction(trx)(TABLES.EDITS).whereNot("authorAddress", authorAddress).orderBy("id", "desc")
             );
-        } else {
-            return [];
-        }
+        else return [];
     }
 
     async editComment(edit: CommentEditForDbType, trx?: Transaction) {
@@ -500,13 +481,22 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENTS).select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery);
     }
 
+    private _parseJsonFields(obj: Object) {
+        const jsonregex = /"((?:[^"\\\/\b\f\n\r\t]|\\u\d{4})*)"/gm;
+        const newObj = { ...obj };
+        for (const field in newObj) {
+            if (typeof newObj[field] === "string" && jsonregex.exec(newObj[field])) newObj[field] = JSON.parse(newObj[field]);
+            if (newObj[field]?.constructor?.name === "Object") newObj[field] = this._parseJsonFields(newObj[field]);
+        }
+        return <any>newObj;
+    }
+
     private async _createCommentsFromRows(commentsRows: CommentType[] | CommentType): Promise<CommentType[] | PostType[]> {
         if (!commentsRows || (Array.isArray(commentsRows) && commentsRows?.length === 0)) return [];
         if (!Array.isArray(commentsRows)) commentsRows = [commentsRows];
         return Promise.all(
             commentsRows.map(async (props) => {
-                const replacedProps: CommentType | PostType = replaceXWithY(props, null, undefined); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
-                for (const field of jsonFields) if (replacedProps[field]) replacedProps[field] = JSON.parse(replacedProps[field]);
+                const replacedProps: CommentType | PostType = this._parseJsonFields(replaceXWithY(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
 
                 assert(
                     typeof replacedProps.replyCount === "number" &&
@@ -523,8 +513,7 @@ export class DbHandler {
         if (!Array.isArray(edits)) edits = [edits];
         return Promise.all(
             edits.map(async (props) => {
-                const replacedProps = replaceXWithY(props, null, undefined); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
-                for (const field of jsonFields) if (replacedProps[field]) replacedProps[field] = JSON.parse(replacedProps[field]);
+                const replacedProps: CommentEditType = this._parseJsonFields(replaceXWithY(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
                 return replacedProps;
             })
         );
@@ -535,8 +524,7 @@ export class DbHandler {
         if (!Array.isArray(voteRows)) voteRows = [voteRows];
         return Promise.all(
             voteRows.map((props) => {
-                const replacedProps: VoteType = replaceXWithY(props, null, undefined);
-                for (const field of jsonFields) if (replacedProps[field]) replacedProps[field] = JSON.parse(replacedProps[field]);
+                const replacedProps: VoteType = this._parseJsonFields(replaceXWithY(props, null, undefined));
                 return replacedProps;
             })
         );
