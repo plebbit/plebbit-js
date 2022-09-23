@@ -1,12 +1,13 @@
 import Publication from "./publication";
-import { PublicationTypeName, VoteType } from "./types";
+import { PublicationTypeName, VoteForDbType, VoteType } from "./types";
+import { Plebbit } from "./plebbit";
 declare class Vote extends Publication implements VoteType {
     commentCid: string;
     vote: 1 | 0 | -1;
-    constructor(props: VoteType, subplebbit: any);
+    constructor(props: VoteType, plebbit: Plebbit);
     toJSON(): VoteType;
     getType(): PublicationTypeName;
-    toJSONForDb(challengeRequestId: string): VoteType;
+    toJSONForDb(challengeRequestId: string): VoteForDbType;
     publish(userOptions: any): Promise<void>;
 }
 export default Vote;

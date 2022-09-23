@@ -1,6 +1,7 @@
 import Publication from "./publication";
 import { Pages } from "./pages";
-import { AuthorCommentEdit, CommentType, CommentUpdate, Flair, ProtocolVersion, PublicationTypeName } from "./types";
+import { AuthorCommentEdit, CommentForDbType, CommentIpfsType, CommentType, CommentUpdate, Flair, PagesType, ProtocolVersion, PublicationTypeName } from "./types";
+import { Plebbit } from "./plebbit";
 export declare class Comment extends Publication implements CommentType {
     title?: string;
     link?: string;
@@ -29,29 +30,14 @@ export declare class Comment extends Publication implements CommentType {
     removed?: boolean;
     moderatorReason?: string;
     private _updateInterval?;
+    constructor(props: CommentType, plebbit: Plebbit);
     _initProps(props: CommentType): void;
     _initCommentUpdate(props: CommentType | CommentUpdate): void;
     _mergeFields(props: CommentType): void;
     getType(): PublicationTypeName;
     toJSON(): CommentType;
     toJSONPages(): CommentType;
-    toJSONIpfs(): {
-        previousCid: string;
-        ipnsName: string;
-        postCid: string;
-        depth: number;
-        thumbnailUrl: string;
-        content: string;
-        parentCid: string;
-        flair: Flair;
-        spoiler: boolean;
-        link: string;
-        author: import("./types").AuthorType;
-        signature: import("./types").SignatureType;
-        protocolVersion: "1.0.0";
-        subplebbitAddress: string;
-        timestamp: number;
-    };
+    toJSONIpfs(): CommentIpfsType;
     toJSONSkeleton(): {
         content: string;
         parentCid: string;
@@ -64,7 +50,7 @@ export declare class Comment extends Publication implements CommentType {
         subplebbitAddress: string;
         timestamp: number;
     };
-    toJSONForDb(challengeRequestId: string): any;
+    toJSONForDb(challengeRequestId?: string): CommentForDbType;
     toJSONCommentUpdate(skipAssert?: boolean): Omit<CommentUpdate, "signature">;
     setCommentIpnsKey(ipnsKey: any): void;
     setPostCid(newPostCid: string): void;
@@ -72,7 +58,7 @@ export declare class Comment extends Publication implements CommentType {
     setPreviousCid(newPreviousCid?: string): void;
     setDepth(newDepth: number): void;
     setUpdatedAt(newUpdatedAt: number): void;
-    setReplies(replies?: Pages): void;
+    setReplies(replies?: Pages | PagesType): void;
     updateOnce(): Promise<this>;
     update(updateIntervalMs?: number): Promise<this>;
     stop(): void;

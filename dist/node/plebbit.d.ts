@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { BlockchainProvider, CommentType, CreateCommentEditOptions, CreateCommentOptions, CreateSignerOptions, CreateSubplebbitOptions, CreateVoteOptions, NativeFunctions, PlebbitOptions, VoteType } from "./types";
+import { BlockchainProvider, CommentEditType, CommentType, CreateCommentEditOptions, CreateCommentOptions, CreateSignerOptions, CreateSubplebbitOptions, CreateVoteOptions, NativeFunctions, PlebbitOptions, PostType, SubplebbitType, VoteType } from "./types";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
@@ -27,11 +27,11 @@ export declare class Plebbit extends EventEmitter implements PlebbitOptions {
     _init(options: PlebbitOptions): Promise<void>;
     getSubplebbit(subplebbitAddress: string): Promise<Subplebbit>;
     getComment(cid: string): Promise<Comment | Post>;
-    createComment(options: CreateCommentOptions | CommentType): Promise<Comment | Post>;
+    createComment(options: CreateCommentOptions | CommentType | PostType): Promise<Comment | Post>;
     _canRunSub(): boolean;
-    createSubplebbit(options?: CreateSubplebbitOptions): Promise<Subplebbit>;
+    createSubplebbit(options?: CreateSubplebbitOptions | SubplebbitType): Promise<Subplebbit>;
     createVote(options: CreateVoteOptions | VoteType): Promise<Vote>;
-    createCommentEdit(options: CreateCommentEditOptions): Promise<CommentEdit>;
+    createCommentEdit(options: CreateCommentEditOptions | CommentEditType): Promise<CommentEdit>;
     createSigner(createSignerOptions?: CreateSignerOptions): Promise<Signer>;
     listSubplebbits(): Promise<string[]>;
 }

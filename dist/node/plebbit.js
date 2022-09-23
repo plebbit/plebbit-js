@@ -183,7 +183,7 @@ var Plebbit = /** @class */ (function (_super) {
     };
     Plebbit.prototype.getComment = function (cid) {
         return __awaiter(this, void 0, void 0, function () {
-            var commentJson, subplebbit, publication, _a, signatureIsVerified, failedVerificationReason;
+            var commentJson, _a, signatureIsVerified, failedVerificationReason, title;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -194,20 +194,17 @@ var Plebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, util_2.loadIpfsFileAsJson)(cid, this)];
                     case 1:
                         commentJson = _b.sent();
-                        return [4 /*yield*/, this.getSubplebbit(commentJson.subplebbitAddress)];
+                        return [4 /*yield*/, (0, signer_1.verifyPublication)(commentJson, this, "comment")];
                     case 2:
-                        subplebbit = _b.sent();
-                        publication = commentJson["title"]
-                            ? new post_1.default(__assign(__assign({}, commentJson), { postCid: cid, cid: cid }), subplebbit)
-                            : new comment_1.Comment(__assign(__assign({}, commentJson), { cid: cid }), subplebbit);
-                        return [4 /*yield*/, (0, signer_1.verifyPublication)(publication, this, "comment")];
-                    case 3:
                         _a = _b.sent(), signatureIsVerified = _a[0], failedVerificationReason = _a[1];
                         if (!signatureIsVerified)
                             throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                                details: "getComment: Failed verification reason: ".concat(failedVerificationReason, ", ").concat(publication.getType(), ": ").concat(JSON.stringify(publication))
+                                details: "getComment: Failed verification reason: ".concat(failedVerificationReason, ", ").concat(commentJson.depth === 0 ? "post" : "comment", ": ").concat(JSON.stringify(commentJson))
                             });
-                        return [2 /*return*/, publication];
+                        title = commentJson.title;
+                        return [2 /*return*/, typeof title === "string"
+                                ? new post_1.default(__assign(__assign({}, commentJson), { cid: cid, title: title, postCid: cid }), this)
+                                : new comment_1.Comment(__assign(__assign({}, commentJson), { cid: cid }), this)];
                 }
             });
         });
@@ -215,14 +212,13 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.createComment = function (options) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log, commentSubplebbit, commentSignature, finalProps;
+            var log, commentSignature, finalProps, title;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createComment");
-                        commentSubplebbit = { plebbit: this, address: options.subplebbitAddress };
                         if (!options.signer)
-                            return [2 /*return*/, options.title ? new post_1.default(options, commentSubplebbit) : new comment_1.Comment(options, commentSubplebbit)];
+                            return [2 /*return*/, typeof options.title === "string" ? new post_1.default(options, this) : new comment_1.Comment(options, this)];
                         if (!options.timestamp) {
                             options.timestamp = (0, util_2.timestamp)();
                             log.trace("User hasn't provided a timestamp in createCommentOptions, defaulting to (".concat(options.timestamp, ")"));
@@ -235,7 +231,8 @@ var Plebbit = /** @class */ (function (_super) {
                     case 1:
                         commentSignature = _b.sent();
                         finalProps = __assign(__assign({}, options), { signature: commentSignature, protocolVersion: version_1.default.PROTOCOL_VERSION });
-                        return [2 /*return*/, finalProps.title ? new post_1.default(finalProps, commentSubplebbit) : new comment_1.Comment(finalProps, commentSubplebbit)];
+                        title = finalProps.title;
+                        return [2 /*return*/, typeof title === "string" ? new post_1.default(__assign(__assign({}, finalProps), { title: title }), this) : new comment_1.Comment(finalProps, this)];
                 }
             });
         });
@@ -344,14 +341,13 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.createVote = function (options) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log, subplebbit, voteSignature, voteProps;
+            var log, voteSignature, voteProps;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createVote");
-                        subplebbit = { plebbit: this, address: options.subplebbitAddress };
                         if (!options.signer)
-                            return [2 /*return*/, new vote_1.default(options, subplebbit)];
+                            return [2 /*return*/, new vote_1.default(options, this)];
                         if (!options.timestamp) {
                             options.timestamp = (0, util_2.timestamp)();
                             log.trace("User hasn't provided a timestamp in createVote, defaulting to (".concat(options.timestamp, ")"));
@@ -364,7 +360,7 @@ var Plebbit = /** @class */ (function (_super) {
                     case 1:
                         voteSignature = _b.sent();
                         voteProps = __assign(__assign({}, options), { signature: voteSignature, protocolVersion: version_1.default.PROTOCOL_VERSION });
-                        return [2 /*return*/, new vote_1.default(voteProps, subplebbit)];
+                        return [2 /*return*/, new vote_1.default(voteProps, this)];
                 }
             });
         });
@@ -372,20 +368,20 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.createCommentEdit = function (options) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log, subplebbitObj, commentEditProps, _b;
+            var log, commentEditProps, _b;
             var _c;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createCommentEdit");
-                        subplebbitObj = { plebbit: this, address: options.subplebbitAddress };
                         if (!options.signer)
-                            return [2 /*return*/, new comment_edit_1.CommentEdit(options, subplebbitObj)]; // User just wants to instantiate a CommentEdit object, not publish
+                            return [2 /*return*/, new comment_edit_1.CommentEdit(options, this)]; // User just wants to instantiate a CommentEdit object, not publish
                         if (!options.timestamp) {
                             options.timestamp = (0, util_2.timestamp)();
                             log.trace("User hasn't provided editTimestamp in createCommentEdit, defaulted to (".concat(options.timestamp, ")"));
                         }
                         if (!((_a = options === null || options === void 0 ? void 0 : options.author) === null || _a === void 0 ? void 0 : _a.address)) {
+                            (0, assert_1.default)(options.signer.address, "Signer has to have an address");
                             options.author = __assign(__assign({}, options.author), { address: options.signer.address });
                             log.trace("CreateCommentEditOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
                         }
@@ -394,7 +390,7 @@ var Plebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signer_1.signPublication)(options, options.signer, this, "commentedit")];
                     case 1:
                         commentEditProps = __assign.apply(void 0, _b.concat([(_c.signature = _d.sent(), _c.protocolVersion = version_1.default.PROTOCOL_VERSION, _c)]));
-                        return [2 /*return*/, new comment_edit_1.CommentEdit(commentEditProps, subplebbitObj)];
+                        return [2 /*return*/, new comment_edit_1.CommentEdit(commentEditProps, this)];
                 }
             });
         });

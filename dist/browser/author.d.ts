@@ -1,4 +1,4 @@
-import { AuthorType, Flair, Nft, Wallet } from "./types";
+import { AuthorDbType, AuthorType, Flair, Nft, Wallet } from "./types";
 declare class Author implements AuthorType {
     address: string;
     previousCommentCid?: string;
@@ -11,10 +11,6 @@ declare class Author implements AuthorType {
     banExpiresAt?: number;
     constructor(props: AuthorType);
     toJSON(): AuthorType;
-    toJSONForDb(): {
-        address: string;
-        banExpiresAt: number;
-        flair: Flair;
-    };
+    toJSONForDb(): AuthorDbType;
 }
 export default Author;

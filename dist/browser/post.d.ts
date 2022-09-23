@@ -1,12 +1,14 @@
 import { Comment } from "./comment";
 import { PostType } from "./types";
+import { Plebbit } from "./plebbit";
 declare class Post extends Comment implements PostType {
     thumbnailUrl?: string;
     title: string;
     parentCid: undefined;
     depth: 0;
     link?: string;
-    _initProps(props: PostType): void;
+    constructor(props: Omit<PostType, "depth" | "parentCid">, plebbit: Plebbit);
+    _initProps(props: Omit<PostType, "depth" | "parentCid">): void;
     toJSON(): PostType;
     toJSONSkeleton(): {
         thumbnailUrl: string;

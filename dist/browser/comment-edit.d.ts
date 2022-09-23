@@ -1,5 +1,6 @@
+import { Plebbit } from "./plebbit";
 import Publication from "./publication";
-import { AuthorCommentEdit, CommentAuthorEditOptions, CommentEditType, Flair, ModeratorCommentEdit, PublicationTypeName } from "./types";
+import { AuthorCommentEdit, CommentAuthorEditOptions, CommentEditForDbType, CommentEditType, Flair, ModeratorCommentEdit, PublicationTypeName } from "./types";
 export declare const MOD_EDIT_FIELDS: (keyof ModeratorCommentEdit)[];
 export declare const AUTHOR_EDIT_FIELDS: (keyof AuthorCommentEdit)[];
 export declare class CommentEdit extends Publication implements CommentEditType {
@@ -14,9 +15,10 @@ export declare class CommentEdit extends Publication implements CommentEditType 
     removed?: boolean;
     moderatorReason?: string;
     commentAuthor?: CommentAuthorEditOptions;
+    constructor(props: CommentEditType, plebbit: Plebbit);
     _initProps(props: CommentEditType): void;
     toJSON(): CommentEditType;
-    toJSONForDb(challengeRequestId: string): any;
+    toJSONForDb(challengeRequestId: string): CommentEditForDbType;
     getType(): PublicationTypeName;
     publish(userOptions: any): Promise<void>;
 }

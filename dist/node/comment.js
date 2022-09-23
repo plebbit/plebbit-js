@@ -78,8 +78,8 @@ var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 var Comment = /** @class */ (function (_super) {
     __extends(Comment, _super);
-    function Comment() {
-        return _super !== null && _super.apply(this, arguments) || this;
+    function Comment(props, plebbit) {
+        return _super.call(this, props, plebbit) || this;
     }
     Comment.prototype._initProps = function (props) {
         _super.prototype._initProps.call(this, props);
@@ -140,27 +140,22 @@ var Comment = /** @class */ (function (_super) {
         return "comment";
     };
     Comment.prototype.toJSON = function () {
-        return __assign(__assign(__assign({}, this.toJSONIpfs()), (typeof this.updatedAt === "number" ? this.toJSONCommentUpdate() : undefined)), { cid: this.cid, original: this.original, author: this.author.toJSON() });
+        return __assign(__assign(__assign({}, this.toJSONSkeleton()), (typeof this.updatedAt === "number" ? this.toJSONCommentUpdate() : undefined)), { cid: this.cid, original: this.original, author: this.author.toJSON(), previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl, ipnsKeyName: this.ipnsKeyName });
     };
     Comment.prototype.toJSONPages = function () {
         return __assign(__assign(__assign({}, this.toJSON()), this.toJSONCommentUpdate(true)), { author: this.author.toJSON() });
     };
     Comment.prototype.toJSONIpfs = function () {
+        (0, assert_1.default)(typeof this.depth === "number");
+        (0, assert_1.default)(typeof this.ipnsName === "string", "this.ipnsName (".concat(this.ipnsName, ") is not a string"));
         return __assign(__assign({}, this.toJSONSkeleton()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl });
     };
     Comment.prototype.toJSONSkeleton = function () {
         return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { content: this.content, parentCid: this.parentCid, flair: this.flair, spoiler: this.spoiler, link: this.link });
     };
     Comment.prototype.toJSONForDb = function (challengeRequestId) {
-        var _a;
-        var json = this.toJSON();
-        ["replyCount", "upvoteCount", "downvoteCount", "replies"].forEach(function (key) { return delete json[key]; });
-        json["authorAddress"] = (_a = this === null || this === void 0 ? void 0 : this.author) === null || _a === void 0 ? void 0 : _a.address;
-        json["challengeRequestId"] = challengeRequestId;
-        json["ipnsKeyName"] = this.ipnsKeyName;
-        // @ts-ignore
-        json["signature"] = JSON.stringify(this.signature);
-        return (0, util_1.removeKeysWithUndefinedValues)(json);
+        (0, assert_1.default)(this.ipnsKeyName);
+        return (0, util_1.removeKeysWithUndefinedValues)(__assign(__assign({}, (0, util_1.removeKeys)(this.toJSON(), ["replyCount", "upvoteCount", "downvoteCount", "replies"])), { authorAddress: this.author.address, challengeRequestId: challengeRequestId, ipnsKeyName: this.ipnsKeyName, signature: JSON.stringify(this.signature) }));
     };
     Comment.prototype.toJSONCommentUpdate = function (skipAssert) {
         if (skipAssert === void 0) { skipAssert = false; }
@@ -174,7 +169,7 @@ var Comment = /** @class */ (function (_super) {
             downvoteCount: this.downvoteCount,
             replyCount: this.replyCount,
             authorEdit: this.authorEdit,
-            replies: this.replies,
+            replies: this.replies.toJSON(),
             flair: this.flair,
             spoiler: this.spoiler,
             pinned: this.pinned,
@@ -211,7 +206,7 @@ var Comment = /** @class */ (function (_super) {
         this.replies = new pages_1.Pages({
             pages: { topAll: (_a = replies === null || replies === void 0 ? void 0 : replies.pages) === null || _a === void 0 ? void 0 : _a.topAll },
             pageCids: replies === null || replies === void 0 ? void 0 : replies.pageCids,
-            subplebbit: this.subplebbit
+            subplebbit: { plebbit: this.plebbit, address: this.subplebbitAddress }
         });
     };
     Comment.prototype.updateOnce = function () {
@@ -224,7 +219,7 @@ var Comment = /** @class */ (function (_super) {
                         _b.label = 1;
                     case 1:
                         _b.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.subplebbit.plebbit)];
+                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.plebbit)];
                     case 2:
                         res = _b.sent();
                         return [3 /*break*/, 4];
@@ -235,7 +230,7 @@ var Comment = /** @class */ (function (_super) {
                     case 4:
                         if (!(res && (!this.updatedAt || !(0, util_1.shallowEqual)(this.toJSONCommentUpdate(), res, ["signature"])))) return [3 /*break*/, 6];
                         log("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
-                        return [4 /*yield*/, (0, signer_1.verifyPublication)(res, this.subplebbit.plebbit, "commentupdate")];
+                        return [4 /*yield*/, (0, signer_1.verifyPublication)(res, this.plebbit, "commentupdate")];
                     case 5:
                         _a = _b.sent(), verified = _a[0], failedVerificationReason = _a[1];
                         if (!verified) {
@@ -274,8 +269,8 @@ var Comment = /** @class */ (function (_super) {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:comment:edit");
-                        (0, assert_1.default)(this.ipnsKeyName && this.subplebbit.plebbit.ipfsClient, "You need to have commentUpdate and ipfs client defined");
-                        return [4 /*yield*/, (0, signer_1.verifyPublication)(options, this.subplebbit.plebbit, "commentupdate")];
+                        (0, assert_1.default)(this.ipnsKeyName && this.plebbit.ipfsClient, "You need to have commentUpdate and ipfs client defined");
+                        return [4 /*yield*/, (0, signer_1.verifyPublication)(options, this.plebbit, "commentupdate")];
                     case 1:
                         _a = _b.sent(), validSignature = _a[0], failedVerificationReason = _a[1];
                         if (!validSignature)
@@ -284,10 +279,10 @@ var Comment = /** @class */ (function (_super) {
                             });
                         this._initCommentUpdate(options);
                         this._mergeFields(this.toJSON());
-                        return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(__assign(__assign({}, this.toJSONCommentUpdate()), { signature: options.signature })))];
+                        return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(__assign(__assign({}, this.toJSONCommentUpdate()), { signature: options.signature })))];
                     case 2:
                         file = _b.sent();
-                        return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.name.publish(file["cid"], {
+                        return [4 /*yield*/, this.plebbit.ipfsClient.name.publish(file["cid"], {
                                 lifetime: "72h",
                                 key: this.ipnsKeyName,
                                 allowOffline: true

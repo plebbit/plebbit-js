@@ -1,9 +1,10 @@
 /// <reference types="node" />
 import EventEmitter from "events";
 import Author from "./author";
-import { Subplebbit } from "./subplebbit";
 import { Signature, Signer } from "./signer";
 import { ProtocolVersion, PublicationType, PublicationTypeName } from "./types";
+import { Plebbit } from "./plebbit";
+import { Subplebbit } from "./subplebbit";
 declare class Publication extends EventEmitter implements PublicationType {
     subplebbitAddress: string;
     timestamp: number;
@@ -11,9 +12,10 @@ declare class Publication extends EventEmitter implements PublicationType {
     signer: Signer;
     author: Author;
     protocolVersion: ProtocolVersion;
-    protected subplebbit: Subplebbit;
+    protected plebbit: Plebbit;
+    protected subplebbit?: Subplebbit;
     private challenge;
-    constructor(props: PublicationType, subplebbit: any);
+    constructor(props: PublicationType, plebbit: Plebbit);
     _initProps(props: PublicationType): void;
     getType(): PublicationTypeName;
     toJSON(): PublicationType;

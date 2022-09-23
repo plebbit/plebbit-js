@@ -1,5 +1,4 @@
-import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeType, ChallengeVerificationMessageType, Encrypted, ProtocolVersion } from "./types";
-import { Signature } from "./signer/signatures";
+import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeType, ChallengeVerificationMessageType, Encrypted, ProtocolVersion, SignatureType } from "./types";
 export declare const PUBSUB_MESSAGE_TYPES: Readonly<{
     CHALLENGEREQUEST: "CHALLENGEREQUEST";
     CHALLENGE: "CHALLENGE";
@@ -17,7 +16,7 @@ export declare class ChallengeRequestMessage implements ChallengeRequestMessageT
     type: "CHALLENGEREQUEST";
     challengeRequestId: string;
     acceptedChallengeTypes?: string[];
-    signature: Signature;
+    signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
     constructor(props: Omit<ChallengeRequestMessageType, "type">);
@@ -28,7 +27,7 @@ export declare class ChallengeMessage implements ChallengeMessageType {
     encryptedChallenges: Encrypted;
     type: "CHALLENGE";
     challengeRequestId: string;
-    signature: Signature;
+    signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
     constructor(props: Omit<ChallengeMessageType, "type">);
@@ -40,7 +39,7 @@ export declare class ChallengeAnswerMessage implements ChallengeAnswerMessageTyp
     challengeAnswerId: string;
     encryptedChallengeAnswers: Encrypted;
     challengeRequestId: string;
-    signature: Signature;
+    signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
     constructor(props: Omit<ChallengeAnswerMessageType, "type">);
@@ -55,7 +54,7 @@ export declare class ChallengeVerificationMessage implements ChallengeVerificati
     challengeErrors?: (string | undefined)[];
     reason?: string;
     encryptedPublication?: Encrypted;
-    signature: Signature;
+    signature: SignatureType;
     protocolVersion: "1.0.0";
     userAgent: string;
     constructor(props: Omit<ChallengeVerificationMessageType, "type">);

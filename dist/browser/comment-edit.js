@@ -106,8 +106,8 @@ exports.AUTHOR_EDIT_FIELDS = __spreadArray(__spreadArray([], PUBLICATION_FIELDS,
 ], false);
 var CommentEdit = /** @class */ (function (_super) {
     __extends(CommentEdit, _super);
-    function CommentEdit() {
-        return _super !== null && _super.apply(this, arguments) || this;
+    function CommentEdit(props, plebbit) {
+        return _super.call(this, props, plebbit) || this;
     }
     CommentEdit.prototype._initProps = function (props) {
         _super.prototype._initProps.call(this, props);
@@ -127,10 +127,7 @@ var CommentEdit = /** @class */ (function (_super) {
         return __assign(__assign({}, _super.prototype.toJSON.call(this)), { commentCid: this.commentCid, content: this.content, reason: this.reason, deleted: this.deleted, flair: this.flair, spoiler: this.spoiler, pinned: this.pinned, locked: this.locked, removed: this.removed, moderatorReason: this.moderatorReason, commentAuthor: this.commentAuthor });
     };
     CommentEdit.prototype.toJSONForDb = function (challengeRequestId) {
-        var json = this.toJSON();
-        json["authorAddress"] = this.author.address;
-        json["challengeRequestId"] = challengeRequestId;
-        return (0, util_1.removeKeysWithUndefinedValues)(json);
+        return (0, util_1.removeKeysWithUndefinedValues)(__assign(__assign({}, this.toJSON()), { authorAddress: this.author.address, challengeRequestId: challengeRequestId }));
     };
     CommentEdit.prototype.getType = function () {
         return "commentedit";

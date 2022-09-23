@@ -93,8 +93,8 @@ var jsonFields = [
     "challengeErrors"
 ];
 var DbHandler = /** @class */ (function () {
-    function DbHandler(subplebbit, userDbConfig) {
-        this._userDbConfig = userDbConfig;
+    function DbHandler(subplebbit) {
+        this._userDbConfig = subplebbit.database;
         this._subplebbit = subplebbit;
         this._currentTrxs = {};
         this._createdTables = false;
@@ -102,20 +102,21 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype.initDbIfNeeded = function () {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
-            var _c, _d;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
+            var log, _c;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:initDbIfNeeded");
                         (0, assert_1.default)(typeof this._subplebbit.address === "string" && this._subplebbit.address.length > 0, "DbHandler needs to be an instantiated with a Subplebbit that has a valid address, (".concat(this._subplebbit.address, ") was provided"));
+                        this._dbConfig = this._dbConfig || this._userDbConfig;
+                        if (!!this._dbConfig) return [3 /*break*/, 2];
                         _c = this;
-                        _d = this._dbConfig || this._userDbConfig;
-                        if (_d) return [3 /*break*/, 2];
                         return [4 /*yield*/, (0, util_2.getDefaultSubplebbitDbConfig)(this._subplebbit)];
                     case 1:
-                        _d = (_e.sent());
-                        _e.label = 2;
+                        _c._dbConfig = _d.sent();
+                        log("User did provide a database config. Defaulting to ".concat(JSON.stringify(this._dbConfig)));
+                        _d.label = 2;
                     case 2:
-                        _c._dbConfig = _d;
                         if (!this._knex) {
                             this._knex = (0, knex_1.default)(this._dbConfig);
                             console.log("Initialized knex in dbHandler for sub (".concat(this._subplebbit.address, ")"));
@@ -123,8 +124,8 @@ var DbHandler = /** @class */ (function () {
                         if (!!this._createdTables) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.createTablesIfNeeded()];
                     case 3:
-                        _e.sent();
-                        _e.label = 4;
+                        _d.sent();
+                        _d.label = 4;
                     case 4:
                         if (!this._keyv) {
                             this._keyv = new keyv_1.default("sqlite://".concat((_b = (_a = this._dbConfig) === null || _a === void 0 ? void 0 : _a.connection) === null || _b === void 0 ? void 0 : _b.filename));
@@ -544,6 +545,7 @@ var DbHandler = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        (0, assert_1.default)(author instanceof Object);
                         (0, assert_1.default)(JSON.stringify(author) !== "{}");
                         if (!author.address) return [3 /*break*/, 2];
                         return [4 /*yield*/, this._baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first()];
@@ -627,16 +629,14 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.upsertVote = function (vote, challengeRequestId, trx) {
+    DbHandler.prototype.upsertVote = function (vote, author, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var dbObject;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._upsertAuthor(vote.author, trx, true)];
+                    case 0: return [4 /*yield*/, this._upsertAuthor(author, trx, true)];
                     case 1:
                         _a.sent();
-                        dbObject = vote.toJSONForDb(challengeRequestId);
-                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.VOTES).insert(dbObject).onConflict(["commentCid", "authorAddress"]).merge()];
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.VOTES).insert(vote).onConflict(["commentCid", "authorAddress"]).merge()];
                     case 2:
                         _a.sent();
                         return [2 /*return*/];
@@ -644,50 +644,52 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.upsertComment = function (postOrComment, challengeRequestId, trx) {
+    DbHandler.prototype.upsertComment = function (comment, author, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var originalComment, dbObject;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var challengeRequestId, _a, originalComment, dbObject;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        (0, assert_1.default)(postOrComment.cid, "Comment need to have a cid before upserting");
-                        if (!postOrComment.author) return [3 /*break*/, 2];
+                        (0, assert_1.default)(comment.cid, "Comment need to have a cid before upserting");
+                        (0, assert_1.default)(comment instanceof Object);
+                        if (!author) return [3 /*break*/, 2];
                         // Skip adding author (For CommentEdit)
-                        return [4 /*yield*/, this._upsertAuthor(postOrComment.author, trx, true)];
+                        return [4 /*yield*/, this._upsertAuthor(author, trx, true)];
                     case 1:
                         // Skip adding author (For CommentEdit)
-                        _a.sent();
-                        _a.label = 2;
+                        _b.sent();
+                        _b.label = 2;
                     case 2:
-                        if (!!challengeRequestId) return [3 /*break*/, 4];
+                        _a = comment.challengeRequestId;
+                        if (_a) return [3 /*break*/, 4];
                         return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
                                 .where({
-                                cid: postOrComment.cid
+                                cid: comment.cid
                             })
                                 .first()];
                     case 3:
-                        challengeRequestId = (_a.sent()).challengeRequestId;
-                        _a.label = 4;
+                        _a = (_b.sent()).challengeRequestId;
+                        _b.label = 4;
                     case 4:
+                        challengeRequestId = _a;
                         (0, assert_1.default)(challengeRequestId, "Need to have challengeRequestId before upserting");
-                        return [4 /*yield*/, this.queryComment(postOrComment.cid, trx)];
+                        return [4 /*yield*/, this.queryComment(comment.cid, trx)];
                     case 5:
-                        originalComment = _a.sent();
-                        dbObject = originalComment
-                            ? __assign(__assign({}, (0, util_1.removeKeysWithUndefinedValues)(originalComment.toJSONForDb(challengeRequestId))), (0, util_1.removeKeysWithUndefinedValues)(postOrComment.toJSONForDb(challengeRequestId))) : postOrComment.toJSONForDb(challengeRequestId);
+                        originalComment = _b.sent();
+                        dbObject = originalComment ? __assign(__assign({}, originalComment.toJSONForDb(challengeRequestId)), comment) : comment;
                         return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge()];
                     case 6:
-                        _a.sent();
+                        _b.sent();
                         return [2 /*return*/];
                 }
             });
         });
     };
-    DbHandler.prototype.insertEdit = function (edit, challengeRequestId, trx) {
+    DbHandler.prototype.insertEdit = function (edit, trx) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.EDITS).insert(edit.toJSONForDb(challengeRequestId))];
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.EDITS).insert(edit)];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -723,7 +725,7 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.editComment = function (edit, challengeRequestId, trx) {
+    DbHandler.prototype.editComment = function (edit, trx) {
         return __awaiter(this, void 0, void 0, function () {
             var commentToBeEdited, isEditFromAuthor, newProps, modEdits, hasModEditedCommentFlairBefore, flairIfNeeded;
             return __generator(this, function (_a) {
@@ -743,10 +745,10 @@ var DbHandler = /** @class */ (function () {
                         modEdits = _a.sent();
                         hasModEditedCommentFlairBefore = modEdits.some(function (modEdit) { return Boolean(modEdit.flair); });
                         flairIfNeeded = hasModEditedCommentFlairBefore || !edit.flair ? undefined : { flair: JSON.stringify(edit.flair) };
-                        newProps = (0, util_1.removeKeysWithUndefinedValues)(__assign({ authorEdit: JSON.stringify(edit.toJSONForDb(challengeRequestId)), original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) }, flairIfNeeded));
+                        newProps = (0, util_1.removeKeysWithUndefinedValues)(__assign({ authorEdit: JSON.stringify(edit), original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) }, flairIfNeeded));
                         return [3 /*break*/, 4];
                     case 3:
-                        newProps = __assign(__assign({}, edit.toJSONForDb(challengeRequestId)), { original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) });
+                        newProps = __assign(__assign({}, edit), { original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) });
                         _a.label = 4;
                     case 4: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid)];
                     case 5:

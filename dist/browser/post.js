@@ -70,8 +70,8 @@ var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
 var Post = /** @class */ (function (_super) {
     __extends(Post, _super);
-    function Post() {
-        return _super !== null && _super.apply(this, arguments) || this;
+    function Post(props, plebbit) {
+        return _super.call(this, props, plebbit) || this;
     }
     Post.prototype._initProps = function (props) {
         _super.prototype._initProps.call(this, props);
