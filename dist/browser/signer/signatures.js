@@ -211,7 +211,6 @@ function signPublication(publication, signer, plebbit, signatureType) {
                 case 0:
                     (0, assert_1.default)(signer.publicKey);
                     (0, assert_1.default)(Object.keys(exports.SIGNED_PROPERTY_NAMES).includes(signatureType));
-                    assert_1.default.equal(publication.constructor.name, "Object", "Publication is not a JSON object. Did you forget to call toJSON()?");
                     publicationJson = (0, util_2.removeKeysWithUndefinedValues)(publication);
                     log = (0, plebbit_logger_1.default)("plebbit-js:signatures:signPublication");
                     if (!(publicationJson["author"] && publicationJson["author"]["address"])) return [3 /*break*/, 3];

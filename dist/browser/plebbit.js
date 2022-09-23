@@ -225,7 +225,7 @@ var Plebbit = /** @class */ (function (_super) {
                         }
                         if (!((_a = options === null || options === void 0 ? void 0 : options.author) === null || _a === void 0 ? void 0 : _a.address)) {
                             options.author = __assign(__assign({}, options.author), { address: options.signer.address });
-                            log.trace("CreateCommentOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
+                            log("CreateCommentOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
                         }
                         return [4 /*yield*/, (0, signer_1.signPublication)(options, options.signer, this, "comment")];
                     case 1:

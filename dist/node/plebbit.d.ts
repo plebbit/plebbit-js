@@ -27,7 +27,7 @@ export declare class Plebbit extends EventEmitter implements PlebbitOptions {
     _init(options: PlebbitOptions): Promise<void>;
     getSubplebbit(subplebbitAddress: string): Promise<Subplebbit>;
     getComment(cid: string): Promise<Comment | Post>;
-    createComment(options: CreateCommentOptions | CommentType | PostType): Promise<Comment | Post>;
+    createComment(options: CreateCommentOptions | CommentType | PostType | Comment | Post): Promise<Comment | Post>;
     _canRunSub(): boolean;
     createSubplebbit(options?: CreateSubplebbitOptions | SubplebbitType): Promise<Subplebbit>;
     createVote(options: CreateVoteOptions | VoteType): Promise<Vote>;
