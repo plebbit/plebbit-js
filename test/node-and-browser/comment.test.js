@@ -56,6 +56,29 @@ describe("comment (node and browser)", async () => {
             expect(signedComment.signature.publicKey).to.be.equal(signers[1].publicKey, "Generated public key should be same as provided");
         });
 
+        it(`comment = await createComment(await createComment)`, async () => {
+            const props = {
+                content: `test comment = await createComment(await createComment) ${Date.now()}`,
+                subplebbitAddress,
+                author: {
+                    address: signers[4].address,
+                    displayName: `Mock Author - comment = await createComment(await createComment)`
+                },
+                signer: signers[4],
+                timestamp: 2345324
+            };
+            const comment = await plebbit.createComment(props);
+
+            const nestedComment = await plebbit.createComment(comment);
+
+            expect(comment.content).to.equal(props.content);
+            expect(comment.subplebbitAddress).to.equal(props.subplebbitAddress);
+            expect(JSON.stringify(comment.author)).to.equal(JSON.stringify(props.author));
+            expect(comment.timestamp).to.equal(props.timestamp);
+
+            expect(comment.toJSON()).to.deep.equal(nestedComment.toJSON());
+        });
+
         it("Throws an error when a user attempts to publish a comment under a non existent parent", async () => {
             return new Promise(async (resolve) => {
                 const comment = await plebbit.createComment({
