@@ -195,16 +195,12 @@ var Subplebbit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         if (!this.dbHandler) {
-                            //@ts-ignore
-                            this.sortHandler = undefined;
                             this.dbHandler = util_3.nativeFunctions.createDbHandler({
                                 address: this.address,
                                 database: this.database,
                                 plebbit: {
                                     dataPath: this.plebbit.dataPath,
-                                    createComment: this.plebbit.createComment.bind(this.plebbit),
-                                    createVote: this.plebbit.createVote.bind(this.plebbit),
-                                    createCommentEdit: this.plebbit.createCommentEdit.bind(this.plebbit)
+                                    createComment: this.plebbit.createComment.bind(this.plebbit)
                                 }
                             });
                         }
@@ -365,11 +361,17 @@ var Subplebbit = /** @class */ (function (_super) {
                         });
                         log.trace("Attempting to edit subplebbit.address from ".concat(this.address, " to ").concat(newSubplebbitOptions.address));
                         this.initSubplebbit(newSubplebbitOptions);
-                        return [4 /*yield*/, this.dbHandler.changeDbFilename(newSubplebbitOptions.address, this)];
+                        return [4 /*yield*/, this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
+                                address: this.address,
+                                database: this.database,
+                                plebbit: {
+                                    dataPath: this.plebbit.dataPath,
+                                    createComment: this.plebbit.createComment.bind(this.plebbit)
+                                }
+                            })];
                     case 1:
                         _a.sent();
-                        this.dbHandler = undefined;
-                        return [4 /*yield*/, this.prePublish()];
+                        return [4 /*yield*/, this.initDbIfNeeded()];
                     case 2:
                         _a.sent();
                         _a.label = 3;
@@ -1197,9 +1199,16 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.dbHandler.queryComments()];
                     case 4:
                         dbComments = _b.sent();
-                        return [4 /*yield*/, Promise.all(__spreadArray(__spreadArray([], dbComments.map(function (comment) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
-                                return [2 /*return*/, this.syncComment(comment)];
-                            }); }); }), true), [this.updateSubplebbitIpns()], false))];
+                        return [4 /*yield*/, Promise.all(__spreadArray(__spreadArray([], dbComments.map(function (commentProps) { return __awaiter(_this, void 0, void 0, function () { var _a; return __generator(this, function (_b) {
+                                switch (_b.label) {
+                                    case 0:
+                                        _a = this.syncComment;
+                                        return [4 /*yield*/, this.plebbit.createComment(commentProps)];
+                                    case 1: return [2 /*return*/, _a.apply(this, [_b.sent()])];
+                                }
+                            }); }); }), true), [
+                                this.updateSubplebbitIpns()
+                            ], false))];
                     case 5:
                         _b.sent();
                         exports.RUNNING_SUBPLEBBITS[this.signer.address] = true;
