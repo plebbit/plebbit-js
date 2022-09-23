@@ -360,11 +360,15 @@ export declare type NativeFunctions = {
 export declare type OnlyDefinedProperties<T> = Pick<T, {
     [Prop in keyof T]: T[Prop] extends undefined ? never : Prop;
 }[keyof T]>;
-export declare type CommentEditForDbType = OnlyDefinedProperties<CommentEditType & {
+export declare type CommentEditForDbType = OnlyDefinedProperties<Omit<CommentEditType, "author"> & {
+    author: string;
     authorAddress: string;
     challengeRequestId: string;
 }>;
-export declare type CommentForDbType = OnlyDefinedProperties<Omit<CommentType, "replyCount" | "upvoteCount" | "downvoteCount" | "replies" | "signature"> & {
+export declare type CommentForDbType = OnlyDefinedProperties<Omit<CommentType, "replyCount" | "upvoteCount" | "downvoteCount" | "replies" | "signature" | "author" | "authorEdit"> & {
+    authorEdit: string;
+    original: string;
+    author: string;
     authorAddress: string;
     challengeRequestId?: string;
     ipnsKeyName: string;

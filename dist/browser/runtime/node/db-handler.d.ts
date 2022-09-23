@@ -45,6 +45,7 @@ export declare class DbHandler {
     upsertChallenge(challenge: Omit<ChallengeRequestMessageType, "encryptedPublication" | "signature"> | Omit<DecryptedChallengeMessageType, "encryptedChallenges" | "signature"> | Omit<DecryptedChallengeAnswerMessageType, "encryptedChallengeAnswers" | "signature"> | Omit<ChallengeVerificationMessageType, "encryptedPublication" | "signature">, trx?: Transaction): Promise<void>;
     getLastVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<VoteType | undefined>;
     private _baseCommentQuery;
+    private _parseJsonFields;
     private _createCommentsFromRows;
     private _createEditsFromRows;
     private _createVotesFromRows;
