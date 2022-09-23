@@ -116,9 +116,10 @@ var Resolver = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        (0, assert_1.default)(typeof authorAddress === "string", "authorAddress needs to be a string to be resolved");
                         if (!this.plebbit.resolveAuthorAddresses)
                             return [2 /*return*/, authorAddress];
-                        if (!(authorAddress === null || authorAddress === void 0 ? void 0 : authorAddress.endsWith(".eth"))) return [3 /*break*/, 2];
+                        if (!authorAddress.endsWith(".eth")) return [3 /*break*/, 2];
                         return [4 /*yield*/, this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address")];
                     case 1:
                         resolvedAuthorAddress = _a.sent();
@@ -138,7 +139,8 @@ var Resolver = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!(subplebbitAddress === null || subplebbitAddress === void 0 ? void 0 : subplebbitAddress.endsWith(".eth"))) return [3 /*break*/, 2];
+                        (0, assert_1.default)(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
+                        if (!subplebbitAddress.endsWith(".eth")) return [3 /*break*/, 2];
                         return [4 /*yield*/, this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address")];
                     case 1:
                         resolvedSubplebbitAddress = _a.sent();
