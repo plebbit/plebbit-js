@@ -69,9 +69,12 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
                 chainId: 137
             }
         };
-        this.resolver = new Resolver({ plebbit: this, blockchainProviders: this.blockchainProviders });
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         this._memCache = new TinyCache();
+        this.resolver = new Resolver({
+            plebbit: { _memCache: this._memCache, resolveAuthorAddresses: this.resolveAuthorAddresses },
+            blockchainProviders: this.blockchainProviders
+        });
         this.dataPath = options.dataPath || getDefaultDataPath();
     }
 

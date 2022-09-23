@@ -10,9 +10,9 @@ import Logger from "@plebbit/plebbit-logger";
 export class Resolver {
     blockchainProviders: { [chainTicker: string]: BlockchainProvider };
     private cachedBlockchainProviders: { [chainTicker: string]: ethers.providers.BaseProvider };
-    private plebbit: Plebbit;
+    private plebbit: Pick<Plebbit, "_memCache" | "resolveAuthorAddresses">;
 
-    constructor(options: { plebbit: Plebbit; blockchainProviders: { [chainTicker: string]: BlockchainProvider } }) {
+    constructor(options: { plebbit: Resolver["plebbit"]; blockchainProviders: { [chainTicker: string]: BlockchainProvider } }) {
         this.blockchainProviders = options.blockchainProviders;
         this.cachedBlockchainProviders = {};
         this.plebbit = options.plebbit;
@@ -74,8 +74,9 @@ export class Resolver {
     }
 
     async resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string> {
+        assert(typeof authorAddress === "string", "authorAddress needs to be a string to be resolved");
         if (!this.plebbit.resolveAuthorAddresses) return authorAddress;
-        if (authorAddress?.endsWith(".eth")) {
+        if (authorAddress.endsWith(".eth")) {
             const resolvedAuthorAddress = await this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address");
             if (!isIPFS.cid(resolvedAuthorAddress))
                 throw errcode(
@@ -90,7 +91,8 @@ export class Resolver {
     }
 
     async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string> {
-        if (subplebbitAddress?.endsWith(".eth")) {
+        assert(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
+        if (subplebbitAddress.endsWith(".eth")) {
             const resolvedSubplebbitAddress = await this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address");
             if (!isIPFS.cid(resolvedSubplebbitAddress))
                 throw errcode(
