@@ -30,6 +30,7 @@ import { CommentEdit } from "../../comment-edit";
 import Logger from "@plebbit/plebbit-logger";
 import { getDefaultSubplebbitDbConfig } from "./util";
 import env from "../../version";
+import { Plebbit } from "../../plebbit";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -55,14 +56,16 @@ const jsonFields = [
 
 export class DbHandler {
     private _knex: Knex;
-    private _subplebbit: Subplebbit;
+    private _subplebbit: Pick<Subplebbit, "address" | "database"> & {
+        plebbit: Pick<Plebbit, "dataPath" | "createComment" | "createVote" | "createCommentEdit">;
+    };
     private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
     private _dbConfig: any;
     private _userDbConfig?: Knex.Config;
     private _keyv: Keyv; // Don't change any here to Keyv since it will crash for browsers
     private _createdTables: boolean;
 
-    constructor(subplebbit: Subplebbit) {
+    constructor(subplebbit: DbHandler["_subplebbit"]) {
         this._userDbConfig = subplebbit.database;
         this._subplebbit = subplebbit;
         this._currentTrxs = {};

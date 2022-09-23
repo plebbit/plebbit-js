@@ -5,7 +5,6 @@ import assert from "assert";
 
 import { pendingSubplebbitCreations } from "../../plebbit";
 import { DbHandler } from "./db-handler";
-import { Subplebbit } from "../../subplebbit";
 
 import fetch from "node-fetch";
 import { create } from "ipfs-http-client";
@@ -29,7 +28,7 @@ const nativeFunctions: NativeFunctions = {
         return addresses;
     },
 
-    createDbHandler: (subplebbit: Subplebbit): DbHandlerPublicAPI => {
+    createDbHandler: (subplebbit: DbHandler["_subplebbit"]): DbHandlerPublicAPI => {
         const dbHandler = new DbHandler(subplebbit);
 
         const dbApi = {};
