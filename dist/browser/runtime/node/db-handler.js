@@ -61,7 +61,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DbHandler = void 0;
 var challenge_1 = require("../../challenge");
-var post_1 = __importDefault(require("../../post"));
 var author_1 = __importDefault(require("../../author"));
 var util_1 = require("../../util");
 var knex_1 = __importDefault(require("knex"));
@@ -589,18 +588,20 @@ var DbHandler = /** @class */ (function () {
                     case 2: return [4 /*yield*/, _a.apply(this, [_b.sent()])];
                     case 3:
                         commentsWithAuthor = _b.sent();
-                        return [4 /*yield*/, Promise.all(commentsWithAuthor.map(function (comment) { return __awaiter(_this, void 0, void 0, function () {
-                                var newOriginal, newCommentProps;
+                        return [4 /*yield*/, Promise.all(commentsWithAuthor.map(function (commentProps) { return __awaiter(_this, void 0, void 0, function () {
+                                var comment, newOriginal, newCommentProps;
                                 var _a;
                                 return __generator(this, function (_b) {
                                     switch (_b.label) {
-                                        case 0:
+                                        case 0: return [4 /*yield*/, this._subplebbit.plebbit.createComment(commentProps)];
+                                        case 1:
+                                            comment = _b.sent();
                                             newOriginal = ((_a = comment.original) === null || _a === void 0 ? void 0 : _a.author)
                                                 ? comment.original
                                                 : __assign(__assign({}, comment.original), { author: comment.author.toJSON() });
                                             newCommentProps = { author: __assign(__assign({}, comment.author.toJSON()), onlyNewProps), original: newOriginal };
                                             return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).update(newCommentProps).where("cid", comment.cid)];
-                                        case 1:
+                                        case 2:
                                             _b.sent();
                                             return [2 /*return*/];
                                     }
@@ -646,12 +647,11 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.upsertComment = function (comment, author, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var challengeRequestId, _a, originalComment, dbObject;
+            var challengeRequestId, _a, originalCommentProps, originalComment, dbObject;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         (0, assert_1.default)(comment.cid, "Comment need to have a cid before upserting");
-                        (0, assert_1.default)(comment instanceof Object);
                         if (!author) return [3 /*break*/, 2];
                         // Skip adding author (For CommentEdit)
                         return [4 /*yield*/, this._upsertAuthor(author, trx, true)];
@@ -675,10 +675,16 @@ var DbHandler = /** @class */ (function () {
                         (0, assert_1.default)(challengeRequestId, "Need to have challengeRequestId before upserting");
                         return [4 /*yield*/, this.queryComment(comment.cid, trx)];
                     case 5:
-                        originalComment = _b.sent();
-                        dbObject = originalComment ? __assign(__assign({}, originalComment.toJSONForDb(challengeRequestId)), comment) : comment;
-                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge()];
+                        originalCommentProps = _b.sent();
+                        if (!originalCommentProps) return [3 /*break*/, 7];
+                        return [4 /*yield*/, this._subplebbit.plebbit.createComment(originalCommentProps)];
                     case 6:
+                        originalComment = _b.sent();
+                        _b.label = 7;
+                    case 7:
+                        dbObject = originalComment ? __assign(__assign({}, originalComment === null || originalComment === void 0 ? void 0 : originalComment.toJSONForDb(challengeRequestId)), comment) : comment;
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge()];
+                    case 8:
                         _b.sent();
                         return [2 /*return*/];
                 }
@@ -727,7 +733,7 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.editComment = function (edit, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var commentToBeEdited, isEditFromAuthor, newProps, modEdits, hasModEditedCommentFlairBefore, flairIfNeeded;
+            var commentProps, commentToBeEdited, isEditFromAuthor, newProps, modEdits, hasModEditedCommentFlairBefore, flairIfNeeded;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -736,22 +742,26 @@ var DbHandler = /** @class */ (function () {
                         (0, assert_1.default)(edit.commentCid);
                         return [4 /*yield*/, this.queryComment(edit.commentCid)];
                     case 1:
+                        commentProps = _a.sent();
+                        (0, assert_1.default)(commentProps);
+                        return [4 /*yield*/, this._subplebbit.plebbit.createComment(commentProps)];
+                    case 2:
                         commentToBeEdited = _a.sent();
                         (0, assert_1.default)(commentToBeEdited);
                         isEditFromAuthor = commentToBeEdited.signature.publicKey === edit.signature.publicKey;
-                        if (!isEditFromAuthor) return [3 /*break*/, 3];
+                        if (!isEditFromAuthor) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.queryEditsSorted(edit.commentCid, "mod", trx)];
-                    case 2:
+                    case 3:
                         modEdits = _a.sent();
                         hasModEditedCommentFlairBefore = modEdits.some(function (modEdit) { return Boolean(modEdit.flair); });
                         flairIfNeeded = hasModEditedCommentFlairBefore || !edit.flair ? undefined : { flair: JSON.stringify(edit.flair) };
                         newProps = (0, util_1.removeKeysWithUndefinedValues)(__assign({ authorEdit: JSON.stringify(edit), original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) }, flairIfNeeded));
-                        return [3 /*break*/, 4];
-                    case 3:
+                        return [3 /*break*/, 5];
+                    case 4:
                         newProps = __assign(__assign({}, edit), { original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) });
-                        _a.label = 4;
-                    case 4: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid)];
-                    case 5:
+                        _a.label = 5;
+                    case 5: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid)];
+                    case 6:
                         _a.sent();
                         return [2 /*return*/];
                 }
@@ -831,24 +841,18 @@ var DbHandler = /** @class */ (function () {
                 if (!Array.isArray(commentsRows))
                     commentsRows = [commentsRows];
                 return [2 /*return*/, Promise.all(commentsRows.map(function (props) { return __awaiter(_this, void 0, void 0, function () {
-                        var replacedProps, _i, jsonFields_1, field, comment;
+                        var replacedProps, _i, jsonFields_1, field;
                         return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    replacedProps = (0, util_1.replaceXWithY)(props, null, undefined);
-                                    for (_i = 0, jsonFields_1 = jsonFields; _i < jsonFields_1.length; _i++) {
-                                        field = jsonFields_1[_i];
-                                        if (replacedProps[field])
-                                            replacedProps[field] = JSON.parse(replacedProps[field]);
-                                    }
-                                    return [4 /*yield*/, this._subplebbit.plebbit.createComment(replacedProps)];
-                                case 1:
-                                    comment = _a.sent();
-                                    (0, assert_1.default)(typeof comment.replyCount === "number" &&
-                                        typeof comment.upvoteCount === "number" &&
-                                        typeof comment.downvoteCount === "number");
-                                    return [2 /*return*/, comment];
+                            replacedProps = (0, util_1.replaceXWithY)(props, null, undefined);
+                            for (_i = 0, jsonFields_1 = jsonFields; _i < jsonFields_1.length; _i++) {
+                                field = jsonFields_1[_i];
+                                if (replacedProps[field])
+                                    replacedProps[field] = JSON.parse(replacedProps[field]);
                             }
+                            (0, assert_1.default)(typeof replacedProps.replyCount === "number" &&
+                                typeof replacedProps.upvoteCount === "number" &&
+                                typeof replacedProps.downvoteCount === "number");
+                            return [2 /*return*/, replacedProps];
                         });
                     }); }))];
             });
@@ -871,7 +875,7 @@ var DbHandler = /** @class */ (function () {
                                 if (replacedProps[field])
                                     replacedProps[field] = JSON.parse(replacedProps[field]);
                             }
-                            return [2 /*return*/, this._subplebbit.plebbit.createCommentEdit(replacedProps)];
+                            return [2 /*return*/, replacedProps];
                         });
                     }); }))];
             });
@@ -879,7 +883,6 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype._createVotesFromRows = function (voteRows) {
         return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
             return __generator(this, function (_a) {
                 if (!voteRows || (Array.isArray(voteRows) && voteRows.length === 0))
                     return [2 /*return*/, []];
@@ -892,7 +895,7 @@ var DbHandler = /** @class */ (function () {
                             if (replacedProps[field])
                                 replacedProps[field] = JSON.parse(replacedProps[field]);
                         }
-                        return _this._subplebbit.plebbit.createVote(replacedProps);
+                        return replacedProps;
                     }))];
             });
         });
@@ -1010,7 +1013,8 @@ var DbHandler = /** @class */ (function () {
                     case 0:
                         _a = this._createCommentsFromRows;
                         return [4 /*yield*/, this._baseCommentQuery(trx).orderBy("id", "desc")];
-                    case 1: return [2 /*return*/, _a.apply(this, [_b.sent()])];
+                    case 1: return [4 /*yield*/, _a.apply(this, [_b.sent()])];
+                    case 2: return [2 /*return*/, _b.sent()];
                 }
             });
         });
@@ -1096,7 +1100,6 @@ var DbHandler = /** @class */ (function () {
                         post = (_a.sent())[0];
                         if (!post)
                             return [2 /*return*/, undefined];
-                        (0, assert_1.default)(post instanceof post_1.default);
                         return [2 /*return*/, post];
                 }
             });

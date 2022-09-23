@@ -105,12 +105,15 @@ var SortHandler = /** @class */ (function () {
                                 var _this = this;
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
-                                        case 0: return [4 /*yield*/, Promise.all(chunk.map(function (comment) { return __awaiter(_this, void 0, void 0, function () {
-                                                var repliesPages;
+                                        case 0: return [4 /*yield*/, Promise.all(chunk.map(function (commentProps) { return __awaiter(_this, void 0, void 0, function () {
+                                                var comment, repliesPages;
                                                 return __generator(this, function (_a) {
                                                     switch (_a.label) {
-                                                        case 0: return [4 /*yield*/, this.generatePagesUnderComment(comment, undefined)];
+                                                        case 0: return [4 /*yield*/, this.subplebbit.plebbit.createComment(commentProps)];
                                                         case 1:
+                                                            comment = _a.sent();
+                                                            return [4 /*yield*/, this.generatePagesUnderComment(comment, undefined)];
+                                                        case 2:
                                                             repliesPages = _a.sent();
                                                             comment.setReplies(repliesPages);
                                                             return [2 /*return*/, comment];
