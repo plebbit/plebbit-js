@@ -5,6 +5,9 @@ import { CommentType, OnlyDefinedProperties, Timeframe } from "./types";
 import { nativeFunctions } from "./runtime/node/util";
 import { Signer } from "./signer";
 import { Buffer } from "buffer";
+import isIPFS from "is-ipfs";
+import { codes, messages } from "./errors";
+import errcode from "err-code";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -40,7 +43,10 @@ async function fetchWithLimit(url: string, options?) {
 }
 
 export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultOptions = { timeout: 60000 }) {
-    assert.ok(cid, "Cid has to not be null to load");
+    if (!isIPFS.cid(cid) && !isIPFS.path(cid))
+        throw errcode(Error(messages.ERR_CID_IS_INVALID), codes.ERR_CID_IS_INVALID, {
+            details: `loadIpfsFileAsJson: CID (${cid}) is invalid`
+        });
     if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
         const res = await fetchWithLimit(url, { cache: "force-cache", size: DOWNLOAD_LIMIT_BYTES });
@@ -59,7 +65,10 @@ export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultO
 }
 
 export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
-    assert.ok(ipns, "ipns has to be not null to load");
+    if (typeof ipns !== "string")
+        throw errcode(Error(messages.ERR_IPNS_IS_INVALID), codes.ERR_IPNS_IS_INVALID, {
+            details: `loadIpnsAsJson: ipns (${ipns}) is invalid`
+        });
     if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
         const res = await fetchWithLimit(url, { cache: "no-store", size: DOWNLOAD_LIMIT_BYTES });

@@ -13,7 +13,8 @@ export enum messages {
     ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID = "subplebbit-address resolves to an invalid CID",
     ERR_CID_IS_INVALID = "CID is invalid",
     ERR_SUB_HAS_NO_DB_CONFIG = "Subplebbit has no db config",
-    ERR_DATA_PATH_IS_NOT_DEFINED = "plebbitOptions.dataPath needs to be defined with native functions"
+    ERR_DATA_PATH_IS_NOT_DEFINED = "plebbitOptions.dataPath needs to be defined with native functions",
+    ERR_IPNS_IS_INVALID = "IPNS is invalid"
 }
 
 export enum codes {
@@ -31,5 +32,6 @@ export enum codes {
     ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID = "ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID",
     ERR_CID_IS_INVALID = "ERR_CID_IS_INVALID",
     ERR_SUB_HAS_NO_DB_CONFIG = "ERR_SUB_HAS_NO_DB_CONFIG",
-    ERR_DATA_PATH_IS_NOT_DEFINED = "ERR_DATA_PATH_IS_NOT_DEFINED"
+    ERR_DATA_PATH_IS_NOT_DEFINED = "ERR_DATA_PATH_IS_NOT_DEFINED",
+    ERR_IPNS_IS_INVALID = "ERR_IPNS_IS_INVALID"
 }
