@@ -298,7 +298,7 @@ export class Comment extends Publication implements CommentType {
         this._initCommentUpdate(options);
         this._mergeFields(this.toJSON());
         const file = await this.plebbit.ipfsClient.add(JSON.stringify({ ...this.toJSONCommentUpdate(), signature: options.signature }));
-        await this.plebbit.ipfsClient.name.publish(file["cid"], {
+        await this.plebbit.ipfsClient.name.publish(file.path, {
             lifetime: "72h",
             key: this.ipnsKeyName,
             allowOffline: true
