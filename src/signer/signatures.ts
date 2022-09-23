@@ -146,7 +146,6 @@ export async function signPublication(
 ): Promise<Signature> {
     assert(signer.publicKey);
     assert(Object.keys(SIGNED_PROPERTY_NAMES).includes(signatureType));
-    assert.equal(publication.constructor.name, "Object", "Publication is not a JSON object. Did you forget to call toJSON()?");
     let publicationJson = <PublicationsToSign>removeKeysWithUndefinedValues(publication); // This line is needed to remove nested undefined values
 
     const log = Logger("plebbit-js:signatures:signPublication");

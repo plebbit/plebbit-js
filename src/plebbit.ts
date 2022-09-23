@@ -131,7 +131,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             : new Comment({ ...commentJson, cid }, this);
     }
 
-    async createComment(options: CreateCommentOptions | CommentType | PostType): Promise<Comment | Post> {
+    async createComment(options: CreateCommentOptions | CommentType | PostType | Comment | Post): Promise<Comment | Post> {
         const log = Logger("plebbit-js:plebbit:createComment");
 
         if (!options.signer)
@@ -142,7 +142,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         }
         if (!options?.author?.address) {
             options.author = { ...options.author, address: options.signer.address };
-            log.trace(`CreateCommentOptions did not provide author.address, will define it to signer.address (${options.signer.address})`);
+            log(`CreateCommentOptions did not provide author.address, will define it to signer.address (${options.signer.address})`);
         }
 
         const commentSignature = await signPublication(<CreateCommentOptions>options, options.signer, this, "comment");
