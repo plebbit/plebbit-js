@@ -60,7 +60,7 @@ describe("Test upvote", async () => {
             await vote.publish();
             vote.once("challengeverification", async (challengeVerificationMsg, updatedVote) => {
                 expect(challengeVerificationMsg.challengeSuccess).to.be.true;
-                expect(challengeVerificationMsg.reason).to.be.null;
+                expect(challengeVerificationMsg.reason).to.be.a.string;
                 resolve();
             });
         });
