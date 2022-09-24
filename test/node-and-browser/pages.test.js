@@ -3,7 +3,7 @@ const Plebbit = require("../../dist/node");
 const { expect } = require("chai");
 const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../dist/node/sort-handler");
 const signers = require("../fixtures/signers");
-const { loadAllPages } = require("../../dist/node/test-util");
+const { loadAllPages } = require("../../dist/node/test/test-util");
 
 let plebbit, subplebbit;
 let posts;

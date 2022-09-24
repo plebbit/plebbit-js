@@ -2,7 +2,7 @@ const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
 const { timestamp } = require("../../dist/node/util");
 const { signPublication, verifyPublication } = require("../../dist/node/signer");
-const { generateMockPost, generateMockComment } = require("../../dist/node/test-util");
+const { generateMockPost, generateMockComment } = require("../../dist/node/test/test-util");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");

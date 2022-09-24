@@ -1,7 +1,7 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
 const { waitTillCommentsUpdate, waitTillPublicationsArePublished, timestamp } = require("../../dist/node/util");
-const { generateMockPost } = require("../../dist/node/test-util");
+const { generateMockPost } = require("../../dist/node/test/test-util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);

@@ -1,7 +1,7 @@
 const Plebbit = require("../../dist/node");
 const { expect } = require("chai");
 const signers = require("../fixtures/signers");
-const { generateMockVote, generateMockPost } = require("../../dist/node/test-util");
+const { generateMockVote, generateMockPost } = require("../../dist/node/test/test-util");
 const { waitTillCommentsUpdate, waitTillPublicationsArePublished, randomElement } = require("../../dist/node/util");
 
 const subplebbitAddress = signers[0].address;

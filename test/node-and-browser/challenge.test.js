@@ -1,7 +1,7 @@
 const Plebbit = require("../../dist/node");
 const { expect } = require("chai");
 const signers = require("../fixtures/signers");
-const { generateMockPost } = require("../../dist/node/test-util");
+const { generateMockPost } = require("../../dist/node/test/test-util");
 
 let plebbit;
 const mathCliSubplebbitAddress = signers[1].address;
