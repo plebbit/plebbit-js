@@ -148,7 +148,7 @@ describe("signer (node and browser)", async () => {
 
             const wronglySignedPublication = { ...signedPublication, signature: invalidSignature };
             const verification = await verifyPublication(wronglySignedPublication, plebbit, "comment");
-            expect(verification).to.deep.equal([false, "AssertionError [ERR_ASSERTION]: Signature is invalid"]);
+            expect(verification).to.deep.equal([false, "Error: Signature is invalid"]);
         });
 
         it("can sign a comment with author.displayName = undefined", async () => {
