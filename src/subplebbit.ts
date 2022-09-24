@@ -85,7 +85,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     private _challengeToSolution: any;
     private _challengeToPublication: any;
-    private provideCaptchaCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[Challenge[], string | undefined]>;
+    private provideCaptchaCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[ChallengeType[], string | undefined]>;
     private validateCaptchaAnswerCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>;
     private ipnsKeyName?: string;
     private sortHandler: SortHandler;
@@ -184,7 +184,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         await this.initSignerIfNeeded();
     }
 
-    setProvideCaptchaCallback(newCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[Challenge[], string | undefined]>) {
+    setProvideCaptchaCallback(
+        newCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[ChallengeType[], string | undefined]>
+    ) {
         this.provideCaptchaCallback = newCallback;
     }
 
@@ -679,7 +681,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(requestWithDecryptedPublication);
         this._challengeToPublication[request.challengeRequestId] = decryptedPublication;
         log(`Received a request to a challenge (${request.challengeRequestId})`);
-        if (!providedChallenges) {
+        if (providedChallenges.length === 0) {
             // Subplebbit owner has chosen to skip challenging this user or post
             log.trace(
                 `Skipping challenge for ${request.challengeRequestId}, add publication to IPFS and respond with challengeVerificationMessage right away`
@@ -865,7 +867,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    async defaultProvideCaptcha(request: DecryptedChallengeRequestMessageType): Promise<[Challenge[], string | undefined]> {
+    async defaultProvideCaptcha(request: DecryptedChallengeRequestMessageType): Promise<[ChallengeType[], string | undefined]> {
         // Return question, type
         // Expected return is:
         // captcha, reason for skipping captcha (if it's skipped by nullifying captcha)
@@ -874,10 +876,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const imageBuffer = (await image).toString("base64");
         return [
             [
-                new Challenge({
+                {
                     challenge: imageBuffer,
                     type: "image"
-                })
+                }
             ],
             undefined
         ];
