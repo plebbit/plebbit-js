@@ -282,7 +282,7 @@ var Comment = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(__assign(__assign({}, this.toJSONCommentUpdate()), { signature: options.signature })))];
                     case 2:
                         file = _b.sent();
-                        return [4 /*yield*/, this.plebbit.ipfsClient.name.publish(file["cid"], {
+                        return [4 /*yield*/, this.plebbit.ipfsClient.name.publish(file.path, {
                                 lifetime: "72h",
                                 key: this.ipnsKeyName,
                                 allowOffline: true
