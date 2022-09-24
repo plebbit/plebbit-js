@@ -155,7 +155,7 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.toJSONForDb = function (challengeRequestId) {
         (0, assert_1.default)(this.ipnsKeyName);
-        return (0, util_1.removeKeysWithUndefinedValues)(__assign(__assign({}, (0, util_1.removeKeys)(this.toJSON(), ["replyCount", "upvoteCount", "downvoteCount", "replies"])), { authorAddress: this.author.address, challengeRequestId: challengeRequestId, ipnsKeyName: this.ipnsKeyName, signature: JSON.stringify(this.signature) }));
+        return (0, util_1.removeKeysWithUndefinedValues)(__assign(__assign({}, (0, util_1.removeKeys)(this.toJSON(), ["replyCount", "upvoteCount", "downvoteCount", "replies"])), { author: JSON.stringify(this.author), authorEdit: JSON.stringify(this.authorEdit), original: JSON.stringify(this.original), authorAddress: this.author.address, challengeRequestId: challengeRequestId, ipnsKeyName: this.ipnsKeyName, signature: JSON.stringify(this.signature) }));
     };
     Comment.prototype.toJSONCommentUpdate = function (skipAssert) {
         if (skipAssert === void 0) { skipAssert = false; }

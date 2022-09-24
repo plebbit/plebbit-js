@@ -127,7 +127,7 @@ var CommentEdit = /** @class */ (function (_super) {
         return __assign(__assign({}, _super.prototype.toJSON.call(this)), { commentCid: this.commentCid, content: this.content, reason: this.reason, deleted: this.deleted, flair: this.flair, spoiler: this.spoiler, pinned: this.pinned, locked: this.locked, removed: this.removed, moderatorReason: this.moderatorReason, commentAuthor: this.commentAuthor });
     };
     CommentEdit.prototype.toJSONForDb = function (challengeRequestId) {
-        return (0, util_1.removeKeysWithUndefinedValues)(__assign(__assign({}, this.toJSON()), { authorAddress: this.author.address, challengeRequestId: challengeRequestId }));
+        return (0, util_1.removeKeysWithUndefinedValues)(__assign(__assign({}, this.toJSON()), { author: JSON.stringify(this.author), authorAddress: this.author.address, challengeRequestId: challengeRequestId }));
     };
     CommentEdit.prototype.getType = function () {
         return "commentedit";

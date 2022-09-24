@@ -79,18 +79,6 @@ var TABLES = Object.freeze({
     SIGNERS: "signers",
     EDITS: "edits"
 });
-var jsonFields = [
-    "signature",
-    "author",
-    "authorEdit",
-    "original",
-    "flair",
-    "commentAuthor",
-    "acceptedChallengeTypes",
-    "challenges",
-    "challengeAnswers",
-    "challengeErrors"
-];
 var DbHandler = /** @class */ (function () {
     function DbHandler(subplebbit) {
         this._userDbConfig = subplebbit.database;
@@ -647,7 +635,7 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.upsertComment = function (comment, author, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var challengeRequestId, _a, originalCommentProps, originalComment, dbObject;
+            var challengeRequestId, _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -673,20 +661,18 @@ var DbHandler = /** @class */ (function () {
                     case 4:
                         challengeRequestId = _a;
                         (0, assert_1.default)(challengeRequestId, "Need to have challengeRequestId before upserting");
-                        return [4 /*yield*/, this.queryComment(comment.cid, trx)];
+                        return [4 /*yield*/, this.queryComment(comment.cid)];
                     case 5:
-                        originalCommentProps = _b.sent();
-                        if (!originalCommentProps) return [3 /*break*/, 7];
-                        return [4 /*yield*/, this._subplebbit.plebbit.createComment(originalCommentProps)];
+                        if (!_b.sent()) return [3 /*break*/, 7];
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid: comment.cid }).update(comment)];
                     case 6:
-                        originalComment = _b.sent();
-                        _b.label = 7;
-                    case 7:
-                        dbObject = originalComment ? __assign(__assign({}, originalComment === null || originalComment === void 0 ? void 0 : originalComment.toJSONForDb(challengeRequestId)), comment) : comment;
-                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).insert(dbObject).onConflict(["cid"]).merge()];
+                        _b.sent();
+                        return [3 /*break*/, 9];
+                    case 7: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).insert(comment)];
                     case 8:
                         _b.sent();
-                        return [2 /*return*/];
+                        _b.label = 9;
+                    case 9: return [2 /*return*/];
                 }
             });
         });
@@ -832,6 +818,18 @@ var DbHandler = /** @class */ (function () {
             .as("replyCount");
         return this._baseTransaction(trx)(TABLES.COMMENTS).select("".concat(TABLES.COMMENTS, ".*"), upvoteQuery, downvoteQuery, replyCountQuery);
     };
+    DbHandler.prototype._parseJsonFields = function (obj) {
+        var _a, _b;
+        var jsonregex = /"((?:[^"\\\/\b\f\n\r\t]|\\u\d{4})*)"/gm;
+        var newObj = __assign({}, obj);
+        for (var field in newObj) {
+            if (typeof newObj[field] === "string" && jsonregex.exec(newObj[field]))
+                newObj[field] = JSON.parse(newObj[field]);
+            if (((_b = (_a = newObj[field]) === null || _a === void 0 ? void 0 : _a.constructor) === null || _b === void 0 ? void 0 : _b.name) === "Object")
+                newObj[field] = this._parseJsonFields(newObj[field]);
+        }
+        return newObj;
+    };
     DbHandler.prototype._createCommentsFromRows = function (commentsRows) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
@@ -841,14 +839,9 @@ var DbHandler = /** @class */ (function () {
                 if (!Array.isArray(commentsRows))
                     commentsRows = [commentsRows];
                 return [2 /*return*/, Promise.all(commentsRows.map(function (props) { return __awaiter(_this, void 0, void 0, function () {
-                        var replacedProps, _i, jsonFields_1, field;
+                        var replacedProps;
                         return __generator(this, function (_a) {
-                            replacedProps = (0, util_1.replaceXWithY)(props, null, undefined);
-                            for (_i = 0, jsonFields_1 = jsonFields; _i < jsonFields_1.length; _i++) {
-                                field = jsonFields_1[_i];
-                                if (replacedProps[field])
-                                    replacedProps[field] = JSON.parse(replacedProps[field]);
-                            }
+                            replacedProps = this._parseJsonFields((0, util_1.replaceXWithY)(props, null, undefined));
                             (0, assert_1.default)(typeof replacedProps.replyCount === "number" &&
                                 typeof replacedProps.upvoteCount === "number" &&
                                 typeof replacedProps.downvoteCount === "number");
@@ -867,14 +860,9 @@ var DbHandler = /** @class */ (function () {
                 if (!Array.isArray(edits))
                     edits = [edits];
                 return [2 /*return*/, Promise.all(edits.map(function (props) { return __awaiter(_this, void 0, void 0, function () {
-                        var replacedProps, _i, jsonFields_2, field;
+                        var replacedProps;
                         return __generator(this, function (_a) {
-                            replacedProps = (0, util_1.replaceXWithY)(props, null, undefined);
-                            for (_i = 0, jsonFields_2 = jsonFields; _i < jsonFields_2.length; _i++) {
-                                field = jsonFields_2[_i];
-                                if (replacedProps[field])
-                                    replacedProps[field] = JSON.parse(replacedProps[field]);
-                            }
+                            replacedProps = this._parseJsonFields((0, util_1.replaceXWithY)(props, null, undefined));
                             return [2 /*return*/, replacedProps];
                         });
                     }); }))];
@@ -883,18 +871,14 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype._createVotesFromRows = function (voteRows) {
         return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
             return __generator(this, function (_a) {
                 if (!voteRows || (Array.isArray(voteRows) && voteRows.length === 0))
                     return [2 /*return*/, []];
                 if (!Array.isArray(voteRows))
                     voteRows = [voteRows];
                 return [2 /*return*/, Promise.all(voteRows.map(function (props) {
-                        var replacedProps = (0, util_1.replaceXWithY)(props, null, undefined);
-                        for (var _i = 0, jsonFields_3 = jsonFields; _i < jsonFields_3.length; _i++) {
-                            var field = jsonFields_3[_i];
-                            if (replacedProps[field])
-                                replacedProps[field] = JSON.parse(replacedProps[field]);
-                        }
+                        var replacedProps = _this._parseJsonFields((0, util_1.replaceXWithY)(props, null, undefined));
                         return replacedProps;
                     }))];
             });
