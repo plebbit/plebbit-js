@@ -1,5 +1,4 @@
 import { default as NodeFormData } from "form-data";
-import assert from "assert";
 import { Plebbit } from "./plebbit";
 import { CommentType, OnlyDefinedProperties, Timeframe } from "./types";
 import { nativeFunctions } from "./runtime/node/util";
@@ -59,7 +58,7 @@ export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultO
         } catch (e) {
             error = e;
         }
-        assert(typeof fileContent === "string", `Was not able to load IPFS (${cid}) due to error: ${error}`);
+        if (typeof fileContent !== "string") throw Error(`Was not able to load IPFS (${cid}) due to error: ${error}`);
         return JSON.parse(fileContent);
     }
 }
@@ -81,7 +80,8 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
         } catch (e) {
             error = e;
         }
-        assert(typeof cid === "string", `ipns (${ipns}) resolves to undefined due to error ${error}`);
+        if (typeof cid !== "string")
+            throw Error(`ipns (${ipns}) record ${error ? ` fails to resolve due to error ${error} ` : " does not exist"}`);
         return loadIpfsFileAsJson(cid, plebbit);
     }
 }
@@ -177,10 +177,10 @@ export async function waitTillCommentsUpdate(comments, updateInterval) {
 }
 
 export function hotScore(comment: CommentType) {
-    assert(
-        typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number",
-        `Comment.downvoteCount (${comment.downvoteCount}) and comment.upvoteCount (${comment.upvoteCount}) need to be defined before calculating hotScore`
-    );
+    if (typeof comment.downvoteCount !== "number" || typeof comment.upvoteCount !== "number")
+        throw Error(
+            `Comment.downvoteCount (${comment.downvoteCount}) and comment.upvoteCount (${comment.upvoteCount}) need to be defined before calculating hotScore`
+        );
     const score = comment.upvoteCount - comment.downvoteCount;
     const order = Math.log10(Math.max(score, 1));
     const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
@@ -189,10 +189,10 @@ export function hotScore(comment: CommentType) {
 }
 
 export function controversialScore(comment: CommentType) {
-    assert(
-        typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number",
-        `Comment.downvoteCount (${comment.downvoteCount}) and comment.upvoteCount (${comment.upvoteCount}) need to be defined before calculating controversialScore`
-    );
+    if (typeof comment.downvoteCount !== "number" || typeof comment.upvoteCount !== "number")
+        throw Error(
+            `Comment.downvoteCount (${comment.downvoteCount}) and comment.upvoteCount (${comment.upvoteCount}) need to be defined before calculating controversialScore`
+        );
     if (comment.downvoteCount <= 0 || comment.upvoteCount <= 0) return 0;
     const magnitude = comment.upvoteCount + comment.downvoteCount;
     const balance =
@@ -203,20 +203,23 @@ export function controversialScore(comment: CommentType) {
 }
 
 export function topScore(comment: CommentType) {
-    assert(
-        typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number",
-        `Comment.downvoteCount (${comment.downvoteCount}) and comment.upvoteCount (${comment.upvoteCount}) need to be defined before calculating topScore`
-    );
+    if (typeof comment.downvoteCount !== "number" || typeof comment.upvoteCount !== "number")
+        throw Error(
+            `Comment.downvoteCount (${comment.downvoteCount}) and comment.upvoteCount (${comment.upvoteCount}) need to be defined before calculating topScore`
+        );
+
     return comment.upvoteCount - comment.downvoteCount;
 }
 
 export function newScore(comment: CommentType) {
-    assert(typeof comment.timestamp === "number", `Comment.timestamp (${comment.timestamp}) needs to defined to calculate newScore`);
+    if (typeof comment.timestamp !== "number")
+        throw Error(`Comment.timestamp (${comment.timestamp}) needs to defined to calculate newScore`);
     return comment.timestamp;
 }
 
 export function oldScore(comment: CommentType) {
-    assert(typeof comment.timestamp === "number", `Comment.timestamp (${comment.timestamp}) needs to defined to calculate oldScore`);
+    if (typeof comment.timestamp !== "number")
+        throw Error(`Comment.timestamp (${comment.timestamp}) needs to defined to calculate oldScore`);
     return -comment.timestamp;
 }
 
@@ -227,9 +230,9 @@ export function removeKeysWithUndefinedValues<T extends Object>(object: T): Only
 // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
 export async function ipfsImportKey(signer: Signer, plebbit, password = "") {
     const data = globalThis["FormData"] ? new FormData() : new NodeFormData();
-
-    assert(signer.ipnsKeyName, "Signer.ipnsKeyName needs to be defined before importing key into IPFS node");
-    assert(signer.ipfsKey, "Signer.ipfsKey needs to be defined before importing key into IPFS node");
+    if (typeof signer.ipnsKeyName !== "string") throw Error("Signer.ipnsKeyName needs to be defined before importing key into IPFS node");
+    if (signer.ipfsKey?.constructor?.name !== "Uint8Array")
+        throw Error("Signer.ipfsKey needs to be defined before importing key into IPFS node");
     const ipfsKeyFile = globalThis["Buffer"] ? Buffer.from(signer.ipfsKey) : new File([signer.ipfsKey], "myfile");
 
     //@ts-ignore
