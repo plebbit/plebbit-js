@@ -2,8 +2,7 @@ import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import EventEmitter from "events";
 import { sha256 } from "js-sha256";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
-import { Challenge, ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
-import assert from "assert";
+import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
 import { createCaptcha } from "./runtime/node/captcha";
 import { SortHandler } from "./sort-handler";
 import { ipfsImportKey, loadIpnsAsJson, removeKeys, removeKeysWithUndefinedValues, shallowEqual, timestamp } from "./util";
@@ -145,7 +144,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (this.dbHandler) {
             const dbSigner = await this.dbHandler.querySubplebbitSigner(undefined);
             if (!dbSigner) {
-                assert(this.signer, "Subplebbit needs a signer to start");
                 log.trace(`Subplebbit has no signer in DB, will insert provided signer from createSubplebbitOptions into DB`);
                 await this.dbHandler.insertSigner(
                     {
@@ -161,7 +159,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             }
         }
 
-        assert(this.signer?.publicKey);
+        if (typeof this.signer?.publicKey !== "string") throw Error("subplebbit.signer.publicKey is not defined");
         this.encryption = {
             type: "aes-cbc",
             publicKey: this.signer.publicKey
@@ -237,9 +235,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         if (!this.address && this.signer?.address) this.address = this.signer.address;
         await this.initDbIfNeeded();
-        assert(this.address && this.signer, "Both address and signer need to be defined at this point");
         // import ipfs key into ipfs node
-        assert(this.plebbit.ipfsClient, "a defined plebbit.ipfsClient is needed to load sub address from IPFS node");
 
         let subplebbitIpfsNodeKey, error;
         try {
@@ -256,7 +252,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             log.trace(`Subplebbit key is already in ipfs node, no need to import (${JSON.stringify(subplebbitIpfsNodeKey)})`);
             this.ipnsKeyName = subplebbitIpfsNodeKey["name"] || subplebbitIpfsNodeKey["Name"];
         }
-        assert(this.ipnsKeyName && this.address && this.signer && this.encryption, "These fields are needed to run the subplebbit");
 
         const cachedSubplebbit: SubplebbitType | undefined = await this.dbHandler?.keyvGet(this.address);
         if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}") this.initSubplebbit(cachedSubplebbit); // Init subplebbit fields from DB
@@ -290,7 +285,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit> {
-        assert(this.dbHandler, "dbHandler is needed to edit");
         const log = Logger("plebbit-js:subplebbit:edit");
 
         if (newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address) {
@@ -366,7 +360,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async stop() {
         this._updateInterval = clearInterval(this._updateInterval);
         if (this.signer) {
-            assert(this.signer?.address, "Signer is needed to stop publishing");
             this.removeAllListeners();
             this._sync = false;
 
@@ -382,10 +375,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async updateSubplebbitIpns() {
         const log = Logger("plebbit-js:subplebbit:sync");
 
-        assert(
-            this.dbHandler && this.plebbit.ipfsClient && this.signer,
-            "A connection to DB and ipfs client are needed to update subplebbit IPNS"
-        );
         // debugger;
         const trx: any = await this.dbHandler.createTransaction("subplebbit");
         const latestPost = await this.dbHandler.queryLatestPost(trx);
@@ -435,9 +424,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange:storePublicationIfValid:handleCommentEdit");
 
-        assert(this.dbHandler, "Need db handler to handleCommentEdit");
         let commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
-        assert(commentToBeEdited);
         const editorAddress = await getPlebbitAddressFromPublicKeyPem(commentEdit.signature.publicKey);
         const modRole = this.roles && this.roles[editorAddress];
         if (commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey) {
@@ -500,7 +487,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async handleVote(newVote: Vote, challengeRequestId: string) {
-        assert(this.dbHandler);
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange:storePublicationIfValid:handleVote");
 
         const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address);
@@ -521,9 +507,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         challengeRequestId: string
     ): Promise<Vote | CommentEdit | Post | Comment | string> {
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange:storePublicationIfValid");
-
-        assert.equal(publication.constructor.name, "Object", "Publication to store has to be a JSON object");
-        assert(this.dbHandler && this.plebbit.ipfsClient);
 
         delete this._challengeToSolution[challengeRequestId];
         delete this._challengeToPublication[challengeRequestId];
@@ -666,9 +649,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async handleChallengeRequest(request: ChallengeRequestMessage) {
-        assert(this.dbHandler);
         const log = Logger("plebbit-js:subplebbit:handleChallengeRequest");
-        assert(this.signer);
 
         const decryptedPublication = JSON.parse(
             await decrypt(request.encryptedPublication.encrypted, request.encryptedPublication.encryptedKey, this.signer.privateKey)
@@ -743,7 +724,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage) {
-        assert(this.dbHandler && this.signer);
         const log = Logger("plebbit-js:subplebbit:handleChallengeAnswer");
 
         const decryptedAnswers = JSON.parse(
@@ -816,7 +796,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 userAgent: env.USER_AGENT,
                 protocolVersion: env.PROTOCOL_VERSION
             };
-            assert(this.signer);
 
             const challengeVerification = new ChallengeVerificationMessage({
                 ...toSignVerification,
@@ -848,7 +827,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange");
 
         let msgParsed: ChallengeRequestMessageType | ChallengeAnswerMessageType | undefined;
-        assert(this.dbHandler);
         try {
             msgParsed = <ChallengeRequestMessageType | ChallengeAnswerMessageType>JSON.parse(uint8ArrayToString(pubsubMsg.data));
 
@@ -900,7 +878,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async syncComment(dbComment: Comment) {
         const log = Logger("plebbit-js:subplebbit:sync:syncComment");
 
-        assert(this.dbHandler && this.signer);
         let commentIpns: CommentUpdate | undefined;
         try {
             commentIpns = dbComment.ipnsName && (await loadIpnsAsJson(dbComment.ipnsName, this.plebbit));
@@ -926,8 +903,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async syncIpnsWithDb() {
         const log = Logger("plebbit-js:subplebbit:sync");
 
-        assert(this.dbHandler, "DbHandler need to be defined before syncing");
-        assert(this.signer?.address, "Signer is needed to sync");
         log.trace("Starting to sync IPNS with DB");
         await this.initDbIfNeeded();
         try {
@@ -983,7 +958,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async _addPublicationToDb(publication: CommentEdit | Vote | Comment | Post) {
-        assert(this.dbHandler);
         const log = Logger("plebbit-js:subplebbit:_addPublicationToDb");
         const [validSignature, failedVerificationReason] = await verifyPublication(publication, this.plebbit, publication.getType());
         if (!validSignature)

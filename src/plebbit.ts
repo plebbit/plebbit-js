@@ -20,7 +20,6 @@ import Post from "./post";
 import { Subplebbit } from "./subplebbit";
 import { loadIpfsFileAsJson, loadIpnsAsJson, timestamp } from "./util";
 import Vote from "./vote";
-import assert from "assert";
 import { createSigner, Signer, signPublication, verifyPublication } from "./signer";
 import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
@@ -176,15 +175,14 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         const canRunSub = this._canRunSub();
 
         const newSub = async () => {
-            assert(canRunSub, "missing nativeFunctions required to create a subplebbit");
+            if (!canRunSub) throw Error("missing nativeFunctions required to create a subplebbit");
             if (canRunSub && !this.dataPath)
                 throw errcode(Error(messages.ERR_DATA_PATH_IS_NOT_DEFINED), codes.ERR_DATA_PATH_IS_NOT_DEFINED, {
                     details: `createSubplebbit: canRunSub=${canRunSub}, plebbitOptions.dataPath=${this.dataPath}`
                 });
             const subplebbit = new Subplebbit(options, this);
-            const key = subplebbit.address || subplebbit.signer.address;
-            assert(typeof key === "string", "To create a subplebbit you need to either defined signer or address");
-            assert(!pendingSubplebbitCreations[key], "Can't recreate a pending subplebbit that is waiting to be created");
+            const key = subplebbit.address || <string>subplebbit.signer.address;
+            if (pendingSubplebbitCreations[key]) throw Error("Can't recreate a pending subplebbit that is waiting to be created");
             pendingSubplebbitCreations[key] = true;
             await subplebbit.prePublish();
             pendingSubplebbitCreations[key] = false;
@@ -247,7 +245,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         }
 
         if (!options?.author?.address) {
-            assert(options.signer.address, "Signer has to have an address");
+            if (typeof options.signer.address !== "string") throw Error("createCommentEditOptions.signer.address is not defined");
 
             options.author = { ...options.author, address: options.signer.address };
             log.trace(

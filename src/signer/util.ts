@@ -1,7 +1,6 @@
 const libp2pCrypto = require("libp2p-crypto");
 const PeerId = require("peer-id");
 const jose = require("jose");
-const assert = require("assert");
 
 export const generatePrivateKeyPem = async (): Promise<string> => {
     const keyPair = await generateKeyPair();
@@ -94,14 +93,12 @@ const getPeerIdFromPrivateKeyPem = async (privateKeyPem) => {
 };
 
 const validatePrivateKeyPem = (privateKeyPem) => {
-    assert(typeof privateKeyPem === "string", `invalid encrypted private key pem '${privateKeyPem}' not a string`);
-    assert(
-        privateKeyPem.startsWith("-----BEGIN ENCRYPTED PRIVATE KEY-----"),
-        `invalid encrypted private key pem '${privateKeyPem}' not encrypted private key pem`
-    );
+    if (typeof privateKeyPem !== "string") throw Error(`invalid encrypted private key pem '${privateKeyPem}' not a string`);
+    if (!privateKeyPem.startsWith("-----BEGIN ENCRYPTED PRIVATE KEY-----"))
+        throw Error(`invalid encrypted private key pem '${privateKeyPem}' not encrypted private key pem`);
 };
 
 const validatePublicKeyPem = (publicKeyPem) => {
-    assert(typeof publicKeyPem === "string", `invalid public key pem '${publicKeyPem}' not a string`);
-    assert(publicKeyPem.startsWith("-----BEGIN PUBLIC KEY-----"), `invalid public key pem '${publicKeyPem}' not public key pem`);
+    if (typeof publicKeyPem !== "string") throw Error(`invalid public key pem '${publicKeyPem}' not a string`);
+    if (!publicKeyPem.startsWith("-----BEGIN PUBLIC KEY-----")) throw Error(`invalid public key pem '${publicKeyPem}' not public key pem`);
 };

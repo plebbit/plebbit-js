@@ -7,7 +7,6 @@ import {
 import * as cborg from "cborg";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
-import assert from "assert";
 import PeerId from "peer-id";
 import { keepKeys, removeKeys, removeKeysWithUndefinedValues } from "../util";
 import { Plebbit } from "../plebbit";
@@ -125,15 +124,15 @@ export class Signature implements SignatureType {
 const isProbablyBuffer = (arg) => arg && typeof arg !== "string" && typeof arg !== "number";
 
 export const signBufferRsa = async (bufferToSign, privateKeyPem, privateKeyPemPassword = "") => {
-    assert(isProbablyBuffer(bufferToSign), `signBufferRsa invalid bufferToSign '${bufferToSign}' not buffer`);
+    if (!isProbablyBuffer(bufferToSign)) throw Error(`signBufferRsa invalid bufferToSign '${bufferToSign}' not buffer`);
     const keyPair = await getKeyPairFromPrivateKeyPem(privateKeyPem, privateKeyPemPassword);
     // do not use libp2p keyPair.sign to sign strings, it doesn't encode properly in the browser
     return await keyPair.sign(bufferToSign);
 };
 
 export const verifyBufferRsa = async (bufferToSign, bufferSignature, publicKeyPem) => {
-    assert(isProbablyBuffer(bufferToSign), `verifyBufferRsa invalid bufferSignature '${bufferToSign}' not buffer`);
-    assert(isProbablyBuffer(bufferSignature), `verifyBufferRsa invalid bufferSignature '${bufferSignature}' not buffer`);
+    if (!isProbablyBuffer(bufferToSign)) throw Error(`verifyBufferRsa invalid bufferSignature '${bufferToSign}' not buffer`);
+    if (!isProbablyBuffer(bufferSignature)) throw Error(`verifyBufferRsa invalid bufferSignature '${bufferSignature}' not buffer`);
     const peerId = await getPeerIdFromPublicKeyPem(publicKeyPem);
     return await peerId.pubKey.verify(bufferToSign, bufferSignature);
 };
@@ -144,22 +143,21 @@ export async function signPublication(
     plebbit: Plebbit,
     signatureType: SignatureTypes
 ): Promise<Signature> {
-    assert(signer.publicKey);
-    assert(Object.keys(SIGNED_PROPERTY_NAMES).includes(signatureType));
+    if (typeof signer.publicKey !== "string") throw Error(`signer.publicKey (${signer.publicKey}) is not a valid public key`);
+
+    if (!Object.keys(SIGNED_PROPERTY_NAMES).includes(signatureType)) throw Error(`signature type (${signatureType}) is not supported`);
     let publicationJson = <PublicationsToSign>removeKeysWithUndefinedValues(publication); // This line is needed to remove nested undefined values
 
     const log = Logger("plebbit-js:signatures:signPublication");
 
-    if (publicationJson["author"] && publicationJson["author"]["address"]) {
+    if (publicationJson["author"]?.constructor?.name === "Object" && typeof publicationJson["author"]["address"] === "string") {
         publicationJson = <CreateCommentEditOptions | CreateVoteOptions | CreateCommentOptions>publicationJson;
-        assert(publicationJson.author && publicationJson.author.address);
-        const resolvedAddress = await plebbit.resolver.resolveAuthorAddressIfNeeded(publicationJson.author.address);
+        const resolvedAddress = await plebbit.resolver.resolveAuthorAddressIfNeeded(<string>publicationJson.author.address);
         const derivedAddress = await getPlebbitAddressFromPrivateKeyPem(signer.privateKey);
-        assert.equal(
-            resolvedAddress,
-            derivedAddress,
-            `author.address (${publicationJson.author.address}) does not equate its resolved address (${resolvedAddress}) is invalid. For this publication to be signed, user needs to ensure plebbit-author-address points to same key used by signer (${derivedAddress})`
-        );
+        if (resolvedAddress !== derivedAddress)
+            throw Error(
+                `author.address (${publicationJson?.author?.address}) does not equate its resolved address (${resolvedAddress}) is invalid. For this publication to be signed, user needs to ensure plebbit-author-address points to same key used by signer (${derivedAddress})`
+            );
     }
 
     const signedPropertyNames = SIGNED_PROPERTY_NAMES[signatureType];
@@ -185,7 +183,7 @@ const verifyPublicationSignature = async (signature: SignatureType, publicationT
         uint8ArrayFromString(signature.signature, "base64"),
         signature.publicKey
     );
-    assert.equal(signatureIsValid, true, "Signature is invalid");
+    if (!signatureIsValid) throw Error("Signature is invalid");
 };
 
 // Return [verification (boolean), reasonForFailing (string)]
@@ -195,7 +193,7 @@ export async function verifyPublication(
     signatureType: SignatureTypes,
     overrideAuthorAddressIfInvalid = true
 ): Promise<[boolean, string | undefined]> {
-    assert(Object.keys(SIGNED_PROPERTY_NAMES).includes(signatureType));
+    if (!Object.keys(SIGNED_PROPERTY_NAMES).includes(signatureType)) throw Error(`signature type (${signatureType}) is not supported`);
     let publicationJson = <PublicationToVerify>removeKeysWithUndefinedValues(publication); // This line is needed to remove nested undefined values
 
     const log = Logger("plebbit-js:signatures:verifyPublication");
@@ -206,14 +204,13 @@ export async function verifyPublication(
     const verifyAuthor = async (signature: SignatureType, author: AuthorType) => {
         publicationJson = <CommentEditType | VoteType | CommentType>publicationJson;
         const signaturePeerId = await getPeerIdFromPublicKeyPem(signature.publicKey);
-        assert(author.address, "Author address is needed to verify");
         let authorPeerId: PeerId | undefined;
         try {
             // There are cases where author.address is a crypto domain so PeerId.createFromB58String crashes
             authorPeerId = PeerId.createFromB58String(author.address);
         } catch {}
-        if (authorPeerId)
-            assert.equal(signaturePeerId.equals(authorPeerId), true, "comment.author.address doesn't match comment.signature.publicKey");
+        if (authorPeerId && !signaturePeerId.equals(authorPeerId))
+            throw Error("comment.author.address doesn't match comment.signature.publicKey");
         else if (overrideAuthorAddressIfInvalid && publicationJson?.author?.address) {
             // Meaning author is a domain, crypto one likely
             const resolvedAddress = await plebbit.resolver.resolveAuthorAddressIfNeeded(publicationJson.author.address);
@@ -247,7 +244,8 @@ export async function verifyPublication(
                 overrideAuthorAddressIfInvalid
             );
             if (!verified) return [false, `Failed to verify ${signatureType}.original due to: ${failedVerificationReason}`];
-            assert(publicationJson.authorEdit, "Comment.original is defined while publication.authorEdit is not");
+
+            if (!publicationJson.authorEdit) throw Error("Comment.original is defined while publication.authorEdit is not");
             [verified, failedVerificationReason] = await verifyPublication(
                 publicationJson.authorEdit,
                 plebbit,
@@ -263,11 +261,8 @@ export async function verifyPublication(
                 : publicationJson.address;
             const subPeerId = PeerId.createFromB58String(resolvedSubAddress);
             const signaturePeerId = await getPeerIdFromPublicKeyPem(publicationJson.signature.publicKey);
-            assert.equal(
-                subPeerId.equals(signaturePeerId),
-                true,
-                "subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey"
-            );
+            if (!subPeerId.equals(signaturePeerId))
+                throw Error("subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey");
         } else {
             await verifyPublicationSignature(publicationJson.signature, publicationJson);
             // Verify author at the end since we might change author.address which will fail signature verification

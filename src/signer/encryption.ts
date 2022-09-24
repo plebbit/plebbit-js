@@ -2,13 +2,12 @@ import forge from "node-forge";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { getPeerIdFromPublicKeyPem, getKeyPairFromPrivateKeyPem } from "./util";
-import assert from "assert";
 import libp2pCrypto from "libp2p-crypto";
 import { Encrypted } from "../types";
 
 const validateArgumentNotEmptyString = (value, propertyName, functionName) => {
-    assert(typeof value === "string", `function '${functionName}' argument '${propertyName}': '${value}' not a string`);
-    assert(value.length > 0, `function '${functionName}' argument '${propertyName}': '${value}' empty string`);
+    if (typeof value !== "string") throw Error(`function '${functionName}' argument '${propertyName}': '${value}' not a string`);
+    if (value.length === 0) throw Error(`function '${functionName}' argument '${propertyName}': '${value}' empty string`);
 };
 
 export const generateKeyAesCbc = async () => {

@@ -1,4 +1,3 @@
-import assert from "assert";
 import { loadIpnsAsJson, removeKeys, removeKeysWithUndefinedValues, shallowEqual } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
@@ -112,9 +111,8 @@ export class Comment extends Publication implements CommentType {
         this.author = new Author({ ...props.author, ...this.author });
 
         for (const key of Object.keys(original))
-            this[key] &&
-                original[key] &&
-                assert.notEqual(this[key], original[key], `${key} and original ${key} can't be equal to each other`);
+            if (this[key] && original[key] && this[key] === original[key])
+                throw Error(`${key} and original ${key} can't be equal to each other`);
 
         if (JSON.stringify(original) !== "{}") this.original = original;
     }
@@ -148,8 +146,6 @@ export class Comment extends Publication implements CommentType {
     }
 
     toJSONIpfs(): CommentIpfsType {
-        assert(typeof this.depth === "number");
-        assert(typeof this.ipnsName === "string", `this.ipnsName (${this.ipnsName}) is not a string`);
         return {
             ...this.toJSONSkeleton(),
             previousCid: this.previousCid,
@@ -172,7 +168,7 @@ export class Comment extends Publication implements CommentType {
     }
 
     toJSONForDb(challengeRequestId?: string): CommentForDbType {
-        assert(this.ipnsKeyName);
+        if (typeof this.ipnsKeyName !== "string") throw Error("comment.ipnsKeyName needs to be defined before inserting comment in DB");
         return removeKeysWithUndefinedValues({
             ...removeKeys(this.toJSON(), ["replyCount", "upvoteCount", "downvoteCount", "replies"]),
             author: JSON.stringify(this.author),
@@ -186,14 +182,14 @@ export class Comment extends Publication implements CommentType {
     }
 
     toJSONCommentUpdate(skipAssert = false): Omit<CommentUpdate, "signature"> {
-        if (!skipAssert)
-            assert(
-                typeof this.upvoteCount === "number" &&
-                    typeof this.downvoteCount === "number" &&
-                    typeof this.replyCount === "number" &&
-                    typeof this.updatedAt === "number",
-                "Fields are needed to export a CommentUpdate JSON"
-            );
+        // if (!skipAssert)
+        //     assert(
+        //         typeof this.upvoteCount === "number" &&
+        //             typeof this.downvoteCount === "number" &&
+        //             typeof this.replyCount === "number" &&
+        //             typeof this.updatedAt === "number",
+        //         "Fields are needed to export a CommentUpdate JSON"
+        //     );
         return {
             upvoteCount: this.upvoteCount,
             downvoteCount: this.downvoteCount,
@@ -289,7 +285,8 @@ export class Comment extends Publication implements CommentType {
 
     async edit(options: CommentUpdate) {
         const log = Logger("plebbit-js:comment:edit");
-        assert(this.ipnsKeyName && this.plebbit.ipfsClient, "You need to have commentUpdate and ipfs client defined");
+        if (typeof this.ipnsKeyName !== "string")
+            throw Error("comment.ipnsKeyName needs to be defined in order to publish a new CommentUpdate");
         const [validSignature, failedVerificationReason] = await verifyPublication(options, this.plebbit, "commentupdate");
         if (!validSignature)
             throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {

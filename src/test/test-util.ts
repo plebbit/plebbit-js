@@ -2,7 +2,6 @@ import { TIMEFRAMES_TO_SECONDS, timestamp } from "../util";
 import { Signer, verifyPublication } from "../signer";
 import { Comment } from "../comment";
 import Post from "../post";
-import assert from "assert";
 import { Plebbit } from "../plebbit";
 import PlebbitIndex from "../index";
 import Vote from "../vote";
@@ -11,6 +10,7 @@ import { Subplebbit } from "../subplebbit";
 import { CommentType, SignerType } from "../types";
 import errcode from "err-code";
 import { codes, messages } from "../errors";
+import isIPFS from "is-ipfs";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [parentTimestamp || 0, timestamp()];
@@ -44,7 +44,7 @@ export async function generateMockPost(
         subplebbitAddress: subplebbitAddress,
         ...postProps
     });
-    assert.equal(post.constructor.name, "Post", "createComment should return Post if title is provided");
+    if (post.constructor.name !== "Post") throw Error("createComment should return Post if title is provided");
     post.once("challenge", (challengeMsg) => {
         post.publishChallengeAnswers([]);
     });
@@ -64,7 +64,8 @@ export async function generateMockComment(
     randomTimestamp = false,
     commentProps = {}
 ): Promise<Comment> {
-    assert(parentPostOrComment, "Need to have parentComment defined to generate mock comment");
+    if (!["Comment", "Post"].includes(parentPostOrComment.constructor.name))
+        throw Error("Need to have parentComment defined to generate mock comment");
     const commentTimestamp = (randomTimestamp && generateRandomTimestamp(parentPostOrComment.timestamp)) || timestamp();
     const commentTime = Date.now() / 1000 + Math.random();
     signer = signer || (await plebbit.createSigner());
@@ -96,13 +97,13 @@ export async function generateMockVote(
 ): Promise<Vote> {
     const voteTime = Date.now() / 1000;
     const commentCid = parentPostOrComment.cid || parentPostOrComment.postCid;
-    assert(typeof commentCid === "string");
+    if (typeof commentCid !== "string") throw Error(`generateMockVote: commentCid (${commentCid}) is not a valid CID`);
 
     signer = signer || (await plebbit.createSigner());
     const voteObj = await plebbit.createVote({
         author: { displayName: `Mock Author - ${voteTime}` },
         signer: signer,
-        commentCid: commentCid,
+        commentCid: <string>commentCid,
         vote: vote,
         subplebbitAddress: parentPostOrComment.subplebbitAddress
     });
@@ -119,7 +120,7 @@ export async function generateMockVote(
 }
 
 export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promise<Comment[]> {
-    assert(typeof pageCid === "string");
+    if (!isIPFS.cid(pageCid)) throw Error(`loadAllPages: pageCid (${pageCid}) is not a valid CID`);
     let sortedCommentsPage = await pagesInstance.getPage(pageCid);
     let sortedComments: Comment[] | CommentType[] = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {
@@ -266,7 +267,6 @@ async function _populateSubplebbit(
         numOfCommentsToPublish: number;
     }
 ) {
-    assert(props.signers[1].address && props.signers[2].address && props.signers[3].address);
     await subplebbit.edit({
         roles: {
             [props.signers[1].address]: { role: "owner" },

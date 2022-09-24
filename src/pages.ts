@@ -1,6 +1,5 @@
 import { loadIpfsFileAsJson } from "./util";
 import { verifyPublication } from "./signer";
-import assert from "assert";
 import { Subplebbit } from "./subplebbit";
 import { Comment } from "./comment";
 import { CommentType, PagesType, PageType, PostSortName, ReplySortName } from "./types";
@@ -27,14 +26,13 @@ export class Pages implements PagesType {
                 details: `getPage: cid (${pageCid}) is invalid as a CID`
             });
 
-        assert(this.subplebbit.address, "Address of subplebbit is needed to load pages");
+        if (typeof this.subplebbit.address !== "string") throw Error("Address of subplebbit is needed to load pages");
 
         const page = new Page(await loadIpfsFileAsJson(pageCid, this.subplebbit.plebbit));
         const verifyComment = async (comment: CommentType, parentComment?: CommentType) => {
-            assert(typeof comment.upvoteCount === "number" && typeof comment.downvoteCount === "number");
-            assert.equal(comment.subplebbitAddress, this.subplebbit.address, "Comment in page should be under the same subplebbit");
-            if (parentComment)
-                assert.equal(parentComment.cid, comment.parentCid, "Comment under parent comment/post should have parentCid initialized");
+            if (comment.subplebbitAddress !== this.subplebbit.address) throw Error("Comment in page should be under the same subplebbit");
+            if (parentComment && parentComment.cid !== comment.parentCid)
+                throw Error("Comment under parent comment/post should have parentCid initialized");
 
             const [signatureIsVerified, failedVerificationReason] = await verifyPublication(comment, this.subplebbit.plebbit, "comment");
             if (!signatureIsVerified)
