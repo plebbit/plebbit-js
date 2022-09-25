@@ -25,13 +25,7 @@ async function fetchWithLimit(url: string, options?): Promise<[resJson: Object, 
     try {
         res = await (globalThis["window"]?.fetch || nativeFunctions.fetch)(url, { ...options, size: DOWNLOAD_LIMIT_BYTES });
         // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
-        console.log(`Fetch res`);
-        if (res.body.getReader === undefined) {
-            console.log(`res.body.getReader is undefined`);
-            const resJson = await res.json();
-            console.log(`Called res.json`);
-            return [resJson, res];
-        }
+        if (res.body.getReader === undefined) return [await res.json(), res];
     } catch (e) {
         console.log(`error.message: ${e.message}`);
         if (e.message.includes("over limit"))
