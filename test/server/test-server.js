@@ -117,8 +117,8 @@ const startIpfsNodes = async () => {
             signers: signers,
             syncInterval: 100,
             database: memoryDatabaseConfig,
-            votesPerCommentToPublish: 2,
-            numOfCommentsToPublish: 2
+            votesPerCommentToPublish: 6,
+            numOfCommentsToPublish: 6
         });
 
     // create a test server to be able to use npm module 'wait-on'
