@@ -3,6 +3,7 @@ const { expect } = require("chai");
 const signers = require("../fixtures/signers");
 const { generateMockVote, generateMockPost } = require("../../dist/node/test/test-util");
 const { waitTillCommentsUpdate, waitTillPublicationsArePublished, randomElement } = require("../../dist/node/util");
+if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const subplebbitAddress = signers[0].address;
 

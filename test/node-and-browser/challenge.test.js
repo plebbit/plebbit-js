@@ -3,6 +3,8 @@ const { expect } = require("chai");
 const signers = require("../fixtures/signers");
 const { generateMockPost } = require("../../dist/node/test/test-util");
 
+if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
+
 let plebbit;
 const mathCliSubplebbitAddress = signers[1].address;
 const imageCaptchaSubplebbitAddress = signers[2].address;

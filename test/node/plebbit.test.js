@@ -3,6 +3,8 @@ const { expect } = require("chai");
 
 // example of node only tests
 
+if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
+
 describe("plebbit", () => {
     let plebbit;
 
@@ -19,7 +21,8 @@ describe("plebbit", () => {
     it(`plebbit.listSubplebbits() lists subplebbits correctly`, async () => {
         plebbit = await Plebbit({
             ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
+            pubsubHttpClientOptions: `http://localhost:5002/api/v0`,
+            dataPath: globalThis["window"]?.plebbitDataPath
         });
         plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
             if (authorAddress === "plebbit.eth") return signers[6].address;

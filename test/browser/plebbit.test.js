@@ -3,6 +3,8 @@ const { expect } = require("chai");
 
 // example of browser only tests
 
+if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
+
 describe("plebbit", () => {
     let plebbit;
 

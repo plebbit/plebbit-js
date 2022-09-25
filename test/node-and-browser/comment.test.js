@@ -13,6 +13,8 @@ let plebbit;
 const updateInterval = 100;
 const subplebbitAddress = signers[0].address;
 
+if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
+
 describe("comment (node and browser)", async () => {
     describe("createComment", async () => {
         before(async () => {

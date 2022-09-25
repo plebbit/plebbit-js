@@ -11,6 +11,8 @@ let plebbit, postToVote;
 const previousVotes = [];
 const updateInterval = 100;
 
+if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
+
 describe("Test upvote", async () => {
     before(async () => {
         plebbit = await Plebbit({

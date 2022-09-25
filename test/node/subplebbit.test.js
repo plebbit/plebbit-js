@@ -12,21 +12,10 @@ let plebbit;
 let subplebbit;
 let subplebbitSigner;
 
-const setupNativeFunction = () => {
-    const isElectron = globalThis["navigator"]?.userAgent?.includes("Electron");
-    if (isElectron) {
-        // If in electron env, set native functiosn
-        console.log(`subplebbit.test.js: Detected Electron env. Will set native functions`);
-        console.log(window.plebbitJsNativeFunctions);
-        Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
-    } else {
-        console.log(`subplebbit.test.js: Detected non native Electron env`);
-    }
-};
+if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 describe("subplebbit", async () => {
     before(async () => {
-        setupNativeFunction();
         plebbit = await Plebbit({
             ipfsHttpClientOptions: "http://localhost:5001/api/v0",
             pubsubHttpClientOptions: `http://localhost:5002/api/v0`,

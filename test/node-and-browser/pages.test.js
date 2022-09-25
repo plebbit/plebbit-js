@@ -11,6 +11,8 @@ const subplebbitAddress = signers[0].address;
 
 const updateInterval = 100;
 
+if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
+
 const mockPlebbit = async () => {
     const plebbit = await Plebbit({
         ipfsHttpClientOptions: "http://localhost:5001/api/v0",

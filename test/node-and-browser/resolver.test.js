@@ -9,6 +9,8 @@ let plebbit;
 const subplebbitAddress = signers[0].address;
 const mockComments = [];
 
+if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
+
 describe("Comments with Authors as domains", async () => {
     before(async () => {
         plebbit = await Plebbit({

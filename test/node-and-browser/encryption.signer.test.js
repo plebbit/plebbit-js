@@ -17,6 +17,8 @@ const { expect } = chai;
 const { toString } = require("uint8arrays/to-string");
 const { fromString } = require("uint8arrays/from-string");
 
+if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
+
 describe("encryption", () => {
     let plebbit, authorSigner;
 

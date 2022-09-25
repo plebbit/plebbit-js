@@ -10,6 +10,8 @@ const { expect, assert } = chai;
 const updateInterval = 100;
 const subplebbitAddress = signers[0].address;
 
+if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
+
 const [ensSubplebbitSigner, ensSubplebbitAddress] = [signers[3], "plebbit.eth"];
 describe("plebbit (node and browser)", () => {
     let plebbit, signer, subplebbitSigner;
@@ -78,7 +80,10 @@ describe("plebbit (node and browser)", () => {
 
     describe("plebbit.getComment", async () => {
         before(async () => {
-            plebbit = await Plebbit({ ipfsHttpClientOptions: "http://localhost:5001/api/v0" });
+            plebbit = await Plebbit({
+                ipfsHttpClientOptions: "http://localhost:5001/api/v0",
+                dataPath: globalThis["window"]?.plebbitDataPath
+            });
             plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
                 if (authorAddress === "plebbit.eth") return signers[6].address;
                 else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);

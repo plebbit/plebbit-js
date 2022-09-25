@@ -12,6 +12,8 @@ const subplebbitAddress = signers[0].address;
 const mockComments = [];
 const updateInterval = 100;
 
+if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
+
 describe("publishing", async () => {
     before(async () => {
         plebbit = await Plebbit({
