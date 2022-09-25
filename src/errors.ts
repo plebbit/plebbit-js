@@ -14,7 +14,8 @@ export enum messages {
     ERR_CID_IS_INVALID = "CID is invalid",
     ERR_SUB_HAS_NO_DB_CONFIG = "Subplebbit has no db config",
     ERR_DATA_PATH_IS_NOT_DEFINED = "plebbitOptions.dataPath needs to be defined with native functions",
-    ERR_IPNS_IS_INVALID = "IPNS is invalid"
+    ERR_IPNS_IS_INVALID = "IPNS is invalid",
+    ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit"
 }
 
 export enum codes {
@@ -33,5 +34,6 @@ export enum codes {
     ERR_CID_IS_INVALID = "ERR_CID_IS_INVALID",
     ERR_SUB_HAS_NO_DB_CONFIG = "ERR_SUB_HAS_NO_DB_CONFIG",
     ERR_DATA_PATH_IS_NOT_DEFINED = "ERR_DATA_PATH_IS_NOT_DEFINED",
-    ERR_IPNS_IS_INVALID = "ERR_IPNS_IS_INVALID"
+    ERR_IPNS_IS_INVALID = "ERR_IPNS_IS_INVALID",
+    ERR_OVER_DOWNLOAD_LIMIT = "ERR_OVER_DOWNLOAD_LIMIT"
 }

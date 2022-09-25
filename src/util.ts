@@ -19,26 +19,52 @@ export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
 });
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
-async function fetchWithLimit(url: string, options?) {
+async function fetchWithLimit(url: string, options?): Promise<[resJson: Object, response: Response]> {
     // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
-    const res = await nativeFunctions.fetch(url, options);
-    // @ts-ignore
-    if (res.body.getReader === undefined) return res; // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
-
-    const originalRes = res.clone();
-    // @ts-ignore
-    const reader = res.body.getReader();
-    let currentChunk: any = undefined,
-        totalBytesRead = 0;
-
-    while (true) {
-        currentChunk = await reader.read();
-        const { done, value } = currentChunk;
-        if (done || !value) break;
-        if (value.length + totalBytesRead > options.size) throw new Error(`content size at ${url} over limit: ${options.size}`);
-        totalBytesRead += value.length;
+    let res;
+    try {
+        res = await nativeFunctions.fetch(url, { ...options, size: DOWNLOAD_LIMIT_BYTES });
+        // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
+        console.log(`Fetch res`);
+        if (res.body.getReader === undefined) {
+            console.log(`res.body.getReader is undefined`);
+            const resJson = await res.json();
+            console.log(`Called res.json`);
+            return [resJson, res];
+        }
+    } catch (e) {
+        console.log(`error.message: ${e.message}`);
+        if (e.message.includes("over limit"))
+            throw errcode(Error(messages.ERR_OVER_DOWNLOAD_LIMIT), codes.ERR_OVER_DOWNLOAD_LIMIT, {
+                details: `fetch: url (${url}) points to a file larger than download limit (${DOWNLOAD_LIMIT_BYTES}) bytes`
+            });
+        // If error is not related to size limit, then throw it again
+        throw e;
     }
-    return originalRes;
+
+    //@ts-ignore
+    if (res?.body?.getReader !== undefined) {
+        let totalBytesRead = 0;
+
+        // @ts-ignore
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+
+        let resJson: string = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            //@ts-ignore
+            if (value) resJson += decoder.decode(value);
+            if (done || !value) break;
+            if (value.length + totalBytesRead > DOWNLOAD_LIMIT_BYTES)
+                throw errcode(Error(messages.ERR_OVER_DOWNLOAD_LIMIT), codes.ERR_OVER_DOWNLOAD_LIMIT, {
+                    details: `fetch: url (${url}) points to a file larger than download limit (${DOWNLOAD_LIMIT_BYTES}) bytes`
+                });
+            totalBytesRead += value.length;
+        }
+        return [JSON.parse(resJson), res];
+    }
 }
 
 export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultOptions = { timeout: 60000 }) {
@@ -48,18 +74,25 @@ export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultO
         });
     if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
-        const res = await fetchWithLimit(url, { cache: "force-cache", size: DOWNLOAD_LIMIT_BYTES });
-        if (res.status === 200) return res.json();
-        else throw new Error(`Failed to load IPFS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
+        const [resJson, res] = await fetchWithLimit(url, { cache: "force-cache" });
+        if (res.status === 200) return resJson;
+        else throw Error(`Failed to load IPFS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
     } else {
         let fileContent: string | undefined, error;
         try {
-            fileContent = await plebbit.ipfsClient.cat(cid, { ...defaultOptions, length: DOWNLOAD_LIMIT_BYTES }); // // Limit is 1mb files
+            fileContent = await plebbit.ipfsClient.cat(cid, { ...defaultOptions, length: DOWNLOAD_LIMIT_BYTES }); // Limit is 1mb files
         } catch (e) {
             error = e;
         }
         if (typeof fileContent !== "string") throw Error(`Was not able to load IPFS (${cid}) due to error: ${error}`);
-        return JSON.parse(fileContent);
+        try {
+            return JSON.parse(fileContent);
+        } catch {
+            if (fileContent.length === DOWNLOAD_LIMIT_BYTES)
+                throw errcode(Error(messages.ERR_OVER_DOWNLOAD_LIMIT), codes.ERR_OVER_DOWNLOAD_LIMIT, {
+                    details: `loadIpfsFileAsJson: cid (${cid}) points to a file larger than download limit (${DOWNLOAD_LIMIT_BYTES}) bytes`
+                });
+        }
     }
 }
 
@@ -70,9 +103,9 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
         });
     if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
-        const res = await fetchWithLimit(url, { cache: "no-store", size: DOWNLOAD_LIMIT_BYTES });
-        if (res.status === 200) return await res.json();
-        else throw new Error(`Failed to load IPNS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
+        const [resJson, res] = await fetchWithLimit(url, { cache: "no-store", size: DOWNLOAD_LIMIT_BYTES });
+        if (res.status === 200) return resJson;
+        else throw Error(`Failed to load IPNS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
     } else {
         let cid: string | undefined, error;
         try {

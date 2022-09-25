@@ -26,8 +26,8 @@ describe("Test util functions", async () => {
         it("Throws if provided with invalid cid", async () => {
             const gibberishCid = "12345";
 
-            await assert.isRejected(loadIpfsFileAsJson(gibberishCid, plebbit));
-            await assert.isRejected(loadIpfsFileAsJson(gibberishCid, gatewayPlebbit));
+            await assert.isRejected(loadIpfsFileAsJson(gibberishCid, plebbit), messages.ERR_CID_IS_INVALID);
+            await assert.isRejected(loadIpfsFileAsJson(gibberishCid, gatewayPlebbit), messages.ERR_CID_IS_INVALID);
         });
         it("Loads an ipfs file under 1mb as JSON correctly", async () => {
             const jsonFileTest = { 123: "123" };
@@ -44,15 +44,15 @@ describe("Test util functions", async () => {
 
             const cid = (await plebbit.ipfsClient.add(JSON.stringify(twoMbObject))).path; // Cid of a file with over 1mb size
 
-            await assert.isRejected(loadIpfsFileAsJson(cid, plebbit), "JSON");
-            await assert.isRejected(loadIpfsFileAsJson(cid, gatewayPlebbit), "content size");
+            await assert.isRejected(loadIpfsFileAsJson(cid, plebbit), messages.ERR_OVER_DOWNLOAD_LIMIT);
+            await assert.isRejected(loadIpfsFileAsJson(cid, gatewayPlebbit), messages.ERR_OVER_DOWNLOAD_LIMIT);
         });
     });
 
     describe("loadIpnsAsJson", async () => {
         it("Throws if provided with invalid ipns", async () => {
             const gibberishIpns = "12345";
-            await assert.isRejected(loadIpnsAsJson(gibberishIpns, plebbit));
+            await assert.isRejected(loadIpnsAsJson(gibberishIpns, plebbit), 'could not resolve name: "12345" is missing a DNSLink record'); // Provide message here
         });
         it("Loads an IPNS file as JSON correctly", async () => {
             const jsonFileTest = { 1234: "1234" };
@@ -76,7 +76,7 @@ describe("Test util functions", async () => {
                 })
             ).name;
 
-            await assert.isRejected(loadIpnsAsJson(ipns, gatewayPlebbit), "content size");
+            await assert.isRejected(loadIpnsAsJson(ipns, gatewayPlebbit), messages.ERR_OVER_DOWNLOAD_LIMIT);
         });
     });
 });
