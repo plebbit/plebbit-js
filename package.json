@@ -18,6 +18,7 @@
         "test:electron": "karma start config/karma-electron.conf.js",
         "test:server": "node test/server/test-server.js",
         "test:server:no-internet": "NO_INTERNET=1 firejail --noprofile --net=none --name=test_server node test/server/test-server.js",
+        "test:server:electron": "NO_SUBPLEBBITS=1 node test/server/test-server.js & wait-on http://localhost:14952 --timeout 300000 && karma start config/karma-server-electron.conf.js",
         "test:server:wait-on": "wait-on http://localhost:14952 --timeout 300000",
         "clean": "rimraf dist",
         "prettier": "prettier {src,test,config}/**/*.{js,ts} --write --config config/prettier.config.js",
@@ -29,7 +30,9 @@
         ".": "dist/browser/index.js",
         "./dist/node/index.js": "./dist/browser/index.js",
         "./dist/node": "./dist/browser",
-        "./dist/node/runtime/node/util": "./dist/browser/runtime/browser/util"
+        "./dist/node/runtime/node/util": "./dist/browser/runtime/browser/util",
+        "dist/node/test/test-util": "./dist/browser/test/test-util",
+        "./runtime/node/util": "./runtime/browser/util"
     },
     "files": [
         "dist/"

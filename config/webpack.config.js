@@ -11,7 +11,7 @@ const testFolder = path.resolve(rootFolder, "test");
 const lockFile = path.resolve(rootFolder, "package-lock.json");
 
 // all our test files
-const testGlob = testFolder + "/{browser,node-and-browser,node}/**/*.{test,util}.js";
+const testGlob = testFolder + "/{browser,node-and-browser,node,server}/**/*.{test,util,electron}.js";
 
 // find all the browser test files and assign them to their own name, don't bundle them
 const testFiles = glob.sync(testGlob).sort();
@@ -22,8 +22,6 @@ const testEntries = testFiles.reduce((acc, file) => {
 
 // debug build paths if needed
 // console.log({rootFolder, testFiles, testEntries, outputFolder, testFolder, lockFile})
-console.log("karma test files:");
-console.log(Object.keys(testEntries));
 
 module.exports = {
     // each test file is its own entry

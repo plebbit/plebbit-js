@@ -144,10 +144,11 @@ export async function getAllCommentsUnderSubplebbit(subplebbit: Subplebbit): Pro
     return (await Promise.all(subplebbit.posts?.pages.hot?.comments.map(getChildrenComments) || [])).flat();
 }
 
-async function _mockPlebbit(signers: SignerType[]) {
+async function _mockPlebbit(signers: SignerType[], dataPath: string) {
     const plebbit = await PlebbitIndex({
         ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-        pubsubHttpClientOptions: `http://localhost:5002/api/v0`
+        pubsubHttpClientOptions: `http://localhost:5002/api/v0`,
+        dataPath
     });
     //@ts-ignore
     plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
@@ -164,8 +165,8 @@ async function _mockPlebbit(signers: SignerType[]) {
     return plebbit;
 }
 
-async function _startMathCliSubplebbit(signers: SignerType[], database: any, syncInterval: number) {
-    const plebbit = await _mockPlebbit(signers);
+async function _startMathCliSubplebbit(signers: SignerType[], database: any, syncInterval: number, dataPath: string) {
+    const plebbit = await _mockPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[1]);
     const subplebbit = await plebbit.createSubplebbit({ signer, database });
     subplebbit.setProvideCaptchaCallback(async (challengeRequestMessage) => {
@@ -183,8 +184,8 @@ async function _startMathCliSubplebbit(signers: SignerType[], database: any, syn
     return subplebbit;
 }
 
-async function _startImageCaptchaSubplebbit(signers: SignerType[], database: any, syncInterval: number) {
-    const plebbit = await _mockPlebbit(signers);
+async function _startImageCaptchaSubplebbit(signers: SignerType[], database: any, syncInterval: number, dataPath: string) {
+    const plebbit = await _mockPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[2]);
     const subplebbit = await plebbit.createSubplebbit({ signer, database });
 
@@ -198,8 +199,8 @@ async function _startImageCaptchaSubplebbit(signers: SignerType[], database: any
     return subplebbit;
 }
 
-async function _startEnsSubplebbit(signers: SignerType[], database: any, syncInterval: number) {
-    const plebbit = await _mockPlebbit(signers);
+async function _startEnsSubplebbit(signers: SignerType[], database: any, syncInterval: number, dataPath: string) {
+    const plebbit = await _mockPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[3]);
     const subplebbit = await plebbit.createSubplebbit({ signer, database });
     await subplebbit.start(syncInterval);
@@ -287,11 +288,12 @@ async function _populateSubplebbit(
 export async function startSubplebbits(props: {
     signers: SignerType[];
     syncInterval: number;
+    dataPath: string;
     database: any;
     votesPerCommentToPublish: number;
     numOfCommentsToPublish: number;
 }) {
-    const plebbit = await _mockPlebbit(props.signers);
+    const plebbit = await _mockPlebbit(props.signers, props.dataPath);
 
     const signer = await plebbit.createSigner(props.signers[0]);
     const subplebbit = await plebbit.createSubplebbit({ signer, database: props.database });
@@ -300,9 +302,9 @@ export async function startSubplebbits(props: {
     await subplebbit.start(props.syncInterval);
     console.time("populate");
     const [imageSubplebbit, mathSubplebbit] = await Promise.all([
-        _startImageCaptchaSubplebbit(props.signers, props.database, props.syncInterval),
-        _startMathCliSubplebbit(props.signers, props.database, props.syncInterval),
-        _startEnsSubplebbit(props.signers, props.database, props.syncInterval),
+        _startImageCaptchaSubplebbit(props.signers, props.database, props.syncInterval, props.dataPath),
+        _startMathCliSubplebbit(props.signers, props.database, props.syncInterval, props.dataPath),
+        _startEnsSubplebbit(props.signers, props.database, props.syncInterval, props.dataPath),
         _populateSubplebbit(subplebbit, props)
     ]);
     console.timeEnd("populate");
