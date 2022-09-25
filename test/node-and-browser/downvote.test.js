@@ -1,8 +1,14 @@
 const Plebbit = require("../../dist/node");
-const { expect } = require("chai");
 const signers = require("../fixtures/signers");
 const { generateMockVote, generateMockPost } = require("../../dist/node/test/test-util");
 const { waitTillCommentsUpdate, waitTillPublicationsArePublished, randomElement } = require("../../dist/node/util");
+const { messages } = require("../../dist/node/errors");
+
+const chai = require("chai");
+const { expect, assert } = require("chai");
+const chaiAsPromised = require("chai-as-promised");
+chai.use(chaiAsPromised);
+
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const subplebbitAddress = signers[0].address;
@@ -59,15 +65,10 @@ describe(`Test Downvote`, async () => {
         });
     });
 
-    it("Throws an error when vote's comment does not exist", async () => {
-        return new Promise(async (resolve, reject) => {
-            const vote = await generateMockVote({ ...postToVote.toJSON(), cid: "gibbrish" }, 1, plebbit, signers[0]);
-            await vote.publish();
-            vote.once("challengeverification", async (challengeVerificationMsg, updatedVote) => {
-                expect(challengeVerificationMsg.challengeSuccess).to.be.false;
-                expect(challengeVerificationMsg.reason).to.be.a("string").with.length.at.least(1);
-                resolve();
-            });
-        });
+    it("Vote.publish fails when Vote.commentCid is invalid ", async () => {
+        const vote = await generateMockVote({ ...postToVote.toJSON(), cid: "gibbrish" }, 1, plebbit, signers[0]);
+        await assert.isRejected(vote.publish(), messages.ERR_CID_IS_INVALID);
     });
+
+    it(`Subplebbits rejects votes with invalid commentCid `);
 });
