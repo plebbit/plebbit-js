@@ -3,6 +3,7 @@ const signers = require("../fixtures/signers");
 const { timestamp } = require("../../dist/node/util");
 const { signPublication, verifyPublication } = require("../../dist/node/signer");
 const { generateMockPost, generateMockComment } = require("../../dist/node/test/test-util");
+const { messages, codes } = require("../../dist/node/errors");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
@@ -93,7 +94,10 @@ describe("comment (node and browser)", async () => {
                 await comment.publish();
                 comment.once("challengeverification", (challengeVerificationMessage, updatedComment) => {
                     expect(challengeVerificationMessage.challengeSuccess).to.be.false;
-                    expect(challengeVerificationMessage.reason).to.be.a("string");
+                    expect(challengeVerificationMessage.reason).to.be.equal(messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST);
+                    expect(challengeVerificationMessage.publication).to.be.undefined;
+                    expect(challengeVerificationMessage.encryptedPublication).to.be.undefined;
+
                     resolve();
                 });
             });
@@ -112,11 +116,14 @@ describe("comment (node and browser)", async () => {
                 await subplebbit.stop();
                 expect(subplebbit.lastPostCid).to.be.a("string");
                 const parentPost = await plebbit.getComment(subplebbit.lastPostCid);
+                expect(parentPost.timestamp).to.be.a("number");
                 const reply = await generateMockComment(parentPost, plebbit, signers[0], false, { timestamp: parentPost.timestamp - 1 });
                 await reply.publish();
                 reply.once("challengeverification", async (challengeVerificationMessage, updatedComment) => {
                     expect(challengeVerificationMessage.challengeSuccess).to.be.false;
-                    expect(challengeVerificationMessage.reason).to.be.a("string");
+                    expect(challengeVerificationMessage.reason).to.equal(messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT);
+                    expect(challengeVerificationMessage.publication).to.be.undefined;
+                    expect(challengeVerificationMessage.encryptedPublication).to.be.undefined;
                     resolve();
                 });
             });

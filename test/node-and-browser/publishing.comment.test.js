@@ -55,7 +55,10 @@ describe("publishing", async () => {
             await mockComments[0].publish();
             mockComments[0].once("challengeverification", (challengeVerificationMessage, updatedComment) => {
                 expect(challengeVerificationMessage.challengeSuccess).to.be.false;
-                expect(challengeVerificationMessage.reason).to.be.a("string");
+                expect(challengeVerificationMessage.reason).to.be.a("string"); // TODO add check for message here
+                expect(challengeVerificationMessage.publication).to.be.undefined;
+                expect(challengeVerificationMessage.encryptedPublication).to.be.undefined;
+
                 resolve();
             });
         });
@@ -78,6 +81,8 @@ describe("publishing", async () => {
             post.once("challengeverification", (challengeVerificationMessage, updatedComment) => {
                 expect(challengeVerificationMessage.challengeSuccess).to.be.true;
                 expect(challengeVerificationMessage.reason).to.be.a("string");
+                expect(challengeVerificationMessage.publication).to.be.a("object");
+                expect(challengeVerificationMessage.encryptedPublication).to.be.a("object");
                 expect(updatedComment.link).to.equal(postLink);
                 resolve();
             });
@@ -99,6 +104,8 @@ describe("publishing", async () => {
             post.once("challengeverification", (challengeVerificationMessage, updatedComment) => {
                 expect(challengeVerificationMessage.challengeSuccess).to.be.true;
                 expect(challengeVerificationMessage.reason).to.be.a("string");
+                expect(challengeVerificationMessage.publication).to.be.a("object");
+                expect(challengeVerificationMessage.encryptedPublication).to.be.a("object");
                 expect(updatedComment.spoiler).to.be.true;
                 resolve();
             });
