@@ -69,15 +69,12 @@ export class DbHandler {
             this._dbConfig = await getDefaultSubplebbitDbConfig(this._subplebbit);
             log(`User did provide a database config. Defaulting to ${JSON.stringify(this._dbConfig)}`);
         }
-        if (!this._knex) {
-            this._knex = knex(this._dbConfig);
-            console.log(`Initialized knex in dbHandler for sub (${this._subplebbit.address})`);
-        }
+        if (!this._knex) this._knex = knex(this._dbConfig);
+
         if (!this._createdTables) await this.createTablesIfNeeded();
-        if (!this._keyv) {
-            this._keyv = new Keyv(`sqlite://${this._dbConfig?.connection?.filename}`);
-            console.log(`Initialized keyv in dbHandler for sub (${this._subplebbit.address})`);
-        } // TODO make this work with DBs other than sqlite
+
+        // TODO make this work with DBs other than sqlite
+        if (!this._keyv) this._keyv = new Keyv(`sqlite://${this._dbConfig?.connection?.filename}`);
     }
 
     getDbConfig(): Knex.Config {

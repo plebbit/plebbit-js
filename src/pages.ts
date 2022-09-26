@@ -7,13 +7,12 @@ import errcode from "err-code";
 import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 import isIPFS from "is-ipfs";
-import { Plebbit } from "./plebbit";
 
 export class Pages implements PagesType {
     pages?: Partial<Record<PostSortName | ReplySortName, PageType>>;
     pageCids?: Partial<Record<PostSortName | ReplySortName, string>>;
     subplebbit: Pick<Subplebbit, "address" | "plebbit">;
-    constructor(props: PagesType & { subplebbit: { plebbit: Plebbit; address: string } }) {
+    constructor(props: PagesType & { subplebbit: Pages["subplebbit"] }) {
         this.pages = props.pages;
         this.pageCids = props.pageCids;
         this.subplebbit = props.subplebbit;

@@ -15,10 +15,10 @@ import isIPFS from "is-ipfs";
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [parentTimestamp || 0, timestamp()];
 
-    let randomTimestamp;
-    while (!randomTimestamp) {
+    let randomTimestamp: number = -1;
+    while (randomTimestamp === -1) {
         const randomTimeframeIndex = (Object.keys(TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
-        const tempTimestamp = lowerLimit + Object.values(TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
+        const tempTimestamp = lowerLimit + Math.random() > 0.5 ? Object.values(TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex] : 1;
         if (tempTimestamp >= lowerLimit && tempTimestamp <= upperLimit) randomTimestamp = tempTimestamp;
     }
 

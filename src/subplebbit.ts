@@ -82,8 +82,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     // private
 
-    private _challengeToSolution: any;
-    private _challengeToPublication: any;
+    private _challengeToSolution: Record<string, string[]>;
+    private _challengeToPublication: Record<string, DecryptedChallengeRequestMessageType["publication"]>;
     private provideCaptchaCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[ChallengeType[], string | undefined]>;
     private validateCaptchaAnswerCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>;
     private ipnsKeyName?: string;

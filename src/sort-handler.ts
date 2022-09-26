@@ -7,7 +7,7 @@ import { CommentType, PostSort, PostSortName, ReplySort, ReplySortName, SortProp
 import Logger from "@plebbit/plebbit-logger";
 
 export const POSTS_SORT_TYPES: PostSort = {
-    hot: { score: hotScore },
+    hot: { score: (...args) => hotScore(...args) },
     new: {},
     topHour: { timeframe: "HOUR" },
     topDay: { timeframe: "DAY" },
@@ -15,18 +15,18 @@ export const POSTS_SORT_TYPES: PostSort = {
     topMonth: { timeframe: "MONTH" },
     topYear: { timeframe: "YEAR" },
     topAll: { timeframe: "ALL" },
-    controversialHour: { score: controversialScore, timeframe: "HOUR" },
-    controversialDay: { timeframe: "DAY", score: controversialScore },
-    controversialWeek: { timeframe: "WEEK", score: controversialScore },
-    controversialMonth: { timeframe: "MONTH", score: controversialScore },
-    controversialYear: { timeframe: "YEAR", score: controversialScore },
-    controversialAll: { timeframe: "ALL", score: controversialScore }
+    controversialHour: { score: (...args) => controversialScore(...args), timeframe: "HOUR" },
+    controversialDay: { timeframe: "DAY", score: (...args) => controversialScore(...args) },
+    controversialWeek: { timeframe: "WEEK", score: (...args) => controversialScore(...args) },
+    controversialMonth: { timeframe: "MONTH", score: (...args) => controversialScore(...args) },
+    controversialYear: { timeframe: "YEAR", score: (...args) => controversialScore(...args) },
+    controversialAll: { timeframe: "ALL", score: (...args) => controversialScore(...args) }
 };
 
 export const REPLIES_SORT_TYPES: ReplySort = {
     topAll: { timeframe: "ALL" },
     new: {},
-    controversialAll: { timeframe: "ALL", score: controversialScore },
+    controversialAll: { timeframe: "ALL", score: (...args) => controversialScore(...args) },
     old: {}
 };
 
@@ -76,10 +76,10 @@ export class SortHandler {
         sortName: PostSortName | ReplySortName,
         limit = SORTED_POSTS_PAGE_SIZE
     ): Promise<[Partial<Record<PostSortName | ReplySortName, Page>>, string]> {
-        assert(comments.length > 0);
         let commentsSorted: CommentType[];
         const sortProps: SortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
-        assert(sortProps);
+        if (sortProps.hasOwnProperty("score") && typeof sortProps.score !== "function")
+            throw Error(`SortProps[${sortName}] is not defined`);
 
         if (!sortProps.score) commentsSorted = comments;
         // If sort type has no score function, that means it already has been sorted by DB
@@ -92,7 +92,6 @@ export class SortHandler {
                 .sort((postA, postB) => postB.score - postA.score)
                 .map((comment) => comment.comment);
 
-        assert(commentsSorted.every((comment) => typeof comment.upvoteCount === "number" && typeof comment.downvoteCount === "number"));
         const commentsChunks = chunks(commentsSorted, limit);
 
         const [listOfPage, cids] = await this.chunksToListOfPage(commentsChunks);
@@ -251,16 +250,16 @@ export class SortHandler {
         return pages;
     }
 
-    async deleteCommentPageCache(dbComment: Comment) {
+    async deleteCommentPageCache(dbComment: CommentType) {
         const log = Logger("plebbit-js:sort-handler:deleteCommentPageCache");
 
-        assert(this.subplebbit.dbHandler);
-        const cachesToDelete = [
+        assert(this.subplebbit.dbHandler && dbComment.cid);
+        const cachesToDelete: string[] = [
             dbComment.cid,
-            ...(await this.subplebbit.dbHandler.queryParentsOfComment(dbComment, undefined)).map((comment) => comment.cid),
+            ...(await this.subplebbit.dbHandler.queryParentsOfComment(dbComment, undefined)).map((comment) => <string>comment.cid),
             "subplebbit"
         ];
         log.trace(`Caches to delete: ${cachesToDelete}`);
-        await Promise.all(cachesToDelete.map(async (cacheKey) => this.subplebbit.dbHandler?.keyvDelete(cacheKey)));
+        await this.subplebbit.dbHandler?.keyvDelete(cachesToDelete);
     }
 }
