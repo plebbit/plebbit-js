@@ -333,7 +333,7 @@
             "request": "launch",
             "name": "Launch Test Server",
             "skipFiles": ["<node_internals>/**"],
-            "program": "${workspaceFolder}/test/test-server.js",
+            "program": "${workspaceFolder}/test/server/test-server.js",
             "console": "integratedTerminal",
 
             "env": { "DEBUG": "plebbit-js:*, -plebbit-js:*:trace, -plebbit-js:trace" }
