@@ -687,11 +687,9 @@ export class DbHandler {
         }
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbFileName });
         await fs.promises.mkdir(path.dirname(newPath), { recursive: true });
-        //@ts-ignore
-        this._knex = this._keyv = undefined;
         this._currentTrxs = {};
         this._subplebbit = newSubplebbit;
-        await fs.promises.rename(oldPathString, newPath);
+        await fs.promises.cp(oldPathString, newPath);
         this._dbConfig = {
             ...this._dbConfig,
             connection: {
@@ -699,6 +697,8 @@ export class DbHandler {
                 filename: newPath
             }
         };
+        //@ts-ignore
+        this._knex = this._keyv = undefined;
         await this.initDbIfNeeded();
         log(`Changed db path from (${oldPathString}) to (${newPath})`);
     }

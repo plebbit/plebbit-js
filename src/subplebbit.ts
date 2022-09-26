@@ -304,8 +304,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     createComment: this.plebbit.createComment.bind(this.plebbit)
                 }
             });
-
-            await this.initDbIfNeeded();
         }
 
         this.initSubplebbit(newSubplebbitOptions);
@@ -411,7 +409,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (!currentIpns || JSON.stringify(currentIpns) !== JSON.stringify(this.toJSON()) || lastPublishOverTwentyMinutes) {
             this.updatedAt = timestamp();
             this.signature = await signPublication(this.toJSON(), this.signer, this.plebbit, "subplebbit");
-            this.dbHandler.keyvSet(this.address, this.toJSON());
             const file = await this.plebbit.ipfsClient.add(JSON.stringify(this.toJSON()));
             await this.plebbit.ipfsClient.name.publish(file.path, {
                 lifetime: "72h", // TODO decide on optimal time later
@@ -663,7 +660,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         log(`Received a request to a challenge (${request.challengeRequestId})`);
         if (providedChallenges.length === 0) {
             // Subplebbit owner has chosen to skip challenging this user or post
-            log.trace(
+            log(
                 `Skipping challenge for ${request.challengeRequestId}, add publication to IPFS and respond with challengeVerificationMessage right away`
             );
             await this.dbHandler.upsertChallenge(request.toJSONForDb(), undefined);
@@ -903,7 +900,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const log = Logger("plebbit-js:subplebbit:sync");
 
         log.trace("Starting to sync IPNS with DB");
-        await this.initDbIfNeeded();
         try {
             await this.sortHandler.cacheCommentsPages();
             const dbComments = await this.dbHandler.queryComments();
@@ -915,6 +911,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         } catch (e) {
             log.error(`Failed to sync due to error: ${e}`);
         }
+        await this.dbHandler.keyvSet(this.address, this.toJSON());
     }
 
     async _syncLoop(syncIntervalMs: number) {
