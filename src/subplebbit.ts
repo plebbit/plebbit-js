@@ -539,22 +539,20 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     ? postOrCommentOrVote.commentCid
                     : undefined;
 
-            const errResponse = `Rejecting ${postOrCommentOrVote.constructor.name} because its parentCid or commentCid is not defined`;
             if (!parentCid) {
-                log(errResponse);
-                return errResponse;
+                log(messages.ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED);
+                return messages.ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED;
             }
 
             const parent = await this.dbHandler.queryComment(parentCid);
             if (!parent) {
-                log(errResponse);
-                return errResponse;
+                log(messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST);
+                return messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST;
             }
 
             if (parent.timestamp > postOrCommentOrVote.timestamp) {
-                const reason = `Rejecting ${postOrCommentOrVote.constructor.name} because its timestamp (${postOrCommentOrVote.timestamp}) is earlier than its parent (${parent.timestamp})`;
-                log(reason);
-                return reason;
+                log(messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT);
+                return messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT;
             }
         }
         if (this.plebbit.resolver.isDomain(publication.author.address)) {
