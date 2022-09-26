@@ -44,11 +44,12 @@ var node_forge_1 = __importDefault(require("node-forge"));
 var to_string_1 = require("uint8arrays/to-string");
 var from_string_1 = require("uint8arrays/from-string");
 var util_1 = require("./util");
-var assert_1 = __importDefault(require("assert"));
 var libp2p_crypto_1 = __importDefault(require("libp2p-crypto"));
 var validateArgumentNotEmptyString = function (value, propertyName, functionName) {
-    (0, assert_1.default)(typeof value === "string", "function '".concat(functionName, "' argument '").concat(propertyName, "': '").concat(value, "' not a string"));
-    (0, assert_1.default)(value.length > 0, "function '".concat(functionName, "' argument '").concat(propertyName, "': '").concat(value, "' empty string"));
+    if (typeof value !== "string")
+        throw Error("function '".concat(functionName, "' argument '").concat(propertyName, "': '").concat(value, "' not a string"));
+    if (value.length === 0)
+        throw Error("function '".concat(functionName, "' argument '").concat(propertyName, "': '").concat(value, "' empty string"));
 };
 var generateKeyAesCbc = function () { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {

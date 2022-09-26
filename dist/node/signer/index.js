@@ -35,13 +35,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createSigner = exports.Signer = exports.decrypt = exports.encrypt = exports.Signature = exports.verifyPublication = exports.signPublication = void 0;
 var util_1 = require("./util");
-var assert_1 = __importDefault(require("assert"));
 var signatures_1 = require("./signatures");
 Object.defineProperty(exports, "signPublication", { enumerable: true, get: function () { return signatures_1.signPublication; } });
 Object.defineProperty(exports, "verifyPublication", { enumerable: true, get: function () { return signatures_1.verifyPublication; } });
@@ -71,7 +67,8 @@ var createSigner = function (createSignerOptions) {
                 case 0:
                     privateKey = createSignerOptions.privateKey, signerType = createSignerOptions.type;
                     if (!privateKey) return [3 /*break*/, 1];
-                    assert_1.default.equal(signerType, "rsa", "invalid signer createSignerOptions.type, not 'rsa'");
+                    if (signerType !== "rsa")
+                        throw Error("invalid signer createSignerOptions.type, not 'rsa'");
                     return [3 /*break*/, 3];
                 case 1: return [4 /*yield*/, (0, util_1.generatePrivateKeyPem)()];
                 case 2:
@@ -79,7 +76,8 @@ var createSigner = function (createSignerOptions) {
                     signerType = "rsa";
                     _a.label = 3;
                 case 3:
-                    (0, assert_1.default)(typeof signerType === "string");
+                    if (typeof signerType !== "string")
+                        throw Error("createSignerOptions does not include type");
                     return [4 /*yield*/, (0, util_1.getPublicKeyPemFromPrivateKeyPem)(privateKey)];
                 case 4:
                     publicKeyPem = _a.sent();

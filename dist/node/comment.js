@@ -66,7 +66,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Comment = void 0;
-var assert_1 = __importDefault(require("assert"));
 var util_1 = require("./util");
 var publication_1 = __importDefault(require("./publication"));
 var pages_1 = require("./pages");
@@ -129,9 +128,8 @@ var Comment = /** @class */ (function (_super) {
         this.author = new author_1.default(__assign(__assign({}, props.author), this.author));
         for (var _i = 0, _k = Object.keys(original); _i < _k.length; _i++) {
             var key = _k[_i];
-            this[key] &&
-                original[key] &&
-                assert_1.default.notEqual(this[key], original[key], "".concat(key, " and original ").concat(key, " can't be equal to each other"));
+            if (this[key] && original[key] && this[key] === original[key])
+                throw Error("".concat(key, " and original ").concat(key, " can't be equal to each other"));
         }
         if (JSON.stringify(original) !== "{}")
             this.original = original;
@@ -146,24 +144,26 @@ var Comment = /** @class */ (function (_super) {
         return __assign(__assign(__assign({}, this.toJSON()), this.toJSONCommentUpdate(true)), { author: this.author.toJSON() });
     };
     Comment.prototype.toJSONIpfs = function () {
-        (0, assert_1.default)(typeof this.depth === "number");
-        (0, assert_1.default)(typeof this.ipnsName === "string", "this.ipnsName (".concat(this.ipnsName, ") is not a string"));
         return __assign(__assign({}, this.toJSONSkeleton()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl });
     };
     Comment.prototype.toJSONSkeleton = function () {
         return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { content: this.content, parentCid: this.parentCid, flair: this.flair, spoiler: this.spoiler, link: this.link });
     };
     Comment.prototype.toJSONForDb = function (challengeRequestId) {
-        (0, assert_1.default)(this.ipnsKeyName);
+        if (typeof this.ipnsKeyName !== "string")
+            throw Error("comment.ipnsKeyName needs to be defined before inserting comment in DB");
         return (0, util_1.removeKeysWithUndefinedValues)(__assign(__assign({}, (0, util_1.removeKeys)(this.toJSON(), ["replyCount", "upvoteCount", "downvoteCount", "replies"])), { author: JSON.stringify(this.author), authorEdit: JSON.stringify(this.authorEdit), original: JSON.stringify(this.original), authorAddress: this.author.address, challengeRequestId: challengeRequestId, ipnsKeyName: this.ipnsKeyName, signature: JSON.stringify(this.signature) }));
     };
     Comment.prototype.toJSONCommentUpdate = function (skipAssert) {
         if (skipAssert === void 0) { skipAssert = false; }
-        if (!skipAssert)
-            (0, assert_1.default)(typeof this.upvoteCount === "number" &&
-                typeof this.downvoteCount === "number" &&
-                typeof this.replyCount === "number" &&
-                typeof this.updatedAt === "number", "Fields are needed to export a CommentUpdate JSON");
+        // if (!skipAssert)
+        //     assert(
+        //         typeof this.upvoteCount === "number" &&
+        //             typeof this.downvoteCount === "number" &&
+        //             typeof this.replyCount === "number" &&
+        //             typeof this.updatedAt === "number",
+        //         "Fields are needed to export a CommentUpdate JSON"
+        //     );
         return {
             upvoteCount: this.upvoteCount,
             downvoteCount: this.downvoteCount,
@@ -269,7 +269,8 @@ var Comment = /** @class */ (function (_super) {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:comment:edit");
-                        (0, assert_1.default)(this.ipnsKeyName && this.plebbit.ipfsClient, "You need to have commentUpdate and ipfs client defined");
+                        if (typeof this.ipnsKeyName !== "string")
+                            throw Error("comment.ipnsKeyName needs to be defined in order to publish a new CommentUpdate");
                         return [4 /*yield*/, (0, signer_1.verifyPublication)(options, this.plebbit, "commentupdate")];
                     case 1:
                         _a = _b.sent(), validSignature = _a[0], failedVerificationReason = _a[1];

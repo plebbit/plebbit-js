@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import EventEmitter from "events";
-import { Challenge, ChallengeAnswerMessage, ChallengeRequestMessage } from "./challenge";
+import { ChallengeAnswerMessage, ChallengeRequestMessage } from "./challenge";
 import { Signer } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
@@ -49,7 +49,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     initSubplebbit(newProps: SubplebbitType | SubplebbitEditOptions): void;
     initSignerIfNeeded(): Promise<void>;
     initDbIfNeeded(): Promise<void>;
-    setProvideCaptchaCallback(newCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[Challenge[], string | undefined]>): void;
+    setProvideCaptchaCallback(newCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[ChallengeType[], string | undefined]>): void;
     setValidateCaptchaAnswerCallback(newCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>): void;
     toJSONInternal(): {
         ipnsKeyName: string;
@@ -92,7 +92,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage): Promise<void>;
     private _verifyPubsubMsgSignature;
     handleChallengeExchange(pubsubMsg: any): Promise<void>;
-    defaultProvideCaptcha(request: DecryptedChallengeRequestMessageType): Promise<[Challenge[], string | undefined]>;
+    defaultProvideCaptcha(request: DecryptedChallengeRequestMessageType): Promise<[ChallengeType[], string | undefined]>;
     defaultValidateCaptcha(answerMessage: DecryptedChallengeAnswerMessageType): Promise<[boolean, string[] | undefined]>;
     syncComment(dbComment: Comment): Promise<void>;
     syncIpnsWithDb(): Promise<void>;

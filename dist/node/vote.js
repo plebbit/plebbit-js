@@ -66,7 +66,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var publication_1 = __importDefault(require("./publication"));
-var assert_1 = __importDefault(require("assert"));
+var is_ipfs_1 = __importDefault(require("is-ipfs"));
+var errors_1 = require("./errors");
+var err_code_1 = __importDefault(require("err-code"));
 var Vote = /** @class */ (function (_super) {
     __extends(Vote, _super);
     function Vote(props, plebbit) {
@@ -87,7 +89,12 @@ var Vote = /** @class */ (function (_super) {
     Vote.prototype.publish = function (userOptions) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                (0, assert_1.default)([-1, 0, 1].includes(this.vote) && this.commentCid, "Need vote and commentCid to be defined to publish Vote");
+                if (![-1, 0, 1].includes(this.vote))
+                    throw Error("Vote.vote (".concat(this.vote, ") can only be -1, 0, or 1"));
+                if (!is_ipfs_1.default.cid(this.commentCid))
+                    throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.codes.ERR_CID_IS_INVALID, {
+                        details: "Vote.publish: commentCid (".concat(this.commentCid, ") is invalid as a CID")
+                    });
                 return [2 /*return*/, _super.prototype.publish.call(this, userOptions)];
             });
         });

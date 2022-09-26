@@ -65,7 +65,13 @@ var pages_1 = require("./pages");
 var assert_1 = __importDefault(require("assert"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 exports.POSTS_SORT_TYPES = {
-    hot: { score: util_1.hotScore },
+    hot: { score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return util_1.hotScore.apply(void 0, args);
+        } },
     new: {},
     topHour: { timeframe: "HOUR" },
     topDay: { timeframe: "DAY" },
@@ -73,17 +79,59 @@ exports.POSTS_SORT_TYPES = {
     topMonth: { timeframe: "MONTH" },
     topYear: { timeframe: "YEAR" },
     topAll: { timeframe: "ALL" },
-    controversialHour: { score: util_1.controversialScore, timeframe: "HOUR" },
-    controversialDay: { timeframe: "DAY", score: util_1.controversialScore },
-    controversialWeek: { timeframe: "WEEK", score: util_1.controversialScore },
-    controversialMonth: { timeframe: "MONTH", score: util_1.controversialScore },
-    controversialYear: { timeframe: "YEAR", score: util_1.controversialScore },
-    controversialAll: { timeframe: "ALL", score: util_1.controversialScore }
+    controversialHour: { score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return util_1.controversialScore.apply(void 0, args);
+        }, timeframe: "HOUR" },
+    controversialDay: { timeframe: "DAY", score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return util_1.controversialScore.apply(void 0, args);
+        } },
+    controversialWeek: { timeframe: "WEEK", score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return util_1.controversialScore.apply(void 0, args);
+        } },
+    controversialMonth: { timeframe: "MONTH", score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return util_1.controversialScore.apply(void 0, args);
+        } },
+    controversialYear: { timeframe: "YEAR", score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return util_1.controversialScore.apply(void 0, args);
+        } },
+    controversialAll: { timeframe: "ALL", score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return util_1.controversialScore.apply(void 0, args);
+        } }
 };
 exports.REPLIES_SORT_TYPES = {
     topAll: { timeframe: "ALL" },
     new: {},
-    controversialAll: { timeframe: "ALL", score: util_1.controversialScore },
+    controversialAll: { timeframe: "ALL", score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return util_1.controversialScore.apply(void 0, args);
+        } },
     old: {}
 };
 exports.SORTED_POSTS_PAGE_SIZE = 50;
@@ -161,9 +209,9 @@ var SortHandler = /** @class */ (function () {
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
-                        (0, assert_1.default)(comments.length > 0);
                         sortProps = exports.POSTS_SORT_TYPES[sortName] || exports.REPLIES_SORT_TYPES[sortName];
-                        (0, assert_1.default)(sortProps);
+                        if (sortProps.hasOwnProperty("score") && typeof sortProps.score !== "function")
+                            throw Error("SortProps[".concat(sortName, "] is not defined"));
                         if (!sortProps.score)
                             commentsSorted = comments;
                         // If sort type has no score function, that means it already has been sorted by DB
@@ -175,7 +223,6 @@ var SortHandler = /** @class */ (function () {
                             }); })
                                 .sort(function (postA, postB) { return postB.score - postA.score; })
                                 .map(function (comment) { return comment.comment; });
-                        (0, assert_1.default)(commentsSorted.every(function (comment) { return typeof comment.upvoteCount === "number" && typeof comment.downvoteCount === "number"; }));
                         commentsChunks = (0, util_1.chunks)(commentsSorted, limit);
                         return [4 /*yield*/, this.chunksToListOfPage(commentsChunks)];
                     case 1:
@@ -378,7 +425,11 @@ var SortHandler = /** @class */ (function () {
                         // [pagesRaw, pageCids] = [removeKeysWithUndefinedValues(pagesRaw), removeKeysWithUndefinedValues(pageCids)];
                         if (!pagesRaw || !pageCids || JSON.stringify(pagesRaw) === "{}" || JSON.stringify(pageCids) === "{}")
                             throw new Error("Failed to generate pages for ".concat(key, ": pagesRaw: ").concat(pagesRaw, ", pageCids: ").concat(pageCids));
-                        pages = new pages_1.Pages({ pages: pagesRaw, pageCids: pageCids, subplebbit: this.subplebbit });
+                        pages = new pages_1.Pages({
+                            pages: pagesRaw,
+                            pageCids: pageCids,
+                            subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
+                        });
                         if (key === "subplebbit") {
                             // If there is at least one comment in subplebbit, then assert the following
                             [(_d = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _d === void 0 ? void 0 : _d.controversialAll, (_e = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _e === void 0 ? void 0 : _e.hot, (_f = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _f === void 0 ? void 0 : _f.new, (_g = pages === null || pages === void 0 ? void 0 : pages.pages) === null || _g === void 0 ? void 0 : _g.topAll].forEach(function (sortPage) {
@@ -408,28 +459,26 @@ var SortHandler = /** @class */ (function () {
         });
     };
     SortHandler.prototype.deleteCommentPageCache = function (dbComment) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log, cachesToDelete, _a;
-            var _this = this;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var log, cachesToDelete, _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:sort-handler:deleteCommentPageCache");
-                        (0, assert_1.default)(this.subplebbit.dbHandler);
-                        _a = [[
+                        (0, assert_1.default)(this.subplebbit.dbHandler && dbComment.cid);
+                        _b = [[
                                 dbComment.cid
                             ]];
                         return [4 /*yield*/, this.subplebbit.dbHandler.queryParentsOfComment(dbComment, undefined)];
                     case 1:
-                        cachesToDelete = __spreadArray.apply(void 0, [__spreadArray.apply(void 0, _a.concat([(_b.sent()).map(function (comment) { return comment.cid; }), true])), [
+                        cachesToDelete = __spreadArray.apply(void 0, [__spreadArray.apply(void 0, _b.concat([(_c.sent()).map(function (comment) { return comment.cid; }), true])), [
                                 "subplebbit"
                             ], false]);
                         log.trace("Caches to delete: ".concat(cachesToDelete));
-                        return [4 /*yield*/, Promise.all(cachesToDelete.map(function (cacheKey) { return __awaiter(_this, void 0, void 0, function () { var _a; return __generator(this, function (_b) {
-                                return [2 /*return*/, (_a = this.subplebbit.dbHandler) === null || _a === void 0 ? void 0 : _a.keyvDelete(cacheKey)];
-                            }); }); }))];
+                        return [4 /*yield*/, ((_a = this.subplebbit.dbHandler) === null || _a === void 0 ? void 0 : _a.keyvDelete(cachesToDelete))];
                     case 2:
-                        _b.sent();
+                        _c.sent();
                         return [2 /*return*/];
                 }
             });

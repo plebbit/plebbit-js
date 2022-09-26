@@ -72,7 +72,6 @@ var post_1 = __importDefault(require("./post"));
 var subplebbit_1 = require("./subplebbit");
 var util_2 = require("./util");
 var vote_1 = __importDefault(require("./vote"));
-var assert_1 = __importDefault(require("assert"));
 var signer_1 = require("./signer");
 var resolver_1 = require("./resolver");
 var tinycache_1 = __importDefault(require("tinycache"));
@@ -264,15 +263,16 @@ var Plebbit = /** @class */ (function (_super) {
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
-                                        (0, assert_1.default)(canRunSub, "missing nativeFunctions required to create a subplebbit");
+                                        if (!canRunSub)
+                                            throw Error("missing nativeFunctions required to create a subplebbit");
                                         if (canRunSub && !this.dataPath)
                                             throw (0, err_code_1.default)(Error(errors_1.messages.ERR_DATA_PATH_IS_NOT_DEFINED), errors_1.codes.ERR_DATA_PATH_IS_NOT_DEFINED, {
                                                 details: "createSubplebbit: canRunSub=".concat(canRunSub, ", plebbitOptions.dataPath=").concat(this.dataPath)
                                             });
                                         subplebbit = new subplebbit_1.Subplebbit(options, this);
                                         key = subplebbit.address || subplebbit.signer.address;
-                                        (0, assert_1.default)(typeof key === "string", "To create a subplebbit you need to either defined signer or address");
-                                        (0, assert_1.default)(!exports.pendingSubplebbitCreations[key], "Can't recreate a pending subplebbit that is waiting to be created");
+                                        if (exports.pendingSubplebbitCreations[key])
+                                            throw Error("Can't recreate a pending subplebbit that is waiting to be created");
                                         exports.pendingSubplebbitCreations[key] = true;
                                         return [4 /*yield*/, subplebbit.prePublish()];
                                     case 1:
@@ -384,7 +384,8 @@ var Plebbit = /** @class */ (function (_super) {
                             log.trace("User hasn't provided editTimestamp in createCommentEdit, defaulted to (".concat(options.timestamp, ")"));
                         }
                         if (!((_a = options === null || options === void 0 ? void 0 : options.author) === null || _a === void 0 ? void 0 : _a.address)) {
-                            (0, assert_1.default)(options.signer.address, "Signer has to have an address");
+                            if (typeof options.signer.address !== "string")
+                                throw Error("createCommentEditOptions.signer.address is not defined");
                             options.author = __assign(__assign({}, options.author), { address: options.signer.address });
                             log.trace("CreateCommentEditOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
                         }

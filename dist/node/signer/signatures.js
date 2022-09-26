@@ -78,7 +78,6 @@ var util_1 = require("./util");
 var cborg = __importStar(require("cborg"));
 var to_string_1 = require("uint8arrays/to-string");
 var from_string_1 = require("uint8arrays/from-string");
-var assert_1 = __importDefault(require("assert"));
 var peer_id_1 = __importDefault(require("peer-id"));
 var util_2 = require("../util");
 var js_sha256_1 = require("js-sha256");
@@ -174,7 +173,8 @@ var signBufferRsa = function (bufferToSign, privateKeyPem, privateKeyPemPassword
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    (0, assert_1.default)(isProbablyBuffer(bufferToSign), "signBufferRsa invalid bufferToSign '".concat(bufferToSign, "' not buffer"));
+                    if (!isProbablyBuffer(bufferToSign))
+                        throw Error("signBufferRsa invalid bufferToSign '".concat(bufferToSign, "' not buffer"));
                     return [4 /*yield*/, (0, util_1.getKeyPairFromPrivateKeyPem)(privateKeyPem, privateKeyPemPassword)];
                 case 1:
                     keyPair = _a.sent();
@@ -192,8 +192,10 @@ var verifyBufferRsa = function (bufferToSign, bufferSignature, publicKeyPem) { r
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                (0, assert_1.default)(isProbablyBuffer(bufferToSign), "verifyBufferRsa invalid bufferSignature '".concat(bufferToSign, "' not buffer"));
-                (0, assert_1.default)(isProbablyBuffer(bufferSignature), "verifyBufferRsa invalid bufferSignature '".concat(bufferSignature, "' not buffer"));
+                if (!isProbablyBuffer(bufferToSign))
+                    throw Error("verifyBufferRsa invalid bufferSignature '".concat(bufferToSign, "' not buffer"));
+                if (!isProbablyBuffer(bufferSignature))
+                    throw Error("verifyBufferRsa invalid bufferSignature '".concat(bufferSignature, "' not buffer"));
                 return [4 /*yield*/, (0, util_1.getPeerIdFromPublicKeyPem)(publicKeyPem)];
             case 1:
                 peerId = _a.sent();
@@ -204,35 +206,38 @@ var verifyBufferRsa = function (bufferToSign, bufferSignature, publicKeyPem) { r
 }); };
 exports.verifyBufferRsa = verifyBufferRsa;
 function signPublication(publication, signer, plebbit, signatureType) {
+    var _a, _b, _c;
     return __awaiter(this, void 0, void 0, function () {
-        var publicationJson, log, resolvedAddress, derivedAddress, signedPropertyNames, fieldsToSign, commentEncoded, signatureData, _a;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var publicationJson, log, resolvedAddress, derivedAddress, signedPropertyNames, fieldsToSign, commentEncoded, signatureData, _d;
+        return __generator(this, function (_e) {
+            switch (_e.label) {
                 case 0:
-                    (0, assert_1.default)(signer.publicKey);
-                    (0, assert_1.default)(Object.keys(exports.SIGNED_PROPERTY_NAMES).includes(signatureType));
+                    if (typeof signer.publicKey !== "string")
+                        throw Error("signer.publicKey (".concat(signer.publicKey, ") is not a valid public key"));
+                    if (!Object.keys(exports.SIGNED_PROPERTY_NAMES).includes(signatureType))
+                        throw Error("signature type (".concat(signatureType, ") is not supported"));
                     publicationJson = (0, util_2.removeKeysWithUndefinedValues)(publication);
                     log = (0, plebbit_logger_1.default)("plebbit-js:signatures:signPublication");
-                    if (!(publicationJson["author"] && publicationJson["author"]["address"])) return [3 /*break*/, 3];
+                    if (!(((_b = (_a = publicationJson["author"]) === null || _a === void 0 ? void 0 : _a.constructor) === null || _b === void 0 ? void 0 : _b.name) === "Object" && typeof publicationJson["author"]["address"] === "string")) return [3 /*break*/, 3];
                     publicationJson = publicationJson;
-                    (0, assert_1.default)(publicationJson.author && publicationJson.author.address);
                     return [4 /*yield*/, plebbit.resolver.resolveAuthorAddressIfNeeded(publicationJson.author.address)];
                 case 1:
-                    resolvedAddress = _b.sent();
+                    resolvedAddress = _e.sent();
                     return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPrivateKeyPem)(signer.privateKey)];
                 case 2:
-                    derivedAddress = _b.sent();
-                    assert_1.default.equal(resolvedAddress, derivedAddress, "author.address (".concat(publicationJson.author.address, ") does not equate its resolved address (").concat(resolvedAddress, ") is invalid. For this publication to be signed, user needs to ensure plebbit-author-address points to same key used by signer (").concat(derivedAddress, ")"));
-                    _b.label = 3;
+                    derivedAddress = _e.sent();
+                    if (resolvedAddress !== derivedAddress)
+                        throw Error("author.address (".concat((_c = publicationJson === null || publicationJson === void 0 ? void 0 : publicationJson.author) === null || _c === void 0 ? void 0 : _c.address, ") does not equate its resolved address (").concat(resolvedAddress, ") is invalid. For this publication to be signed, user needs to ensure plebbit-author-address points to same key used by signer (").concat(derivedAddress, ")"));
+                    _e.label = 3;
                 case 3:
                     signedPropertyNames = exports.SIGNED_PROPERTY_NAMES[signatureType];
                     fieldsToSign = (0, util_2.keepKeys)(publicationJson, signedPropertyNames);
                     log.trace("Fields to sign: ".concat(JSON.stringify(signedPropertyNames), ". Publication object to sign:  ").concat(JSON.stringify(fieldsToSign)));
                     commentEncoded = cborg.encode(fieldsToSign);
-                    _a = to_string_1.toString;
+                    _d = to_string_1.toString;
                     return [4 /*yield*/, (0, exports.signBufferRsa)(commentEncoded, signer.privateKey)];
                 case 4:
-                    signatureData = _a.apply(void 0, [_b.sent(), "base64"]);
+                    signatureData = _d.apply(void 0, [_e.sent(), "base64"]);
                     log.trace("Publication been signed, signature data is (".concat(signatureData, ")"));
                     return [2 /*return*/, new Signature({
                             signature: signatureData,
@@ -255,7 +260,8 @@ var verifyPublicationSignature = function (signature, publicationToBeVerified) {
                 return [4 /*yield*/, (0, exports.verifyBufferRsa)(commentEncoded, (0, from_string_1.fromString)(signature.signature, "base64"), signature.publicKey)];
             case 1:
                 signatureIsValid = _a.sent();
-                assert_1.default.equal(signatureIsValid, true, "Signature is invalid");
+                if (!signatureIsValid)
+                    throw Error("Signature is invalid");
                 return [2 /*return*/];
         }
     });
@@ -270,7 +276,8 @@ function verifyPublication(publication, plebbit, signatureType, overrideAuthorAd
         return __generator(this, function (_d) {
             switch (_d.label) {
                 case 0:
-                    (0, assert_1.default)(Object.keys(exports.SIGNED_PROPERTY_NAMES).includes(signatureType));
+                    if (!Object.keys(exports.SIGNED_PROPERTY_NAMES).includes(signatureType))
+                        throw Error("signature type (".concat(signatureType, ") is not supported"));
                     publicationJson = (0, util_2.removeKeysWithUndefinedValues)(publication);
                     log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifyPublication");
                     cachedResult = plebbit._memCache.get((0, js_sha256_1.sha256)(JSON.stringify(publicationJson) + signatureType));
@@ -286,15 +293,13 @@ function verifyPublication(publication, plebbit, signatureType, overrideAuthorAd
                                     return [4 /*yield*/, (0, util_1.getPeerIdFromPublicKeyPem)(signature.publicKey)];
                                 case 1:
                                     signaturePeerId = _b.sent();
-                                    (0, assert_1.default)(author.address, "Author address is needed to verify");
                                     try {
                                         // There are cases where author.address is a crypto domain so PeerId.createFromB58String crashes
                                         authorPeerId = peer_id_1.default.createFromB58String(author.address);
                                     }
                                     catch (_c) { }
-                                    if (!authorPeerId) return [3 /*break*/, 2];
-                                    assert_1.default.equal(signaturePeerId.equals(authorPeerId), true, "comment.author.address doesn't match comment.signature.publicKey");
-                                    return [3 /*break*/, 5];
+                                    if (!(authorPeerId && !signaturePeerId.equals(authorPeerId))) return [3 /*break*/, 2];
+                                    throw Error("comment.author.address doesn't match comment.signature.publicKey");
                                 case 2:
                                     if (!(overrideAuthorAddressIfInvalid && ((_a = publicationJson === null || publicationJson === void 0 ? void 0 : publicationJson.author) === null || _a === void 0 ? void 0 : _a.address))) return [3 /*break*/, 5];
                                     return [4 /*yield*/, plebbit.resolver.resolveAuthorAddressIfNeeded(publicationJson.author.address)];
@@ -328,7 +333,8 @@ function verifyPublication(publication, plebbit, signatureType, overrideAuthorAd
                     _a = _d.sent(), verified = _a[0], failedVerificationReason = _a[1];
                     if (!verified)
                         return [2 /*return*/, [false, "Failed to verify ".concat(signatureType, ".original due to: ").concat(failedVerificationReason)]];
-                    (0, assert_1.default)(publicationJson.authorEdit, "Comment.original is defined while publication.authorEdit is not");
+                    if (!publicationJson.authorEdit)
+                        throw Error("Comment.original is defined while publication.authorEdit is not");
                     return [4 /*yield*/, verifyPublication(publicationJson.authorEdit, plebbit, "commentedit", overrideAuthorAddressIfInvalid)];
                 case 3:
                     _c = _d.sent(), verified = _c[0], failedVerificationReason = _c[1];
@@ -355,7 +361,8 @@ function verifyPublication(publication, plebbit, signatureType, overrideAuthorAd
                     return [4 /*yield*/, (0, util_1.getPeerIdFromPublicKeyPem)(publicationJson.signature.publicKey)];
                 case 9:
                     signaturePeerId = _d.sent();
-                    assert_1.default.equal(subPeerId.equals(signaturePeerId), true, "subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey");
+                    if (!subPeerId.equals(signaturePeerId))
+                        throw Error("subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey");
                     return [3 /*break*/, 13];
                 case 10: return [4 /*yield*/, verifyPublicationSignature(publicationJson.signature, publicationJson)];
                 case 11:

@@ -40,7 +40,6 @@ exports.getPeerIdFromPublicKeyPem = exports.getKeyPairFromPrivateKeyPem = export
 var libp2pCrypto = require("libp2p-crypto");
 var PeerId = require("peer-id");
 var jose = require("jose");
-var assert = require("assert");
 var generatePrivateKeyPem = function () { return __awaiter(void 0, void 0, void 0, function () {
     var keyPair, privateKeyPem;
     return __generator(this, function (_a) {
@@ -235,10 +234,14 @@ var getPeerIdFromPrivateKeyPem = function (privateKeyPem) { return __awaiter(voi
     });
 }); };
 var validatePrivateKeyPem = function (privateKeyPem) {
-    assert(typeof privateKeyPem === "string", "invalid encrypted private key pem '".concat(privateKeyPem, "' not a string"));
-    assert(privateKeyPem.startsWith("-----BEGIN ENCRYPTED PRIVATE KEY-----"), "invalid encrypted private key pem '".concat(privateKeyPem, "' not encrypted private key pem"));
+    if (typeof privateKeyPem !== "string")
+        throw Error("invalid encrypted private key pem '".concat(privateKeyPem, "' not a string"));
+    if (!privateKeyPem.startsWith("-----BEGIN ENCRYPTED PRIVATE KEY-----"))
+        throw Error("invalid encrypted private key pem '".concat(privateKeyPem, "' not encrypted private key pem"));
 };
 var validatePublicKeyPem = function (publicKeyPem) {
-    assert(typeof publicKeyPem === "string", "invalid public key pem '".concat(publicKeyPem, "' not a string"));
-    assert(publicKeyPem.startsWith("-----BEGIN PUBLIC KEY-----"), "invalid public key pem '".concat(publicKeyPem, "' not public key pem"));
+    if (typeof publicKeyPem !== "string")
+        throw Error("invalid public key pem '".concat(publicKeyPem, "' not a string"));
+    if (!publicKeyPem.startsWith("-----BEGIN PUBLIC KEY-----"))
+        throw Error("invalid public key pem '".concat(publicKeyPem, "' not public key pem"));
 };

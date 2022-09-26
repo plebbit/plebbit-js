@@ -104,20 +104,17 @@ var DbHandler = /** @class */ (function () {
                         log("User did provide a database config. Defaulting to ".concat(JSON.stringify(this._dbConfig)));
                         _d.label = 2;
                     case 2:
-                        if (!this._knex) {
+                        if (!this._knex)
                             this._knex = (0, knex_1.default)(this._dbConfig);
-                            console.log("Initialized knex in dbHandler for sub (".concat(this._subplebbit.address, ")"));
-                        }
                         if (!!this._createdTables) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.createTablesIfNeeded()];
                     case 3:
                         _d.sent();
                         _d.label = 4;
                     case 4:
-                        if (!this._keyv) {
+                        // TODO make this work with DBs other than sqlite
+                        if (!this._keyv)
                             this._keyv = new keyv_1.default("sqlite://".concat((_b = (_a = this._dbConfig) === null || _a === void 0 ? void 0 : _a.connection) === null || _b === void 0 ? void 0 : _b.filename));
-                            console.log("Initialized keyv in dbHandler for sub (".concat(this._subplebbit.address, ")"));
-                        } // TODO make this work with DBs other than sqlite
                         return [2 /*return*/];
                 }
             });
@@ -1178,14 +1175,14 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, fs_1.default.promises.mkdir(path_1.default.dirname(newPath), { recursive: true })];
                     case 1:
                         _c.sent();
-                        //@ts-ignore
-                        this._knex = this._keyv = undefined;
                         this._currentTrxs = {};
                         this._subplebbit = newSubplebbit;
-                        return [4 /*yield*/, fs_1.default.promises.rename(oldPathString, newPath)];
+                        return [4 /*yield*/, fs_1.default.promises.cp(oldPathString, newPath)];
                     case 2:
                         _c.sent();
                         this._dbConfig = __assign(__assign({}, this._dbConfig), { connection: __assign(__assign({}, this._dbConfig.connection), { filename: newPath }) });
+                        //@ts-ignore
+                        this._knex = this._keyv = undefined;
                         return [4 /*yield*/, this.initDbIfNeeded()];
                     case 3:
                         _c.sent();

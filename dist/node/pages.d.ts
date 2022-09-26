@@ -1,15 +1,11 @@
 import { Subplebbit } from "./subplebbit";
 import { CommentType, PagesType, PageType, PostSortName, ReplySortName } from "./types";
-import { Plebbit } from "./plebbit";
 export declare class Pages implements PagesType {
     pages?: Partial<Record<PostSortName | ReplySortName, PageType>>;
     pageCids?: Partial<Record<PostSortName | ReplySortName, string>>;
     subplebbit: Pick<Subplebbit, "address" | "plebbit">;
     constructor(props: PagesType & {
-        subplebbit: {
-            plebbit: Plebbit;
-            address: string;
-        };
+        subplebbit: Pages["subplebbit"];
     });
     getPage(pageCid: string): Promise<Page>;
     toJSON(): PagesType;

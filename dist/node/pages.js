@@ -42,7 +42,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Page = exports.Pages = void 0;
 var util_1 = require("./util");
 var signer_1 = require("./signer");
-var assert_1 = __importDefault(require("assert"));
 var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
@@ -65,7 +64,8 @@ var Pages = /** @class */ (function () {
                             throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.codes.ERR_CID_IS_INVALID, {
                                 details: "getPage: cid (".concat(pageCid, ") is invalid as a CID")
                             });
-                        (0, assert_1.default)(this.subplebbit.address, "Address of subplebbit is needed to load pages");
+                        if (typeof this.subplebbit.address !== "string")
+                            throw Error("Address of subplebbit is needed to load pages");
                         _a = Page.bind;
                         return [4 /*yield*/, (0, util_1.loadIpfsFileAsJson)(pageCid, this.subplebbit.plebbit)];
                     case 1:
@@ -76,10 +76,10 @@ var Pages = /** @class */ (function () {
                             return __generator(this, function (_b) {
                                 switch (_b.label) {
                                     case 0:
-                                        (0, assert_1.default)(typeof comment.upvoteCount === "number" && typeof comment.downvoteCount === "number");
-                                        assert_1.default.equal(comment.subplebbitAddress, this.subplebbit.address, "Comment in page should be under the same subplebbit");
-                                        if (parentComment)
-                                            assert_1.default.equal(parentComment.cid, comment.parentCid, "Comment under parent comment/post should have parentCid initialized");
+                                        if (comment.subplebbitAddress !== this.subplebbit.address)
+                                            throw Error("Comment in page should be under the same subplebbit");
+                                        if (parentComment && parentComment.cid !== comment.parentCid)
+                                            throw Error("Comment under parent comment/post should have parentCid initialized");
                                         return [4 /*yield*/, (0, signer_1.verifyPublication)(comment, this.subplebbit.plebbit, "comment")];
                                     case 1:
                                         _a = _b.sent(), signatureIsVerified = _a[0], failedVerificationReason = _a[1];

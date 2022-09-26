@@ -14,7 +14,11 @@ export declare enum messages {
     ERR_CID_IS_INVALID = "CID is invalid",
     ERR_SUB_HAS_NO_DB_CONFIG = "Subplebbit has no db config",
     ERR_DATA_PATH_IS_NOT_DEFINED = "plebbitOptions.dataPath needs to be defined with native functions",
-    ERR_IPNS_IS_INVALID = "IPNS is invalid"
+    ERR_IPNS_IS_INVALID = "IPNS is invalid",
+    ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit",
+    ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT = "Rejecting post/comment because its timestamp is earlier than its parent",
+    ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST = "The parent of this comment does not exist",
+    ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "The parent cid of this comment is not defined"
 }
 export declare enum codes {
     ERR_ENS_RESOLVER_NOT_FOUND = "ERR_ENS_RESOLVER_NOT_FOUND",
@@ -32,5 +36,9 @@ export declare enum codes {
     ERR_CID_IS_INVALID = "ERR_CID_IS_INVALID",
     ERR_SUB_HAS_NO_DB_CONFIG = "ERR_SUB_HAS_NO_DB_CONFIG",
     ERR_DATA_PATH_IS_NOT_DEFINED = "ERR_DATA_PATH_IS_NOT_DEFINED",
-    ERR_IPNS_IS_INVALID = "ERR_IPNS_IS_INVALID"
+    ERR_IPNS_IS_INVALID = "ERR_IPNS_IS_INVALID",
+    ERR_OVER_DOWNLOAD_LIMIT = "ERR_OVER_DOWNLOAD_LIMIT",
+    ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT = "ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT",
+    ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST = "ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST",
+    ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED"
 }
