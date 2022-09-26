@@ -33,9 +33,9 @@ export const REPLIES_SORT_TYPES: ReplySort = {
 export const SORTED_POSTS_PAGE_SIZE = 50;
 
 export class SortHandler {
-    subplebbit: Subplebbit;
+    subplebbit: Pick<Subplebbit, "dbHandler" | "plebbit" | "address">;
 
-    constructor(subplebbit: Subplebbit) {
+    constructor(subplebbit: SortHandler["subplebbit"]) {
         this.subplebbit = subplebbit;
     }
 
@@ -221,7 +221,11 @@ export class SortHandler {
         if (!pagesRaw || !pageCids || JSON.stringify(pagesRaw) === "{}" || JSON.stringify(pageCids) === "{}")
             throw new Error(`Failed to generate pages for ${key}: pagesRaw: ${pagesRaw}, pageCids: ${pageCids}`);
 
-        const pages = new Pages({ pages: pagesRaw, pageCids: pageCids, subplebbit: this.subplebbit });
+        const pages = new Pages({
+            pages: pagesRaw,
+            pageCids: pageCids,
+            subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
+        });
 
         if (key === "subplebbit") {
             // If there is at least one comment in subplebbit, then assert the following

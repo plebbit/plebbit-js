@@ -178,7 +178,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
         }
         await this.dbHandler.initDbIfNeeded();
-        if (!this.sortHandler) this.sortHandler = new SortHandler(this);
+        if (!this.sortHandler)
+            this.sortHandler = new SortHandler({ address: this.address, plebbit: this.plebbit, dbHandler: this.dbHandler });
         await this.initSignerIfNeeded();
     }
 
