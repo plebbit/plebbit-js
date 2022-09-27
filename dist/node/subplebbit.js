@@ -80,7 +80,6 @@ var events_1 = __importDefault(require("events"));
 var js_sha256_1 = require("js-sha256");
 var from_string_1 = require("uint8arrays/from-string");
 var challenge_1 = require("./challenge");
-var captcha_1 = require("./runtime/node/captcha");
 var sort_handler_1 = require("./sort-handler");
 var util_1 = require("./util");
 var signer_1 = require("./signer");
@@ -198,8 +197,7 @@ var Subplebbit = /** @class */ (function (_super) {
                                 address: this.address,
                                 database: this.database,
                                 plebbit: {
-                                    dataPath: this.plebbit.dataPath,
-                                    createComment: this.plebbit.createComment.bind(this.plebbit)
+                                    dataPath: this.plebbit.dataPath
                                 }
                             });
                         }
@@ -358,8 +356,7 @@ var Subplebbit = /** @class */ (function (_super) {
                                 address: this.address,
                                 database: this.database,
                                 plebbit: {
-                                    dataPath: this.plebbit.dataPath,
-                                    createComment: this.plebbit.createComment.bind(this.plebbit)
+                                    dataPath: this.plebbit.dataPath
                                 }
                             })];
                     case 1:
@@ -1066,19 +1063,17 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.defaultProvideCaptcha = function (request) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, image, text, imageBuffer;
+            var _a, image, text;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0:
-                        _a = (0, captcha_1.createCaptcha)(300, 100), image = _a.image, text = _a.text;
-                        this._challengeToSolution[request.challengeRequestId] = [text];
-                        return [4 /*yield*/, image];
+                    case 0: return [4 /*yield*/, util_3.nativeFunctions.createImageCaptcha(300, 100)];
                     case 1:
-                        imageBuffer = (_b.sent()).toString("base64");
+                        _a = _b.sent(), image = _a.image, text = _a.text;
+                        this._challengeToSolution[request.challengeRequestId] = [text];
                         return [2 /*return*/, [
                                 [
                                     {
-                                        challenge: imageBuffer,
+                                        challenge: image,
                                         type: "image"
                                     }
                                 ],

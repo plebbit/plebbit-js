@@ -71,6 +71,7 @@ var keyv_1 = __importDefault(require("keyv"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var util_2 = require("./util");
 var version_1 = __importDefault(require("../../version"));
+var comment_1 = require("../../comment");
 var TABLES = Object.freeze({
     COMMENTS: "comments",
     VOTES: "votes",
@@ -578,15 +579,14 @@ var DbHandler = /** @class */ (function () {
                                 var _a;
                                 return __generator(this, function (_b) {
                                     switch (_b.label) {
-                                        case 0: return [4 /*yield*/, this._subplebbit.plebbit.createComment(commentProps)];
-                                        case 1:
-                                            comment = _b.sent();
+                                        case 0:
+                                            comment = new comment_1.Comment(commentProps, this._subplebbit.plebbit);
                                             newOriginal = ((_a = comment.original) === null || _a === void 0 ? void 0 : _a.author)
                                                 ? comment.original
                                                 : __assign(__assign({}, comment.original), { author: comment.author.toJSON() });
                                             newCommentProps = { author: __assign(__assign({}, comment.author.toJSON()), onlyNewProps), original: newOriginal };
                                             return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).update(newCommentProps).where("cid", comment.cid)];
-                                        case 2:
+                                        case 1:
                                             _b.sent();
                                             return [2 /*return*/];
                                     }
@@ -727,24 +727,21 @@ var DbHandler = /** @class */ (function () {
                     case 1:
                         commentProps = _a.sent();
                         (0, assert_1.default)(commentProps);
-                        return [4 /*yield*/, this._subplebbit.plebbit.createComment(commentProps)];
-                    case 2:
-                        commentToBeEdited = _a.sent();
-                        (0, assert_1.default)(commentToBeEdited);
+                        commentToBeEdited = new comment_1.Comment(commentProps, this._subplebbit.plebbit);
                         isEditFromAuthor = commentToBeEdited.signature.publicKey === edit.signature.publicKey;
-                        if (!isEditFromAuthor) return [3 /*break*/, 4];
+                        if (!isEditFromAuthor) return [3 /*break*/, 3];
                         return [4 /*yield*/, this.queryEditsSorted(edit.commentCid, "mod", trx)];
-                    case 3:
+                    case 2:
                         modEdits = _a.sent();
                         hasModEditedCommentFlairBefore = modEdits.some(function (modEdit) { return Boolean(modEdit.flair); });
                         flairIfNeeded = hasModEditedCommentFlairBefore || !edit.flair ? undefined : { flair: JSON.stringify(edit.flair) };
                         newProps = (0, util_1.removeKeysWithUndefinedValues)(__assign({ authorEdit: JSON.stringify(edit), original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) }, flairIfNeeded));
-                        return [3 /*break*/, 5];
-                    case 4:
+                        return [3 /*break*/, 4];
+                    case 3:
                         newProps = __assign(__assign({}, edit), { original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) });
-                        _a.label = 5;
-                    case 5: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid)];
-                    case 6:
+                        _a.label = 4;
+                    case 4: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid)];
+                    case 5:
                         _a.sent();
                         return [2 /*return*/];
                 }
