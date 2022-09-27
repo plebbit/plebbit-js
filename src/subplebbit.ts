@@ -3,7 +3,6 @@ import EventEmitter from "events";
 import { sha256 } from "js-sha256";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
-import { createCaptcha } from "./runtime/node/captcha";
 import { SortHandler } from "./sort-handler";
 import { ipfsImportKey, loadIpnsAsJson, removeKeys, removeKeysWithUndefinedValues, shallowEqual, timestamp } from "./util";
 import { decrypt, encrypt, verifyPublication, Signer, signPublication } from "./signer";
@@ -845,13 +844,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         // Return question, type
         // Expected return is:
         // captcha, reason for skipping captcha (if it's skipped by nullifying captcha)
-        const { image, text } = createCaptcha(300, 100);
+        const { image, text } = await nativeFunctions.createImageCaptcha(300, 100);
         this._challengeToSolution[request.challengeRequestId] = [text];
-        const imageBuffer = (await image).toString("base64");
         return [
             [
                 {
-                    challenge: imageBuffer,
+                    challenge: image,
                     type: "image"
                 }
             ],

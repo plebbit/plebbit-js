@@ -8,6 +8,9 @@ import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 
 const nativeFunctions: NativeFunctions = {
+    createImageCaptcha: async (...args): Promise<{ image: string; text: string }> => {
+        throw Error("Shouldn't call createImageCaptcha over native-functions of browser");
+    },
     listSubplebbits: async (dataPath: string): Promise<string[]> => {
         return [];
     },

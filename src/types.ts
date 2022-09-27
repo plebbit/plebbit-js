@@ -4,6 +4,7 @@ import { Pages } from "./pages";
 import { DbHandler } from "./runtime/node/db-handler";
 import { Subplebbit } from "./subplebbit";
 import fetch from "node-fetch";
+import { createCaptcha } from "captcha-canvas";
 
 export type ProtocolVersion = "1.0.0";
 
@@ -442,6 +443,7 @@ export type NativeFunctions = {
     createDbHandler: (subplebbit: DbHandler["_subplebbit"]) => DbHandlerPublicAPI;
     fetch: typeof fetch;
     createIpfsClient: (options: Options) => IpfsHttpClientPublicAPI;
+    createImageCaptcha: (...p: Parameters<typeof createCaptcha>) => Promise<{ image: string; text: string }>;
 };
 
 export type OnlyDefinedProperties<T> = Pick<

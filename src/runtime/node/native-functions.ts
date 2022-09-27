@@ -13,8 +13,16 @@ import all from "it-all";
 import last from "it-last";
 import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
+import { createCaptcha } from "captcha-canvas";
 
 const nativeFunctions: NativeFunctions = {
+    createImageCaptcha: async (...args): Promise<{ image: string; text: string }> => {
+        const { image, text } = createCaptcha(...args);
+
+        const imageBase64 = (await image).toString("base64");
+
+        return { image: imageBase64, text };
+    },
     listSubplebbits: async (dataPath: string): Promise<string[]> => {
         assert(typeof dataPath === "string", "Data path is not defined");
         const subplebbitsPath = path.join(dataPath, "subplebbits");
