@@ -171,8 +171,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 address: this.address,
                 database: this.database,
                 plebbit: {
-                    dataPath: this.plebbit.dataPath,
-                    createComment: this.plebbit.createComment.bind(this.plebbit)
+                    dataPath: this.plebbit.dataPath
                 }
             });
         }
@@ -299,8 +298,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 address: this.address,
                 database: this.database,
                 plebbit: {
-                    dataPath: this.plebbit.dataPath,
-                    createComment: this.plebbit.createComment.bind(this.plebbit)
+                    dataPath: this.plebbit.dataPath
                 }
             });
         }

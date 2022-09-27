@@ -30,6 +30,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { getDefaultSubplebbitDbConfig } from "./util";
 import env from "../../version";
 import { Plebbit } from "../../plebbit";
+import { Comment } from "../../comment";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -43,7 +44,7 @@ const TABLES = Object.freeze({
 export class DbHandler {
     private _knex: Knex;
     private _subplebbit: Pick<Subplebbit, "address" | "database"> & {
-        plebbit: Pick<Plebbit, "dataPath" | "createComment">;
+        plebbit: Pick<Plebbit, "dataPath">;
     };
     private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
     private _dbConfig: any;
@@ -332,7 +333,8 @@ export class DbHandler {
             );
             await Promise.all(
                 commentsWithAuthor.map(async (commentProps: CommentType) => {
-                    const comment = await this._subplebbit.plebbit.createComment(commentProps);
+                    //@ts-ignore
+                    const comment = new Comment(commentProps, this._subplebbit.plebbit);
                     const newOriginal = comment.original?.author
                         ? comment.original
                         : { ...comment.original, author: comment.author.toJSON() };
@@ -401,8 +403,10 @@ export class DbHandler {
         assert(edit.commentCid);
         const commentProps = await this.queryComment(edit.commentCid);
         assert(commentProps);
-        const commentToBeEdited = await this._subplebbit.plebbit.createComment(commentProps);
-        assert(commentToBeEdited);
+        // We usually call plebbit.createComment but since dbHandler is called over context isolation we will not be able to get a Comment instance out of createComment
+        // So we had to resort to creating a Comment instance manually
+        // @ts-ignore
+        const commentToBeEdited = new Comment(commentProps, this._subplebbit.plebbit);
 
         const isEditFromAuthor = commentToBeEdited.signature.publicKey === edit.signature.publicKey;
         let newProps: Object;
