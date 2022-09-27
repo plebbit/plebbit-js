@@ -118,6 +118,7 @@ describe("comment (node and browser)", async () => {
                 const parentPost = await plebbit.getComment(subplebbit.lastPostCid);
                 expect(parentPost.timestamp).to.be.a("number");
                 const reply = await generateMockComment(parentPost, plebbit, signers[0], false, { timestamp: parentPost.timestamp - 1 });
+                expect(reply.timestamp).to.be.lessThan(parentPost.timestamp);
                 await reply.publish();
                 reply.once("challengeverification", async (challengeVerificationMessage, updatedComment) => {
                     expect(challengeVerificationMessage.challengeSuccess).to.be.false;
