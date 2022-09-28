@@ -72,6 +72,8 @@ var getDefaultSubplebbitDbConfig = function (subplebbit) { return __awaiter(void
 exports.getDefaultSubplebbitDbConfig = getDefaultSubplebbitDbConfig;
 exports.nativeFunctions = native_functions_1.default;
 var setNativeFunctions = function (newNativeFunctions) {
+    if (!newNativeFunctions)
+        throw Error("User passed an undefined object to setNativeFunctions");
     for (var i in newNativeFunctions)
         exports.nativeFunctions[i] = newNativeFunctions[i];
 };

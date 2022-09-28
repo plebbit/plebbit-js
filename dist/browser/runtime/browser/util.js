@@ -11,6 +11,8 @@ var mkdir = function () { return undefined; };
 exports.mkdir = mkdir;
 exports.nativeFunctions = native_functions_1.default;
 var setNativeFunctions = function (newNativeFunctions) {
+    if (!newNativeFunctions)
+        throw Error("User passed an undefined object to setNativeFunctions");
     for (var i in newNativeFunctions)
         exports.nativeFunctions[i] = newNativeFunctions[i];
 };
