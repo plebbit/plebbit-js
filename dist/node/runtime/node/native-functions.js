@@ -50,7 +50,27 @@ var it_all_1 = __importDefault(require("it-all"));
 var it_last_1 = __importDefault(require("it-last"));
 var concat_1 = require("uint8arrays/concat");
 var to_string_1 = require("uint8arrays/to-string");
+var captcha_canvas_1 = require("captcha-canvas");
 var nativeFunctions = {
+    createImageCaptcha: function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        return __awaiter(void 0, void 0, void 0, function () {
+            var _a, image, text, imageBase64;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _a = captcha_canvas_1.createCaptcha.apply(void 0, args), image = _a.image, text = _a.text;
+                        return [4 /*yield*/, image];
+                    case 1:
+                        imageBase64 = (_b.sent()).toString("base64");
+                        return [2 /*return*/, { image: imageBase64, text: text }];
+                }
+            });
+        });
+    },
     listSubplebbits: function (dataPath) { return __awaiter(void 0, void 0, void 0, function () {
         var subplebbitsPath, addresses;
         return __generator(this, function (_a) {

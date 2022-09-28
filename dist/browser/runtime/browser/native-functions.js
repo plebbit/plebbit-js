@@ -45,6 +45,17 @@ var it_last_1 = __importDefault(require("it-last"));
 var concat_1 = require("uint8arrays/concat");
 var to_string_1 = require("uint8arrays/to-string");
 var nativeFunctions = {
+    createImageCaptcha: function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        return __awaiter(void 0, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                throw Error("Shouldn't call createImageCaptcha over native-functions of browser");
+            });
+        });
+    },
     listSubplebbits: function (dataPath) { return __awaiter(void 0, void 0, void 0, function () {
         return __generator(this, function (_a) {
             return [2 /*return*/, []];
