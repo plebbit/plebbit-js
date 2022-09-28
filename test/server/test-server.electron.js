@@ -26,5 +26,3 @@ describe("plebbit", () => {
             console.log("started subplebbits");
         }));
 });
-
-// (async () => {})();

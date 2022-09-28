@@ -31,6 +31,7 @@ export const getDefaultSubplebbitDbConfig = async (
 
 export const nativeFunctions: NativeFunctions = nodeNativeFunctions;
 export const setNativeFunctions = (newNativeFunctions: Partial<NativeFunctions>) => {
+    if (!newNativeFunctions) throw Error(`User passed an undefined object to setNativeFunctions`);
     for (const i in newNativeFunctions) nativeFunctions[i] = newNativeFunctions[i];
 };
 
