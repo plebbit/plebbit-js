@@ -129,7 +129,7 @@ var Publication = /** @class */ (function (_super) {
                             log.error("Received a CHALLENGEMESSAGE with invalid signature. Failed verification reason: ".concat(failedVerificationReason));
                             return [2 /*return*/];
                         }
-                        log("Received encrypted challenges.  Will decrypt and emit them on \"challenge\". User shoud publish solution by calling publishChallengeAnswers");
+                        log("Received encrypted challenges.  Will decrypt and emit them on \"challenge\" event. User shoud publish solution by calling publishChallengeAnswers");
                         _c = (_b = JSON).parse;
                         return [4 /*yield*/, (0, signer_1.decrypt)(msgParsed.encryptedChallenges.encrypted, msgParsed.encryptedChallenges.encryptedKey, this.signer.privateKey)];
                     case 2:
@@ -157,7 +157,7 @@ var Publication = /** @class */ (function (_super) {
                         this._initProps(decryptedPublication);
                         return [3 /*break*/, 7];
                     case 6:
-                        log.error("Challenge ".concat(msgParsed.challengeRequestId, " has failed to pass. Challenge errors = ").concat(msgParsed.challengeErrors, ", reason = ").concat(msgParsed.reason));
+                        log.error("Challenge ".concat(msgParsed.challengeRequestId, " has failed to pass. Challenge errors = ").concat(msgParsed.challengeErrors, ", reason = '").concat(msgParsed.reason, "'"));
                         _g.label = 7;
                     case 7:
                         this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication }), this);
@@ -201,7 +201,7 @@ var Publication = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(challengeAnswer)))];
                     case 3:
                         _d.sent();
-                        log("Responded to challenge (".concat(challengeAnswer.challengeRequestId, ") with answers ").concat(JSON.stringify(challengeAnswers)));
+                        log("Responded to challenge (".concat(challengeAnswer.challengeRequestId, ") with answers"), challengeAnswers);
                         this.emit("challengeanswer", challengeAnswer);
                         return [2 /*return*/];
                 }
@@ -263,7 +263,7 @@ var Publication = /** @class */ (function (_super) {
                     case 4:
                         pubsubMsgSignature = _f.sent();
                         this.challenge = new challenge_1.ChallengeRequestMessage(__assign(__assign({}, toSignMsg), { signature: pubsubMsgSignature }));
-                        log.trace("Attempting to publish ".concat(this.getType(), " with options (").concat(JSON.stringify(options), ")"));
+                        log.trace("Attempting to publish ".concat(this.getType(), " with options"), options);
                         return [4 /*yield*/, Promise.all([
                                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(this.challenge))),
                                 this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this))

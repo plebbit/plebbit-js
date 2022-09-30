@@ -232,13 +232,14 @@ function signPublication(publication, signer, plebbit, signatureType) {
                 case 3:
                     signedPropertyNames = exports.SIGNED_PROPERTY_NAMES[signatureType];
                     fieldsToSign = (0, util_2.keepKeys)(publicationJson, signedPropertyNames);
-                    log.trace("Fields to sign: ".concat(JSON.stringify(signedPropertyNames), ". Publication object to sign:  ").concat(JSON.stringify(fieldsToSign)));
+                    log.trace("Fields to sign: ", signedPropertyNames);
+                    log.trace("Publication to sign: ", fieldsToSign);
                     commentEncoded = cborg.encode(fieldsToSign);
                     _d = to_string_1.toString;
                     return [4 /*yield*/, (0, exports.signBufferRsa)(commentEncoded, signer.privateKey)];
                 case 4:
                     signatureData = _d.apply(void 0, [_e.sent(), "base64"]);
-                    log.trace("Publication been signed, signature data is (".concat(signatureData, ")"));
+                    log.trace("Publication been signed, signature:", signatureData);
                     return [2 /*return*/, new Signature({
                             signature: signatureData,
                             publicKey: signer.publicKey,
@@ -279,6 +280,8 @@ function verifyPublication(publication, plebbit, signatureType, overrideAuthorAd
                     if (!Object.keys(exports.SIGNED_PROPERTY_NAMES).includes(signatureType))
                         throw Error("signature type (".concat(signatureType, ") is not supported"));
                     publicationJson = (0, util_2.removeKeysWithUndefinedValues)(publication);
+                    if (!publicationJson.signature)
+                        throw Error("Publication has no signature to verify");
                     log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifyPublication");
                     cachedResult = plebbit._memCache.get((0, js_sha256_1.sha256)(JSON.stringify(publicationJson) + signatureType));
                     if (Array.isArray(cachedResult))
@@ -378,7 +381,8 @@ function verifyPublication(publication, plebbit, signatureType, overrideAuthorAd
                     return [2 /*return*/, res];
                 case 14:
                     e_1 = _d.sent();
-                    log("Failed to verify ".concat(signatureType, " due to error: ").concat(e_1, "\nPublication: ").concat(JSON.stringify(publicationJson)));
+                    log("Failed to verify ".concat(signatureType, " due to error:"), e_1);
+                    log("Publication: ", publicationJson);
                     res = [false, String(e_1)];
                     plebbit._memCache.put((0, js_sha256_1.sha256)(JSON.stringify(publicationJson) + signatureType), res);
                     return [2 /*return*/, res];

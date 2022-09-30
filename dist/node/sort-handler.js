@@ -386,7 +386,7 @@ var SortHandler = /** @class */ (function () {
                         if ((comment === null || comment === void 0 ? void 0 : comment.replyCount) === 0)
                             return [2 /*return*/, undefined];
                         if (comment && (comment.replyCount === undefined || comment.replyCount === null))
-                            throw new Error("Comment has not defined replyCount (".concat(comment.replyCount, "): ").concat(JSON.stringify(comment)));
+                            throw Error("Can't generate pages for a comment that has undefined replyCount (".concat(comment.replyCount, ")"));
                         key = (comment === null || comment === void 0 ? void 0 : comment.cid) || "subplebbit";
                         return [4 /*yield*/, ((_a = this.subplebbit.dbHandler) === null || _a === void 0 ? void 0 : _a.keyvGet(key))];
                     case 1:

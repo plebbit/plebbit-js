@@ -225,7 +225,7 @@ var Comment = /** @class */ (function (_super) {
                         return [3 /*break*/, 4];
                     case 3:
                         e_1 = _b.sent();
-                        log.error("Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error = ").concat(e_1.message));
+                        log.error("Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error: "), e_1);
                         return [2 /*return*/];
                     case 4:
                         if (!(res && (!this.updatedAt || !(0, util_1.shallowEqual)(this.toJSONCommentUpdate(), res, ["signature"])))) return [3 /*break*/, 6];
@@ -234,7 +234,7 @@ var Comment = /** @class */ (function (_super) {
                     case 5:
                         _a = _b.sent(), verified = _a[0], failedVerificationReason = _a[1];
                         if (!verified) {
-                            log.error("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") signature is invalid. Will not update: ").concat(failedVerificationReason));
+                            log.error("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") signature is invalid due to '").concat(failedVerificationReason, "'"));
                             return [2 /*return*/];
                         }
                         this._initCommentUpdate(res);

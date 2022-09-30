@@ -102,7 +102,7 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, (0, util_2.getDefaultSubplebbitDbConfig)(this._subplebbit)];
                     case 1:
                         _c._dbConfig = _d.sent();
-                        log("User did provide a database config. Defaulting to ".concat(JSON.stringify(this._dbConfig)));
+                        log("User did not provide a database config. Defaulting to: ", this._dbConfig);
                         _d.label = 2;
                     case 2:
                         if (!this._knex)

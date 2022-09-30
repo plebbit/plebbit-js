@@ -148,7 +148,7 @@ var Plebbit = /** @class */ (function (_super) {
                     case 5:
                         e_1 = _a.sent();
                         this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
-                        log("".concat(e_1, ": Failed to retrieve gateway url from ipfs node, will default to ").concat(this.ipfsGatewayUrl));
+                        log(e_1, "\nFailed to retrieve gateway url from ipfs node, will default to ".concat(this.ipfsGatewayUrl));
                         return [3 /*break*/, 6];
                     case 6: return [2 /*return*/];
                 }
@@ -278,7 +278,7 @@ var Plebbit = /** @class */ (function (_super) {
                                     case 1:
                                         _a.sent();
                                         exports.pendingSubplebbitCreations[key] = false;
-                                        log("Created subplebbit (".concat(subplebbit.address, ") with options (").concat(JSON.stringify(subplebbit.toJSON()), ")"));
+                                        log("Created subplebbit (".concat(subplebbit.address, ") with props:"), (0, util_2.removeKeysWithUndefinedValues)((0, util_2.removeKeys)(subplebbit.toJSON(), ["signer"])));
                                         return [2 /*return*/, subplebbit];
                                 }
                             });

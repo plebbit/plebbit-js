@@ -85,7 +85,7 @@ var Resolver = /** @class */ (function () {
                         log = (0, plebbit_logger_1.default)("plebbit-js:resolver:_resolveEnsTxtRecord");
                         cachedResponse = this.plebbit._memCache.get(ensName + txtRecordName);
                         if (cachedResponse && typeof cachedResponse === "string") {
-                            log("ENS (".concat(ensName, ") text record (").concat(txtRecordName, ") is already cached: ").concat(JSON.stringify(cachedResponse)));
+                            log("ENS (".concat(ensName, ") text record (").concat(txtRecordName, ") is already cached: ").concat(cachedResponse));
                             return [2 /*return*/, cachedResponse];
                         }
                         blockchainProvider = this._getBlockchainProvider("eth");
@@ -94,14 +94,16 @@ var Resolver = /** @class */ (function () {
                         resolver = _a.sent();
                         if (!resolver)
                             throw (0, err_code_1.default)(new Error(errors_1.messages.ERR_ENS_RESOLVER_NOT_FOUND), errors_1.codes.ERR_ENS_RESOLVER_NOT_FOUND, {
-                                details: "ensName: ".concat(ensName, ", blockchainProvider: ").concat(JSON.stringify(blockchainProvider), " ")
+                                details: "ensName: ".concat(ensName, ", blockchainProvider:"),
+                                blockchainProvider: blockchainProvider
                             });
                         return [4 /*yield*/, resolver.getText(txtRecordName)];
                     case 2:
                         txtRecordResult = _a.sent();
                         if (!txtRecordResult)
                             throw (0, err_code_1.default)(new Error(errors_1.messages.ERR_ENS_TXT_RECORD_NOT_FOUND), errors_1.codes.ERR_ENS_TXT_RECORD_NOT_FOUND, {
-                                details: "ensName: ".concat(ensName, ", txtRecordName: ").concat(txtRecordName, ", blockchainProvider: ").concat(JSON.stringify(blockchainProvider), ",")
+                                details: "ensName: ".concat(ensName, ", txtRecordName: ").concat(txtRecordName, ", blockchainProvider:"),
+                                blockchainProvider: blockchainProvider
                             });
                         log.trace("Resolved text record name (".concat(txtRecordName, ") of ENS (").concat(ensName, ") to ").concat(txtRecordResult));
                         this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // Expire memory ENS cache after an hour

@@ -67,11 +67,11 @@ var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("../errors");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 function generateRandomTimestamp(parentTimestamp) {
-    var _a = [parentTimestamp || 0, (0, util_1.timestamp)()], lowerLimit = _a[0], upperLimit = _a[1];
+    var _a = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, (0, util_1.timestamp)()], lowerLimit = _a[0], upperLimit = _a[1];
     var randomTimestamp = -1;
     while (randomTimestamp === -1) {
         var randomTimeframeIndex = (Object.keys(util_1.TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
-        var tempTimestamp = lowerLimit + Math.random() > 0.5 ? Object.values(util_1.TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex] : 1;
+        var tempTimestamp = lowerLimit + Object.values(util_1.TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
         if (tempTimestamp >= lowerLimit && tempTimestamp <= upperLimit)
             randomTimestamp = tempTimestamp;
     }

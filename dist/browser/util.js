@@ -93,7 +93,6 @@ function fetchWithLimit(url, options) {
                 case 3: return [3 /*break*/, 5];
                 case 4:
                     e_1 = _d.sent();
-                    console.log("error.message: ".concat(e_1.message));
                     if (e_1.message.includes("over limit"))
                         throw (0, err_code_1.default)(Error(errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT), errors_1.codes.ERR_OVER_DOWNLOAD_LIMIT, {
                             details: "fetch: url (".concat(url, ") points to a file larger than download limit (").concat(DOWNLOAD_LIMIT_BYTES, ") bytes")
