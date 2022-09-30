@@ -653,14 +653,14 @@ const subplebbitOptions = {address: 'Qmb...',}
 const subplebbit = await plebbit.createSubplebbit(subplebbitOptions)
 
 // edit the subplebbit info in the database
-subplebbit.edit({
+await subplebbit.edit({
   title: 'Memes',
   description: 'Post your memes here.',
   pubsubTopic: 'Qmb...'
 })
 
 // start publishing updates every 5 minutes
-subplebbit.start()
+await subplebbit.start()
 
 // instantiate an already existing subplebbit instance and initialize any property on it
 const subplebbit = await plebbit.createSubplebbit({
