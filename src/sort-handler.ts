@@ -192,7 +192,7 @@ export class SortHandler {
     async generatePagesUnderComment(comment?: Comment | CommentType, trx?): Promise<Pages | undefined> {
         if (comment?.replyCount === 0) return undefined;
         if (comment && (comment.replyCount === undefined || comment.replyCount === null))
-            throw new Error(`Comment has not defined replyCount (${comment.replyCount}): ${JSON.stringify(comment)}`);
+            throw Error(`Can't generate pages for a comment that has undefined replyCount (${comment.replyCount})`);
         const key = comment?.cid || "subplebbit"; // If comment is undefined then we're generating page for subplebbit
         const cachedPageJson = await this.subplebbit.dbHandler?.keyvGet(key);
         if (!cachedPageJson || JSON.stringify(cachedPageJson) === "{}") {

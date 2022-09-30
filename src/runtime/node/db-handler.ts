@@ -68,7 +68,7 @@ export class DbHandler {
         this._dbConfig = this._dbConfig || this._userDbConfig;
         if (!this._dbConfig) {
             this._dbConfig = await getDefaultSubplebbitDbConfig(this._subplebbit);
-            log(`User did provide a database config. Defaulting to ${JSON.stringify(this._dbConfig)}`);
+            log(`User did not provide a database config. Defaulting to: `, this._dbConfig);
         }
         if (!this._knex) this._knex = knex(this._dbConfig);
 

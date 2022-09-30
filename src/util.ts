@@ -27,7 +27,6 @@ async function fetchWithLimit(url: string, options?): Promise<[resJson: Object, 
         // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
         if (res.body.getReader === undefined) return [await res.json(), res];
     } catch (e) {
-        console.log(`error.message: ${e.message}`);
         if (e.message.includes("over limit"))
             throw errcode(Error(messages.ERR_OVER_DOWNLOAD_LIMIT), codes.ERR_OVER_DOWNLOAD_LIMIT, {
                 details: `fetch: url (${url}) points to a file larger than download limit (${DOWNLOAD_LIMIT_BYTES}) bytes`

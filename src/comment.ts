@@ -248,16 +248,14 @@ export class Comment extends Publication implements CommentType {
         try {
             res = await loadIpnsAsJson(this.ipnsName, this.plebbit);
         } catch (e) {
-            log.error(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error = ${e.message}`);
+            log.error(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error: `, e);
             return;
         }
         if (res && (!this.updatedAt || !shallowEqual(this.toJSONCommentUpdate(), res, ["signature"]))) {
             log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
             const [verified, failedVerificationReason] = await verifyPublication(res, this.plebbit, "commentupdate");
             if (!verified) {
-                log.error(
-                    `Comment (${this.cid}) IPNS (${this.ipnsName}) signature is invalid. Will not update: ${failedVerificationReason}`
-                );
+                log.error(`Comment (${this.cid}) IPNS (${this.ipnsName}) signature is invalid due to '${failedVerificationReason}'`);
                 return;
             }
             this._initCommentUpdate(res);

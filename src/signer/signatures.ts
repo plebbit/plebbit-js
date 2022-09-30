@@ -163,10 +163,11 @@ export async function signPublication(
     const signedPropertyNames = SIGNED_PROPERTY_NAMES[signatureType];
 
     const fieldsToSign = keepKeys(publicationJson, signedPropertyNames);
-    log.trace(`Fields to sign: ${JSON.stringify(signedPropertyNames)}. Publication object to sign:  ${JSON.stringify(fieldsToSign)}`);
+    log.trace("Fields to sign: ", signedPropertyNames);
+    log.trace("Publication to sign: ", fieldsToSign);
     const commentEncoded = cborg.encode(fieldsToSign); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
     const signatureData = uint8ArrayToString(await signBufferRsa(commentEncoded, signer.privateKey), "base64");
-    log.trace(`Publication been signed, signature data is (${signatureData})`);
+    log.trace(`Publication been signed, signature:`, signatureData);
     return new Signature({
         signature: signatureData,
         publicKey: signer.publicKey,
@@ -195,6 +196,7 @@ export async function verifyPublication(
 ): Promise<[boolean, string | undefined]> {
     if (!Object.keys(SIGNED_PROPERTY_NAMES).includes(signatureType)) throw Error(`signature type (${signatureType}) is not supported`);
     let publicationJson = <PublicationToVerify>removeKeysWithUndefinedValues(publication); // This line is needed to remove nested undefined values
+    if (!publicationJson.signature) throw Error(`Publication has no signature to verify`);
 
     const log = Logger("plebbit-js:signatures:verifyPublication");
 
@@ -274,7 +276,8 @@ export async function verifyPublication(
         plebbit._memCache.put(sha256(JSON.stringify(publicationJson) + signatureType), res);
         return res;
     } catch (e) {
-        log(`Failed to verify ${signatureType} due to error: ${e}\nPublication: ${JSON.stringify(publicationJson)}`);
+        log(`Failed to verify ${signatureType} due to error:`, e);
+        log("Publication: ", publicationJson);
         const res: [boolean, string | undefined] = [false, String(e)];
         plebbit._memCache.put(sha256(JSON.stringify(publicationJson) + signatureType), res);
 

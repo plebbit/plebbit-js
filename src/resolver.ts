@@ -49,21 +49,23 @@ export class Resolver {
     async _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string> {
         const log = Logger("plebbit-js:resolver:_resolveEnsTxtRecord");
 
-        const cachedResponse = this.plebbit._memCache.get(ensName + txtRecordName);
+        const cachedResponse: string | undefined = this.plebbit._memCache.get(ensName + txtRecordName);
         if (cachedResponse && typeof cachedResponse === "string") {
-            log(`ENS (${ensName}) text record (${txtRecordName}) is already cached: ${JSON.stringify(cachedResponse)}`);
+            log(`ENS (${ensName}) text record (${txtRecordName}) is already cached: ${cachedResponse}`);
             return cachedResponse;
         }
         const blockchainProvider = this._getBlockchainProvider("eth");
         const resolver = await blockchainProvider.getResolver(ensName);
         if (!resolver)
             throw errcode(new Error(messages.ERR_ENS_RESOLVER_NOT_FOUND), codes.ERR_ENS_RESOLVER_NOT_FOUND, {
-                details: `ensName: ${ensName}, blockchainProvider: ${JSON.stringify(blockchainProvider)} `
+                details: `ensName: ${ensName}, blockchainProvider:`,
+                blockchainProvider
             });
         const txtRecordResult = await resolver.getText(txtRecordName);
         if (!txtRecordResult)
             throw errcode(new Error(messages.ERR_ENS_TXT_RECORD_NOT_FOUND), codes.ERR_ENS_TXT_RECORD_NOT_FOUND, {
-                details: `ensName: ${ensName}, txtRecordName: ${txtRecordName}, blockchainProvider: ${JSON.stringify(blockchainProvider)},`
+                details: `ensName: ${ensName}, txtRecordName: ${txtRecordName}, blockchainProvider:`,
+                blockchainProvider
             });
 
         log.trace(`Resolved text record name (${txtRecordName}) of ENS (${ensName}) to ${txtRecordResult}`);

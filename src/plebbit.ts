@@ -18,7 +18,7 @@ import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util"
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
-import { loadIpfsFileAsJson, loadIpnsAsJson, timestamp } from "./util";
+import { loadIpfsFileAsJson, loadIpnsAsJson, removeKeys, removeKeysWithUndefinedValues, timestamp } from "./util";
 import Vote from "./vote";
 import { createSigner, Signer, signPublication, verifyPublication } from "./signer";
 import { Resolver } from "./resolver";
@@ -92,7 +92,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
                 log.trace(`plebbit.ipfsGatewayUrl retrieved from IPFS node: ${this.ipfsGatewayUrl}`);
             } catch (e) {
                 this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
-                log(`${e}: Failed to retrieve gateway url from ipfs node, will default to ${this.ipfsGatewayUrl}`);
+                log(e, `\nFailed to retrieve gateway url from ipfs node, will default to ${this.ipfsGatewayUrl}`);
             }
         }
     }
@@ -186,7 +186,10 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             pendingSubplebbitCreations[key] = true;
             await subplebbit.prePublish();
             pendingSubplebbitCreations[key] = false;
-            log(`Created subplebbit (${subplebbit.address}) with options (${JSON.stringify(subplebbit.toJSON())})`);
+            log(
+                `Created subplebbit (${subplebbit.address}) with props:`,
+                removeKeysWithUndefinedValues(removeKeys(subplebbit.toJSON(), ["signer"]))
+            );
             return subplebbit;
         };
 

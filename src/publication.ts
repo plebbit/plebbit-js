@@ -84,7 +84,7 @@ class Publication extends EventEmitter implements PublicationType {
             }
 
             log(
-                `Received encrypted challenges.  Will decrypt and emit them on "challenge". User shoud publish solution by calling publishChallengeAnswers`
+                `Received encrypted challenges.  Will decrypt and emit them on "challenge" event. User shoud publish solution by calling publishChallengeAnswers`
             );
             const decryptedChallenges: ChallengeType[] = JSON.parse(
                 await decrypt(msgParsed.encryptedChallenges.encrypted, msgParsed.encryptedChallenges.encryptedKey, this.signer.privateKey)
@@ -119,7 +119,7 @@ class Publication extends EventEmitter implements PublicationType {
                 this._initProps(decryptedPublication);
             } else
                 log.error(
-                    `Challenge ${msgParsed.challengeRequestId} has failed to pass. Challenge errors = ${msgParsed.challengeErrors}, reason = ${msgParsed.reason}`
+                    `Challenge ${msgParsed.challengeRequestId} has failed to pass. Challenge errors = ${msgParsed.challengeErrors}, reason = '${msgParsed.reason}'`
                 );
 
             this.emit("challengeverification", { ...msgParsed, publication: decryptedPublication }, this);
@@ -152,7 +152,7 @@ class Publication extends EventEmitter implements PublicationType {
             this.subplebbit.pubsubTopic,
             uint8ArrayFromString(JSON.stringify(challengeAnswer))
         );
-        log(`Responded to challenge (${challengeAnswer.challengeRequestId}) with answers ${JSON.stringify(challengeAnswers)}`);
+        log(`Responded to challenge (${challengeAnswer.challengeRequestId}) with answers`, challengeAnswers);
         this.emit("challengeanswer", challengeAnswer);
     }
 
@@ -207,7 +207,7 @@ class Publication extends EventEmitter implements PublicationType {
         const pubsubMsgSignature = await signPublication(toSignMsg, this.signer, this.plebbit, "challengerequestmessage");
 
         this.challenge = new ChallengeRequestMessage({ ...toSignMsg, signature: pubsubMsgSignature });
-        log.trace(`Attempting to publish ${this.getType()} with options (${JSON.stringify(options)})`);
+        log.trace(`Attempting to publish ${this.getType()} with options`, options);
 
         await Promise.all([
             this.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, uint8ArrayFromString(JSON.stringify(this.challenge))),
