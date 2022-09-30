@@ -7,18 +7,18 @@ import PlebbitIndex from "../index";
 import Vote from "../vote";
 import { Pages } from "../pages";
 import { Subplebbit } from "../subplebbit";
-import { CommentType, SignerType } from "../types";
+import { CommentType, CreateCommentOptions, PostType, SignerType } from "../types";
 import errcode from "err-code";
 import { codes, messages } from "../errors";
 import isIPFS from "is-ipfs";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
-    const [lowerLimit, upperLimit] = [parentTimestamp || 0, timestamp()];
+    const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
 
     let randomTimestamp: number = -1;
     while (randomTimestamp === -1) {
         const randomTimeframeIndex = (Object.keys(TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
-        const tempTimestamp = lowerLimit + Math.random() > 0.5 ? Object.values(TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex] : 1;
+        const tempTimestamp = lowerLimit + Object.values(TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
         if (tempTimestamp >= lowerLimit && tempTimestamp <= upperLimit) randomTimestamp = tempTimestamp;
     }
 
@@ -30,7 +30,7 @@ export async function generateMockPost(
     plebbit: Plebbit,
     signer?: Signer,
     randomTimestamp = false,
-    postProps = {}
+    postProps: Partial<CreateCommentOptions | PostType> = {}
 ) {
     const postTimestamp = (randomTimestamp && generateRandomTimestamp()) || timestamp();
     const postStartTestTime = Date.now() / 1000 + Math.random();
@@ -62,7 +62,7 @@ export async function generateMockComment(
     plebbit: Plebbit,
     signer?: Signer,
     randomTimestamp = false,
-    commentProps = {}
+    commentProps: Partial<CreateCommentOptions | CommentType> = {}
 ): Promise<Comment> {
     if (!["Comment", "Post"].includes(parentPostOrComment.constructor.name))
         throw Error("Need to have parentComment defined to generate mock comment");
