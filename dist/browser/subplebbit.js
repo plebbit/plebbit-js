@@ -273,9 +273,11 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [3 /*break*/, 5];
                     case 5:
                         if (error)
-                            throw new Error("Failed to list keys from ipfs node due to error: ".concat(error));
+                            throw Error("Failed to list keys from ipfs node due to error: ".concat(error));
+                        if (!this.signer)
+                            throw Error("Failed to import subplebbit.signer into ipfs node since it's undefined");
                         if (!!subplebbitIpfsNodeKey) return [3 /*break*/, 7];
-                        return [4 /*yield*/, (0, util_1.ipfsImportKey)(__assign(__assign({}, this.signer), { ipnsKeyName: this.signer.address }), this.plebbit)];
+                        return [4 /*yield*/, util_3.nativeFunctions.importSignerIntoIpfsNode(__assign(__assign({}, this.signer), { ipnsKeyName: this.signer.address }), this.plebbit)];
                     case 6:
                         ipfsKey = _h.sent();
                         this.ipnsKeyName = ipfsKey["name"] || ipfsKey["Name"];
@@ -754,7 +756,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 23:
                         _s.sent();
                         _o = (_m = postOrCommentOrVote).setCommentIpnsKey;
-                        return [4 /*yield*/, (0, util_1.ipfsImportKey)(ipfsSigner, this.plebbit)];
+                        return [4 /*yield*/, util_3.nativeFunctions.importSignerIntoIpfsNode(ipfsSigner, this.plebbit)];
                     case 24:
                         _o.apply(_m, [_s.sent()]);
                         if (!(postOrCommentOrVote instanceof post_1.default)) return [3 /*break*/, 30];

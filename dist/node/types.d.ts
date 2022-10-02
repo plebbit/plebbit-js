@@ -5,6 +5,7 @@ import { DbHandler } from "./runtime/node/db-handler";
 import { Subplebbit } from "./subplebbit";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
+import { Plebbit } from "./plebbit";
 export declare type ProtocolVersion = "1.0.0";
 export declare type BlockchainProvider = {
     url: string;
@@ -360,6 +361,10 @@ export declare type NativeFunctions = {
     createImageCaptcha: (...p: Parameters<typeof createCaptcha>) => Promise<{
         image: string;
         text: string;
+    }>;
+    importSignerIntoIpfsNode: (signer: SignerType, plebbit: Plebbit) => Promise<{
+        Id: string;
+        Name: string;
     }>;
 };
 export declare type OnlyDefinedProperties<T> = Pick<T, {

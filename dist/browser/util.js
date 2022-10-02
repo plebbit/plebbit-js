@@ -59,10 +59,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.randomElement = exports.ipfsImportKey = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.waitTillCommentsUpdate = exports.waitTillPublicationsArePublished = exports.shallowEqual = exports.replaceXWithY = exports.removeKeys = exports.keepKeys = exports.timestamp = exports.parseJsonIfString = exports.round = exports.chunks = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.TIMEFRAMES_TO_SECONDS = void 0;
-var form_data_1 = __importDefault(require("form-data"));
+exports.randomElement = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.waitTillCommentsUpdate = exports.waitTillPublicationsArePublished = exports.shallowEqual = exports.replaceXWithY = exports.removeKeys = exports.keepKeys = exports.timestamp = exports.parseJsonIfString = exports.round = exports.chunks = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var util_1 = require("./runtime/browser/util");
-var buffer_1 = require("buffer");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var errors_1 = require("./errors");
 var err_code_1 = __importDefault(require("err-code"));
@@ -84,10 +82,10 @@ function fetchWithLimit(url, options) {
             switch (_d.label) {
                 case 0:
                     _d.trys.push([0, 4, , 5]);
-                    return [4 /*yield*/, (((_a = globalThis["window"]) === null || _a === void 0 ? void 0 : _a.fetch) || util_1.nativeFunctions.fetch)(url, __assign(__assign({}, options), { size: DOWNLOAD_LIMIT_BYTES }))];
+                    return [4 /*yield*/, util_1.nativeFunctions.fetch(url, __assign(__assign({}, options), { size: DOWNLOAD_LIMIT_BYTES }))];
                 case 1:
                     res = _d.sent();
-                    if (!(res.body.getReader === undefined)) return [3 /*break*/, 3];
+                    if (!(((_a = res === null || res === void 0 ? void 0 : res.body) === null || _a === void 0 ? void 0 : _a.getReader) === undefined)) return [3 /*break*/, 3];
                     return [4 /*yield*/, res.json()];
                 case 2: return [2 /*return*/, [_d.sent(), res]];
                 case 3: return [3 /*break*/, 5];
@@ -401,44 +399,6 @@ function removeKeysWithUndefinedValues(object) {
     return JSON.parse(JSON.stringify(object));
 }
 exports.removeKeysWithUndefinedValues = removeKeysWithUndefinedValues;
-// This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
-function ipfsImportKey(signer, plebbit, password) {
-    var _a, _b, _c;
-    if (password === void 0) { password = ""; }
-    return __awaiter(this, void 0, void 0, function () {
-        var data, ipfsKeyFile, nodeUrl, url, res;
-        return __generator(this, function (_d) {
-            switch (_d.label) {
-                case 0:
-                    data = globalThis["FormData"] ? new FormData() : new form_data_1.default();
-                    if (typeof signer.ipnsKeyName !== "string")
-                        throw Error("Signer.ipnsKeyName needs to be defined before importing key into IPFS node");
-                    if (((_b = (_a = signer.ipfsKey) === null || _a === void 0 ? void 0 : _a.constructor) === null || _b === void 0 ? void 0 : _b.name) !== "Uint8Array")
-                        throw Error("Signer.ipfsKey needs to be defined before importing key into IPFS node");
-                    ipfsKeyFile = globalThis["Buffer"] ? buffer_1.Buffer.from(signer.ipfsKey) : new File([signer.ipfsKey], "myfile");
-                    //@ts-ignore
-                    data.append("file", ipfsKeyFile);
-                    nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
-                    if (!nodeUrl)
-                        throw new Error("Can't figure out ipfs node URL");
-                    url = "".concat(nodeUrl, "/key/import?arg=").concat(signer.ipnsKeyName);
-                    return [4 /*yield*/, (globalThis["window"] ? window.fetch : util_1.nativeFunctions.fetch)(url, {
-                            method: "POST",
-                            //@ts-ignore
-                            body: data,
-                            headers: (_c = plebbit.ipfsHttpClientOptions) === null || _c === void 0 ? void 0 : _c.headers
-                        })];
-                case 1:
-                    res = _d.sent();
-                    if (res.status !== 200)
-                        throw new Error("failed ipfs import key: '".concat(url, "' '").concat(res.status, "' '").concat(res.statusText, "'"));
-                    return [4 /*yield*/, res.json()];
-                case 2: return [2 /*return*/, _d.sent()];
-            }
-        });
-    });
-}
-exports.ipfsImportKey = ipfsImportKey;
 function randomElement(array) {
     return array[Math.floor(Math.random() * array.length)];
 }

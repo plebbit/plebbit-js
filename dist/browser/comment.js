@@ -183,8 +183,8 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.setCommentIpnsKey = function (ipnsKey) {
         // Contains name and id
-        this.ipnsName = ipnsKey["id"] || ipnsKey["Id"];
-        this.ipnsKeyName = ipnsKey["name"] || ipnsKey["Name"];
+        this.ipnsName = ipnsKey.Id;
+        this.ipnsKeyName = ipnsKey.Name;
     };
     Comment.prototype.setPostCid = function (newPostCid) {
         this.postCid = newPostCid;

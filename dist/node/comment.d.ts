@@ -52,7 +52,10 @@ export declare class Comment extends Publication implements CommentType {
     };
     toJSONForDb(challengeRequestId?: string): CommentForDbType;
     toJSONCommentUpdate(skipAssert?: boolean): Omit<CommentUpdate, "signature">;
-    setCommentIpnsKey(ipnsKey: any): void;
+    setCommentIpnsKey(ipnsKey: {
+        Id: string;
+        Name: string;
+    }): void;
     setPostCid(newPostCid: string): void;
     setCid(newCid: string): void;
     setPreviousCid(newPreviousCid?: string): void;

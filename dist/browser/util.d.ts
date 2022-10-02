@@ -1,6 +1,5 @@
 import { Plebbit } from "./plebbit";
 import { CommentType, OnlyDefinedProperties, Timeframe } from "./types";
-import { Signer } from "./signer";
 export declare const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number>;
 export declare function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultOptions?: {
     timeout: number;
@@ -22,5 +21,4 @@ export declare function topScore(comment: CommentType): number;
 export declare function newScore(comment: CommentType): number;
 export declare function oldScore(comment: CommentType): number;
 export declare function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T>;
-export declare function ipfsImportKey(signer: Signer, plebbit: any, password?: string): Promise<any>;
 export declare function randomElement<T>(array: Array<T>): T;
