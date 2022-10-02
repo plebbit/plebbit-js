@@ -14,6 +14,8 @@ import last from "it-last";
 import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { createCaptcha } from "captcha-canvas";
+import { Agent } from "http";
+import FormData from "form-data";
 
 const nativeFunctions: NativeFunctions = {
     createImageCaptcha: async (...args): Promise<{ image: string; text: string }> => {
@@ -51,7 +53,14 @@ const nativeFunctions: NativeFunctions = {
 
     fetch: fetch,
     createIpfsClient: (ipfsHttpClientOptions): IpfsHttpClientPublicAPI => {
-        const ipfsClient = create(ipfsHttpClientOptions);
+        const ipfsClient = create(
+            typeof ipfsHttpClientOptions === "string"
+                ? { url: ipfsHttpClientOptions, agent: new Agent({ keepAlive: true, maxSockets: Infinity }) }
+                : {
+                      ...ipfsHttpClientOptions,
+                      agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity })
+                  }
+        );
 
         const cat = async (...args: Parameters<IpfsHttpClientPublicAPI["cat"]>): Promise<string | undefined> => {
             const rawData = await all(ipfsClient.cat(...args));

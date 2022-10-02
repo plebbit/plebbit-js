@@ -294,7 +294,6 @@ export async function startSubplebbits(props: {
     numOfCommentsToPublish: number;
 }) {
     const plebbit = await _mockPlebbit(props.signers, props.dataPath);
-
     const signer = await plebbit.createSigner(props.signers[0]);
     const subplebbit = await plebbit.createSubplebbit({ signer, database: props.database });
     subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
