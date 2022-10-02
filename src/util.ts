@@ -20,9 +20,9 @@ async function fetchWithLimit(url: string, options?): Promise<[resJson: any, res
     // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
     let res;
     try {
-        res = await (globalThis["window"]?.fetch || nativeFunctions.fetch)(url, { ...options, size: DOWNLOAD_LIMIT_BYTES });
+        res = await nativeFunctions.fetch(url, { ...options, size: DOWNLOAD_LIMIT_BYTES });
         // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
-        if (res.body.getReader === undefined) return [await res.json(), res];
+        if (res?.body?.getReader === undefined) return [await res.json(), res];
     } catch (e) {
         if (e.message.includes("over limit"))
             throw errcode(Error(messages.ERR_OVER_DOWNLOAD_LIMIT), codes.ERR_OVER_DOWNLOAD_LIMIT, {

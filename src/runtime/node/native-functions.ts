@@ -51,7 +51,14 @@ const nativeFunctions: NativeFunctions = {
         return dbApi;
     },
 
-    fetch: fetch,
+    //@ts-ignore
+    fetch: async (...args) => {
+        const res = await fetch(...args);
+        const resObj = {};
+        for (const property in res) resObj[property] = typeof res[property] === "function" ? res[property].bind(res) : res[property];
+
+        return resObj;
+    },
     createIpfsClient: (ipfsHttpClientOptions): IpfsHttpClientPublicAPI => {
         const ipfsClient = create(
             typeof ipfsHttpClientOptions === "string"
