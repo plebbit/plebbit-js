@@ -107,8 +107,9 @@ const startIpfsNodes = async () => {
 (async () => {
     // do more stuff here, like start some subplebbits
 
-    await fs.promises.rm(path.join(process.cwd(), ".plebbit"), { recursive: true, force: true });
-    await fs.promises.rm(path.join(process.cwd(), ".plebbit2"), { recursive: true, force: true });
+    const dirsToDelete = [".plebbit", ".plebbit2", ".test-ipfs-offline", ".test-ipfs-offline2", ".test-ipfs-online", ".test-ipfs-pubsub"];
+
+    await Promise.all(dirsToDelete.map((dirPath) => fs.promises.rm(path.join(process.cwd(), dirPath), { recursive: true, force: true })));
 
     await startIpfsNodes();
 
