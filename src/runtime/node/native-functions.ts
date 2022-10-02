@@ -1,9 +1,9 @@
-import { DbHandlerPublicAPI, IpfsHttpClientPublicAPI, NativeFunctions } from "../../types";
+import { DbHandlerPublicAPI, IpfsHttpClientPublicAPI, NativeFunctions, SignerType } from "../../types";
 import { promises as fs } from "fs";
 import path from "path";
 import assert from "assert";
 
-import { pendingSubplebbitCreations } from "../../plebbit";
+import { pendingSubplebbitCreations, Plebbit } from "../../plebbit";
 import { DbHandler } from "./db-handler";
 
 import fetch from "node-fetch";
@@ -91,6 +91,27 @@ const nativeFunctions: NativeFunctions = {
                 list: ipfsClient.key.list
             }
         };
+    },
+    importSignerIntoIpfsNode: async (signer: SignerType, plebbit: Plebbit): Promise<{ Id: string; Name: string }> => {
+        const data = new FormData();
+        if (typeof signer.ipnsKeyName !== "string")
+            throw Error("Signer.ipnsKeyName needs to be defined before importing key into IPFS node");
+        if (signer.ipfsKey?.constructor?.name !== "Uint8Array")
+            throw Error("Signer.ipfsKey needs to be defined before importing key into IPFS node");
+        const ipfsKeyFile = Buffer.from(signer.ipfsKey);
+
+        data.append("file", ipfsKeyFile);
+        const nodeUrl =
+            typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
+        if (!nodeUrl) throw Error("Can't figure out ipfs node URL");
+        const url = `${nodeUrl}/key/import?arg=${signer.ipnsKeyName}`;
+        const res = await nativeFunctions.fetch(url, {
+            method: "POST",
+            body: data
+        });
+        if (res.status !== 200) throw Error(`failed ipfs import key: '${url}' '${res.status}' '${res.statusText}'`);
+        const resJson: { Id: string; Name: string } = await res.json();
+        return resJson;
     }
 };
 

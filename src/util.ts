@@ -1,9 +1,6 @@
-import { default as NodeFormData } from "form-data";
 import { Plebbit } from "./plebbit";
 import { CommentType, OnlyDefinedProperties, Timeframe } from "./types";
 import { nativeFunctions } from "./runtime/node/util";
-import { Signer } from "./signer";
-import { Buffer } from "buffer";
 import isIPFS from "is-ipfs";
 import { codes, messages } from "./errors";
 import errcode from "err-code";
@@ -19,7 +16,7 @@ export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
 });
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
-async function fetchWithLimit(url: string, options?): Promise<[resJson: Object, response: Response]> {
+async function fetchWithLimit(url: string, options?): Promise<[resJson: any, response: Response]> {
     // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
     let res;
     try {
@@ -251,29 +248,6 @@ export function oldScore(comment: CommentType) {
 
 export function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T> {
     return JSON.parse(JSON.stringify(object));
-}
-
-// This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
-export async function ipfsImportKey(signer: Signer, plebbit, password = "") {
-    const data = globalThis["FormData"] ? new FormData() : new NodeFormData();
-    if (typeof signer.ipnsKeyName !== "string") throw Error("Signer.ipnsKeyName needs to be defined before importing key into IPFS node");
-    if (signer.ipfsKey?.constructor?.name !== "Uint8Array")
-        throw Error("Signer.ipfsKey needs to be defined before importing key into IPFS node");
-    const ipfsKeyFile = globalThis["Buffer"] ? Buffer.from(signer.ipfsKey) : new File([signer.ipfsKey], "myfile");
-
-    //@ts-ignore
-    data.append("file", ipfsKeyFile);
-    const nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
-    if (!nodeUrl) throw new Error("Can't figure out ipfs node URL");
-    const url = `${nodeUrl}/key/import?arg=${signer.ipnsKeyName}`;
-    const res = await (globalThis["window"] ? window.fetch : nativeFunctions.fetch)(url, {
-        method: "POST",
-        //@ts-ignore
-        body: data,
-        headers: plebbit.ipfsHttpClientOptions?.headers
-    });
-    if (res.status !== 200) throw new Error(`failed ipfs import key: '${url}' '${res.status}' '${res.statusText}'`);
-    return await res.json();
 }
 
 export function randomElement<T>(array: Array<T>): T {

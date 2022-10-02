@@ -208,10 +208,10 @@ export class Comment extends Publication implements CommentType {
         };
     }
 
-    setCommentIpnsKey(ipnsKey) {
+    setCommentIpnsKey(ipnsKey: { Id: string; Name: string }) {
         // Contains name and id
-        this.ipnsName = ipnsKey["id"] || ipnsKey["Id"];
-        this.ipnsKeyName = ipnsKey["name"] || ipnsKey["Name"];
+        this.ipnsName = ipnsKey.Id;
+        this.ipnsKeyName = ipnsKey.Name;
     }
 
     setPostCid(newPostCid: string) {

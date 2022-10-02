@@ -1,4 +1,4 @@
-import { IpfsHttpClientPublicAPI, NativeFunctions } from "../../types";
+import { IpfsHttpClientPublicAPI, NativeFunctions, SignerType } from "../../types";
 
 import { create } from "ipfs-http-client";
 
@@ -6,6 +6,7 @@ import all from "it-all";
 import last from "it-last";
 import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
+import { Plebbit } from "../../plebbit";
 
 const nativeFunctions: NativeFunctions = {
     createImageCaptcha: async (...args): Promise<{ image: string; text: string }> => {
@@ -53,6 +54,9 @@ const nativeFunctions: NativeFunctions = {
                 list: ipfsClient.key.list
             }
         };
+    },
+    importSignerIntoIpfsNode: async (signer: SignerType, plebbit: Plebbit): Promise<{ Id: string; Name: string }> => {
+        throw Error("Shouldn't call importSignerIntoIpfsNode over native-functions of browser");
     }
 };
 

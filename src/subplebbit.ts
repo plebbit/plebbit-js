@@ -4,7 +4,7 @@ import { sha256 } from "js-sha256";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
 import { SortHandler } from "./sort-handler";
-import { ipfsImportKey, loadIpnsAsJson, removeKeys, removeKeysWithUndefinedValues, shallowEqual, timestamp } from "./util";
+import { loadIpnsAsJson, removeKeys, removeKeysWithUndefinedValues, shallowEqual, timestamp } from "./util";
 import { decrypt, encrypt, verifyPublication, Signer, signPublication } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
@@ -242,9 +242,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         } catch (e) {
             error = e;
         }
-        if (error) throw new Error(`Failed to list keys from ipfs node due to error: ${error}`);
+        if (error) throw Error(`Failed to list keys from ipfs node due to error: ${error}`);
+        if (!this.signer) throw Error(`Failed to import subplebbit.signer into ipfs node since it's undefined`);
         if (!subplebbitIpfsNodeKey) {
-            const ipfsKey = await ipfsImportKey({ ...this.signer, ipnsKeyName: this.signer.address }, this.plebbit);
+            const ipfsKey = await nativeFunctions.importSignerIntoIpfsNode(
+                { ...this.signer, ipnsKeyName: this.signer.address },
+                this.plebbit
+            );
             this.ipnsKeyName = ipfsKey["name"] || ipfsKey["Name"];
             log(`Imported subplebbit keys into ipfs node,`, ipfsKey);
         } else {
@@ -371,7 +375,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async updateSubplebbitIpns() {
         const log = Logger("plebbit-js:subplebbit:sync");
 
-        // debugger;
         const trx: any = await this.dbHandler.createTransaction("subplebbit");
         const latestPost = await this.dbHandler.queryLatestPost(trx);
         await this.dbHandler.commitTransaction("subplebbit");
@@ -594,7 +597,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 usage: "comment"
             });
             await this.dbHandler.insertSigner(ipfsSigner, undefined);
-            postOrCommentOrVote.setCommentIpnsKey(await ipfsImportKey(ipfsSigner, this.plebbit));
+            postOrCommentOrVote.setCommentIpnsKey(await nativeFunctions.importSignerIntoIpfsNode(ipfsSigner, this.plebbit));
 
             if (postOrCommentOrVote instanceof Post) {
                 const trx = await this.dbHandler.createTransaction(challengeRequestId);

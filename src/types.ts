@@ -5,6 +5,7 @@ import { DbHandler } from "./runtime/node/db-handler";
 import { Subplebbit } from "./subplebbit";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
+import { Plebbit } from "./plebbit";
 
 export type ProtocolVersion = "1.0.0";
 
@@ -444,6 +445,8 @@ export type NativeFunctions = {
     fetch: typeof fetch;
     createIpfsClient: (options: Options) => IpfsHttpClientPublicAPI;
     createImageCaptcha: (...p: Parameters<typeof createCaptcha>) => Promise<{ image: string; text: string }>;
+    // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
+    importSignerIntoIpfsNode: (signer: SignerType, plebbit: Plebbit) => Promise<{ Id: string; Name: string }>;
 };
 
 export type OnlyDefinedProperties<T> = Pick<
