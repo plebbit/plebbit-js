@@ -262,7 +262,7 @@ export type Flair = {
 
 export type FlairOwner = "post" | "author";
 
-export interface SubplebbitType extends CreateSubplebbitOptions {
+export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"> {
     signature: SignatureType;
     encryption: SubplebbitEncryption;
     address: string;
@@ -280,7 +280,11 @@ export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     encryption?: SubplebbitEncryption;
     signature?: SignatureType; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
 
-    database?: Knex.Config;
+    database?: Omit<Knex.Config, "client" | "connection" | "pool" | "postProcessResponse" | "wrapIdentifier" | "seeds" | "log"> & {
+        connection: { filename: string; flags?: string[]; debug?: boolean; expirationChecker?(): boolean };
+        client: string;
+        useNullAsDefault: true;
+    }; // "client" field causes an error in plebbit-cli tsoa routes generation. Easier to omit it here than to debug there
 }
 
 export interface SubplebbitEditOptions {

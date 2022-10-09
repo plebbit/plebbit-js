@@ -48,7 +48,7 @@ import { nativeFunctions } from "./runtime/node/util";
 import env from "./version";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
-const DEFAULT_SYNC_INTERVAL_MS = 100000; // 5 minutes
+const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
 
 export const RUNNING_SUBPLEBBITS: Record<string, boolean> = {};
 
@@ -359,7 +359,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     async stop() {
         this._updateInterval = clearInterval(this._updateInterval);
-        if (this.signer) {
+        if (typeof this.signer?.address === "string") {
             this.removeAllListeners();
             this._sync = false;
 
@@ -931,11 +931,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const log = Logger("plebbit-js:subplebbit:start");
 
         if (!this.signer?.address)
-            throw errcode(new Error(messages.ERR_SUB_SIGNER_NOT_DEFINED), codes.ERR_SUB_SIGNER_NOT_DEFINED, {
+            throw errcode(Error(messages.ERR_SUB_SIGNER_NOT_DEFINED), codes.ERR_SUB_SIGNER_NOT_DEFINED, {
                 details: `signer: ${JSON.stringify(this.signer)}, address: ${this.address}`
             });
         if (this._sync || RUNNING_SUBPLEBBITS[this.signer.address])
-            throw errcode(new Error(messages.ERR_SUB_ALREADY_STARTED), codes.ERR_SUB_ALREADY_STARTED, {
+            throw errcode(Error(messages.ERR_SUB_ALREADY_STARTED), codes.ERR_SUB_ALREADY_STARTED, {
                 details: `address: ${this.address}`
             });
         this._sync = true;
