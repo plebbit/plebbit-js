@@ -368,7 +368,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     async stop() {
         this._updateInterval = clearInterval(this._updateInterval);
-        if (typeof this.signer?.address === "string") {
+        if (this._sync) {
             this.removeAllListeners();
             this._sync = false;
 
