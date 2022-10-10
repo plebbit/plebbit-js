@@ -483,10 +483,12 @@ export class DbHandler {
     }
 
     private _parseJsonFields(obj: Object) {
-        const jsonregex = /"((?:[^"\\\/\b\f\n\r\t]|\\u\d{4})*)"/gm;
         const newObj = { ...obj };
         for (const field in newObj) {
-            if (typeof newObj[field] === "string" && jsonregex.exec(newObj[field])) newObj[field] = JSON.parse(newObj[field]);
+            if (typeof newObj[field] === "string")
+                try {
+                    newObj[field] = JSON.parse(newObj[field]);
+                } catch {}
             if (newObj[field]?.constructor?.name === "Object") newObj[field] = this._parseJsonFields(newObj[field]);
         }
         return <any>newObj;
