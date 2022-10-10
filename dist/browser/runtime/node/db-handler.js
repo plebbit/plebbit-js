@@ -814,11 +814,13 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype._parseJsonFields = function (obj) {
         var _a, _b;
-        var jsonregex = /"((?:[^"\\\/\b\f\n\r\t]|\\u\d{4})*)"/gm;
         var newObj = __assign({}, obj);
         for (var field in newObj) {
-            if (typeof newObj[field] === "string" && jsonregex.exec(newObj[field]))
-                newObj[field] = JSON.parse(newObj[field]);
+            if (typeof newObj[field] === "string")
+                try {
+                    newObj[field] = JSON.parse(newObj[field]);
+                }
+                catch (_c) { }
             if (((_b = (_a = newObj[field]) === null || _a === void 0 ? void 0 : _a.constructor) === null || _b === void 0 ? void 0 : _b.name) === "Object")
                 newObj[field] = this._parseJsonFields(newObj[field]);
         }
