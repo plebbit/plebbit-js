@@ -250,6 +250,8 @@ describe("subplebbit", async () => {
                 expect(updatedSubplebbit.title).to.equal(title);
                 expect(subOne.title).to.equal(title);
                 expect(JSON.stringify(updatedSubplebbit)).to.equal(JSON.stringify(subOne.toJSON()));
+                subOne.stop();
+                subTwo.stop();
                 resolve();
             });
 
