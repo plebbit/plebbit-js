@@ -238,4 +238,23 @@ describe("subplebbit", async () => {
         const createdSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
         expect(JSON.stringify(createdSubplebbit.toJSON())).to.equal(JSON.stringify(subplebbit.toJSON()));
     });
+
+    it("Two local sub instances can receive each other updates with subplebbit.update", async () => {
+        return new Promise(async (resolve) => {
+            const subOne = await plebbit.createSubplebbit({});
+            await subOne.start(syncInterval);
+            const subTwo = await plebbit.createSubplebbit({ address: subOne.address });
+            await subTwo.update(syncInterval);
+            const title = "Test new Title" + Date.now();
+            subTwo.once("update", (updatedSubplebbit) => {
+                expect(updatedSubplebbit.title).to.equal(title);
+                expect(subOne.title).to.equal(title);
+                expect(JSON.stringify(updatedSubplebbit)).to.equal(JSON.stringify(subOne.toJSON()));
+                resolve();
+            });
+
+            await subOne.edit({ title });
+            expect(subOne.title).to.equal(title);
+        });
+    });
 });
