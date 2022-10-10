@@ -318,7 +318,17 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async updateOnce() {
         const log = Logger("plebbit-js:subplebbit:update");
 
-        if (this._sync) throw errcode(Error(messages.ERR_SUB_CAN_EITHER_RUN_OR_UPDATE), codes.ERR_SUB_CAN_EITHER_RUN_OR_UPDATE);
+        if (this._sync) {
+            // Local subs run update differently. Latest IPNS is retrieved from DB not ipfs
+            const subIpnsCacheKey = sha256("ipns" + this.address);
+            const ipnsCache: SubplebbitType | undefined = await this.dbHandler?.keyvGet(subIpnsCacheKey);
+            if (ipnsCache?.constructor?.name === "Object" && JSON.stringify(this.toJSON()) !== JSON.stringify(ipnsCache)) {
+                this.initSubplebbit(ipnsCache);
+                log(`Local Subplebbit received a new update. Will emit an update event`);
+                this.emit("update", ipnsCache);
+            }
+            return this;
+        }
 
         if (this.plebbit.resolver.isDomain(this.address))
             try {
@@ -340,7 +350,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 });
             if (JSON.stringify(this.toJSON()) !== JSON.stringify(subplebbitIpns)) {
                 this.initSubplebbit(subplebbitIpns);
-                log(`Subplebbit received a new update. Will emit an update event`);
+                log(`Remote Subplebbit received a new update. Will emit an update event`);
                 this.emit("update", subplebbitIpns);
             }
             return this;
@@ -352,7 +362,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
         if (this._updateInterval) clearInterval(this._updateInterval);
-        if (this._sync) throw errcode(Error(messages.ERR_SUB_CAN_EITHER_RUN_OR_UPDATE), codes.ERR_SUB_CAN_EITHER_RUN_OR_UPDATE);
         this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
         return this.updateOnce();
     }
@@ -409,6 +418,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (!currentIpns || JSON.stringify(currentIpns) !== JSON.stringify(this.toJSON()) || lastPublishOverTwentyMinutes) {
             this.updatedAt = timestamp();
             this.signature = await signPublication(this.toJSON(), this.signer, this.plebbit, "subplebbit");
+            const subIpnsCacheKey = sha256("ipns" + this.address);
+            await this.dbHandler?.keyvSet(subIpnsCacheKey, this.toJSON());
             const file = await this.plebbit.ipfsClient.add(JSON.stringify(this.toJSON()));
             await this.plebbit.ipfsClient.name.publish(file.path, {
                 lifetime: "72h", // TODO decide on optimal time later
