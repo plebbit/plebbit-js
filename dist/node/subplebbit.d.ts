@@ -64,18 +64,18 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
         metricsCid?: string;
         protocolVersion: "1.0.0";
         posts: Pages | Pick<Pages, "pageCids" | "pages">;
-        title?: string;
         description?: string;
+        title?: string;
         roles?: {
             [authorAddress: string]: SubplebbitRole;
         };
-        rules?: string[];
         lastPostCid?: string;
         challengeTypes?: ChallengeType[];
-        metrics?: SubplebbitMetrics;
         features?: SubplebbitFeatures;
         suggested?: SubplebbitSuggested;
+        rules?: string[];
         flairs?: Record<FlairOwner, Flair[]>;
+        metrics?: SubplebbitMetrics;
     };
     toJSON(): SubplebbitType;
     prePublish(): Promise<void>;

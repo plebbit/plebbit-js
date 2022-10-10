@@ -237,7 +237,7 @@ export declare type Flair = {
     expiresAt?: number;
 };
 export declare type FlairOwner = "post" | "author";
-export interface SubplebbitType extends CreateSubplebbitOptions {
+export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"> {
     signature: SignatureType;
     encryption: SubplebbitEncryption;
     address: string;
@@ -254,7 +254,16 @@ export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     signer?: SignerType;
     encryption?: SubplebbitEncryption;
     signature?: SignatureType;
-    database?: Knex.Config;
+    database?: Omit<Knex.Config, "client" | "connection" | "pool" | "postProcessResponse" | "wrapIdentifier" | "seeds" | "log"> & {
+        connection: {
+            filename: string;
+            flags?: string[];
+            debug?: boolean;
+            expirationChecker?(): boolean;
+        };
+        client: string;
+        useNullAsDefault: true;
+    };
 }
 export interface SubplebbitEditOptions {
     title?: string;

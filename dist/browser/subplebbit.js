@@ -96,7 +96,7 @@ var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var util_3 = require("./runtime/browser/util");
 var version_1 = __importDefault(require("./version"));
 var DEFAULT_UPDATE_INTERVAL_MS = 60000;
-var DEFAULT_SYNC_INTERVAL_MS = 100000; // 5 minutes
+var DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
 exports.RUNNING_SUBPLEBBITS = {};
 var Subplebbit = /** @class */ (function (_super) {
     __extends(Subplebbit, _super);
@@ -440,23 +440,23 @@ var Subplebbit = /** @class */ (function (_super) {
         return this.updateOnce();
     };
     Subplebbit.prototype.stop = function () {
-        var _a;
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         this._updateInterval = clearInterval(this._updateInterval);
-                        if (!this.signer) return [3 /*break*/, 2];
+                        if (!(typeof ((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address) === "string")) return [3 /*break*/, 2];
                         this.removeAllListeners();
                         this._sync = false;
                         this._syncInterval = clearInterval(this._syncInterval);
                         return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic)];
                     case 1:
-                        _b.sent();
-                        (_a = this.dbHandler) === null || _a === void 0 ? void 0 : _a.destoryConnection();
+                        _c.sent();
+                        (_b = this.dbHandler) === null || _b === void 0 ? void 0 : _b.destoryConnection();
                         this.dbHandler = undefined;
                         exports.RUNNING_SUBPLEBBITS[this.signer.address] = false;
-                        _b.label = 2;
+                        _c.label = 2;
                     case 2: return [2 /*return*/];
                 }
             });
@@ -1225,11 +1225,11 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:start");
                         if (!((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address))
-                            throw (0, err_code_1.default)(new Error(errors_1.messages.ERR_SUB_SIGNER_NOT_DEFINED), errors_1.codes.ERR_SUB_SIGNER_NOT_DEFINED, {
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SUB_SIGNER_NOT_DEFINED), errors_1.codes.ERR_SUB_SIGNER_NOT_DEFINED, {
                                 details: "signer: ".concat(JSON.stringify(this.signer), ", address: ").concat(this.address)
                             });
                         if (this._sync || exports.RUNNING_SUBPLEBBITS[this.signer.address])
-                            throw (0, err_code_1.default)(new Error(errors_1.messages.ERR_SUB_ALREADY_STARTED), errors_1.codes.ERR_SUB_ALREADY_STARTED, {
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SUB_ALREADY_STARTED), errors_1.codes.ERR_SUB_ALREADY_STARTED, {
                                 details: "address: ".concat(this.address)
                             });
                         this._sync = true;
