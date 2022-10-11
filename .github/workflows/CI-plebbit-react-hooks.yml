@@ -39,7 +39,8 @@ jobs:
       - run: yarn install --frozen-lockfile
       # install latest plebbit-js using $GITHUB_SHA
       - run: yarn remove @plebbit/plebbit-js
-      - run: yarn add "https://github.com/plebbit/plebbit-js.git#$GITHUB_SHA"
+      - run: echo https://github.com/plebbit/plebbit-js.git#`echo $GITHUB_SHA`
+      - run: yarn add https://github.com/plebbit/plebbit-js.git#`echo $GITHUB_SHA`
       - run: yarn
       # build
       - run: yarn build
