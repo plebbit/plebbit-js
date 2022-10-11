@@ -37,12 +37,9 @@ jobs:
       - run: rm -fr plebbit-js/node_modules
       # install plebbit-react-hooks
       - run: yarn install --frozen-lockfile
-      # install latest plebbit-js using $GITHUB_SHA, don't use yarn file install it gives different deps results
+      # install latest plebbit-js using add ./plebbit-js (local folder module)
       - run: yarn remove @plebbit/plebbit-js
-      - run: yarn add https://github.com/plebbit/plebbit-js.git#`echo $GITHUB_SHA`
-      - run: yarn
-      # copy the latest plebbit-js build to the node_modules
-      - run: rm -fr node_modules/@plebbit/plebbit-js/dist && cp -r plebbit-js/dist node_modules/@plebbit/plebbit-js/dist
+      - run: yarn add ./plebbit-js
       # build
       - run: yarn build
       - run: yarn webpack
@@ -54,4 +51,4 @@ jobs:
       - run: CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) yarn test:e2e:mock
       - run: CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) yarn test:e2e:browser
       # electron cannot run headless needs virtual display xvfb
-      - run: xvfb-run yarn test:e2e:electron
+      - run: DEBUG="plebbit-js:*" xvfb-run yarn test:e2e:electron
