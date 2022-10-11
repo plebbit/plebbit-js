@@ -37,9 +37,10 @@ jobs:
       - run: rm -fr plebbit-js/node_modules
       # install plebbit-react-hooks
       - run: yarn install --frozen-lockfile
-      # install latest plebbit-js using add ./plebbit-js (local folder module)
+      # install latest plebbit-js using $GITHUB_SHA
       - run: yarn remove @plebbit/plebbit-js
-      - run: yarn add ./plebbit-js
+      - run: yarn add "https://github.com/plebbit/plebbit-js.git#$GITHUB_SHA"
+      - run: yarn
       # build
       - run: yarn build
       - run: yarn webpack
