@@ -37,11 +37,12 @@ jobs:
       - run: rm -fr plebbit-js/node_modules
       # install plebbit-react-hooks
       - run: yarn install --frozen-lockfile
-      # install latest plebbit-js using $GITHUB_SHA
+      # install latest plebbit-js using $GITHUB_SHA, don't use yarn file install it gives different deps results
       - run: yarn remove @plebbit/plebbit-js
-      - run: echo https://github.com/plebbit/plebbit-js.git#`echo $GITHUB_SHA`
       - run: yarn add https://github.com/plebbit/plebbit-js.git#`echo $GITHUB_SHA`
       - run: yarn
+      # copy the latest plebbit-js build to the node_modules
+      - run: rm -fr node_modules/@plebbit/plebbit-js/dist && cp -r plebbit-js/dist node_modules/@plebbit/plebbit-js/dist
       # build
       - run: yarn build
       - run: yarn webpack
