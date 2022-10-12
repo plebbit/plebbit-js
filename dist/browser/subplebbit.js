@@ -376,56 +376,67 @@ var Subplebbit = /** @class */ (function (_super) {
         });
     };
     Subplebbit.prototype.updateOnce = function () {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
-            var log, e_2, updateError, ipnsAddress, subplebbitIpns, _a, verified, failedVerificationReason, e_3;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var log, subIpnsCacheKey, ipnsCache, e_2, updateError, ipnsAddress, subplebbitIpns, _c, verified, failedVerificationReason, e_3;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:update");
-                        if (this._sync)
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SUB_CAN_EITHER_RUN_OR_UPDATE), errors_1.codes.ERR_SUB_CAN_EITHER_RUN_OR_UPDATE);
-                        if (!this.plebbit.resolver.isDomain(this.address)) return [3 /*break*/, 4];
-                        _b.label = 1;
+                        if (!this._sync) return [3 /*break*/, 2];
+                        subIpnsCacheKey = (0, js_sha256_1.sha256)("ipns" + this.address);
+                        return [4 /*yield*/, ((_a = this.dbHandler) === null || _a === void 0 ? void 0 : _a.keyvGet(subIpnsCacheKey))];
                     case 1:
-                        _b.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, this.assertDomainResolvesCorrectly(this.address)];
+                        ipnsCache = _d.sent();
+                        if (((_b = ipnsCache === null || ipnsCache === void 0 ? void 0 : ipnsCache.constructor) === null || _b === void 0 ? void 0 : _b.name) === "Object" && JSON.stringify(this.toJSON()) !== JSON.stringify(ipnsCache)) {
+                            this.initSubplebbit(ipnsCache);
+                            log("Local Subplebbit received a new update. Will emit an update event");
+                            this.emit("update", ipnsCache);
+                        }
+                        return [2 /*return*/, this];
                     case 2:
-                        _b.sent();
-                        return [3 /*break*/, 4];
+                        if (!this.plebbit.resolver.isDomain(this.address)) return [3 /*break*/, 6];
+                        _d.label = 3;
                     case 3:
-                        e_2 = _b.sent();
+                        _d.trys.push([3, 5, , 6]);
+                        return [4 /*yield*/, this.assertDomainResolvesCorrectly(this.address)];
+                    case 4:
+                        _d.sent();
+                        return [3 /*break*/, 6];
+                    case 5:
+                        e_2 = _d.sent();
                         updateError = (0, err_code_1.default)(e_2, e_2.code, { details: "subplebbit.update: ".concat(e_2.details) });
                         log.error(updateError);
                         this.emit("error", updateError);
                         return [2 /*return*/];
-                    case 4: return [4 /*yield*/, this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address)];
-                    case 5:
-                        ipnsAddress = _b.sent();
-                        _b.label = 6;
-                    case 6:
-                        _b.trys.push([6, 9, , 10]);
-                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(ipnsAddress, this.plebbit)];
+                    case 6: return [4 /*yield*/, this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address)];
                     case 7:
-                        subplebbitIpns = _b.sent();
-                        return [4 /*yield*/, (0, signer_1.verifyPublication)(subplebbitIpns, this.plebbit, "subplebbit")];
+                        ipnsAddress = _d.sent();
+                        _d.label = 8;
                     case 8:
-                        _a = _b.sent(), verified = _a[0], failedVerificationReason = _a[1];
+                        _d.trys.push([8, 11, , 12]);
+                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(ipnsAddress, this.plebbit)];
+                    case 9:
+                        subplebbitIpns = _d.sent();
+                        return [4 /*yield*/, (0, signer_1.verifyPublication)(subplebbitIpns, this.plebbit, "subplebbit")];
+                    case 10:
+                        _c = _d.sent(), verified = _c[0], failedVerificationReason = _c[1];
                         if (!verified)
                             throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
                                 details: "subplebbit.update: Subplebbit (".concat(this.address, ") IPNS (").concat(ipnsAddress, ") signature is invalid. Will not update: ").concat(failedVerificationReason)
                             });
                         if (JSON.stringify(this.toJSON()) !== JSON.stringify(subplebbitIpns)) {
                             this.initSubplebbit(subplebbitIpns);
-                            log("Subplebbit received a new update. Will emit an update event");
+                            log("Remote Subplebbit received a new update. Will emit an update event");
                             this.emit("update", subplebbitIpns);
                         }
                         return [2 /*return*/, this];
-                    case 9:
-                        e_3 = _b.sent();
+                    case 11:
+                        e_3 = _d.sent();
                         log.error("Failed to update subplebbit IPNS, error:", e_3);
                         this.emit("error", e_3);
-                        return [3 /*break*/, 10];
-                    case 10: return [2 /*return*/];
+                        return [3 /*break*/, 12];
+                    case 12: return [2 /*return*/];
                 }
             });
         });
@@ -434,70 +445,68 @@ var Subplebbit = /** @class */ (function (_super) {
         if (updateIntervalMs === void 0) { updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS; }
         if (this._updateInterval)
             clearInterval(this._updateInterval);
-        if (this._sync)
-            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SUB_CAN_EITHER_RUN_OR_UPDATE), errors_1.codes.ERR_SUB_CAN_EITHER_RUN_OR_UPDATE);
         this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
         return this.updateOnce();
     };
     Subplebbit.prototype.stop = function () {
-        var _a, _b;
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         this._updateInterval = clearInterval(this._updateInterval);
-                        if (!(typeof ((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address) === "string")) return [3 /*break*/, 2];
+                        if (!this._sync) return [3 /*break*/, 2];
                         this.removeAllListeners();
                         this._sync = false;
                         this._syncInterval = clearInterval(this._syncInterval);
                         return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic)];
                     case 1:
-                        _c.sent();
-                        (_b = this.dbHandler) === null || _b === void 0 ? void 0 : _b.destoryConnection();
+                        _b.sent();
+                        (_a = this.dbHandler) === null || _a === void 0 ? void 0 : _a.destoryConnection();
                         this.dbHandler = undefined;
                         exports.RUNNING_SUBPLEBBITS[this.signer.address] = false;
-                        _c.label = 2;
+                        _b.label = 2;
                     case 2: return [2 /*return*/];
                 }
             });
         });
     };
     Subplebbit.prototype.updateSubplebbitIpns = function () {
-        var _a;
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
-            var log, trx, latestPost, _b, metrics, subplebbitPosts, resolvedAddress, currentIpns, e_4, _c, lastPublishOverTwentyMinutes, _d, file;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
+            var log, trx, latestPost, _c, metrics, subplebbitPosts, resolvedAddress, currentIpns, e_4, _d, lastPublishOverTwentyMinutes, _e, subIpnsCacheKey, file;
+            return __generator(this, function (_f) {
+                switch (_f.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:sync");
                         return [4 /*yield*/, this.dbHandler.createTransaction("subplebbit")];
                     case 1:
-                        trx = _e.sent();
+                        trx = _f.sent();
                         return [4 /*yield*/, this.dbHandler.queryLatestPost(trx)];
                     case 2:
-                        latestPost = _e.sent();
+                        latestPost = _f.sent();
                         return [4 /*yield*/, this.dbHandler.commitTransaction("subplebbit")];
                     case 3:
-                        _e.sent();
+                        _f.sent();
                         this.lastPostCid = latestPost === null || latestPost === void 0 ? void 0 : latestPost.cid;
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.querySubplebbitMetrics(undefined),
                                 this.sortHandler.generatePagesUnderComment(undefined, undefined)
                             ])];
                     case 4:
-                        _b = _e.sent(), metrics = _b[0], subplebbitPosts = _b[1];
+                        _c = _f.sent(), metrics = _c[0], subplebbitPosts = _c[1];
                         return [4 /*yield*/, this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address)];
                     case 5:
-                        resolvedAddress = _e.sent();
-                        _e.label = 6;
+                        resolvedAddress = _f.sent();
+                        _f.label = 6;
                     case 6:
-                        _e.trys.push([6, 8, , 9]);
+                        _f.trys.push([6, 8, , 9]);
                         return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(resolvedAddress, this.plebbit)];
                     case 7:
-                        currentIpns = _e.sent();
+                        currentIpns = _f.sent();
                         return [3 /*break*/, 9];
                     case 8:
-                        e_4 = _e.sent();
+                        e_4 = _f.sent();
                         log("Subplebbit IPNS (".concat(resolvedAddress, ") is not defined, will publish a new record"));
                         return [3 /*break*/, 9];
                     case 9:
@@ -512,30 +521,34 @@ var Subplebbit = /** @class */ (function (_super) {
                                 subplebbit: this
                             });
                         }
-                        _c = this;
+                        _d = this;
                         return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(metrics))];
                     case 10:
-                        _c.metricsCid = (_e.sent()).path;
+                        _d.metricsCid = (_f.sent()).path;
                         lastPublishOverTwentyMinutes = this.updatedAt < (0, util_1.timestamp)() - 60 * 20;
-                        if (!(!currentIpns || JSON.stringify(currentIpns) !== JSON.stringify(this.toJSON()) || lastPublishOverTwentyMinutes)) return [3 /*break*/, 14];
+                        if (!(!currentIpns || JSON.stringify(currentIpns) !== JSON.stringify(this.toJSON()) || lastPublishOverTwentyMinutes)) return [3 /*break*/, 15];
                         this.updatedAt = (0, util_1.timestamp)();
-                        _d = this;
+                        _e = this;
                         return [4 /*yield*/, (0, signer_1.signPublication)(this.toJSON(), this.signer, this.plebbit, "subplebbit")];
                     case 11:
-                        _d.signature = _e.sent();
-                        return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(this.toJSON()))];
+                        _e.signature = _f.sent();
+                        subIpnsCacheKey = (0, js_sha256_1.sha256)("ipns" + this.address);
+                        return [4 /*yield*/, ((_b = this.dbHandler) === null || _b === void 0 ? void 0 : _b.keyvSet(subIpnsCacheKey, this.toJSON()))];
                     case 12:
-                        file = _e.sent();
+                        _f.sent();
+                        return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(this.toJSON()))];
+                    case 13:
+                        file = _f.sent();
                         return [4 /*yield*/, this.plebbit.ipfsClient.name.publish(file.path, {
                                 lifetime: "72h",
                                 key: this.ipnsKeyName,
                                 allowOffline: true
                             })];
-                    case 13:
-                        _e.sent();
+                    case 14:
+                        _f.sent();
                         log.trace("Published a new IPNS record for sub(".concat(this.address, ")"));
-                        _e.label = 14;
-                    case 14: return [2 /*return*/];
+                        _f.label = 15;
+                    case 15: return [2 /*return*/];
                 }
             });
         });
