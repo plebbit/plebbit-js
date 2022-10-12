@@ -325,7 +325,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             if (ipnsCache?.constructor?.name === "Object" && JSON.stringify(this.toJSON()) !== JSON.stringify(ipnsCache)) {
                 this.initSubplebbit(ipnsCache);
                 log(`Local Subplebbit received a new update. Will emit an update event`);
-                this.emit("update", ipnsCache);
+                this.emit("update", this);
             }
             return this;
         }
@@ -351,7 +351,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             if (JSON.stringify(this.toJSON()) !== JSON.stringify(subplebbitIpns)) {
                 this.initSubplebbit(subplebbitIpns);
                 log(`Remote Subplebbit received a new update. Will emit an update event`);
-                this.emit("update", subplebbitIpns);
+                this.emit("update", this);
             }
             return this;
         } catch (e) {
@@ -426,6 +426,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 key: this.ipnsKeyName,
                 allowOffline: true
             });
+            this.emit("update", this);
             log.trace(`Published a new IPNS record for sub(${this.address})`);
         }
     }
