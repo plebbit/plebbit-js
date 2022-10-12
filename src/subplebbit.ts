@@ -249,7 +249,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 { ...this.signer, ipnsKeyName: this.signer.address },
                 this.plebbit
             );
-            this.ipnsKeyName = ipfsKey["name"] || ipfsKey["Name"];
+            this.ipnsKeyName = ipfsKey.Name;
             log(`Imported subplebbit keys into ipfs node,`, ipfsKey);
         } else {
             log.trace(`Subplebbit key is already in ipfs node, no need to import key, `, subplebbitIpfsNodeKey);
