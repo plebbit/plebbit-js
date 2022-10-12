@@ -918,10 +918,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         try {
             await this.sortHandler.cacheCommentsPages();
             const dbComments = await this.dbHandler.queryComments();
-            await Promise.all([
-                ...dbComments.map(async (commentProps: CommentType) => this.syncComment(await this.plebbit.createComment(commentProps))),
-                this.updateSubplebbitIpns()
-            ]);
+            await Promise.all(
+                dbComments.map(async (commentProps: CommentType) => this.syncComment(await this.plebbit.createComment(commentProps)))
+            );
+            await this.updateSubplebbitIpns();
+
             RUNNING_SUBPLEBBITS[this.signer.address] = true;
         } catch (e) {
             log.error(`Failed to sync due to error,`, e);
