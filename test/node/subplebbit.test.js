@@ -7,7 +7,7 @@ const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-const syncInterval = 100;
+const syncInterval = 300;
 let plebbit;
 let subplebbit;
 let subplebbitSigner;
@@ -34,12 +34,18 @@ describe("subplebbit", async () => {
 
     [{}, { title: `Test title - ${Date.now()}` }].map((subArgs) =>
         it(`createSubplebbit(${JSON.stringify(subArgs)})`, async () => {
-            const newSubplebbit = await plebbit.createSubplebbit(subArgs);
-            await newSubplebbit.start();
-            expect(newSubplebbit.address).to.equal(newSubplebbit.signer.address);
-            const subplebbitIpns = await plebbit.getSubplebbit(newSubplebbit.address);
-            expect(subplebbitIpns.address).to.equal(newSubplebbit.signer.address);
-            await newSubplebbit.stop();
+            return new Promise(async (resolve) => {
+                const newSubplebbit = await plebbit.createSubplebbit(subArgs);
+                await newSubplebbit.start(syncInterval);
+                newSubplebbit.once("update", async () => {
+                    // Sub has finished its first sync loop, should have address now
+                    expect(newSubplebbit.address).to.equal(newSubplebbit.signer.address);
+                    const subplebbitIpns = await plebbit.getSubplebbit(newSubplebbit.address);
+                    expect(subplebbitIpns.address).to.equal(newSubplebbit.signer.address);
+                    await newSubplebbit.stop();
+                    resolve();
+                });
+            });
         })
     );
 
@@ -74,18 +80,22 @@ describe("subplebbit", async () => {
         expect(endTime).to.be.lessThanOrEqual(startTime + 10, "createSubplebbit took more than 10s in an online ipfs node");
     });
 
-    it("create new subplebbit", async function () {
-        subplebbitSigner = await plebbit.createSigner();
-        subplebbit = await plebbit.createSubplebbit({
-            signer: subplebbitSigner,
-            title: `Test subplebbit - ${Date.now() / 1000}`
+    it("create new subplebbit from signer", async function () {
+        return new Promise(async (resolve) => {
+            subplebbitSigner = await plebbit.createSigner();
+            subplebbit = await plebbit.createSubplebbit({
+                signer: subplebbitSigner,
+                title: `Test subplebbit - ${Date.now() / 1000}`
+            });
+            await subplebbit.start(syncInterval);
+            subplebbit.once("update", async () => {
+                expect(subplebbit.address).to.equal(subplebbitSigner.address);
+                // Should have address now
+                const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
+                expect(JSON.stringify(subplebbit)).to.equal(JSON.stringify(loadedSubplebbit));
+                resolve();
+            });
         });
-
-        await subplebbit.start(syncInterval);
-        expect(subplebbit.address).to.be.a("string");
-        // Should have address now
-        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
-        expect(JSON.stringify(subplebbit)).to.equal(JSON.stringify(loadedSubplebbit));
     });
 
     it(`subplebbit = await createSubplebbit(await createSubplebbit)`, async () => {
@@ -243,20 +253,22 @@ describe("subplebbit", async () => {
         return new Promise(async (resolve) => {
             const subOne = await plebbit.createSubplebbit({});
             await subOne.start(syncInterval);
-            const subTwo = await plebbit.createSubplebbit({ address: subOne.address });
-            await subTwo.update(syncInterval);
-            const title = "Test new Title" + Date.now();
-            subTwo.once("update", (updatedSubplebbit) => {
-                expect(updatedSubplebbit.title).to.equal(title);
-                expect(subOne.title).to.equal(title);
-                expect(JSON.stringify(updatedSubplebbit)).to.equal(JSON.stringify(subOne.toJSON()));
-                subOne.stop();
-                subTwo.stop();
-                resolve();
-            });
+            subOne.once("update", async () => {
+                const subTwo = await plebbit.createSubplebbit({ address: subOne.address });
+                await subTwo.update(syncInterval);
+                const title = "Test new Title" + Date.now();
+                subTwo.once("update", (updatedSubplebbit) => {
+                    expect(updatedSubplebbit.title).to.equal(title);
+                    expect(subOne.title).to.equal(title);
+                    expect(JSON.stringify(updatedSubplebbit)).to.equal(JSON.stringify(subOne.toJSON()));
+                    subOne.stop();
+                    subTwo.stop();
+                    resolve();
+                });
 
-            await subOne.edit({ title });
-            expect(subOne.title).to.equal(title);
+                await subOne.edit({ title });
+                expect(subOne.title).to.equal(title);
+            });
         });
     });
 });
