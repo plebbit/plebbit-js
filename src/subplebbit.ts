@@ -964,9 +964,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             async (pubsubMessage) => await this.handleChallengeExchange(pubsubMessage)
         );
         log.trace(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
-        await this.syncIpnsWithDb();
-
-        await this._syncLoop(syncIntervalMs);
+        this.syncIpnsWithDb()
+            .then(() => this._syncLoop(syncIntervalMs))
+            .catch((reason) => {
+                throw Error(reason);
+            });
     }
 
     async _addPublicationToDb(publication: CommentEdit | Vote | Comment | Post) {
