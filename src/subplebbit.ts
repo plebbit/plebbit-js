@@ -924,10 +924,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.updateSubplebbitIpns();
 
             RUNNING_SUBPLEBBITS[this.signer.address] = true;
+            await this.dbHandler.keyvSet(this.address, this.toJSON());
         } catch (e) {
             log.error(`Failed to sync due to error,`, e);
         }
-        await this.dbHandler.keyvSet(this.address, this.toJSON());
     }
 
     async _syncLoop(syncIntervalMs: number) {
@@ -967,7 +967,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.syncIpnsWithDb()
             .then(() => this._syncLoop(syncIntervalMs))
             .catch((reason) => {
-                throw Error(reason);
+                log.error(reason);
+                this.emit("error", reason);
             });
     }
 
