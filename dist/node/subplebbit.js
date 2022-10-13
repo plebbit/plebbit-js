@@ -280,7 +280,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, util_3.nativeFunctions.importSignerIntoIpfsNode(__assign(__assign({}, this.signer), { ipnsKeyName: this.signer.address }), this.plebbit)];
                     case 6:
                         ipfsKey = _h.sent();
-                        this.ipnsKeyName = ipfsKey["name"] || ipfsKey["Name"];
+                        this.ipnsKeyName = ipfsKey.Name;
                         log("Imported subplebbit keys into ipfs node,", ipfsKey);
                         return [3 /*break*/, 8];
                     case 7:
@@ -391,7 +391,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         if (((_b = ipnsCache === null || ipnsCache === void 0 ? void 0 : ipnsCache.constructor) === null || _b === void 0 ? void 0 : _b.name) === "Object" && JSON.stringify(this.toJSON()) !== JSON.stringify(ipnsCache)) {
                             this.initSubplebbit(ipnsCache);
                             log("Local Subplebbit received a new update. Will emit an update event");
-                            this.emit("update", ipnsCache);
+                            this.emit("update", this);
                         }
                         return [2 /*return*/, this];
                     case 2:
@@ -428,7 +428,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         if (JSON.stringify(this.toJSON()) !== JSON.stringify(subplebbitIpns)) {
                             this.initSubplebbit(subplebbitIpns);
                             log("Remote Subplebbit received a new update. Will emit an update event");
-                            this.emit("update", subplebbitIpns);
+                            this.emit("update", this);
                         }
                         return [2 /*return*/, this];
                     case 11:
@@ -546,6 +546,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             })];
                     case 14:
                         _f.sent();
+                        this.emit("update", this);
                         log.trace("Published a new IPNS record for sub(".concat(this.address, ")"));
                         _f.label = 15;
                     case 15: return [2 /*return*/];
@@ -1168,35 +1169,36 @@ var Subplebbit = /** @class */ (function (_super) {
                         log.trace("Starting to sync IPNS with DB");
                         _a.label = 1;
                     case 1:
-                        _a.trys.push([1, 5, , 6]);
+                        _a.trys.push([1, 7, , 8]);
                         return [4 /*yield*/, this.sortHandler.cacheCommentsPages()];
                     case 2:
                         _a.sent();
                         return [4 /*yield*/, this.dbHandler.queryComments()];
                     case 3:
                         dbComments = _a.sent();
-                        return [4 /*yield*/, Promise.all(__spreadArray(__spreadArray([], dbComments.map(function (commentProps) { return __awaiter(_this, void 0, void 0, function () { var _a; return __generator(this, function (_b) {
+                        return [4 /*yield*/, Promise.all(dbComments.map(function (commentProps) { return __awaiter(_this, void 0, void 0, function () { var _a; return __generator(this, function (_b) {
                                 switch (_b.label) {
                                     case 0:
                                         _a = this.syncComment;
                                         return [4 /*yield*/, this.plebbit.createComment(commentProps)];
                                     case 1: return [2 /*return*/, _a.apply(this, [_b.sent()])];
                                 }
-                            }); }); }), true), [
-                                this.updateSubplebbitIpns()
-                            ], false))];
+                            }); }); }))];
                     case 4:
                         _a.sent();
-                        exports.RUNNING_SUBPLEBBITS[this.signer.address] = true;
-                        return [3 /*break*/, 6];
+                        return [4 /*yield*/, this.updateSubplebbitIpns()];
                     case 5:
+                        _a.sent();
+                        exports.RUNNING_SUBPLEBBITS[this.signer.address] = true;
+                        return [4 /*yield*/, this.dbHandler.keyvSet(this.address, this.toJSON())];
+                    case 6:
+                        _a.sent();
+                        return [3 /*break*/, 8];
+                    case 7:
                         e_7 = _a.sent();
                         log.error("Failed to sync due to error,", e_7);
-                        return [3 /*break*/, 6];
-                    case 6: return [4 /*yield*/, this.dbHandler.keyvSet(this.address, this.toJSON())];
-                    case 7:
-                        _a.sent();
-                        return [2 /*return*/];
+                        return [3 /*break*/, 8];
+                    case 8: return [2 /*return*/];
                 }
             });
         });
@@ -1264,12 +1266,12 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 2:
                         _b.sent();
                         log.trace("Waiting for publications on pubsub topic (".concat(this.pubsubTopic, ")"));
-                        return [4 /*yield*/, this.syncIpnsWithDb()];
-                    case 3:
-                        _b.sent();
-                        return [4 /*yield*/, this._syncLoop(syncIntervalMs)];
-                    case 4:
-                        _b.sent();
+                        this.syncIpnsWithDb()
+                            .then(function () { return _this._syncLoop(syncIntervalMs); })
+                            .catch(function (reason) {
+                            log.error(reason);
+                            _this.emit("error", reason);
+                        });
                         return [2 /*return*/];
                 }
             });
