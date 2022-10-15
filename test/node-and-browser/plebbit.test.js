@@ -92,8 +92,7 @@ describe("plebbit (node and browser)", () => {
         });
         it("loads post correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
-            await subplebbit.update(updateInterval);
-            await new Promise((resolve) => subplebbit.once("update", resolve));
+            await Promise.all([new Promise((resolve) => subplebbit.once("update", resolve)), subplebbit.update(updateInterval)]);
             await subplebbit.stop();
             expect(subplebbit.lastPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
             const expectedPostProps = await loadIpfsFileAsJson(subplebbit.lastPostCid, plebbit);
@@ -103,13 +102,10 @@ describe("plebbit (node and browser)", () => {
                 ...expectedPostProps
             });
             expect(expectedPost.constructor.name).to.equal("Post");
-            await expectedPost.update(updateInterval);
-            await new Promise((resolve) => expectedPost.once("update", resolve));
+            await Promise.all([new Promise((resolve) => expectedPost.once("update", resolve)), expectedPost.update(updateInterval)]);
             const loadedPost = await plebbit.getComment(subplebbit.lastPostCid);
             expect(loadedPost.constructor.name).to.equal("Post");
-            await loadedPost.update(updateInterval);
-            await new Promise((resolve) => loadedPost.once("update", resolve));
-
+            await Promise.all([new Promise((resolve) => loadedPost.once("update", resolve)), loadedPost.update(updateInterval)]);
             expect(loadedPost.toJSON()).to.deep.equal(expectedPost.toJSON());
             await expectedPost.stop();
             await loadedPost.stop();
@@ -117,8 +113,7 @@ describe("plebbit (node and browser)", () => {
 
         it("loads comment correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
-            await subplebbit.update(updateInterval);
-            await new Promise((resolve) => subplebbit.once("update", resolve));
+            await Promise.all([new Promise((resolve) => subplebbit.once("update", resolve)), subplebbit.update(updateInterval)]);
 
             await subplebbit.stop();
             const comment = subplebbit?.posts?.pages?.hot?.comments.filter((comment) => comment.replyCount > 0)[0]?.replies?.pages?.topAll
@@ -127,13 +122,11 @@ describe("plebbit (node and browser)", () => {
             const expectedCommentProps = await loadIpfsFileAsJson(comment.cid, plebbit);
             const expectedComment = await plebbit.createComment({ cid: comment.cid, ...expectedCommentProps });
             expect(expectedComment.constructor.name).to.equal("Comment");
-            await expectedComment.update(updateInterval);
-            await new Promise((resolve) => expectedComment.once("update", resolve));
+            await Promise.all([new Promise((resolve) => expectedComment.once("update", resolve)), expectedComment.update(updateInterval)]);
             await expectedComment.stop();
             const loadedComment = await plebbit.getComment(comment.cid);
             expect(loadedComment.constructor.name).to.equal("Comment");
-            await loadedComment.update(updateInterval);
-            await new Promise((resolve) => loadedComment.once("update", resolve));
+            await Promise.all([new Promise((resolve) => loadedComment.once("update", resolve)), loadedComment.update(updateInterval)]);
             await loadedComment.stop();
 
             expect(loadedComment.toJSON()).to.deep.equal(expectedComment.toJSON());
