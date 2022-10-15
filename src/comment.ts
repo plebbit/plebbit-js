@@ -261,20 +261,19 @@ export class Comment extends Publication implements CommentType {
             this._initCommentUpdate(res);
             this._mergeFields(this.toJSON());
             this.emit("update", this);
-        } else {
+        } else if (res) {
             log.trace(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
             this._initCommentUpdate(res);
         }
-        return this;
     }
 
-    update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
+    async update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
         if (typeof this.ipnsName !== "string")
             throw errcode(Error(messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME), codes.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME);
 
-        if (this._updateInterval) clearInterval(this._updateInterval);
+        if (this._updateInterval) return; // Do nothing if it's already updating
+        this.updateOnce();
         this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
-        return this.updateOnce();
     }
 
     stop() {

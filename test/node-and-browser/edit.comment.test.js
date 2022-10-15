@@ -1,6 +1,6 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { waitTillCommentsUpdate, waitTillPublicationsArePublished, timestamp } = require("../../dist/node/util");
+const { timestamp } = require("../../dist/node/util");
 const { generateMockPost } = require("../../dist/node/test/test-util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
@@ -33,10 +33,10 @@ describe("Editing", async () => {
 
         commentToBeEdited = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
         await commentToBeEdited.publish();
-        await waitTillPublicationsArePublished([commentToBeEdited]);
+        await new Promise((resolve) => commentToBeEdited.once("challengeverification", resolve));
         expect(commentToBeEdited?.cid).to.be.a("string");
-        await waitTillCommentsUpdate([commentToBeEdited], updateInterval);
         await commentToBeEdited.update(updateInterval);
+        await new Promise((resolve) => commentToBeEdited.once("update", resolve));
     });
 
     after(async () => {

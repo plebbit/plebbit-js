@@ -315,20 +315,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         return this;
     }
 
-    async updateOnce() {
+    private async updateOnce() {
         const log = Logger("plebbit-js:subplebbit:update");
-
-        if (this._sync) {
-            // Local subs run update differently. Latest IPNS is retrieved from DB not ipfs
-            const subIpnsCacheKey = sha256("ipns" + this.address);
-            const ipnsCache: SubplebbitType | undefined = await this.dbHandler?.keyvGet(subIpnsCacheKey);
-            if (ipnsCache?.constructor?.name === "Object" && JSON.stringify(this.toJSON()) !== JSON.stringify(ipnsCache)) {
-                this.initSubplebbit(ipnsCache);
-                log(`Local Subplebbit received a new update. Will emit an update event`);
-                this.emit("update", this);
-            }
-            return this;
-        }
 
         if (this.plebbit.resolver.isDomain(this.address))
             try {
@@ -353,17 +341,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 log(`Remote Subplebbit received a new update. Will emit an update event`);
                 this.emit("update", this);
             }
-            return this;
         } catch (e) {
             log.error(`Failed to update subplebbit IPNS, error:`, e);
             this.emit("error", e);
         }
     }
 
-    update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
-        if (this._updateInterval) clearInterval(this._updateInterval);
+    async update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
+        if (this._updateInterval || this._sync) return; // No need to do anything if subplebbit is already updating
+        this.updateOnce();
         this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
-        return this.updateOnce();
     }
 
     async stop() {

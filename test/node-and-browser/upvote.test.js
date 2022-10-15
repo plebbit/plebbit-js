@@ -2,7 +2,7 @@ const Plebbit = require("../../dist/node");
 const { expect } = require("chai");
 const signers = require("../fixtures/signers");
 const { generateMockVote, generateMockPost } = require("../../dist/node/test/test-util");
-const { timestamp, waitTillCommentsUpdate, waitTillPublicationsArePublished, randomElement } = require("../../dist/node/util");
+const { timestamp, randomElement } = require("../../dist/node/util");
 
 const subplebbitAddress = signers[0].address;
 
@@ -22,10 +22,10 @@ describe("Test upvote", async () => {
 
         postToVote = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
         await postToVote.publish();
-        await waitTillPublicationsArePublished([postToVote]);
+        await new Promise((resolve) => postToVote.once("challengeverification", resolve));
         expect(postToVote.cid).to.be.a("string");
-        await waitTillCommentsUpdate([postToVote], updateInterval);
         await postToVote.update(updateInterval);
+        await new Promise((resolve) => postToVote.once("update", resolve));
     });
 
     after(async () => {

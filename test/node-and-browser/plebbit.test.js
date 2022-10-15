@@ -106,6 +106,7 @@ describe("plebbit (node and browser)", () => {
             const loadedPost = await plebbit.getComment(subplebbit.lastPostCid);
             expect(loadedPost.constructor.name).to.equal("Post");
             await loadedPost.update(updateInterval);
+            await new Promise((resolve) => loadedPost.once("update", resolve));
 
             expect(JSON.stringify(loadedPost)).to.equal(JSON.stringify(expectedPost));
             await expectedPost.stop();

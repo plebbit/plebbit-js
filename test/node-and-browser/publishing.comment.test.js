@@ -1,6 +1,6 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { waitTillCommentsUpdate, randomElement } = require("../../dist/node/util");
+const { randomElement } = require("../../dist/node/util");
 const { generateMockPost, generateMockComment } = require("../../dist/node/test/test-util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
@@ -116,8 +116,8 @@ describe("publishing", async () => {
             return new Promise(async (resolve, reject) => {
                 const parentComment = mockComments[depth - 1];
                 const mockComment = await generateMockComment(parentComment, plebbit, signers[0]);
-                await waitTillCommentsUpdate([parentComment], updateInterval);
                 await parentComment.update(updateInterval);
+                await new Promise((resolve) => parentComment.once("update", resolve));
                 expect(parentComment.updatedAt).to.be.a("number");
                 const originalReplyCount = parentComment.replyCount;
                 expect(originalReplyCount).to.be.equal(0);
