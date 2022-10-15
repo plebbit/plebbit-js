@@ -138,7 +138,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.signature = mergedProps.signature;
     }
 
-    async initSignerIfNeeded() {
+    private async initSignerIfNeeded() {
         const log = Logger("plebbit-js:subplebbit:prePublish");
         if (this.dbHandler) {
             const dbSigner = await this.dbHandler.querySubplebbitSigner(undefined);
@@ -165,7 +165,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         };
     }
 
-    async initDbIfNeeded() {
+    private async initDbIfNeeded() {
         if (!this.dbHandler) {
             this.dbHandler = nativeFunctions.createDbHandler({
                 address: this.address,
@@ -225,6 +225,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         };
     }
 
+    // TODO rename and make this private
     async prePublish() {
         // Import ipfs key into node (if not imported already)
         // Initialize signer
@@ -272,7 +273,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.dbHandler?.keyvSet(this.address, this.toJSON());
     }
 
-    async assertDomainResolvesCorrectly(domain: string) {
+    private async assertDomainResolvesCorrectly(domain: string) {
         if (this.plebbit.resolver.isDomain(domain)) {
             const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(domain);
             const derivedAddress = await getPlebbitAddressFromPublicKeyPem(this.encryption.publicKey);
@@ -368,7 +369,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    async updateSubplebbitIpns() {
+    private async updateSubplebbitIpns() {
         const log = Logger("plebbit-js:subplebbit:sync");
 
         const trx: any = await this.dbHandler.createTransaction("subplebbit");
@@ -418,7 +419,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    async handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string) {
+    private async handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange:storePublicationIfValid:handleCommentEdit");
 
         let commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
@@ -481,7 +482,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    async handleVote(newVote: Vote, challengeRequestId: string) {
+    private async handleVote(newVote: Vote, challengeRequestId: string) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange:storePublicationIfValid:handleVote");
 
         const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address);
@@ -496,7 +497,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    async storePublicationIfValid(
+    private async storePublicationIfValid(
         publication: DecryptedChallengeRequestMessageType["publication"],
         challengeRequestId: string
     ): Promise<Vote | CommentEdit | Post | Comment | string> {
@@ -640,26 +641,25 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         return postOrCommentOrVote;
     }
 
-    async handleChallengeRequest(request: ChallengeRequestMessage) {
+    private async handleChallengeRequest(request: ChallengeRequestMessage) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeRequest");
 
-        const decryptedPublication = JSON.parse(
-            await decrypt(request.encryptedPublication.encrypted, request.encryptedPublication.encryptedKey, this.signer.privateKey)
-        );
-        const requestWithDecryptedPublication: DecryptedChallengeRequestMessageType = {
+        const decryptedRequest: DecryptedChallengeRequestMessageType = {
             ...request,
-            publication: decryptedPublication
+            publication: JSON.parse(
+                await decrypt(request.encryptedPublication.encrypted, request.encryptedPublication.encryptedKey, this.signer.privateKey)
+            )
         };
-        this.emit("challengerequest", requestWithDecryptedPublication);
-        const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(requestWithDecryptedPublication);
-        this._challengeToPublication[request.challengeRequestId] = decryptedPublication;
+        this.emit("challengerequest", decryptedRequest);
+        const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(decryptedRequest);
+        this._challengeToPublication[request.challengeRequestId] = decryptedRequest.publication;
         log(`Received a request to a challenge (${request.challengeRequestId})`);
         if (providedChallenges.length === 0) {
             // Subplebbit owner has chosen to skip challenging this user or post
             log.trace(`(${request.challengeRequestId}): No challenge is required`);
             await this.dbHandler.upsertChallenge(request.toJSONForDb(), undefined);
 
-            const publicationOrReason = await this.storePublicationIfValid(decryptedPublication, request.challengeRequestId);
+            const publicationOrReason = await this.storePublicationIfValid(decryptedRequest.publication, request.challengeRequestId);
             const encryptedPublication =
                 typeof publicationOrReason !== "string"
                     ? await encrypt(JSON.stringify(publicationOrReason), publicationOrReason.signature.publicKey)
@@ -690,19 +690,14 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 `Published ${challengeVerification.type} over pubsub: `,
                 removeKeys(toSignMsg, ["encryptedPublication"])
             );
-            this.emit("challengeverification", { ...challengeVerification, publication: decryptedPublication });
+            this.emit("challengeverification", { ...challengeVerification, publication: decryptedRequest.publication });
         } else {
-            const encryptedChallenges = await encrypt(
-                JSON.stringify(providedChallenges),
-                (decryptedPublication.signature || decryptedPublication.editSignature).publicKey
-            );
-
             const toSignChallenge: Omit<ChallengeMessageType, "signature"> = {
                 type: "CHALLENGE",
                 protocolVersion: env.PROTOCOL_VERSION,
                 userAgent: env.USER_AGENT,
                 challengeRequestId: request.challengeRequestId,
-                encryptedChallenges: encryptedChallenges
+                encryptedChallenges: await encrypt(JSON.stringify(providedChallenges), decryptedRequest.publication.signature.publicKey)
             };
 
             const challengeSignature = await signPublication(toSignChallenge, this.signer, this.plebbit, "challengemessage");
@@ -821,7 +816,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
     }
 
-    async handleChallengeExchange(pubsubMsg) {
+    private async handleChallengeExchange(pubsubMsg) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange");
 
         let msgParsed: ChallengeRequestMessageType | ChallengeAnswerMessageType | undefined;
@@ -843,7 +838,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    async defaultProvideCaptcha(request: DecryptedChallengeRequestMessageType): Promise<[ChallengeType[], string | undefined]> {
+    private async defaultProvideCaptcha(request: DecryptedChallengeRequestMessageType): Promise<[ChallengeType[], string | undefined]> {
         // Return question, type
         // Expected return is:
         // captcha, reason for skipping captcha (if it's skipped by nullifying captcha)
@@ -860,7 +855,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         ];
     }
 
-    async defaultValidateCaptcha(answerMessage: DecryptedChallengeAnswerMessageType): Promise<[boolean, string[] | undefined]> {
+    private async defaultValidateCaptcha(answerMessage: DecryptedChallengeAnswerMessageType): Promise<[boolean, string[] | undefined]> {
         const log = Logger("plebbit-js:subplebbit:validateCaptcha");
 
         const actualSolution = this._challengeToSolution[answerMessage.challengeRequestId];
@@ -873,7 +868,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         return [answerIsCorrect, challengeErrors];
     }
 
-    async syncComment(dbComment: Comment) {
+    private async syncComment(dbComment: Comment) {
         const log = Logger("plebbit-js:subplebbit:sync:syncComment");
 
         let commentIpns: CommentUpdate | undefined;
@@ -898,7 +893,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         log.trace(`Comment (${dbComment.cid}) is up-to-date and does not need syncing`);
     }
 
-    async syncIpnsWithDb() {
+    private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:subplebbit:sync");
 
         log.trace("Starting to sync IPNS with DB");
@@ -917,7 +912,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    async _syncLoop(syncIntervalMs: number) {
+    private async _syncLoop(syncIntervalMs: number) {
         const loop = async () => {
             if (this._sync) {
                 await this.syncIpnsWithDb();

@@ -53,6 +53,8 @@ class Publication extends EventEmitter implements PublicationType {
         this.author = new Author(parseJsonIfString(props.author));
         this.protocolVersion = props.protocolVersion;
     }
+    // TODO make this private/protected
+
     getType(): PublicationTypeName {
         throw new Error(`Should be implemented by children of Publication`);
     }
@@ -61,6 +63,7 @@ class Publication extends EventEmitter implements PublicationType {
         return { ...this.toJSONSkeleton() };
     }
 
+    // TODO make this private/protected
     toJSONSkeleton(): PublicationType {
         return {
             subplebbitAddress: this.subplebbitAddress,
@@ -71,7 +74,7 @@ class Publication extends EventEmitter implements PublicationType {
         };
     }
 
-    async handleChallengeExchange(pubsubMsg) {
+    private async handleChallengeExchange(pubsubMsg) {
         const log = Logger("plebbit-js:publication:handleChallengeExchange");
 
         const msgParsed: ChallengeMessageType | ChallengeVerificationMessageType = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
