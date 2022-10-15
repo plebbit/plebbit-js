@@ -32,7 +32,7 @@ const nativeFunctions: NativeFunctions = {
         await fs.mkdir(subplebbitsPath, { recursive: true });
 
         const addresses = (await fs.readdir(subplebbitsPath)).filter(
-            (address: string) => !Boolean(pendingSubplebbitCreations[address]) && !address.includes("journal")
+            (address: string) => !Boolean(pendingSubplebbitCreations[address]) && !/-journal$/.test(address) // Ignore sqlite journal files
         );
 
         return addresses;
