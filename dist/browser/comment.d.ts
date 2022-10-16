@@ -62,8 +62,8 @@ export declare class Comment extends Publication implements CommentType {
     setDepth(newDepth: number): void;
     setUpdatedAt(newUpdatedAt: number): void;
     setReplies(replies?: Pages | PagesType): void;
-    updateOnce(): Promise<this>;
-    update(updateIntervalMs?: number): Promise<this>;
+    updateOnce(): Promise<void>;
+    update(updateIntervalMs?: number): Promise<void>;
     stop(): void;
     edit(options: CommentUpdate): Promise<void>;
     publish(userOptions: any): Promise<void>;

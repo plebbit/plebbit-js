@@ -59,7 +59,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.randomElement = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.waitTillCommentsUpdate = exports.waitTillPublicationsArePublished = exports.shallowEqual = exports.replaceXWithY = exports.removeKeys = exports.keepKeys = exports.timestamp = exports.parseJsonIfString = exports.round = exports.chunks = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.randomElement = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.shallowEqual = exports.replaceXWithY = exports.removeKeys = exports.keepKeys = exports.timestamp = exports.parseJsonIfString = exports.round = exports.chunks = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var util_1 = require("./runtime/browser/util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var errors_1 = require("./errors");
@@ -297,64 +297,6 @@ function shallowEqual(object1, object2, excludeKeys) {
     return true;
 }
 exports.shallowEqual = shallowEqual;
-function waitTillPublicationsArePublished(publications) {
-    return __awaiter(this, void 0, void 0, function () {
-        var promises;
-        var _this = this;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    promises = publications.map(function (publication) {
-                        return new Promise(function (publicationResolve, publicationReject) { return __awaiter(_this, void 0, void 0, function () {
-                            return __generator(this, function (_a) {
-                                publication.once("challengeverification", function (challengeVerificationMessage, newComment) {
-                                    publicationResolve(challengeVerificationMessage);
-                                });
-                                return [2 /*return*/];
-                            });
-                        }); });
-                    });
-                    return [4 /*yield*/, Promise.all(promises)];
-                case 1: return [2 /*return*/, _a.sent()];
-            }
-        });
-    });
-}
-exports.waitTillPublicationsArePublished = waitTillPublicationsArePublished;
-// Takes a list of Comments, run .update on them and make sure at least one update has been polled
-function waitTillCommentsUpdate(comments, updateInterval) {
-    return __awaiter(this, void 0, void 0, function () {
-        var _this = this;
-        return __generator(this, function (_a) {
-            return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                    var promises;
-                    var _this = this;
-                    return __generator(this, function (_a) {
-                        promises = comments.map(function (comment) {
-                            return new Promise(function (commentResolve, commentReject) { return __awaiter(_this, void 0, void 0, function () {
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0:
-                                            comment.once("update", function (newComment) {
-                                                comment.stop();
-                                                commentResolve(newComment);
-                                            });
-                                            return [4 /*yield*/, comment.update(updateInterval)];
-                                        case 1:
-                                            _a.sent();
-                                            return [2 /*return*/];
-                                    }
-                                });
-                            }); });
-                        });
-                        Promise.all(promises).then(resolve).catch(reject);
-                        return [2 /*return*/];
-                    });
-                }); })];
-        });
-    });
-}
-exports.waitTillCommentsUpdate = waitTillCommentsUpdate;
 function hotScore(comment) {
     if (typeof comment.downvoteCount !== "number" || typeof comment.upvoteCount !== "number")
         throw Error("Comment.downvoteCount (".concat(comment.downvoteCount, ") and comment.upvoteCount (").concat(comment.upvoteCount, ") need to be defined before calculating hotScore"));

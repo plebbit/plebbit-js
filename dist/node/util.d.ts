@@ -13,8 +13,6 @@ export declare function keepKeys<T extends Record<string, any>, V extends string
 export declare function removeKeys<T extends Record<string, any>, V extends string>(object1: T, keys: V[]): Omit<T, V>;
 export declare function replaceXWithY(obj: Object, x: any, y: any): any;
 export declare function shallowEqual(object1: Object, object2: Object, excludeKeys?: any[]): boolean;
-export declare function waitTillPublicationsArePublished(publications: any): Promise<any[]>;
-export declare function waitTillCommentsUpdate(comments: any, updateInterval: any): Promise<unknown>;
 export declare function hotScore(comment: CommentType): number;
 export declare function controversialScore(comment: CommentType): number;
 export declare function topScore(comment: CommentType): number;
