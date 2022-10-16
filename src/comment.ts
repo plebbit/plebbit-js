@@ -55,9 +55,11 @@ export class Comment extends Publication implements CommentType {
 
     // private
     private _updateInterval?: any;
+    private _updateIntervalMs: number;
 
     constructor(props: CommentType, plebbit: Plebbit) {
         super(props, plebbit);
+        this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
     }
 
     _initProps(props: CommentType) {
@@ -267,13 +269,13 @@ export class Comment extends Publication implements CommentType {
         }
     }
 
-    async update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
+    async update() {
         if (typeof this.ipnsName !== "string")
             throw errcode(Error(messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME), codes.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME);
 
         if (this._updateInterval) return; // Do nothing if it's already updating
         this.updateOnce();
-        this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
+        this._updateInterval = setInterval(this.updateOnce.bind(this), this._updateIntervalMs);
     }
 
     stop() {

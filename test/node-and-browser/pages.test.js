@@ -114,9 +114,6 @@ describe("Test pages sorting", async () => {
     before(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-
-        await subplebbit.update(updateInterval);
-        await subplebbit.stop();
         posts = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
     });
 

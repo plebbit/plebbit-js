@@ -35,8 +35,8 @@ describe("Editing", async () => {
         await commentToBeEdited.publish();
         await new Promise((resolve) => commentToBeEdited.once("challengeverification", resolve));
         expect(commentToBeEdited?.cid).to.be.a("string");
-        await commentToBeEdited.update(updateInterval);
-        await new Promise((resolve) => commentToBeEdited.once("update", resolve));
+        commentToBeEdited._updateIntervalMs = updateInterval;
+        await Promise.all([new Promise((resolve) => commentToBeEdited.once("update", resolve)), commentToBeEdited.update()]);
     });
 
     after(async () => {
@@ -171,6 +171,7 @@ describe("Editing", async () => {
 //         await waitTillPublicationsArePublished([commentToBeBanned]);
 //         expect(commentToBeBanned?.cid).to.be.a("string");
 //         await waitTillCommentsUpdate([commentToBeBanned], updateInterval);
+//
 //         await commentToBeBanned.update(updateInterval);
 //         authorBanExpiresAt = timestamp() + 4; // Ban stays for four seconds
 //     });

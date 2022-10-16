@@ -27,8 +27,8 @@ describe(`Test Downvote`, async () => {
         await postToVote.publish();
         await new Promise((resolve) => postToVote.once("challengeverification", resolve));
         expect(postToVote.cid).to.be.a("string");
-        await postToVote.update(updateInterval);
-        await new Promise((resolve) => postToVote.once("update", resolve));
+        postToVote._updateIntervalMs = updateInterval;
+        await Promise.all([new Promise((resolve) => postToVote.once("update", resolve)), postToVote.update()]);
     });
     after(async () => {
         await postToVote.stop();

@@ -112,8 +112,6 @@ describe("comment (node and browser)", async () => {
         it(`Fail to publish a reply with a timestamp earlier than parent`, async () => {
             return new Promise(async (resolve) => {
                 const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-                await subplebbit.update(updateInterval);
-                await subplebbit.stop();
                 expect(subplebbit.lastPostCid).to.be.a("string");
                 const parentPost = await plebbit.getComment(subplebbit.lastPostCid);
                 expect(parentPost.timestamp).to.be.a("number");

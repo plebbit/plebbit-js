@@ -88,7 +88,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     private ipnsKeyName?: string;
     private sortHandler: SortHandler;
     private _updateInterval?: any;
+    private _updateIntervalMs: number;
     private _syncInterval?: any;
+    private _syncIntervalMs: number; // How often should a sub publish a new IPNS
     private _sync: boolean;
 
     constructor(props: CreateSubplebbitOptions, plebbit: Plebbit) {
@@ -106,6 +108,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.edit = this.edit.bind(this);
 
         this.on("error", (...args) => this.plebbit.emit("error", ...args));
+
+        this._syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS;
+        this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
     }
 
     initSubplebbit(newProps: SubplebbitType | SubplebbitEditOptions) {
@@ -348,10 +353,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    async update(updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS) {
+    async update() {
         if (this._updateInterval || this._sync) return; // No need to do anything if subplebbit is already updating
         this.updateOnce();
-        this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
+        this._updateInterval = setInterval(this.updateOnce.bind(this), this._updateIntervalMs);
     }
 
     async stop() {
@@ -922,7 +927,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this._syncInterval = setTimeout(loop.bind(this), syncIntervalMs);
     }
 
-    async start(syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS) {
+    async start() {
         const log = Logger("plebbit-js:subplebbit:start");
 
         if (!this.signer?.address)
@@ -947,7 +952,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         );
         log.trace(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
         this.syncIpnsWithDb()
-            .then(() => this._syncLoop(syncIntervalMs))
+            .then(() => this._syncLoop(this._syncIntervalMs))
             .catch((reason) => {
                 log.error(reason);
                 this.emit("error", reason);

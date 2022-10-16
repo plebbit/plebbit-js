@@ -115,9 +115,11 @@ describe("publishing", async () => {
         it(`Can publish comment with depth = ${depth}`, async () => {
             return new Promise(async (resolve, reject) => {
                 const parentComment = mockComments[depth - 1];
+                parentComment._updateIntervalMs = updateInterval;
+                await Promise.all([new Promise((resolve) => parentComment.once("update", resolve)), parentComment.update()]);
+
                 const mockComment = await generateMockComment(parentComment, plebbit, signers[0]);
-                await parentComment.update(updateInterval);
-                await new Promise((resolve) => parentComment.once("update", resolve));
+
                 expect(parentComment.updatedAt).to.be.a("number");
                 const originalReplyCount = parentComment.replyCount;
                 expect(originalReplyCount).to.be.equal(0);

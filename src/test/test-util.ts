@@ -180,7 +180,9 @@ async function _startMathCliSubplebbit(signers: SignerType[], database: any, syn
         const challengeErrors = challengeSuccess ? undefined : ["Result of math expression is incorrect"];
         return [challengeSuccess, challengeErrors];
     });
-    await subplebbit.start(syncInterval);
+    //@ts-ignore
+    subplebbit._syncIntervalMs = syncInterval;
+    await subplebbit.start();
     return subplebbit;
 }
 
@@ -190,7 +192,9 @@ async function _startImageCaptchaSubplebbit(signers: SignerType[], database: any
     const subplebbit = await plebbit.createSubplebbit({ signer, database });
 
     // Image captcha are default
-    await subplebbit.start(syncInterval);
+    //@ts-ignore
+    subplebbit._syncIntervalMs = syncInterval;
+    await subplebbit.start();
     subplebbit.setValidateCaptchaAnswerCallback(async (challengeAnswerMessage) => {
         const challengeSuccess = challengeAnswerMessage.challengeAnswers[0] === "1234";
         const challengeErrors = challengeSuccess ? undefined : ["User answered image captcha incorrectly"];
@@ -203,7 +207,9 @@ async function _startEnsSubplebbit(signers: SignerType[], database: any, syncInt
     const plebbit = await _mockPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[3]);
     const subplebbit = await plebbit.createSubplebbit({ signer, database });
-    await subplebbit.start(syncInterval);
+    //@ts-ignore
+    subplebbit._syncIntervalMs = syncInterval;
+    await subplebbit.start();
     await subplebbit.edit({ address: "plebbit.eth" });
 }
 
@@ -298,7 +304,9 @@ export async function startSubplebbits(props: {
     const subplebbit = await plebbit.createSubplebbit({ signer, database: props.database });
     subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
 
-    await subplebbit.start(props.syncInterval);
+    //@ts-ignore
+    subplebbit._syncIntervalMs = props.syncInterval;
+    await subplebbit.start();
     console.time("populate");
     const [imageSubplebbit, mathSubplebbit] = await Promise.all([
         _startImageCaptchaSubplebbit(props.signers, props.database, props.syncInterval, props.dataPath),

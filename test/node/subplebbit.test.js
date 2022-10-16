@@ -36,7 +36,8 @@ describe("subplebbit", async () => {
         it(`createSubplebbit(${JSON.stringify(subArgs)})`, async () => {
             return new Promise(async (resolve) => {
                 const newSubplebbit = await plebbit.createSubplebbit(subArgs);
-                await newSubplebbit.start(syncInterval);
+                newSubplebbit._syncIntervalMs = syncInterval;
+                await newSubplebbit.start();
                 newSubplebbit.once("update", async () => {
                     // Sub has finished its first sync loop, should have address now
                     expect(newSubplebbit.address).to.equal(newSubplebbit.signer.address);
@@ -87,7 +88,8 @@ describe("subplebbit", async () => {
                 signer: subplebbitSigner,
                 title: `Test subplebbit - ${Date.now() / 1000}`
             });
-            await subplebbit.start(syncInterval);
+            subplebbit._syncIntervalMs = syncInterval;
+            await subplebbit.start();
             subplebbit.once("update", async () => {
                 expect(subplebbit.address).to.equal(subplebbitSigner.address);
                 // Should have address now
@@ -115,7 +117,8 @@ describe("subplebbit", async () => {
             await subplebbit.edit(newProps);
             expect(subplebbit.title).to.equal(newTitle);
             expect(subplebbit.description).to.equal(newDescription);
-            await loadedSubplebbit.update(syncInterval);
+            loadedSubplebbit._updateIntervalMs = syncInterval;
+            await loadedSubplebbit.update();
             loadedSubplebbit.once("update", (updatedSubplebbit) => {
                 expect(updatedSubplebbit.description).to.equal(newDescription);
                 expect(updatedSubplebbit.title).to.equal(newTitle);
@@ -162,7 +165,8 @@ describe("subplebbit", async () => {
     it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () =>
         new Promise(async (resolve) => {
             const loadedSubplebbit = await plebbit.getSubplebbit("plebbit.eth");
-            await loadedSubplebbit.update(syncInterval);
+            loadedSubplebbit._updateIntervalMs = syncInterval;
+            await loadedSubplebbit.update();
 
             const post = await subplebbit._addPublicationToDb(await generateMockPost("plebbit.eth", plebbit, signers[0]));
 
@@ -237,7 +241,8 @@ describe("subplebbit", async () => {
         const originalDbVersion = await subplebbit.dbHandler.getDbVersion();
         await subplebbit.dbHandler._knex.raw("PRAGMA user_version = 999999"); // Force a migrate
         await subplebbit.stop(); // Clear out dbHandler
-        await subplebbit.start(syncInterval);
+        subplebbit._syncIntervalMs = syncInterval;
+        await subplebbit.start();
 
         const currentDbVersion = await subplebbit.dbHandler.getDbVersion();
         expect(currentDbVersion).to.equal(originalDbVersion); // If they're equal, that means all tables have been migrated
@@ -251,10 +256,12 @@ describe("subplebbit", async () => {
     it("Two local sub instances can receive each other updates with subplebbit.update", async () => {
         return new Promise(async (resolve) => {
             const subOne = await plebbit.createSubplebbit({});
-            await subOne.start(syncInterval);
+            subOne._syncIntervalMs = syncInterval;
+            await subOne.start();
             subOne.once("update", async () => {
                 const subTwo = await plebbit.createSubplebbit({ address: subOne.address });
-                await subTwo.update(syncInterval);
+                subTwo._updateIntervalMs = syncInterval;
+                await subTwo.update();
                 const title = "Test new Title" + Date.now();
                 subTwo.once("update", (updatedSubplebbit) => {
                     expect(updatedSubplebbit.title).to.equal(title);

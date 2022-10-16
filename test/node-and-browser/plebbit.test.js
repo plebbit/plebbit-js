@@ -100,10 +100,12 @@ describe("plebbit (node and browser)", () => {
                 ...expectedPostProps
             });
             expect(expectedPost.constructor.name).to.equal("Post");
-            await Promise.all([new Promise((resolve) => expectedPost.once("update", resolve)), expectedPost.update(updateInterval)]);
+            expectedPost._updateIntervalMs = updateInterval;
+            await Promise.all([new Promise((resolve) => expectedPost.once("update", resolve)), expectedPost.update()]);
             const loadedPost = await plebbit.getComment(subplebbit.lastPostCid);
             expect(loadedPost.constructor.name).to.equal("Post");
-            await Promise.all([new Promise((resolve) => loadedPost.once("update", resolve)), loadedPost.update(updateInterval)]);
+            loadedPost._updateIntervalMs = updateInterval;
+            await Promise.all([new Promise((resolve) => loadedPost.once("update", resolve)), loadedPost.update()]);
             expect(loadedPost.toJSON()).to.deep.equal(expectedPost.toJSON());
             await expectedPost.stop();
             await loadedPost.stop();
@@ -117,11 +119,13 @@ describe("plebbit (node and browser)", () => {
             const expectedCommentProps = await loadIpfsFileAsJson(comment.cid, plebbit);
             const expectedComment = await plebbit.createComment({ cid: comment.cid, ...expectedCommentProps });
             expect(expectedComment.constructor.name).to.equal("Comment");
-            await Promise.all([new Promise((resolve) => expectedComment.once("update", resolve)), expectedComment.update(updateInterval)]);
+            expectedComment._updateIntervalMs = updateInterval;
+            await Promise.all([new Promise((resolve) => expectedComment.once("update", resolve)), expectedComment.update()]);
             await expectedComment.stop();
             const loadedComment = await plebbit.getComment(comment.cid);
             expect(loadedComment.constructor.name).to.equal("Comment");
-            await Promise.all([new Promise((resolve) => loadedComment.once("update", resolve)), loadedComment.update(updateInterval)]);
+            loadedComment._updateIntervalMs = updateInterval;
+            await Promise.all([new Promise((resolve) => loadedComment.once("update", resolve)), loadedComment.update()]);
             await loadedComment.stop();
 
             expect(loadedComment.toJSON()).to.deep.equal(expectedComment.toJSON());
