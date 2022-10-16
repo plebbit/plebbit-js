@@ -92,8 +92,6 @@ describe("plebbit (node and browser)", () => {
         });
         it("loads post correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
-            await Promise.all([new Promise((resolve) => subplebbit.once("update", resolve)), subplebbit.update(updateInterval)]);
-            await subplebbit.stop();
             expect(subplebbit.lastPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
             const expectedPostProps = await loadIpfsFileAsJson(subplebbit.lastPostCid, plebbit);
             const expectedPost = await plebbit.createComment({
@@ -113,9 +111,6 @@ describe("plebbit (node and browser)", () => {
 
         it("loads comment correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
-            await Promise.all([new Promise((resolve) => subplebbit.once("update", resolve)), subplebbit.update(updateInterval)]);
-
-            await subplebbit.stop();
             const comment = subplebbit?.posts?.pages?.hot?.comments.filter((comment) => comment.replyCount > 0)[0]?.replies?.pages?.topAll
                 ?.comments[0];
             expect(comment).to.exist;
