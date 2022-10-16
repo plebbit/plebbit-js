@@ -328,7 +328,9 @@ function _startMathCliSubplebbit(signers, database, syncInterval, dataPath) {
                             return [2 /*return*/, [challengeSuccess, challengeErrors]];
                         });
                     }); });
-                    return [4 /*yield*/, subplebbit.start(syncInterval)];
+                    //@ts-ignore
+                    subplebbit._syncIntervalMs = syncInterval;
+                    return [4 /*yield*/, subplebbit.start()];
                 case 4:
                     _a.sent();
                     return [2 /*return*/, subplebbit];
@@ -352,9 +354,10 @@ function _startImageCaptchaSubplebbit(signers, database, syncInterval, dataPath)
                 case 3:
                     subplebbit = _a.sent();
                     // Image captcha are default
-                    return [4 /*yield*/, subplebbit.start(syncInterval)];
+                    //@ts-ignore
+                    subplebbit._syncIntervalMs = syncInterval;
+                    return [4 /*yield*/, subplebbit.start()];
                 case 4:
-                    // Image captcha are default
                     _a.sent();
                     subplebbit.setValidateCaptchaAnswerCallback(function (challengeAnswerMessage) { return __awaiter(_this, void 0, void 0, function () {
                         var challengeSuccess, challengeErrors;
@@ -383,7 +386,9 @@ function _startEnsSubplebbit(signers, database, syncInterval, dataPath) {
                     return [4 /*yield*/, plebbit.createSubplebbit({ signer: signer, database: database })];
                 case 3:
                     subplebbit = _a.sent();
-                    return [4 /*yield*/, subplebbit.start(syncInterval)];
+                    //@ts-ignore
+                    subplebbit._syncIntervalMs = syncInterval;
+                    return [4 /*yield*/, subplebbit.start()];
                 case 4:
                     _a.sent();
                     return [4 /*yield*/, subplebbit.edit({ address: "plebbit.eth" })];
@@ -546,7 +551,9 @@ function startSubplebbits(props) {
                     subplebbit.setProvideCaptchaCallback(function () { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                         return [2 /*return*/, [[], "Challenge skipped"]];
                     }); }); });
-                    return [4 /*yield*/, subplebbit.start(props.syncInterval)];
+                    //@ts-ignore
+                    subplebbit._syncIntervalMs = props.syncInterval;
+                    return [4 /*yield*/, subplebbit.start()];
                 case 4:
                     _b.sent();
                     console.time("populate");

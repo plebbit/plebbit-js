@@ -43,7 +43,9 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     private ipnsKeyName?;
     private sortHandler;
     private _updateInterval?;
+    private _updateIntervalMs;
     private _syncInterval?;
+    private _syncIntervalMs;
     private _sync;
     constructor(props: CreateSubplebbitOptions, plebbit: Plebbit);
     initSubplebbit(newProps: SubplebbitType | SubplebbitEditOptions): void;
@@ -82,7 +84,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     private assertDomainResolvesCorrectly;
     edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit>;
     private updateOnce;
-    update(updateIntervalMs?: number): Promise<void>;
+    update(): Promise<void>;
     stop(): Promise<void>;
     private updateSubplebbitIpns;
     private handleCommentEdit;
@@ -97,6 +99,6 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     private syncComment;
     private syncIpnsWithDb;
     private _syncLoop;
-    start(syncIntervalMs?: number): Promise<void>;
+    start(): Promise<void>;
     _addPublicationToDb(publication: CommentEdit | Vote | Comment | Post): Promise<string | CommentEdit | Vote | Comment | Post>;
 }

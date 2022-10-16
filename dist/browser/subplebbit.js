@@ -120,6 +120,8 @@ var Subplebbit = /** @class */ (function (_super) {
             }
             return (_a = _this.plebbit).emit.apply(_a, __spreadArray(["error"], args, false));
         });
+        _this._syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS;
+        _this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
         return _this;
     }
     Subplebbit.prototype.initSubplebbit = function (newProps) {
@@ -429,14 +431,13 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Subplebbit.prototype.update = function (updateIntervalMs) {
-        if (updateIntervalMs === void 0) { updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS; }
+    Subplebbit.prototype.update = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 if (this._updateInterval || this._sync)
                     return [2 /*return*/]; // No need to do anything if subplebbit is already updating
                 this.updateOnce();
-                this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
+                this._updateInterval = setInterval(this.updateOnce.bind(this), this._updateIntervalMs);
                 return [2 /*return*/];
             });
         });
@@ -1224,9 +1225,8 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Subplebbit.prototype.start = function (syncIntervalMs) {
+    Subplebbit.prototype.start = function () {
         var _a;
-        if (syncIntervalMs === void 0) { syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS; }
         return __awaiter(this, void 0, void 0, function () {
             var log;
             var _this = this;
@@ -1262,7 +1262,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _b.sent();
                         log.trace("Waiting for publications on pubsub topic (".concat(this.pubsubTopic, ")"));
                         this.syncIpnsWithDb()
-                            .then(function () { return _this._syncLoop(syncIntervalMs); })
+                            .then(function () { return _this._syncLoop(_this._syncIntervalMs); })
                             .catch(function (reason) {
                             log.error(reason);
                             _this.emit("error", reason);
