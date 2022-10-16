@@ -96,12 +96,14 @@ var Publication = /** @class */ (function (_super) {
         this.author = new author_1.default((0, util_1.parseJsonIfString)(props.author));
         this.protocolVersion = props.protocolVersion;
     };
+    // TODO make this private/protected
     Publication.prototype.getType = function () {
         throw new Error("Should be implemented by children of Publication");
     };
     Publication.prototype.toJSON = function () {
         return __assign({}, this.toJSONSkeleton());
     };
+    // TODO make this private/protected
     Publication.prototype.toJSONSkeleton = function () {
         return {
             subplebbitAddress: this.subplebbitAddress,

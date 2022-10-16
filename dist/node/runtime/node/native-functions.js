@@ -96,7 +96,8 @@ var nativeFunctions = {
                     _a.sent();
                     return [4 /*yield*/, fs_1.promises.readdir(subplebbitsPath)];
                 case 2:
-                    addresses = (_a.sent()).filter(function (address) { return !Boolean(plebbit_1.pendingSubplebbitCreations[address]) && !address.includes("journal"); });
+                    addresses = (_a.sent()).filter(function (address) { return !Boolean(plebbit_1.pendingSubplebbitCreations[address]) && !/-journal$/.test(address); } // Ignore sqlite journal files
+                    );
                     return [2 /*return*/, addresses];
             }
         });

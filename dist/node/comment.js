@@ -242,22 +242,29 @@ var Comment = /** @class */ (function (_super) {
                         this.emit("update", this);
                         return [3 /*break*/, 7];
                     case 6:
-                        log.trace("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
-                        this._initCommentUpdate(res);
+                        if (res) {
+                            log.trace("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
+                            this._initCommentUpdate(res);
+                        }
                         _b.label = 7;
-                    case 7: return [2 /*return*/, this];
+                    case 7: return [2 /*return*/];
                 }
             });
         });
     };
     Comment.prototype.update = function (updateIntervalMs) {
         if (updateIntervalMs === void 0) { updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS; }
-        if (typeof this.ipnsName !== "string")
-            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME), errors_1.codes.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME);
-        if (this._updateInterval)
-            clearInterval(this._updateInterval);
-        this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
-        return this.updateOnce();
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                if (typeof this.ipnsName !== "string")
+                    throw (0, err_code_1.default)(Error(errors_1.messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME), errors_1.codes.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME);
+                if (this._updateInterval)
+                    return [2 /*return*/]; // Do nothing if it's already updating
+                this.updateOnce();
+                this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
+                return [2 /*return*/];
+            });
+        });
     };
     Comment.prototype.stop = function () {
         clearInterval(this._updateInterval);
