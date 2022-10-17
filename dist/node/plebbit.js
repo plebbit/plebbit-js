@@ -251,7 +251,7 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.createSubplebbit = function (options) {
         if (options === void 0) { options = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, canRunSub, newSub, remoteSub, localSubs, _a, localSubs, derivedAddress, _b;
+            var log, canRunSub, newSub, remoteSub, subHasBeenCreatedBefore, _a, localSubs, derivedAddress, _b;
             var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
@@ -259,7 +259,7 @@ var Plebbit = /** @class */ (function (_super) {
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
                         canRunSub = this._canRunSub();
                         newSub = function () { return __awaiter(_this, void 0, void 0, function () {
-                            var subplebbit, key;
+                            var subplebbit, key, subHasBeenCreatedBefore;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
@@ -271,13 +271,18 @@ var Plebbit = /** @class */ (function (_super) {
                                             });
                                         subplebbit = new subplebbit_1.Subplebbit(options, this);
                                         key = subplebbit.address || subplebbit.signer.address;
-                                        if (exports.pendingSubplebbitCreations[key])
-                                            throw Error("Can't recreate a pending subplebbit that is waiting to be created");
-                                        exports.pendingSubplebbitCreations[key] = true;
-                                        return [4 /*yield*/, subplebbit.prePublish()];
+                                        return [4 /*yield*/, this.listSubplebbits()];
                                     case 1:
+                                        subHasBeenCreatedBefore = (_a.sent()).includes(key);
+                                        if (!subHasBeenCreatedBefore && exports.pendingSubplebbitCreations[key])
+                                            throw Error("Can't recreate a pending subplebbit that is waiting to be created");
+                                        if (!subHasBeenCreatedBefore)
+                                            exports.pendingSubplebbitCreations[key] = true;
+                                        return [4 /*yield*/, subplebbit.prePublish()];
+                                    case 2:
                                         _a.sent();
-                                        exports.pendingSubplebbitCreations[key] = false;
+                                        if (!subHasBeenCreatedBefore)
+                                            exports.pendingSubplebbitCreations[key] = false;
                                         log("Created subplebbit (".concat(subplebbit.address, ") with props:"), (0, util_2.removeKeysWithUndefinedValues)((0, util_2.removeKeys)(subplebbit.toJSON(), ["signer"])));
                                         return [2 /*return*/, subplebbit];
                                 }
@@ -293,8 +298,8 @@ var Plebbit = /** @class */ (function (_super) {
                         return [2 /*return*/, remoteSub()];
                     case 1: return [4 /*yield*/, this.listSubplebbits()];
                     case 2:
-                        localSubs = _c.sent();
-                        if (localSubs.includes(options.address))
+                        subHasBeenCreatedBefore = (_c.sent()).includes(options.address);
+                        if (subHasBeenCreatedBefore)
                             return [2 /*return*/, newSub()];
                         else
                             return [2 /*return*/, remoteSub()];
