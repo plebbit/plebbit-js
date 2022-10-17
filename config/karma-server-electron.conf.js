@@ -56,7 +56,7 @@ module.exports = function (config) {
         // sinon adds mocking utils
         frameworks: ["mocha", "chai", "sinon"],
         client: {
-            mocha: { timeout: 180000 },
+            mocha: { timeout: 1800000 },
 
             // in electron iframes don't get `nodeIntegration` but windows do
             useIframe: false,
@@ -123,10 +123,10 @@ module.exports = function (config) {
         colors: true,
         logLevel: config.LOG_INFO,
         // logLevel: config.LOG_DEBUG,
-        browserNoActivityTimeout: 180000,
-        browserDisconnectTimeout: 180000,
+        browserNoActivityTimeout: 1800000,
+        browserDisconnectTimeout: 1800000,
         browserDisconnectTolerance: 10,
-        processKillTimeout: 180000
+        processKillTimeout: 1800000
     });
 };
 
