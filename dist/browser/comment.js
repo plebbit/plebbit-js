@@ -78,7 +78,9 @@ var DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 var Comment = /** @class */ (function (_super) {
     __extends(Comment, _super);
     function Comment(props, plebbit) {
-        return _super.call(this, props, plebbit) || this;
+        var _this = _super.call(this, props, plebbit) || this;
+        _this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
+        return _this;
     }
     Comment.prototype._initProps = function (props) {
         _super.prototype._initProps.call(this, props);
@@ -252,8 +254,7 @@ var Comment = /** @class */ (function (_super) {
             });
         });
     };
-    Comment.prototype.update = function (updateIntervalMs) {
-        if (updateIntervalMs === void 0) { updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS; }
+    Comment.prototype.update = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 if (typeof this.ipnsName !== "string")
@@ -261,7 +262,7 @@ var Comment = /** @class */ (function (_super) {
                 if (this._updateInterval)
                     return [2 /*return*/]; // Do nothing if it's already updating
                 this.updateOnce();
-                this._updateInterval = setInterval(this.updateOnce.bind(this), updateIntervalMs);
+                this._updateInterval = setInterval(this.updateOnce.bind(this), this._updateIntervalMs);
                 return [2 /*return*/];
             });
         });

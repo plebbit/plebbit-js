@@ -30,6 +30,7 @@ export declare class Comment extends Publication implements CommentType {
     removed?: boolean;
     moderatorReason?: string;
     private _updateInterval?;
+    private _updateIntervalMs;
     constructor(props: CommentType, plebbit: Plebbit);
     _initProps(props: CommentType): void;
     _initCommentUpdate(props: CommentType | CommentUpdate): void;
@@ -63,7 +64,7 @@ export declare class Comment extends Publication implements CommentType {
     setUpdatedAt(newUpdatedAt: number): void;
     setReplies(replies?: Pages | PagesType): void;
     updateOnce(): Promise<void>;
-    update(updateIntervalMs?: number): Promise<void>;
+    update(): Promise<void>;
     stop(): void;
     edit(options: CommentUpdate): Promise<void>;
     publish(userOptions: any): Promise<void>;
