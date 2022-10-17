@@ -14,7 +14,8 @@ import last from "it-last";
 import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { createCaptcha } from "captcha-canvas";
-import { Agent } from "https";
+import { Agent as HttpAgent} from "http";
+import { Agent as HttpsAgent} from "https";
 import FormData from "form-data";
 
 const nativeFunctions: NativeFunctions = {
@@ -60,6 +61,14 @@ const nativeFunctions: NativeFunctions = {
         return resObj;
     },
     createIpfsClient: (ipfsHttpClientOptions): IpfsHttpClientPublicAPI => {
+        const isHttpsAgent = ipfsHttpClientOptions?.startsWith?.('https')
+          || ipfsHttpClientOptions?.url?.startsWith?.('https')
+          || ipfsHttpClientOptions?.protocol === 'https'
+          || ipfsHttpClientOptions?.url?.protocol === 'https:'
+        const Agent = isHttpsAgent ? HttpsAgent : HttpAgent
+
+        const ipfsHttpClientUrl = typeof ipfsHttpClientOptions === 'string' ? ipfsHttpClientOptions : ipfsHttpClientOptions.url
+        if (ipfsHttpClientOptions.startsWith?.())
         const ipfsClient = create(
             typeof ipfsHttpClientOptions === "string"
                 ? { url: ipfsHttpClientOptions, agent: new Agent({ keepAlive: true, maxSockets: Infinity }) }
