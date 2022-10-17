@@ -14,7 +14,7 @@ import last from "it-last";
 import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { createCaptcha } from "captcha-canvas";
-import { Agent } from "http";
+import { Agent } from "https";
 import FormData from "form-data";
 
 const nativeFunctions: NativeFunctions = {
