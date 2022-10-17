@@ -132,12 +132,12 @@ var CommentEdit = /** @class */ (function (_super) {
     CommentEdit.prototype.getType = function () {
         return "commentedit";
     };
-    CommentEdit.prototype.publish = function (userOptions) {
+    CommentEdit.prototype.publish = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 // TODO if publishing with content,reason, deleted, verify that publisher is original author
                 (0, assert_1.default)(this.commentCid, "Need commentCid to be defined to publish CommentEdit");
-                return [2 /*return*/, _super.prototype.publish.call(this, userOptions)];
+                return [2 /*return*/, _super.prototype.publish.call(this)];
             });
         });
     };

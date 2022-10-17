@@ -20,5 +20,5 @@ export declare class CommentEdit extends Publication implements CommentEditType 
     toJSON(): CommentEditType;
     toJSONForDb(challengeRequestId: string): CommentEditForDbType;
     getType(): PublicationTypeName;
-    publish(userOptions: any): Promise<void>;
+    publish(): Promise<void>;
 }

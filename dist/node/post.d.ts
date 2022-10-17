@@ -24,6 +24,6 @@ declare class Post extends Comment implements PostType {
         subplebbitAddress: string;
         timestamp: number;
     };
-    publish(userOptions: any): Promise<void>;
+    publish(): Promise<void>;
 }
 export default Post;

@@ -67,5 +67,5 @@ export declare class Comment extends Publication implements CommentType {
     update(): Promise<void>;
     stop(): void;
     edit(options: CommentUpdate): Promise<void>;
-    publish(userOptions: any): Promise<void>;
+    publish(): Promise<void>;
 }

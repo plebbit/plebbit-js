@@ -304,10 +304,10 @@ var Comment = /** @class */ (function (_super) {
             });
         });
     };
-    Comment.prototype.publish = function (userOptions) {
+    Comment.prototype.publish = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, _super.prototype.publish.call(this, userOptions)];
+                return [2 /*return*/, _super.prototype.publish.call(this)];
             });
         });
     };

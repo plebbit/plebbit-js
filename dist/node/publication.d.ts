@@ -22,6 +22,6 @@ declare class Publication extends EventEmitter implements PublicationType {
     toJSONSkeleton(): PublicationType;
     private handleChallengeExchange;
     publishChallengeAnswers(challengeAnswers: string[]): Promise<void>;
-    publish(userOptions: any): Promise<void>;
+    publish(): Promise<void>;
 }
 export default Publication;

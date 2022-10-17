@@ -87,14 +87,14 @@ var Post = /** @class */ (function (_super) {
     Post.prototype.toJSONSkeleton = function () {
         return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { thumbnailUrl: this.thumbnailUrl, title: this.title, parentCid: undefined, link: this.link });
     };
-    Post.prototype.publish = function (userOptions) {
+    Post.prototype.publish = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 if (typeof this.title !== "string")
                     throw (0, err_code_1.default)(Error(errors_1.messages.ERR_PUBLICATION_MISSING_FIELD), errors_1.codes.ERR_PUBLICATION_MISSING_FIELD, {
                         details: "".concat(this.getType(), ".publish: title should be a string")
                     });
-                return [2 /*return*/, _super.prototype.publish.call(this, userOptions)];
+                return [2 /*return*/, _super.prototype.publish.call(this)];
             });
         });
     };

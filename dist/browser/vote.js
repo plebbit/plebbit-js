@@ -86,7 +86,7 @@ var Vote = /** @class */ (function (_super) {
     Vote.prototype.toJSONForDb = function (challengeRequestId) {
         return __assign(__assign({}, this.toJSON()), { author: JSON.stringify(this.author), authorAddress: this.author.address, challengeRequestId: challengeRequestId, signature: JSON.stringify(this.signature) });
     };
-    Vote.prototype.publish = function (userOptions) {
+    Vote.prototype.publish = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 if (![-1, 0, 1].includes(this.vote))
@@ -95,7 +95,7 @@ var Vote = /** @class */ (function (_super) {
                     throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.codes.ERR_CID_IS_INVALID, {
                         details: "Vote.publish: commentCid (".concat(this.commentCid, ") is invalid as a CID")
                     });
-                return [2 /*return*/, _super.prototype.publish.call(this, userOptions)];
+                return [2 /*return*/, _super.prototype.publish.call(this)];
             });
         });
     };

@@ -210,7 +210,7 @@ var Publication = /** @class */ (function (_super) {
             });
         });
     };
-    Publication.prototype.publish = function (userOptions) {
+    Publication.prototype.publish = function () {
         var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function () {
             var log, _d, isSignatureValid, failedVerificationReason, options, _e, encryptedPublication, toSignMsg, pubsubMsgSignature;
@@ -237,7 +237,7 @@ var Publication = /** @class */ (function (_super) {
                             throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
                                 details: "".concat(this.getType(), ".publish: Failed verification reason: ").concat(failedVerificationReason, ", publication: ").concat(JSON.stringify(this))
                             });
-                        options = __assign({ acceptedChallengeTypes: [] }, userOptions);
+                        options = { acceptedChallengeTypes: [] };
                         _e = this;
                         return [4 /*yield*/, this.plebbit.getSubplebbit(this.subplebbitAddress)];
                     case 2:

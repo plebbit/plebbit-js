@@ -8,6 +8,6 @@ declare class Vote extends Publication implements VoteType {
     toJSON(): VoteType;
     getType(): PublicationTypeName;
     toJSONForDb(challengeRequestId: string): VoteForDbType;
-    publish(userOptions: any): Promise<void>;
+    publish(): Promise<void>;
 }
 export default Vote;
