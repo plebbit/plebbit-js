@@ -159,7 +159,7 @@ class Publication extends EventEmitter implements PublicationType {
         this.emit("challengeanswer", challengeAnswer);
     }
 
-    async publish(userOptions) {
+    async publish() {
         const log = Logger("plebbit-js:publication:publish");
 
         if (typeof this.timestamp !== "number" || this.timestamp < 0)
@@ -184,7 +184,7 @@ class Publication extends EventEmitter implements PublicationType {
                 )}`
             });
 
-        const options = { acceptedChallengeTypes: [], ...userOptions };
+        const options = { acceptedChallengeTypes: [] };
         this.subplebbit = await this.plebbit.getSubplebbit(this.subplebbitAddress);
 
         if (typeof this.subplebbit?.encryption?.publicKey !== "string")

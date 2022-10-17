@@ -38,12 +38,12 @@ class Post extends Comment implements PostType {
         };
     }
 
-    async publish(userOptions): Promise<void> {
+    async publish(): Promise<void> {
         if (typeof this.title !== "string")
             throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), codes.ERR_PUBLICATION_MISSING_FIELD, {
                 details: `${this.getType()}.publish: title should be a string`
             });
-        return super.publish(userOptions);
+        return super.publish();
     }
 }
 

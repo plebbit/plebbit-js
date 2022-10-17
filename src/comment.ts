@@ -302,7 +302,7 @@ export class Comment extends Publication implements CommentType {
         log.trace(`Linked comment (${this.cid}) ipns name(${this.ipnsName}) to ipfs file (${file.path})`);
     }
 
-    async publish(userOptions): Promise<void> {
-        return super.publish(userOptions);
+    async publish(): Promise<void> {
+        return super.publish();
     }
 }

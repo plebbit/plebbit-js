@@ -105,9 +105,9 @@ export class CommentEdit extends Publication implements CommentEditType {
         return "commentedit";
     }
 
-    async publish(userOptions): Promise<void> {
+    async publish(): Promise<void> {
         // TODO if publishing with content,reason, deleted, verify that publisher is original author
         assert(this.commentCid, "Need commentCid to be defined to publish CommentEdit");
-        return super.publish(userOptions);
+        return super.publish();
     }
 }
