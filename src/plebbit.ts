@@ -182,10 +182,12 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
                 });
             const subplebbit = new Subplebbit(options, this);
             const key = subplebbit.address || <string>subplebbit.signer.address;
-            if (pendingSubplebbitCreations[key]) throw Error("Can't recreate a pending subplebbit that is waiting to be created");
-            pendingSubplebbitCreations[key] = true;
+            const subHasBeenCreatedBefore = (await this.listSubplebbits()).includes(key);
+            if (!subHasBeenCreatedBefore && pendingSubplebbitCreations[key])
+                throw Error("Can't recreate a pending subplebbit that is waiting to be created");
+            if (!subHasBeenCreatedBefore) pendingSubplebbitCreations[key] = true;
             await subplebbit.prePublish();
-            pendingSubplebbitCreations[key] = false;
+            if (!subHasBeenCreatedBefore) pendingSubplebbitCreations[key] = false;
             log(
                 `Created subplebbit (${subplebbit.address}) with props:`,
                 removeKeysWithUndefinedValues(removeKeys(subplebbit.toJSON(), ["signer"]))
@@ -200,8 +202,8 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         if (options.address && !options.signer) {
             if (!canRunSub) return remoteSub();
             else {
-                const localSubs = await this.listSubplebbits();
-                if (localSubs.includes(options.address)) return newSub();
+                const subHasBeenCreatedBefore = (await this.listSubplebbits()).includes(options.address);
+                if (subHasBeenCreatedBefore) return newSub();
                 else return remoteSub();
             }
         } else if (!options.address && !options.signer) {
