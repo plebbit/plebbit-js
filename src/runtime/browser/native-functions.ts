@@ -1,6 +1,6 @@
 import { IpfsHttpClientPublicAPI, NativeFunctions, SignerType } from "../../types";
 
-import { create } from "ipfs-http-client";
+import { create, Options } from "ipfs-http-client";
 
 import all from "it-all";
 import last from "it-last";
@@ -22,8 +22,8 @@ const nativeFunctions: NativeFunctions = {
 
     //@ts-ignore
     fetch: (...args) => window.fetch(...args),
-    createIpfsClient: (ipfsHttpClientOptions): IpfsHttpClientPublicAPI => {
-        const ipfsClient = create(ipfsHttpClientOptions);
+    createIpfsClient: (ipfsHttpClientOptions: string | Options): IpfsHttpClientPublicAPI => {
+        const ipfsClient = create(<Options>ipfsHttpClientOptions);
 
         const cat = async (...args: Parameters<IpfsHttpClientPublicAPI["cat"]>): Promise<string | undefined> => {
             const rawData = await all(ipfsClient.cat(...args));
