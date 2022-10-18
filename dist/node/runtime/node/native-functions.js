@@ -63,7 +63,9 @@ var concat_1 = require("uint8arrays/concat");
 var to_string_1 = require("uint8arrays/to-string");
 var captcha_canvas_1 = require("captcha-canvas");
 var http_1 = require("http");
+var https_1 = require("https");
 var form_data_1 = __importDefault(require("form-data"));
+var multiaddr_1 = require("multiaddr");
 var nativeFunctions = {
     createImageCaptcha: function () {
         var args = [];
@@ -133,9 +135,17 @@ var nativeFunctions = {
         });
     },
     createIpfsClient: function (ipfsHttpClientOptions) {
+        var _a;
+        var isHttpsAgent = typeof ipfsHttpClientOptions === "string"
+            ? ipfsHttpClientOptions.startsWith("https")
+            : (typeof ipfsHttpClientOptions.url === "string" && ipfsHttpClientOptions.url.startsWith("https")) ||
+                (ipfsHttpClientOptions === null || ipfsHttpClientOptions === void 0 ? void 0 : ipfsHttpClientOptions.protocol) === "https" ||
+                (ipfsHttpClientOptions.url instanceof URL && ((_a = ipfsHttpClientOptions === null || ipfsHttpClientOptions === void 0 ? void 0 : ipfsHttpClientOptions.url) === null || _a === void 0 ? void 0 : _a.protocol) === "https:") ||
+                (ipfsHttpClientOptions.url instanceof multiaddr_1.Multiaddr && ipfsHttpClientOptions.url.protoNames().includes("https"));
+        var Agent = isHttpsAgent ? https_1.Agent : http_1.Agent;
         var ipfsClient = (0, ipfs_http_client_1.create)(typeof ipfsHttpClientOptions === "string"
-            ? { url: ipfsHttpClientOptions, agent: new http_1.Agent({ keepAlive: true, maxSockets: Infinity }) }
-            : __assign(__assign({}, ipfsHttpClientOptions), { agent: ipfsHttpClientOptions.agent || new http_1.Agent({ keepAlive: true, maxSockets: Infinity }) }));
+            ? { url: ipfsHttpClientOptions, agent: new Agent({ keepAlive: true, maxSockets: Infinity }) }
+            : __assign(__assign({}, ipfsHttpClientOptions), { agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity }) }));
         var cat = function () {
             var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
