@@ -180,4 +180,19 @@ describe("plebbit (node and browser)", () => {
             expect(loadedSubplebbit.toJSON()).to.deep.equal(createdSubplebbit.toJSON());
         });
     });
+
+    describe("plebbit.fetchCid", async () => {
+        let plebbit;
+        before(async () => {
+            plebbit = await Plebbit({
+                ipfsHttpClientOptions: "http://localhost:5001/api/v0"
+            });
+        });
+        it(`Can fetch a cid correctly`, async () => {
+            const fileString = "Hello plebs";
+            const cid = (await plebbit.ipfsClient.add(fileString)).path;
+            const contentFromFetchCid = await plebbit.fetchCid(cid);
+            expect(contentFromFetchCid).to.equal(fileString);
+        });
+    });
 });
