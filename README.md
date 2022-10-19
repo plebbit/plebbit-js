@@ -316,6 +316,7 @@ Encrypted {
   - [`plebbit.createSigner(createSignerOptions)`](#plebbitcreatesignercreatesigneroptions)
   - [`plebbit.listSubplebbits()`](#plebbitlistsubplebbits)
   - [`plebbit.getDefaults()`](#plebbitgetdefaults)
+  - `plebbit.fetchCid(cid)`
 - [Subplebbit API](#subplebbit-api)
   - [`subplebbit.edit(subplebbitEditOptions)`](#subplebbiteditsubplebbiteditoptions)
   - [`subplebbit.start()`](#subplebbitstart)
