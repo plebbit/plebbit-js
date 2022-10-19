@@ -18,7 +18,7 @@ import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util"
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
-import { loadIpfsFileAsJson, loadIpnsAsJson, removeKeys, removeKeysWithUndefinedValues, timestamp } from "./util";
+import { fetchCid, loadIpfsFileAsJson, loadIpnsAsJson, removeKeys, removeKeysWithUndefinedValues, timestamp } from "./util";
 import Vote from "./vote";
 import { createSigner, Signer, signPublication, verifyPublication } from "./signer";
 import { Resolver } from "./resolver";
@@ -276,5 +276,9 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
                 details: `listSubplebbits: canRunSub=${canRunSub}, plebbitOptions.dataPath=${this.dataPath}`
             });
         return nativeFunctions.listSubplebbits(this.dataPath);
+    }
+
+    async fetchCid(cid: string) {
+        return fetchCid(cid, this);
     }
 }
