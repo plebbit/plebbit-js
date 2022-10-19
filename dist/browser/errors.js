@@ -23,6 +23,7 @@ var messages;
     messages["ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT"] = "Rejecting post/comment because its timestamp is earlier than its parent";
     messages["ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST"] = "The parent of this comment does not exist";
     messages["ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED"] = "The parent cid of this comment is not defined";
+    messages["ERR_GENERATED_CID_DOES_NOT_MATCH"] = "The CID generated from loaded content does not match the provided CID";
 })(messages = exports.messages || (exports.messages = {}));
 var codes;
 (function (codes) {
@@ -46,4 +47,5 @@ var codes;
     codes["ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT"] = "ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT";
     codes["ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST"] = "ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST";
     codes["ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED"] = "ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED";
+    codes["ERR_GENERATED_CID_DOES_NOT_MATCH"] = "ERR_GENERATED_CID_DOES_NOT_MATCH";
 })(codes = exports.codes || (exports.codes = {}));

@@ -34,4 +34,5 @@ export declare class Plebbit extends EventEmitter implements PlebbitOptions {
     createCommentEdit(options: CreateCommentEditOptions | CommentEditType): Promise<CommentEdit>;
     createSigner(createSignerOptions?: CreateSignerOptions): Promise<Signer>;
     listSubplebbits(): Promise<string[]>;
+    fetchCid(cid: string): Promise<string>;
 }

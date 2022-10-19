@@ -59,11 +59,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.randomElement = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.shallowEqual = exports.replaceXWithY = exports.removeKeys = exports.keepKeys = exports.timestamp = exports.parseJsonIfString = exports.round = exports.chunks = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.randomElement = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.shallowEqual = exports.replaceXWithY = exports.removeKeys = exports.keepKeys = exports.timestamp = exports.parseJsonIfString = exports.round = exports.chunks = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.fetchCid = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var util_1 = require("./runtime/browser/util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var errors_1 = require("./errors");
 var err_code_1 = __importDefault(require("err-code"));
+var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
 //This is temp. TODO replace this with accurate mapping
 exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -77,7 +78,7 @@ var DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 function fetchWithLimit(url, options) {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function () {
-        var res, e_1, totalBytesRead, reader, decoder, resJson, _c, done, value;
+        var res, e_1, totalBytesRead, reader, decoder, resText, _c, done, value;
         return __generator(this, function (_d) {
             switch (_d.label) {
                 case 0:
@@ -86,7 +87,7 @@ function fetchWithLimit(url, options) {
                 case 1:
                     res = _d.sent();
                     if (!(((_a = res === null || res === void 0 ? void 0 : res.body) === null || _a === void 0 ? void 0 : _a.getReader) === undefined)) return [3 /*break*/, 3];
-                    return [4 /*yield*/, res.json()];
+                    return [4 /*yield*/, res.text()];
                 case 2: return [2 /*return*/, [_d.sent(), res]];
                 case 3: return [3 /*break*/, 5];
                 case 4:
@@ -102,7 +103,7 @@ function fetchWithLimit(url, options) {
                     totalBytesRead = 0;
                     reader = res.body.getReader();
                     decoder = new TextDecoder("utf-8");
-                    resJson = "";
+                    resText = "";
                     _d.label = 6;
                 case 6:
                     if (!true) return [3 /*break*/, 8];
@@ -111,7 +112,7 @@ function fetchWithLimit(url, options) {
                     _c = _d.sent(), done = _c.done, value = _c.value;
                     //@ts-ignore
                     if (value)
-                        resJson += decoder.decode(value);
+                        resText += decoder.decode(value);
                     if (done || !value)
                         return [3 /*break*/, 8];
                     if (value.length + totalBytesRead > DOWNLOAD_LIMIT_BYTES)
@@ -120,39 +121,41 @@ function fetchWithLimit(url, options) {
                         });
                     totalBytesRead += value.length;
                     return [3 /*break*/, 6];
-                case 8: return [2 /*return*/, [JSON.parse(resJson), res]];
+                case 8: return [2 /*return*/, [resText, res]];
                 case 9: return [2 /*return*/];
             }
         });
     });
 }
-function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
-    if (defaultOptions === void 0) { defaultOptions = { timeout: 60000 }; }
+function fetchCid(cid, plebbit, catOptions) {
+    if (catOptions === void 0) { catOptions = { length: DOWNLOAD_LIMIT_BYTES }; }
     return __awaiter(this, void 0, void 0, function () {
-        var url, _a, resJson, res, fileContent, error, e_2;
+        var fileContent, url, _a, resText, res, error, e_2, generatedCid;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    if (!is_ipfs_1.default.cid(cid) && !is_ipfs_1.default.path(cid))
+                    if (!is_ipfs_1.default.cid(cid) && is_ipfs_1.default.path(cid))
+                        cid = cid.split("/")[2];
+                    if (!is_ipfs_1.default.cid(cid))
                         throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.codes.ERR_CID_IS_INVALID, {
-                            details: "loadIpfsFileAsJson: CID (".concat(cid, ") is invalid")
+                            details: "fetchCid: CID (".concat(cid, ") is invalid")
                         });
                     if (!!plebbit.ipfsClient) return [3 /*break*/, 2];
                     url = "".concat(plebbit.ipfsGatewayUrl, "/ipfs/").concat(cid);
                     return [4 /*yield*/, fetchWithLimit(url, { cache: "force-cache" })];
                 case 1:
-                    _a = _b.sent(), resJson = _a[0], res = _a[1];
+                    _a = _b.sent(), resText = _a[0], res = _a[1];
                     if (res.status === 200)
-                        return [2 /*return*/, resJson];
+                        fileContent = resText;
                     else
                         throw Error("Failed to load IPFS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText));
                     return [3 /*break*/, 7];
                 case 2:
-                    fileContent = void 0, error = void 0;
+                    error = void 0;
                     _b.label = 3;
                 case 3:
                     _b.trys.push([3, 5, , 6]);
-                    return [4 /*yield*/, plebbit.ipfsClient.cat(cid, __assign(__assign({}, defaultOptions), { length: DOWNLOAD_LIMIT_BYTES }))];
+                    return [4 /*yield*/, plebbit.ipfsClient.cat(cid, catOptions)];
                 case 4:
                     fileContent = _b.sent(); // Limit is 1mb files
                     return [3 /*break*/, 6];
@@ -163,17 +166,33 @@ function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
                 case 6:
                     if (typeof fileContent !== "string")
                         throw Error("Was not able to load IPFS (".concat(cid, ") due to error: ").concat(error));
-                    try {
-                        return [2 /*return*/, JSON.parse(fileContent)];
-                    }
-                    catch (_c) {
-                        if (fileContent.length === DOWNLOAD_LIMIT_BYTES)
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT), errors_1.codes.ERR_OVER_DOWNLOAD_LIMIT, {
-                                details: "loadIpfsFileAsJson: cid (".concat(cid, ") points to a file larger than download limit (").concat(DOWNLOAD_LIMIT_BYTES, ") bytes")
-                            });
-                    }
                     _b.label = 7;
-                case 7: return [2 /*return*/];
+                case 7: return [4 /*yield*/, ipfs_only_hash_1.default.of(fileContent)];
+                case 8:
+                    generatedCid = _b.sent();
+                    if (fileContent.length === DOWNLOAD_LIMIT_BYTES && generatedCid !== cid)
+                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT), errors_1.codes.ERR_OVER_DOWNLOAD_LIMIT, {
+                            details: "fetchCid: CID (".concat(cid, ") points to a file larger than download limit ").concat(DOWNLOAD_LIMIT_BYTES)
+                        });
+                    if (generatedCid !== cid)
+                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_GENERATED_CID_DOES_NOT_MATCH), errors_1.codes.ERR_GENERATED_CID_DOES_NOT_MATCH, {
+                            details: "fetchCid: Loaded file generates a different CID (".concat(generatedCid, ") than provided CID (").concat(cid, ")")
+                        });
+                    return [2 /*return*/, fileContent];
+            }
+        });
+    });
+}
+exports.fetchCid = fetchCid;
+function loadIpfsFileAsJson(cid, plebbit) {
+    return __awaiter(this, void 0, void 0, function () {
+        var _a, _b;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
+                case 0:
+                    _b = (_a = JSON).parse;
+                    return [4 /*yield*/, fetchCid(cid, plebbit)];
+                case 1: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
             }
         });
     });
@@ -181,7 +200,7 @@ function loadIpfsFileAsJson(cid, plebbit, defaultOptions) {
 exports.loadIpfsFileAsJson = loadIpfsFileAsJson;
 function loadIpnsAsJson(ipns, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
-        var url, _a, resJson, res, cid, error, e_3;
+        var url, _a, resText, res, cid, error, e_3;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -193,9 +212,9 @@ function loadIpnsAsJson(ipns, plebbit) {
                     url = "".concat(plebbit.ipfsGatewayUrl, "/ipns/").concat(ipns);
                     return [4 /*yield*/, fetchWithLimit(url, { cache: "no-store", size: DOWNLOAD_LIMIT_BYTES })];
                 case 1:
-                    _a = _b.sent(), resJson = _a[0], res = _a[1];
+                    _a = _b.sent(), resText = _a[0], res = _a[1];
                     if (res.status === 200)
-                        return [2 /*return*/, resJson];
+                        return [2 /*return*/, JSON.parse(resText)];
                     else
                         throw Error("Failed to load IPNS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText));
                     return [3 /*break*/, 7];

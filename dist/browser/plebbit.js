@@ -420,6 +420,13 @@ var Plebbit = /** @class */ (function (_super) {
             });
         });
     };
+    Plebbit.prototype.fetchCid = function (cid) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, (0, util_2.fetchCid)(cid, this)];
+            });
+        });
+    };
     return Plebbit;
 }(events_1.default));
 exports.Plebbit = Plebbit;
