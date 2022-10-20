@@ -113,6 +113,19 @@ const startIpfsNodes = async () => {
 
     await startIpfsNodes();
 
+    // Create a server that mocks an ipfs gateway
+    // Will return valid content for one cid and invalid content for another
+    // The purpose is to test whether plebbit.fetchCid will throw if we retrieved the invalid content
+
+    require("http")
+        .createServer((req, res) => {
+            if (req.url === "/ipfs/QmbWqTYuyfcpDyn6gawRf5eSFVtYnGDAKttjESXjjbAHbr") res.end("Hello plebs"); // Valid content
+            else if (req.url === "/ipfs/QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav")
+                res.end("This string does not generate the CID in the URL. This should throw an error in plebbit.fetchCid");
+            else res.end("Unknown CID");
+        })
+        .listen(33415);
+
     if (process.env["NO_SUBPLEBBITS"] !== "1")
         await startSubplebbits({
             signers: signers,

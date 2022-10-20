@@ -14,7 +14,6 @@ Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 describe("plebbit", () => {
     it(`Run server`, async () =>
         new Promise(async (resolve) => {
-            console.log(startSubplebbits);
             await startSubplebbits({
                 dataPath: window.plebbitDataPath,
                 signers: signers,
@@ -24,5 +23,10 @@ describe("plebbit", () => {
                 numOfCommentsToPublish: 1
             });
             console.log("started subplebbits");
+            // Create a server that mocks an ipfs gateway
+            // Will return valid content for one cid and invalid content for another
+            // The purpose is to test whether plebbit.fetchCid will throw if we retrieved the invalid content
+
+            window.startMaliciousGateway();
         }));
 });

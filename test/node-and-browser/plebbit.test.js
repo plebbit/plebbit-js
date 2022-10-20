@@ -4,6 +4,7 @@ const signers = require("../fixtures/signers");
 const { loadIpfsFileAsJson, loadIpnsAsJson } = require("../../dist/node/util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
+const { messages } = require("../../dist/node/errors");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -193,6 +194,18 @@ describe("plebbit (node and browser)", () => {
             const cid = (await plebbit.ipfsClient.add(fileString)).path;
             const contentFromFetchCid = await plebbit.fetchCid(cid);
             expect(contentFromFetchCid).to.equal(fileString);
+        });
+
+        it(`Throws an error if malicious gateway modifies content of file`, async () => {
+            const [fileString1, fileString2] = ["Hello plebs", "Hello plebs 2"];
+            const cids = (await Promise.all([fileString1, fileString2].map((file) => plebbit.ipfsClient.add(file)))).map((res) => res.path);
+
+            const plebbitWithMaliciousGateway = await Plebbit({ ipfsGatewayUrl: "http://127.0.0.1:33415" });
+            const fileString1FromGateway = await plebbitWithMaliciousGateway.fetchCid(cids[0]);
+            expect(fileString1).to.equal(fileString1FromGateway);
+
+            // The following line should throw since the malicious gateway would send a content that differs from original content
+            assert.isRejected(plebbitWithMaliciousGateway.fetchCid(cids[1]), messages.ERR_GENERATED_CID_DOES_NOT_MATCH);
         });
     });
 });
