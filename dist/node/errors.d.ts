@@ -18,7 +18,8 @@ export declare enum messages {
     ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit",
     ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT = "Rejecting post/comment because its timestamp is earlier than its parent",
     ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST = "The parent of this comment does not exist",
-    ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "The parent cid of this comment is not defined"
+    ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "The parent cid of this comment is not defined",
+    ERR_GENERATED_CID_DOES_NOT_MATCH = "The CID generated from loaded content does not match the provided CID"
 }
 export declare enum codes {
     ERR_ENS_RESOLVER_NOT_FOUND = "ERR_ENS_RESOLVER_NOT_FOUND",
@@ -40,5 +41,6 @@ export declare enum codes {
     ERR_OVER_DOWNLOAD_LIMIT = "ERR_OVER_DOWNLOAD_LIMIT",
     ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT = "ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT",
     ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST = "ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST",
-    ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED"
+    ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED",
+    ERR_GENERATED_CID_DOES_NOT_MATCH = "ERR_GENERATED_CID_DOES_NOT_MATCH"
 }

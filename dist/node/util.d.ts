@@ -1,9 +1,10 @@
 import { Plebbit } from "./plebbit";
 import { CommentType, OnlyDefinedProperties, Timeframe } from "./types";
 export declare const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number>;
-export declare function loadIpfsFileAsJson(cid: string, plebbit: Plebbit, defaultOptions?: {
-    timeout: number;
-}): Promise<any>;
+export declare function fetchCid(cid: string, plebbit: Plebbit, catOptions?: {
+    length: number;
+}): Promise<string>;
+export declare function loadIpfsFileAsJson(cid: string, plebbit: Plebbit): Promise<any>;
 export declare function loadIpnsAsJson(ipns: string, plebbit: Plebbit): Promise<any>;
 export declare function chunks<T>(arr: Array<T>, len: number): Array<Array<T>>;
 export declare function round(number: number, decimalPlaces: number): number;
