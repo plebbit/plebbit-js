@@ -1,12 +1,8 @@
 import Plebbit from "@plebbit/plebbit-js";
 import { subplebbitsPrivateKeys } from "./secrets.js";
-import http from "http";
 
 const plebbit = await Plebbit({
-    ipfsHttpClientOptions: {
-        url: `http://localhost:5001/api/v0`,
-        agent: new http.Agent({ keepAlive: true, maxSockets: Infinity })
-    }
+    ipfsHttpClientOptions: `http://localhost:5001/api/v0`
 });
 
 const subplebbitsProps = [
@@ -44,7 +40,8 @@ const subplebbitsProps = [
 
 async function runSubplebbit(props) {
     const subplebbit = await plebbit.createSubplebbit(props);
-    await subplebbit.start(100000); // Sync every 5 minutes
+    await subplebbit.start();
+    await subplebbit.edit({ roles: { ...subplebbit.roles, "estebanabaroa.eth": { role: "admin" } } });
     console.log(`Subplebbit ${props.title} (${subplebbit.address}) is running now`);
 }
 
