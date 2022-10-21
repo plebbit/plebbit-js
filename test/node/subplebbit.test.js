@@ -277,4 +277,13 @@ describe("subplebbit", async () => {
             });
         });
     });
+
+    it(`Deleted sub is not listed in listSubplebbits`, async () => {
+        const subs = await plebbit.listSubplebbits();
+        expect(subs).to.include(subplebbit.address);
+        expect(await plebbit.getSubplebbit(subplebbit.address)).to.be.an("object");
+        await subplebbit.delete();
+        const subsAfterDeletion = await plebbit.listSubplebbits();
+        expect(subsAfterDeletion).to.not.include(subplebbit.address);
+    });
 });
