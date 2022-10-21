@@ -4,6 +4,7 @@ import { Pages } from "./pages";
 import { verifyPublication } from "./signer";
 import {
     AuthorCommentEdit,
+    CommentAuthorEditOptions,
     CommentForDbType,
     CommentIpfsType,
     CommentType,
@@ -183,15 +184,17 @@ export class Comment extends Publication implements CommentType {
         });
     }
 
-    toJSONCommentUpdate(skipAssert = false): Omit<CommentUpdate, "signature"> {
-        // if (!skipAssert)
-        //     assert(
-        //         typeof this.upvoteCount === "number" &&
-        //             typeof this.downvoteCount === "number" &&
-        //             typeof this.replyCount === "number" &&
-        //             typeof this.updatedAt === "number",
-        //         "Fields are needed to export a CommentUpdate JSON"
-        //     );
+    toJSONCommentUpdate(skipValidation = false): Omit<CommentUpdate, "signature"> {
+        if (!skipValidation) {
+            if (
+                typeof this.upvoteCount !== "number" ||
+                typeof this.downvoteCount !== "number" ||
+                typeof this.replyCount !== "number" ||
+                typeof this.updatedAt !== "number"
+            )
+                throw Error(`upvoteCount, downvoteCount, replyCount, and updatedAt need to be properly defined as numbers`);
+        }
+        const author: CommentAuthorEditOptions = { banExpiresAt: this.author.banExpiresAt, flair: this.flair };
         return {
             upvoteCount: this.upvoteCount,
             downvoteCount: this.downvoteCount,
@@ -206,7 +209,7 @@ export class Comment extends Publication implements CommentType {
             moderatorReason: this.moderatorReason,
             updatedAt: this.updatedAt,
             protocolVersion: this.protocolVersion,
-            author: { banExpiresAt: this.author.banExpiresAt, flair: this.flair }
+            ...(JSON.stringify(author) === "{}" ? {} : author)
         };
     }
 
