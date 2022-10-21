@@ -119,6 +119,7 @@ const startIpfsNodes = async () => {
 
     require("http")
         .createServer((req, res) => {
+            res.setHeader("Access-Control-Allow-Headers", "*");
             if (req.url === "/ipfs/QmbWqTYuyfcpDyn6gawRf5eSFVtYnGDAKttjESXjjbAHbr") res.end("Hello plebs"); // Valid content
             else if (req.url === "/ipfs/QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav")
                 res.end("This string does not generate the CID in the URL. This should throw an error in plebbit.fetchCid");
