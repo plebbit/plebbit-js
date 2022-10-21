@@ -140,7 +140,7 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   lastPostCid?: string // the most recent post in the linked list of posts
   posts?: Pages // only preload page 1 sorted by 'hot', might preload more later, comments should include Comment + CommentUpdate data
   challengeTypes?: ChallengeType[] // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
-  metricsCid?: subplebbitMetricsCid
+  metricsCid?: string
   createdAt: number
   updatedAt: number
   features?: SubplebbitFeatures
@@ -336,7 +336,7 @@ Encrypted {
   - `subplebbit.settings`
   - `subplebbit.createdAt`
   - `subplebbit.updatedAt`
-  - `subplebbit.metrics`
+  - `subplebbit.metricsCid`
   - `subplebbit.signer`
 - [Subplebbit Events](#subplebbit-events)
   - [`update`](#update)
@@ -996,7 +996,6 @@ An object which may have the following keys:
 | posts | `Pages` or `undefined` | Only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post |
 | pubsubTopic | `string` or `undefined` | The string to publish to in the pubsub, a public key of the subplebbit owner's choice |
 | challengeTypes | `ChallengeType[]` or `undefined` | The challenge types provided by the subplebbit owner |
-| metrics | `SubplebbitMetrics` or `undefined` | The self reported metrics of the subplebbit |
 | features | `SubplebbitFeatures` or `undefined` | The features of the subplebbit |
 | suggested | `SubplebbitSuggested` or `undefined` | The suggested client settings for the subplebbit |
 | flairs | `{[key: 'post' or 'author']: Flair[]}` or `undefined` | The list of flairs (colored labels for comments or authors) authors or mods can choose from |
