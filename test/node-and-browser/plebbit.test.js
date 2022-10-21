@@ -184,9 +184,13 @@ describe("plebbit (node and browser)", () => {
 
     describe("plebbit.fetchCid", async () => {
         let plebbit;
+        let gatewayPlebbit;
         before(async () => {
             plebbit = await Plebbit({
                 ipfsHttpClientOptions: "http://localhost:5001/api/v0"
+            });
+            gatewayPlebbit = await Plebbit({
+                ipfsGatewayUrl: "http://127.0.0.1:8080"
             });
         });
         it(`Can fetch a cid correctly`, async () => {
@@ -194,6 +198,8 @@ describe("plebbit (node and browser)", () => {
             const cid = (await plebbit.ipfsClient.add(fileString)).path;
             const contentFromFetchCid = await plebbit.fetchCid(cid);
             expect(contentFromFetchCid).to.equal(fileString);
+            const contentFromGatewayFetchCid = await gatewayPlebbit.fetchCid(cid);
+            expect(contentFromGatewayFetchCid).to.equal(fileString);
         });
 
         it(`Throws an error if malicious gateway modifies content of file`, async () => {
