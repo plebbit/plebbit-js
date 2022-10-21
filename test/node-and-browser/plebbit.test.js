@@ -205,7 +205,7 @@ describe("plebbit (node and browser)", () => {
             expect(fileString1).to.equal(fileString1FromGateway);
 
             // The following line should throw since the malicious gateway would send a content that differs from original content
-            assert.isRejected(plebbitWithMaliciousGateway.fetchCid(cids[1]), messages.ERR_GENERATED_CID_DOES_NOT_MATCH);
+            await assert.isRejected(plebbitWithMaliciousGateway.fetchCid(cids[1]), messages.ERR_GENERATED_CID_DOES_NOT_MATCH);
         });
     });
 });
