@@ -7,7 +7,7 @@ import { pendingSubplebbitCreations, Plebbit } from "../../plebbit";
 import { DbHandler } from "./db-handler";
 
 import fetch from "node-fetch";
-import { create, Options } from "ipfs-http-client";
+import { CID, create, Options } from "ipfs-http-client";
 
 import all from "it-all";
 import last from "it-last";
@@ -33,9 +33,11 @@ const nativeFunctions: NativeFunctions = {
 
         await fs.mkdir(subplebbitsPath, { recursive: true });
 
-        const addresses = (await fs.readdir(subplebbitsPath)).filter(
-            (address: string) => !Boolean(pendingSubplebbitCreations[address]) && !/-journal$/.test(address) // Ignore sqlite journal files
-        );
+        const addresses = (await fs.readdir(subplebbitsPath, { withFileTypes: true }))
+            .filter(
+                (file) => file.isFile() && !Boolean(pendingSubplebbitCreations[file.name]) && !/-journal$/.test(file.name) // Ignore sqlite journal files
+            )
+            .map((file) => file.name);
 
         return addresses;
     },
@@ -90,6 +92,13 @@ const nativeFunctions: NativeFunctions = {
             return last(ipfsClient.name.resolve(...args));
         };
 
+        const blockRm = async (...args: Parameters<IpfsHttpClientPublicAPI["block"]["rm"]>) => {
+            const rmResults: { cid: CID; error?: Error }[] = [];
+            for await (const res of ipfsClient.block.rm(...args)) rmResults.push(res);
+
+            return rmResults;
+        };
+
         return {
             add: ipfsClient.add,
             cat: cat,
@@ -106,8 +115,11 @@ const nativeFunctions: NativeFunctions = {
                 get: ipfsClient.config.get
             },
             key: {
-                list: ipfsClient.key.list
-            }
+                list: ipfsClient.key.list,
+                rm: ipfsClient.key.rm
+            },
+            pin: { rm: ipfsClient.pin.rm },
+            block: { rm: blockRm }
         };
     },
     importSignerIntoIpfsNode: async (signer: SignerType, plebbit: Plebbit): Promise<{ Id: string; Name: string }> => {
@@ -130,6 +142,13 @@ const nativeFunctions: NativeFunctions = {
         if (res.status !== 200) throw Error(`failed ipfs import key: '${url}' '${res.status}' '${res.statusText}'`);
         const resJson: { Id: string; Name: string } = await res.json();
         return resJson;
+    },
+    deleteSubplebbit: async (subplebbitAddress: string, dataPath: string) => {
+        // Delete subplebbit will just move the sub db file to another directory
+        const oldPath = path.join(dataPath, "subplebbits", subplebbitAddress);
+        const newPath = path.join(dataPath, "subplebbits", "deleted", subplebbitAddress);
+        await fs.mkdir(path.join(dataPath, "subplebbits", "deleted"), { recursive: true });
+        await fs.rename(oldPath, newPath);
     }
 };
 

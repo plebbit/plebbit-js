@@ -1,6 +1,6 @@
 import { IpfsHttpClientPublicAPI, NativeFunctions, SignerType } from "../../types";
 
-import { create, Options } from "ipfs-http-client";
+import { CID, create, Options } from "ipfs-http-client";
 
 import all from "it-all";
 import last from "it-last";
@@ -35,6 +35,13 @@ const nativeFunctions: NativeFunctions = {
             return last(ipfsClient.name.resolve(...args));
         };
 
+        const blockRm = async (...args: Parameters<IpfsHttpClientPublicAPI["block"]["rm"]>) => {
+            const rmResults: { cid: CID; error?: Error }[] = [];
+            for await (const res of ipfsClient.block.rm(...args)) rmResults.push(res);
+
+            return rmResults;
+        };
+
         return {
             add: ipfsClient.add,
             cat: cat,
@@ -51,8 +58,11 @@ const nativeFunctions: NativeFunctions = {
                 get: ipfsClient.config.get
             },
             key: {
-                list: ipfsClient.key.list
-            }
+                list: ipfsClient.key.list,
+                rm: ipfsClient.key.rm
+            },
+            pin: { rm: ipfsClient.pin.rm },
+            block: { rm: blockRm }
         };
     },
     importSignerIntoIpfsNode: async (signer: SignerType, plebbit: Plebbit): Promise<{ Id: string; Name: string }> => {

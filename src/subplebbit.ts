@@ -46,6 +46,7 @@ import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 import { nativeFunctions } from "./runtime/node/util";
 import env from "./version";
+import { CID } from "ipfs-http-client";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
@@ -391,7 +392,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         try {
             currentIpns = await loadIpnsAsJson(resolvedAddress, this.plebbit);
         } catch (e) {
-            log(`Subplebbit IPNS (${resolvedAddress}) is not defined, will publish a new record`);
+            log(`${e}\n subplebbit IPNS (${resolvedAddress}) is not defined, will publish a new record`);
         }
         if (subplebbitPosts) {
             if (!subplebbitPosts?.pages?.hot) throw Error("Generated pages for subplebbit.posts is missing pages");
@@ -957,6 +958,26 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 log.error(reason);
                 this.emit("error", reason);
             });
+    }
+
+    async delete() {
+        await this.stop();
+        if (typeof this.plebbit.dataPath !== "string")
+            throw errcode(Error(messages.ERR_DATA_PATH_IS_NOT_DEFINED), codes.ERR_DATA_PATH_IS_NOT_DEFINED, {
+                details: `delete: plebbitOptions.dataPath=${this.plebbit.dataPath}`
+            });
+        if (!this.plebbit.ipfsClient) throw Error("Ipfs client is not defined");
+
+        await nativeFunctions.deleteSubplebbit(this.address, this.plebbit.dataPath);
+        const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
+        try {
+            await this.plebbit.ipfsClient.pin.rm(resolvedAddress);
+        } catch (e) {
+            if (!e.message.includes("not pinned")) throw e;
+        }
+
+        await this.plebbit.ipfsClient.block.rm(CID.parse(resolvedAddress));
+        if (this.ipnsKeyName) await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
     }
 
     async _addPublicationToDb(publication: CommentEdit | Vote | Comment | Post) {

@@ -1,4 +1,4 @@
-import { IPFSHTTPClient, Options } from "ipfs-http-client";
+import { CID, IPFSHTTPClient, Options } from "ipfs-http-client";
 import { Knex } from "knex";
 import { Pages } from "./pages";
 import { DbHandler } from "./runtime/node/db-handler";
@@ -441,7 +441,9 @@ export type IpfsHttpClientPublicAPI = {
         publish: IPFSHTTPClient["name"]["publish"];
     };
     config: Pick<IPFSHTTPClient["config"], "get">;
-    key: Pick<IPFSHTTPClient["key"], "list">;
+    key: Pick<IPFSHTTPClient["key"], "list" | "rm">;
+    pin: Pick<IPFSHTTPClient["pin"], "rm">;
+    block: { rm: (...p: Parameters<IPFSHTTPClient["block"]["rm"]>) => Promise<{ cid: CID; error?: Error }[]> };
 };
 export type NativeFunctions = {
     listSubplebbits: (dataPath: string) => Promise<string[]>;
@@ -451,6 +453,7 @@ export type NativeFunctions = {
     createImageCaptcha: (...p: Parameters<typeof createCaptcha>) => Promise<{ image: string; text: string }>;
     // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
     importSignerIntoIpfsNode: (signer: SignerType, plebbit: Plebbit) => Promise<{ Id: string; Name: string }>;
+    deleteSubplebbit(subplebbitAddress: string, dataPath: string): Promise<void>;
 };
 
 export type OnlyDefinedProperties<T> = Pick<
