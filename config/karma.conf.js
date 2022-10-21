@@ -83,7 +83,8 @@ module.exports = function (config) {
         logLevel: config.LOG_INFO,
 
         // fix various timeout errors
-        browserNoActivityTimeout: 210000,
+        browserNoActivityTimeout: mochaConfig.timeout,
+        captureTimeout: mochaConfig.timeout,
         browserDisconnectTimeout: mochaConfig.timeout,
         browserDisconnectTolerance: 10
     });
