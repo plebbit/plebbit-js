@@ -253,6 +253,35 @@ describe("subplebbit", async () => {
         expect(JSON.stringify(createdSubplebbit.toJSON())).to.equal(JSON.stringify(subplebbit.toJSON()));
     });
 
+    it(`createSubplebbit({address, ...extraProps}) creates a sub with extraProps fields over cached fields`, async () =>
+        new Promise(async (resolve) => {
+            const newSub = await plebbit.createSubplebbit({
+                title: `Test for extra props`,
+                description: "Test for description extra props"
+            });
+            newSub._syncIntervalMs = syncInterval;
+            await newSub.start();
+            await new Promise((resolve) => newSub.once("update", resolve));
+            await newSub.stop();
+
+            const createdSubplebbit = await plebbit.createSubplebbit({
+                address: newSub.address,
+                title: "nothing",
+                description: "nothing also"
+            });
+            expect(createdSubplebbit.title).to.equal("nothing");
+            expect(createdSubplebbit.description).to.equal("nothing also");
+
+            createdSubplebbit._syncIntervalMs = syncInterval;
+            await createdSubplebbit.start();
+            createdSubplebbit.once("update", (updatedSubplebbit) => {
+                expect(updatedSubplebbit.title).to.equal("nothing");
+                expect(updatedSubplebbit.description).to.equal("nothing also");
+                createdSubplebbit.stop();
+                resolve();
+            });
+        }));
+
     it("Two local sub instances can receive each other updates with subplebbit.update", async () => {
         return new Promise(async (resolve) => {
             const subOne = await plebbit.createSubplebbit({});
