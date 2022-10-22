@@ -42,7 +42,7 @@ async function runSubplebbit(props) {
     const subplebbit = await plebbit.createSubplebbit(props);
     await subplebbit.start();
     await subplebbit.edit({ roles: { ...subplebbit.roles, "estebanabaroa.eth": { role: "admin" } } });
-    console.log(`Subplebbit ${props.title} (${subplebbit.address}) is running now`);
+    subplebbit.once("update", () => console.log(`Subplebbit ${props.title} (${subplebbit.address}) is running now`));
 }
 
 await Promise.all(subplebbitsProps.map((prop) => runSubplebbit(prop)));
