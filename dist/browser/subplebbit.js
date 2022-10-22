@@ -95,6 +95,7 @@ var errors_1 = require("./errors");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var util_3 = require("./runtime/browser/util");
 var version_1 = __importDefault(require("./version"));
+var ipfs_http_client_1 = require("ipfs-http-client");
 var DEFAULT_UPDATE_INTERVAL_MS = 60000;
 var DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
 exports.RUNNING_SUBPLEBBITS = {};
@@ -501,7 +502,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [3 /*break*/, 9];
                     case 8:
                         e_4 = _f.sent();
-                        log("Subplebbit IPNS (".concat(resolvedAddress, ") is not defined, will publish a new record"));
+                        log("".concat(e_4, "\n subplebbit IPNS (").concat(resolvedAddress, ") is not defined, will publish a new record"));
                         return [3 /*break*/, 9];
                     case 9:
                         if (subplebbitPosts) {
@@ -1268,6 +1269,51 @@ var Subplebbit = /** @class */ (function (_super) {
                             _this.emit("error", reason);
                         });
                         return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Subplebbit.prototype.delete = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var resolvedAddress, e_8;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.stop()];
+                    case 1:
+                        _a.sent();
+                        if (typeof this.plebbit.dataPath !== "string")
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_DATA_PATH_IS_NOT_DEFINED), errors_1.codes.ERR_DATA_PATH_IS_NOT_DEFINED, {
+                                details: "delete: plebbitOptions.dataPath=".concat(this.plebbit.dataPath)
+                            });
+                        if (!this.plebbit.ipfsClient)
+                            throw Error("Ipfs client is not defined");
+                        return [4 /*yield*/, util_3.nativeFunctions.deleteSubplebbit(this.address, this.plebbit.dataPath)];
+                    case 2:
+                        _a.sent();
+                        return [4 /*yield*/, this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address)];
+                    case 3:
+                        resolvedAddress = _a.sent();
+                        _a.label = 4;
+                    case 4:
+                        _a.trys.push([4, 6, , 7]);
+                        return [4 /*yield*/, this.plebbit.ipfsClient.pin.rm(resolvedAddress)];
+                    case 5:
+                        _a.sent();
+                        return [3 /*break*/, 7];
+                    case 6:
+                        e_8 = _a.sent();
+                        if (!e_8.message.includes("not pinned"))
+                            throw e_8;
+                        return [3 /*break*/, 7];
+                    case 7: return [4 /*yield*/, this.plebbit.ipfsClient.block.rm(ipfs_http_client_1.CID.parse(resolvedAddress))];
+                    case 8:
+                        _a.sent();
+                        if (!this.ipnsKeyName) return [3 /*break*/, 10];
+                        return [4 /*yield*/, this.plebbit.ipfsClient.key.rm(this.ipnsKeyName)];
+                    case 9:
+                        _a.sent();
+                        _a.label = 10;
+                    case 10: return [2 /*return*/];
                 }
             });
         });

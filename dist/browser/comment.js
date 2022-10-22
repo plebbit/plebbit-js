@@ -156,32 +156,17 @@ var Comment = /** @class */ (function (_super) {
             throw Error("comment.ipnsKeyName needs to be defined before inserting comment in DB");
         return (0, util_1.removeKeysWithUndefinedValues)(__assign(__assign({}, (0, util_1.removeKeys)(this.toJSON(), ["replyCount", "upvoteCount", "downvoteCount", "replies"])), { author: JSON.stringify(this.author), authorEdit: JSON.stringify(this.authorEdit), original: JSON.stringify(this.original), authorAddress: this.author.address, challengeRequestId: challengeRequestId, ipnsKeyName: this.ipnsKeyName, signature: JSON.stringify(this.signature) }));
     };
-    Comment.prototype.toJSONCommentUpdate = function (skipAssert) {
-        if (skipAssert === void 0) { skipAssert = false; }
-        // if (!skipAssert)
-        //     assert(
-        //         typeof this.upvoteCount === "number" &&
-        //             typeof this.downvoteCount === "number" &&
-        //             typeof this.replyCount === "number" &&
-        //             typeof this.updatedAt === "number",
-        //         "Fields are needed to export a CommentUpdate JSON"
-        //     );
-        return {
-            upvoteCount: this.upvoteCount,
-            downvoteCount: this.downvoteCount,
-            replyCount: this.replyCount,
-            authorEdit: this.authorEdit,
-            replies: this.replies.toJSON(),
-            flair: this.flair,
-            spoiler: this.spoiler,
-            pinned: this.pinned,
-            locked: this.locked,
-            removed: this.removed,
-            moderatorReason: this.moderatorReason,
-            updatedAt: this.updatedAt,
-            protocolVersion: this.protocolVersion,
-            author: { banExpiresAt: this.author.banExpiresAt, flair: this.flair }
-        };
+    Comment.prototype.toJSONCommentUpdate = function (skipValidation) {
+        if (skipValidation === void 0) { skipValidation = false; }
+        if (!skipValidation) {
+            if (typeof this.upvoteCount !== "number" ||
+                typeof this.downvoteCount !== "number" ||
+                typeof this.replyCount !== "number" ||
+                typeof this.updatedAt !== "number")
+                throw Error("upvoteCount, downvoteCount, replyCount, and updatedAt need to be properly defined as numbers");
+        }
+        var author = { banExpiresAt: this.author.banExpiresAt, flair: this.flair };
+        return __assign({ upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replyCount: this.replyCount, authorEdit: this.authorEdit, replies: this.replies.toJSON(), flair: this.flair, spoiler: this.spoiler, pinned: this.pinned, locked: this.locked, removed: this.removed, moderatorReason: this.moderatorReason, updatedAt: this.updatedAt, protocolVersion: this.protocolVersion }, (JSON.stringify(author) === "{}" ? {} : author));
     };
     Comment.prototype.setCommentIpnsKey = function (ipnsKey) {
         // Contains name and id
