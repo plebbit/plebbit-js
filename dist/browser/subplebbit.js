@@ -295,15 +295,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 9:
                         cachedSubplebbit = _h.sent();
                         if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")
-                            this.initSubplebbit(cachedSubplebbit); // Init subplebbit fields from DB
-                        if (!this.pubsubTopic) {
-                            this.pubsubTopic = this.address;
-                            log("Defaulted subplebbit (".concat(this.address, ") pubsub topic to ").concat(this.pubsubTopic, " since sub owner hasn't provided any"));
-                        }
-                        if (!this.createdAt) {
-                            this.createdAt = (0, util_1.timestamp)();
-                            log("Subplebbit (".concat(this.address, ") createdAt has been set to ").concat(this.createdAt));
-                        }
+                            this.initSubplebbit(__assign(__assign({}, cachedSubplebbit), (0, util_1.removeKeysWithUndefinedValues)(this.toJSON()))); // Init subplebbit fields from DB
                         _e = JSON.stringify(this.toJSON());
                         _g = (_f = JSON).stringify;
                         return [4 /*yield*/, ((_c = this.dbHandler) === null || _c === void 0 ? void 0 : _c.keyvGet(this.address))];
@@ -1245,13 +1237,18 @@ var Subplebbit = /** @class */ (function (_super) {
                             });
                         this._sync = true;
                         exports.RUNNING_SUBPLEBBITS[this.signer.address] = true;
-                        return [4 /*yield*/, this.prePublish()];
-                    case 1:
-                        _b.sent();
                         if (!this.provideCaptchaCallback) {
                             log("Subplebbit owner has not provided any captcha. Will go with default image captcha");
                             this.provideCaptchaCallback = this.defaultProvideCaptcha;
                             this.validateCaptchaAnswerCallback = this.defaultValidateCaptcha;
+                        }
+                        if (typeof this.pubsubTopic !== "string") {
+                            this.pubsubTopic = this.address;
+                            log("Defaulted subplebbit (".concat(this.address, ") pubsub topic to ").concat(this.pubsubTopic, " since sub owner hasn't provided any"));
+                        }
+                        if (typeof this.createdAt !== "number") {
+                            this.createdAt = (0, util_1.timestamp)();
+                            log("Subplebbit (".concat(this.address, ") createdAt has been set to ").concat(this.createdAt));
                         }
                         return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, function (pubsubMessage) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                                 switch (_a.label) {
@@ -1259,7 +1256,7 @@ var Subplebbit = /** @class */ (function (_super) {
                                     case 1: return [2 /*return*/, _a.sent()];
                                 }
                             }); }); })];
-                    case 2:
+                    case 1:
                         _b.sent();
                         log.trace("Waiting for publications on pubsub topic (".concat(this.pubsubTopic, ")"));
                         this.syncIpnsWithDb()

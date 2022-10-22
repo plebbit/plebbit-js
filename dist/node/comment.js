@@ -166,7 +166,7 @@ var Comment = /** @class */ (function (_super) {
                 throw Error("upvoteCount, downvoteCount, replyCount, and updatedAt need to be properly defined as numbers");
         }
         var author = { banExpiresAt: this.author.banExpiresAt, flair: this.flair };
-        return __assign({ upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replyCount: this.replyCount, authorEdit: this.authorEdit, replies: this.replies.toJSON(), flair: this.flair, spoiler: this.spoiler, pinned: this.pinned, locked: this.locked, removed: this.removed, moderatorReason: this.moderatorReason, updatedAt: this.updatedAt, protocolVersion: this.protocolVersion }, (JSON.stringify(author) === "{}" ? {} : author));
+        return __assign({ upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replyCount: this.replyCount, authorEdit: this.authorEdit, replies: this.replies.toJSON(), flair: this.flair, spoiler: this.spoiler, pinned: this.pinned, locked: this.locked, removed: this.removed, moderatorReason: this.moderatorReason, updatedAt: this.updatedAt, protocolVersion: this.protocolVersion }, (JSON.stringify(author) === "{}" ? {} : { author: author }));
     };
     Comment.prototype.setCommentIpnsKey = function (ipnsKey) {
         // Contains name and id
