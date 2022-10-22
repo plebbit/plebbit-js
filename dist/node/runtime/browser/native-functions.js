@@ -35,6 +35,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -104,6 +111,53 @@ var nativeFunctions = {
                 });
             });
         };
+        var blockRm = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return __awaiter(void 0, void 0, void 0, function () {
+                var rmResults, _a, _b, res, e_1_1;
+                var _c;
+                var e_1, _d;
+                return __generator(this, function (_e) {
+                    switch (_e.label) {
+                        case 0:
+                            rmResults = [];
+                            _e.label = 1;
+                        case 1:
+                            _e.trys.push([1, 6, 7, 12]);
+                            _a = __asyncValues((_c = ipfsClient.block).rm.apply(_c, args));
+                            _e.label = 2;
+                        case 2: return [4 /*yield*/, _a.next()];
+                        case 3:
+                            if (!(_b = _e.sent(), !_b.done)) return [3 /*break*/, 5];
+                            res = _b.value;
+                            rmResults.push(res);
+                            _e.label = 4;
+                        case 4: return [3 /*break*/, 2];
+                        case 5: return [3 /*break*/, 12];
+                        case 6:
+                            e_1_1 = _e.sent();
+                            e_1 = { error: e_1_1 };
+                            return [3 /*break*/, 12];
+                        case 7:
+                            _e.trys.push([7, , 10, 11]);
+                            if (!(_b && !_b.done && (_d = _a.return))) return [3 /*break*/, 9];
+                            return [4 /*yield*/, _d.call(_a)];
+                        case 8:
+                            _e.sent();
+                            _e.label = 9;
+                        case 9: return [3 /*break*/, 11];
+                        case 10:
+                            if (e_1) throw e_1.error;
+                            return [7 /*endfinally*/];
+                        case 11: return [7 /*endfinally*/];
+                        case 12: return [2 /*return*/, rmResults];
+                    }
+                });
+            });
+        };
         return {
             add: ipfsClient.add,
             cat: cat,
@@ -120,8 +174,11 @@ var nativeFunctions = {
                 get: ipfsClient.config.get
             },
             key: {
-                list: ipfsClient.key.list
-            }
+                list: ipfsClient.key.list,
+                rm: ipfsClient.key.rm
+            },
+            pin: { rm: ipfsClient.pin.rm },
+            block: { rm: blockRm }
         };
     },
     importSignerIntoIpfsNode: function (signer, plebbit) { return __awaiter(void 0, void 0, void 0, function () {

@@ -100,5 +100,6 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     private syncIpnsWithDb;
     private _syncLoop;
     start(): Promise<void>;
+    delete(): Promise<void>;
     _addPublicationToDb(publication: CommentEdit | Vote | Comment | Post): Promise<string | CommentEdit | Vote | Comment | Post>;
 }
