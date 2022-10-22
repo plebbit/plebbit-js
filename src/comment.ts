@@ -209,7 +209,7 @@ export class Comment extends Publication implements CommentType {
             moderatorReason: this.moderatorReason,
             updatedAt: this.updatedAt,
             protocolVersion: this.protocolVersion,
-            ...(JSON.stringify(author) === "{}" ? {} : author)
+            ...(JSON.stringify(author) === "{}" ? {} : { author })
         };
     }
 

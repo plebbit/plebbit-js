@@ -264,16 +264,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
 
         const cachedSubplebbit: SubplebbitType | undefined = await this.dbHandler?.keyvGet(this.address);
-        if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}") this.initSubplebbit(cachedSubplebbit); // Init subplebbit fields from DB
-
-        if (!this.pubsubTopic) {
-            this.pubsubTopic = this.address;
-            log(`Defaulted subplebbit (${this.address}) pubsub topic to ${this.pubsubTopic} since sub owner hasn't provided any`);
-        }
-        if (!this.createdAt) {
-            this.createdAt = timestamp();
-            log(`Subplebbit (${this.address}) createdAt has been set to ${this.createdAt}`);
-        }
+        if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")
+            this.initSubplebbit({ ...cachedSubplebbit, ...removeKeysWithUndefinedValues(this.toJSON()) }); // Init subplebbit fields from DB
 
         if (JSON.stringify(this.toJSON()) !== JSON.stringify(await this.dbHandler?.keyvGet(this.address)))
             await this.dbHandler?.keyvSet(this.address, this.toJSON());
@@ -941,11 +933,18 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
         this._sync = true;
         RUNNING_SUBPLEBBITS[this.signer.address] = true;
-        await this.prePublish();
         if (!this.provideCaptchaCallback) {
             log("Subplebbit owner has not provided any captcha. Will go with default image captcha");
             this.provideCaptchaCallback = this.defaultProvideCaptcha;
             this.validateCaptchaAnswerCallback = this.defaultValidateCaptcha;
+        }
+        if (typeof this.pubsubTopic !== "string") {
+            this.pubsubTopic = this.address;
+            log(`Defaulted subplebbit (${this.address}) pubsub topic to ${this.pubsubTopic} since sub owner hasn't provided any`);
+        }
+        if (typeof this.createdAt !== "number") {
+            this.createdAt = timestamp();
+            log(`Subplebbit (${this.address}) createdAt has been set to ${this.createdAt}`);
         }
         await this.plebbit.pubsubIpfsClient.pubsub.subscribe(
             this.pubsubTopic,

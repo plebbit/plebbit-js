@@ -230,7 +230,11 @@ export function oldScore(comment: CommentType) {
 }
 
 export function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T> {
-    return JSON.parse(JSON.stringify(object));
+    const newObj = JSON.parse(JSON.stringify(object));
+    for (const prop in newObj)
+        if (newObj[prop]?.constructor?.name === "Object" && JSON.stringify(newObj[prop]) === "{}") delete newObj[prop];
+
+    return newObj;
 }
 
 export function randomElement<T>(array: Array<T>): T {

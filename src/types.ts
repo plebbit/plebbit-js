@@ -31,7 +31,6 @@ export interface PageType {
 export interface PagesType {
     pages?: Partial<Record<PostSortName | ReplySortName, PageType>>;
     pageCids?: Partial<Record<PostSortName | ReplySortName, string>>;
-    subplebbit: Pick<Subplebbit, "address">; // We don't need full Subplebbit, just these two
 }
 export interface SignerType {
     type: "rsa";

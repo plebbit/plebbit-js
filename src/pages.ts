@@ -65,8 +65,7 @@ export class Pages implements PagesType {
     toJSON(): PagesType {
         return {
             pages: this.pages,
-            pageCids: this.pageCids,
-            subplebbit: { address: this.subplebbit.address }
+            pageCids: this.pageCids
         };
     }
 }
