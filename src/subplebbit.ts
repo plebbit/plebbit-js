@@ -974,9 +974,15 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         } catch (e) {
             if (!e.message.includes("not pinned")) throw e;
         }
+        // block.rm requires CID.parse but it throws an error in Electron. Most likely due to context isolation
+        //@ts-ignore
+        await this.plebbit.ipfsClient.block.rm(resolvedAddress, { force: true });
 
-        await this.plebbit.ipfsClient.block.rm(CID.parse(resolvedAddress));
-        if (this.ipnsKeyName) await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
+        if (this.ipnsKeyName)
+            // Key may not exist on ipfs node
+            try {
+                await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
+            } catch {}
     }
 
     async _addPublicationToDb(publication: CommentEdit | Vote | Comment | Post) {
