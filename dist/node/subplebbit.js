@@ -95,7 +95,6 @@ var errors_1 = require("./errors");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var util_3 = require("./runtime/node/util");
 var version_1 = __importDefault(require("./version"));
-var ipfs_http_client_1 = require("ipfs-http-client");
 var DEFAULT_UPDATE_INTERVAL_MS = 60000;
 var DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
 exports.RUNNING_SUBPLEBBITS = {};
@@ -1272,12 +1271,12 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.delete = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var resolvedAddress, e_8;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var resolvedAddress, e_8, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0: return [4 /*yield*/, this.stop()];
                     case 1:
-                        _a.sent();
+                        _b.sent();
                         if (typeof this.plebbit.dataPath !== "string")
                             throw (0, err_code_1.default)(Error(errors_1.messages.ERR_DATA_PATH_IS_NOT_DEFINED), errors_1.codes.ERR_DATA_PATH_IS_NOT_DEFINED, {
                                 details: "delete: plebbitOptions.dataPath=".concat(this.plebbit.dataPath)
@@ -1286,31 +1285,42 @@ var Subplebbit = /** @class */ (function (_super) {
                             throw Error("Ipfs client is not defined");
                         return [4 /*yield*/, util_3.nativeFunctions.deleteSubplebbit(this.address, this.plebbit.dataPath)];
                     case 2:
-                        _a.sent();
+                        _b.sent();
                         return [4 /*yield*/, this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address)];
                     case 3:
-                        resolvedAddress = _a.sent();
-                        _a.label = 4;
+                        resolvedAddress = _b.sent();
+                        _b.label = 4;
                     case 4:
-                        _a.trys.push([4, 6, , 7]);
+                        _b.trys.push([4, 6, , 7]);
                         return [4 /*yield*/, this.plebbit.ipfsClient.pin.rm(resolvedAddress)];
                     case 5:
-                        _a.sent();
+                        _b.sent();
                         return [3 /*break*/, 7];
                     case 6:
-                        e_8 = _a.sent();
+                        e_8 = _b.sent();
                         if (!e_8.message.includes("not pinned"))
                             throw e_8;
                         return [3 /*break*/, 7];
-                    case 7: return [4 /*yield*/, this.plebbit.ipfsClient.block.rm(ipfs_http_client_1.CID.parse(resolvedAddress))];
+                    case 7: 
+                    // block.rm requires CID.parse but it throws an error in Electron. Most likely due to context isolation
+                    //@ts-ignore
+                    return [4 /*yield*/, this.plebbit.ipfsClient.block.rm(resolvedAddress, { force: true })];
                     case 8:
-                        _a.sent();
-                        if (!this.ipnsKeyName) return [3 /*break*/, 10];
-                        return [4 /*yield*/, this.plebbit.ipfsClient.key.rm(this.ipnsKeyName)];
+                        // block.rm requires CID.parse but it throws an error in Electron. Most likely due to context isolation
+                        //@ts-ignore
+                        _b.sent();
+                        if (!this.ipnsKeyName) return [3 /*break*/, 12];
+                        _b.label = 9;
                     case 9:
-                        _a.sent();
-                        _a.label = 10;
-                    case 10: return [2 /*return*/];
+                        _b.trys.push([9, 11, , 12]);
+                        return [4 /*yield*/, this.plebbit.ipfsClient.key.rm(this.ipnsKeyName)];
+                    case 10:
+                        _b.sent();
+                        return [3 /*break*/, 12];
+                    case 11:
+                        _a = _b.sent();
+                        return [3 /*break*/, 12];
+                    case 12: return [2 /*return*/];
                 }
             });
         });
