@@ -123,8 +123,7 @@ var Pages = /** @class */ (function () {
     Pages.prototype.toJSON = function () {
         return {
             pages: this.pages,
-            pageCids: this.pageCids,
-            subplebbit: { address: this.subplebbit.address }
+            pageCids: this.pageCids
         };
     };
     return Pages;

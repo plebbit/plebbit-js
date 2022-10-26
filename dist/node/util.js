@@ -357,7 +357,12 @@ function oldScore(comment) {
 }
 exports.oldScore = oldScore;
 function removeKeysWithUndefinedValues(object) {
-    return JSON.parse(JSON.stringify(object));
+    var _a, _b;
+    var newObj = JSON.parse(JSON.stringify(object));
+    for (var prop in newObj)
+        if (((_b = (_a = newObj[prop]) === null || _a === void 0 ? void 0 : _a.constructor) === null || _b === void 0 ? void 0 : _b.name) === "Object" && JSON.stringify(newObj[prop]) === "{}")
+            delete newObj[prop];
+    return newObj;
 }
 exports.removeKeysWithUndefinedValues = removeKeysWithUndefinedValues;
 function randomElement(array) {

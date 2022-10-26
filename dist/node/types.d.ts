@@ -2,7 +2,6 @@ import { CID, IPFSHTTPClient, Options } from "ipfs-http-client";
 import { Knex } from "knex";
 import { Pages } from "./pages";
 import { DbHandler } from "./runtime/node/db-handler";
-import { Subplebbit } from "./subplebbit";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
 import { Plebbit } from "./plebbit";
@@ -32,7 +31,6 @@ export interface PageType {
 export interface PagesType {
     pages?: Partial<Record<PostSortName | ReplySortName, PageType>>;
     pageCids?: Partial<Record<PostSortName | ReplySortName, string>>;
-    subplebbit: Pick<Subplebbit, "address">;
 }
 export interface SignerType {
     type: "rsa";
