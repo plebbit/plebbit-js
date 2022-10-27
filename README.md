@@ -90,6 +90,7 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   author?: { // merge commentUpdate.author with comment.author
     banExpiresAt?: number // timestamp in second, if defined the author was banned for this comment
     flair?: Flair // mod can edit an author's flair
+    subplebbit: SubplebbitAuthor
   }
 }
 Author {
@@ -100,9 +101,9 @@ Author {
   avatar?: Nft
   flair?: Flair // (added by moderator or author) not part of the signature, mod can edit it after comment is published
   banExpiresAt?: number // (added by moderator only) timestamp in second, if defined the author was banned for this comment
-  subplebbit: SubplebbitAuthor // (added by CommentUpdate) up to date author properties specific to the subplebbit it's in
+  subplebbit?: SubplebbitAuthor // (added by CommentUpdate) up to date author properties specific to the subplebbit it's in
 }
-SubplebbitAuthor { 
+SubplebbitAuthor { // use prop author.subplebbit to differentiate between props that are both multiple subs or single sub, e.g. author.postScore is the score amongst all subs, comment.author.subplebbit.postScore is the score in the single specifific sub of the comment
   postScore: number // total post karma in the subplebbit
   replyScore: number // total reply karma in the subplebbit
   lastCommentCid: string // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
