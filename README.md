@@ -90,6 +90,7 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   author?: { // merge commentUpdate.author with comment.author
     banExpiresAt?: number // timestamp in second, if defined the author was banned for this comment
     flair?: Flair // mod can edit an author's flair
+    subplebbit: SubplebbitAuthor
   }
 }
 Author {
