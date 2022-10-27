@@ -1,6 +1,5 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { timestamp } = require("../../dist/node/util");
 const { generateMockPost } = require("../../dist/node/test/test-util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
@@ -18,7 +17,7 @@ const roles = [
 ];
 
 describe("Editing", async () => {
-    let plebbit, commentToBeEdited;
+    let plebbit, commentToBeEdited, signer;
 
     before(async () => {
         plebbit = await Plebbit({
@@ -31,7 +30,8 @@ describe("Editing", async () => {
             return authorAddress;
         };
 
-        commentToBeEdited = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
+        signer = await plebbit.createSigner();
+        commentToBeEdited = await generateMockPost(subplebbitAddress, plebbit, signer);
         await commentToBeEdited.publish();
         await new Promise((resolve) => commentToBeEdited.once("challengeverification", resolve));
         expect(commentToBeEdited?.cid).to.be.a("string");
@@ -90,7 +90,7 @@ describe("Editing", async () => {
                 commentCid: commentToBeEdited.cid,
                 reason: editReason,
                 content: editedText,
-                signer: signers[0] // All posts within tests are signed with signers[0]
+                signer
             });
             await commentEdit.publish();
             commentToBeEdited.once("update", async (updatedCommentToBeEdited) => {
@@ -98,6 +98,10 @@ describe("Editing", async () => {
                 expect(updatedCommentToBeEdited.content).to.equal(editedText, "Comment has not been edited");
                 expect(updatedCommentToBeEdited.original?.content).to.equal(originalContent, "Original content should be preserved");
                 expect(updatedCommentToBeEdited.authorEdit.reason).to.equal(editReason, "Edit reason has not been updated");
+                expect(updatedCommentToBeEdited.author.subplebbit.postScore).to.equal(0);
+                expect(updatedCommentToBeEdited.author.subplebbit.replyScore).to.equal(0);
+                expect(updatedCommentToBeEdited.author.subplebbit.lastCommentCid).to.equal(commentToBeEdited.cid);
+
                 resolve();
             });
         });
@@ -113,7 +117,7 @@ describe("Editing", async () => {
                 commentCid: commentToBeEdited.cid,
                 reason: editReason,
                 content: editedText,
-                signer: signers[0]
+                signer
             });
             await commentEdit.publish();
             commentToBeEdited.once("update", async (updatedCommentToBeEdited) => {
@@ -121,6 +125,10 @@ describe("Editing", async () => {
                 expect(updatedCommentToBeEdited.content).to.equal(editedText, "Comment has not been edited");
                 expect(updatedCommentToBeEdited.original?.content).to.equal(originalContent, "Original content should be preserved");
                 expect(updatedCommentToBeEdited.authorEdit.reason).to.equal(editReason, "Edit reason has not been updated");
+                expect(updatedCommentToBeEdited.author.subplebbit.postScore).to.equal(0);
+                expect(updatedCommentToBeEdited.author.subplebbit.replyScore).to.equal(0);
+                expect(updatedCommentToBeEdited.author.subplebbit.lastCommentCid).to.equal(commentToBeEdited.cid);
+
                 resolve();
             });
         });
