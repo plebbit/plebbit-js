@@ -113,6 +113,40 @@ describe("signer (node and browser)", async () => {
             expect(verification).to.deep.equal([true, undefined]);
         });
 
+        it(`CommentUpdate from previous plebbit-js versions can be verified`, async () => {
+            const update = {
+                upvoteCount: 0,
+                downvoteCount: 0,
+                replyCount: 0,
+                replies: { pages: {}, subplebbit: { address: "Qmb99crTbSUfKXamXwZBe829Vf6w5w5TktPkb6WstC9RFW" } },
+                updatedAt: 1666425163,
+                protocolVersion: "1.0.0",
+                signature: {
+                    signature:
+                        "eZk+MoWtIkF9+0NHTLY8q8vKjAhYNiASBjK2dI2uf7CcDQhTTEzTVTXU7BdsdWyrXw1R59M22hQ5KTDxnvOkbAnON3a6jcwEKo/bX5dgnrimI2D2qPQ4zqN4IFa1LpvzJXIv5jolIwUUm14NuBc9wjbPEAoyds8R6x3BVzeR9y7Un28tqQ7wiK6x/elu8bByXXbaA2vtxRWdAQSQNNpTdJtyX8YgO+W/Sj1hnrBVQ17xoTH0ZaPo9ardKjuGuuX4hBxK0sqF2p3yc/RhQEP1PH6+a2fPHrS6wz1eHMJAbp84MOzk9ReEt+AbL9l6OJOhVFmdtX/KGfjL/hce3L7KVg",
+                    publicKey:
+                        "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0X1KiwSRPW1CSMhyQhjz\n/c0tFxZ3Axr99etLxHkUhPPshxUe+clgqCGcN9HpOwuy+5uPUtBNDJb76lljwZr6\n3MeMiV8sXsxOY88yyiRHbEpOPgS4/dDpBh+2XZnnCtAen08Ob4/fA8q5Izyo1cSb\n8YclUgH5AIqJsleVsl32zK1UzIuYeY5Czzv4cEAa1/11y1b9ZCOIW/ziNK3y3iBQ\nJXdexhWWVQSA6DzNGDb+G6gObOXD0VLCsldZSHGIjY2vZuE/5/IKHo52l7U1RA9u\n0Txtm3TCretEhExrU3RmhWiL05/6qcp0UB7VYlh9Eh4njsGLK78YwvRlLnKdqPx9\nGwIDAQAB\n-----END PUBLIC KEY-----",
+                    type: "rsa",
+                    signedPropertyNames: [
+                        "author",
+                        "spoiler",
+                        "pinned",
+                        "locked",
+                        "removed",
+                        "moderatorReason",
+                        "flair",
+                        "upvoteCount",
+                        "downvoteCount",
+                        "replies",
+                        "updatedAt",
+                        "replyCount",
+                        "authorEdit"
+                    ]
+                }
+            };
+            const verification = await verifyPublication(update, plebbit, "commentupdate");
+            expect(verification).to.deep.equal([true, undefined]);
+        });
         it(`Pre-defined signature is validated correctly`, async () => {
             const fixtureWithSignature = { ...fixtureComment, signature: expectedAuthorSignature };
             const verification = await verifyPublication(fixtureWithSignature, plebbit, "comment");
