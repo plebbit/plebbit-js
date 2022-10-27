@@ -22,6 +22,7 @@ import {
     DecryptedChallengeMessageType,
     PostType,
     SignerType,
+    SubplebbitAuthor,
     SubplebbitMetrics,
     VoteForDbType,
     VoteType
@@ -31,6 +32,7 @@ import { getDefaultSubplebbitDbConfig } from "./util";
 import env from "../../version";
 import { Plebbit } from "../../plebbit";
 import { Comment } from "../../comment";
+import sumBy from "lodash/sumBy";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -680,6 +682,27 @@ export class DbHandler {
         const obj = await this._baseTransaction(trx)(TABLES.COMMENTS).count().where({ depth: 0 }).first();
         if (!obj) return 0;
         return Number(obj["count(*)"]);
+    }
+
+    async queryCommentsOfAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<CommentType[]> {
+        return this._createCommentsFromRows(await this._baseCommentQuery(trx).where({ authorAddress }));
+    }
+
+    async querySubplebbitAuthorFields(cid: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor> {
+        const authorAddress: string = (await this._baseCommentQuery(trx).select("authorAddress").where({ cid }).first())["authorAddress"];
+        const authorComments = await this.queryCommentsOfAuthor(authorAddress);
+        const authorPosts = authorComments.filter((comment) => comment.depth === 0);
+        const authorReplies = authorComments.filter((comment) => <number>comment.depth > 0);
+
+        const postScore: number = sumBy(authorPosts, (post) => post.upvoteCount) - sumBy(authorPosts, (post) => post.downvoteCount);
+
+        const replyScore: number =
+            sumBy(authorReplies, (reply) => reply.upvoteCount) - sumBy(authorReplies, (reply) => reply.downvoteCount);
+
+        const lastCommentCid: string = (
+            await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where({ authorAddress }).orderBy("id", "desc").first()
+        )["cid"];
+        return { postScore, replyScore, lastCommentCid };
     }
 
     async changeDbFilename(newDbFileName: string, newSubplebbit: DbHandler["_subplebbit"]) {

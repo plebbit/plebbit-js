@@ -46,7 +46,6 @@ import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 import { nativeFunctions } from "./runtime/node/util";
 import env from "./version";
-import { CID } from "ipfs-http-client";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
@@ -877,15 +876,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 `Failed to load Comment (${dbComment.cid}) IPNS (${dbComment.ipnsName}) while syncing. Will attempt to publish a new IPNS record`
             );
         }
-        if (!commentIpns || !shallowEqual(commentIpns, dbComment.toJSONCommentUpdate(), ["replies", "signature"])) {
+        if (!commentIpns || !shallowEqual(commentIpns, dbComment.toJSONCommentUpdate(), ["replies", "signature", "subplebbitAuthor"])) {
             log.trace(`Attempting to update Comment (${dbComment.cid})`);
             await this.sortHandler.deleteCommentPageCache(dbComment);
             const commentReplies = await this.sortHandler.generatePagesUnderComment(dbComment, undefined);
+            const subplebbitAuthor = await this.dbHandler.querySubplebbitAuthorFields(dbComment.cid);
+            dbComment.author.subplebbit = subplebbitAuthor;
             dbComment.setReplies(commentReplies);
             dbComment.setUpdatedAt(timestamp());
             await this.dbHandler.upsertComment(dbComment.toJSONForDb(undefined), dbComment.author.toJSONForDb(), undefined);
             const subplebbitSignature = await signPublication(dbComment.toJSONCommentUpdate(), this.signer, this.plebbit, "commentupdate");
-
             return dbComment.edit({ ...dbComment.toJSONCommentUpdate(), signature: subplebbitSignature });
         }
         log.trace(`Comment (${dbComment.cid}) is up-to-date and does not need syncing`);

@@ -2,7 +2,6 @@ import { CID, IPFSHTTPClient, Options } from "ipfs-http-client";
 import { Knex } from "knex";
 import { Pages } from "./pages";
 import { DbHandler } from "./runtime/node/db-handler";
-import { Subplebbit } from "./subplebbit";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
 import { Plebbit } from "./plebbit";
@@ -73,6 +72,12 @@ export interface VoteType extends Omit<CreateVoteOptions, "signer">, Publication
     signer?: SignerType;
 }
 
+export interface SubplebbitAuthor {
+    postScore: number; // total post karma in the subplebbit
+    replyScore: number; // total reply karma in the subplebbit
+    lastCommentCid: string; // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
+}
+
 export interface AuthorType {
     address: string;
     previousCommentCid?: string; // linked list of the author's comments
@@ -81,6 +86,7 @@ export interface AuthorType {
     avatar?: Nft;
     flair?: Flair; // not part of the signature, mod can edit it after comment is published
     banExpiresAt?: number; // timestamp in second, if defined the author was banned for this comment
+    subplebbit?: SubplebbitAuthor; // (added by CommentUpdate) up to date author properties specific to the subplebbit it's in
 }
 
 export type Wallet = {
@@ -342,7 +348,7 @@ export interface CommentUpdate {
     updatedAt: number; // timestamp in seconds the IPNS record was updated
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
     signature: SignatureType; // signature of the CommentUpdate by the sub owner to protect against malicious gateway
-    author?: CommentAuthorEditOptions;
+    author?: Pick<AuthorType, "banExpiresAt" | "flair" | "subplebbit">;
 }
 
 export interface CommentType extends Partial<CommentUpdate>, Omit<CreateCommentOptions, "signer">, PublicationType {

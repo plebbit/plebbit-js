@@ -4,7 +4,6 @@ import { Pages } from "./pages";
 import { verifyPublication } from "./signer";
 import {
     AuthorCommentEdit,
-    CommentAuthorEditOptions,
     CommentForDbType,
     CommentIpfsType,
     CommentType,
@@ -99,6 +98,9 @@ export class Comment extends Publication implements CommentType {
         this.moderatorReason = props.moderatorReason;
         this.authorEdit = props.authorEdit;
         this.protocolVersion = props.protocolVersion;
+        this.author.banExpiresAt = props.author?.banExpiresAt || this.author.banExpiresAt;
+        this.author.flair = props.author?.flair || this.author.flair;
+        this.author.subplebbit = props.author?.subplebbit || this.author.subplebbit;
     }
 
     _mergeFields(props: CommentType) {
@@ -194,7 +196,11 @@ export class Comment extends Publication implements CommentType {
             )
                 throw Error(`upvoteCount, downvoteCount, replyCount, and updatedAt need to be properly defined as numbers`);
         }
-        const author: CommentAuthorEditOptions = { banExpiresAt: this.author.banExpiresAt, flair: this.flair };
+        const author: CommentUpdate["author"] = {
+            banExpiresAt: this.author.banExpiresAt,
+            flair: this.flair,
+            subplebbit: this.author.subplebbit
+        };
         return {
             upvoteCount: this.upvoteCount,
             downvoteCount: this.downvoteCount,

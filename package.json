@@ -59,7 +59,8 @@
         "peer-id": "0.16.0",
         "sqlite3": "5.1.2",
         "tinycache": "1.1.2",
-        "uuid": "8.3.2"
+        "uuid": "8.3.2",
+        "lodash-es": "4.17.21"
     },
     "devDependencies": {
         "@babel/core": "7.18.10",
@@ -97,7 +98,8 @@
         "wait-on": "6.0.1",
         "webpack": "5.74.0",
         "webpack-cli": "4.10.0",
-        "webpack-watch-files-plugin": "1.2.1"
+        "webpack-watch-files-plugin": "1.2.1",
+        "@types/lodash": "4.14.186"
     },
     "lint-staged": {
         "{src,test,config}/**/*.{js,ts}": [

@@ -1,4 +1,4 @@
-import { AuthorDbType, AuthorType, Flair, Nft, Wallet } from "./types";
+import { AuthorDbType, AuthorType, Flair, Nft, SubplebbitAuthor, Wallet } from "./types";
 import { parseJsonIfString } from "./util";
 
 class Author implements AuthorType {
@@ -9,6 +9,7 @@ class Author implements AuthorType {
     avatar?: Nft;
     flair?: Flair;
     banExpiresAt?: number;
+    subplebbit?: SubplebbitAuthor;
 
     constructor(props: AuthorType) {
         this.address = props.address;
@@ -18,6 +19,7 @@ class Author implements AuthorType {
         this.avatar = props.avatar;
         this.flair = parseJsonIfString(props.flair);
         this.banExpiresAt = props.banExpiresAt;
+        this.subplebbit = props.subplebbit;
     }
 
     toJSON(): AuthorType {
@@ -28,7 +30,8 @@ class Author implements AuthorType {
             wallets: this.wallets,
             avatar: this.avatar,
             flair: this.flair,
-            banExpiresAt: this.banExpiresAt
+            banExpiresAt: this.banExpiresAt,
+            subplebbit: this.subplebbit
         };
     }
 
