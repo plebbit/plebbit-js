@@ -1,6 +1,6 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { generateMockVote, generateMockPost } = require("../../dist/node/test/test-util");
+const { generateMockVote, generateMockPost, generateMockComment } = require("../../dist/node/test/test-util");
 const { randomElement } = require("../../dist/node/util");
 const { messages } = require("../../dist/node/errors");
 
@@ -13,7 +13,7 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 
 const subplebbitAddress = signers[0].address;
 
-let plebbit, postToVote;
+let plebbit, postToVote, replyToVote, signer;
 
 const previousVotes = [];
 const updateInterval = 100;
@@ -23,31 +23,64 @@ describe(`Test Downvote`, async () => {
             ipfsHttpClientOptions: "http://localhost:5001/api/v0",
             pubsubHttpClientOptions: `http://localhost:5002/api/v0`
         });
-        postToVote = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
+        signer = await plebbit.createSigner();
+        postToVote = await generateMockPost(subplebbitAddress, plebbit, signer);
         await postToVote.publish();
         await new Promise((resolve) => postToVote.once("challengeverification", resolve));
         expect(postToVote.cid).to.be.a("string");
+        replyToVote = await generateMockComment(postToVote, plebbit, signer);
+        await replyToVote.publish();
+        await new Promise((resolve) => replyToVote.once("challengeverification", resolve));
+
         postToVote._updateIntervalMs = updateInterval;
-        await Promise.all([new Promise((resolve) => postToVote.once("update", resolve)), postToVote.update()]);
+        replyToVote._updateIntervalMs = updateInterval;
+
+        await Promise.all([
+            new Promise((resolve) => postToVote.once("update", resolve)),
+            new Promise((resolve) => replyToVote.once("update", resolve)),
+            postToVote.update(),
+            replyToVote.update()
+        ]);
     });
     after(async () => {
         await postToVote.stop();
+        await replyToVote.stop();
     });
 
-    it("Can downvote a comment", async () => {
+    it("Can downvote a post", async () => {
         return new Promise(async (resolve, reject) => {
             const originalDownvote = postToVote.downvoteCount;
             const vote = await generateMockVote(postToVote, -1, plebbit, randomElement(signers));
             await vote.publish();
             postToVote.once("update", async (updatedPost) => {
                 expect(updatedPost.downvoteCount).to.equal(originalDownvote + 1);
+                expect(updatedPost.author.subplebbit.replyScore).to.equal(0);
+                expect(updatedPost.author.subplebbit.postScore).to.equal(-1);
+                expect(updatedPost.author.subplebbit.lastCommentCid).to.equal(replyToVote.cid);
+
                 previousVotes.push(vote);
                 resolve();
             });
         });
     });
 
-    it("Can change downvote to upvote", async () => {
+    it(`Can downvote a reply`, async () =>
+        new Promise(async (resolve) => {
+            const originalDownvote = replyToVote.downvoteCount;
+            const vote = await generateMockVote(replyToVote, -1, plebbit, randomElement(signers));
+            await vote.publish();
+            replyToVote.once("update", async (updatedReply) => {
+                expect(updatedReply.downvoteCount).to.equal(originalDownvote + 1);
+                expect(updatedReply.author.subplebbit.replyScore).to.equal(-1);
+                expect(updatedReply.author.subplebbit.postScore).to.equal(-1);
+                expect(updatedReply.author.subplebbit.lastCommentCid).to.equal(replyToVote.cid);
+
+                previousVotes.push(vote);
+                resolve();
+            });
+        }));
+
+    it("Can change post downvote to upvote", async () => {
         return new Promise(async (resolve, reject) => {
             const originalUpvote = postToVote.upvoteCount;
             const originalDownvote = postToVote.downvoteCount;
@@ -60,6 +93,32 @@ describe(`Test Downvote`, async () => {
             postToVote.once("update", async (updatedPost) => {
                 expect(updatedPost.upvoteCount).to.equal(originalUpvote + 1, "Failed to update upvote count");
                 expect(updatedPost.downvoteCount).to.equal(originalDownvote - 1, "Failed to update downvote count");
+                expect(updatedPost.author.subplebbit.postScore).to.equal(1);
+                expect(updatedPost.author.subplebbit.replyScore).to.equal(-1);
+                expect(updatedPost.author.subplebbit.lastCommentCid).to.equal(replyToVote.cid);
+
+                resolve();
+            });
+        });
+    });
+
+    it("Can change reply downvote to upvote", async () => {
+        return new Promise(async (resolve, reject) => {
+            const originalUpvote = replyToVote.upvoteCount;
+            const originalDownvote = replyToVote.downvoteCount;
+            const vote = await plebbit.createVote({
+                ...previousVotes[1].toJSON(),
+                signer: previousVotes[1].signer,
+                vote: 1
+            });
+            await vote.publish();
+            replyToVote.once("update", async (updatedReply) => {
+                expect(updatedReply.upvoteCount).to.equal(originalUpvote + 1);
+                expect(updatedReply.downvoteCount).to.equal(originalDownvote - 1);
+                expect(updatedReply.author.subplebbit.postScore).to.equal(1);
+                expect(updatedReply.author.subplebbit.replyScore).to.equal(1);
+                expect(updatedReply.author.subplebbit.lastCommentCid).to.equal(replyToVote.cid);
+
                 resolve();
             });
         });
