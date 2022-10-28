@@ -199,7 +199,6 @@ export class SortHandler {
             await this.subplebbit.dbHandler?.keyvDelete(key);
         } else {
             const cachedPage = new Pages({ ...cachedPageJson, subplebbit: this.subplebbit });
-            assert(cachedPage.toJSON && JSON.stringify(cachedPage.toJSON()) !== "{}", "Cache returns empty pages");
             return cachedPage;
         }
 

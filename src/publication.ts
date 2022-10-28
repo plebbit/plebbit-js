@@ -45,12 +45,12 @@ class Publication extends EventEmitter implements PublicationType {
     }
 
     _initProps(props: PublicationType) {
-        this.subplebbitAddress = props["subplebbitAddress"];
-        this.timestamp = props["timestamp"];
+        this.subplebbitAddress = props.subplebbitAddress;
+        this.timestamp = props.timestamp;
         this.signer = this.signer || props["signer"];
         this.signature = parseJsonIfString(props.signature);
         assert(props.author?.address, "publication.author.address need to be defined");
-        this.author = new Author(parseJsonIfString(props.author));
+        this.author = new Author(props.author);
         this.protocolVersion = props.protocolVersion;
     }
     // TODO make this private/protected

@@ -702,6 +702,7 @@ export class DbHandler {
         const lastCommentCid: string = (
             await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where({ authorAddress }).orderBy("id", "desc").first()
         )["cid"];
+        if (typeof lastCommentCid !== "string") throw Error("lastCommentCid should be always defined");
         return { postScore, replyScore, lastCommentCid };
     }
 

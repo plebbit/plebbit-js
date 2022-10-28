@@ -235,10 +235,10 @@ export async function verifyPublication(
         // Need to verify comment.signature (of original comment) and authorEdit (latest edit by author, if exists)
         log.trace(`Attempting to verify a ${signatureType}`);
 
-        if (publicationJson["original"]) {
-            publicationJson = <CommentType>publicationJson;
+        if (signatureType === "comment" && publicationJson["authorEdit"]) {
             // Means comment has been edited, verify both comment.signature and comment.authorEdit.signature
-            const originalObj = { ...removeKeys(publicationJson, ["original"]), ...publicationJson.original };
+            publicationJson = <CommentType>publicationJson;
+            const originalObj = { ...removeKeys(publicationJson, ["original", "authorEdit"]), ...publicationJson.original };
             let [verified, failedVerificationReason] = await verifyPublication(
                 originalObj,
                 plebbit,
@@ -247,7 +247,6 @@ export async function verifyPublication(
             );
             if (!verified) return [false, `Failed to verify ${signatureType}.original due to: ${failedVerificationReason}`];
 
-            if (!publicationJson.authorEdit) throw Error("Comment.original is defined while publication.authorEdit is not");
             [verified, failedVerificationReason] = await verifyPublication(
                 publicationJson.authorEdit,
                 plebbit,
@@ -255,6 +254,13 @@ export async function verifyPublication(
                 overrideAuthorAddressIfInvalid
             );
             if (!verified) return [false, `Failed to verify ${signatureType}.authorEdit due to: ${failedVerificationReason}`];
+        } else if (signatureType === "comment" && publicationJson["updatedAt"]) {
+            // We're verifying a comment (IPFS) along with Comment Update
+            publicationJson = <CommentType>publicationJson;
+            const originalObj = { ...removeKeys(publicationJson, ["original"]), ...publicationJson.original };
+
+            // Verify comment (IPFS)
+            await verifyPublicationSignature(publicationJson.signature, originalObj);
         } else if (signatureType === "subplebbit") {
             publicationJson = <SubplebbitType>publicationJson;
             await verifyPublicationSignature(publicationJson.signature, publicationJson);

@@ -98,6 +98,9 @@ export class Comment extends Publication implements CommentType {
         this.moderatorReason = props.moderatorReason;
         this.authorEdit = props.authorEdit;
         this.protocolVersion = props.protocolVersion;
+        if (props.author?.banExpiresAt || props.author?.flair || props.author?.subplebbit) {
+            this.original = { ...this.original, author: this.author };
+        }
         this.author.banExpiresAt = props.author?.banExpiresAt || this.author.banExpiresAt;
         this.author.flair = props.author?.flair || this.author.flair;
         this.author.subplebbit = props.author?.subplebbit || this.author.subplebbit;
@@ -114,10 +117,6 @@ export class Comment extends Publication implements CommentType {
 
         this.content = props.authorEdit?.content || props.content || this.content;
         this.author = new Author({ ...props.author, ...this.author });
-
-        for (const key of Object.keys(original))
-            if (this[key] && original[key] && this[key] === original[key])
-                throw Error(`${key} and original ${key} can't be equal to each other`);
 
         if (JSON.stringify(original) !== "{}") this.original = original;
     }
@@ -215,7 +214,7 @@ export class Comment extends Publication implements CommentType {
             moderatorReason: this.moderatorReason,
             updatedAt: this.updatedAt,
             protocolVersion: this.protocolVersion,
-            ...(JSON.stringify(author) === "{}" ? {} : { author })
+            author
         };
     }
 
