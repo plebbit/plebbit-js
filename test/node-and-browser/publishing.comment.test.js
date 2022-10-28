@@ -7,7 +7,7 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-let plebbit;
+let plebbit, signer;
 const subplebbitAddress = signers[0].address;
 const mockComments = [];
 const updateInterval = 100;
@@ -20,6 +20,7 @@ describe("publishing", async () => {
             ipfsHttpClientOptions: "http://localhost:5001/api/v0",
             pubsubHttpClientOptions: `http://localhost:5002/api/v0`
         });
+        signer = await plebbit.createSigner();
         plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
             if (authorAddress === "plebbit.eth") return signers[6].address;
             else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
@@ -29,9 +30,13 @@ describe("publishing", async () => {
 
     it("Can publish a post", async function () {
         return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
+            const mockPost = await generateMockPost(subplebbitAddress, plebbit, signer);
             await mockPost.publish();
             mockPost.once("challengeverification", (challengeVerificationMessage, updatedComment) => {
+                expect(challengeVerificationMessage.challengeSuccess).to.be.true;
+                expect(challengeVerificationMessage.reason).to.be.a("string");
+                expect(challengeVerificationMessage.publication).to.be.a("object");
+                expect(challengeVerificationMessage.encryptedPublication).to.be.a("object");
                 mockComments.push(mockPost);
                 resolve();
             });
@@ -118,7 +123,7 @@ describe("publishing", async () => {
                 parentComment._updateIntervalMs = updateInterval;
                 await Promise.all([new Promise((resolve) => parentComment.once("update", resolve)), parentComment.update()]);
 
-                const mockComment = await generateMockComment(parentComment, plebbit, signers[0]);
+                const mockComment = await generateMockComment(parentComment, plebbit, signer);
 
                 expect(parentComment.updatedAt).to.be.a("number");
                 const originalReplyCount = parentComment.replyCount;
@@ -128,6 +133,9 @@ describe("publishing", async () => {
                     expect(mockComment.parentCid).to.be.equal(updatedParentComment.cid);
                     expect(mockComment.depth).to.be.equal(depth);
                     expect(updatedParentComment.replyCount).to.equal(originalReplyCount + 1);
+                    expect(updatedParentComment.author.subplebbit.postScore).to.equal(0);
+                    expect(updatedParentComment.author.subplebbit.replyScore).to.equal(0);
+                    expect(updatedParentComment.author.subplebbit.lastCommentCid).to.equal(mockComment.cid);
                     const parentLatestCommentCid = (await updatedParentComment.replies.getPage(updatedParentComment.replies.pageCids.new))
                         .comments[0]?.cid;
                     expect(parentLatestCommentCid).to.equal(mockComment.cid, "parentComment.replies.new should include new comment");
