@@ -398,7 +398,6 @@ var SortHandler = /** @class */ (function () {
                         return [3 /*break*/, 4];
                     case 3:
                         cachedPage = new pages_1.Pages(__assign(__assign({}, cachedPageJson), { subplebbit: this.subplebbit }));
-                        (0, assert_1.default)(cachedPage.toJSON && JSON.stringify(cachedPage.toJSON()) !== "{}", "Cache returns empty pages");
                         return [2 /*return*/, cachedPage];
                     case 4:
                         _o = key === "subplebbit";

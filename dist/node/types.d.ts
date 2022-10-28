@@ -69,6 +69,11 @@ export interface VoteType extends Omit<CreateVoteOptions, "signer">, Publication
     timestamp: number;
     signer?: SignerType;
 }
+export interface SubplebbitAuthor {
+    postScore: number;
+    replyScore: number;
+    lastCommentCid: string;
+}
 export interface AuthorType {
     address: string;
     previousCommentCid?: string;
@@ -79,6 +84,7 @@ export interface AuthorType {
     avatar?: Nft;
     flair?: Flair;
     banExpiresAt?: number;
+    subplebbit?: SubplebbitAuthor;
 }
 export declare type Wallet = {
     address: string;
@@ -304,7 +310,7 @@ export interface CommentUpdate {
     updatedAt: number;
     protocolVersion: ProtocolVersion;
     signature: SignatureType;
-    author?: CommentAuthorEditOptions;
+    author?: Pick<AuthorType, "banExpiresAt" | "flair" | "subplebbit">;
 }
 export interface CommentType extends Partial<CommentUpdate>, Omit<CreateCommentOptions, "signer">, PublicationType {
     author: AuthorType;

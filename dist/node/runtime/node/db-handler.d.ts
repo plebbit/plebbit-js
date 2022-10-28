@@ -2,7 +2,7 @@ import Author from "../../author";
 import { Knex } from "knex";
 import { Signer } from "../../signer";
 import Transaction = Knex.Transaction;
-import { AuthorDbType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditForDbType, CommentEditType, CommentForDbType, CommentType, DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, PostType, SignerType, SubplebbitMetrics, VoteForDbType, VoteType } from "../../types";
+import { AuthorDbType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditForDbType, CommentEditType, CommentForDbType, CommentType, DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, PostType, SignerType, SubplebbitAuthor, SubplebbitMetrics, VoteForDbType, VoteType } from "../../types";
 export declare class DbHandler {
     private _knex;
     private _subplebbit;
@@ -63,5 +63,7 @@ export declare class DbHandler {
     querySigner(ipnsKeyName: string, trx?: Transaction): Promise<Signer | undefined>;
     queryCommentsGroupByDepth(trx?: Knex.Transaction): Promise<CommentType[][]>;
     queryCountOfPosts(trx?: Knex.Transaction): Promise<number>;
+    queryCommentsOfAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<CommentType[]>;
+    querySubplebbitAuthorFields(cid: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor>;
     changeDbFilename(newDbFileName: string, newSubplebbit: DbHandler["_subplebbit"]): Promise<void>;
 }

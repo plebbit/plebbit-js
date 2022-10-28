@@ -88,12 +88,12 @@ var Publication = /** @class */ (function (_super) {
     }
     Publication.prototype._initProps = function (props) {
         var _a;
-        this.subplebbitAddress = props["subplebbitAddress"];
-        this.timestamp = props["timestamp"];
+        this.subplebbitAddress = props.subplebbitAddress;
+        this.timestamp = props.timestamp;
         this.signer = this.signer || props["signer"];
         this.signature = (0, util_1.parseJsonIfString)(props.signature);
         (0, assert_1.default)((_a = props.author) === null || _a === void 0 ? void 0 : _a.address, "publication.author.address need to be defined");
-        this.author = new author_1.default((0, util_1.parseJsonIfString)(props.author));
+        this.author = new author_1.default(props.author);
         this.protocolVersion = props.protocolVersion;
     };
     // TODO make this private/protected

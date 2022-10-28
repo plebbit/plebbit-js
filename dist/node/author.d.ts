@@ -1,4 +1,4 @@
-import { AuthorDbType, AuthorType, Flair, Nft, Wallet } from "./types";
+import { AuthorDbType, AuthorType, Flair, Nft, SubplebbitAuthor, Wallet } from "./types";
 declare class Author implements AuthorType {
     address: string;
     previousCommentCid?: string;
@@ -9,6 +9,7 @@ declare class Author implements AuthorType {
     avatar?: Nft;
     flair?: Flair;
     banExpiresAt?: number;
+    subplebbit?: SubplebbitAuthor;
     constructor(props: AuthorType);
     toJSON(): AuthorType;
     toJSONForDb(): AuthorDbType;

@@ -271,7 +271,7 @@ var verifyPublicationSignature = function (signature, publicationToBeVerified) {
 function verifyPublication(publication, plebbit, signatureType, overrideAuthorAddressIfInvalid) {
     if (overrideAuthorAddressIfInvalid === void 0) { overrideAuthorAddressIfInvalid = true; }
     return __awaiter(this, void 0, void 0, function () {
-        var publicationJson, log, cachedResult, verifyAuthor, originalObj, _a, verified, failedVerificationReason, resolvedSubAddress, _b, subPeerId, signaturePeerId, res, e_1, res;
+        var publicationJson, log, cachedResult, verifyAuthor, originalObj, _a, verified, failedVerificationReason, originalObj, resolvedSubAddress, _b, subPeerId, signaturePeerId, res, e_1, res;
         var _c;
         var _this = this;
         return __generator(this, function (_d) {
@@ -325,68 +325,78 @@ function verifyPublication(publication, plebbit, signatureType, overrideAuthorAd
                     }); };
                     _d.label = 1;
                 case 1:
-                    _d.trys.push([1, 14, , 15]);
+                    _d.trys.push([1, 16, , 17]);
                     // Need to verify comment.signature (of original comment) and authorEdit (latest edit by author, if exists)
                     log.trace("Attempting to verify a ".concat(signatureType));
-                    if (!publicationJson["original"]) return [3 /*break*/, 4];
+                    if (!(signatureType === "comment" && publicationJson["authorEdit"])) return [3 /*break*/, 4];
+                    // Means comment has been edited, verify both comment.signature and comment.authorEdit.signature
                     publicationJson = publicationJson;
-                    originalObj = __assign(__assign({}, (0, util_2.removeKeys)(publicationJson, ["original"])), publicationJson.original);
+                    originalObj = __assign(__assign({}, (0, util_2.removeKeys)(publicationJson, ["original", "authorEdit"])), publicationJson.original);
                     return [4 /*yield*/, verifyPublication(originalObj, plebbit, "comment", overrideAuthorAddressIfInvalid)];
                 case 2:
                     _a = _d.sent(), verified = _a[0], failedVerificationReason = _a[1];
                     if (!verified)
                         return [2 /*return*/, [false, "Failed to verify ".concat(signatureType, ".original due to: ").concat(failedVerificationReason)]];
-                    if (!publicationJson.authorEdit)
-                        throw Error("Comment.original is defined while publication.authorEdit is not");
                     return [4 /*yield*/, verifyPublication(publicationJson.authorEdit, plebbit, "commentedit", overrideAuthorAddressIfInvalid)];
                 case 3:
                     _c = _d.sent(), verified = _c[0], failedVerificationReason = _c[1];
                     if (!verified)
                         return [2 /*return*/, [false, "Failed to verify ".concat(signatureType, ".authorEdit due to: ").concat(failedVerificationReason)]];
-                    return [3 /*break*/, 13];
+                    return [3 /*break*/, 15];
                 case 4:
-                    if (!(signatureType === "subplebbit")) return [3 /*break*/, 10];
+                    if (!(signatureType === "comment" && publicationJson["updatedAt"])) return [3 /*break*/, 6];
+                    // We're verifying a comment (IPFS) along with Comment Update
+                    publicationJson = publicationJson;
+                    originalObj = __assign(__assign({}, (0, util_2.removeKeys)(publicationJson, ["original"])), publicationJson.original);
+                    // Verify comment (IPFS)
+                    return [4 /*yield*/, verifyPublicationSignature(publicationJson.signature, originalObj)];
+                case 5:
+                    // Verify comment (IPFS)
+                    _d.sent();
+                    return [3 /*break*/, 15];
+                case 6:
+                    if (!(signatureType === "subplebbit")) return [3 /*break*/, 12];
                     publicationJson = publicationJson;
                     return [4 /*yield*/, verifyPublicationSignature(publicationJson.signature, publicationJson)];
-                case 5:
-                    _d.sent();
-                    if (!plebbit.resolver.isDomain(publicationJson.address)) return [3 /*break*/, 7];
-                    return [4 /*yield*/, plebbit.resolver.resolveSubplebbitAddressIfNeeded(publicationJson.address)];
-                case 6:
-                    _b = _d.sent();
-                    return [3 /*break*/, 8];
                 case 7:
-                    _b = publicationJson.address;
-                    _d.label = 8;
+                    _d.sent();
+                    if (!plebbit.resolver.isDomain(publicationJson.address)) return [3 /*break*/, 9];
+                    return [4 /*yield*/, plebbit.resolver.resolveSubplebbitAddressIfNeeded(publicationJson.address)];
                 case 8:
+                    _b = _d.sent();
+                    return [3 /*break*/, 10];
+                case 9:
+                    _b = publicationJson.address;
+                    _d.label = 10;
+                case 10:
                     resolvedSubAddress = _b;
                     subPeerId = peer_id_1.default.createFromB58String(resolvedSubAddress);
                     return [4 /*yield*/, (0, util_1.getPeerIdFromPublicKeyPem)(publicationJson.signature.publicKey)];
-                case 9:
+                case 11:
                     signaturePeerId = _d.sent();
                     if (!subPeerId.equals(signaturePeerId))
                         throw Error("subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey");
-                    return [3 /*break*/, 13];
-                case 10: return [4 /*yield*/, verifyPublicationSignature(publicationJson.signature, publicationJson)];
-                case 11:
-                    _d.sent();
-                    if (!(publicationJson["author"] && publicationJson["author"]["address"] && plebbit.resolveAuthorAddresses)) return [3 /*break*/, 13];
-                    return [4 /*yield*/, verifyAuthor(publicationJson.signature, publicationJson.author)];
-                case 12:
-                    _d.sent();
-                    _d.label = 13;
+                    return [3 /*break*/, 15];
+                case 12: return [4 /*yield*/, verifyPublicationSignature(publicationJson.signature, publicationJson)];
                 case 13:
+                    _d.sent();
+                    if (!(publicationJson["author"] && publicationJson["author"]["address"] && plebbit.resolveAuthorAddresses)) return [3 /*break*/, 15];
+                    return [4 /*yield*/, verifyAuthor(publicationJson.signature, publicationJson.author)];
+                case 14:
+                    _d.sent();
+                    _d.label = 15;
+                case 15:
                     res = [true, undefined];
                     plebbit._memCache.put((0, js_sha256_1.sha256)(JSON.stringify(publicationJson) + signatureType), res);
                     return [2 /*return*/, res];
-                case 14:
+                case 16:
                     e_1 = _d.sent();
                     log("Failed to verify ".concat(signatureType, " due to error:"), e_1);
                     log("Publication: ", publicationJson);
                     res = [false, String(e_1)];
                     plebbit._memCache.put((0, js_sha256_1.sha256)(JSON.stringify(publicationJson) + signatureType), res);
                     return [2 /*return*/, res];
-                case 15: return [2 /*return*/];
+                case 17: return [2 /*return*/];
             }
         });
     });
