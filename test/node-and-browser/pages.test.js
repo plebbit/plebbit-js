@@ -9,8 +9,6 @@ let plebbit, subplebbit;
 let posts;
 const subplebbitAddress = signers[0].address;
 
-const updateInterval = 100;
-
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const mockPlebbit = async () => {
