@@ -102,7 +102,7 @@ var Comment = /** @class */ (function (_super) {
         this.stop = this.stop.bind(this);
     };
     Comment.prototype._initCommentUpdate = function (props) {
-        var _a;
+        var _a, _b, _c, _d, _e, _f, _g;
         this.upvoteCount = props.upvoteCount;
         this.downvoteCount = props.downvoteCount;
         this.replyCount = props.replyCount;
@@ -116,6 +116,12 @@ var Comment = /** @class */ (function (_super) {
         this.moderatorReason = props.moderatorReason;
         this.authorEdit = props.authorEdit;
         this.protocolVersion = props.protocolVersion;
+        if (((_b = props.author) === null || _b === void 0 ? void 0 : _b.banExpiresAt) || ((_c = props.author) === null || _c === void 0 ? void 0 : _c.flair) || ((_d = props.author) === null || _d === void 0 ? void 0 : _d.subplebbit)) {
+            this.original = __assign(__assign({}, this.original), { author: this.author });
+        }
+        this.author.banExpiresAt = ((_e = props.author) === null || _e === void 0 ? void 0 : _e.banExpiresAt) || this.author.banExpiresAt;
+        this.author.flair = ((_f = props.author) === null || _f === void 0 ? void 0 : _f.flair) || this.author.flair;
+        this.author.subplebbit = ((_g = props.author) === null || _g === void 0 ? void 0 : _g.subplebbit) || this.author.subplebbit;
     };
     Comment.prototype._mergeFields = function (props) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
@@ -128,11 +134,6 @@ var Comment = /** @class */ (function (_super) {
             ((_f = props.original) === null || _f === void 0 ? void 0 : _f.flair) || ((_g = this.original) === null || _g === void 0 ? void 0 : _g.flair) || (props.flair && ((_h = props.authorEdit) === null || _h === void 0 ? void 0 : _h.flair) ? props.flair : undefined);
         this.content = ((_j = props.authorEdit) === null || _j === void 0 ? void 0 : _j.content) || props.content || this.content;
         this.author = new author_1.default(__assign(__assign({}, props.author), this.author));
-        for (var _i = 0, _k = Object.keys(original); _i < _k.length; _i++) {
-            var key = _k[_i];
-            if (this[key] && original[key] && this[key] === original[key])
-                throw Error("".concat(key, " and original ").concat(key, " can't be equal to each other"));
-        }
         if (JSON.stringify(original) !== "{}")
             this.original = original;
     };
@@ -165,8 +166,27 @@ var Comment = /** @class */ (function (_super) {
                 typeof this.updatedAt !== "number")
                 throw Error("upvoteCount, downvoteCount, replyCount, and updatedAt need to be properly defined as numbers");
         }
-        var author = { banExpiresAt: this.author.banExpiresAt, flair: this.flair };
-        return __assign({ upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replyCount: this.replyCount, authorEdit: this.authorEdit, replies: this.replies.toJSON(), flair: this.flair, spoiler: this.spoiler, pinned: this.pinned, locked: this.locked, removed: this.removed, moderatorReason: this.moderatorReason, updatedAt: this.updatedAt, protocolVersion: this.protocolVersion }, (JSON.stringify(author) === "{}" ? {} : { author: author }));
+        var author = {
+            banExpiresAt: this.author.banExpiresAt,
+            flair: this.flair,
+            subplebbit: this.author.subplebbit
+        };
+        return {
+            upvoteCount: this.upvoteCount,
+            downvoteCount: this.downvoteCount,
+            replyCount: this.replyCount,
+            authorEdit: this.authorEdit,
+            replies: this.replies.toJSON(),
+            flair: this.flair,
+            spoiler: this.spoiler,
+            pinned: this.pinned,
+            locked: this.locked,
+            removed: this.removed,
+            moderatorReason: this.moderatorReason,
+            updatedAt: this.updatedAt,
+            protocolVersion: this.protocolVersion,
+            author: author
+        };
     };
     Comment.prototype.setCommentIpnsKey = function (ipnsKey) {
         // Contains name and id

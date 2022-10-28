@@ -1100,46 +1100,52 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.syncComment = function (dbComment) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, commentIpns, _a, e_6, commentReplies, subplebbitSignature;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var log, commentIpns, _a, e_6, commentReplies, _b, subplebbitSignature;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:sync:syncComment");
-                        _b.label = 1;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 4, , 5]);
+                        _c.trys.push([1, 4, , 5]);
                         _a = dbComment.ipnsName;
                         if (!_a) return [3 /*break*/, 3];
                         return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(dbComment.ipnsName, this.plebbit)];
                     case 2:
-                        _a = (_b.sent());
-                        _b.label = 3;
+                        _a = (_c.sent());
+                        _c.label = 3;
                     case 3:
                         commentIpns = _a;
                         return [3 /*break*/, 5];
                     case 4:
-                        e_6 = _b.sent();
+                        e_6 = _c.sent();
                         log.trace("Failed to load Comment (".concat(dbComment.cid, ") IPNS (").concat(dbComment.ipnsName, ") while syncing. Will attempt to publish a new IPNS record"));
                         return [3 /*break*/, 5];
                     case 5:
-                        if (!(!commentIpns || !(0, util_1.shallowEqual)(commentIpns, dbComment.toJSONCommentUpdate(), ["replies", "signature"]))) return [3 /*break*/, 10];
+                        if (!(!commentIpns || !(0, util_1.shallowEqual)(commentIpns, dbComment.toJSONCommentUpdate(), ["replies", "signature", "subplebbitAuthor"]))) return [3 /*break*/, 11];
                         log.trace("Attempting to update Comment (".concat(dbComment.cid, ")"));
                         return [4 /*yield*/, this.sortHandler.deleteCommentPageCache(dbComment)];
                     case 6:
-                        _b.sent();
+                        _c.sent();
                         return [4 /*yield*/, this.sortHandler.generatePagesUnderComment(dbComment, undefined)];
                     case 7:
-                        commentReplies = _b.sent();
+                        commentReplies = _c.sent();
+                        if (!dbComment.updatedAt)
+                            dbComment.original = { author: __assign({}, dbComment.author), flair: dbComment.flair, content: dbComment.content };
+                        _b = dbComment.author;
+                        return [4 /*yield*/, this.dbHandler.querySubplebbitAuthorFields(dbComment.cid)];
+                    case 8:
+                        _b.subplebbit = _c.sent();
                         dbComment.setReplies(commentReplies);
                         dbComment.setUpdatedAt((0, util_1.timestamp)());
                         return [4 /*yield*/, this.dbHandler.upsertComment(dbComment.toJSONForDb(undefined), dbComment.author.toJSONForDb(), undefined)];
-                    case 8:
-                        _b.sent();
-                        return [4 /*yield*/, (0, signer_1.signPublication)(dbComment.toJSONCommentUpdate(), this.signer, this.plebbit, "commentupdate")];
                     case 9:
-                        subplebbitSignature = _b.sent();
-                        return [2 /*return*/, dbComment.edit(__assign(__assign({}, dbComment.toJSONCommentUpdate()), { signature: subplebbitSignature }))];
+                        _c.sent();
+                        return [4 /*yield*/, (0, signer_1.signPublication)(dbComment.toJSONCommentUpdate(), this.signer, this.plebbit, "commentupdate")];
                     case 10:
+                        subplebbitSignature = _c.sent();
+                        return [2 /*return*/, dbComment.edit(__assign(__assign({}, dbComment.toJSONCommentUpdate()), { signature: subplebbitSignature }))];
+                    case 11:
                         log.trace("Comment (".concat(dbComment.cid, ") is up-to-date and does not need syncing"));
                         return [2 /*return*/];
                 }

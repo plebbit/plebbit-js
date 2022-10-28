@@ -10,6 +10,7 @@ var Author = /** @class */ (function () {
         this.avatar = props.avatar;
         this.flair = (0, util_1.parseJsonIfString)(props.flair);
         this.banExpiresAt = props.banExpiresAt;
+        this.subplebbit = props.subplebbit;
     }
     Author.prototype.toJSON = function () {
         return {
@@ -19,7 +20,8 @@ var Author = /** @class */ (function () {
             wallets: this.wallets,
             avatar: this.avatar,
             flair: this.flair,
-            banExpiresAt: this.banExpiresAt
+            banExpiresAt: this.banExpiresAt,
+            subplebbit: this.subplebbit
         };
     };
     Author.prototype.toJSONForDb = function () {
