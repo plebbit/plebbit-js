@@ -5,6 +5,7 @@ import isIPFS from "is-ipfs";
 import { codes, messages } from "./errors";
 import errcode from "err-code";
 import Hash from "ipfs-only-hash";
+import lodash from "lodash";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -119,18 +120,6 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
     }
 }
 
-export function chunks<T>(arr: Array<T>, len: number): Array<Array<T>> {
-    let chunks: T[][] = [];
-    let i = 0;
-    while (i < arr.length) chunks.push(arr.slice(i, (i += len)));
-    return chunks;
-}
-
-export function round(number: number, decimalPlaces: number): number {
-    const factorOfTen = Math.pow(10, decimalPlaces);
-    return Math.round(number * factorOfTen) / factorOfTen;
-}
-
 export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
@@ -158,7 +147,7 @@ export function hotScore(comment: CommentType) {
     const order = Math.log10(Math.max(score, 1));
     const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
     const seconds = comment.timestamp - 1134028003;
-    return round(sign * order + seconds / 45000, 7);
+    return lodash.round(sign * order + seconds / 45000, 7);
 }
 
 export function controversialScore(comment: CommentType) {

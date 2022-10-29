@@ -1,10 +1,11 @@
-import { chunks, controversialScore, hotScore, TIMEFRAMES_TO_SECONDS, timestamp } from "./util";
+import { controversialScore, hotScore, TIMEFRAMES_TO_SECONDS, timestamp } from "./util";
 import { Page, Pages } from "./pages";
 import { Subplebbit } from "./subplebbit";
 import assert from "assert";
 import { Comment } from "./comment";
 import { CommentType, PostSort, PostSortName, ReplySort, ReplySortName, SortProps, Timeframe } from "./types";
 import Logger from "@plebbit/plebbit-logger";
+import lodash from "lodash";
 
 export const POSTS_SORT_TYPES: PostSort = {
     hot: { score: (...args) => hotScore(...args) },
@@ -92,7 +93,7 @@ export class SortHandler {
                 .sort((postA, postB) => postB.score - postA.score)
                 .map((comment) => comment.comment);
 
-        const commentsChunks = chunks(commentsSorted, limit);
+        const commentsChunks = lodash.chunk(commentsSorted, limit);
 
         const [listOfPage, cids] = await this.chunksToListOfPage(commentsChunks);
 
