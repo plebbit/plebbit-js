@@ -18,7 +18,7 @@ import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util"
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
-import { fetchCid, loadIpfsFileAsJson, loadIpnsAsJson, removeKeys, removeKeysWithUndefinedValues, timestamp } from "./util";
+import { fetchCid, loadIpfsFileAsJson, loadIpnsAsJson, removeKeysWithUndefinedValues, timestamp } from "./util";
 import Vote from "./vote";
 import { createSigner, Signer, signPublication, verifyPublication } from "./signer";
 import { Resolver } from "./resolver";
@@ -31,6 +31,7 @@ import errcode from "err-code";
 import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
+import lodash from "lodash";
 
 export const pendingSubplebbitCreations: Record<string, boolean> = {};
 
@@ -190,7 +191,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             if (!subHasBeenCreatedBefore) pendingSubplebbitCreations[key] = false;
             log(
                 `Created subplebbit (${subplebbit.address}) with props:`,
-                removeKeysWithUndefinedValues(removeKeys(subplebbit.toJSON(), ["signer"]))
+                removeKeysWithUndefinedValues(lodash.omit(subplebbit.toJSON(), ["signer"]))
             );
             return subplebbit;
         };

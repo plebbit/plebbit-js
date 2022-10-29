@@ -1,4 +1,4 @@
-import { loadIpnsAsJson, removeKeys, removeKeysWithUndefinedValues, shallowEqual } from "./util";
+import { loadIpnsAsJson, removeKeysWithUndefinedValues } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
 import { verifyPublication } from "./signer";
@@ -19,6 +19,8 @@ import { codes, messages } from "./errors";
 
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "./plebbit";
+import lodash from "lodash";
+
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
 export class Comment extends Publication implements CommentType {
@@ -174,7 +176,7 @@ export class Comment extends Publication implements CommentType {
     toJSONForDb(challengeRequestId?: string): CommentForDbType {
         if (typeof this.ipnsKeyName !== "string") throw Error("comment.ipnsKeyName needs to be defined before inserting comment in DB");
         return removeKeysWithUndefinedValues({
-            ...removeKeys(this.toJSON(), ["replyCount", "upvoteCount", "downvoteCount", "replies"]),
+            ...lodash.omit(this.toJSON(), ["replyCount", "upvoteCount", "downvoteCount", "replies"]),
             author: JSON.stringify(this.author),
             authorEdit: JSON.stringify(this.authorEdit),
             original: JSON.stringify(this.original),
@@ -256,12 +258,19 @@ export class Comment extends Publication implements CommentType {
         const log = Logger("plebbit-js:comment:update");
         let res: CommentUpdate | undefined;
         try {
-            res = await loadIpnsAsJson(this.ipnsName, this.plebbit);
+            res = await loadIpnsAsJson(<string>this.ipnsName, this.plebbit);
         } catch (e) {
             log.error(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error: `, e);
             return;
         }
-        if (res && (!this.updatedAt || !shallowEqual(this.toJSONCommentUpdate(), res, ["signature"]))) {
+        if (
+            res &&
+            (!this.updatedAt ||
+                !lodash.isEqual(
+                    removeKeysWithUndefinedValues(lodash.omit(this.toJSONCommentUpdate(), ["signature"])),
+                    lodash.omit(res, ["signature"])
+                ))
+        ) {
             log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
             const [verified, failedVerificationReason] = await verifyPublication(res, this.plebbit, "commentupdate");
             if (!verified) {

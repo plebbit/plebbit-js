@@ -1,6 +1,6 @@
 import { PUBSUB_MESSAGE_TYPES } from "../../challenge";
 import Author from "../../author";
-import { removeKeys, removeKeysWithUndefinedValues, replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
+import { removeKeysWithUndefinedValues, replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
 import knex, { Knex } from "knex";
 import { Subplebbit } from "../../subplebbit";
 import path from "path";
@@ -33,6 +33,7 @@ import env from "../../version";
 import { Plebbit } from "../../plebbit";
 import { Comment } from "../../comment";
 import sumBy from "lodash/sumBy";
+import lodash from "lodash";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -326,7 +327,7 @@ export class DbHandler {
     }
 
     async updateAuthor(newAuthorProps: AuthorDbType, updateCommentsAuthor = true, trx?: Transaction) {
-        const onlyNewProps: Omit<AuthorDbType, "address"> = removeKeysWithUndefinedValues(removeKeys(newAuthorProps, ["address"]));
+        const onlyNewProps: Omit<AuthorDbType, "address"> = removeKeysWithUndefinedValues(lodash.omit(newAuthorProps, ["address"]));
 
         await this._baseTransaction(trx)(TABLES.AUTHORS).update(onlyNewProps).where("address", newAuthorProps.address);
         if (updateCommentsAuthor) {

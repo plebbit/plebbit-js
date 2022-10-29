@@ -8,7 +8,7 @@ import * as cborg from "cborg";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import PeerId from "peer-id";
-import { keepKeys, removeKeys, removeKeysWithUndefinedValues } from "../util";
+import { removeKeysWithUndefinedValues } from "../util";
 import { Plebbit } from "../plebbit";
 import { Signer } from ".";
 import {
@@ -31,6 +31,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { CommentEdit } from "../comment-edit";
 import Vote from "../vote";
 import { Comment } from "../comment";
+import lodash from "lodash";
 
 export const SIGNED_PROPERTY_NAMES: Record<SignatureTypes, SignedPropertyNames> = Object.freeze({
     comment: ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"],
@@ -162,7 +163,10 @@ export async function signPublication(
 
     const signedPropertyNames = SIGNED_PROPERTY_NAMES[signatureType];
 
-    const fieldsToSign = keepKeys(publicationJson, signedPropertyNames);
+    const fieldsToSign = {
+        ...lodash.fromPairs(signedPropertyNames.map((name: string) => [name, undefined])), // Create an object with all of signedPropertyNames present
+        ...lodash.pick(publicationJson, signedPropertyNames)
+    };
     log.trace("Fields to sign: ", signedPropertyNames);
     log.trace("Publication to sign: ", fieldsToSign);
     const commentEncoded = cborg.encode(fieldsToSign); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
@@ -177,7 +181,10 @@ export async function signPublication(
 }
 
 const verifyPublicationSignature = async (signature: SignatureType, publicationToBeVerified: PublicationToVerify) => {
-    const commentWithFieldsToSign = keepKeys(publicationToBeVerified, signature.signedPropertyNames);
+    const commentWithFieldsToSign = {
+        ...lodash.fromPairs(signature.signedPropertyNames.map((name: string) => [name, undefined])), // Create an object with all of signedPropertyNames present
+        ...lodash.pick(publicationToBeVerified, signature.signedPropertyNames)
+    };
     const commentEncoded = cborg.encode(commentWithFieldsToSign);
     const signatureIsValid = await verifyBufferRsa(
         commentEncoded,
@@ -238,7 +245,7 @@ export async function verifyPublication(
         if (signatureType === "comment" && publicationJson["authorEdit"]) {
             // Means comment has been edited, verify both comment.signature and comment.authorEdit.signature
             publicationJson = <CommentType>publicationJson;
-            const originalObj = { ...removeKeys(publicationJson, ["original", "authorEdit"]), ...publicationJson.original };
+            const originalObj = { ...lodash.omit(publicationJson, ["original", "authorEdit"]), ...publicationJson.original };
             let [verified, failedVerificationReason] = await verifyPublication(
                 originalObj,
                 plebbit,
@@ -257,7 +264,7 @@ export async function verifyPublication(
         } else if (signatureType === "comment" && publicationJson["updatedAt"]) {
             // We're verifying a comment (IPFS) along with Comment Update
             publicationJson = <CommentType>publicationJson;
-            const originalObj = { ...removeKeys(publicationJson, ["original"]), ...publicationJson.original };
+            const originalObj = { ...lodash.omit(publicationJson, ["original"]), ...publicationJson.original };
 
             // Verify comment (IPFS)
             await verifyPublicationSignature(publicationJson.signature, originalObj);

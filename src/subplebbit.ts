@@ -4,7 +4,7 @@ import { sha256 } from "js-sha256";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
 import { SortHandler } from "./sort-handler";
-import { loadIpnsAsJson, removeKeys, removeKeysWithUndefinedValues, shallowEqual, timestamp } from "./util";
+import { loadIpnsAsJson, removeKeysWithUndefinedValues, timestamp } from "./util";
 import { decrypt, encrypt, verifyPublication, Signer, signPublication } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
@@ -46,6 +46,7 @@ import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 import { nativeFunctions } from "./runtime/node/util";
 import env from "./version";
+import lodash from "lodash";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
@@ -685,7 +686,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             log(
                 `(${request.challengeRequestId}): `,
                 `Published ${challengeVerification.type} over pubsub: `,
-                removeKeys(toSignMsg, ["encryptedPublication"])
+                lodash.omit(toSignMsg, ["encryptedPublication"])
             );
             this.emit("challengeverification", { ...challengeVerification, publication: decryptedRequest.publication });
         } else {
@@ -707,7 +708,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             log(
                 `(${request.challengeRequestId}): `,
                 `Published ${challengeMessage.type} over pubsub: `,
-                removeKeys(toSignChallenge, ["encryptedChallenges"])
+                lodash.omit(toSignChallenge, ["encryptedChallenges"])
             );
             this.emit("challengemessage", { ...challengeMessage, challenges: providedChallenges });
         }
@@ -769,7 +770,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             log(
                 `(${challengeAnswer.challengeRequestId}): `,
                 `Published ${challengeVerification.type} over pubsub:`,
-                removeKeys(toSignMsg, ["encryptedPublication"])
+                lodash.omit(toSignMsg, ["encryptedPublication"])
             );
             this.emit("challengeverification", {
                 ...challengeVerification,
@@ -876,7 +877,14 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 `Failed to load Comment (${dbComment.cid}) IPNS (${dbComment.ipnsName}) while syncing. Will attempt to publish a new IPNS record`
             );
         }
-        if (!commentIpns || !shallowEqual(commentIpns, dbComment.toJSONCommentUpdate(), ["replies", "signature", "subplebbitAuthor"])) {
+
+        if (
+            !commentIpns ||
+            !lodash.isEqual(
+                lodash.omit(commentIpns, ["replies", "signature", "subplebbitAuthor"]),
+                removeKeysWithUndefinedValues(lodash.omit(dbComment.toJSONCommentUpdate(), ["replies", "signature", "subplebbitAuthor"]))
+            )
+        ) {
             log.trace(`Attempting to update Comment (${dbComment.cid})`);
             await this.sortHandler.deleteCommentPageCache(dbComment);
             const commentReplies = await this.sortHandler.generatePagesUnderComment(dbComment, undefined);

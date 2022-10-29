@@ -140,20 +140,6 @@ export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
 
-export function keepKeys<T extends Record<string, any>, V extends string>(obj: T, keys: V[]): Pick<T, V> {
-    return Object.assign(
-        {},
-        ...keys.map((key) => ({ [key]: undefined })),
-        ...Object.entries(obj).map(([key, value]) => ((<string[]>keys).includes(key) ? { [key]: value } : undefined))
-    );
-}
-
-export function removeKeys<T extends Record<string, any>, V extends string>(object1: T, keys: V[]): Omit<T, V> {
-    const newObject = { ...object1 };
-    keys.forEach((key) => delete newObject[key]);
-    return newObject;
-}
-
 export function replaceXWithY(obj: Object, x: any, y: any): any {
     // obj is a JS object
     const newObj = {};
@@ -166,20 +152,6 @@ export function replaceXWithY(obj: Object, x: any, y: any): any {
         else newObj[key] = value;
     });
     return newObj;
-}
-
-export function shallowEqual(object1: Object, object2: Object, excludeKeys: any[] = []) {
-    object1 = removeKeys(object1 || {}, excludeKeys);
-    object1 = removeKeysWithUndefinedValues(object1); // To get rid of keys with undefined value
-    object2 = removeKeys(object2 || {}, excludeKeys);
-    object2 = removeKeysWithUndefinedValues(object2); // To get rid of keys with undefined value
-    const keys1 = Object.keys(object1);
-    const keys2 = Object.keys(object2);
-    if (keys1.length !== keys2.length) return false;
-
-    for (const key of keys1) if (JSON.stringify(object1[key]) !== JSON.stringify(object2[key])) return false;
-
-    return true;
 }
 
 export function hotScore(comment: CommentType) {
