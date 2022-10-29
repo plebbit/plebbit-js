@@ -1,4 +1,3 @@
-import { parseJsonIfString } from "./util";
 import {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
@@ -44,9 +43,9 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
     constructor(props: Omit<ChallengeRequestMessageType, "type">) {
         this.type = "CHALLENGEREQUEST";
         this.challengeRequestId = props.challengeRequestId;
-        this.acceptedChallengeTypes = parseJsonIfString(props.acceptedChallengeTypes);
+        this.acceptedChallengeTypes = props.acceptedChallengeTypes;
         this.encryptedPublication = props.encryptedPublication;
-        this.signature = parseJsonIfString(props.signature);
+        this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
     }
@@ -86,7 +85,7 @@ export class ChallengeMessage implements ChallengeMessageType {
         this.type = "CHALLENGE";
         this.challengeRequestId = props.challengeRequestId;
         this.encryptedChallenges = props.encryptedChallenges;
-        this.signature = parseJsonIfString(props.signature);
+        this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
     }
@@ -125,7 +124,7 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
         this.challengeAnswerId = props.challengeAnswerId;
         this.encryptedChallengeAnswers = props.encryptedChallengeAnswers;
         this.challengeRequestId = props.challengeRequestId;
-        this.signature = parseJsonIfString(props.signature);
+        this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
     }
@@ -170,7 +169,7 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
         this.challengeRequestId = props.challengeRequestId;
         this.challengeAnswerId = props.challengeAnswerId;
         this.challengeSuccess = props.challengeSuccess;
-        this.challengeErrors = parseJsonIfString(props.challengeErrors);
+        this.challengeErrors = props.challengeErrors;
         this.reason = props.reason;
         this.encryptedPublication = props.encryptedPublication;
         this.signature = props.signature;

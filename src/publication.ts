@@ -3,7 +3,6 @@ import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { v4 as uuidv4 } from "uuid";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import EventEmitter from "events";
-import { parseJsonIfString } from "./util";
 import Author from "./author";
 import assert from "assert";
 import { decrypt, encrypt, Signature, Signer, signPublication, verifyPublication } from "./signer";
@@ -48,7 +47,7 @@ class Publication extends EventEmitter implements PublicationType {
         this.subplebbitAddress = props.subplebbitAddress;
         this.timestamp = props.timestamp;
         this.signer = this.signer || props["signer"];
-        this.signature = parseJsonIfString(props.signature);
+        this.signature = new Signature(props.signature);
         assert(props.author?.address, "publication.author.address need to be defined");
         this.author = new Author(props.author);
         this.protocolVersion = props.protocolVersion;

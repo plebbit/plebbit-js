@@ -131,11 +131,6 @@ export function round(number: number, decimalPlaces: number): number {
     return Math.round(number * factorOfTen) / factorOfTen;
 }
 
-export function parseJsonIfString(x) {
-    // @ts-ignore
-    return x instanceof String || typeof x === "string" ? JSON.parse(x) : x;
-}
-
 export function timestamp() {
     return Math.round(Date.now() / 1000);
 }

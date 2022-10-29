@@ -1,5 +1,4 @@
 import { AuthorDbType, AuthorType, Flair, Nft, SubplebbitAuthor, Wallet } from "./types";
-import { parseJsonIfString } from "./util";
 
 class Author implements AuthorType {
     address: string;
@@ -17,7 +16,7 @@ class Author implements AuthorType {
         this.displayName = props.displayName;
         this.wallets = props.wallets;
         this.avatar = props.avatar;
-        this.flair = parseJsonIfString(props.flair);
+        this.flair = props.flair;
         this.banExpiresAt = props.banExpiresAt;
         this.subplebbit = props.subplebbit;
     }
