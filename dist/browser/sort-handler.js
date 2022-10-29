@@ -64,6 +64,7 @@ var util_1 = require("./util");
 var pages_1 = require("./pages");
 var assert_1 = __importDefault(require("assert"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
+var lodash_1 = __importDefault(require("lodash"));
 exports.POSTS_SORT_TYPES = {
     hot: { score: function () {
             var args = [];
@@ -223,7 +224,7 @@ var SortHandler = /** @class */ (function () {
                             }); })
                                 .sort(function (postA, postB) { return postB.score - postA.score; })
                                 .map(function (comment) { return comment.comment; });
-                        commentsChunks = (0, util_1.chunks)(commentsSorted, limit);
+                        commentsChunks = lodash_1.default.chunk(commentsSorted, limit);
                         return [4 /*yield*/, this.chunksToListOfPage(commentsChunks)];
                     case 1:
                         _a = _c.sent(), listOfPage = _a[0], cids = _a[1];

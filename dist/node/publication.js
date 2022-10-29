@@ -70,7 +70,6 @@ var from_string_1 = require("uint8arrays/from-string");
 var uuid_1 = require("uuid");
 var to_string_1 = require("uint8arrays/to-string");
 var events_1 = __importDefault(require("events"));
-var util_1 = require("./util");
 var author_1 = __importDefault(require("./author"));
 var assert_1 = __importDefault(require("assert"));
 var signer_1 = require("./signer");
@@ -91,7 +90,7 @@ var Publication = /** @class */ (function (_super) {
         this.subplebbitAddress = props.subplebbitAddress;
         this.timestamp = props.timestamp;
         this.signer = this.signer || props["signer"];
-        this.signature = (0, util_1.parseJsonIfString)(props.signature);
+        this.signature = new signer_1.Signature(props.signature);
         (0, assert_1.default)((_a = props.author) === null || _a === void 0 ? void 0 : _a.address, "publication.author.address need to be defined");
         this.author = new author_1.default(props.author);
         this.protocolVersion = props.protocolVersion;

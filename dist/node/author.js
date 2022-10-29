@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var util_1 = require("./util");
 var Author = /** @class */ (function () {
     function Author(props) {
         this.address = props.address;
@@ -8,7 +7,7 @@ var Author = /** @class */ (function () {
         this.displayName = props.displayName;
         this.wallets = props.wallets;
         this.avatar = props.avatar;
-        this.flair = (0, util_1.parseJsonIfString)(props.flair);
+        this.flair = props.flair;
         this.banExpiresAt = props.banExpiresAt;
         this.subplebbit = props.subplebbit;
     }

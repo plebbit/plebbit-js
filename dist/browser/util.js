@@ -46,25 +46,17 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.randomElement = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.shallowEqual = exports.replaceXWithY = exports.removeKeys = exports.keepKeys = exports.timestamp = exports.parseJsonIfString = exports.round = exports.chunks = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.fetchCid = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.randomElement = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.fetchCid = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var util_1 = require("./runtime/browser/util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var errors_1 = require("./errors");
 var err_code_1 = __importDefault(require("err-code"));
 var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
+var lodash_1 = __importDefault(require("lodash"));
 //This is temp. TODO replace this with accurate mapping
 exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -241,45 +233,10 @@ function loadIpnsAsJson(ipns, plebbit) {
     });
 }
 exports.loadIpnsAsJson = loadIpnsAsJson;
-function chunks(arr, len) {
-    var chunks = [];
-    var i = 0;
-    while (i < arr.length)
-        chunks.push(arr.slice(i, (i += len)));
-    return chunks;
-}
-exports.chunks = chunks;
-function round(number, decimalPlaces) {
-    var factorOfTen = Math.pow(10, decimalPlaces);
-    return Math.round(number * factorOfTen) / factorOfTen;
-}
-exports.round = round;
-function parseJsonIfString(x) {
-    // @ts-ignore
-    return x instanceof String || typeof x === "string" ? JSON.parse(x) : x;
-}
-exports.parseJsonIfString = parseJsonIfString;
 function timestamp() {
     return Math.round(Date.now() / 1000);
 }
 exports.timestamp = timestamp;
-function keepKeys(obj, keys) {
-    return Object.assign.apply(Object, __spreadArray(__spreadArray([{}], keys.map(function (key) {
-        var _a;
-        return (_a = {}, _a[key] = undefined, _a);
-    }), false), Object.entries(obj).map(function (_a) {
-        var _b;
-        var key = _a[0], value = _a[1];
-        return (keys.includes(key) ? (_b = {}, _b[key] = value, _b) : undefined);
-    }), false));
-}
-exports.keepKeys = keepKeys;
-function removeKeys(object1, keys) {
-    var newObject = __assign({}, object1);
-    keys.forEach(function (key) { return delete newObject[key]; });
-    return newObject;
-}
-exports.removeKeys = removeKeys;
 function replaceXWithY(obj, x, y) {
     // obj is a JS object
     var newObj = {};
@@ -298,24 +255,6 @@ function replaceXWithY(obj, x, y) {
     return newObj;
 }
 exports.replaceXWithY = replaceXWithY;
-function shallowEqual(object1, object2, excludeKeys) {
-    if (excludeKeys === void 0) { excludeKeys = []; }
-    object1 = removeKeys(object1 || {}, excludeKeys);
-    object1 = removeKeysWithUndefinedValues(object1); // To get rid of keys with undefined value
-    object2 = removeKeys(object2 || {}, excludeKeys);
-    object2 = removeKeysWithUndefinedValues(object2); // To get rid of keys with undefined value
-    var keys1 = Object.keys(object1);
-    var keys2 = Object.keys(object2);
-    if (keys1.length !== keys2.length)
-        return false;
-    for (var _i = 0, keys1_1 = keys1; _i < keys1_1.length; _i++) {
-        var key = keys1_1[_i];
-        if (JSON.stringify(object1[key]) !== JSON.stringify(object2[key]))
-            return false;
-    }
-    return true;
-}
-exports.shallowEqual = shallowEqual;
 function hotScore(comment) {
     if (typeof comment.downvoteCount !== "number" || typeof comment.upvoteCount !== "number")
         throw Error("Comment.downvoteCount (".concat(comment.downvoteCount, ") and comment.upvoteCount (").concat(comment.upvoteCount, ") need to be defined before calculating hotScore"));
@@ -323,7 +262,7 @@ function hotScore(comment) {
     var order = Math.log10(Math.max(score, 1));
     var sign = score > 0 ? 1 : score < 0 ? -1 : 0;
     var seconds = comment.timestamp - 1134028003;
-    return round(sign * order + seconds / 45000, 7);
+    return lodash_1.default.round(sign * order + seconds / 45000, 7);
 }
 exports.hotScore = hotScore;
 function controversialScore(comment) {

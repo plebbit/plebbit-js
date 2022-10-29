@@ -6,14 +6,8 @@ export declare function fetchCid(cid: string, plebbit: Plebbit, catOptions?: {
 }): Promise<string>;
 export declare function loadIpfsFileAsJson(cid: string, plebbit: Plebbit): Promise<any>;
 export declare function loadIpnsAsJson(ipns: string, plebbit: Plebbit): Promise<any>;
-export declare function chunks<T>(arr: Array<T>, len: number): Array<Array<T>>;
-export declare function round(number: number, decimalPlaces: number): number;
-export declare function parseJsonIfString(x: any): any;
 export declare function timestamp(): number;
-export declare function keepKeys<T extends Record<string, any>, V extends string>(obj: T, keys: V[]): Pick<T, V>;
-export declare function removeKeys<T extends Record<string, any>, V extends string>(object1: T, keys: V[]): Omit<T, V>;
 export declare function replaceXWithY(obj: Object, x: any, y: any): any;
-export declare function shallowEqual(object1: Object, object2: Object, excludeKeys?: any[]): boolean;
 export declare function hotScore(comment: CommentType): number;
 export declare function controversialScore(comment: CommentType): number;
 export declare function topScore(comment: CommentType): number;

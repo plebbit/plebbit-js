@@ -95,6 +95,7 @@ var errors_1 = require("./errors");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var util_3 = require("./runtime/node/util");
 var version_1 = __importDefault(require("./version"));
+var lodash_1 = __importDefault(require("lodash"));
 var DEFAULT_UPDATE_INTERVAL_MS = 60000;
 var DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
 exports.RUNNING_SUBPLEBBITS = {};
@@ -874,7 +875,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 9:
                         _l.sent();
-                        log("(".concat(request.challengeRequestId, "): "), "Published ".concat(challengeVerification.type, " over pubsub: "), (0, util_1.removeKeys)(toSignMsg, ["encryptedPublication"]));
+                        log("(".concat(request.challengeRequestId, "): "), "Published ".concat(challengeVerification.type, " over pubsub: "), lodash_1.default.omit(toSignMsg, ["encryptedPublication"]));
                         this.emit("challengeverification", __assign(__assign({}, challengeVerification), { publication: decryptedRequest.publication }));
                         return [3 /*break*/, 14];
                     case 10:
@@ -898,7 +899,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 13:
                         _l.sent();
-                        log("(".concat(request.challengeRequestId, "): "), "Published ".concat(challengeMessage.type, " over pubsub: "), (0, util_1.removeKeys)(toSignChallenge, ["encryptedChallenges"]));
+                        log("(".concat(request.challengeRequestId, "): "), "Published ".concat(challengeMessage.type, " over pubsub: "), lodash_1.default.omit(toSignChallenge, ["encryptedChallenges"]));
                         this.emit("challengemessage", __assign(__assign({}, challengeMessage), { challenges: providedChallenges }));
                         _l.label = 14;
                     case 14: return [2 /*return*/];
@@ -966,7 +967,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 9:
                         _m.sent();
-                        log("(".concat(challengeAnswer.challengeRequestId, "): "), "Published ".concat(challengeVerification.type, " over pubsub:"), (0, util_1.removeKeys)(toSignMsg, ["encryptedPublication"]));
+                        log("(".concat(challengeAnswer.challengeRequestId, "): "), "Published ".concat(challengeVerification.type, " over pubsub:"), lodash_1.default.omit(toSignMsg, ["encryptedPublication"]));
                         this.emit("challengeverification", __assign(__assign({}, challengeVerification), { publication: encryptedPublication ? publicationOrReason : undefined }));
                         return [3 /*break*/, 13];
                     case 10:
@@ -1122,7 +1123,8 @@ var Subplebbit = /** @class */ (function (_super) {
                         log.trace("Failed to load Comment (".concat(dbComment.cid, ") IPNS (").concat(dbComment.ipnsName, ") while syncing. Will attempt to publish a new IPNS record"));
                         return [3 /*break*/, 5];
                     case 5:
-                        if (!(!commentIpns || !(0, util_1.shallowEqual)(commentIpns, dbComment.toJSONCommentUpdate(), ["replies", "signature", "subplebbitAuthor"]))) return [3 /*break*/, 11];
+                        if (!(!commentIpns ||
+                            !lodash_1.default.isEqual(lodash_1.default.omit(commentIpns, ["replies", "signature", "subplebbitAuthor"]), (0, util_1.removeKeysWithUndefinedValues)(lodash_1.default.omit(dbComment.toJSONCommentUpdate(), ["replies", "signature", "subplebbitAuthor"]))))) return [3 /*break*/, 11];
                         log.trace("Attempting to update Comment (".concat(dbComment.cid, ")"));
                         return [4 /*yield*/, this.sortHandler.deleteCommentPageCache(dbComment)];
                     case 6:
