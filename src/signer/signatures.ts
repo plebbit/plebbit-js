@@ -12,12 +12,18 @@ import { removeKeysWithUndefinedValues } from "../util";
 import { Plebbit } from "../plebbit";
 import { Signer } from ".";
 import {
-    AuthorType,
+    AuthorCommentEdit,
+    ChallengeAnswerMessageType,
+    ChallengeMessageType,
+    ChallengeRequestMessageType,
+    ChallengeVerificationMessageType,
     CommentEditType,
     CommentType,
+    CommentUpdate,
     CreateCommentEditOptions,
     CreateCommentOptions,
     CreateVoteOptions,
+    PageType,
     PublicationsToSign,
     PublicationToVerify,
     SignatureType,
@@ -26,12 +32,10 @@ import {
     SubplebbitType,
     VoteType
 } from "../types";
-import { sha256 } from "js-sha256";
 import Logger from "@plebbit/plebbit-logger";
-import { CommentEdit } from "../comment-edit";
-import Vote from "../vote";
-import { Comment } from "../comment";
 import lodash from "lodash";
+import errcode from "err-code";
+import { codes, messages } from "../errors";
 
 export const SIGNED_PROPERTY_NAMES: Record<SignatureTypes, SignedPropertyNames> = Object.freeze({
     comment: ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"],
@@ -98,6 +102,11 @@ export const SIGNED_PROPERTY_NAMES: Record<SignatureTypes, SignedPropertyNames> 
         "challengeErrors"
     ]
 });
+
+interface ValidationResult {
+    valid: boolean;
+    reason?: string; // Reason why it's invalid
+}
 
 export class Signature implements SignatureType {
     signature: string;
@@ -180,120 +189,183 @@ export async function signPublication(
     });
 }
 
-const verifyPublicationSignature = async (signature: SignatureType, publicationToBeVerified: PublicationToVerify) => {
+const verifyAuthor = async (
+    publicationJson: CommentEditType | VoteType | CommentType,
+    plebbit: Plebbit,
+    returnDerivedAuthorAddressIfInvalid: boolean
+): Promise<Pick<ValidationResult, "valid"> & { newAddress?: string }> => {
+    const log = Logger("plebbit-js:signatures:verifyAuthor");
+    const authorAddress = plebbit.resolver.isDomain(publicationJson.author.address)
+        ? await plebbit.resolver.resolveAuthorAddressIfNeeded(publicationJson.author.address)
+        : publicationJson.author.address;
+    const authorPeerId = PeerId.createFromB58String(authorAddress);
+    const signaturePeerId = await getPeerIdFromPublicKeyPem(publicationJson.signature.publicKey);
+    if (!signaturePeerId.equals(authorPeerId)) return { valid: false };
+    if (returnDerivedAuthorAddressIfInvalid && plebbit.resolver.isDomain(publicationJson.author.address)) {
+        const derivedAddress = await getPlebbitAddressFromPublicKeyPem(publicationJson.signature.publicKey);
+        if (authorAddress !== derivedAddress) {
+            // Means plebbit-author-address text record is resolving to another address (outdated?)
+            // Will always use address derived from publication.signature.publicKey as truth
+            log.error(
+                `domain (${publicationJson.author.address}) resolved address (${authorAddress}) is invalid, changing publication.author.address to derived address ${derivedAddress}`
+            );
+            return { valid: true, newAddress: derivedAddress };
+        }
+    }
+    return { valid: true };
+};
+
+const verifyPublicationSignature = async (signature: SignatureType, publicationToBeVerified: PublicationToVerify): Promise<boolean> => {
     const commentWithFieldsToSign = {
         ...lodash.fromPairs(signature.signedPropertyNames.map((name: string) => [name, undefined])), // Create an object with all of signedPropertyNames present
         ...lodash.pick(publicationToBeVerified, signature.signedPropertyNames)
     };
     const commentEncoded = cborg.encode(commentWithFieldsToSign);
-    const signatureIsValid = await verifyBufferRsa(
-        commentEncoded,
-        uint8ArrayFromString(signature.signature, "base64"),
-        signature.publicKey
-    );
-    if (!signatureIsValid) throw Error("Signature is invalid");
+    try {
+        const signatureIsValid = await verifyBufferRsa(
+            commentEncoded,
+            uint8ArrayFromString(signature.signature, "base64"),
+            signature.publicKey
+        );
+        if (!signatureIsValid) return false;
+        return true;
+    } catch {
+        return false;
+    }
 };
 
-// Return [verification (boolean), reasonForFailing (string)]
-export async function verifyPublication(
-    publication: PublicationToVerify,
+const verifyPublicationWithAuthor = async (
+    publicationJson: PublicationToVerify,
+    plebbit: Plebbit
+): Promise<ValidationResult & { newAddress?: string }> => {
+    const signatureValidity = await verifyPublicationSignature(publicationJson.signature, publicationJson);
+    if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_NOT_VALID };
+
+    if (plebbit.resolveAuthorAddresses && publicationJson["author"]) {
+        const authorSignatureValidity = await verifyAuthor(<VoteType | CommentType | CommentEditType>publicationJson, plebbit, true);
+        if (!authorSignatureValidity.valid) return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
+
+        if (authorSignatureValidity?.newAddress) return { valid: true, newAddress: authorSignatureValidity.newAddress };
+    }
+
+    return { valid: true };
+};
+
+export async function verifyVote(vote: VoteType, plebbit: Plebbit): Promise<ValidationResult> {
+    const voteJson: VoteType = removeKeysWithUndefinedValues(vote);
+    const res = await verifyPublicationWithAuthor(voteJson, plebbit);
+    if (!res.valid) return res;
+    return { valid: true };
+}
+
+export async function verifyCommentEdit(edit: CommentEditType, plebbit: Plebbit): Promise<ValidationResult> {
+    const editJson: CommentEditType = removeKeysWithUndefinedValues(edit);
+    const res = await verifyPublicationWithAuthor(editJson, plebbit);
+    if (!res.valid) return res;
+    return { valid: true };
+}
+
+export async function verifyComment(
+    comment: CommentType,
     plebbit: Plebbit,
-    signatureType: SignatureTypes,
     overrideAuthorAddressIfInvalid = true
-): Promise<[boolean, string | undefined]> {
-    if (!Object.keys(SIGNED_PROPERTY_NAMES).includes(signatureType)) throw Error(`signature type (${signatureType}) is not supported`);
-    let publicationJson = <PublicationToVerify>removeKeysWithUndefinedValues(publication); // This line is needed to remove nested undefined values
-    if (!publicationJson.signature) throw Error(`Publication has no signature to verify`);
+): Promise<ValidationResult> {
+    const commentJson: CommentType = removeKeysWithUndefinedValues(comment);
 
-    const log = Logger("plebbit-js:signatures:verifyPublication");
+    if (comment.authorEdit) {
+        // Means comment has been edited, verify both comment.signature and comment.authorEdit.signature
+        const originalObj: CommentType = { ...lodash.omit(commentJson, ["original", "authorEdit"]), ...commentJson.original };
+        const originalValidation = await verifyPublicationWithAuthor(originalObj, plebbit);
+        if (!originalValidation.valid) return originalValidation;
+        if (overrideAuthorAddressIfInvalid && originalValidation.newAddress) comment.author.address = originalValidation.newAddress;
 
-    const cachedResult: [boolean, string] = plebbit._memCache.get(sha256(JSON.stringify(publicationJson) + signatureType));
-    if (Array.isArray(cachedResult)) return cachedResult;
+        const authorEditValidation = await verifyPublicationWithAuthor(<AuthorCommentEdit>commentJson.authorEdit, plebbit);
+        if (!authorEditValidation.valid) return authorEditValidation;
+        if (overrideAuthorAddressIfInvalid && authorEditValidation.newAddress)
+            comment.authorEdit.author.address = authorEditValidation.newAddress;
+    } else if (typeof commentJson.updatedAt === "number") {
+        // We're verifying a comment (IPFS) along with Comment Update
+        const originalObj = { ...lodash.omit(commentJson, ["original"]), ...commentJson.original };
 
-    const verifyAuthor = async (signature: SignatureType, author: AuthorType) => {
-        publicationJson = <CommentEditType | VoteType | CommentType>publicationJson;
-        const signaturePeerId = await getPeerIdFromPublicKeyPem(signature.publicKey);
-        let authorPeerId: PeerId | undefined;
-        try {
-            // There are cases where author.address is a crypto domain so PeerId.createFromB58String crashes
-            authorPeerId = PeerId.createFromB58String(author.address);
-        } catch {}
-        if (authorPeerId && !signaturePeerId.equals(authorPeerId))
-            throw Error("comment.author.address doesn't match comment.signature.publicKey");
-        else if (overrideAuthorAddressIfInvalid && publicationJson?.author?.address) {
-            // Meaning author is a domain, crypto one likely
-            const resolvedAddress = await plebbit.resolver.resolveAuthorAddressIfNeeded(publicationJson.author.address);
-            if (resolvedAddress !== publicationJson.author.address) {
-                // Means author.address is a crypto domain
-                const derivedAddress = await getPlebbitAddressFromPublicKeyPem(publication.signature.publicKey);
-                if (resolvedAddress !== derivedAddress) {
-                    // Means plebbit-author-address text record is resolving to another comment (outdated?)
-                    // Will always use address derived from publication.signature.publicKey as truth
-                    log.error(
-                        `domain (${publicationJson.author.address}) resolved address (${resolvedAddress}) is invalid, changing publication.author.address to derived address ${derivedAddress}`
-                    );
-                    (<CommentEdit | Vote | Comment>publication).author.address = derivedAddress; // Change argument Publication author address. This is why we're using publicationJson
-                }
-            }
-        }
+        // Verify comment (IPFS)
+        const res = await verifyPublicationWithAuthor(originalObj, plebbit);
+        if (!res.valid) return res;
+        if (overrideAuthorAddressIfInvalid && res.newAddress) comment.author.address = res.newAddress;
+    } else {
+        const res = await verifyPublicationWithAuthor(commentJson, plebbit);
+        if (!res.valid) return res;
+        if (overrideAuthorAddressIfInvalid && res.newAddress) comment.author.address = res.newAddress;
+    }
+    return { valid: true };
+}
+
+export async function verifySubplebbit(subplebbit: SubplebbitType, plebbit: Plebbit): Promise<ValidationResult> {
+    const subplebbitJson: SubplebbitType = removeKeysWithUndefinedValues(subplebbit);
+    const signatureValidity = await verifyPublicationSignature(subplebbitJson.signature, subplebbitJson);
+    if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_NOT_VALID };
+    const resolvedSubAddress = await plebbit.resolver.resolveSubplebbitAddressIfNeeded(subplebbitJson.address);
+
+    const subPeerId = PeerId.createFromB58String(resolvedSubAddress);
+    const signaturePeerId = await getPeerIdFromPublicKeyPem(subplebbitJson.signature.publicKey);
+    if (!subPeerId.equals(signaturePeerId)) return { valid: false, reason: messages.ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY };
+    return { valid: true };
+}
+
+async function _getValidationResult(publication: PublicationToVerify) {
+    //@ts-ignore
+    const publicationJson: PublicationToVerify = removeKeysWithUndefinedValues(publication);
+    const signatureValidity = await verifyPublicationSignature(publicationJson.signature, publicationJson);
+    if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_NOT_VALID };
+    return { valid: true };
+}
+
+export async function verifyCommentUpdate(update: CommentUpdate): Promise<ValidationResult> {
+    return _getValidationResult(update);
+}
+
+export async function verifyChallengeRequest(request: ChallengeRequestMessageType): Promise<ValidationResult> {
+    return _getValidationResult(request);
+}
+
+export async function verifyChallengeMessage(challenge: ChallengeMessageType): Promise<ValidationResult> {
+    return _getValidationResult(challenge);
+}
+
+export async function verifyChallengeAnswer(answer: ChallengeAnswerMessageType): Promise<ValidationResult> {
+    return _getValidationResult(answer);
+}
+
+export async function verifyChallengeVerification(verification: ChallengeVerificationMessageType): Promise<ValidationResult> {
+    return _getValidationResult(verification);
+}
+
+export async function verifyPage(page: PageType, plebbit: Plebbit): Promise<ValidationResult> {
+    const verifyCommentInPage = async (comment: CommentType, parentComment?: CommentType) => {
+        if (comment.subplebbitAddress !== this.subplebbit.address) throw Error(messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB);
+        if (parentComment && parentComment.cid !== comment.parentCid) throw Error(messages.ERR_PARENT_CID_NOT_AS_EXPECTED);
+
+        const commentSignatureValidity = await verifyComment(comment, plebbit, true);
+        if (!commentSignatureValidity.valid)
+            throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+                details: `getPage: Failed to verify comment ${comment.cid} due to '${commentSignatureValidity.reason}'`
+            });
+
+        await Promise.all(
+            Object.values(comment?.replies?.pages).map(
+                async (page) =>
+                    await Promise.all(page.comments.map(async (preloadedComment) => verifyCommentInPage(preloadedComment, comment)))
+            )
+        );
     };
 
     try {
-        // Need to verify comment.signature (of original comment) and authorEdit (latest edit by author, if exists)
-        log.trace(`Attempting to verify a ${signatureType}`);
-
-        if (signatureType === "comment" && publicationJson["authorEdit"]) {
-            // Means comment has been edited, verify both comment.signature and comment.authorEdit.signature
-            publicationJson = <CommentType>publicationJson;
-            const originalObj = { ...lodash.omit(publicationJson, ["original", "authorEdit"]), ...publicationJson.original };
-            let [verified, failedVerificationReason] = await verifyPublication(
-                originalObj,
-                plebbit,
-                "comment",
-                overrideAuthorAddressIfInvalid
-            );
-            if (!verified) return [false, `Failed to verify ${signatureType}.original due to: ${failedVerificationReason}`];
-
-            [verified, failedVerificationReason] = await verifyPublication(
-                publicationJson.authorEdit,
-                plebbit,
-                "commentedit",
-                overrideAuthorAddressIfInvalid
-            );
-            if (!verified) return [false, `Failed to verify ${signatureType}.authorEdit due to: ${failedVerificationReason}`];
-        } else if (signatureType === "comment" && publicationJson["updatedAt"]) {
-            // We're verifying a comment (IPFS) along with Comment Update
-            publicationJson = <CommentType>publicationJson;
-            const originalObj = { ...lodash.omit(publicationJson, ["original"]), ...publicationJson.original };
-
-            // Verify comment (IPFS)
-            await verifyPublicationSignature(publicationJson.signature, originalObj);
-        } else if (signatureType === "subplebbit") {
-            publicationJson = <SubplebbitType>publicationJson;
-            await verifyPublicationSignature(publicationJson.signature, publicationJson);
-            const resolvedSubAddress: string = plebbit.resolver.isDomain(publicationJson.address)
-                ? await plebbit.resolver.resolveSubplebbitAddressIfNeeded(publicationJson.address)
-                : publicationJson.address;
-            const subPeerId = PeerId.createFromB58String(resolvedSubAddress);
-            const signaturePeerId = await getPeerIdFromPublicKeyPem(publicationJson.signature.publicKey);
-            if (!subPeerId.equals(signaturePeerId))
-                throw Error("subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey");
-        } else {
-            await verifyPublicationSignature(publicationJson.signature, publicationJson);
-            // Verify author at the end since we might change author.address which will fail signature verification
-            if (publicationJson["author"] && publicationJson["author"]["address"] && plebbit.resolveAuthorAddresses)
-                await verifyAuthor(publicationJson.signature, (<CommentEditType | VoteType | CommentType>publicationJson).author);
-        }
-
-        const res: [boolean, string | undefined] = [true, undefined];
-        plebbit._memCache.put(sha256(JSON.stringify(publicationJson) + signatureType), res);
-        return res;
+        await Promise.all(
+            page.comments.map(async (comment) => {
+                await verifyCommentInPage(comment, undefined);
+            })
+        );
+        return { valid: true };
     } catch (e) {
-        log(`Failed to verify ${signatureType} due to error:`, e);
-        log("Publication: ", publicationJson);
-        const res: [boolean, string | undefined] = [false, String(e)];
-        plebbit._memCache.put(sha256(JSON.stringify(publicationJson) + signatureType), res);
-
-        return res;
+        return { valid: false, reason: e.message };
     }
 }

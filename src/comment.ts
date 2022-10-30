@@ -1,7 +1,6 @@
 import { loadIpnsAsJson, removeKeysWithUndefinedValues } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
-import { verifyPublication } from "./signer";
 import {
     AuthorCommentEdit,
     CommentForDbType,
@@ -20,6 +19,7 @@ import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "./plebbit";
 import lodash from "lodash";
+import { verifyCommentUpdate } from "./signer/signatures";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
@@ -272,9 +272,9 @@ export class Comment extends Publication implements CommentType {
                 ))
         ) {
             log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
-            const [verified, failedVerificationReason] = await verifyPublication(res, this.plebbit, "commentupdate");
-            if (!verified) {
-                log.error(`Comment (${this.cid}) IPNS (${this.ipnsName}) signature is invalid due to '${failedVerificationReason}'`);
+            const signatureValidity = await verifyCommentUpdate(res);
+            if (!signatureValidity.valid) {
+                log.error(`Comment (${this.cid}) IPNS (${this.ipnsName}) signature is invalid due to '${signatureValidity.reason}'`);
                 return;
             }
             this._initCommentUpdate(res);
@@ -297,26 +297,6 @@ export class Comment extends Publication implements CommentType {
 
     stop() {
         clearInterval(this._updateInterval);
-    }
-
-    async edit(options: CommentUpdate) {
-        const log = Logger("plebbit-js:comment:edit");
-        if (typeof this.ipnsKeyName !== "string")
-            throw Error("comment.ipnsKeyName needs to be defined in order to publish a new CommentUpdate");
-        const [validSignature, failedVerificationReason] = await verifyPublication(options, this.plebbit, "commentupdate");
-        if (!validSignature)
-            throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                details: `comment.edit: Failed verification reason: ${failedVerificationReason}, editOptions: ${JSON.stringify(options)}`
-            });
-        this._initCommentUpdate(options);
-        this._mergeFields(this.toJSON());
-        const file = await this.plebbit.ipfsClient.add(JSON.stringify({ ...this.toJSONCommentUpdate(), signature: options.signature }));
-        await this.plebbit.ipfsClient.name.publish(file.path, {
-            lifetime: "72h",
-            key: this.ipnsKeyName,
-            allowOffline: true
-        });
-        log.trace(`Linked comment (${this.cid}) ipns name(${this.ipnsName}) to ipfs file (${file.path})`);
     }
 
     async publish(): Promise<void> {

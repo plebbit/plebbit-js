@@ -20,7 +20,7 @@ import Post from "./post";
 import { Subplebbit } from "./subplebbit";
 import { fetchCid, loadIpfsFileAsJson, loadIpnsAsJson, removeKeysWithUndefinedValues, timestamp } from "./util";
 import Vote from "./vote";
-import { createSigner, Signer, signPublication, verifyPublication } from "./signer";
+import { createSigner, Signer, signPublication, verifyComment, verifySubplebbit } from "./signer";
 import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
@@ -105,10 +105,10 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             });
         const resolvedSubplebbitAddress = await this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
         const subplebbitJson: SubplebbitType = await loadIpnsAsJson(resolvedSubplebbitAddress, this);
-        const [signatureIsVerified, failedVerificationReason] = await verifyPublication(subplebbitJson, this, "subplebbit");
-        if (!signatureIsVerified)
+        const signatureValidity = await verifySubplebbit(subplebbitJson, this);
+        if (!signatureValidity.valid)
             throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                details: `getSubplebbit: Failed verification reason: ${failedVerificationReason}`
+                details: `getSubplebbit: Failed verification reason: ${signatureValidity.reason}`
             });
 
         return new Subplebbit(subplebbitJson, this);
@@ -120,10 +120,10 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
                 details: `getComment: cid (${cid}) is invalid as a CID`
             });
         const commentJson: CommentIpfsType = await loadIpfsFileAsJson(cid, this);
-        const [signatureIsVerified, failedVerificationReason] = await verifyPublication(commentJson, this, "comment");
-        if (!signatureIsVerified)
+        const signatureValidity = await verifyComment(commentJson, this, true);
+        if (!signatureValidity.valid)
             throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                details: `getComment: Failed verification reason: ${failedVerificationReason}, ${
+                details: `getComment: Failed verification reason: ${signatureValidity.reason}, ${
                     commentJson.depth === 0 ? "post" : "comment"
                 }: ${JSON.stringify(commentJson)}`
             });

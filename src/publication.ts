@@ -5,7 +5,7 @@ import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import EventEmitter from "events";
 import Author from "./author";
 import assert from "assert";
-import { decrypt, encrypt, Signature, Signer, signPublication, verifyPublication } from "./signer";
+import { decrypt, encrypt, Signature, Signer, signPublication } from "./signer";
 import {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
@@ -23,6 +23,7 @@ import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
 import { Plebbit } from "./plebbit";
 import { Subplebbit } from "./subplebbit";
+import { verifyChallengeMessage, verifyChallengeVerification } from "./signer/signatures";
 
 class Publication extends EventEmitter implements PublicationType {
     subplebbitAddress: string;
@@ -79,9 +80,9 @@ class Publication extends EventEmitter implements PublicationType {
         const msgParsed: ChallengeMessageType | ChallengeVerificationMessageType = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
         if (msgParsed?.challengeRequestId !== this.challenge.challengeRequestId) return; // Process only this publication's challenge
         if (msgParsed?.type === "CHALLENGE") {
-            const [signatureIsVerified, failedVerificationReason] = await verifyPublication(msgParsed, this.plebbit, "challengemessage");
-            if (!signatureIsVerified) {
-                log.error(`Received a CHALLENGEMESSAGE with invalid signature. Failed verification reason: ${failedVerificationReason}`);
+            const challengeMsgValidity = await verifyChallengeMessage(msgParsed);
+            if (!challengeMsgValidity.valid) {
+                log.error(`Received a CHALLENGEMESSAGE with invalid signature. Failed verification reason: ${challengeMsgValidity.reason}`);
                 return;
             }
 
@@ -94,14 +95,10 @@ class Publication extends EventEmitter implements PublicationType {
             const decryptedChallenge: DecryptedChallengeMessageType = { ...msgParsed, challenges: decryptedChallenges };
             this.emit("challenge", decryptedChallenge);
         } else if (msgParsed?.type === "CHALLENGEVERIFICATION") {
-            const [signatureIsVerified, failedVerificationReason] = await verifyPublication(
-                msgParsed,
-                this.plebbit,
-                "challengeverificationmessage"
-            );
-            if (!signatureIsVerified) {
+            const signatureValidation = await verifyChallengeVerification(msgParsed);
+            if (!signatureValidation.valid) {
                 log.error(
-                    `Received a CHALLENGEVERIFICATIONMESSAGE with invalid signature. Failed verification reason: ${failedVerificationReason}`
+                    `Received a CHALLENGEVERIFICATIONMESSAGE with invalid signature. Failed verification reason: ${signatureValidation.reason}`
                 );
                 return;
             }
@@ -173,14 +170,6 @@ class Publication extends EventEmitter implements PublicationType {
         if (typeof this.subplebbitAddress !== "string")
             throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), codes.ERR_PUBLICATION_MISSING_FIELD, {
                 details: `${this.getType()}.publish: subplebbitAddress should be a string`
-            });
-
-        const [isSignatureValid, failedVerificationReason] = await verifyPublication(this, this.plebbit, this.getType());
-        if (!isSignatureValid)
-            throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                details: `${this.getType()}.publish: Failed verification reason: ${failedVerificationReason}, publication: ${JSON.stringify(
-                    this
-                )}`
             });
 
         const options = { acceptedChallengeTypes: [] };

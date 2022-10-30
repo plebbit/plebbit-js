@@ -1,12 +1,11 @@
 import { loadIpfsFileAsJson } from "./util";
-import { verifyPublication } from "./signer";
 import { Subplebbit } from "./subplebbit";
-import { Comment } from "./comment";
+
 import { CommentType, PagesType, PageType, PostSortName, ReplySortName } from "./types";
 import errcode from "err-code";
 import { codes, messages } from "./errors";
-import Logger from "@plebbit/plebbit-logger";
 import isIPFS from "is-ipfs";
+import { verifyPage } from "./signer/signatures";
 
 export class Pages implements PagesType {
     pages?: Partial<Record<PostSortName | ReplySortName, PageType>>;
@@ -19,7 +18,6 @@ export class Pages implements PagesType {
     }
 
     async getPage(pageCid: string): Promise<Page> {
-        const log = Logger("plebbit-js:pages:getPage");
         if (!isIPFS.cid(pageCid))
             throw errcode(Error(messages.ERR_CID_IS_INVALID), codes.ERR_CID_IS_INVALID, {
                 details: `getPage: cid (${pageCid}) is invalid as a CID`
@@ -28,37 +26,10 @@ export class Pages implements PagesType {
         if (typeof this.subplebbit.address !== "string") throw Error("Address of subplebbit is needed to load pages");
 
         const page = new Page(await loadIpfsFileAsJson(pageCid, this.subplebbit.plebbit));
-        const verifyComment = async (comment: CommentType, parentComment?: CommentType) => {
-            if (comment.subplebbitAddress !== this.subplebbit.address) throw Error("Comment in page should be under the same subplebbit");
-            if (parentComment && parentComment.cid !== comment.parentCid)
-                throw Error("Comment under parent comment/post should have parentCid initialized");
 
-            const [signatureIsVerified, failedVerificationReason] = await verifyPublication(comment, this.subplebbit.plebbit, "comment");
-            if (!signatureIsVerified)
-                throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                    details: `getPage: Failed verification reason: ${failedVerificationReason}, ${
-                        comment.depth === 0 ? "post" : "comment"
-                    }: ${JSON.stringify(comment)}`
-                });
-            log.trace(`Comment (${comment.cid}) has been verified. Will attempt to verify its ${comment.replyCount} replies`);
-            if (comment.replies) {
-                const preloadedCommentsChunks: Comment[][] = Object.keys(comment.replies.pages).map(
-                    (sortType) => comment.replies.pages[sortType].comments
-                );
-                await Promise.all(
-                    preloadedCommentsChunks.map(
-                        async (preloadedComments) =>
-                            await Promise.all(preloadedComments.map((preloadedComment) => verifyComment(preloadedComment, comment)))
-                    )
-                );
-            }
-        };
+        const signatureValidity = await verifyPage(page, this.subplebbit.plebbit);
+        if (!signatureValidity.valid) throw Error(signatureValidity.reason);
 
-        await Promise.all(
-            page.comments.map(async (comment) => {
-                await verifyComment(comment, undefined);
-            })
-        );
         return page;
     }
 

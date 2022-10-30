@@ -1,5 +1,5 @@
 import { TIMEFRAMES_TO_SECONDS, timestamp } from "../util";
-import { Signer, verifyPublication } from "../signer";
+import { Signer } from "../signer";
 import { Comment } from "../comment";
 import Post from "../post";
 import { Plebbit } from "../plebbit";
@@ -8,8 +8,6 @@ import Vote from "../vote";
 import { Pages } from "../pages";
 import { Subplebbit } from "../subplebbit";
 import { CommentType, CreateCommentOptions, PostType, SignerType } from "../types";
-import errcode from "err-code";
-import { codes, messages } from "../errors";
 import isIPFS from "is-ipfs";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
@@ -49,11 +47,6 @@ export async function generateMockPost(
         post.publishChallengeAnswers([]);
     });
 
-    const [validSignature, failedVerificationReason] = await verifyPublication(post, plebbit, post.getType());
-    if (!validSignature)
-        throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-            details: `generateMockPost: Failed verification reason: ${failedVerificationReason}`
-        });
     return post;
 }
 
@@ -81,11 +74,7 @@ export async function generateMockComment(
     comment.once("challenge", (challengeMsg) => {
         comment.publishChallengeAnswers([]);
     });
-    const [validSignature, failedVerificationReason] = await verifyPublication(comment, plebbit, comment.getType());
-    if (!validSignature)
-        throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-            details: `generateMockComment: Failed verification reason: ${failedVerificationReason}`
-        });
+
     return comment;
 }
 
@@ -110,12 +99,6 @@ export async function generateMockVote(
     voteObj.once("challenge", (challengeMsg) => {
         voteObj.publishChallengeAnswers([]);
     });
-
-    const [validSignature, failedVerificationReason] = await verifyPublication(voteObj, plebbit, voteObj.getType());
-    if (!validSignature)
-        throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-            details: `generateMockVote: Failed verification reason: ${failedVerificationReason}`
-        });
     return voteObj;
 }
 

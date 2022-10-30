@@ -5,7 +5,7 @@ import {
     getPlebbitAddressFromPrivateKeyPem,
     getIpfsKeyFromPrivateKeyPem
 } from "./util";
-export { signPublication, verifyPublication, Signature } from "./signatures";
+export { signPublication, Signature, verifyComment, verifySubplebbit, verifyVote } from "./signatures";
 export { encrypt, decrypt } from "./encryption";
 
 export class Signer implements SignerType {

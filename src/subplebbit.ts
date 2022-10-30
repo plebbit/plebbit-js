@@ -5,7 +5,7 @@ import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
 import { SortHandler } from "./sort-handler";
 import { loadIpnsAsJson, removeKeysWithUndefinedValues, timestamp } from "./util";
-import { decrypt, encrypt, verifyPublication, Signer, signPublication } from "./signer";
+import { decrypt, encrypt, Signer, signPublication } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
 import {
@@ -47,6 +47,14 @@ import Logger from "@plebbit/plebbit-logger";
 import { nativeFunctions } from "./runtime/node/util";
 import env from "./version";
 import lodash from "lodash";
+import {
+    verifyChallengeAnswer,
+    verifyChallengeRequest,
+    verifyComment,
+    verifyCommentEdit,
+    verifySubplebbit,
+    verifyVote
+} from "./signer/signatures";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
@@ -328,21 +336,23 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             }
 
         const ipnsAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
+        let subplebbitIpns: SubplebbitType;
+
         try {
-            const subplebbitIpns: SubplebbitType = await loadIpnsAsJson(ipnsAddress, this.plebbit);
-            const [verified, failedVerificationReason] = await verifyPublication(subplebbitIpns, this.plebbit, "subplebbit");
-            if (!verified)
-                throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                    details: `subplebbit.update: Subplebbit (${this.address}) IPNS (${ipnsAddress}) signature is invalid. Will not update: ${failedVerificationReason}`
-                });
-            if (JSON.stringify(this.toJSON()) !== JSON.stringify(subplebbitIpns)) {
-                this.initSubplebbit(subplebbitIpns);
-                log(`Remote Subplebbit received a new update. Will emit an update event`);
-                this.emit("update", this);
-            }
+            subplebbitIpns = await loadIpnsAsJson(ipnsAddress, this.plebbit);
         } catch (e) {
-            log.error(`Failed to update subplebbit IPNS, error:`, e);
+            log.error(`Failed to load subplebbit IPNS, error:`, e);
             this.emit("error", e);
+            return;
+        }
+        const updateValidity = await verifySubplebbit(subplebbitIpns, this.plebbit);
+        if (!updateValidity.valid) {
+            log.error(`Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
+            this.emit("error", `Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
+        } else if (JSON.stringify(this.toJSON()) !== JSON.stringify(subplebbitIpns)) {
+            this.initSubplebbit(subplebbitIpns);
+            log(`Remote Subplebbit received a new update. Will emit an update event`);
+            this.emit("update", this);
         }
     }
 
@@ -559,17 +569,19 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             }
         }
 
-        const [signatureIsVerified, failedVerificationReason] = await verifyPublication(
-            postOrCommentOrVote,
-            this.plebbit,
-            postOrCommentOrVote.getType()
-        );
-        if (!signatureIsVerified) {
-            const msg = `Author (${
-                postOrCommentOrVote.author.address
-            }) ${postOrCommentOrVote.getType()}'s signature is invalid: ${failedVerificationReason}`;
+        const signatureValidity =
+            postOrCommentOrVote instanceof Comment
+                ? await verifyComment(postOrCommentOrVote, this.plebbit, false)
+                : postOrCommentOrVote instanceof Vote
+                ? await verifyVote(postOrCommentOrVote, this.plebbit)
+                : await verifyCommentEdit(postOrCommentOrVote, this.plebbit);
+
+        if (!signatureValidity.valid) {
+            const msg = `Author (${postOrCommentOrVote.author.address}) ${postOrCommentOrVote.getType()}'s signature is invalid due to '${
+                signatureValidity.reason
+            }'`;
             log(`(${challengeRequestId}): `, msg);
-            return msg;
+            return <string>signatureValidity.reason;
         }
         if (postOrCommentOrVote instanceof Vote) {
             const res = await this.handleVote(postOrCommentOrVote, challengeRequestId);
@@ -803,14 +815,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     private async _verifyPubsubMsgSignature(msgParsed: ChallengeRequestMessageType | ChallengeAnswerMessageType) {
-        const [signatureIsVerified, failedVerificationReason] = await verifyPublication(
-            msgParsed,
-            this.plebbit,
-            msgParsed.type === "CHALLENGEANSWER" ? "challengeanswermessage" : "challengerequestmessage"
-        );
-        if (!signatureIsVerified)
+        const validation =
+            msgParsed.type === "CHALLENGEANSWER" ? await verifyChallengeAnswer(msgParsed) : await verifyChallengeRequest(msgParsed);
+        if (validation.valid)
             throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                details: `subplebbit.handleChallengeExchange: Failed to verify ${msgParsed.type}, Failed verification reason: ${failedVerificationReason}`
+                details: `subplebbit.handleChallengeExchange: Failed to verify ${msgParsed.type}, Failed verification reason: ${validation.reason}`
             });
     }
 
@@ -866,6 +875,20 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         return [answerIsCorrect, challengeErrors];
     }
 
+    // TODO move this to sub
+    private async _publishCommentIpns(dbComment: Comment, options: CommentUpdate) {
+        dbComment._initCommentUpdate(options);
+        dbComment._mergeFields(dbComment.toJSON());
+        const file = await this.plebbit.ipfsClient.add(
+            JSON.stringify({ ...dbComment.toJSONCommentUpdate(), signature: options.signature })
+        );
+        await this.plebbit.ipfsClient.name.publish(file.path, {
+            lifetime: "72h",
+            key: this.ipnsKeyName,
+            allowOffline: true
+        });
+    }
+
     private async syncComment(dbComment: Comment) {
         const log = Logger("plebbit-js:subplebbit:sync:syncComment");
 
@@ -895,7 +918,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             dbComment.setUpdatedAt(timestamp());
             await this.dbHandler.upsertComment(dbComment.toJSONForDb(undefined), dbComment.author.toJSONForDb(), undefined);
             const subplebbitSignature = await signPublication(dbComment.toJSONCommentUpdate(), this.signer, this.plebbit, "commentupdate");
-            return dbComment.edit({ ...dbComment.toJSONCommentUpdate(), signature: subplebbitSignature });
+            return this._publishCommentIpns(dbComment, { ...dbComment.toJSONCommentUpdate(), signature: subplebbitSignature });
         }
         log.trace(`Comment (${dbComment.cid}) is up-to-date and does not need syncing`);
     }
@@ -996,11 +1019,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     async _addPublicationToDb(publication: CommentEdit | Vote | Comment | Post) {
         const log = Logger("plebbit-js:subplebbit:_addPublicationToDb");
-        const [validSignature, failedVerificationReason] = await verifyPublication(publication, this.plebbit, publication.getType());
-        if (!validSignature)
-            throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                details: `subplebbit._addPublicationToDb: Failed verification reason: ${failedVerificationReason}`
-            });
         log(`Adding ${publication.getType()} to DB with author,`, removeKeysWithUndefinedValues(publication.author));
         const decryptedRequestType: Omit<ChallengeRequestMessageType, "encryptedPublication" | "signature"> = {
             type: "CHALLENGEREQUEST",

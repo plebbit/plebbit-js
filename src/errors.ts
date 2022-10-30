@@ -19,7 +19,16 @@ export enum messages {
     ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT = "Rejecting post/comment because its timestamp is earlier than its parent",
     ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST = "The parent of this comment does not exist",
     ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "The parent cid of this comment is not defined",
-    ERR_GENERATED_CID_DOES_NOT_MATCH = "The CID generated from loaded content does not match the provided CID"
+    ERR_GENERATED_CID_DOES_NOT_MATCH = "The CID generated from loaded content does not match the provided CID",
+
+    // Signature errors
+    ERR_SIGNATURE_IS_NOT_VALID = "Signature of publication is invalid",
+    ERR_AUTHOR_NOT_MATCHING_SIGNATURE = "comment.author.address doesn't match comment.signature.publicKey",
+    ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY = "subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey",
+
+    // getPage errors
+    ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
+    ERR_PARENT_CID_NOT_AS_EXPECTED = "Comment under parent comment/post should have parentCid initialized"
 }
 
 export enum codes {
@@ -43,5 +52,13 @@ export enum codes {
     ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT = "ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT",
     ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST = "ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST",
     ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED",
-    ERR_GENERATED_CID_DOES_NOT_MATCH = "ERR_GENERATED_CID_DOES_NOT_MATCH"
+    ERR_GENERATED_CID_DOES_NOT_MATCH = "ERR_GENERATED_CID_DOES_NOT_MATCH",
+    // Signature errors
+    ERR_SIGNATURE_IS_NOT_VALID = "ERR_SIGNATURE_IS_NOT_VALID",
+    ERR_AUTHOR_NOT_MATCHING_SIGNATURE = "ERR_AUTHOR_NOT_MATCHING_SIGNATURE",
+    ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY = "ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY",
+
+    // getPage errors
+    ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB",
+    ERR_PARENT_CID_NOT_AS_EXPECTED = "ERR_PARENT_CID_NOT_AS_EXPECTED"
 }
