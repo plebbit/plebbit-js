@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChallengeVerificationMessage = exports.ChallengeAnswerMessage = exports.ChallengeMessage = exports.ChallengeRequestMessage = exports.Challenge = exports.PUBSUB_MESSAGE_TYPES = void 0;
-var util_1 = require("./util");
 exports.PUBSUB_MESSAGE_TYPES = Object.freeze({
     CHALLENGEREQUEST: "CHALLENGEREQUEST",
     CHALLENGE: "CHALLENGE",
@@ -26,9 +25,9 @@ var ChallengeRequestMessage = /** @class */ (function () {
     function ChallengeRequestMessage(props) {
         this.type = "CHALLENGEREQUEST";
         this.challengeRequestId = props.challengeRequestId;
-        this.acceptedChallengeTypes = (0, util_1.parseJsonIfString)(props.acceptedChallengeTypes);
+        this.acceptedChallengeTypes = props.acceptedChallengeTypes;
         this.encryptedPublication = props.encryptedPublication;
-        this.signature = (0, util_1.parseJsonIfString)(props.signature);
+        this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
     }
@@ -60,7 +59,7 @@ var ChallengeMessage = /** @class */ (function () {
         this.type = "CHALLENGE";
         this.challengeRequestId = props.challengeRequestId;
         this.encryptedChallenges = props.encryptedChallenges;
-        this.signature = (0, util_1.parseJsonIfString)(props.signature);
+        this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
     }
@@ -91,7 +90,7 @@ var ChallengeAnswerMessage = /** @class */ (function () {
         this.challengeAnswerId = props.challengeAnswerId;
         this.encryptedChallengeAnswers = props.encryptedChallengeAnswers;
         this.challengeRequestId = props.challengeRequestId;
-        this.signature = (0, util_1.parseJsonIfString)(props.signature);
+        this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
     }
@@ -124,7 +123,7 @@ var ChallengeVerificationMessage = /** @class */ (function () {
         this.challengeRequestId = props.challengeRequestId;
         this.challengeAnswerId = props.challengeAnswerId;
         this.challengeSuccess = props.challengeSuccess;
-        this.challengeErrors = (0, util_1.parseJsonIfString)(props.challengeErrors);
+        this.challengeErrors = props.challengeErrors;
         this.reason = props.reason;
         this.encryptedPublication = props.encryptedPublication;
         this.signature = props.signature;

@@ -65,7 +65,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
         pubsubTopic: string;
         metricsCid?: string;
         protocolVersion: "1.0.0";
-        posts: Pages | Pick<Pages, "pageCids" | "pages">;
+        posts: Pages | Pick<Pages, "pages" | "pageCids">;
         description?: string;
         title?: string;
         roles?: {

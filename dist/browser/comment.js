@@ -74,6 +74,7 @@ var author_1 = __importDefault(require("./author"));
 var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
+var lodash_1 = __importDefault(require("lodash"));
 var DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 var Comment = /** @class */ (function (_super) {
     __extends(Comment, _super);
@@ -155,7 +156,7 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype.toJSONForDb = function (challengeRequestId) {
         if (typeof this.ipnsKeyName !== "string")
             throw Error("comment.ipnsKeyName needs to be defined before inserting comment in DB");
-        return (0, util_1.removeKeysWithUndefinedValues)(__assign(__assign({}, (0, util_1.removeKeys)(this.toJSON(), ["replyCount", "upvoteCount", "downvoteCount", "replies"])), { author: JSON.stringify(this.author), authorEdit: JSON.stringify(this.authorEdit), original: JSON.stringify(this.original), authorAddress: this.author.address, challengeRequestId: challengeRequestId, ipnsKeyName: this.ipnsKeyName, signature: JSON.stringify(this.signature) }));
+        return (0, util_1.removeKeysWithUndefinedValues)(__assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["replyCount", "upvoteCount", "downvoteCount", "replies"])), { author: JSON.stringify(this.author), authorEdit: JSON.stringify(this.authorEdit), original: JSON.stringify(this.original), authorAddress: this.author.address, challengeRequestId: challengeRequestId, ipnsKeyName: this.ipnsKeyName, signature: JSON.stringify(this.signature) }));
     };
     Comment.prototype.toJSONCommentUpdate = function (skipValidation) {
         if (skipValidation === void 0) { skipValidation = false; }
@@ -235,7 +236,9 @@ var Comment = /** @class */ (function (_super) {
                         log.error("Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error: "), e_1);
                         return [2 /*return*/];
                     case 4:
-                        if (!(res && (!this.updatedAt || !(0, util_1.shallowEqual)(this.toJSONCommentUpdate(), res, ["signature"])))) return [3 /*break*/, 6];
+                        if (!(res &&
+                            (!this.updatedAt ||
+                                !lodash_1.default.isEqual((0, util_1.removeKeysWithUndefinedValues)(lodash_1.default.omit(this.toJSONCommentUpdate(), ["signature"])), lodash_1.default.omit(res, ["signature"]))))) return [3 /*break*/, 6];
                         log("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
                         return [4 /*yield*/, (0, signer_1.verifyPublication)(res, this.plebbit, "commentupdate")];
                     case 5:

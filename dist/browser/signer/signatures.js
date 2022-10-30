@@ -82,6 +82,7 @@ var peer_id_1 = __importDefault(require("peer-id"));
 var util_2 = require("../util");
 var js_sha256_1 = require("js-sha256");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
+var lodash_1 = __importDefault(require("lodash"));
 exports.SIGNED_PROPERTY_NAMES = Object.freeze({
     comment: ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"],
     commentedit: [
@@ -231,7 +232,7 @@ function signPublication(publication, signer, plebbit, signatureType) {
                     _e.label = 3;
                 case 3:
                     signedPropertyNames = exports.SIGNED_PROPERTY_NAMES[signatureType];
-                    fieldsToSign = (0, util_2.keepKeys)(publicationJson, signedPropertyNames);
+                    fieldsToSign = __assign(__assign({}, lodash_1.default.fromPairs(signedPropertyNames.map(function (name) { return [name, undefined]; }))), lodash_1.default.pick(publicationJson, signedPropertyNames));
                     log.trace("Fields to sign: ", signedPropertyNames);
                     log.trace("Publication to sign: ", fieldsToSign);
                     commentEncoded = cborg.encode(fieldsToSign);
@@ -256,7 +257,7 @@ var verifyPublicationSignature = function (signature, publicationToBeVerified) {
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                commentWithFieldsToSign = (0, util_2.keepKeys)(publicationToBeVerified, signature.signedPropertyNames);
+                commentWithFieldsToSign = __assign(__assign({}, lodash_1.default.fromPairs(signature.signedPropertyNames.map(function (name) { return [name, undefined]; }))), lodash_1.default.pick(publicationToBeVerified, signature.signedPropertyNames));
                 commentEncoded = cborg.encode(commentWithFieldsToSign);
                 return [4 /*yield*/, (0, exports.verifyBufferRsa)(commentEncoded, (0, from_string_1.fromString)(signature.signature, "base64"), signature.publicKey)];
             case 1:
@@ -331,7 +332,7 @@ function verifyPublication(publication, plebbit, signatureType, overrideAuthorAd
                     if (!(signatureType === "comment" && publicationJson["authorEdit"])) return [3 /*break*/, 4];
                     // Means comment has been edited, verify both comment.signature and comment.authorEdit.signature
                     publicationJson = publicationJson;
-                    originalObj = __assign(__assign({}, (0, util_2.removeKeys)(publicationJson, ["original", "authorEdit"])), publicationJson.original);
+                    originalObj = __assign(__assign({}, lodash_1.default.omit(publicationJson, ["original", "authorEdit"])), publicationJson.original);
                     return [4 /*yield*/, verifyPublication(originalObj, plebbit, "comment", overrideAuthorAddressIfInvalid)];
                 case 2:
                     _a = _d.sent(), verified = _a[0], failedVerificationReason = _a[1];
@@ -347,7 +348,7 @@ function verifyPublication(publication, plebbit, signatureType, overrideAuthorAd
                     if (!(signatureType === "comment" && publicationJson["updatedAt"])) return [3 /*break*/, 6];
                     // We're verifying a comment (IPFS) along with Comment Update
                     publicationJson = publicationJson;
-                    originalObj = __assign(__assign({}, (0, util_2.removeKeys)(publicationJson, ["original"])), publicationJson.original);
+                    originalObj = __assign(__assign({}, lodash_1.default.omit(publicationJson, ["original"])), publicationJson.original);
                     // Verify comment (IPFS)
                     return [4 /*yield*/, verifyPublicationSignature(publicationJson.signature, originalObj)];
                 case 5:

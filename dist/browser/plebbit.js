@@ -83,6 +83,7 @@ var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var version_1 = __importDefault(require("./version"));
+var lodash_1 = __importDefault(require("lodash"));
 exports.pendingSubplebbitCreations = {};
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
@@ -283,7 +284,7 @@ var Plebbit = /** @class */ (function (_super) {
                                         _a.sent();
                                         if (!subHasBeenCreatedBefore)
                                             exports.pendingSubplebbitCreations[key] = false;
-                                        log("Created subplebbit (".concat(subplebbit.address, ") with props:"), (0, util_2.removeKeysWithUndefinedValues)((0, util_2.removeKeys)(subplebbit.toJSON(), ["signer"])));
+                                        log("Created subplebbit (".concat(subplebbit.address, ") with props:"), (0, util_2.removeKeysWithUndefinedValues)(lodash_1.default.omit(subplebbit.toJSON(), ["signer"])));
                                         return [2 /*return*/, subplebbit];
                                 }
                             });

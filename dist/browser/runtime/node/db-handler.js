@@ -73,6 +73,7 @@ var util_2 = require("./util");
 var version_1 = __importDefault(require("../../version"));
 var comment_1 = require("../../comment");
 var sumBy_1 = __importDefault(require("lodash/sumBy"));
+var lodash_1 = __importDefault(require("lodash"));
 var TABLES = Object.freeze({
     COMMENTS: "comments",
     VOTES: "votes",
@@ -565,7 +566,7 @@ var DbHandler = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        onlyNewProps = (0, util_1.removeKeysWithUndefinedValues)((0, util_1.removeKeys)(newAuthorProps, ["address"]));
+                        onlyNewProps = (0, util_1.removeKeysWithUndefinedValues)(lodash_1.default.omit(newAuthorProps, ["address"]));
                         return [4 /*yield*/, this._baseTransaction(trx)(TABLES.AUTHORS).update(onlyNewProps).where("address", newAuthorProps.address)];
                     case 1:
                         _b.sent();
