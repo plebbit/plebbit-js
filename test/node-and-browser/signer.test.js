@@ -2,7 +2,7 @@ const Plebbit = require("../../dist/node");
 const fixtureSigners = require("../fixtures/signers");
 const authorSignerFixture = fixtureSigners[1];
 const fixtureComment = require("../fixtures/publications").comment;
-const { signPublication, verifyPublication } = require("../../dist/node/signer");
+const { signPublication, verifyComment } = require("../../dist/node/signer");
 const { signBufferRsa, verifyBufferRsa, SIGNED_PROPERTY_NAMES } = require("../../dist/node/signer/signatures");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
@@ -11,6 +11,7 @@ const { expect, assert } = chai;
 const { toString } = require("uint8arrays/to-string");
 const { fromString } = require("uint8arrays/from-string");
 const { Buffer } = require("buffer");
+const { messages } = require("../../dist/node/errors");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
@@ -88,7 +89,7 @@ describe("signer (node and browser)", async () => {
             signedPublication = { ...fixtureComment, signature: authorSignature };
         });
 
-        it(`Comment from previous version can be verified`, async () => {
+        it(`Comment from previous plebbit-js versions can be verified`, async () => {
             // CID: QmSC6fG7CPfVVif2fsKS1i4zi2DYpSkSrMksyCyZJZW8X8
             const comment = {
                 subplebbitAddress: "QmRcyUK7jUhFyPTEvwWyfGZEAaSoDugNJ8PZSC4PWRjUqd",
@@ -109,8 +110,8 @@ describe("signer (node and browser)", async () => {
                 depth: 0
             };
 
-            const verification = await verifyPublication(comment, plebbit, "comment");
-            expect(verification).to.deep.equal([true, undefined]);
+            const verification = await verifyComment(comment, plebbit, "comment");
+            expect(verification).to.deep.equal({ valid: true });
         });
 
         it(`CommentUpdate from previous plebbit-js versions can be verified`, async () => {
@@ -144,13 +145,32 @@ describe("signer (node and browser)", async () => {
                     ]
                 }
             };
-            const verification = await verifyPublication(update, plebbit, "commentupdate");
-            expect(verification).to.deep.equal([true, undefined]);
+            const verification = await verifyComment(update, plebbit, "commentupdate");
+            expect(verification).to.deep.equal({ valid: true });
         });
+
+        it(`Page from previous plebbit-js versions can be verified`, async () => {
+            // Page cid: QmVdjKcbdvsqDfQ8Vr9fJBetCFz92zkwGhfU1Wwrrmjno1
+        });
+
+        it(`author.address(domain) gets corrected to signer.address if it's not pointing to signer.address, during validation process`);
+
+        it(`Valid vote signature gets validated correctly`);
+
+        it(`Invalid vote signature gets invalidated correctly`);
+
+        it(`A page with content modified by sub owner will get invalidated`);
+
+        it(`Comment with CommentUpdate json, with invalid author address will be corrected to derived address`);
+
+        it(`Subplebbit with domain that does not match public key will get invalidated`);
+
+        it(`Subplebbit with address that does not match public key will be invalidated`);
+
         it(`Pre-defined signature is validated correctly`, async () => {
             const fixtureWithSignature = { ...fixtureComment, signature: expectedAuthorSignature };
-            const verification = await verifyPublication(fixtureWithSignature, plebbit, "comment");
-            expect(verification).to.deep.equal([true, undefined], "Fixture with signature is not verified correctly");
+            const verification = await verifyComment(fixtureWithSignature, plebbit, "comment");
+            expect(verification).to.deep.equal({ valid: true });
         });
 
         it("signPublication author signature is correct", async () => {
@@ -167,12 +187,12 @@ describe("signer (node and browser)", async () => {
             await assert.isRejected(signPublication(fixtureComment, randomSigner, plebbit, "comment"));
         });
 
-        it("verifyPublication success with correct author signature", async () => {
-            const verification = await verifyPublication(signedPublication, plebbit, "comment");
-            expect(verification).to.deep.equal([true, undefined]);
+        it("verifyComment success with correct author signature", async () => {
+            const verification = await verifyComment(signedPublication, plebbit, "comment");
+            expect(verification).to.deep.equal({ valid: true });
         });
 
-        it("verifyPublication failure with wrong signature", async () => {
+        it("verifyComment failure with wrong signature", async () => {
             const invalidSignature = {
                 signature:
                     "DdjseJWstPGtXZkKges4XaZ2pw4MqfVbWjqaZ4t4PzPNlbUsCQKp4H4SDNYNG1iDokKOvux4O6ng2k/0sU78W7XSR2RAcxSiyMV5TeK7JHsiwB8/uUZZa+4jObTO5CG2GyjwhG94lDNUzWh/xtEDKuxYQjYd0Zr9Q8vcGzLTXfbDVGof9qqfE1m6rM9o6UYdhag8QpJtpxpF5RFZOKP2xyqDXyiQTqvtv1FP8XFnwbKjCgT5/stv+WCVjEdzggaG2Ox7k8KJhXwGY6TSTZmB43kBEtSvoAwxCvp+o/xbyUiS9Qfr5ySe6YeCEgACnnMIuHeG2EbQyFKIAV4mTFxGSQ",
@@ -183,8 +203,8 @@ describe("signer (node and browser)", async () => {
             };
 
             const wronglySignedPublication = { ...signedPublication, signature: invalidSignature };
-            const verification = await verifyPublication(wronglySignedPublication, plebbit, "comment");
-            expect(verification).to.deep.equal([false, "Error: Signature is invalid"]);
+            const verification = await verifyComment(wronglySignedPublication, plebbit, "comment");
+            expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_NOT_VALID });
         });
 
         it("can sign a comment with author.displayName = undefined", async () => {
@@ -197,9 +217,8 @@ describe("signer (node and browser)", async () => {
                 signer,
                 author: { address: signer.address }
             });
-            const [validity, failedVerificationReason] = await verifyPublication(comment, plebbit, "comment");
-            expect(validity).to.be.true;
-            expect(failedVerificationReason).to.be.undefined;
+            const res = await verifyComment(comment, plebbit);
+            expect(res).to.deep.equal({ valid: true });
         });
     });
 });
