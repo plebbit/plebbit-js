@@ -884,7 +884,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         );
         await this.plebbit.ipfsClient.name.publish(file.path, {
             lifetime: "72h",
-            key: this.ipnsKeyName,
+            key: dbComment.ipnsKeyName,
             allowOffline: true
         });
     }
