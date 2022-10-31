@@ -5,7 +5,6 @@ export enum messages {
     ERR_SUB_ALREADY_STARTED = "Subplebbit already started",
     ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS = "subplebbit-address is pointing to a different address than subplebbit.signer.address",
     ERR_SUB_CAN_EITHER_RUN_OR_UPDATE = "Subplebbit can either sync through .start() or update, but not both",
-    ERR_FAILED_TO_VERIFY_SIGNATURE = "Failed to verify signature",
     ERR_PUBLICATION_MISSING_FIELD = "Publication is missing field(s)",
     ERR_COMMENT_UPDATE_MISSING_IPNS_NAME = "Can't update comment without a defined IPNS name (comment.ipnsName)",
     ERR_SUBPLEBBIT_MISSING_FIELD = "Subplebbit is missing field needed for publishing",
@@ -22,7 +21,7 @@ export enum messages {
     ERR_GENERATED_CID_DOES_NOT_MATCH = "The CID generated from loaded content does not match the provided CID",
 
     // Signature errors
-    ERR_SIGNATURE_IS_NOT_VALID = "Signature of publication is invalid",
+    ERR_SIGNATURE_IS_INVALID = "Signature of publication is invalid",
     ERR_AUTHOR_NOT_MATCHING_SIGNATURE = "comment.author.address doesn't match comment.signature.publicKey",
     ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY = "subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey",
 
@@ -38,7 +37,6 @@ export enum codes {
     ERR_SUB_ALREADY_STARTED = "ERR_SUB_ALREADY_STARTED",
     ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS = "ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS",
     ERR_SUB_CAN_EITHER_RUN_OR_UPDATE = "ERR_SUB_CAN_EITHER_RUN_OR_UPDATE",
-    ERR_FAILED_TO_VERIFY_SIGNATURE = "ERR_FAILED_TO_VERIFY_SIGNATURE",
     ERR_PUBLICATION_MISSING_FIELD = "ERR_PUBLICATION_MISSING_FIELD",
     ERR_COMMENT_UPDATE_MISSING_IPNS_NAME = "ERR_COMMENT_UPDATE_MISSING_IPNS_NAME",
     ERR_SUBPLEBBIT_MISSING_FIELD = "ERR_SUBPLEBBIT_MISSING_FIELD",
@@ -54,7 +52,7 @@ export enum codes {
     ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED",
     ERR_GENERATED_CID_DOES_NOT_MATCH = "ERR_GENERATED_CID_DOES_NOT_MATCH",
     // Signature errors
-    ERR_SIGNATURE_IS_NOT_VALID = "ERR_SIGNATURE_IS_NOT_VALID",
+    ERR_SIGNATURE_IS_INVALID = "ERR_SIGNATURE_IS_INVALID",
     ERR_AUTHOR_NOT_MATCHING_SIGNATURE = "ERR_AUTHOR_NOT_MATCHING_SIGNATURE",
     ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY = "ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY",
 

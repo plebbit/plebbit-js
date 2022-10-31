@@ -239,7 +239,7 @@ const verifyPublicationWithAuthor = async (
     plebbit: Plebbit
 ): Promise<ValidationResult & { newAddress?: string }> => {
     const signatureValidity = await verifyPublicationSignature(publicationJson.signature, publicationJson);
-    if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_NOT_VALID };
+    if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
 
     if (plebbit.resolveAuthorAddresses && publicationJson["author"]) {
         const authorSignatureValidity = await verifyAuthor(<VoteType | CommentType | CommentEditType>publicationJson, plebbit, true);
@@ -346,7 +346,7 @@ export async function verifyPage(page: PageType, plebbit: Plebbit): Promise<Vali
 
         const commentSignatureValidity = await verifyComment(comment, plebbit, true);
         if (!commentSignatureValidity.valid)
-            throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+            throw errcode(Error(messages.ERR_SIGNATURE_IS_INVALID), codes.ERR_SIGNATURE_IS_INVALID, {
                 details: `getPage: Failed to verify comment ${comment.cid} due to '${commentSignatureValidity.reason}'`
             });
 

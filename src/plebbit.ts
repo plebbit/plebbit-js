@@ -106,8 +106,9 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         const resolvedSubplebbitAddress = await this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
         const subplebbitJson: SubplebbitType = await loadIpnsAsJson(resolvedSubplebbitAddress, this);
         const signatureValidity = await verifySubplebbit(subplebbitJson, this);
+
         if (!signatureValidity.valid)
-            throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+            throw errcode(Error(messages.ERR_SIGNATURE_IS_INVALID), codes.ERR_SIGNATURE_IS_INVALID, {
                 details: `getSubplebbit: Failed verification reason: ${signatureValidity.reason}`
             });
 
@@ -122,7 +123,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         const commentJson: CommentIpfsType = await loadIpfsFileAsJson(cid, this);
         const signatureValidity = await verifyComment(commentJson, this, true);
         if (!signatureValidity.valid)
-            throw errcode(Error(messages.ERR_FAILED_TO_VERIFY_SIGNATURE), codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
+            throw errcode(Error(messages.ERR_SIGNATURE_IS_INVALID), codes.ERR_SIGNATURE_IS_INVALID, {
                 details: `getComment: Failed verification reason: ${signatureValidity.reason}, ${
                     commentJson.depth === 0 ? "post" : "comment"
                 }: ${JSON.stringify(commentJson)}`
