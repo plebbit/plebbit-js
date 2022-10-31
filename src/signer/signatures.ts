@@ -289,7 +289,7 @@ export async function verifyComment(
             comment.authorEdit.author.address = authorEditValidation.newAddress;
     } else if (typeof commentJson.updatedAt === "number") {
         // We're verifying a comment (IPFS) along with Comment Update
-        const originalObj = { ...lodash.omit(commentJson, ["original"]), ...commentJson.original };
+        const originalObj = { ...lodash.omit(commentJson, ["original"]), author: commentJson.original?.author };
 
         // Verify comment (IPFS)
         const res = await verifyPublicationWithAuthor(originalObj, plebbit);
