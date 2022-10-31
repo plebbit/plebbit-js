@@ -193,24 +193,28 @@ const verifyAuthor = async (
     publicationJson: CommentEditType | VoteType | CommentType,
     plebbit: Plebbit,
     returnDerivedAuthorAddressIfInvalid: boolean
-): Promise<Pick<ValidationResult, "valid"> & { newAddress?: string }> => {
+): Promise<ValidationResult & { newAddress?: string }> => {
     const log = Logger("plebbit-js:signatures:verifyAuthor");
-    const authorAddress = plebbit.resolver.isDomain(publicationJson.author.address)
-        ? await plebbit.resolver.resolveAuthorAddressIfNeeded(publicationJson.author.address)
-        : publicationJson.author.address;
-    const authorPeerId = PeerId.createFromB58String(authorAddress);
-    const signaturePeerId = await getPeerIdFromPublicKeyPem(publicationJson.signature.publicKey);
-    if (!signaturePeerId.equals(authorPeerId)) return { valid: false };
-    if (returnDerivedAuthorAddressIfInvalid && plebbit.resolver.isDomain(publicationJson.author.address)) {
+
+    if (
+        plebbit.resolver.isDomain(publicationJson.author.address) &&
+        plebbit.resolveAuthorAddresses &&
+        returnDerivedAuthorAddressIfInvalid
+    ) {
+        const resolvedAuthorAddress = await plebbit.resolver.resolveAuthorAddressIfNeeded(publicationJson.author.address);
         const derivedAddress = await getPlebbitAddressFromPublicKeyPem(publicationJson.signature.publicKey);
-        if (authorAddress !== derivedAddress) {
+        if (resolvedAuthorAddress !== derivedAddress) {
             // Means plebbit-author-address text record is resolving to another address (outdated?)
             // Will always use address derived from publication.signature.publicKey as truth
             log.error(
-                `domain (${publicationJson.author.address}) resolved address (${authorAddress}) is invalid, changing publication.author.address to derived address ${derivedAddress}`
+                `domain (${publicationJson.author.address}) resolved address (${resolvedAuthorAddress}) is invalid, changing publication.author.address to derived address ${derivedAddress}`
             );
             return { valid: true, newAddress: derivedAddress };
         }
+    } else if (!plebbit.resolver.isDomain(publicationJson.author.address)) {
+        const authorPeerId = PeerId.createFromB58String(publicationJson.author.address);
+        const signaturePeerId = await getPeerIdFromPublicKeyPem(publicationJson.signature.publicKey);
+        if (!signaturePeerId.equals(authorPeerId)) return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
     }
     return { valid: true };
 };
@@ -302,7 +306,7 @@ export async function verifyComment(
 export async function verifySubplebbit(subplebbit: SubplebbitType, plebbit: Plebbit): Promise<ValidationResult> {
     const subplebbitJson: SubplebbitType = removeKeysWithUndefinedValues(subplebbit);
     const signatureValidity = await verifyPublicationSignature(subplebbitJson.signature, subplebbitJson);
-    if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_NOT_VALID };
+    if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
     const resolvedSubAddress = await plebbit.resolver.resolveSubplebbitAddressIfNeeded(subplebbitJson.address);
 
     const subPeerId = PeerId.createFromB58String(resolvedSubAddress);
@@ -315,7 +319,7 @@ async function _getValidationResult(publication: PublicationToVerify) {
     //@ts-ignore
     const publicationJson: PublicationToVerify = removeKeysWithUndefinedValues(publication);
     const signatureValidity = await verifyPublicationSignature(publicationJson.signature, publicationJson);
-    if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_NOT_VALID };
+    if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
     return { valid: true };
 }
 
