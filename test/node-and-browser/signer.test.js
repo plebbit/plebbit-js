@@ -222,3 +222,30 @@ describe("signer (node and browser)", async () => {
         });
     });
 });
+
+describe(`Verify pubsub messages`, async () => {
+    describe("challengerequest", async () => {
+        it(`Valid ChallengeRequest gets validated correctly`, async () => {
+            const comment = await generateMockPost(signers[0].address, plebbit, signers[5]);
+            try {
+                await comment.publish();
+            } catch (e) {}
+            // comment.challenge (ChallengeRequest) should be defined now
+            expect(comment.challenge).to.be.a("object");
+            const verificaiton = await verifyChallengeRequest(comment.challenge);
+            expect(verificaiton).to.deep.equal({ valid: true });
+        });
+
+        it(`Invalid ChallengeRequest gets invalidated correctly`, async () => {
+            const comment = await generateMockPost(signers[0].address, plebbit, signers[6]);
+            try {
+                await comment.publish();
+            } catch (e) {}
+            // comment.challenge (ChallengeRequest) should be defined now
+            expect(comment.challenge).to.be.a("object");
+            comment.challenge.challengeRequestId = comment.challenge.challengeRequestId.slice(1); // Signature should be invalid after
+            const verificaiton = await verifyChallengeRequest(comment.challenge);
+            expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
+        });
+    });
+});
