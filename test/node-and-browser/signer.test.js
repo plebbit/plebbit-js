@@ -2,8 +2,15 @@ const Plebbit = require("../../dist/node");
 const fixtureSigners = require("../fixtures/signers");
 const authorSignerFixture = fixtureSigners[1];
 const fixtureComment = require("../fixtures/publications").comment;
+const fixtureValidPage = require("../fixtures/pages").validPage;
 const { signPublication, verifyComment } = require("../../dist/node/signer");
-const { signBufferRsa, verifyBufferRsa, SIGNED_PROPERTY_NAMES } = require("../../dist/node/signer/signatures");
+const {
+    signBufferRsa,
+    verifyBufferRsa,
+    SIGNED_PROPERTY_NAMES,
+    verifyCommentUpdate,
+    verifyChallengeRequest
+} = require("../../dist/node/signer/signatures");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
@@ -12,17 +19,32 @@ const { toString } = require("uint8arrays/to-string");
 const { fromString } = require("uint8arrays/from-string");
 const { Buffer } = require("buffer");
 const { messages } = require("../../dist/node/errors");
+const { verifyPage } = require("../../dist/node/signer/signatures");
+const signers = require("../fixtures/signers");
+const { generateMockPost } = require("../../dist/node/test/test-util");
 
+const updateInterval = 100;
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
+let plebbit;
+
+before(async () => {
+    plebbit = await Plebbit({
+        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
+        pubsubHttpClientOptions: `http://localhost:5002/api/v0`
+    });
+
+    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
+        if (authorAddress === "plebbit.eth") return signers[6].address;
+        else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
+        return authorAddress;
+    };
+});
+
 describe("signer (node and browser)", async () => {
-    let plebbit, authorSigner, randomSigner;
+    let authorSigner, randomSigner;
 
     before(async function () {
-        plebbit = await Plebbit({
-            ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-        });
         authorSigner = await plebbit.createSigner({ privateKey: authorSignerFixture.privateKey, type: "rsa" });
         randomSigner = await plebbit.createSigner();
     });
@@ -91,75 +113,30 @@ describe("signer (node and browser)", async () => {
 
         it(`Comment from previous plebbit-js versions can be verified`, async () => {
             // CID: QmSC6fG7CPfVVif2fsKS1i4zi2DYpSkSrMksyCyZJZW8X8
-            const comment = {
-                subplebbitAddress: "QmRcyUK7jUhFyPTEvwWyfGZEAaSoDugNJ8PZSC4PWRjUqd",
-                timestamp: 1661902265,
-                signature: {
-                    signature:
-                        "js6v39xc7y8yiFlj7DuBVIXiEgdNQcEdD3EXElOjX4ZkQP/b9TbqPulpfQ+EeGLq8UFnhfd2lJXDYvDx25ku8fyKR4fIFTMY9WDId3bHuDiWgbtgfA6+RRTL4eV9Ld2FVNLdsR2DCSxlcAvCc+M2rzzGDEQCZ85GbkCNBZ9jOypOEO1dW626jc41Q/6ddmI8nSV5iFDfw1jyvNE8JElWs5v7S58YcYO3CN0PlHEZgZ9dnfBkO9FihaFp25QDZgZJrXxCmPwQFRiNMe9Wlz7IeEEzop3TZ+PyExpbEG50rcyltkYUJ3LVxJfEQD/ZZ/Im3gTESLadz3aRWfjgfZ/L3A",
-                    publicKey:
-                        "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxJS1ZMx9uqCFdiauIH5e\nJho2CtarYP3zAFzqvbPm1pBLm738I4DotkzvVIbgFHRu7a2wgq0+bUjwg4yX3z7N\nFjetiBaT+hEIMFYKyobsv65ebInsqMYIPNVbn380xLzb5zMyPEL6pBuvGdmQZlRD\ngXDuHiCh66IPLizd8KGWJMSQXOcAhLt+NRcdHSSCLkibcQOHs52dKc0qYvGHd25h\nKPs+dE4d/A86aLRSD5w/yGwiJA8Jn+nLFbOLiEf775L6tOO35OF6PHiXo21BTl0o\nS4Eh9DIlPT7fNhEg+HhQFoQ7VHQLq76OVYpXBCnhIRUaPko5EgjNfrqwG6R1lPZF\nkwIDAQAB\n-----END PUBLIC KEY-----",
-                    type: "rsa",
-                    signedPropertyNames: ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"]
-                },
-                author: { address: "QmXGrdUi1PbSaApyDHbSoPdx2HkGsBAvTGFDTKoFrpuFxq" },
-                protocolVersion: "1.0.0",
-                content: "Check the title\n",
-                title: "I'll stick to reddit. Thank you very much.",
-                ipnsName: "k2k4r8nz40czmblfjgzo79tmex2wuo4y8zwi51843fac1rrx823g7lk8",
-                depth: 0
-            };
+            //prettier-ignore
+            const comment = {"subplebbitAddress":"QmRcyUK7jUhFyPTEvwWyfGZEAaSoDugNJ8PZSC4PWRjUqd","timestamp":1661902265,"signature":{"signature":"js6v39xc7y8yiFlj7DuBVIXiEgdNQcEdD3EXElOjX4ZkQP/b9TbqPulpfQ+EeGLq8UFnhfd2lJXDYvDx25ku8fyKR4fIFTMY9WDId3bHuDiWgbtgfA6+RRTL4eV9Ld2FVNLdsR2DCSxlcAvCc+M2rzzGDEQCZ85GbkCNBZ9jOypOEO1dW626jc41Q/6ddmI8nSV5iFDfw1jyvNE8JElWs5v7S58YcYO3CN0PlHEZgZ9dnfBkO9FihaFp25QDZgZJrXxCmPwQFRiNMe9Wlz7IeEEzop3TZ+PyExpbEG50rcyltkYUJ3LVxJfEQD/ZZ/Im3gTESLadz3aRWfjgfZ/L3A","publicKey":"-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxJS1ZMx9uqCFdiauIH5e\nJho2CtarYP3zAFzqvbPm1pBLm738I4DotkzvVIbgFHRu7a2wgq0+bUjwg4yX3z7N\nFjetiBaT+hEIMFYKyobsv65ebInsqMYIPNVbn380xLzb5zMyPEL6pBuvGdmQZlRD\ngXDuHiCh66IPLizd8KGWJMSQXOcAhLt+NRcdHSSCLkibcQOHs52dKc0qYvGHd25h\nKPs+dE4d/A86aLRSD5w/yGwiJA8Jn+nLFbOLiEf775L6tOO35OF6PHiXo21BTl0o\nS4Eh9DIlPT7fNhEg+HhQFoQ7VHQLq76OVYpXBCnhIRUaPko5EgjNfrqwG6R1lPZF\nkwIDAQAB\n-----END PUBLIC KEY-----","type":"rsa","signedPropertyNames":["subplebbitAddress","author","timestamp","content","title","link","parentCid"]},"author":{"address":"QmXGrdUi1PbSaApyDHbSoPdx2HkGsBAvTGFDTKoFrpuFxq"},"protocolVersion":"1.0.0","content":"Check the title\n","title":"I'll stick to reddit. Thank you very much.","ipnsName":"k2k4r8nz40czmblfjgzo79tmex2wuo4y8zwi51843fac1rrx823g7lk8","depth":0};
 
-            const verification = await verifyComment(comment, plebbit, "comment");
+            const verification = await verifyComment(comment, plebbit);
             expect(verification).to.deep.equal({ valid: true });
         });
 
         it(`CommentUpdate from previous plebbit-js versions can be verified`, async () => {
-            const update = {
-                upvoteCount: 0,
-                downvoteCount: 0,
-                replyCount: 0,
-                replies: { pages: {}, subplebbit: { address: "Qmb99crTbSUfKXamXwZBe829Vf6w5w5TktPkb6WstC9RFW" } },
-                updatedAt: 1666425163,
-                protocolVersion: "1.0.0",
-                signature: {
-                    signature:
-                        "eZk+MoWtIkF9+0NHTLY8q8vKjAhYNiASBjK2dI2uf7CcDQhTTEzTVTXU7BdsdWyrXw1R59M22hQ5KTDxnvOkbAnON3a6jcwEKo/bX5dgnrimI2D2qPQ4zqN4IFa1LpvzJXIv5jolIwUUm14NuBc9wjbPEAoyds8R6x3BVzeR9y7Un28tqQ7wiK6x/elu8bByXXbaA2vtxRWdAQSQNNpTdJtyX8YgO+W/Sj1hnrBVQ17xoTH0ZaPo9ardKjuGuuX4hBxK0sqF2p3yc/RhQEP1PH6+a2fPHrS6wz1eHMJAbp84MOzk9ReEt+AbL9l6OJOhVFmdtX/KGfjL/hce3L7KVg",
-                    publicKey:
-                        "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0X1KiwSRPW1CSMhyQhjz\n/c0tFxZ3Axr99etLxHkUhPPshxUe+clgqCGcN9HpOwuy+5uPUtBNDJb76lljwZr6\n3MeMiV8sXsxOY88yyiRHbEpOPgS4/dDpBh+2XZnnCtAen08Ob4/fA8q5Izyo1cSb\n8YclUgH5AIqJsleVsl32zK1UzIuYeY5Czzv4cEAa1/11y1b9ZCOIW/ziNK3y3iBQ\nJXdexhWWVQSA6DzNGDb+G6gObOXD0VLCsldZSHGIjY2vZuE/5/IKHo52l7U1RA9u\n0Txtm3TCretEhExrU3RmhWiL05/6qcp0UB7VYlh9Eh4njsGLK78YwvRlLnKdqPx9\nGwIDAQAB\n-----END PUBLIC KEY-----",
-                    type: "rsa",
-                    signedPropertyNames: [
-                        "author",
-                        "spoiler",
-                        "pinned",
-                        "locked",
-                        "removed",
-                        "moderatorReason",
-                        "flair",
-                        "upvoteCount",
-                        "downvoteCount",
-                        "replies",
-                        "updatedAt",
-                        "replyCount",
-                        "authorEdit"
-                    ]
-                }
-            };
-            const verification = await verifyComment(update, plebbit, "commentupdate");
+            //prettier-ignore
+            const update = {"upvoteCount":0,"downvoteCount":0,"replyCount":0,"replies":{"pages":{},"subplebbit":{"address":"Qmb99crTbSUfKXamXwZBe829Vf6w5w5TktPkb6WstC9RFW"}},"updatedAt":1666425163,"protocolVersion":"1.0.0","signature":{"signature":"eZk+MoWtIkF9+0NHTLY8q8vKjAhYNiASBjK2dI2uf7CcDQhTTEzTVTXU7BdsdWyrXw1R59M22hQ5KTDxnvOkbAnON3a6jcwEKo/bX5dgnrimI2D2qPQ4zqN4IFa1LpvzJXIv5jolIwUUm14NuBc9wjbPEAoyds8R6x3BVzeR9y7Un28tqQ7wiK6x/elu8bByXXbaA2vtxRWdAQSQNNpTdJtyX8YgO+W/Sj1hnrBVQ17xoTH0ZaPo9ardKjuGuuX4hBxK0sqF2p3yc/RhQEP1PH6+a2fPHrS6wz1eHMJAbp84MOzk9ReEt+AbL9l6OJOhVFmdtX/KGfjL/hce3L7KVg","publicKey":"-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0X1KiwSRPW1CSMhyQhjz\n/c0tFxZ3Axr99etLxHkUhPPshxUe+clgqCGcN9HpOwuy+5uPUtBNDJb76lljwZr6\n3MeMiV8sXsxOY88yyiRHbEpOPgS4/dDpBh+2XZnnCtAen08Ob4/fA8q5Izyo1cSb\n8YclUgH5AIqJsleVsl32zK1UzIuYeY5Czzv4cEAa1/11y1b9ZCOIW/ziNK3y3iBQ\nJXdexhWWVQSA6DzNGDb+G6gObOXD0VLCsldZSHGIjY2vZuE/5/IKHo52l7U1RA9u\n0Txtm3TCretEhExrU3RmhWiL05/6qcp0UB7VYlh9Eh4njsGLK78YwvRlLnKdqPx9\nGwIDAQAB\n-----END PUBLIC KEY-----","type":"rsa","signedPropertyNames":["author","spoiler","pinned","locked","removed","moderatorReason","flair","upvoteCount","downvoteCount","replies","updatedAt","replyCount","authorEdit"]}};
+            const verification = await verifyCommentUpdate(update);
             expect(verification).to.deep.equal({ valid: true });
-        });
-
-        it(`Page from previous plebbit-js versions can be verified`, async () => {
-            // Page cid: QmVdjKcbdvsqDfQ8Vr9fJBetCFz92zkwGhfU1Wwrrmjno1
         });
 
         it(`author.address(domain) gets corrected to signer.address if it's not pointing to signer.address, during validation process`);
 
+        it(
+            `Comment signature will be invalidated if comment.author.address (domain) points to different address, and overrideAuthorAddressIfInvalid=false`
+        );
         it(`Valid vote signature gets validated correctly`);
 
         it(`Invalid vote signature gets invalidated correctly`);
 
-        it(`A page with content modified by sub owner will get invalidated`);
+        it();
 
         it(`Comment with CommentUpdate json, with invalid author address will be corrected to derived address`);
 
@@ -247,5 +224,97 @@ describe(`Verify pubsub messages`, async () => {
             const verificaiton = await verifyChallengeRequest(comment.challenge);
             expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });
+    });
+});
+describe(`verify pages`, async () => {
+    let subplebbit;
+    before(async () => {
+        subplebbit = await plebbit.getSubplebbit(signers[0].address);
+        subplebbit._updateIntervalMs = updateInterval;
+    });
+
+    after(async () => {
+        await subplebbit.stop();
+    });
+    it(`Page from previous plebbit-js versions can be validated`, async () => {
+        const verification = await verifyPage(fixtureValidPage, plebbit, subplebbit.address);
+        expect(verification).to.deep.equal({ valid: true });
+    });
+
+    it(`A page with content modified by sub owner will be invalidated`, async () => {
+        const invalidPage = { ...fixtureValidPage };
+        invalidPage.comments[0].content = "Content modified by sub illegally";
+        const verification = await verifyPage(fixtureValidPage, plebbit, subplebbit.address);
+        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
+    });
+
+    it(`Page with comment.author modified by sub owner will be invalidated`);
+
+    it(`Page with comment.flair (original) modified by sub owner will be invalidated`);
+
+    it(`A page with comment.author.avatar can be valid`);
+
+    it("Page will be invalidated if comment has invalid signature", async () => {
+        const invalidPage = { ...fixtureValidPage };
+        invalidPage.comments[0].timestamp -= 1; // Should make signature invalid
+        const verification = await verifyPage(invalidPage, plebbit, subplebbit.address);
+        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
+    });
+
+    it(`Page will be invalidated if comment.author.address (plebbit address) does not match public key of author`, async () => {
+        const invalidPage = { ...fixtureValidPage };
+
+        invalidPage.comments[0].author.address.slice();
+        const invalidAuthor = invalidPage.comments[0].author.address;
+
+        invalidPage.comments[0].author.address = invalidPage.comments[0].original.author.address = invalidAuthor.slice(
+            0,
+            invalidAuthor.length / 2
+        );
+
+        const verification = await verifyPage(invalidPage, plebbit, subplebbit.address);
+        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
+    });
+
+    it.skip(`Page will be valid even if comment.author.address (domain) does not match public key of author (overrideAuthorAddress=true)`, async () => {
+        // verifyPage would override the incorrect domain
+
+        const signer = await plebbit.createSigner(signers[6]);
+        const newDomain = `plebbit${Math.round(Date.now() / 1000)}.eth`;
+        plebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) => (authorAddress === newDomain ? signer.address : authorAddress);
+        const comment = await plebbit.createComment({
+            subplebbitAddress: subplebbit.address,
+            title: `Test title ${Date.now()}`,
+            content: `Test content ${Date.now()}`,
+            signer,
+            author: { address: newDomain } // This domain would resolve plebbit-author-address to a different public key
+        });
+        await comment.publish();
+        await Promise.all([new Promise((resolve) => subplebbit.once("update", resolve)), subplebbit.update()]);
+        const pageFromPosts = JSON.parse(JSON.stringify(subplebbit.posts.pages.hot));
+
+        expect(pageFromPosts.comments.some((comment) => comment.author.address === newDomain)).to.be.true;
+
+        plebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
+            authorAddress === newDomain
+                ? signers[7].address // Change from signers[6] to 7
+                : authorAddress;
+
+        const verification = await verifyPage(pageFromPosts, plebbit, subplebbit.address);
+        expect(verification).to.deep.equal({ valid: true });
+
+        // We're expecting that verifyPage has overridden domain with signer address
+        expect(pageFromPosts.comments.some((comment) => comment.author.address === newDomain)).to.be.false;
+        expect(pageFromPosts.comments.some((comment) => comment.author.address === signer.address)).to.be.true;
+
+        const page = await subplebbit.posts.getPage(subplebbit.posts.pageCids.hot); // getPage calls verifyPage, so no need to call it
+        expect(page.comments.some((comment) => comment.author.address === newDomain)).to.be.false;
+        expect(page.comments.some((comment) => comment.author.address === signer.address)).to.be.true;
+    });
+
+    it(`Can validate page from live subplebbit`, async () => {
+        const page = subplebbit.posts.pages.hot;
+        const pageVerification = await verifyPage(page, plebbit, subplebbit.address);
+        expect(pageVerification).to.deep.equal({ valid: true });
     });
 });
