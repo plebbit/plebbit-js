@@ -339,9 +339,9 @@ export async function verifyChallengeVerification(verification: ChallengeVerific
     return _getValidationResult(verification);
 }
 
-export async function verifyPage(page: PageType, plebbit: Plebbit): Promise<ValidationResult> {
+export async function verifyPage(page: PageType, plebbit: Plebbit, subplebbitAddress: string): Promise<ValidationResult> {
     const verifyCommentInPage = async (comment: CommentType, parentComment?: CommentType) => {
-        if (comment.subplebbitAddress !== this.subplebbit.address) throw Error(messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB);
+        if (comment.subplebbitAddress !== subplebbitAddress) throw Error(messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB);
         if (parentComment && parentComment.cid !== comment.parentCid) throw Error(messages.ERR_PARENT_CID_NOT_AS_EXPECTED);
 
         const commentSignatureValidity = await verifyComment(comment, plebbit, true);

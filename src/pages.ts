@@ -27,7 +27,7 @@ export class Pages implements PagesType {
 
         const page = new Page(await loadIpfsFileAsJson(pageCid, this.subplebbit.plebbit));
 
-        const signatureValidity = await verifyPage(page, this.subplebbit.plebbit);
+        const signatureValidity = await verifyPage(page, this.subplebbit.plebbit, this.subplebbit.address);
         if (!signatureValidity.valid) throw Error(signatureValidity.reason);
 
         return page;
