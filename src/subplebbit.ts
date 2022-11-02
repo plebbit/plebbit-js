@@ -4,10 +4,11 @@ import { sha256 } from "js-sha256";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
 import { SortHandler } from "./sort-handler";
-import { loadIpnsAsJson, removeKeysWithUndefinedValues, timestamp } from "./util";
+import { encode, loadIpnsAsJson, removeKeysWithUndefinedValues, timestamp } from "./util";
 import { decrypt, encrypt, Signer, signPublication } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
+
 import {
     AuthorDbType,
     ChallengeAnswerMessageType,
@@ -275,7 +276,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")
             this.initSubplebbit({ ...cachedSubplebbit, ...removeKeysWithUndefinedValues(this.toJSON()) }); // Init subplebbit fields from DB
 
-        if (JSON.stringify(this.toJSON()) !== JSON.stringify(await this.dbHandler?.keyvGet(this.address)))
+        if (!lodash.isEqual(this.toJSON(), await this.dbHandler?.keyvGet(this.address)))
             await this.dbHandler?.keyvSet(this.address, this.toJSON());
     }
 
@@ -349,7 +350,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (!updateValidity.valid) {
             log.error(`Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
             this.emit("error", `Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
-        } else if (JSON.stringify(this.toJSON()) !== JSON.stringify(subplebbitIpns)) {
+        } else if (!lodash.isEqual(this.toJSON(), subplebbitIpns)) {
             this.initSubplebbit(subplebbitIpns);
             log(`Remote Subplebbit received a new update. Will emit an update event`);
             this.emit("update", this);
@@ -407,16 +408,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
         }
 
-        this.metricsCid = (await this.plebbit.ipfsClient.add(JSON.stringify(metrics))).path;
+        this.metricsCid = (await this.plebbit.ipfsClient.add(encode(metrics))).path;
 
         const lastPublishOverTwentyMinutes = this.updatedAt < timestamp() - 60 * 20;
 
-        if (!currentIpns || JSON.stringify(currentIpns) !== JSON.stringify(this.toJSON()) || lastPublishOverTwentyMinutes) {
+        if (!currentIpns || !lodash.isEqual(currentIpns, this.toJSON()) || lastPublishOverTwentyMinutes) {
             this.updatedAt = timestamp();
             this.signature = await signPublication(this.toJSON(), this.signer, this.plebbit, "subplebbit");
             const subIpnsCacheKey = sha256("ipns" + this.address);
             await this.dbHandler?.keyvSet(subIpnsCacheKey, this.toJSON());
-            const file = await this.plebbit.ipfsClient.add(JSON.stringify(this.toJSON()));
+            const file = await this.plebbit.ipfsClient.add(encode(this.toJSON()));
             await this.plebbit.ipfsClient.name.publish(file.path, {
                 lifetime: "72h", // TODO decide on optimal time later
                 key: this.ipnsKeyName,
@@ -591,7 +592,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             if (res) return res;
         } else if (postOrCommentOrVote instanceof Comment) {
             // Comment and Post need to add file to ipfs
-            const ipnsKeyName = sha256(JSON.stringify(postOrCommentOrVote.toJSONSkeleton()));
+            const ipnsKeyName = sha256(encode(postOrCommentOrVote.toJSONSkeleton()));
 
             if (await this.dbHandler?.querySigner(ipnsKeyName)) {
                 const msg = `Failed to insert ${
@@ -614,7 +615,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPost(trx))?.cid);
                 await this.dbHandler.commitTransaction(challengeRequestId);
                 postOrCommentOrVote.setDepth(0);
-                const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
+                const file = await this.plebbit.ipfsClient.add(encode(postOrCommentOrVote.toJSONIpfs()));
                 postOrCommentOrVote.setPostCid(file.path);
                 postOrCommentOrVote.setCid(file.path);
                 await this.dbHandler.upsertComment(
@@ -635,9 +636,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
                 postOrCommentOrVote.setPreviousCid(commentsUnderParent[0]?.cid);
                 postOrCommentOrVote.setDepth(parent.depth + 1);
-                const file = await this.plebbit.ipfsClient.add(JSON.stringify(postOrCommentOrVote.toJSONIpfs()));
-                postOrCommentOrVote.setCid(file.path);
                 postOrCommentOrVote.setPostCid(parent.postCid);
+                const file = await this.plebbit.ipfsClient.add(encode(postOrCommentOrVote.toJSONIpfs()));
+                postOrCommentOrVote.setCid(file.path);
                 await this.dbHandler.upsertComment(
                     postOrCommentOrVote.toJSONForDb(challengeRequestId),
                     postOrCommentOrVote.author.toJSONForDb(),
@@ -672,7 +673,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const publicationOrReason = await this.storePublicationIfValid(decryptedRequest.publication, request.challengeRequestId);
             const encryptedPublication =
                 typeof publicationOrReason !== "string"
-                    ? await encrypt(JSON.stringify(publicationOrReason), publicationOrReason.signature.publicKey)
+                    ? await encrypt(encode(publicationOrReason.toJSON()), publicationOrReason.signature.publicKey)
                     : undefined;
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
@@ -693,7 +694,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
             await Promise.all([
                 this.dbHandler.upsertChallenge(challengeVerification.toJSONForDb(), undefined),
-                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
+                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(encode(challengeVerification)))
             ]);
             log(
                 `(${request.challengeRequestId}): `,
@@ -707,7 +708,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 protocolVersion: env.PROTOCOL_VERSION,
                 userAgent: env.USER_AGENT,
                 challengeRequestId: request.challengeRequestId,
-                encryptedChallenges: await encrypt(JSON.stringify(providedChallenges), decryptedRequest.publication.signature.publicKey)
+                encryptedChallenges: await encrypt(encode(providedChallenges), decryptedRequest.publication.signature.publicKey)
             };
 
             const challengeSignature = await signPublication(toSignChallenge, this.signer, this.plebbit, "challengemessage");
@@ -715,7 +716,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
             await Promise.all([
                 this.dbHandler.upsertChallenge({ ...challengeMessage.toJSONForDb(), challenges: providedChallenges }, undefined),
-                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeMessage)))
+                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(encode(challengeMessage)))
             ]);
             log(
                 `(${request.challengeRequestId}): `,
@@ -756,7 +757,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const publicationOrReason = await this.storePublicationIfValid(storedPublication, challengeAnswer.challengeRequestId); // could contain "publication" or "reason"
             const encryptedPublication =
                 typeof publicationOrReason !== "string"
-                    ? await encrypt(JSON.stringify(publicationOrReason), publicationOrReason.signature.publicKey)
+                    ? await encrypt(encode(publicationOrReason.toJSON()), publicationOrReason.signature.publicKey)
                     : undefined;
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
@@ -777,7 +778,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
             await Promise.all([
                 this.dbHandler.upsertChallenge(challengeVerification.toJSONForDb(), undefined),
-                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
+                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(encode(challengeVerification)))
             ]);
             log(
                 `(${challengeAnswer.challengeRequestId}): `,
@@ -807,7 +808,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
             await Promise.all([
                 this.dbHandler.upsertChallenge(challengeVerification.toJSONForDb(), undefined),
-                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(JSON.stringify(challengeVerification)))
+                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(encode(challengeVerification)))
             ]);
             log(`(${challengeAnswer.challengeRequestId}): `, `Published ${challengeVerification.type} over pubsub:`, toSignVerification);
             this.emit("challengeverification", challengeVerification);
@@ -866,7 +867,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const log = Logger("plebbit-js:subplebbit:validateCaptcha");
 
         const actualSolution = this._challengeToSolution[answerMessage.challengeRequestId];
-        const answerIsCorrect = JSON.stringify(answerMessage.challengeAnswers) === JSON.stringify(actualSolution);
+        const answerIsCorrect = lodash.isEqual(answerMessage.challengeAnswers, actualSolution);
         log(
             `(${answerMessage?.challengeRequestId}): `,
             `Answer's validity: ${answerIsCorrect}, user's answer: ${answerMessage.challengeAnswers}, actual solution: ${actualSolution}`
@@ -879,9 +880,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     private async _publishCommentIpns(dbComment: Comment, options: CommentUpdate) {
         dbComment._initCommentUpdate(options);
         dbComment._mergeFields(dbComment.toJSON());
-        const file = await this.plebbit.ipfsClient.add(
-            JSON.stringify({ ...dbComment.toJSONCommentUpdate(), signature: options.signature })
-        );
+        const file = await this.plebbit.ipfsClient.add(encode({ ...dbComment.toJSONCommentUpdate(), signature: options.signature }));
         await this.plebbit.ipfsClient.name.publish(file.path, {
             lifetime: "72h",
             key: dbComment.ipnsKeyName,

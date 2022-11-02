@@ -6,6 +6,7 @@ import { codes, messages } from "./errors";
 import errcode from "err-code";
 import Hash from "ipfs-only-hash";
 import lodash from "lodash";
+import * as cborg from "cborg";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -195,4 +196,11 @@ export function removeKeysWithUndefinedValues<T extends Object>(object: T): Only
 
 export function randomElement<T>(array: Array<T>): T {
     return array[Math.floor(Math.random() * array.length)];
+}
+
+export function encode(obj: Object): string {
+    // May change in future
+    // We're encoding in cborg and decoding to make sure all JSON objects can be stringified and parsed determinstically
+    // Meaning the order of the fields will always be the same
+    return JSON.stringify(cborg.decode(cborg.encode(obj)));
 }
