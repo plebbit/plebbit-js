@@ -152,6 +152,8 @@ export class Comment extends Publication implements CommentType {
     }
 
     toJSONIpfs(): CommentIpfsType {
+        if (typeof this.ipnsName !== "string") throw Error("comment.ipnsName should be defined before calling toJSONIpfs");
+        if (typeof this.depth !== "number") throw Error("comment.depth should be defined before calling toJSONIpfs");
         return {
             ...this.toJSONSkeleton(),
             previousCid: this.previousCid,
