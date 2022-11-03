@@ -2,7 +2,6 @@ const Plebbit = require("../../dist/node");
 const fixtureSigners = require("../fixtures/signers");
 const authorSignerFixture = fixtureSigners[1];
 const fixtureComment = require("../fixtures/publications").comment;
-const fixtureValidPage = require("../fixtures/pages").validPage;
 const { signPublication, verifyComment } = require("../../dist/node/signer");
 const {
     signBufferRsa,
@@ -136,8 +135,6 @@ describe("signer (node and browser)", async () => {
 
         it(`Invalid vote signature gets invalidated correctly`);
 
-        it();
-
         it(`Comment with CommentUpdate json, with invalid author address will be corrected to derived address`);
 
         it(`Subplebbit with domain that does not match public key will get invalidated`);
@@ -236,15 +233,21 @@ describe(`verify pages`, async () => {
     after(async () => {
         await subplebbit.stop();
     });
+    it(`Can validate page from live subplebbit`, async () => {
+        const page = subplebbit.posts.pages.hot;
+        const pageVerification = await verifyPage(page, plebbit, subplebbit.address);
+        expect(pageVerification).to.deep.equal({ valid: true });
+    });
     it(`Page from previous plebbit-js versions can be validated`, async () => {
-        const verification = await verifyPage(fixtureValidPage, plebbit, subplebbit.address);
+        const page = require("../fixtures/valid_page.json");
+        const verification = await verifyPage(page, plebbit, "QmPjewdKya8iVkuQiiXQ5qRBsgVUAZg2LQ2m8v3LNJ7Ht8");
         expect(verification).to.deep.equal({ valid: true });
     });
 
-    it(`A page with content modified by sub owner will be invalidated`, async () => {
-        const invalidPage = { ...fixtureValidPage };
+    it(`A page with comment.content modified by sub owner will be invalidated`, async () => {
+        const invalidPage = JSON.parse(JSON.stringify(require("../fixtures/valid_page.json")));
         invalidPage.comments[0].content = "Content modified by sub illegally";
-        const verification = await verifyPage(fixtureValidPage, plebbit, subplebbit.address);
+        const verification = await verifyPage(invalidPage, plebbit, "QmPjewdKya8iVkuQiiXQ5qRBsgVUAZg2LQ2m8v3LNJ7Ht8");
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
@@ -255,14 +258,14 @@ describe(`verify pages`, async () => {
     it(`A page with comment.author.avatar can be valid`);
 
     it("Page will be invalidated if comment has invalid signature", async () => {
-        const invalidPage = { ...fixtureValidPage };
+        const invalidPage = JSON.parse(JSON.stringify(require("../fixtures/valid_page.json")));
         invalidPage.comments[0].timestamp -= 1; // Should make signature invalid
         const verification = await verifyPage(invalidPage, plebbit, subplebbit.address);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
     it(`Page will be invalidated if comment.author.address (plebbit address) does not match public key of author`, async () => {
-        const invalidPage = { ...fixtureValidPage };
+        const invalidPage = JSON.parse(JSON.stringify(require("../fixtures/valid_page.json")));
 
         invalidPage.comments[0].author.address.slice();
         const invalidAuthor = invalidPage.comments[0].author.address;
@@ -310,11 +313,5 @@ describe(`verify pages`, async () => {
         const page = await subplebbit.posts.getPage(subplebbit.posts.pageCids.hot); // getPage calls verifyPage, so no need to call it
         expect(page.comments.some((comment) => comment.author.address === newDomain)).to.be.false;
         expect(page.comments.some((comment) => comment.author.address === signer.address)).to.be.true;
-    });
-
-    it(`Can validate page from live subplebbit`, async () => {
-        const page = subplebbit.posts.pages.hot;
-        const pageVerification = await verifyPage(page, plebbit, subplebbit.address);
-        expect(pageVerification).to.deep.equal({ valid: true });
     });
 });
