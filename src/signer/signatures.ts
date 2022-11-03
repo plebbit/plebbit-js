@@ -11,6 +11,8 @@ import PeerId from "peer-id";
 import { removeKeysWithUndefinedValues } from "../util";
 import { Plebbit } from "../plebbit";
 import { Signer } from ".";
+import { Comment } from "../comment";
+
 import {
     AuthorCommentEdit,
     ChallengeAnswerMessageType,
@@ -270,36 +272,34 @@ export async function verifyCommentEdit(edit: CommentEditType, plebbit: Plebbit)
 }
 
 export async function verifyComment(
-    comment: CommentType,
+    commentArg: CommentType,
     plebbit: Plebbit,
     overrideAuthorAddressIfInvalid = true
 ): Promise<ValidationResult> {
-    const commentJson: CommentType = removeKeysWithUndefinedValues(comment);
+    const comment: Comment = commentArg instanceof Comment ? commentArg : await plebbit.createComment(commentArg);
 
     if (comment.authorEdit) {
-        // Means comment has been edited, verify both comment.signature and comment.authorEdit.signature
-        const originalObj: CommentType = { ...lodash.omit(commentJson, ["original", "authorEdit"]), ...commentJson.original };
-        const originalValidation = await verifyPublicationWithAuthor(originalObj, plebbit);
-        if (!originalValidation.valid) return originalValidation;
-        if (overrideAuthorAddressIfInvalid && originalValidation.newAddress) comment.author.address = originalValidation.newAddress;
+        // Means comment has been edited, verify comment.authorEdit.signature
 
-        const authorEditValidation = await verifyPublicationWithAuthor(<AuthorCommentEdit>commentJson.authorEdit, plebbit);
+        const authorEditValidation = await verifyPublicationWithAuthor(<AuthorCommentEdit>comment.authorEdit, plebbit);
         if (!authorEditValidation.valid) return authorEditValidation;
         if (overrideAuthorAddressIfInvalid && authorEditValidation.newAddress)
             comment.authorEdit.author.address = authorEditValidation.newAddress;
-    } else if (typeof commentJson.updatedAt === "number") {
-        // We're verifying a comment (IPFS) along with Comment Update
-        const originalObj = { ...lodash.omit(commentJson, ["original"]), author: commentJson.original?.author };
-
-        // Verify comment (IPFS)
-        const res = await verifyPublicationWithAuthor(originalObj, plebbit);
-        if (!res.valid) return res;
-        if (overrideAuthorAddressIfInvalid && res.newAddress) comment.author.address = res.newAddress;
-    } else {
-        const res = await verifyPublicationWithAuthor(commentJson, plebbit);
-        if (!res.valid) return res;
-        if (overrideAuthorAddressIfInvalid && res.newAddress) comment.author.address = res.newAddress;
     }
+
+    // This is the original comment that was published by the author. No CommentUpdate fields should be included here
+    // The signature created by the user via createComment should be valid, since `authorComment` is an object that separates author comment from CommentUpdate
+    const authorComment = removeKeysWithUndefinedValues({
+        ...comment.toJSONSkeleton(),
+        content: comment.authorEdit?.content ? comment?.original?.content : comment.content,
+        author: comment?.original?.author || comment.author // This is not correct, sub owner will be able to change a comment.author.address within a page and the user woud mark the comment as 'valid'
+    });
+
+    const authorCommentValidation = await verifyPublicationWithAuthor(authorComment, plebbit);
+    if (!authorCommentValidation.valid) return authorCommentValidation;
+    if (overrideAuthorAddressIfInvalid && authorCommentValidation.newAddress)
+        commentArg.author.address = authorCommentValidation.newAddress;
+
     return { valid: true };
 }
 
@@ -350,7 +350,7 @@ export async function verifyPage(page: PageType, plebbit: Plebbit, subplebbitAdd
 
         const commentSignatureValidity = await verifyComment(comment, plebbit, true);
         if (!commentSignatureValidity.valid)
-            throw errcode(Error(messages.ERR_SIGNATURE_IS_INVALID), codes.ERR_SIGNATURE_IS_INVALID, {
+            throw errcode(Error(commentSignatureValidity.reason), codes.ERR_SIGNATURE_IS_INVALID, {
                 details: `getPage: Failed to verify comment ${comment.cid} due to '${commentSignatureValidity.reason}'`
             });
 
@@ -363,11 +363,7 @@ export async function verifyPage(page: PageType, plebbit: Plebbit, subplebbitAdd
     };
 
     try {
-        await Promise.all(
-            page.comments.map(async (comment) => {
-                await verifyCommentInPage(comment, undefined);
-            })
-        );
+        await Promise.all(page.comments.map((comment) => verifyCommentInPage(comment, undefined)));
         return { valid: true };
     } catch (e) {
         return { valid: false, reason: e.message };
