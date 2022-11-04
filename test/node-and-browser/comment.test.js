@@ -1,7 +1,7 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
 const { timestamp } = require("../../dist/node/util");
-const { signPublication, verifyPublication } = require("../../dist/node/signer");
+const { signPublication, verifyComment } = require("../../dist/node/signer");
 const { generateMockPost, generateMockComment } = require("../../dist/node/test/test-util");
 const { messages, codes } = require("../../dist/node/errors");
 
@@ -39,8 +39,8 @@ describe("comment (node and browser)", async () => {
             };
             const signature = await signPublication(comment, signers[0], plebbit, "comment");
             const signedComment = { signature: signature.toJSON(), ...comment };
-            const [isVerified, failedVerificationReason] = await verifyPublication(signedComment, plebbit, "comment");
-            expect(isVerified).to.be.true;
+            const verificaiton = await verifyComment(signedComment, plebbit);
+            expect(verificaiton).to.deep.equal({ valid: true });
         });
 
         it("Can sign and verify a comment with an imported key", async () => {
@@ -54,9 +54,9 @@ describe("comment (node and browser)", async () => {
             };
             const signature = await signPublication(comment, signer, plebbit, "comment");
             const signedComment = { signature: signature.toJSON(), ...comment };
-            const [isVerified, failedVerificationReason] = await verifyPublication(signedComment, plebbit, "comment");
-            expect(isVerified).to.be.true;
             expect(signedComment.signature.publicKey).to.be.equal(signers[1].publicKey, "Generated public key should be same as provided");
+            const verificaiton = await verifyComment(signedComment, plebbit);
+            expect(verificaiton).to.deep.equal({ valid: true });
         });
 
         it(`comment = await createComment(await createComment)`, async () => {
