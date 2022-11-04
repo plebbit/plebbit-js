@@ -7,6 +7,7 @@ import errcode from "err-code";
 import Hash from "ipfs-only-hash";
 import lodash from "lodash";
 import * as cborg from "cborg";
+import { stringify as determinsticStringify } from "safe-stable-stringify";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -202,5 +203,5 @@ export function encode(obj: Object): string {
     // May change in future
     // We're encoding in cborg and decoding to make sure all JSON objects can be stringified and parsed determinstically
     // Meaning the order of the fields will always be the same
-    return JSON.stringify(cborg.decode(cborg.encode(obj)));
+    return <string>determinsticStringify(cborg.decode(cborg.encode(obj)));
 }
