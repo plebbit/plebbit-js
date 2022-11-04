@@ -818,10 +818,30 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     private async _verifyPubsubMsgSignature(msgParsed: ChallengeRequestMessageType | ChallengeAnswerMessageType) {
         const validation =
             msgParsed.type === "CHALLENGEANSWER" ? await verifyChallengeAnswer(msgParsed) : await verifyChallengeRequest(msgParsed);
-        if (!validation.valid)
-            throw errcode(Error(messages.ERR_SIGNATURE_IS_INVALID), codes.ERR_SIGNATURE_IS_INVALID, {
+        if (!validation.valid) {
+            const toSignVerification: Omit<ChallengeVerificationMessageType, "signature"> = {
+                type: "CHALLENGEVERIFICATION",
+                challengeRequestId: msgParsed.challengeRequestId,
+                challengeAnswerId: msgParsed["challengeAnswerId"],
+                challengeSuccess: false,
+                reason: validation.reason,
+                userAgent: env.USER_AGENT,
+                protocolVersion: env.PROTOCOL_VERSION
+            };
+
+            const challengeVerification = new ChallengeVerificationMessage({
+                ...toSignVerification,
+                signature: await signPublication(toSignVerification, this.signer, this.plebbit, "challengeverificationmessage")
+            });
+
+            await this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(encode(challengeVerification)));
+
+            const err = errcode(Error(messages.ERR_SIGNATURE_IS_INVALID), codes.ERR_SIGNATURE_IS_INVALID, {
                 details: `subplebbit.handleChallengeExchange: Failed to verify ${msgParsed.type}, Failed verification reason: ${validation.reason}`
             });
+            this.emit("error", err);
+            throw err;
+        }
     }
 
     private async handleChallengeExchange(pubsubMsg) {
