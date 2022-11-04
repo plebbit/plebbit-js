@@ -227,17 +227,13 @@ const verifyPublicationSignature = async (publicationToBeVerified: PublicationTo
         ...lodash.pick(publicationToBeVerified, publicationToBeVerified.signature.signedPropertyNames)
     };
     const commentEncoded = cborg.encode(commentWithFieldsToSign);
-    try {
-        const signatureIsValid = await verifyBufferRsa(
-            commentEncoded,
-            uint8ArrayFromString(publicationToBeVerified.signature.signature, "base64"),
-            publicationToBeVerified.signature.publicKey
-        );
-        if (!signatureIsValid) return false;
-        return true;
-    } catch {
-        return false;
-    }
+
+    const signatureIsValid = await verifyBufferRsa(
+        commentEncoded,
+        uint8ArrayFromString(publicationToBeVerified.signature.signature, "base64"),
+        publicationToBeVerified.signature.publicKey
+    );
+    return signatureIsValid;
 };
 
 const verifyPublicationWithAuthor = async (
