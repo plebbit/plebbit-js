@@ -177,8 +177,8 @@ describe("signer (node and browser)", async () => {
             };
 
             const wronglySignedPublication = { ...signedPublication, signature: invalidSignature };
-            const verification = await verifyComment(wronglySignedPublication, plebbit, "comment");
-            expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_NOT_VALID });
+            const verification = await verifyComment(wronglySignedPublication, plebbit);
+            expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });
 
         it("can sign a comment with author.displayName = undefined", async () => {
@@ -197,7 +197,7 @@ describe("signer (node and browser)", async () => {
     });
 });
 
-describe.only(`Verify pubsub messages`, async () => {
+describe(`Verify pubsub messages`, async () => {
     describe("challengerequest", async () => {
         it(`valid challengerequest fixture from previous version can be validated`);
         it(`Valid ChallengeRequest gets validated correctly`, async () => {
