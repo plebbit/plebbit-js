@@ -1,6 +1,7 @@
 import assert from "assert";
 import { Plebbit } from "./plebbit";
 import Publication from "./publication";
+import { verifyCommentEdit } from "./signer/signatures";
 import {
     AuthorCommentEdit,
     CommentAuthorEditOptions,
@@ -108,6 +109,10 @@ export class CommentEdit extends Publication implements CommentEditType {
     async publish(): Promise<void> {
         // TODO if publishing with content,reason, deleted, verify that publisher is original author
         assert(this.commentCid, "Need commentCid to be defined to publish CommentEdit");
+        const signatureValidity = await verifyCommentEdit(this, this.plebbit);
+        if (!signatureValidity.valid)
+            throw Error(`Failed to validate signature before publishing due to reason '${signatureValidity.reason}'`);
+
         return super.publish();
     }
 }

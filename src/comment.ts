@@ -19,7 +19,7 @@ import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "./plebbit";
 import lodash from "lodash";
-import { verifyCommentUpdate } from "./signer/signatures";
+import { verifyComment, verifyCommentUpdate } from "./signer/signatures";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
@@ -302,6 +302,10 @@ export class Comment extends Publication implements CommentType {
     }
 
     async publish(): Promise<void> {
+        const signatureValidity = await verifyComment(this, this.plebbit, false);
+        if (!signatureValidity.valid)
+            throw Error(`Failed to validate signature before publishing due to reason '${signatureValidity.reason}'`);
+
         return super.publish();
     }
 }
