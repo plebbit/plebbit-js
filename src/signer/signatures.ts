@@ -221,17 +221,17 @@ const verifyAuthor = async (
     return { valid: true };
 };
 
-const verifyPublicationSignature = async (signature: SignatureType, publicationToBeVerified: PublicationToVerify): Promise<boolean> => {
+const verifyPublicationSignature = async (publicationToBeVerified: PublicationToVerify): Promise<boolean> => {
     const commentWithFieldsToSign = {
-        ...lodash.fromPairs(signature.signedPropertyNames.map((name: string) => [name, undefined])), // Create an object with all of signedPropertyNames present
-        ...lodash.pick(publicationToBeVerified, signature.signedPropertyNames)
+        ...lodash.fromPairs(publicationToBeVerified.signature.signedPropertyNames.map((name: string) => [name, undefined])), // Create an object with all of signedPropertyNames present
+        ...lodash.pick(publicationToBeVerified, publicationToBeVerified.signature.signedPropertyNames)
     };
     const commentEncoded = cborg.encode(commentWithFieldsToSign);
     try {
         const signatureIsValid = await verifyBufferRsa(
             commentEncoded,
-            uint8ArrayFromString(signature.signature, "base64"),
-            signature.publicKey
+            uint8ArrayFromString(publicationToBeVerified.signature.signature, "base64"),
+            publicationToBeVerified.signature.publicKey
         );
         if (!signatureIsValid) return false;
         return true;
@@ -244,7 +244,7 @@ const verifyPublicationWithAuthor = async (
     publicationJson: PublicationToVerify,
     plebbit: Plebbit
 ): Promise<ValidationResult & { newAddress?: string }> => {
-    const signatureValidity = await verifyPublicationSignature(publicationJson.signature, publicationJson);
+    const signatureValidity = await verifyPublicationSignature(publicationJson);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
 
     if (plebbit.resolveAuthorAddresses && publicationJson["author"]) {
@@ -305,7 +305,7 @@ export async function verifyComment(
 
 export async function verifySubplebbit(subplebbit: SubplebbitType, plebbit: Plebbit): Promise<ValidationResult> {
     const subplebbitJson: SubplebbitType = removeKeysWithUndefinedValues(subplebbit);
-    const signatureValidity = await verifyPublicationSignature(subplebbitJson.signature, subplebbitJson);
+    const signatureValidity = await verifyPublicationSignature(subplebbitJson);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
     const resolvedSubAddress = await plebbit.resolver.resolveSubplebbitAddressIfNeeded(subplebbitJson.address);
 
@@ -318,7 +318,7 @@ export async function verifySubplebbit(subplebbit: SubplebbitType, plebbit: Pleb
 async function _getValidationResult(publication: PublicationToVerify) {
     //@ts-ignore
     const publicationJson: PublicationToVerify = removeKeysWithUndefinedValues(publication);
-    const signatureValidity = await verifyPublicationSignature(publicationJson.signature, publicationJson);
+    const signatureValidity = await verifyPublicationSignature(publicationJson);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
     return { valid: true };
 }
