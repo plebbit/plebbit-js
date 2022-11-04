@@ -197,8 +197,9 @@ describe("signer (node and browser)", async () => {
     });
 });
 
-describe(`Verify pubsub messages`, async () => {
+describe.only(`Verify pubsub messages`, async () => {
     describe("challengerequest", async () => {
+        it(`valid challengerequest fixture from previous version can be validated`);
         it(`Valid ChallengeRequest gets validated correctly`, async () => {
             const comment = await generateMockPost(signers[0].address, plebbit, signers[5]);
             try {
@@ -210,17 +211,46 @@ describe(`Verify pubsub messages`, async () => {
             expect(verificaiton).to.deep.equal({ valid: true });
         });
 
-        it(`Invalid ChallengeRequest gets invalidated correctly`, async () => {
-            const comment = await generateMockPost(signers[0].address, plebbit, signers[6]);
-            try {
-                await comment.publish();
-            } catch (e) {}
-            // comment.challenge (ChallengeRequest) should be defined now
-            expect(comment.challenge).to.be.a("object");
-            comment.challenge.challengeRequestId = comment.challenge.challengeRequestId.slice(1); // Signature should be invalid after
-            const verificaiton = await verifyChallengeRequest(comment.challenge);
-            expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
+        it(`Subplebbit responds to a challenge request with invalid signature if signature of challenge request is invalid`, async () => {
+            return new Promise(async (resolve) => {
+                const tempPlebbit = await Plebbit(plebbit);
+                const comment = await generateMockPost(signers[0].address, tempPlebbit, signers[6]);
+
+                await Promise.all([new Promise((resolve) => comment.once("challengeverification", resolve)), comment.publish()]);
+
+                // comment.challenge (ChallengeRequest) should be defined now
+                expect(comment.challenge).to.be.a("object");
+                const invalidSignature = JSON.parse(JSON.stringify(comment.challenge));
+                invalidSignature.encryptedPublication.encrypted = invalidSignature.encryptedPublication.encrypted.slice(1); // Signature should be invalid after
+                const verificaiton = await verifyChallengeRequest(invalidSignature);
+                expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
+
+                await tempPlebbit.pubsubIpfsClient.pubsub.publish(
+                    comment.subplebbit.pubsubTopic,
+                    fromString(JSON.stringify(invalidSignature))
+                );
+                await tempPlebbit.pubsubIpfsClient.pubsub.subscribe(comment.subplebbit.pubsubTopic, (pubsubMsg) => {
+                    const msgParsed = JSON.parse(toString(pubsubMsg["data"]));
+                    if (
+                        msgParsed.type === "CHALLENGEVERIFICATION" &&
+                        msgParsed.challengeRequestId === invalidSignature.challengeRequestId
+                    ) {
+                        expect(msgParsed.challengeSuccess).to.be.false;
+                        expect(msgParsed.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
+                        expect(msgParsed.publication).to.be.undefined;
+                        expect(msgParsed.encryptedPublication).to.be.undefined;
+                        tempPlebbit.pubsubIpfsClient.pubsub.unsubscribe();
+                        resolve();
+                    }
+                });
+            });
         });
+    });
+
+    describe("challengeanswer", async () => {
+        it(`Valid ChallengeAnswer gets validated correctly`);
+        it(`Invalid ChallengeAnswer gets invalidated correctly`);
+        it(`Subplebbit responds to a challenge answer with invalid signature if signature of challenge answer is invalid`);
     });
 });
 describe(`verify pages`, async () => {
@@ -233,11 +263,13 @@ describe(`verify pages`, async () => {
     after(async () => {
         await subplebbit.stop();
     });
+
     it(`Can validate page from live subplebbit`, async () => {
         const page = subplebbit.posts.pages.hot;
         const pageVerification = await verifyPage(page, plebbit, subplebbit.address);
         expect(pageVerification).to.deep.equal({ valid: true });
     });
+
     it(`Page from previous plebbit-js versions can be validated`, async () => {
         const page = require("../fixtures/valid_page.json");
         const verification = await verifyPage(page, plebbit, "QmPjewdKya8iVkuQiiXQ5qRBsgVUAZg2LQ2m8v3LNJ7Ht8");
@@ -251,11 +283,22 @@ describe(`verify pages`, async () => {
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
-    it(`Page with comment.author modified by sub owner will be invalidated`);
+    it(`Page with comment.author modified by sub owner will be invalidated`, async () => {
+        const invalidPage = JSON.parse(JSON.stringify(require("../fixtures/valid_page.json")));
+        invalidPage.comments[0].author.address = "invalidAddress.eth";
+        const verification = await verifyPage(invalidPage, plebbit, "QmPjewdKya8iVkuQiiXQ5qRBsgVUAZg2LQ2m8v3LNJ7Ht8");
+        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
+    });
+
+    it(`Page with an edited comment modified by sub owner will be invalidated`);
 
     it(`Page with comment.flair (original) modified by sub owner will be invalidated`);
 
-    it(`A page with comment.author.avatar can be valid`);
+    it.skip(`A page with comment.author.avatar can be valid`, async () => {
+        const page = require("../fixtures/valid_page.json");
+        const verification = await verifyPage(page, plebbit, "QmPjewdKya8iVkuQiiXQ5qRBsgVUAZg2LQ2m8v3LNJ7Ht8");
+        expect(verification).to.deep.equal({ valid: true });
+    });
 
     it("Page will be invalidated if comment has invalid signature", async () => {
         const invalidPage = JSON.parse(JSON.stringify(require("../fixtures/valid_page.json")));
@@ -270,10 +313,7 @@ describe(`verify pages`, async () => {
         invalidPage.comments[0].author.address.slice();
         const invalidAuthor = invalidPage.comments[0].author.address;
 
-        invalidPage.comments[0].author.address = invalidPage.comments[0].original.author.address = invalidAuthor.slice(
-            0,
-            invalidAuthor.length / 2
-        );
+        invalidPage.comments[0].author.address = invalidAuthor.slice(0, invalidAuthor.length / 2);
 
         const verification = await verifyPage(invalidPage, plebbit, subplebbit.address);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
