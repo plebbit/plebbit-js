@@ -285,9 +285,10 @@ export async function verifyComment(
     // This is the original comment that was published by the author. No CommentUpdate fields should be included here
     // The signature created by the user via createComment should be valid, since `authorComment` is an object that separates author comment from CommentUpdate
     const authorComment = removeKeysWithUndefinedValues({
-        ...comment.toJSONSkeleton(),
+        ...comment,
         content: comment.authorEdit?.content ? comment?.original?.content : comment.content,
-        author: comment?.original?.author || comment.author // This is not correct, sub owner will be able to change a comment.author.address within a page and the user woud mark the comment as 'valid'
+        author: { ...lodash.omit(comment.author, ["banExpiresAt", "flair", "subplebbit"]), flair: comment.original?.author?.flair },
+        flair: comment.original?.flair
     });
 
     const authorCommentValidation = await verifyPublicationWithAuthor(authorComment, plebbit);
