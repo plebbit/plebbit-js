@@ -24,6 +24,7 @@ export enum messages {
     ERR_SIGNATURE_IS_INVALID = "Signature of publication is invalid",
     ERR_AUTHOR_NOT_MATCHING_SIGNATURE = "comment.author.address doesn't match comment.signature.publicKey",
     ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY = "subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey",
+    ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT = "comment.content is not set to the latest comment.authorEdit.content",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
@@ -55,6 +56,7 @@ export enum codes {
     ERR_SIGNATURE_IS_INVALID = "ERR_SIGNATURE_IS_INVALID",
     ERR_AUTHOR_NOT_MATCHING_SIGNATURE = "ERR_AUTHOR_NOT_MATCHING_SIGNATURE",
     ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY = "ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY",
+    ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT = "ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB",

@@ -11,7 +11,6 @@ import PeerId from "peer-id";
 import { removeKeysWithUndefinedValues } from "../util";
 import { Plebbit } from "../plebbit";
 import { Signer } from ".";
-import { Comment } from "../comment";
 
 import {
     AuthorCommentEdit,
@@ -279,6 +278,8 @@ export async function verifyComment(
 
         const authorEditValidation = await verifyPublicationWithAuthor(<AuthorCommentEdit>comment.authorEdit, plebbit);
         if (!authorEditValidation.valid) return authorEditValidation;
+        if (comment.authorEdit.content && comment.content !== comment.authorEdit.content)
+            return { valid: false, reason: messages.ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT };
         if (overrideAuthorAddressIfInvalid && authorEditValidation.newAddress)
             comment.authorEdit.author.address = authorEditValidation.newAddress;
     }
