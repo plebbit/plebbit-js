@@ -267,12 +267,10 @@ export async function verifyCommentEdit(edit: CommentEditType, plebbit: Plebbit)
 }
 
 export async function verifyComment(
-    commentArg: CommentType,
+    comment: CommentType,
     plebbit: Plebbit,
     overrideAuthorAddressIfInvalid = true
 ): Promise<ValidationResult> {
-    const comment: Comment = commentArg instanceof Comment ? commentArg : await plebbit.createComment(commentArg);
-
     if (comment.authorEdit) {
         // Means comment has been edited, verify comment.authorEdit.signature
 
@@ -294,8 +292,7 @@ export async function verifyComment(
 
     const authorCommentValidation = await verifyPublicationWithAuthor(authorComment, plebbit);
     if (!authorCommentValidation.valid) return authorCommentValidation;
-    if (overrideAuthorAddressIfInvalid && authorCommentValidation.newAddress)
-        commentArg.author.address = authorCommentValidation.newAddress;
+    if (overrideAuthorAddressIfInvalid && authorCommentValidation.newAddress) comment.author.address = authorCommentValidation.newAddress;
 
     return { valid: true };
 }
