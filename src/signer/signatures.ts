@@ -10,17 +10,24 @@ import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import PeerId from "peer-id";
 import { removeKeysWithUndefinedValues } from "../util";
 import { Plebbit } from "../plebbit";
-import { Signer } from ".";
+import isIPFS from "is-ipfs";
 
 import {
     AuthorCommentEdit,
+    ChallengeAnswerMessageSignedPropertyNames,
     ChallengeAnswerMessageType,
+    ChallengeMessageSignedPropertyNames,
     ChallengeMessageType,
+    ChallengeRequestMessageSignedPropertyNames,
     ChallengeRequestMessageType,
+    ChallengeVerificationMessageSignedPropertyNames,
     ChallengeVerificationMessageType,
+    CommentEditSignedPropertyNames,
     CommentEditType,
+    CommentSignedPropertyNames,
     CommentType,
     CommentUpdate,
+    CommentUpdatedSignedPropertyNames,
     CreateCommentEditOptions,
     CreateCommentOptions,
     CreateVoteOptions,
@@ -28,81 +35,17 @@ import {
     PublicationsToSign,
     PublicationToVerify,
     SignatureType,
-    SignatureTypes,
     SignedPropertyNames,
+    SignerType,
+    SubplebbitSignedPropertyNames,
     SubplebbitType,
+    VoteSignedPropertyNames,
     VoteType
 } from "../types";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
 import errcode from "err-code";
 import { codes, messages } from "../errors";
-
-export const SIGNED_PROPERTY_NAMES: Record<SignatureTypes, SignedPropertyNames> = Object.freeze({
-    comment: ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"],
-    commentedit: [
-        "author",
-        "timestamp",
-        "subplebbitAddress",
-        "content",
-        "commentCid",
-        "deleted",
-        "spoiler",
-        "pinned",
-        "locked",
-        "removed",
-        "moderatorReason",
-        "flair",
-        "reason",
-        "commentAuthor"
-    ],
-    commentupdate: [
-        "author",
-        "spoiler",
-        "pinned",
-        "locked",
-        "removed",
-        "moderatorReason",
-        "flair",
-        "upvoteCount",
-        "downvoteCount",
-        "replies",
-        "updatedAt",
-        "replyCount",
-        "authorEdit"
-    ],
-    vote: ["subplebbitAddress", "author", "timestamp", "vote", "commentCid"],
-    subplebbit: [
-        "title",
-        "description",
-        "roles",
-        "pubsubTopic",
-        "lastPostCid",
-        "posts",
-        "challengeTypes",
-        "metricsCid",
-        "createdAt",
-        "updatedAt",
-        "features",
-        "suggested",
-        "rules",
-        "address",
-        "flairs",
-        "encryption"
-    ],
-    challengerequestmessage: ["type", "challengeRequestId", "encryptedPublication", "acceptedChallengeTypes"],
-    challengemessage: ["type", "challengeRequestId", "encryptedChallenges"],
-    challengeanswermessage: ["type", "challengeRequestId", "challengeAnswerId", "encryptedChallengeAnswers"],
-    challengeverificationmessage: [
-        "reason",
-        "type",
-        "challengeRequestId",
-        "encryptedPublication",
-        "challengeAnswerId",
-        "challengeSuccess",
-        "challengeErrors"
-    ]
-});
 
 interface ValidationResult {
     valid: boolean;
@@ -148,40 +91,28 @@ export const verifyBufferRsa = async (bufferToSign, bufferSignature, publicKeyPe
     return await peerId.pubKey.verify(bufferToSign, bufferSignature);
 };
 
-export async function signPublication(
-    publication: PublicationsToSign,
-    signer: Signer,
-    plebbit: Plebbit,
-    signatureType: SignatureTypes
-): Promise<Signature> {
-    if (typeof signer.publicKey !== "string") throw Error(`signer.publicKey (${signer.publicKey}) is not a valid public key`);
-
-    if (!Object.keys(SIGNED_PROPERTY_NAMES).includes(signatureType)) throw Error(`signature type (${signatureType}) is not supported`);
-    let publicationJson = <PublicationsToSign>removeKeysWithUndefinedValues(publication); // This line is needed to remove nested undefined values
-
-    const log = Logger("plebbit-js:signatures:signPublication");
-
-    if (publicationJson["author"]?.constructor?.name === "Object" && typeof publicationJson["author"]["address"] === "string") {
-        publicationJson = <CreateCommentEditOptions | CreateVoteOptions | CreateCommentOptions>publicationJson;
-        const resolvedAddress = await plebbit.resolver.resolveAuthorAddressIfNeeded(<string>publicationJson.author.address);
+async function _validateAuthor(author: CreateCommentOptions["author"], signer: SignerType, plebbit: Plebbit) {
+    if (isIPFS.cid(author.address)) {
         const derivedAddress = await getPlebbitAddressFromPrivateKeyPem(signer.privateKey);
-        if (resolvedAddress !== derivedAddress)
-            throw Error(
-                `author.address (${publicationJson?.author?.address}) does not equate its resolved address (${resolvedAddress}) is invalid. For this publication to be signed, user needs to ensure plebbit-author-address points to same key used by signer (${derivedAddress})`
-            );
+        if (derivedAddress !== author.address)
+            throw errcode(Error(messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER), codes.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER);
     }
+}
 
-    const signedPropertyNames = SIGNED_PROPERTY_NAMES[signatureType];
-
+async function _sign(
+    signedPropertyNames: SignedPropertyNames,
+    publication: PublicationsToSign,
+    signer: SignerType,
+    log: Logger
+): Promise<Signature> {
     const fieldsToSign = {
         ...lodash.fromPairs(signedPropertyNames.map((name: string) => [name, undefined])), // Create an object with all of signedPropertyNames present
-        ...lodash.pick(publicationJson, signedPropertyNames)
+        ...lodash.pick(removeKeysWithUndefinedValues(publication), signedPropertyNames)
     };
-    log.trace("Fields to sign: ", signedPropertyNames);
-    log.trace("Publication to sign: ", fieldsToSign);
-    const commentEncoded = cborg.encode(fieldsToSign); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
-    const signatureData = uint8ArrayToString(await signBufferRsa(commentEncoded, signer.privateKey), "base64");
-    log.trace(`Publication been signed, signature:`, signatureData);
+    log.trace(`fields to sign: `, fieldsToSign);
+    const publicationEncoded = cborg.encode(fieldsToSign); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    const signatureData = uint8ArrayToString(await signBufferRsa(publicationEncoded, signer.privateKey), "base64");
+    log.trace(`fields have been signed, signature:`, signatureData);
     return new Signature({
         signature: signatureData,
         publicKey: signer.publicKey,
@@ -190,6 +121,91 @@ export async function signPublication(
     });
 }
 
+export async function signComment(comment: CreateCommentOptions, signer: SignerType, plebbit: Plebbit): Promise<Signature> {
+    const log = Logger("plebbit-js:signatures:signComment");
+    await _validateAuthor(comment.author, signer, plebbit);
+
+    //prettier-ignore
+    const signedPropertyNames: CommentSignedPropertyNames = ["subplebbitAddress","author","timestamp","content","title","link","parentCid"];
+    return _sign(signedPropertyNames, comment, signer, log);
+}
+
+export async function signVote(vote: CreateVoteOptions, signer: SignerType, plebbit: Plebbit): Promise<Signature> {
+    const log = Logger("plebbit-js:signatures:signVote");
+    await _validateAuthor(vote.author, signer, plebbit);
+
+    const signedPropertyNames: VoteSignedPropertyNames = ["subplebbitAddress", "author", "timestamp", "vote", "commentCid"];
+    return _sign(signedPropertyNames, vote, signer, log);
+}
+
+export async function signCommentEdit(edit: CreateCommentEditOptions, signer: SignerType, plebbit: Plebbit): Promise<Signature> {
+    const log = Logger("plebbit-js:signatures:signCommentEdit");
+    await _validateAuthor(edit.author, signer, plebbit);
+    //prettier-ignore
+    const signedPropertyNames: CommentEditSignedPropertyNames = ["author","timestamp","subplebbitAddress","content","commentCid","deleted","spoiler","pinned","locked","removed","moderatorReason","flair","reason","commentAuthor"];
+    return _sign(signedPropertyNames, edit, signer, log);
+}
+
+export async function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType): Promise<Signature> {
+    const log = Logger("plebbit-js:signatures:signCommentUpdate");
+    // Not sure, should we validate update.authorEdit here?
+    //prettier-ignore
+    const signedPropertyNames: CommentUpdatedSignedPropertyNames = ["author","spoiler","pinned","locked","removed","moderatorReason","flair","upvoteCount","downvoteCount","replies","updatedAt","replyCount","authorEdit"];
+    return _sign(signedPropertyNames, update, signer, log);
+}
+
+export async function signSubplebbit(subplebbit: Omit<SubplebbitType, "signature">, signer: SignerType): Promise<Signature> {
+    const log = Logger("plebbit-js:signatures:signSubplebbit");
+    //prettier-ignore
+    const signedPropertyNames: SubplebbitSignedPropertyNames = ["title","description","roles","pubsubTopic","lastPostCid","posts","challengeTypes","metricsCid","createdAt","updatedAt","features","suggested","rules","address","flairs","encryption"];
+
+    return _sign(signedPropertyNames, subplebbit, signer, log);
+}
+
+export async function signChallengeRequest(
+    request: Omit<ChallengeRequestMessageType, "signature">,
+    signer: SignerType
+): Promise<Signature> {
+    const log = Logger("plebbit-js:signatures:signChallengeRequest");
+    //prettier-ignore
+    const signedPropertyNames: ChallengeRequestMessageSignedPropertyNames = ["type", "challengeRequestId", "encryptedPublication", "acceptedChallengeTypes"];
+
+    return _sign(signedPropertyNames, request, signer, log);
+}
+
+export async function signChallengeMessage(
+    challengeMessage: Omit<ChallengeMessageType, "signature">,
+    signer: SignerType
+): Promise<Signature> {
+    const log = Logger("plebbit-js:signatures:signChallengeMessage");
+    const signedPropertyNames: ChallengeMessageSignedPropertyNames = ["type", "challengeRequestId", "encryptedChallenges"];
+
+    return _sign(signedPropertyNames, challengeMessage, signer, log);
+}
+
+export async function signChallengeAnswer(
+    challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">,
+    signer: SignerType
+): Promise<Signature> {
+    const log = Logger("plebbit-js:signatures:signChallengeAnswer");
+    //prettier-ignore
+    const signedPropertyNames: ChallengeAnswerMessageSignedPropertyNames = ["type", "challengeRequestId", "challengeAnswerId", "encryptedChallengeAnswers"];
+
+    return _sign(signedPropertyNames, challengeAnswer, signer, log);
+}
+
+export async function signChallengeVerification(
+    challengeVerification: Omit<ChallengeVerificationMessageType, "signature">,
+    signer: SignerType
+): Promise<Signature> {
+    const log = Logger("plebbit-js:signatures:signChallengeVerification");
+    //prettier-ignore
+    const signedPropertyNames: ChallengeVerificationMessageSignedPropertyNames = ["reason","type","challengeRequestId","encryptedPublication","challengeAnswerId","challengeSuccess","challengeErrors"];
+
+    return _sign(signedPropertyNames, challengeVerification, signer, log);
+}
+
+// Verify functions
 const verifyAuthor = async (
     publicationJson: CommentEditType | VoteType | CommentType,
     plebbit: Plebbit,

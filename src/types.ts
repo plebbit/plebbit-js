@@ -108,7 +108,7 @@ export interface PublicationType extends Required<CreatePublicationOptions> {
 }
 
 interface CreatePublicationOptions {
-    author?: Partial<AuthorType>;
+    author?: Partial<Omit<AuthorType, "subplebbit" | "banExpiresAt">>;
     subplebbitAddress: string; // all publications are directed to a subplebbit owner
     timestamp?: number; // // Time of publishing in seconds, Math.round(Date.now() / 1000) if undefined
 }

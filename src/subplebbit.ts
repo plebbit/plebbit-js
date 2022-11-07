@@ -5,7 +5,7 @@ import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
 import { SortHandler } from "./sort-handler";
 import { encode, loadIpnsAsJson, removeKeysWithUndefinedValues, timestamp } from "./util";
-import { decrypt, encrypt, Signer, signPublication } from "./signer";
+import { decrypt, encrypt, Signer } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
 
@@ -49,6 +49,10 @@ import { nativeFunctions } from "./runtime/node/util";
 import env from "./version";
 import lodash from "lodash";
 import {
+    signChallengeMessage,
+    signChallengeVerification,
+    signCommentUpdate,
+    signSubplebbit,
     verifyChallengeAnswer,
     verifyChallengeRequest,
     verifyComment,
@@ -414,7 +418,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         if (!currentIpns || !lodash.isEqual(currentIpns, this.toJSON()) || lastPublishOverTwentyMinutes) {
             this.updatedAt = timestamp();
-            this.signature = await signPublication(this.toJSON(), this.signer, this.plebbit, "subplebbit");
+            this.signature = await signSubplebbit(this.toJSON(), this.signer);
             const subIpnsCacheKey = sha256("ipns" + this.address);
             await this.dbHandler?.keyvSet(subIpnsCacheKey, this.toJSON());
             const file = await this.plebbit.ipfsClient.add(encode(this.toJSON()));
@@ -446,6 +450,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
             await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId));
             // If comment.flair is last modified by a mod, then reject
+            // TODO investiate why challengeRequestId is included in comment.authorEdit
             await this.dbHandler.editComment(commentEdit.toJSONForDb(challengeRequestId));
             // const commentAfterEdit = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
             log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEdit.toJSON());
@@ -689,7 +694,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             };
             const challengeVerification = new ChallengeVerificationMessage({
                 ...toSignMsg,
-                signature: await signPublication(toSignMsg, this.signer, this.plebbit, "challengeverificationmessage")
+                signature: await signChallengeVerification(toSignMsg, this.signer)
             });
 
             await Promise.all([
@@ -711,8 +716,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 encryptedChallenges: await encrypt(encode(providedChallenges), decryptedRequest.publication.signature.publicKey)
             };
 
-            const challengeSignature = await signPublication(toSignChallenge, this.signer, this.plebbit, "challengemessage");
-            const challengeMessage = new ChallengeMessage({ ...toSignChallenge, signature: challengeSignature });
+            const challengeMessage = new ChallengeMessage({
+                ...toSignChallenge,
+                signature: await signChallengeMessage(toSignChallenge, this.signer)
+            });
 
             await Promise.all([
                 this.dbHandler.upsertChallenge({ ...challengeMessage.toJSONForDb(), challenges: providedChallenges }, undefined),
@@ -773,7 +780,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             };
             const challengeVerification = new ChallengeVerificationMessage({
                 ...toSignMsg,
-                signature: await signPublication(toSignMsg, this.signer, this.plebbit, "challengeverificationmessage")
+                signature: await signChallengeVerification(toSignMsg, this.signer)
             });
 
             await Promise.all([
@@ -803,7 +810,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
             const challengeVerification = new ChallengeVerificationMessage({
                 ...toSignVerification,
-                signature: await signPublication(toSignVerification, this.signer, this.plebbit, "challengeverificationmessage")
+                signature: await signChallengeVerification(toSignVerification, this.signer)
             });
 
             await Promise.all([
@@ -831,7 +838,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
             const challengeVerification = new ChallengeVerificationMessage({
                 ...toSignVerification,
-                signature: await signPublication(toSignVerification, this.signer, this.plebbit, "challengeverificationmessage")
+                signature: await signChallengeVerification(toSignVerification, this.signer)
             });
 
             await this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(encode(challengeVerification)));
@@ -930,13 +937,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             log.trace(`Attempting to update Comment (${dbComment.cid})`);
             await this.sortHandler.deleteCommentPageCache(dbComment);
             const commentReplies = await this.sortHandler.generatePagesUnderComment(dbComment, undefined);
-            if (!dbComment.updatedAt)
-                dbComment.original = { author: { ...dbComment.author }, flair: dbComment.flair, content: dbComment.content };
+            if (typeof dbComment.updatedAt !== "number")
+                dbComment.original = { author: dbComment.author, flair: dbComment.flair, content: dbComment.content };
             dbComment.author.subplebbit = await this.dbHandler.querySubplebbitAuthorFields(dbComment.cid);
             dbComment.setReplies(commentReplies);
             dbComment.setUpdatedAt(timestamp());
             await this.dbHandler.upsertComment(dbComment.toJSONForDb(undefined), dbComment.author.toJSONForDb(), undefined);
-            const subplebbitSignature = await signPublication(dbComment.toJSONCommentUpdate(), this.signer, this.plebbit, "commentupdate");
+            const subplebbitSignature = await signCommentUpdate(dbComment.toJSONCommentUpdate(), this.signer);
             return this._publishCommentIpns(dbComment, { ...dbComment.toJSONCommentUpdate(), signature: subplebbitSignature });
         }
         log.trace(`Comment (${dbComment.cid}) is up-to-date and does not need syncing`);

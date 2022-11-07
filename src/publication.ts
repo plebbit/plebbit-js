@@ -1,11 +1,11 @@
-import { ChallengeAnswerMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
+import { ChallengeAnswerMessage, ChallengeRequestMessage } from "./challenge";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { v4 as uuidv4 } from "uuid";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import EventEmitter from "events";
 import Author from "./author";
 import assert from "assert";
-import { decrypt, encrypt, Signature, Signer, signPublication } from "./signer";
+import { decrypt, encrypt, Signature, Signer } from "./signer";
 import {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
@@ -23,7 +23,7 @@ import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
 import { Plebbit } from "./plebbit";
 import { Subplebbit } from "./subplebbit";
-import { verifyChallengeMessage, verifyChallengeVerification } from "./signer/signatures";
+import { signChallengeAnswer, signChallengeRequest, verifyChallengeMessage, verifyChallengeVerification } from "./signer/signatures";
 
 class Publication extends EventEmitter implements PublicationType {
     subplebbitAddress: string;
@@ -145,7 +145,7 @@ class Publication extends EventEmitter implements PublicationType {
         };
         const challengeAnswer = new ChallengeAnswerMessage({
             ...toSignAnswer,
-            signature: await signPublication(toSignAnswer, this.signer, this.plebbit, "challengeanswermessage")
+            signature: await signChallengeAnswer(toSignAnswer, this.signer)
         });
         await this.plebbit.pubsubIpfsClient.pubsub.publish(
             this.subplebbit.pubsubTopic,
@@ -195,9 +195,8 @@ class Publication extends EventEmitter implements PublicationType {
             userAgent: env.USER_AGENT,
             protocolVersion: env.PROTOCOL_VERSION
         };
-        const pubsubMsgSignature = await signPublication(toSignMsg, this.signer, this.plebbit, "challengerequestmessage");
 
-        this.challenge = new ChallengeRequestMessage({ ...toSignMsg, signature: pubsubMsgSignature });
+        this.challenge = new ChallengeRequestMessage({ ...toSignMsg, signature: await signChallengeRequest(toSignMsg, this.signer) });
         log.trace(`Attempting to publish ${this.getType()} with options`, options);
 
         await Promise.all([

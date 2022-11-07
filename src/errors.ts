@@ -20,7 +20,10 @@ export enum messages {
     ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "The parent cid of this comment is not defined",
     ERR_GENERATED_CID_DOES_NOT_MATCH = "The CID generated from loaded content does not match the provided CID",
 
-    // Signature errors
+    // Sign errors
+    ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",
+
+    // Verify Signature errors
     ERR_SIGNATURE_IS_INVALID = "Signature of publication is invalid",
     ERR_AUTHOR_NOT_MATCHING_SIGNATURE = "comment.author.address doesn't match comment.signature.publicKey",
     ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY = "subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey",
@@ -52,7 +55,11 @@ export enum codes {
     ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST = "ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST",
     ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED",
     ERR_GENERATED_CID_DOES_NOT_MATCH = "ERR_GENERATED_CID_DOES_NOT_MATCH",
-    // Signature errors
+
+    // Sign errors
+    ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER",
+
+    // Verify Signature errors
     ERR_SIGNATURE_IS_INVALID = "ERR_SIGNATURE_IS_INVALID",
     ERR_AUTHOR_NOT_MATCHING_SIGNATURE = "ERR_AUTHOR_NOT_MATCHING_SIGNATURE",
     ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY = "ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY",

@@ -20,7 +20,7 @@ import Post from "./post";
 import { Subplebbit } from "./subplebbit";
 import { fetchCid, loadIpfsFileAsJson, loadIpnsAsJson, removeKeysWithUndefinedValues, timestamp } from "./util";
 import Vote from "./vote";
-import { createSigner, Signer, signPublication, verifyComment, verifySubplebbit } from "./signer";
+import { createSigner, Signer, verifyComment, verifySubplebbit } from "./signer";
 import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
@@ -32,6 +32,7 @@ import { codes, messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
 import lodash from "lodash";
+import { signComment, signCommentEdit, signVote } from "./signer/signatures";
 
 export const pendingSubplebbitCreations: Record<string, boolean> = {};
 
@@ -149,7 +150,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             log(`CreateCommentOptions did not provide author.address, will define it to signer.address (${options.signer.address})`);
         }
 
-        const commentSignature = await signPublication(<CreateCommentOptions>options, options.signer, this, "comment");
+        const commentSignature = await signComment(<CreateCommentOptions>options, options.signer, this);
 
         const finalProps: CommentType | PostType = {
             ...(<CommentType>options), // TODO Take out cast later
@@ -237,7 +238,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             options.author = { ...options.author, address: options.signer.address };
             log.trace(`CreateVoteOptions did not provide author.address, will define it to signer.address (${options.signer.address})`);
         }
-        const voteSignature = await signPublication(<CreateVoteOptions>options, options.signer, this, "vote");
+        const voteSignature = await signVote(<CreateVoteOptions>options, options.signer, this);
         const voteProps: VoteType = <VoteType>{ ...options, signature: voteSignature, protocolVersion: env.PROTOCOL_VERSION }; // TODO remove cast here
         return new Vote(voteProps, this);
     }
@@ -261,7 +262,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         }
         const commentEditProps = {
             ...options,
-            signature: await signPublication(<CreateCommentEditOptions>options, options.signer, this, "commentedit"),
+            signature: await signCommentEdit(<CreateCommentEditOptions>options, options.signer, this),
             protocolVersion: env.PROTOCOL_VERSION
         };
         return new CommentEdit(commentEditProps, this);
