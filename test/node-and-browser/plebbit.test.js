@@ -118,6 +118,18 @@ describe("plebbit (node and browser)", () => {
                 ?.comments[0];
             expect(comment).to.exist;
             const expectedCommentProps = await loadIpfsFileAsJson(comment.cid, plebbit);
+            expect(expectedCommentProps.postCid).to.be.a("string");
+            expect(expectedCommentProps.postCid).to.equal(expectedCommentProps.parentCid);
+            expect(expectedCommentProps.protocolVersion).to.be.a("string");
+            expect(expectedCommentProps.ipnsName).to.be.a("string");
+            expect(expectedCommentProps.depth).to.equal(1);
+            expect(expectedCommentProps.subplebbitAddress).to.equal(subplebbit.address);
+            expect(expectedCommentProps.timestamp).to.be.a("number");
+            expect(expectedCommentProps.signature).to.be.a("object");
+            expect(expectedCommentProps.author).to.be.a("object");
+            expect(expectedCommentProps.author.address).to.be.a("string");
+            expect(expectedCommentProps.protocolVersion).to.be.a("string");
+
             const expectedComment = await plebbit.createComment({ cid: comment.cid, ...expectedCommentProps });
             expect(expectedComment.constructor.name).to.equal("Comment");
             expectedComment._updateIntervalMs = updateInterval;
@@ -137,7 +149,8 @@ describe("plebbit (node and browser)", () => {
         it("loads subplebbit via IPNS address", async () => {
             const _subplebbitIpns = await loadIpnsAsJson(subplebbitSigner.address, plebbit);
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
-            expect(JSON.stringify(loadedSubplebbit)).to.equals(JSON.stringify(_subplebbitIpns));
+            // Remove undefined keys from json
+            expect(JSON.parse(JSON.stringify(loadedSubplebbit.toJSON()))).to.deep.equals(_subplebbitIpns);
         });
 
         it("Throws an error when subplebbit address is incorrect", async () => {
