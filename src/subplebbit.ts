@@ -613,6 +613,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 const file = await this.plebbit.ipfsClient.add(encode(postOrCommentOrVote.toJSONIpfs()));
                 postOrCommentOrVote.setPostCid(file.path);
                 postOrCommentOrVote.setCid(file.path);
+                postOrCommentOrVote.original = lodash.pick(postOrCommentOrVote.toJSON(), ["author", "content", "flair"]);
                 await this.dbHandler.upsertComment(
                     postOrCommentOrVote.toJSONForDb(challengeRequestId),
                     postOrCommentOrVote.author.toJSONForDb(),
@@ -635,6 +636,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 postOrCommentOrVote.setPostCid(parent.postCid);
                 const file = await this.plebbit.ipfsClient.add(encode(postOrCommentOrVote.toJSONIpfs()));
                 postOrCommentOrVote.setCid(file.path);
+                postOrCommentOrVote.original = lodash.pick(postOrCommentOrVote.toJSON(), ["author", "content", "flair"]);
                 await this.dbHandler.upsertComment(
                     postOrCommentOrVote.toJSONForDb(challengeRequestId),
                     postOrCommentOrVote.author.toJSONForDb(),
@@ -925,7 +927,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             )
         ) {
             log.trace(`Attempting to update Comment (${dbComment.cid})`);
-            if (!dbComment.original) dbComment.original = lodash.pick(dbComment.toJSON(), ["author", "content", "flair"]);
             await this.sortHandler.deleteCommentPageCache(dbComment);
             const commentReplies = await this.sortHandler.generatePagesUnderComment(dbComment, undefined);
             dbComment.author.subplebbit = await this.dbHandler.querySubplebbitAuthorFields(dbComment.cid);
