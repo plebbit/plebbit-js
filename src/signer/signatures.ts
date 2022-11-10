@@ -299,6 +299,9 @@ export async function verifyComment(
     if (comment.authorEdit) {
         // Means comment has been edited, verify comment.authorEdit.signature
 
+        if (comment.authorEdit.signature.publicKey !== comment.signature.publicKey)
+            return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
+
         const authorEditValidation = await _verifyPublicationWithAuthor(
             <AuthorCommentEdit>comment.authorEdit,
             plebbit,
@@ -347,7 +350,17 @@ async function _getValidationResult(publication: PublicationToVerify) {
     return { valid: true };
 }
 
-export async function verifyCommentUpdate(update: CommentUpdate): Promise<ValidationResult> {
+export async function verifyCommentUpdate(
+    update: CommentUpdate,
+    subplebbitPublicKey: string,
+    authorPublicKey: string
+): Promise<ValidationResult> {
+    if (update.authorEdit && update.authorEdit.signature.publicKey !== authorPublicKey)
+        return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
+
+    if (update.signature.publicKey !== subplebbitPublicKey)
+        return { valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT };
+
     return _getValidationResult(update);
 }
 
