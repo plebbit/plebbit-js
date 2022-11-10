@@ -44,7 +44,7 @@ class Vote extends Publication implements VoteType {
             throw errcode(Error(messages.ERR_CID_IS_INVALID), codes.ERR_CID_IS_INVALID, {
                 details: `Vote.publish: commentCid (${this.commentCid}) is invalid as a CID`
             });
-        const signatureValidity = await verifyVote(this, this.plebbit);
+        const signatureValidity = await verifyVote(this.toJSON(), this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid)
             throw Error(`Failed to validate signature before publishing due to reason '${signatureValidity.reason}'`);
 

@@ -206,7 +206,7 @@ export async function signChallengeVerification(
 }
 
 // Verify functions
-const verifyAuthor = async (
+const _verifyAuthor = async (
     publicationJson: CommentEditType | VoteType | CommentType,
     plebbit: Plebbit,
     returnDerivedAuthorAddressIfInvalid: boolean
@@ -236,7 +236,7 @@ const verifyAuthor = async (
     return { valid: true };
 };
 
-const verifyPublicationSignature = async (publicationToBeVerified: PublicationToVerify): Promise<boolean> => {
+const _verifyPublicationSignature = async (publicationToBeVerified: PublicationToVerify): Promise<boolean> => {
     const commentWithFieldsToSign = {
         ...lodash.fromPairs(publicationToBeVerified.signature.signedPropertyNames.map((name: string) => [name, undefined])), // Create an object with all of signedPropertyNames present
         ...lodash.pick(publicationToBeVerified, publicationToBeVerified.signature.signedPropertyNames)
@@ -251,33 +251,42 @@ const verifyPublicationSignature = async (publicationToBeVerified: PublicationTo
     return signatureIsValid;
 };
 
-const verifyPublicationWithAuthor = async (
+const _verifyPublicationWithAuthor = async (
     publicationJson: PublicationToVerify,
-    plebbit: Plebbit
+    plebbit: Plebbit,
+    overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult & { newAddress?: string }> => {
-    const signatureValidity = await verifyPublicationSignature(publicationJson);
-    if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
-
     if (plebbit.resolveAuthorAddresses && publicationJson["author"]) {
-        const authorSignatureValidity = await verifyAuthor(<VoteType | CommentType | CommentEditType>publicationJson, plebbit, true);
+        const authorSignatureValidity = await _verifyAuthor(<VoteType | CommentType | CommentEditType>publicationJson, plebbit, true);
+
         if (!authorSignatureValidity.valid) return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
+
+        if (!overrideAuthorAddressIfInvalid && authorSignatureValidity.newAddress)
+            return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
 
         if (authorSignatureValidity?.newAddress) return { valid: true, newAddress: authorSignatureValidity.newAddress };
     }
 
+    const signatureValidity = await _verifyPublicationSignature(publicationJson);
+    if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
+
     return { valid: true };
 };
 
-export async function verifyVote(vote: VoteType, plebbit: Plebbit): Promise<ValidationResult> {
+export async function verifyVote(vote: VoteType, plebbit: Plebbit, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult> {
     const voteJson: VoteType = removeKeysWithUndefinedValues(vote);
-    const res = await verifyPublicationWithAuthor(voteJson, plebbit);
+    const res = await _verifyPublicationWithAuthor(voteJson, plebbit, overrideAuthorAddressIfInvalid);
     if (!res.valid) return res;
     return { valid: true };
 }
 
-export async function verifyCommentEdit(edit: CommentEditType, plebbit: Plebbit): Promise<ValidationResult> {
+export async function verifyCommentEdit(
+    edit: CommentEditType,
+    plebbit: Plebbit,
+    overrideAuthorAddressIfInvalid: boolean
+): Promise<ValidationResult> {
     const editJson: CommentEditType = removeKeysWithUndefinedValues(edit);
-    const res = await verifyPublicationWithAuthor(editJson, plebbit);
+    const res = await _verifyPublicationWithAuthor(editJson, plebbit, overrideAuthorAddressIfInvalid);
     if (!res.valid) return res;
     return { valid: true };
 }
@@ -285,12 +294,16 @@ export async function verifyCommentEdit(edit: CommentEditType, plebbit: Plebbit)
 export async function verifyComment(
     comment: CommentType,
     plebbit: Plebbit,
-    overrideAuthorAddressIfInvalid = true
+    overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
     if (comment.authorEdit) {
         // Means comment has been edited, verify comment.authorEdit.signature
 
-        const authorEditValidation = await verifyPublicationWithAuthor(<AuthorCommentEdit>comment.authorEdit, plebbit);
+        const authorEditValidation = await _verifyPublicationWithAuthor(
+            <AuthorCommentEdit>comment.authorEdit,
+            plebbit,
+            overrideAuthorAddressIfInvalid
+        );
         if (!authorEditValidation.valid) return authorEditValidation;
         if (comment.authorEdit.content && comment.content !== comment.authorEdit.content)
             return { valid: false, reason: messages.ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT };
@@ -307,16 +320,16 @@ export async function verifyComment(
         flair: comment.original?.flair
     });
 
-    const authorCommentValidation = await verifyPublicationWithAuthor(authorComment, plebbit);
+    const authorCommentValidation = await _verifyPublicationWithAuthor(authorComment, plebbit, overrideAuthorAddressIfInvalid);
     if (!authorCommentValidation.valid) return authorCommentValidation;
-    if (overrideAuthorAddressIfInvalid && authorCommentValidation.newAddress) comment.author.address = authorCommentValidation.newAddress;
+    if (authorCommentValidation.newAddress) comment.author.address = authorCommentValidation.newAddress;
 
     return { valid: true };
 }
 
 export async function verifySubplebbit(subplebbit: SubplebbitType, plebbit: Plebbit): Promise<ValidationResult> {
     const subplebbitJson: SubplebbitType = removeKeysWithUndefinedValues(subplebbit);
-    const signatureValidity = await verifyPublicationSignature(subplebbitJson);
+    const signatureValidity = await _verifyPublicationSignature(subplebbitJson);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
     const resolvedSubAddress = await plebbit.resolver.resolveSubplebbitAddressIfNeeded(subplebbitJson.address);
 
@@ -329,7 +342,7 @@ export async function verifySubplebbit(subplebbit: SubplebbitType, plebbit: Pleb
 async function _getValidationResult(publication: PublicationToVerify) {
     //@ts-ignore
     const publicationJson: PublicationToVerify = removeKeysWithUndefinedValues(publication);
-    const signatureValidity = await verifyPublicationSignature(publicationJson);
+    const signatureValidity = await _verifyPublicationSignature(publicationJson);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
     return { valid: true };
 }

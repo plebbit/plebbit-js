@@ -579,8 +579,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             postOrCommentOrVote instanceof Comment
                 ? await verifyComment(postOrCommentOrVote, this.plebbit, false)
                 : postOrCommentOrVote instanceof Vote
-                ? await verifyVote(postOrCommentOrVote, this.plebbit)
-                : await verifyCommentEdit(postOrCommentOrVote, this.plebbit);
+                ? await verifyVote(postOrCommentOrVote, this.plebbit, false)
+                : await verifyCommentEdit(postOrCommentOrVote, this.plebbit, false);
 
         if (!signatureValidity.valid) {
             const msg = `Author (${postOrCommentOrVote.author.address}) ${postOrCommentOrVote.getType()}'s signature is invalid due to '${

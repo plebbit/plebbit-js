@@ -74,19 +74,17 @@ export class Comment extends Publication implements CommentType {
         this.depth = props.depth;
         this.link = props.link;
         this.thumbnailUrl = props.thumbnailUrl;
+        this.content = props.content;
         this.setPreviousCid(props.previousCid);
         // CommentUpdate props
-        this._initCommentUpdate(props);
-
-        this._mergeFields(props);
-
+        this._initCommentUpdate(<CommentUpdate>props);
         // these functions might get separated from their `this` when used
         this.publish = this.publish.bind(this);
         this.update = this.update.bind(this);
         this.stop = this.stop.bind(this);
     }
 
-    _initCommentUpdate(props: CommentType | CommentUpdate) {
+    _initCommentUpdate(props: CommentUpdate) {
         this.upvoteCount = props.upvoteCount;
         this.downvoteCount = props.downvoteCount;
         this.replyCount = props.replyCount;
@@ -100,27 +98,11 @@ export class Comment extends Publication implements CommentType {
         this.moderatorReason = props.moderatorReason;
         this.authorEdit = props.authorEdit;
         this.protocolVersion = props.protocolVersion;
-        if (props.author?.banExpiresAt || props.author?.flair || props.author?.subplebbit) {
-            this.original = { ...this.original, author: this.author };
-        }
-        this.author.banExpiresAt = props.author?.banExpiresAt || this.author.banExpiresAt;
-        this.author.flair = props.author?.flair || this.author.flair;
-        this.author.subplebbit = props.author?.subplebbit || this.author.subplebbit;
-    }
-
-    _mergeFields(props: CommentType) {
-        const original = {};
-        original["content"] =
-            props.original?.content || this.original?.content || (props.content && props.authorEdit?.content ? this.content : undefined);
-        original["author"] =
-            props.original?.author || this.original?.author || (props.author && props.authorEdit ? props.author : undefined);
-        original["flair"] =
-            props.original?.flair || this.original?.flair || (props.flair && props.authorEdit?.flair ? props.flair : undefined);
-
-        this.content = props.authorEdit?.content || props.content || this.content;
-        this.author = new Author({ ...props.author, ...this.author });
-
-        if (JSON.stringify(original) !== "{}") this.original = original;
+        if (props.author?.banExpiresAt) this.author.banExpiresAt = props.author.banExpiresAt;
+        if (props.author?.flair) this.author.flair = props.author.flair;
+        if (props.author?.subplebbit) this.author.subplebbit = props.author.subplebbit;
+        if (props.authorEdit?.content) this.content = props.authorEdit.content;
+        // TODO set merged comment flair here
     }
 
     getType(): PublicationTypeName {
@@ -260,11 +242,14 @@ export class Comment extends Publication implements CommentType {
         const log = Logger("plebbit-js:comment:update");
         let res: CommentUpdate | undefined;
         try {
-            res = await loadIpnsAsJson(<string>this.ipnsName, this.plebbit);
+            res = await loadIpnsAsJson(this.ipnsName, this.plebbit);
         } catch (e) {
             log.error(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error: `, e);
             return;
         }
+        // Make a copy of fields that may be changed with a CommentUpdate
+        if (!this.original) this.original = lodash.pick(this.toJSON(), ["author", "flair", "content"]);
+
         if (
             res &&
             (!this.updatedAt ||
@@ -273,14 +258,14 @@ export class Comment extends Publication implements CommentType {
                     lodash.omit(res, ["signature"])
                 ))
         ) {
+            if (!this.subplebbit) this.subplebbit = await this.plebbit.getSubplebbit(this.subplebbitAddress);
             log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
-            const signatureValidity = await verifyCommentUpdate(res);
+            const signatureValidity = await verifyCommentUpdate(res, this.subplebbit.encryption.publicKey, this.signature.publicKey);
             if (!signatureValidity.valid) {
                 log.error(`Comment (${this.cid}) IPNS (${this.ipnsName}) signature is invalid due to '${signatureValidity.reason}'`);
                 return;
             }
             this._initCommentUpdate(res);
-            this._mergeFields(this.toJSON());
             this.emit("update", this);
         } else if (res) {
             log.trace(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
@@ -302,7 +287,7 @@ export class Comment extends Publication implements CommentType {
     }
 
     async publish(): Promise<void> {
-        const signatureValidity = await verifyComment(this, this.plebbit, false);
+        const signatureValidity = await verifyComment(this.toJSON(), this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid)
             throw Error(`Failed to validate signature before publishing due to reason '${signatureValidity.reason}'`);
 
