@@ -75,6 +75,7 @@ export class Comment extends Publication implements CommentType {
         this.link = props.link;
         this.thumbnailUrl = props.thumbnailUrl;
         this.content = props.content;
+        this.original = props.original;
         this.setPreviousCid(props.previousCid);
         // CommentUpdate props
         this._initCommentUpdate(<CommentUpdate>props);
