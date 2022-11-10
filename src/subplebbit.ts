@@ -564,16 +564,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 return messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT;
             }
         }
-        if (this.plebbit.resolver.isDomain(publication.author.address)) {
-            const derivedAddress = await getPlebbitAddressFromPublicKeyPem(postOrCommentOrVote.signature.publicKey);
-            const resolvedAddress = await this.plebbit.resolver.resolveAuthorAddressIfNeeded(publication.author.address);
-            if (resolvedAddress !== derivedAddress) {
-                // Means ENS's plebbit-author-address is resolving to another address, which shouldn't happen
-                const msg = `domain (${postOrCommentOrVote.author.address}) plebbit-author-address (${resolvedAddress}) does not have the same signer address (${this.signer?.address})`;
-                log(`(${challengeRequestId}): `, msg);
-                return msg;
-            }
-        }
 
         const signatureValidity =
             postOrCommentOrVote instanceof Comment
