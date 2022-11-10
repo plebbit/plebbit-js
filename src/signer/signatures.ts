@@ -256,7 +256,7 @@ const _verifyPublicationWithAuthor = async (
     plebbit: Plebbit,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult & { newAddress?: string }> => {
-    if (plebbit.resolveAuthorAddresses && publicationJson["author"]) {
+    if (publicationJson["author"]) {
         const authorSignatureValidity = await _verifyAuthor(<VoteType | CommentType | CommentEditType>publicationJson, plebbit, true);
 
         if (!authorSignatureValidity.valid) return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
