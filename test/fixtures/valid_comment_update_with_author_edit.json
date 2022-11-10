@@ -1,0 +1,61 @@
+{
+    "author": { "subplebbit": { "lastCommentCid": "QmbZW42T5aq6rVQL9REmchtxsweasBYJDM4KgLpu668XwQ", "postScore": 0, "replyScore": 0 } },
+    "authorEdit": {
+        "author": { "address": "QmZ6VdxyxRknmNub1nnStSFke83WnabduRCZ5xBdNBaYqN" },
+        "authorAddress": "QmZ6VdxyxRknmNub1nnStSFke83WnabduRCZ5xBdNBaYqN",
+        "challengeRequestId": "f3315d10-1f72-4a60-a051-8ff0dac9ef8a",
+        "commentCid": "QmbZW42T5aq6rVQL9REmchtxsweasBYJDM4KgLpu668XwQ",
+        "content": "Double edit test",
+        "protocolVersion": "1.0.0",
+        "reason": "To test double editing a comment",
+        "signature": {
+            "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv2gh6mwr/rE1b2I/PlRG\nSzJzS++TH8dYCBFg1b54xfjxy/acF7mvkts2ZCOFS9i89HAuUmeUKxzwU5wJMTjh\nx8+NBbLYckhyfrnV4NLqWQhP28tLyEcvK3w96rViWGN7XWJgdA+zRxmvursmoCfo\nGN4NZF8ihb8na7ApI/5NZFpRKfQe6Pd1GtoMsUlLM4H0nC4X+lr2SWsEA/6uVZy9\niFW+zsCrZhsPfeda6/lA4kMOEdYM8RtSdiZNw6EImYc7P6mrd9n52glLhkDYDJoC\niKzoLTDhezI0CM0NvhUtamyuBmkNbYcdXTQ78yCk8k6Ysc/rRPraaJP2dZASu44V\nuQIDAQAB\n-----END PUBLIC KEY-----",
+            "signature": "uNpyUsdsY4nGbbF9qcCYiwTlOwpXTWq0Hdf6F9HIxoeiDBT6mb4L+3EGQ52prWpcodfIThnPYFJaTMHmoGvZxJM1AwZBkNZVlPy+dxGP7qdNoz5dcTfYLyOy9jChjtz4H/NcG/SzxWX4eT6+CygYMswRZKTMLFOpzXSE/2vQ28XooneK25eQLVqgA/OMuGKpz+qmxdFwMBlN1l64yXsZRFCt6zlq3efH0hCQrx7d3+de7jKdOxbB1gEQiuraGDvSZoG1DgPWa2O3iQNhJ0soWQ4SnjN0sZF3leg8jLyYyJYGX7wI+AdMg08QeNsPSv7Aqv/k8C4jFf3NUNgiWu98lQ",
+            "signedPropertyNames": [
+                "author",
+                "timestamp",
+                "subplebbitAddress",
+                "content",
+                "commentCid",
+                "deleted",
+                "spoiler",
+                "pinned",
+                "locked",
+                "removed",
+                "moderatorReason",
+                "flair",
+                "reason",
+                "commentAuthor"
+            ],
+            "type": "rsa"
+        },
+        "subplebbitAddress": "QmbdJpNU6cAgSXHjUNnSBrUZGBtStKPkdwKyiffqRy1x6c",
+        "timestamp": 1668002281
+    },
+    "downvoteCount": 0,
+    "protocolVersion": "1.0.0",
+    "replies": { "pages": {} },
+    "replyCount": 0,
+    "signature": {
+        "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuJSnnxopT40LZqoBvnq6\nn2d8GlmlIs9RH5Qtqyroc7KggWvUyT/ETgqFsGBj6kIXr0JtAXgHYbvnUuGcNGB6\nMs1lVdcP4S60UV7lPOGuGan5XMCk3keQ24psyMvJVGRdO+NZRcohNelEU4MmLrpB\nnfqwM8eN0Yzb6xadCVS+dVL9NzV7cKkvLdwaCJsCYo8s9N0Yz3OuOwiwB/B8g21G\nA8QOrEBYnGQ+gABDVuINEte9pm5ciV3oiHQpzsCWljIXgsZLfUgLq0kD3De2Pqrp\nsdl+hK3bw/O8aMucwVx6tcctktylOY3YYjM+QepcZT+7QuzE0KbPyNIRL9SDT4HR\nxQIDAQAB\n-----END PUBLIC KEY-----",
+        "signature": "TWSQsTeg3riVTbx+BDFMeOeE5LyQUTIzS8Fv7tkzJM6nh5QvNaf5ouG2nuEQvou8pAzZA71Why5SLluaALbRetvi+j7bDLUd9LOtKDjAdj1d6aMVpa5vSY5oJ7/oSxD93HCBfXC99L1bhuY2TZiokdtyhVoU+lO1KtfD6kb6gDyT40INB8ff3oxklXEJPmXH4A8v0YUjZ2KOsl8a8LiaHh40b9sWfBuXACdBtccQgyIZl8iva1XnEgNMtBo8vOPjwusUAliaxk3RlTSLBW+o/f/gKMQX3k2QhjM1E6OjRSiphECGRd7NoT5VLfLMZZLxuvawLBV13xoDBKXRonQK4g",
+        "signedPropertyNames": [
+            "author",
+            "spoiler",
+            "pinned",
+            "locked",
+            "removed",
+            "moderatorReason",
+            "flair",
+            "upvoteCount",
+            "downvoteCount",
+            "replies",
+            "updatedAt",
+            "replyCount",
+            "authorEdit"
+        ],
+        "type": "rsa"
+    },
+    "updatedAt": 1668002282,
+    "upvoteCount": 0
+}

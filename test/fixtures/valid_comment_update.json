@@ -1,0 +1,68 @@
+{
+    "author": { "subplebbit": { "lastCommentCid": "QmYhHisAoYBR6BCK6MVTYVGN229L2mgF7PCqv4Q76EFvUq", "postScore": -1, "replyScore": -1 } },
+    "downvoteCount": 1,
+    "protocolVersion": "1.0.0",
+    "replies": {
+        "pageCids": {
+            "controversialAll": "QmVcV3SeeHMTbhmYjwfouRoT68XWXrbHZPNEVXqapjEPJF",
+            "new": "QmVcV3SeeHMTbhmYjwfouRoT68XWXrbHZPNEVXqapjEPJF",
+            "old": "QmVcV3SeeHMTbhmYjwfouRoT68XWXrbHZPNEVXqapjEPJF",
+            "topAll": "QmVcV3SeeHMTbhmYjwfouRoT68XWXrbHZPNEVXqapjEPJF"
+        },
+        "pages": {
+            "topAll": {
+                "comments": [
+                    {
+                        "author": {
+                            "address": "QmbdJpNU6cAgSXHjUNnSBrUZGBtStKPkdwKyiffqRy1x6c",
+                            "displayName": "Mock Author - 1667916701.0539224"
+                        },
+                        "cid": "QmYhHisAoYBR6BCK6MVTYVGN229L2mgF7PCqv4Q76EFvUq",
+                        "content": "Mock comment - 1667916701.0539224",
+                        "depth": 1,
+                        "downvoteCount": 1,
+                        "ipnsKeyName": "5989a48a2725ca29a197f517d7a559867f60cbbf4c4e2e1f260dc9970c54c70d",
+                        "ipnsName": "k2k4r8licr27b0zj8toaw3r5lwrh1tw123ismqgxr24c1oqu6zbn0yd7",
+                        "parentCid": "QmPYSgyRAemHXcmtfdWb9q7KuGTwXfFzidZrneJLZ9rsCk",
+                        "postCid": "QmPYSgyRAemHXcmtfdWb9q7KuGTwXfFzidZrneJLZ9rsCk",
+                        "protocolVersion": "1.0.0",
+                        "replies": { "pages": {} },
+                        "replyCount": 0,
+                        "signature": {
+                            "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuJSnnxopT40LZqoBvnq6\nn2d8GlmlIs9RH5Qtqyroc7KggWvUyT/ETgqFsGBj6kIXr0JtAXgHYbvnUuGcNGB6\nMs1lVdcP4S60UV7lPOGuGan5XMCk3keQ24psyMvJVGRdO+NZRcohNelEU4MmLrpB\nnfqwM8eN0Yzb6xadCVS+dVL9NzV7cKkvLdwaCJsCYo8s9N0Yz3OuOwiwB/B8g21G\nA8QOrEBYnGQ+gABDVuINEte9pm5ciV3oiHQpzsCWljIXgsZLfUgLq0kD3De2Pqrp\nsdl+hK3bw/O8aMucwVx6tcctktylOY3YYjM+QepcZT+7QuzE0KbPyNIRL9SDT4HR\nxQIDAQAB\n-----END PUBLIC KEY-----",
+                            "signature": "L+ec7a9VAcI0Kbjsh4leEKHcTMeVPYZUkh+9n2TlRL/d5beXTUxrCOSqoUhX/ysNexkz9jr22yAjntZXLi28FCT/8LlGHIKr/521BFFPgu4M20xqdYo+1bLKis61WaYkycBt/UFEVcmHXLaXGzC7D5VeIz/3cI7OidE5QohXvVWvb0h4larjogWnXTTBJ88fbBNhTgGpWLYTC5xKONAuZKYJ4M/rpmd9yG4gHA2C46U+LkjVAT5gnegyhdjBLu7leYWmN/D6o7H1ZGOhubce8gRIFI3g4wVCHD1d45NHBpRmhwY77bA9mpBxMUa0htBL7aURTua5mxyb9tbRIeVWDQ",
+                            "signedPropertyNames": ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"],
+                            "type": "rsa"
+                        },
+                        "subplebbitAddress": "QmbdJpNU6cAgSXHjUNnSBrUZGBtStKPkdwKyiffqRy1x6c",
+                        "timestamp": 3024002,
+                        "upvoteCount": 0
+                    }
+                ]
+            }
+        }
+    },
+    "replyCount": 1,
+    "signature": {
+        "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuJSnnxopT40LZqoBvnq6\nn2d8GlmlIs9RH5Qtqyroc7KggWvUyT/ETgqFsGBj6kIXr0JtAXgHYbvnUuGcNGB6\nMs1lVdcP4S60UV7lPOGuGan5XMCk3keQ24psyMvJVGRdO+NZRcohNelEU4MmLrpB\nnfqwM8eN0Yzb6xadCVS+dVL9NzV7cKkvLdwaCJsCYo8s9N0Yz3OuOwiwB/B8g21G\nA8QOrEBYnGQ+gABDVuINEte9pm5ciV3oiHQpzsCWljIXgsZLfUgLq0kD3De2Pqrp\nsdl+hK3bw/O8aMucwVx6tcctktylOY3YYjM+QepcZT+7QuzE0KbPyNIRL9SDT4HR\nxQIDAQAB\n-----END PUBLIC KEY-----",
+        "signature": "emTgwf3pX7YsMPQCJ3tQYcewpP8izCytRoms1YV3RlvL70THIaugsq38BFxE2TeMnqMuIRbsWSFqAIvv5GilJ4Q2dd6NS0nN1H+Qjmrcrq+7YAHTEK7ZA2YPMc1Hy1vqIkDVMs+6xYVtt3qicwZO9/UDgOK0hpqwBCbSdOSZlmXXGxKnjqKuhwes4XMFaQbZGoFMTM1wki2wLXhPWmuRkrFklQ+5jmm5Mb46joLN7Tz1b0MYGmQZeS56erE+ceptqNnNLSkCsMBHRhm7HA3Pdy1IG11cFQHo/WxrBUep5ELqWs76nlRNOdG9tIlbxBXryfmEBubyaDFBmThH3emB0w",
+        "signedPropertyNames": [
+            "author",
+            "spoiler",
+            "pinned",
+            "locked",
+            "removed",
+            "moderatorReason",
+            "flair",
+            "upvoteCount",
+            "downvoteCount",
+            "replies",
+            "updatedAt",
+            "replyCount",
+            "authorEdit"
+        ],
+        "type": "rsa"
+    },
+    "updatedAt": 1667916704,
+    "upvoteCount": 0
+}

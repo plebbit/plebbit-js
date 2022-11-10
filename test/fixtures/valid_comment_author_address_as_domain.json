@@ -1,0 +1,32 @@
+{
+    "subplebbitAddress": "QmbdJpNU6cAgSXHjUNnSBrUZGBtStKPkdwKyiffqRy1x6c",
+    "timestamp": 1668081379,
+    "signature": {
+        "signature": "T49zYuwhLuYc1pnFCozSlbDhJ1VFnHqK8w9NUxtRHppX/iOepUq4oBdxgFiCWCyCUy3dp8m9m/Y6lW7wc/2vji1i8363kd69QWPOyDFhX69DMZ8hYs8jcvyg110FSKl1JygUNIOPzQr/+ylxM2Yja6uCiuiQp8y1CNIPPoJuCHRZZt0DXpSlYSYNE+0FRQjBONa+xwWB18evOItA+BmI5+NBPXoJWpZKT0Rn+G5D+ftV5Q6o96LUkjKkCqXrrV/r3oW7V3u7dnUAGZPHkDQlr/ocoxU3HVyBAw/ISAvRMy2N/2jeQoprv8je4T/RYo0QcUEFpfD8WQd3YewGhgwlPw",
+        "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAto+VL/pu1+sAgMvKbocY\nr4tgK1fXZ9Geh5dhVDgTqQkoaFZ3PJnpvP3MUTNBMMn5SiwZgA0lijYb4CMTwfVa\ngUTUlUSKbVTvycovo2fGnmrxeCJrSc7kjAQQNWqw2+8/0HuOfjQEDFbZNavu/NH9\n/8wnwoDn/imUjpytN8RAFjU/Hz7KR6x3TPOwvimWvmsi83DTULg3voubRuapO/rP\nMjB58ju7WoJbtEJ3Os4oXucQ1+u/RsVu+LnSYDUVp7YyO3rNb02Pl2QnZNqy/aw9\nBwDJPIryLt+wR/NVGVhuCfcITvONHjI3x2bzwcb/nKlnuT6CgGwHfYUdG5NwvjAa\nDwIDAQAB\n-----END PUBLIC KEY-----",
+        "type": "rsa",
+        "signedPropertyNames": ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"]
+    },
+    "author": {
+        "address": "plebbit.eth",
+        "displayName": "Mock Author - 1668081379063",
+        "subplebbit": { "lastCommentCid": "QmZgQ2r1DLJLCj7JWGK9vPP9ngERev9FpBZWhWBZp2E4UA", "postScore": 0, "replyScore": 0 }
+    },
+    "protocolVersion": "1.0.0",
+    "content": "Mock post - 1668081379063",
+    "title": "Mock post title",
+    "upvoteCount": 0,
+    "downvoteCount": 0,
+    "replyCount": 0,
+    "replies": { "pages": {} },
+    "updatedAt": 1668081381,
+    "cid": "QmZgQ2r1DLJLCj7JWGK9vPP9ngERev9FpBZWhWBZp2E4UA",
+    "original": {
+        "author": { "address": "plebbit.eth", "displayName": "Mock Author - 1668081379063" },
+        "content": "Mock post - 1668081379063"
+    },
+    "previousCid": "QmaVmhhcPrKxUNgxrUvvXEA3DQPrctT8ordSPtqadHzTue",
+    "ipnsName": "k2k4r8m7ji0bonrxvrsfuxplvhotafym40lxvl5ucv9yrxpyrpl4ownx",
+    "postCid": "QmZgQ2r1DLJLCj7JWGK9vPP9ngERev9FpBZWhWBZp2E4UA",
+    "depth": 0
+}
