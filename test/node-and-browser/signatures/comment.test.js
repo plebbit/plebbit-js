@@ -130,6 +130,28 @@ describe("verify Comment", async () => {
         expect(verification).to.deep.equal({ valid: true });
     });
 
+    it(`A comment with authorEdit fixture is validated correctly`, async () => {
+        const comment = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_with_author_edit.json")));
+        const verification = await verifyComment(comment, plebbit);
+        expect(verification).to.deep.equal({ valid: true });
+    });
+
+    it(`A comment with authorEdit signed by other than original author is invalidated`, async () => {
+        const comment = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_with_author_edit.json")));
+        comment.authorEdit.author.address = signers[7].address;
+        comment.authorEdit.signature = await signCommentEdit(comment.authorEdit, signers[7], plebbit);
+
+        const verification = await verifyComment(comment, plebbit);
+        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR });
+    });
+
+    // TODO when flairs are implemented
+    it(`Can sign and verify a comment with flair`);
+    it(`Can verify a comment whose author.flair have been changed`);
+    it(`can verify a comment whose flair have been changed by mod`);
+});
+
+describe(`Comment with author.address as domain`, async () => {
     it(`verifyComment corrects author.address(domain) if it resolves to a different author (overrideAuthorAddressIfInvalid=true)`, async () => {
         const tempPlebbit = await Plebbit(plebbit);
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
@@ -147,7 +169,6 @@ describe("verify Comment", async () => {
         expect(verificaiton).to.deep.equal({ valid: true });
         expect(signedPublication.author.address).to.equal(fixtureComment.author.address); // It has been corrected to the original signer even though resolver is resolving to signers[6]
     });
-
     it(`Comment with CommentUpdate json, with invalid author domain address will be corrected to derived address (overrideAuthorAddressIfInvalid=false)`, async () => {
         const comment = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_author_address_as_domain.json")));
         const tempPlebbit = await Plebbit(plebbit);
@@ -169,26 +190,6 @@ describe("verify Comment", async () => {
         const verification = await verifyComment(comment, tempPlebbit, false);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE });
     });
-
-    it(`A comment with authorEdit fixture is validated correctly`, async () => {
-        const comment = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_with_author_edit.json")));
-        const verification = await verifyComment(comment, plebbit);
-        expect(verification).to.deep.equal({ valid: true });
-    });
-
-    it(`A comment with authorEdit signed by other than original author is invalidated`, async () => {
-        const comment = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_with_author_edit.json")));
-        comment.authorEdit.author.address = signers[7].address;
-        comment.authorEdit.signature = await signCommentEdit(comment.authorEdit, signers[7], plebbit);
-
-        const verification = await verifyComment(comment, plebbit);
-        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR });
-    });
-
-    // TODO when flairs are implemented
-    it(`Can sign and verify a comment with flair`);
-    it(`Can verify a comment whose author.flair have been changed`);
-    it(`can verify a comment whose flair have been changed by mod`);
 });
 
 describe(`commentupdate`, async () => {
