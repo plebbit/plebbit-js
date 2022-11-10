@@ -487,13 +487,12 @@ export class DbHandler {
 
     private _parseJsonFields(obj: Object) {
         const newObj = { ...obj };
-        for (const field in newObj) {
+        for (const field in newObj)
             if (typeof newObj[field] === "string")
                 try {
                     newObj[field] = JSON.parse(newObj[field]);
                 } catch {}
-            if (newObj[field]?.constructor?.name === "Object") newObj[field] = this._parseJsonFields(newObj[field]);
-        }
+
         return <any>newObj;
     }
 
