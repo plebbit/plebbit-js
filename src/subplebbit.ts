@@ -935,10 +935,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             )
         ) {
             log.trace(`Attempting to update Comment (${dbComment.cid})`);
+            if (!dbComment.original) dbComment.original = lodash.pick(dbComment.toJSON(), ["author", "content", "flair"]);
             await this.sortHandler.deleteCommentPageCache(dbComment);
             const commentReplies = await this.sortHandler.generatePagesUnderComment(dbComment, undefined);
-            if (typeof dbComment.updatedAt !== "number")
-                dbComment.original = { author: dbComment.author, flair: dbComment.flair, content: dbComment.content };
             dbComment.author.subplebbit = await this.dbHandler.querySubplebbitAuthorFields(dbComment.cid);
             dbComment.setReplies(commentReplies);
             dbComment.setUpdatedAt(timestamp());
