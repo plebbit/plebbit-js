@@ -629,6 +629,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     undefined
                 );
 
+                postOrCommentOrVote.ipnsKeyName = postOrCommentOrVote.original = undefined; // so that ipnsKeyName and original would not be included in ChallengeVerification
                 log(`(${challengeRequestId}): `, `New post with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
             } else if (postOrCommentOrVote instanceof Comment) {
                 // Comment
@@ -650,6 +651,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     undefined
                 );
 
+                postOrCommentOrVote.ipnsKeyName = postOrCommentOrVote.original = undefined; // so that ipnsKeyName would not be included in ChallengeVerification
                 log(`(${challengeRequestId}): `, `New comment with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
             }
         }
@@ -903,10 +905,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         return [answerIsCorrect, challengeErrors];
     }
 
-    // TODO move this to sub
     private async _publishCommentIpns(dbComment: Comment, options: CommentUpdate) {
         dbComment._initCommentUpdate(options);
-        dbComment._mergeFields(dbComment.toJSON());
         const file = await this.plebbit.ipfsClient.add(encode({ ...dbComment.toJSONCommentUpdate(), signature: options.signature }));
         await this.plebbit.ipfsClient.name.publish(file.path, {
             lifetime: "72h",
