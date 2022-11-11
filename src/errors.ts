@@ -27,6 +27,7 @@ export enum messages {
     ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT = "comment.content is not set to the latest comment.authorEdit.content",
     ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT = "Comment update is not signed by the subplebbit",
     ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR = "Author edit is not signed by original author of comment",
+    ERR_SUBPLEBBIT_POSTS_INVALID = "subplebbit.posts signature is invalid",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
@@ -73,6 +74,7 @@ export enum codes {
     ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT = "ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT",
     ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT = "ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT",
     ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR = "ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR",
+    ERR_SUBPLEBBIT_POSTS_INVALID = "ERR_SUBPLEBBIT_POSTS_INVALID",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB",

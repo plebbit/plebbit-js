@@ -332,8 +332,16 @@ export async function verifyComment(
 
 export async function verifySubplebbit(subplebbit: SubplebbitType, plebbit: Plebbit): Promise<ValidationResult> {
     const subplebbitJson: SubplebbitType = removeKeysWithUndefinedValues(subplebbit);
+
+    if (subplebbit.posts.pages)
+        for (const page of Object.values(subplebbitJson.posts.pages)) {
+            const pageValidity = await verifyPage(page, plebbit, subplebbit.address);
+            if (!pageValidity.valid) return { valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID };
+        }
+
     const signatureValidity = await _verifyPublicationSignature(subplebbitJson);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
+
     const resolvedSubAddress = await plebbit.resolver.resolveSubplebbitAddressIfNeeded(subplebbitJson.address);
 
     const subPeerId = PeerId.createFromB58String(resolvedSubAddress);
