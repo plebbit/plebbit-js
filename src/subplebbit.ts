@@ -491,7 +491,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             // Editor has no subplebbit role like owner, moderator or admin, and their signer is not the signer used in the original comment
             const msg = `Editor (non-mod) - (${editorAddress}) attempted to edit a comment (${commentEdit.commentCid}) without having original author keys.`;
             log(`(${challengeRequestId}): `, msg);
-            return msg;
+            return messages.ERR_UNAUTHORIZED_COMMENT_EDIT;
         }
     }
 

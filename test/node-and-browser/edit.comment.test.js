@@ -5,6 +5,7 @@ const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
+const { messages } = require("../../dist/node/errors");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
@@ -52,16 +53,13 @@ describe("Editing", async () => {
                 commentCid: commentToBeEdited.cid,
                 reason: editReason,
                 content: editedText,
-                signer: signers[7] // Create a new signer, different than the signer of the original comment
+                signer: signers[7] // different than the signer of the original comment
             });
             await commentEdit.publish();
             commentEdit.once("challengeverification", async (challengeVerificationMessage, updatedCommentEdit) => {
                 // Challenge verification should fail if signer is different than original signer
                 expect(challengeVerificationMessage.challengeSuccess).to.be.false;
-                expect(challengeVerificationMessage.reason).to.be.a(
-                    "string",
-                    `Should include a reason for refusing publication of a comment edit`
-                );
+                expect(challengeVerificationMessage.reason).to.equal(messages.ERR_UNAUTHORIZED_COMMENT_EDIT);
                 resolve();
             });
         });
@@ -101,6 +99,9 @@ describe("Editing", async () => {
                 expect(updatedCommentToBeEdited.author.subplebbit.postScore).to.equal(0);
                 expect(updatedCommentToBeEdited.author.subplebbit.replyScore).to.equal(0);
                 expect(updatedCommentToBeEdited.author.subplebbit.lastCommentCid).to.equal(commentToBeEdited.cid);
+
+                expect(updatedCommentToBeEdited.authorEdit.authorAddress).to.be.undefined;
+                expect(updatedCommentToBeEdited.authorEdit.challengeRequestId).to.be.undefined;
 
                 resolve();
             });

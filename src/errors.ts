@@ -15,9 +15,6 @@ export enum messages {
     ERR_DATA_PATH_IS_NOT_DEFINED = "plebbitOptions.dataPath needs to be defined with native functions",
     ERR_IPNS_IS_INVALID = "IPNS is invalid",
     ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit",
-    ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT = "Rejecting post/comment because its timestamp is earlier than its parent",
-    ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST = "The parent of this comment does not exist",
-    ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "The parent cid of this comment is not defined",
     ERR_GENERATED_CID_DOES_NOT_MATCH = "The CID generated from loaded content does not match the provided CID",
 
     // Sign errors
@@ -33,9 +30,17 @@ export enum messages {
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
-    ERR_PARENT_CID_NOT_AS_EXPECTED = "Comment under parent comment/post should have parentCid initialized"
+    ERR_PARENT_CID_NOT_AS_EXPECTED = "Comment under parent comment/post should have parentCid initialized",
+
+    // Subplebbit rejections of publications
+
+    ERR_UNAUTHORIZED_COMMENT_EDIT = "Current author is not the original author nor a mod. Can't edit the comment due to lack of authorization",
+    ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT = "Rejecting post/comment because its timestamp is earlier than its parent",
+    ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST = "The parent of this comment does not exist",
+    ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "The parent cid of this comment is not defined"
 }
 
+// TODO generate 'codes' out of messages above
 export enum codes {
     ERR_ENS_RESOLVER_NOT_FOUND = "ERR_ENS_RESOLVER_NOT_FOUND",
     ERR_ENS_TXT_RECORD_NOT_FOUND = "ERR_ENS_TXT_RECORD_NOT_FOUND",
