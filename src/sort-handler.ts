@@ -192,8 +192,6 @@ export class SortHandler {
 
     async generatePagesUnderComment(comment?: Comment | CommentType, trx?): Promise<Pages | undefined> {
         if (comment?.replyCount === 0) return undefined;
-        if (comment && (comment.replyCount === undefined || comment.replyCount === null))
-            throw Error(`Can't generate pages for a comment that has undefined replyCount (${comment.replyCount})`);
         const key = comment?.cid || "subplebbit"; // If comment is undefined then we're generating page for subplebbit
         const cachedPageJson = await this.subplebbit.dbHandler?.keyvGet(key);
         if (!cachedPageJson || JSON.stringify(cachedPageJson) === "{}") {
@@ -202,7 +200,6 @@ export class SortHandler {
             const cachedPage = new Pages({ ...cachedPageJson, subplebbit: this.subplebbit });
             return cachedPage;
         }
-
         const subplebbitPostCount = key === "subplebbit" && (await this.subplebbit.dbHandler?.queryCountOfPosts(trx));
 
         if (subplebbitPostCount === 0)
@@ -217,36 +214,10 @@ export class SortHandler {
             if (page) pageCids[Object.keys(page)[0]] = pageCid;
         }
 
-        // [pagesRaw, pageCids] = [removeKeysWithUndefinedValues(pagesRaw), removeKeysWithUndefinedValues(pageCids)];
-        if (!pagesRaw || !pageCids || JSON.stringify(pagesRaw) === "{}" || JSON.stringify(pageCids) === "{}")
-            throw new Error(`Failed to generate pages for ${key}: pagesRaw: ${pagesRaw}, pageCids: ${pageCids}`);
-
         const pages = new Pages({
             pages: pagesRaw,
             pageCids: pageCids,
             subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
-        });
-
-        if (key === "subplebbit") {
-            // If there is at least one comment in subplebbit, then assert the following
-            [pages?.pages?.controversialAll, pages?.pages?.hot, pages?.pages?.new, pages?.pages?.topAll].forEach((sortPage) => {
-                assert(typeof subplebbitPostCount === "number");
-                if (sortPage && Array.isArray(sortPage?.comments))
-                    assert.ok(sortPage?.comments?.length >= Math.min(subplebbitPostCount, SORTED_POSTS_PAGE_SIZE));
-            });
-        } else {
-            [pages?.pages?.controversialAll, pages?.pages?.new, pages?.pages?.topAll, pages?.pages?.old].forEach((sortPage) => {
-                assert(typeof comment?.replyCount === "number");
-                if (sortPage && Array.isArray(sortPage?.comments))
-                    assert.ok(
-                        sortPage?.comments?.length >= Math.min(SORTED_POSTS_PAGE_SIZE, comment.replyCount),
-                        "Replies page is missing comments"
-                    );
-            });
-        }
-
-        Object.values(JSON.parse(JSON.stringify(pages)).pages).forEach((sortPage: Page) => {
-            assert(sortPage.comments.every((comment) => typeof comment.upvoteCount === "number"));
         });
 
         await this.subplebbit.dbHandler?.keyvSet(key, pages.toJSON());
