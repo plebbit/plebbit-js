@@ -1,0 +1,63 @@
+const Plebbit = require("../../../dist/node");
+const signers = require("../../fixtures/signers");
+const chai = require("chai");
+const chaiAsPromised = require("chai-as-promised");
+chai.use(chaiAsPromised);
+const { expect, assert } = chai;
+const { messages } = require("../../../dist/node/errors");
+const { verifySubplebbit, signSubplebbit } = require("../../../dist/node/signer/signatures");
+
+let subplebbit, plebbit;
+
+before(async () => {
+    plebbit = await Plebbit({
+        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
+        pubsubHttpClientOptions: `http://localhost:5002/api/v0`
+    });
+    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
+        if (authorAddress === "plebbit.eth") return signers[6].address;
+        else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
+        return authorAddress;
+    };
+
+    plebbit.resolver.resolveSubplebbitAddressIfNeeded = (address) => (address === "plebbit.eth" ? signers[3].address : address);
+
+    subplebbit = await plebbit.getSubplebbit(signers[0].address);
+});
+
+describe("Sign subplebbit", async () => {
+    it(`Can sign and validate subplebbit correctly`, async () => {
+        const subplebbitToSign = JSON.parse(JSON.stringify(subplebbit.toJSON()));
+        const subSigner = signers[7]; // Random signer
+
+        subplebbitToSign.posts.pages = {};
+        subplebbitToSign.address = subSigner.address;
+        subplebbitToSign.signature = await signSubplebbit(subplebbitToSign, subSigner);
+
+        const verification = await verifySubplebbit(subplebbitToSign, plebbit);
+        expect(verification).to.deep.equal({ valid: true });
+    });
+});
+
+describe("Verify subplebbit", async () => {
+    it(`Valid subplebbit fixture is validated correctly`, async () => {
+        const sub = JSON.parse(JSON.stringify(require("../../fixtures/valid_subplebbit.json")));
+        expect(await verifySubplebbit(sub, plebbit)).to.deep.equal({ valid: true });
+    });
+    it(`Subplebbit with domain that does not match public key will get invalidated`, async () => {
+        // plebbit.eth -> signers[3]
+        const tempPlebbit = await Plebbit(plebbit);
+        tempPlebbit.resolver.resolveSubplebbitAddressIfNeeded = (address) => (address === "plebbit.eth" ? signers[4].address : address);
+        const sub = await plebbit.getSubplebbit("plebbit.eth");
+        const verification = await verifySubplebbit(sub.toJSON(), tempPlebbit);
+        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY });
+    });
+
+    it(`Invalidate a subplebbit signature if subplebbit.posts has an invalid page`, async () => {
+        const sub = subplebbit.toJSON();
+        expect(await verifySubplebbit(sub, plebbit)).to.deep.equal({ valid: true });
+
+        sub.posts.pages.hot.comments[0].content += "1234"; // Invalidate signature
+        expect(await verifySubplebbit(sub, plebbit)).to.deep.equal({ valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID });
+    });
+});
