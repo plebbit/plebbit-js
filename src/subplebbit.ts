@@ -450,7 +450,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
             await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId));
             // If comment.flair is last modified by a mod, then reject
-            // TODO investiate why challengeRequestId is included in comment.authorEdit
             await this.dbHandler.editComment(commentEdit.toJSONForDb(challengeRequestId));
             // const commentAfterEdit = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
             log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEdit.toJSON());

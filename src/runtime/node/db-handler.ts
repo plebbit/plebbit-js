@@ -419,16 +419,10 @@ export class DbHandler {
             const flairIfNeeded = hasModEditedCommentFlairBefore || !edit.flair ? undefined : { flair: JSON.stringify(edit.flair) };
 
             newProps = removeKeysWithUndefinedValues({
-                authorEdit: JSON.stringify(edit),
-                original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()),
+                authorEdit: JSON.stringify(lodash.omit(edit, ["authorAddress", "challengeRequestId"])),
                 ...flairIfNeeded
             });
-        } else {
-            newProps = {
-                ...edit,
-                original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton())
-            };
-        }
+        } else newProps = edit;
 
         await this._baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid);
     }
