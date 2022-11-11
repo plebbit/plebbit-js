@@ -24,6 +24,57 @@ const mockPlebbit = async () => {
     return plebbit;
 };
 
+const testCommentFields = (comment) => {
+    expect(comment.author.address).to.be.a("string");
+    expect(comment.cid).to.be.a("string");
+    expect(comment.content).to.be.a("string");
+    expect(comment.depth).to.be.a("number");
+    if (typeof comment.updatedAt === "number") {
+        expect(comment.author.subplebbit).to.be.a("object");
+        expect(comment.downvoteCount).to.be.a("number");
+        expect(comment.upvoteCount).to.be.a("number");
+        expect(comment.original.author.address).to.be.a("string");
+        expect(comment.original.content).to.be.a("string");
+        // TODO verify flair here when implemented
+        // if (comment.flair) expect(comment.original.flair).to.be.a("object");
+    }
+    expect(comment.ipnsName).to.be.a("string");
+    if (comment.depth === 0) {
+        // A post
+        expect(comment.postCid).to.equal(comment.cid);
+        expect(comment.title).to.be.a("string");
+    }
+    if (comment.depth === 1) {
+        // Comment (reply)
+        expect(comment.postCid).to.equal(comment.parentCid);
+        expect(comment.title).to.be.undefined;
+    }
+    expect(comment.protocolVersion).to.be.a("string");
+    expect(comment.replyCount).to.be.a("number");
+    if (comment.replyCount > 0) {
+        expect(comment.replies.pages.topAll.comments.length).to.equal(comment.replyCount);
+        expect(comment.replies.pageCids).to.have.keys(["controversialAll", "new", "old", "topAll"]);
+    }
+
+    expect(comment.signature).to.be.a("object");
+    expect(comment.subplebbitAddress).to.be.a("string");
+    expect(comment.timestamp).to.be.a("number");
+
+    if (comment.authorEdit) {
+        expect(comment.author.address).to.equal(comment.author.address);
+        expect(comment.authorEdit.authorAddress).to.be.undefined; // Shouldn't be included (extra from db)
+        expect(comment.authorEdit.challengeRequestId).to.be.undefined;
+        expect(comment.authorEdit.commentCid).to.equal(comment.cid);
+        expect(comment.authorEdit.signature).to.be.a("object");
+        expect(comment.authorEdit.subplebbitAddress).to.equal(comment.subplebbitAddress);
+        expect(comment.timestamp).to.be.a("number");
+    }
+
+    // Props that shouldn't be there
+    expect(comment.ipnsKeyName).to.be.undefined;
+    expect(comment.challengeRequestId).to.be.undefined;
+};
+
 const testSorting = async (sort, shouldTestCommentReplies) => {
     // if shouldTestCommentReplies = true, we will test comment.replies. Else test subplebbit.posts
     // We use a plebbit for each comment/vote so that when we unsubscribe from a pubsub it doesn't affect other publications
@@ -37,6 +88,7 @@ const testSorting = async (sort, shouldTestCommentReplies) => {
         console.log(`Current sort ${currentSortName} current timeframe = ${currentTimeframe}`);
         for (let j = 0; j < alreadySortedComments.length - 1; j++) {
             // Check if timestamp is within [timestamp() - timeframe, subplebbit.updatedAt]
+            testCommentFields(alreadySortedComments[j]);
             if (currentTimeframe) {
                 // If sort types are more than 1 that means this particular sort type has timeframes
                 const syncIntervalSeconds = 5 * 60;
