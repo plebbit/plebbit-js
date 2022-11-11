@@ -12,7 +12,6 @@ import {
     ProtocolVersion,
     PublicationTypeName
 } from "./types";
-import Author from "./author";
 import errcode from "err-code";
 import { codes, messages } from "./errors";
 
@@ -128,7 +127,7 @@ export class Comment extends Publication implements CommentType {
 
     toJSONPages(): CommentType {
         return {
-            ...this.toJSON(),
+            ...lodash.omit(this.toJSON(), ["ipnsKeyName"]),
             ...this.toJSONCommentUpdate(true),
             author: this.author.toJSON()
         };
