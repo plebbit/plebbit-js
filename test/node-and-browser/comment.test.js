@@ -1,7 +1,5 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { timestamp } = require("../../dist/node/util");
-const { signPublication, verifyComment } = require("../../dist/node/signer");
 const { generateMockPost, generateMockComment } = require("../../dist/node/test/test-util");
 const { messages, codes } = require("../../dist/node/errors");
 
@@ -11,7 +9,6 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 let plebbit;
-const updateInterval = 100;
 const subplebbitAddress = signers[0].address;
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
@@ -28,35 +25,6 @@ describe("comment (node and browser)", async () => {
                 else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
                 return authorAddress;
             };
-        });
-        it("Can sign and verify a comment with randomly generated key", async () => {
-            const comment = {
-                subplebbitAddress: subplebbitAddress,
-                author: { address: signers[0].address },
-                timestamp: timestamp(),
-                title: "Test post signature",
-                content: "some content..."
-            };
-            const signature = await signPublication(comment, signers[0], plebbit, "comment");
-            const signedComment = { signature: signature.toJSON(), ...comment };
-            const verificaiton = await verifyComment(signedComment, plebbit);
-            expect(verificaiton).to.deep.equal({ valid: true });
-        });
-
-        it("Can sign and verify a comment with an imported key", async () => {
-            const signer = await plebbit.createSigner({ privateKey: signers[1].privateKey, type: "rsa" });
-            const comment = {
-                subplebbitAddress: subplebbitAddress,
-                author: { address: signer.address },
-                timestamp: timestamp(),
-                title: "Test post signature",
-                content: "some content..."
-            };
-            const signature = await signPublication(comment, signer, plebbit, "comment");
-            const signedComment = { signature: signature.toJSON(), ...comment };
-            expect(signedComment.signature.publicKey).to.be.equal(signers[1].publicKey, "Generated public key should be same as provided");
-            const verificaiton = await verifyComment(signedComment, plebbit);
-            expect(verificaiton).to.deep.equal({ valid: true });
         });
 
         it(`comment = await createComment(await createComment)`, async () => {
@@ -82,7 +50,7 @@ describe("comment (node and browser)", async () => {
             expect(comment.toJSON()).to.deep.equal(nestedComment.toJSON());
         });
 
-        it("Throws an error when a user attempts to publish a comment under a non existent parent", async () => {
+        it("Subplebbit reject a comment under a non existent parent", async () => {
             return new Promise(async (resolve) => {
                 const comment = await plebbit.createComment({
                     parentCid: "gibberish", // invalid parentCid,
@@ -103,13 +71,13 @@ describe("comment (node and browser)", async () => {
             });
         });
 
-        it("Publishing a comment with invalid signature fails", async () => {
+        it(".publish() throws if publication has invalid signature", async () => {
             const mockComment = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
             mockComment.signature.signature = mockComment.signature.signature.slice(1); // Corrupts signature by deleting one key
-            await assert.isRejected(mockComment.publish());
+            await assert.isRejected(mockComment.publish(), messages.ERR_SIGNATURE_IS_INVALID);
         });
 
-        it(`Fail to publish a reply with a timestamp earlier than parent`, async () => {
+        it(`Subplebbit reject a reply with a timestamp earlier than parent`, async () => {
             return new Promise(async (resolve) => {
                 const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
                 expect(subplebbit.lastPostCid).to.be.a("string");

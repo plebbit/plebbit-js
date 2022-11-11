@@ -64,6 +64,9 @@ describe(`verify pages`, async () => {
             const page = JSON.parse(JSON.stringify(require("../../fixtures/valid_page.json")));
             expect(await verifyPage(page, plebbit, "QmbdJpNU6cAgSXHjUNnSBrUZGBtStKPkdwKyiffqRy1x6c")).to.deep.equal({ valid: true });
         });
+
+        // TODO when comment.flair is implemented
+        it(`flair (original)`);
         it("content (author has never modified comment.content before))", async () => {
             const invalidPage = JSON.parse(JSON.stringify(require("../../fixtures/valid_page.json")));
             const commentWithNoEditIndex = invalidPage.comments.findIndex((comment) => !comment.authorEdit?.content);
