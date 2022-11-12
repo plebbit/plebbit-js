@@ -1,10 +1,11 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
 const { generateMockPost } = require("../../dist/node/test/test-util");
-const { timestamp } = require("../../dist/node/util");
+const { timestamp, encode } = require("../../dist/node/util");
 const { messages, codes } = require("../../dist/node/errors");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
+const { mockPlebbit } = require("../test-util");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const syncInterval = 300;
@@ -16,16 +17,7 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 
 describe("subplebbit", async () => {
     before(async () => {
-        plebbit = await Plebbit({
-            ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5002/api/v0`,
-            dataPath: globalThis["window"]?.plebbitDataPath
-        });
-        plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-            if (authorAddress === "plebbit.eth") return signers[6].address;
-            else if (authorAddress === "testgibbreish.eth") return undefined;
-            return authorAddress;
-        };
+        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
     });
     after(async () => {
         // Delete DB
@@ -81,23 +73,21 @@ describe("subplebbit", async () => {
         expect(endTime).to.be.lessThanOrEqual(startTime + 10, "createSubplebbit took more than 10s in an online ipfs node");
     });
 
-    it("create new subplebbit from signer", async function () {
-        return new Promise(async (resolve) => {
-            subplebbitSigner = await plebbit.createSigner();
-            subplebbit = await plebbit.createSubplebbit({
-                signer: subplebbitSigner,
-                title: `Test subplebbit - ${Date.now() / 1000}`
-            });
-            subplebbit._syncIntervalMs = syncInterval;
-            await subplebbit.start();
-            subplebbit.once("update", async () => {
-                expect(subplebbit.address).to.equal(subplebbitSigner.address);
-                // Should have address now
-                const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
-                expect(JSON.stringify(subplebbit)).to.equal(JSON.stringify(loadedSubplebbit));
-                resolve();
-            });
+    it("create new subplebbit from signer", async () => {
+        subplebbitSigner = await plebbit.createSigner();
+        const title = `Test subplebbit - ${Date.now() / 1000}`;
+        subplebbit = await plebbit.createSubplebbit({
+            signer: subplebbitSigner,
+            title
         });
+        subplebbit._syncIntervalMs = syncInterval;
+        await subplebbit.start();
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        expect(subplebbit.address).to.equal(subplebbitSigner.address);
+        // Should have address now
+        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
+        expect(loadedSubplebbit.title).to.equal(title);
+        expect(encode(subplebbit.toJSON())).to.equal(encode(loadedSubplebbit.toJSON()));
     });
 
     it(`subplebbit = await createSubplebbit(await createSubplebbit)`, async () => {
@@ -107,26 +97,28 @@ describe("subplebbit", async () => {
         expect(createdSub.signer.address).to.be.a("string");
     });
 
-    it("subplebbit.edit", async () =>
-        new Promise(async (resolve) => {
-            const newTitle = `New title to test subplebbit.edit - ${Date.now()}`;
-            const newDescription = `New description to test subplebbit.edit - ${Date.now()}`;
-            const newProps = { title: newTitle, description: newDescription };
-            const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
+    it("subplebbit.edit", async () => {
+        const newTitle = `New title to test subplebbit.edit - ${Date.now()}`;
+        const newDescription = `New description to test subplebbit.edit - ${Date.now()}`;
+        const newProps = { title: newTitle, description: newDescription };
+        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
 
-            await subplebbit.edit(newProps);
-            expect(subplebbit.title).to.equal(newTitle);
-            expect(subplebbit.description).to.equal(newDescription);
-            loadedSubplebbit._updateIntervalMs = syncInterval;
-            await loadedSubplebbit.update();
-            loadedSubplebbit.once("update", (updatedSubplebbit) => {
-                expect(updatedSubplebbit.description).to.equal(newDescription);
-                expect(updatedSubplebbit.title).to.equal(newTitle);
-                loadedSubplebbit.removeAllListeners("update");
+        await subplebbit.edit(newProps);
+        expect(subplebbit.title).to.equal(newTitle);
+        expect(subplebbit.description).to.equal(newDescription);
+        loadedSubplebbit._updateIntervalMs = syncInterval;
+        loadedSubplebbit.update();
+        await new Promise((resolve) =>
+            loadedSubplebbit.on("update", async () => {
+                if (loadedSubplebbit.description !== newDescription) return;
+                expect(loadedSubplebbit.description).to.equal(newDescription);
+                expect(loadedSubplebbit.title).to.equal(newTitle);
                 loadedSubplebbit.stop();
+                loadedSubplebbit.removeAllListeners();
                 resolve();
-            });
-        }));
+            })
+        );
+    });
 
     it(`Can edit a subplebbit to have ENS domain as address`, async () => {
         const address = JSON.parse(JSON.stringify(subplebbit.address));
@@ -138,12 +130,11 @@ describe("subplebbit", async () => {
         };
         await subplebbit.edit({ address: "plebbit.eth" });
         expect(subplebbit.address).to.equal("plebbit.eth");
-        subplebbit.once("update", async (updatedSubplebbit) => {
-            expect(updatedSubplebbit.address).to.equal("plebbit.eth");
-            expect(subplebbit.address).to.equal("plebbit.eth");
-            const loadedSubplebbit = await plebbit.getSubplebbit("plebbit.eth");
-            expect(JSON.stringify(loadedSubplebbit)).to.equal(JSON.stringify(subplebbit));
-        });
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        const loadedSubplebbit = await plebbit.getSubplebbit("plebbit.eth");
+        expect(loadedSubplebbit.address).to.equal("plebbit.eth");
+        expect(subplebbit.address).to.equal("plebbit.eth");
+        expect(encode(loadedSubplebbit.toJSON())).to.equal(encode(subplebbit.toJSON()));
     });
     it(`Can edit subplebbit.address to a new domain if subplebbit-address record does not exist or does not match signer.address`, async () => {
         // Has no subplebbit-address
@@ -283,28 +274,29 @@ describe("subplebbit", async () => {
         }));
 
     it("Two local sub instances can receive each other updates with subplebbit.update", async () => {
-        return new Promise(async (resolve) => {
-            const subOne = await plebbit.createSubplebbit({});
-            subOne._syncIntervalMs = syncInterval;
-            await subOne.start();
-            subOne.once("update", async () => {
-                const subTwo = await plebbit.createSubplebbit({ address: subOne.address });
-                subTwo._updateIntervalMs = syncInterval;
-                await subTwo.update();
-                const title = "Test new Title" + Date.now();
-                subTwo.once("update", (updatedSubplebbit) => {
-                    expect(updatedSubplebbit.title).to.equal(title);
-                    expect(subOne.title).to.equal(title);
-                    expect(JSON.stringify(updatedSubplebbit)).to.equal(JSON.stringify(subOne.toJSON()));
-                    subOne.stop();
-                    subTwo.stop();
-                    resolve();
-                });
-
-                await subOne.edit({ title });
-                expect(subOne.title).to.equal(title);
-            });
-        });
+        const subOne = await plebbit.createSubplebbit({});
+        subOne._syncIntervalMs = syncInterval;
+        await subOne.start();
+        await new Promise((resolve) => subOne.once("update", resolve));
+        // subOne is published now
+        const subTwo = await plebbit.createSubplebbit({ address: subOne.address });
+        subTwo._updateIntervalMs = syncInterval;
+        await subTwo.update();
+        const newTitle = "Test new Title" + Date.now();
+        await subOne.edit({ title: newTitle });
+        expect(subOne.title).to.equal(newTitle);
+        await new Promise((resolve) =>
+            subTwo.on("update", () => {
+                if (subTwo.title !== newTitle) return;
+                expect(subTwo.title).to.equal(newTitle);
+                expect(subOne.title).to.equal(newTitle);
+                expect(encode(subTwo.toJSON())).to.equal(encode(subOne.toJSON()));
+                subOne.stop();
+                subTwo.stop();
+                subTwo.removeAllListeners();
+                resolve();
+            })
+        );
     });
 
     it(`Deleted sub is not listed in listSubplebbits`, async () => {
