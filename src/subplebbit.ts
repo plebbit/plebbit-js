@@ -921,17 +921,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (
             !commentIpns ||
             !lodash.isEqual(
-                lodash.omit(commentIpns, ["replies", "signature", "subplebbitAuthor"]),
-                removeKeysWithUndefinedValues(lodash.omit(dbComment.toJSONCommentUpdate(), ["replies", "signature", "subplebbitAuthor"]))
+                lodash.omit(commentIpns, ["replies", "signature"]),
+                removeKeysWithUndefinedValues(lodash.omit(dbComment.toJSONCommentUpdate(), ["replies", "signature"]))
             )
         ) {
             log.trace(`Attempting to update Comment (${dbComment.cid})`);
             await this.sortHandler.deleteCommentPageCache(dbComment);
-            const commentReplies = await this.sortHandler.generatePagesUnderComment(dbComment, undefined);
             dbComment.author.subplebbit = await this.dbHandler.querySubplebbitAuthorFields(dbComment.cid);
-            dbComment.setReplies(commentReplies);
             dbComment.setUpdatedAt(timestamp());
-            await this.dbHandler.upsertComment(dbComment.toJSONForDb(undefined), dbComment.author.toJSONForDb(), undefined);
+            await this.dbHandler.upsertComment(dbComment.toJSONForDb(undefined), dbComment.author.toJSONForDb(), undefined); // Need to insert comment in DB before generating pages so props updated above would be included in pages
+            dbComment.setReplies(await this.sortHandler.generatePagesUnderComment(dbComment, undefined));
             const subplebbitSignature = await signCommentUpdate(dbComment.toJSONCommentUpdate(), this.signer);
             return this._publishCommentIpns(dbComment, { ...dbComment.toJSONCommentUpdate(), signature: subplebbitSignature });
         }
@@ -943,11 +942,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         log.trace("Starting to sync IPNS with DB");
         try {
-            await this.sortHandler.cacheCommentsPages();
             const dbComments = await this.dbHandler.queryComments();
             await Promise.all(
                 dbComments.map(async (commentProps: CommentType) => this.syncComment(await this.plebbit.createComment(commentProps)))
             );
+            await this.sortHandler.cacheCommentsPages();
             await this.updateSubplebbitIpns();
 
             RUNNING_SUBPLEBBITS[this.signer.address] = true;
