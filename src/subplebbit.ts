@@ -416,7 +416,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         const lastPublishOverTwentyMinutes = this.updatedAt < timestamp() - 60 * 20;
 
-        if (!currentIpns || !lodash.isEqual(currentIpns, this.toJSON()) || lastPublishOverTwentyMinutes) {
+        if (!currentIpns || encode(currentIpns) !== encode(this.toJSON()) || lastPublishOverTwentyMinutes) {
             this.updatedAt = timestamp();
             this.signature = await signSubplebbit(this.toJSON(), this.signer);
             const subIpnsCacheKey = sha256("ipns" + this.address);
