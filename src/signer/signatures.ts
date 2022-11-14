@@ -335,7 +335,7 @@ export async function verifySubplebbit(subplebbit: SubplebbitType, plebbit: Pleb
 
     if (subplebbit.posts.pages)
         for (const page of Object.values(subplebbitJson.posts.pages)) {
-            const pageValidity = await verifyPage(page, plebbit, subplebbit.address);
+            const pageValidity = await verifyPage(lodash.cloneDeep(page), plebbit, subplebbit.address);
             if (!pageValidity.valid) return { valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID };
         }
 
