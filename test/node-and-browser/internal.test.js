@@ -6,16 +6,14 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const { messages, codes } = require("../../dist/node/errors");
+const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 describe("Test util functions", async () => {
     let plebbit, gatewayPlebbit;
     before(async () => {
-        plebbit = await Plebbit({
-            ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-        });
+        plebbit = await mockPlebbit();
         gatewayPlebbit = await Plebbit({
             ipfsGatewayUrl: "http://127.0.0.1:8080"
         });

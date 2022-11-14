@@ -3,9 +3,9 @@ const { expect } = require("chai");
 const signers = require("../fixtures/signers");
 const { generateMockVote, generateMockPost, generateMockComment } = require("../../dist/node/test/test-util");
 const { timestamp, randomElement } = require("../../dist/node/util");
+const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 const subplebbitAddress = signers[0].address;
-
 let plebbit, postToVote, replyToVote, signer;
 
 const previousVotes = [];
@@ -15,11 +15,7 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 
 describe("Test upvote", async () => {
     before(async () => {
-        plebbit = await Plebbit({
-            ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-        });
-
+        plebbit = await mockPlebbit();
         signer = await plebbit.createSigner();
         postToVote = await generateMockPost(subplebbitAddress, plebbit, signer);
         await postToVote.publish();

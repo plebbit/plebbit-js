@@ -301,3 +301,18 @@ export async function startSubplebbits(props: {
 
     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 }
+
+export async function mockPlebbit(dataPath?: string) {
+    const plebbit = await PlebbitIndex({
+        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
+        pubsubHttpClientOptions: `http://localhost:5002/api/v0`,
+        dataPath
+    });
+
+    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
+        if (authorAddress === "plebbit.eth") return "QmayyhaKccEKfLS8jHbvPAUHP6fuHMSV7rpm97bFz1W44h"; // signers[6].address
+        else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
+        return authorAddress;
+    };
+    return plebbit;
+}

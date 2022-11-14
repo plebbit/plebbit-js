@@ -6,24 +6,12 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const { messages } = require("../../../dist/node/errors");
 const { verifyCommentEdit } = require("../../../dist/node/signer/signatures");
-
-let subplebbit, plebbit;
-
-before(async () => {
-    plebbit = await Plebbit({
-        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-        pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-    });
-    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-        if (authorAddress === "plebbit.eth") return signers[6].address;
-        else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
-        return authorAddress;
-    };
-
-    subplebbit = await plebbit.getSubplebbit(signers[0].address);
-});
+const { mockPlebbit } = require("../../../dist/node/test/test-util");
 
 describe("Sign commentedit", async () => {
+    const plebbit = await mockPlebbit();
+    const subplebbit = await plebbit.getSubplebbit(signers[0].address);
+
     it(`Can sign and validate commentEdit correctly`, async () => {
         const edit = await plebbit.createCommentEdit({
             subplebbitAddress: subplebbit.address,
@@ -39,6 +27,8 @@ describe("Sign commentedit", async () => {
 });
 
 describe("Verify CommentEdit", async () => {
+    const plebbit = await mockPlebbit();
+
     it(`Valid CommentEdit signature fixture is validated correctly`, async () => {
         const edit = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_edit.json")));
         const verification = await verifyCommentEdit(edit, plebbit);

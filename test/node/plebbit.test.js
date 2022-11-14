@@ -1,5 +1,6 @@
 const Plebbit = require("../../dist/node");
 const { expect } = require("chai");
+const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 // example of node only tests
 
@@ -19,16 +20,7 @@ describe("plebbit", () => {
     });
 
     it(`plebbit.listSubplebbits() lists subplebbits correctly`, async () => {
-        plebbit = await Plebbit({
-            ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5002/api/v0`,
-            dataPath: globalThis["window"]?.plebbitDataPath
-        });
-        plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-            if (authorAddress === "plebbit.eth") return signers[6].address;
-            else if (authorAddress === "testgibbreish.eth") return undefined;
-            return authorAddress;
-        };
+        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
         const newSubplebbit = await plebbit.createSubplebbit({
             signer: await plebbit.createSigner()
         });

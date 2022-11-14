@@ -7,6 +7,7 @@ const { messages } = require("../../dist/node/errors");
 const chai = require("chai");
 const { expect, assert } = require("chai");
 const chaiAsPromised = require("chai-as-promised");
+const { mockPlebbit } = require("../../dist/node/test/test-util");
 chai.use(chaiAsPromised);
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
@@ -19,10 +20,7 @@ const previousVotes = [];
 const updateInterval = 100;
 describe(`Test Downvote`, async () => {
     before(async () => {
-        plebbit = await Plebbit({
-            ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-        });
+        plebbit = await mockPlebbit();
         signer = await plebbit.createSigner();
         postToVote = await generateMockPost(subplebbitAddress, plebbit, signer);
         await postToVote.publish();
@@ -129,5 +127,5 @@ describe(`Test Downvote`, async () => {
         await assert.isRejected(vote.publish(), messages.ERR_CID_IS_INVALID);
     });
 
-    it(`Subplebbits rejects votes with invalid commentCid `);
+    it(`Subplebbits rejects votes with invalid commentCid`);
 });

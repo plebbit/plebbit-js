@@ -5,7 +5,7 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const { messages } = require("../../dist/node/errors");
-const { mockPlebbit } = require("../test-util");
+const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 let plebbit, subplebbit;
 const mockComments = [];

@@ -6,6 +6,7 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const { messages } = require("../../dist/node/errors");
+const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
@@ -21,15 +22,7 @@ describe("Editing", async () => {
     let plebbit, commentToBeEdited, signer;
 
     before(async () => {
-        plebbit = await Plebbit({
-            ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-        });
-        plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-            if (authorAddress === "plebbit.eth") return signers[6].address;
-            else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
-            return authorAddress;
-        };
+        plebbit = await mockPlebbit();
 
         signer = await plebbit.createSigner();
         commentToBeEdited = await generateMockPost(subplebbitAddress, plebbit, signer);

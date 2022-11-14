@@ -9,23 +9,14 @@ const { expect, assert } = chai;
 const { toString } = require("uint8arrays/to-string");
 const { fromString } = require("uint8arrays/from-string");
 const { Buffer } = require("buffer");
-const signers = require("../fixtures/signers");
+const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 let plebbit;
 
 before(async () => {
-    plebbit = await Plebbit({
-        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-        pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-    });
-
-    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-        if (authorAddress === "plebbit.eth") return signers[6].address;
-        else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
-        return authorAddress;
-    };
+    plebbit = await mockPlebbit();
 });
 
 describe("signer (node and browser)", async () => {

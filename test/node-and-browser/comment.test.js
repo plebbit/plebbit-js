@@ -5,6 +5,7 @@ const { messages, codes } = require("../../dist/node/errors");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
+const { mockPlebbit } = require("../../dist/node/test/test-util");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -16,15 +17,7 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 describe("comment (node and browser)", async () => {
     describe("createComment", async () => {
         before(async () => {
-            plebbit = await Plebbit({
-                ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-                pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-            });
-            plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-                if (authorAddress === "plebbit.eth") return signers[6].address;
-                else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
-                return authorAddress;
-            };
+            plebbit = await mockPlebbit();
         });
 
         it(`comment = await createComment(await createComment)`, async () => {
@@ -73,7 +66,7 @@ describe("comment (node and browser)", async () => {
 
         it(".publish() throws if publication has invalid signature", async () => {
             const mockComment = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
-            mockComment.signature.signature = mockComment.signature.signature.slice(1); // Corrupts signature by deleting one key
+            mockComment.timestamp += 1; // Corrupts signature
             await assert.isRejected(mockComment.publish(), messages.ERR_SIGNATURE_IS_INVALID);
         });
 

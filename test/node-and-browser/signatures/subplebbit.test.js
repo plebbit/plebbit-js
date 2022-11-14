@@ -6,26 +6,15 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const { messages } = require("../../../dist/node/errors");
 const { verifySubplebbit, signSubplebbit } = require("../../../dist/node/signer/signatures");
-
-let subplebbit, plebbit;
-
-before(async () => {
-    plebbit = await Plebbit({
-        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-        pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-    });
-    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-        if (authorAddress === "plebbit.eth") return signers[6].address;
-        else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
-        return authorAddress;
-    };
-
-    plebbit.resolver.resolveSubplebbitAddressIfNeeded = (address) => (address === "plebbit.eth" ? signers[3].address : address);
-
-    subplebbit = await plebbit.getSubplebbit(signers[0].address);
-});
+const { mockPlebbit } = require("../../../dist/node/test/test-util");
 
 describe("Sign subplebbit", async () => {
+    let subplebbit, plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+        plebbit.resolver.resolveSubplebbitAddressIfNeeded = (address) => (address === "plebbit.eth" ? signers[3].address : address);
+        subplebbit = await plebbit.getSubplebbit(signers[0].address);
+    });
     it(`Can sign and validate subplebbit correctly`, async () => {
         const subplebbitToSign = JSON.parse(JSON.stringify(subplebbit.toJSON()));
         const subSigner = signers[7]; // Random signer
@@ -40,6 +29,14 @@ describe("Sign subplebbit", async () => {
 });
 
 describe("Verify subplebbit", async () => {
+    const plebbit = await mockPlebbit();
+    plebbit.resolver.resolveSubplebbitAddressIfNeeded = (address) => (address === "plebbit.eth" ? signers[3].address : address);
+    const subplebbit = await plebbit.getSubplebbit(signers[0].address);
+
+    it(`Can validate live subplebbit`, async () => {
+        const loadedSubplebbit = await plebbit.getSubplebbit(signers[0].address);
+        expect(await verifySubplebbit(loadedSubplebbit, plebbit)).to.deep.equal({ valid: true });
+    });
     it(`Valid subplebbit fixture is validated correctly`, async () => {
         const sub = JSON.parse(JSON.stringify(require("../../fixtures/valid_subplebbit.json")));
         expect(await verifySubplebbit(sub, plebbit)).to.deep.equal({ valid: true });

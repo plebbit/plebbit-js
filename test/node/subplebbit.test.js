@@ -5,7 +5,7 @@ const { timestamp, encode } = require("../../dist/node/util");
 const { messages, codes } = require("../../dist/node/errors");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
-const { mockPlebbit } = require("../test-util");
+const { mockPlebbit } = require("../../dist/node/test/test-util");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const syncInterval = 300;

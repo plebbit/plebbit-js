@@ -16,6 +16,7 @@ chai.use(chaiAsPromised);
 const { expect } = chai;
 const { toString } = require("uint8arrays/to-string");
 const { fromString } = require("uint8arrays/from-string");
+const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
@@ -23,10 +24,7 @@ describe("encryption", () => {
     let plebbit, authorSigner;
 
     before(async function () {
-        plebbit = await Plebbit({
-            ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-        });
+        plebbit = await mockPlebbit();
         authorSigner = await plebbit.createSigner({ privateKey: authorSignerFixture.privateKey, type: "rsa" });
     });
 

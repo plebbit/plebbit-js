@@ -13,6 +13,7 @@ const {
 const { messages } = require("../../../dist/node/errors");
 const signers = require("../../fixtures/signers");
 const { timestamp } = require("../../../dist/node/util");
+const { mockPlebbit } = require("../../../dist/node/test/test-util");
 
 const fixtureComment = require("../../fixtures/publications").comment;
 
@@ -26,16 +27,7 @@ const fixtureSignature = {
 
 let plebbit;
 before(async () => {
-    plebbit = await Plebbit({
-        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-        pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-    });
-
-    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-        if (authorAddress === "plebbit.eth") return signers[6].address;
-        else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
-        return authorAddress;
-    };
+    plebbit = await mockPlebbit();
 });
 
 describe("sign comment", async () => {
@@ -85,13 +77,13 @@ describe("sign comment", async () => {
     });
 
     it(`signComment throws with invalid author`, async () => {
-        const randomSigner = await plebbit.createSigner();
+        const randomSigner = signers[3];
         // Trying to sign a publication with author.address !== randomSigner.address
         // should throw an error
         await assert.isRejected(signComment(fixtureComment, randomSigner, plebbit), messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER);
     });
     it("can sign a comment with author.displayName = undefined", async () => {
-        const signer = await plebbit.createSigner();
+        const signer = signers[4];
 
         const comment = await plebbit.createComment({
             title: "comment title",
@@ -200,7 +192,7 @@ describe(`commentupdate`, async () => {
     });
     it(`Fixture CommentUpdate can be signed by subplebbit and validated correctly`, async () => {
         const update = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_update.json")));
-        update.signature = await signCommentUpdate(update, signers[0]);
+        update.signature = await signCommentUpdate(update, signers[0]); // Same signer as the subplebbit that signed the CommentUpdate
         const verification = await verifyCommentUpdate(update, subplebbit.encryption.publicKey, signers[0].publicKey);
         expect(verification).to.deep.equal({ valid: true });
     });

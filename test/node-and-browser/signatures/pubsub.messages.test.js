@@ -5,7 +5,7 @@ const {
     verifyChallengeMessage,
     verifyChallengeVerification
 } = require("../../../dist/node/signer/signatures");
-const { generateMockPost } = require("../../../dist/node/test/test-util");
+const { generateMockPost, mockPlebbit } = require("../../../dist/node/test/test-util");
 const Plebbit = require("../../../dist/node");
 const { toString } = require("uint8arrays/to-string");
 const { fromString } = require("uint8arrays/from-string");
@@ -17,15 +17,8 @@ const version = require("../../../dist/node/version");
 
 const mathCliSubplebbitAddress = signers[1].address;
 
-let plebbit;
-before(async () => {
-    plebbit = await Plebbit({
-        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-        pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-    });
-});
-
 describe("challengerequest", async () => {
+    const plebbit = await mockPlebbit();
     it(`valid challengerequest fixture from previous version can be validated`, async () => {
         const request = require("../../fixtures/valid_challenge_request.json");
         const verificaiton = await verifyChallengeRequest(request);
@@ -43,6 +36,7 @@ describe("challengerequest", async () => {
     it(`Subplebbit responds to a challenge request with invalid signature if signature of challenge request is invalid`, async () => {
         return new Promise(async (resolve) => {
             const tempPlebbit = await Plebbit(plebbit);
+            tempPlebbit.resolver = plebbit.resolver;
             const comment = await generateMockPost(signers[0].address, tempPlebbit, signers[6]);
 
             await Promise.all([new Promise((resolve) => comment.once("challengeverification", resolve)), comment.publish()]);
@@ -71,6 +65,8 @@ describe("challengerequest", async () => {
 });
 
 describe(`challengemessage`, async () => {
+    const plebbit = await mockPlebbit();
+
     it(`valid challengemessage fixture from previous version can be validated`, async () => {
         const challenge = JSON.parse(JSON.stringify(require("../../fixtures/valid_challenge_message.json")));
         const verificaiton = await verifyChallengeMessage(challenge);
@@ -99,6 +95,7 @@ describe(`challengemessage`, async () => {
 });
 
 describe("challengeanswer", async () => {
+    const plebbit = await mockPlebbit();
     it(`valid challengeanswer fixture from previous version can be validated`, async () => {
         const answer = JSON.parse(JSON.stringify(require("../../fixtures/valid_challenge_answer.json")));
         const verificaiton = await verifyChallengeAnswer(answer);
@@ -120,6 +117,8 @@ describe("challengeanswer", async () => {
     });
     it(`Subplebbit responds to a challenge answer with invalid signature`, async () => {
         const tempPlebbit = await Plebbit(plebbit);
+        tempPlebbit.resolver = plebbit.resolver;
+
         const comment = await generateMockPost(mathCliSubplebbitAddress, tempPlebbit, signers[6]);
 
         comment.removeAllListeners();
@@ -174,6 +173,7 @@ describe("challengeanswer", async () => {
 });
 
 describe("challengeverification", async () => {
+    const plebbit = await mockPlebbit();
     it(`valid challengeverification fixture from previous version can be validated`, async () => {
         const challengeVerification = JSON.parse(JSON.stringify(require("../../fixtures/valid_challenge_verification.json")));
         const verificaiton = await verifyChallengeVerification(challengeVerification);
