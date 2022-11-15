@@ -4,32 +4,17 @@ const { expect } = require("chai");
 const signers = require("../../fixtures/signers");
 
 const Plebbit = require("../../../dist/node");
+const { mockPlebbit } = require("../../../dist/node/test/test-util");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-const updateInterval = 100;
-
-let subplebbit, plebbit;
-before(async () => {
-    plebbit = await Plebbit({
-        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-        pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-    });
-    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-        if (authorAddress === "plebbit.eth") return signers[6].address;
-        else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
-        return authorAddress;
-    };
-    subplebbit = await plebbit.getSubplebbit(signers[0].address);
-    subplebbit._updateIntervalMs = updateInterval;
-    subplebbit.update();
-});
-
-after(async () => {
-    await subplebbit.stop();
-});
-
 describe(`verify pages`, async () => {
+    let plebbit, subplebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+        subplebbit = await plebbit.getSubplebbit(signers[0].address);
+    });
+
     it(`Can validate page from live subplebbit`, async () => {
         const page = subplebbit.posts.pages.hot;
         const pageVerification = await verifyPage(page, plebbit, subplebbit.address);
@@ -117,11 +102,11 @@ describe(`verify pages`, async () => {
             const verification = await verifyPage(invalidPage, plebbit, "QmbdJpNU6cAgSXHjUNnSBrUZGBtStKPkdwKyiffqRy1x6c");
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });
-        it(`author.address`, async () => {
+        it(`author.address (base58)`, async () => {
             const invalidPage = JSON.parse(JSON.stringify(require("../../fixtures/valid_page.json")));
-            invalidPage.comments[0].author.address = "invalidAddress.eth";
+            invalidPage.comments[0].author.address = "QmSz169sN2FtwzsxwJxTYxs1HLvkRKrawBr4mFVCr2rsUS"; // Random address
             const verification = await verifyPage(invalidPage, plebbit, "QmbdJpNU6cAgSXHjUNnSBrUZGBtStKPkdwKyiffqRy1x6c");
-            expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
+            expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE });
         });
         it(`author.previousCommentCid`, async () => {
             const invalidPage = JSON.parse(JSON.stringify(require("../../fixtures/valid_page.json")));

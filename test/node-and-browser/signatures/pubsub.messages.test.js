@@ -18,7 +18,10 @@ const version = require("../../../dist/node/version");
 const mathCliSubplebbitAddress = signers[1].address;
 
 describe("challengerequest", async () => {
-    const plebbit = await mockPlebbit();
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
     it(`valid challengerequest fixture from previous version can be validated`, async () => {
         const request = require("../../fixtures/valid_challenge_request.json");
         const verificaiton = await verifyChallengeRequest(request);
@@ -65,8 +68,10 @@ describe("challengerequest", async () => {
 });
 
 describe(`challengemessage`, async () => {
-    const plebbit = await mockPlebbit();
-
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
     it(`valid challengemessage fixture from previous version can be validated`, async () => {
         const challenge = JSON.parse(JSON.stringify(require("../../fixtures/valid_challenge_message.json")));
         const verificaiton = await verifyChallengeMessage(challenge);
@@ -95,7 +100,10 @@ describe(`challengemessage`, async () => {
 });
 
 describe("challengeanswer", async () => {
-    const plebbit = await mockPlebbit();
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
     it(`valid challengeanswer fixture from previous version can be validated`, async () => {
         const answer = JSON.parse(JSON.stringify(require("../../fixtures/valid_challenge_answer.json")));
         const verificaiton = await verifyChallengeAnswer(answer);
@@ -173,7 +181,10 @@ describe("challengeanswer", async () => {
 });
 
 describe("challengeverification", async () => {
-    const plebbit = await mockPlebbit();
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
     it(`valid challengeverification fixture from previous version can be validated`, async () => {
         const challengeVerification = JSON.parse(JSON.stringify(require("../../fixtures/valid_challenge_verification.json")));
         const verificaiton = await verifyChallengeVerification(challengeVerification);

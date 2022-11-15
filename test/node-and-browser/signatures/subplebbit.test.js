@@ -29,9 +29,13 @@ describe("Sign subplebbit", async () => {
 });
 
 describe("Verify subplebbit", async () => {
-    const plebbit = await mockPlebbit();
-    plebbit.resolver.resolveSubplebbitAddressIfNeeded = (address) => (address === "plebbit.eth" ? signers[3].address : address);
-    const subplebbit = await plebbit.getSubplebbit(signers[0].address);
+    let plebbit, subplebbit;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        plebbit.resolver.resolveSubplebbitAddressIfNeeded = (address) => (address === "plebbit.eth" ? signers[3].address : address);
+        subplebbit = await plebbit.getSubplebbit(signers[0].address);
+    });
 
     it(`Can validate live subplebbit`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(signers[0].address);

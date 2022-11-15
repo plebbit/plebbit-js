@@ -9,8 +9,11 @@ const { verifyVote } = require("../../../dist/node/signer/signatures");
 const { mockPlebbit } = require("../../../dist/node/test/test-util");
 
 describe("Sign Vote", async () => {
-    const plebbit = await mockPlebbit();
-    const subplebbit = await plebbit.getSubplebbit(signers[0].address);
+    let plebbit, subplebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+        subplebbit = await plebbit.getSubplebbit(signers[0].address);
+    });
     it(`Can sign and validate commentEdit correctly`, async () => {
         const vote = await plebbit.createVote({
             subplebbitAddress: subplebbit.address,
@@ -25,7 +28,10 @@ describe("Sign Vote", async () => {
 });
 
 describe("Verify vote", async () => {
-    const plebbit = await mockPlebbit();
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
     it(`Valid vote signature fixture is validated correctly`, async () => {
         const vote = JSON.parse(JSON.stringify(require("../../fixtures/valid_vote.json")));
         const verification = await verifyVote(vote, plebbit);

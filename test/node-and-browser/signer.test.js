@@ -13,16 +13,10 @@ const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-let plebbit;
-
-before(async () => {
-    plebbit = await mockPlebbit();
-});
-
 describe("signer (node and browser)", async () => {
-    let authorSigner, randomSigner;
-
-    before(async function () {
+    let plebbit, authorSigner, randomSigner;
+    before(async () => {
+        plebbit = await mockPlebbit();
         authorSigner = await plebbit.createSigner({ privateKey: authorSignerFixture.privateKey, type: "rsa" });
         randomSigner = await plebbit.createSigner();
     });

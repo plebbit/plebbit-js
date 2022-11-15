@@ -14,11 +14,10 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 
 const subplebbitAddress = signers[0].address;
 
-let plebbit, postToVote, replyToVote, signer;
-
 const previousVotes = [];
 const updateInterval = 100;
 describe(`Test Downvote`, async () => {
+    let plebbit, postToVote, replyToVote, signer;
     before(async () => {
         plebbit = await mockPlebbit();
         signer = await plebbit.createSigner();

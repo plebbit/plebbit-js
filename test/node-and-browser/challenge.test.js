@@ -6,11 +6,12 @@ const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-let plebbit;
 const mathCliSubplebbitAddress = signers[1].address;
 const imageCaptchaSubplebbitAddress = signers[2].address;
 
 describe("math-cli", async () => {
+    let plebbit;
+
     before(async () => {
         plebbit = await mockPlebbit();
     });
@@ -45,11 +46,9 @@ describe("math-cli", async () => {
 });
 
 describe("image captcha", async () => {
+    let plebbit;
     before(async () => {
-        plebbit = await Plebbit({
-            ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-        });
+        plebbit = await mockPlebbit();
     });
     it("can post after answering correctly", async function () {
         return new Promise(async (resolve, reject) => {

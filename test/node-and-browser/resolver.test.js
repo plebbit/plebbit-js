@@ -7,16 +7,14 @@ const { expect, assert } = chai;
 const { messages } = require("../../dist/node/errors");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 
-let plebbit, subplebbit;
 const mockComments = [];
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-before(async () => {
-    plebbit = await mockPlebbit();
-    subplebbit = await plebbit.getSubplebbit(signers[0].address);
-});
-
 describe("Comments with Authors as domains", async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
     it(`post.author.address resolves correctly for author plebbit.eth `, async () => {
         return new Promise(async (resolve) => {
             // I've mocked plebbit.resolver.resolveAuthorAddressIfNeeded to return signers[6] address for plebbit.eth
@@ -25,7 +23,7 @@ describe("Comments with Authors as domains", async () => {
                 signer: signers[6],
                 content: `Mock post - ${Date.now()}`,
                 title: "Mock post title",
-                subplebbitAddress: subplebbit.address
+                subplebbitAddress: signers[0].address
             });
 
             await mockPost.publish();
@@ -55,7 +53,7 @@ describe("Comments with Authors as domains", async () => {
             signer: signers[6],
             content: `Mock comment - ${Date.now()}`,
             title: "Mock post Title",
-            subplebbitAddress: subplebbit.address
+            subplebbitAddress: signers[0].address
         });
 
         await mockPost.publish();
@@ -81,6 +79,12 @@ describe("Comments with Authors as domains", async () => {
 });
 
 describe(`Vote with authors as domains`, async () => {
+    let plebbit, subplebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+        subplebbit = await plebbit.getSubplebbit(signers[0].address);
+    });
+
     it(`Subplebbit rejects a Vote with author.address (domain) that resolves to a different signer`, async () => {
         const tempPlebbit = await Plebbit(plebbit);
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) =>

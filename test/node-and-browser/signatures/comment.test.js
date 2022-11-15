@@ -25,12 +25,11 @@ const fixtureSignature = {
     signedPropertyNames: ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"]
 };
 
-let plebbit;
-before(async () => {
-    plebbit = await mockPlebbit();
-});
-
 describe("sign comment", async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
     it("Can sign a comment with randomly generated key", async () => {
         const signer = await plebbit.createSigner();
 
@@ -98,6 +97,11 @@ describe("sign comment", async () => {
 });
 
 describe("verify Comment", async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
+    it(`Reject a comment with author.subplebbit provided by actual author(check if ipfs file)`);
     it(`Valid signature fixture is validated correctly`, async () => {
         const fixtureWithSignature = { ...fixtureComment, signature: fixtureSignature };
         const verification = await verifyComment(fixtureWithSignature, plebbit);
@@ -144,6 +148,10 @@ describe("verify Comment", async () => {
 });
 
 describe(`Comment with author.address as domain`, async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
     it(`verifyComment corrects author.address(domain) if it resolves to a different author (overrideAuthorAddressIfInvalid=true)`, async () => {
         const tempPlebbit = await Plebbit(plebbit);
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
@@ -185,9 +193,9 @@ describe(`Comment with author.address as domain`, async () => {
 });
 
 describe(`commentupdate`, async () => {
-    let subplebbit;
-
+    let plebbit, subplebbit;
     before(async () => {
+        plebbit = await mockPlebbit();
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
     });
     it(`Fixture CommentUpdate can be signed by subplebbit and validated correctly`, async () => {

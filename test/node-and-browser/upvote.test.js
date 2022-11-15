@@ -6,7 +6,6 @@ const { timestamp, randomElement } = require("../../dist/node/util");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 const subplebbitAddress = signers[0].address;
-let plebbit, postToVote, replyToVote, signer;
 
 const previousVotes = [];
 const updateInterval = 100;
@@ -14,6 +13,8 @@ const updateInterval = 100;
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 describe("Test upvote", async () => {
+    let plebbit, postToVote, replyToVote, signer;
+
     before(async () => {
         plebbit = await mockPlebbit();
         signer = await plebbit.createSigner();

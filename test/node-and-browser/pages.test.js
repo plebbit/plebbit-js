@@ -4,25 +4,13 @@ const { expect } = require("chai");
 const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../dist/node/sort-handler");
 const signers = require("../fixtures/signers");
 const { loadAllPages } = require("../../dist/node/test/test-util");
+const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 let plebbit, subplebbit;
 let posts;
 const subplebbitAddress = signers[0].address;
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
-
-const mockPlebbit = async () => {
-    const plebbit = await Plebbit({
-        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-        pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-    });
-    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-        if (authorAddress === "plebbit.eth") return signers[6].address;
-        else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
-        return authorAddress;
-    };
-    return plebbit;
-};
 
 const testCommentFields = (comment) => {
     expect(comment.author.address).to.be.a("string");

@@ -5,6 +5,7 @@ const { loadIpfsFileAsJson, loadIpnsAsJson } = require("../../dist/node/util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { messages } = require("../../dist/node/errors");
+const { mockPlebbit } = require("../../dist/node/test/test-util");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -13,10 +14,12 @@ const subplebbitAddress = signers[0].address;
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-const [ensSubplebbitSigner, ensSubplebbitAddress] = [signers[3], "plebbit.eth"];
-describe("plebbit (node and browser)", () => {
-    let plebbit, signer, subplebbitSigner;
+const ensSubplebbitSigner = signers[3];
+const ensSubplebbitAddress = "plebbit.eth";
+const subplebbitSigner = signers[0];
 
+describe("plebbit (node and browser)", async () => {
+    let plebbit;
     before(async () => {
         plebbit = await Plebbit();
     });
@@ -45,10 +48,11 @@ describe("plebbit (node and browser)", () => {
         });
     });
 
-    describe("plebbit.createSigner", () => {
+    describe("plebbit.createSigner", async () => {
+        let plebbit, signer;
         before(async () => {
+            plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
             signer = await plebbit.createSigner();
-            subplebbitSigner = await plebbit.createSigner(signers[0]);
         });
 
         it("without private key argument", async () => {
@@ -80,16 +84,9 @@ describe("plebbit (node and browser)", () => {
     });
 
     describe("plebbit.getComment", async () => {
+        let plebbit;
         before(async () => {
-            plebbit = await Plebbit({
-                ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-                dataPath: globalThis["window"]?.plebbitDataPath
-            });
-            plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-                if (authorAddress === "plebbit.eth") return signers[6].address;
-                else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
-                return authorAddress;
-            };
+            plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
         });
         it("loads post correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
@@ -146,6 +143,10 @@ describe("plebbit (node and browser)", () => {
     });
 
     describe("plebbit.getSubplebbit", async () => {
+        let plebbit;
+        before(async () => {
+            plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        });
         it("loads subplebbit via IPNS address", async () => {
             const _subplebbitIpns = await loadIpnsAsJson(subplebbitSigner.address, plebbit);
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
@@ -157,22 +158,26 @@ describe("plebbit (node and browser)", () => {
             const gibbreishAddress = "0xdeadbeef";
             await assert.isRejected(
                 plebbit.getSubplebbit(gibbreishAddress),
-                "Subplebbit address is incorrect. Address should be either a domain or CID"
+                "Subplebbit address is incorrect. Address should be either a domain or CID" // TODO should be standard error message
             );
         });
 
         it("can load subplebbit with ENS domain via plebbit.getSubplebbit", async () => {
-            plebbit.resolver.resolveSubplebbitAddressIfNeeded = async (subplebbitAddress) => {
-                if (subplebbitAddress === ensSubplebbitAddress) return ensSubplebbitSigner.address;
-                return subplebbitAddress;
-            };
-            const subplebbit = await plebbit.getSubplebbit(ensSubplebbitAddress);
+            const tempPlebbit = await Plebbit(plebbit);
+
+            tempPlebbit.resolver.resolveSubplebbitAddressIfNeeded = async (address) =>
+                address === ensSubplebbitAddress ? ensSubplebbitSigner.address : address;
+            const subplebbit = await tempPlebbit.getSubplebbit(ensSubplebbitAddress);
             expect(subplebbit.address).to.equal(ensSubplebbitAddress);
             // I'd add more tests for subplebbit.title and subplebbit.description here but the ipfs node is offline, and won't be able to retrieve plebwhales.eth IPNS record
         });
 
         it(`A subplebbit with ENS domain for address can also be loaded from its IPNS`, async () => {
-            const loadedSubplebbit = await plebbit.getSubplebbit(ensSubplebbitSigner.address);
+            const tempPlebbit = await Plebbit(plebbit);
+            tempPlebbit.resolver.resolveSubplebbitAddressIfNeeded = async (address) =>
+                address === ensSubplebbitAddress ? ensSubplebbitSigner.address : address;
+
+            const loadedSubplebbit = await tempPlebbit.getSubplebbit(ensSubplebbitSigner.address);
             expect(loadedSubplebbit.address).to.equal(ensSubplebbitAddress);
         });
 
@@ -196,16 +201,11 @@ describe("plebbit (node and browser)", () => {
     });
 
     describe("plebbit.fetchCid", async () => {
-        let plebbit;
-        let gatewayPlebbit;
-        before(async () => {
-            plebbit = await Plebbit({
-                ipfsHttpClientOptions: "http://localhost:5001/api/v0"
-            });
-            gatewayPlebbit = await Plebbit({
-                ipfsGatewayUrl: "http://127.0.0.1:8080"
-            });
+        const plebbit = await mockPlebbit();
+        const gatewayPlebbit = await Plebbit({
+            ipfsGatewayUrl: "http://127.0.0.1:8080"
         });
+
         it(`Can fetch a cid correctly`, async () => {
             const fileString = "Hello plebs";
             const cid = (await plebbit.ipfsClient.add(fileString)).path;

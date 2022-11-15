@@ -4,6 +4,7 @@ const { randomElement } = require("../../dist/node/util");
 const { generateMockPost, generateMockComment } = require("../../dist/node/test/test-util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
+const { mockPlebbit } = require("../../dist/node/test/test-util");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -16,16 +17,8 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 
 describe("publishing", async () => {
     before(async () => {
-        plebbit = await Plebbit({
-            ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-        });
+        plebbit = await mockPlebbit();
         signer = await plebbit.createSigner();
-        plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-            if (authorAddress === "plebbit.eth") return signers[6].address;
-            else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
-            return authorAddress;
-        };
     });
 
     it("Can publish a post", async function () {
