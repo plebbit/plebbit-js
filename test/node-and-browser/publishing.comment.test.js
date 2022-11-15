@@ -66,10 +66,10 @@ describe("publishing", async () => {
         new Promise(async (resolve) => {
             const postLink = "https://demo.plebbit.eth.limo";
             const post = await plebbit.createComment({
-                title: "Post with link",
+                title: "Post with link " + Date.now(),
                 link: postLink,
-                subplebbitAddress: subplebbitAddress,
-                signer: await plebbit.createSigner()
+                subplebbitAddress,
+                signer
             });
 
             expect(post.link).to.equal(postLink);
@@ -82,6 +82,7 @@ describe("publishing", async () => {
                 expect(challengeVerificationMessage.publication).to.be.a("object");
                 expect(challengeVerificationMessage.encryptedPublication).to.be.a("object");
                 expect(updatedComment.link).to.equal(postLink);
+                expect(challengeVerificationMessage.publication.link).to.equal(postLink);
                 resolve();
             });
         }));
@@ -89,10 +90,11 @@ describe("publishing", async () => {
     it(`Publish a post with spoiler`, async () =>
         new Promise(async (resolve) => {
             const post = await plebbit.createComment({
-                title: "Post with link" + Date.now(),
+                title: "Post with spoiler" + Date.now(),
+                content: "Content that should be hidden under spoiler" + Date.now(),
                 spoiler: true,
-                subplebbitAddress: subplebbitAddress,
-                signer: await plebbit.createSigner()
+                subplebbitAddress,
+                signer
             });
 
             expect(post.spoiler).to.be.true;
@@ -105,6 +107,8 @@ describe("publishing", async () => {
                 expect(challengeVerificationMessage.publication).to.be.a("object");
                 expect(challengeVerificationMessage.encryptedPublication).to.be.a("object");
                 expect(updatedComment.spoiler).to.be.true;
+                expect(challengeVerificationMessage.publication.spoiler).to.be.true;
+
                 resolve();
             });
         }));
