@@ -15,17 +15,9 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 const testCommentFields = (comment) => {
     expect(comment.author.address).to.be.a("string");
     expect(comment.cid).to.be.a("string");
-    expect(comment.content).to.be.a("string");
+    if (!comment.link) expect(comment.content).to.be.a("string");
     expect(comment.depth).to.be.a("number");
-    if (typeof comment.updatedAt === "number") {
-        expect(comment.author.subplebbit).to.be.a("object");
-        expect(comment.downvoteCount).to.be.a("number");
-        expect(comment.upvoteCount).to.be.a("number");
-        expect(comment.original.author.address).to.be.a("string");
-        expect(comment.original.content).to.be.a("string");
-        // TODO verify flair here when implemented
-        // if (comment.flair) expect(comment.original.flair).to.be.a("object");
-    }
+
     expect(comment.ipnsName).to.be.a("string");
     if (comment.depth === 0) {
         // A post
@@ -47,6 +39,19 @@ const testCommentFields = (comment) => {
     expect(comment.signature).to.be.a("object");
     expect(comment.subplebbitAddress).to.be.a("string");
     expect(comment.timestamp).to.be.a("number");
+
+    // Verify CommentUpdate fields
+    expect(comment.updatedAt).to.be.a("number");
+    expect(comment.author.subplebbit).to.be.a("object");
+    expect(comment.author.subplebbit.postScore).to.be.a("number");
+    expect(comment.author.subplebbit.replyScore).to.be.a("number");
+    expect(comment.author.subplebbit.lastCommentCid).to.be.a("string");
+
+    expect(comment.downvoteCount).to.be.a("number");
+    expect(comment.upvoteCount).to.be.a("number");
+    expect(comment.original.author.address).to.be.a("string");
+    if (!comment.link) expect(comment.original.content).to.be.a("string");
+    // TODO verify flair here when implemented
 
     if (comment.authorEdit) {
         expect(comment.author.address).to.equal(comment.author.address);
