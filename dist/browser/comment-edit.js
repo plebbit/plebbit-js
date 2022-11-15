@@ -77,6 +77,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CommentEdit = exports.AUTHOR_EDIT_FIELDS = exports.MOD_EDIT_FIELDS = void 0;
 var assert_1 = __importDefault(require("assert"));
 var publication_1 = __importDefault(require("./publication"));
+var signatures_1 = require("./signer/signatures");
 var util_1 = require("./util");
 var PUBLICATION_FIELDS = [
     "author",
@@ -134,10 +135,19 @@ var CommentEdit = /** @class */ (function (_super) {
     };
     CommentEdit.prototype.publish = function () {
         return __awaiter(this, void 0, void 0, function () {
+            var signatureValidity;
             return __generator(this, function (_a) {
-                // TODO if publishing with content,reason, deleted, verify that publisher is original author
-                (0, assert_1.default)(this.commentCid, "Need commentCid to be defined to publish CommentEdit");
-                return [2 /*return*/, _super.prototype.publish.call(this)];
+                switch (_a.label) {
+                    case 0:
+                        // TODO if publishing with content,reason, deleted, verify that publisher is original author
+                        (0, assert_1.default)(this.commentCid, "Need commentCid to be defined to publish CommentEdit");
+                        return [4 /*yield*/, (0, signatures_1.verifyCommentEdit)(this.toJSON(), this.plebbit, true)];
+                    case 1:
+                        signatureValidity = _a.sent();
+                        if (!signatureValidity.valid)
+                            throw Error("Failed to validate signature before publishing due to reason '".concat(signatureValidity.reason, "'"));
+                        return [2 /*return*/, _super.prototype.publish.call(this)];
+                }
             });
         });
     };

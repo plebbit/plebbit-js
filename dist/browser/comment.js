@@ -69,12 +69,11 @@ exports.Comment = void 0;
 var util_1 = require("./util");
 var publication_1 = __importDefault(require("./publication"));
 var pages_1 = require("./pages");
-var signer_1 = require("./signer");
-var author_1 = __importDefault(require("./author"));
 var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var lodash_1 = __importDefault(require("lodash"));
+var signatures_1 = require("./signer/signatures");
 var DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 var Comment = /** @class */ (function (_super) {
     __extends(Comment, _super);
@@ -93,17 +92,18 @@ var Comment = /** @class */ (function (_super) {
         this.depth = props.depth;
         this.link = props.link;
         this.thumbnailUrl = props.thumbnailUrl;
+        this.content = props.content;
+        this.original = props.original;
         this.setPreviousCid(props.previousCid);
         // CommentUpdate props
         this._initCommentUpdate(props);
-        this._mergeFields(props);
         // these functions might get separated from their `this` when used
         this.publish = this.publish.bind(this);
         this.update = this.update.bind(this);
         this.stop = this.stop.bind(this);
     };
     Comment.prototype._initCommentUpdate = function (props) {
-        var _a, _b, _c, _d, _e, _f, _g;
+        var _a, _b, _c, _d, _e;
         this.upvoteCount = props.upvoteCount;
         this.downvoteCount = props.downvoteCount;
         this.replyCount = props.replyCount;
@@ -117,26 +117,15 @@ var Comment = /** @class */ (function (_super) {
         this.moderatorReason = props.moderatorReason;
         this.authorEdit = props.authorEdit;
         this.protocolVersion = props.protocolVersion;
-        if (((_b = props.author) === null || _b === void 0 ? void 0 : _b.banExpiresAt) || ((_c = props.author) === null || _c === void 0 ? void 0 : _c.flair) || ((_d = props.author) === null || _d === void 0 ? void 0 : _d.subplebbit)) {
-            this.original = __assign(__assign({}, this.original), { author: this.author });
-        }
-        this.author.banExpiresAt = ((_e = props.author) === null || _e === void 0 ? void 0 : _e.banExpiresAt) || this.author.banExpiresAt;
-        this.author.flair = ((_f = props.author) === null || _f === void 0 ? void 0 : _f.flair) || this.author.flair;
-        this.author.subplebbit = ((_g = props.author) === null || _g === void 0 ? void 0 : _g.subplebbit) || this.author.subplebbit;
-    };
-    Comment.prototype._mergeFields = function (props) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
-        var original = {};
-        original["content"] =
-            ((_a = props.original) === null || _a === void 0 ? void 0 : _a.content) || ((_b = this.original) === null || _b === void 0 ? void 0 : _b.content) || (props.content && ((_c = props.authorEdit) === null || _c === void 0 ? void 0 : _c.content) ? this.content : undefined);
-        original["author"] =
-            ((_d = props.original) === null || _d === void 0 ? void 0 : _d.author) || ((_e = this.original) === null || _e === void 0 ? void 0 : _e.author) || (props.author && props.authorEdit ? props.author : undefined);
-        original["flair"] =
-            ((_f = props.original) === null || _f === void 0 ? void 0 : _f.flair) || ((_g = this.original) === null || _g === void 0 ? void 0 : _g.flair) || (props.flair && ((_h = props.authorEdit) === null || _h === void 0 ? void 0 : _h.flair) ? props.flair : undefined);
-        this.content = ((_j = props.authorEdit) === null || _j === void 0 ? void 0 : _j.content) || props.content || this.content;
-        this.author = new author_1.default(__assign(__assign({}, props.author), this.author));
-        if (JSON.stringify(original) !== "{}")
-            this.original = original;
+        if ((_b = props.author) === null || _b === void 0 ? void 0 : _b.banExpiresAt)
+            this.author.banExpiresAt = props.author.banExpiresAt;
+        if ((_c = props.author) === null || _c === void 0 ? void 0 : _c.flair)
+            this.author.flair = props.author.flair;
+        if ((_d = props.author) === null || _d === void 0 ? void 0 : _d.subplebbit)
+            this.author.subplebbit = props.author.subplebbit;
+        if ((_e = props.authorEdit) === null || _e === void 0 ? void 0 : _e.content)
+            this.content = props.authorEdit.content;
+        // TODO set merged comment flair here
     };
     Comment.prototype.getType = function () {
         return "comment";
@@ -145,9 +134,13 @@ var Comment = /** @class */ (function (_super) {
         return __assign(__assign(__assign({}, this.toJSONSkeleton()), (typeof this.updatedAt === "number" ? this.toJSONCommentUpdate() : undefined)), { cid: this.cid, original: this.original, author: this.author.toJSON(), previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl, ipnsKeyName: this.ipnsKeyName });
     };
     Comment.prototype.toJSONPages = function () {
-        return __assign(__assign(__assign({}, this.toJSON()), this.toJSONCommentUpdate(true)), { author: this.author.toJSON() });
+        return __assign(__assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["ipnsKeyName"])), this.toJSONCommentUpdate(true)), { author: this.author.toJSON() });
     };
     Comment.prototype.toJSONIpfs = function () {
+        if (typeof this.ipnsName !== "string")
+            throw Error("comment.ipnsName should be defined before calling toJSONIpfs");
+        if (typeof this.depth !== "number")
+            throw Error("comment.depth should be defined before calling toJSONIpfs");
         return __assign(__assign({}, this.toJSONSkeleton()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl });
     };
     Comment.prototype.toJSONSkeleton = function () {
@@ -219,7 +212,7 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, res, e_1, _a, verified, failedVerificationReason;
+            var log, res, e_1, _a, signatureValidity;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -236,28 +229,37 @@ var Comment = /** @class */ (function (_super) {
                         log.error("Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error: "), e_1);
                         return [2 /*return*/];
                     case 4:
+                        // Make a copy of fields that may be changed with a CommentUpdate
+                        if (!this.original)
+                            this.original = lodash_1.default.pick(this.toJSON(), ["author", "flair", "content"]);
                         if (!(res &&
                             (!this.updatedAt ||
-                                !lodash_1.default.isEqual((0, util_1.removeKeysWithUndefinedValues)(lodash_1.default.omit(this.toJSONCommentUpdate(), ["signature"])), lodash_1.default.omit(res, ["signature"]))))) return [3 /*break*/, 6];
-                        log("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
-                        return [4 /*yield*/, (0, signer_1.verifyPublication)(res, this.plebbit, "commentupdate")];
+                                !lodash_1.default.isEqual((0, util_1.removeKeysWithUndefinedValues)(lodash_1.default.omit(this.toJSONCommentUpdate(), ["signature"])), lodash_1.default.omit(res, ["signature"]))))) return [3 /*break*/, 8];
+                        if (!!this.subplebbit) return [3 /*break*/, 6];
+                        _a = this;
+                        return [4 /*yield*/, this.plebbit.getSubplebbit(this.subplebbitAddress)];
                     case 5:
-                        _a = _b.sent(), verified = _a[0], failedVerificationReason = _a[1];
-                        if (!verified) {
-                            log.error("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") signature is invalid due to '").concat(failedVerificationReason, "'"));
+                        _a.subplebbit = _b.sent();
+                        _b.label = 6;
+                    case 6:
+                        log("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
+                        return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(res, this.subplebbit.encryption.publicKey, this.signature.publicKey)];
+                    case 7:
+                        signatureValidity = _b.sent();
+                        if (!signatureValidity.valid) {
+                            log.error("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") signature is invalid due to '").concat(signatureValidity.reason, "'"));
                             return [2 /*return*/];
                         }
                         this._initCommentUpdate(res);
-                        this._mergeFields(this.toJSON());
                         this.emit("update", this);
-                        return [3 /*break*/, 7];
-                    case 6:
+                        return [3 /*break*/, 9];
+                    case 8:
                         if (res) {
                             log.trace("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
                             this._initCommentUpdate(res);
                         }
-                        _b.label = 7;
-                    case 7: return [2 /*return*/];
+                        _b.label = 9;
+                    case 9: return [2 /*return*/];
                 }
             });
         });
@@ -278,44 +280,18 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype.stop = function () {
         clearInterval(this._updateInterval);
     };
-    Comment.prototype.edit = function (options) {
-        return __awaiter(this, void 0, void 0, function () {
-            var log, _a, validSignature, failedVerificationReason, file;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:comment:edit");
-                        if (typeof this.ipnsKeyName !== "string")
-                            throw Error("comment.ipnsKeyName needs to be defined in order to publish a new CommentUpdate");
-                        return [4 /*yield*/, (0, signer_1.verifyPublication)(options, this.plebbit, "commentupdate")];
-                    case 1:
-                        _a = _b.sent(), validSignature = _a[0], failedVerificationReason = _a[1];
-                        if (!validSignature)
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                                details: "comment.edit: Failed verification reason: ".concat(failedVerificationReason, ", editOptions: ").concat(JSON.stringify(options))
-                            });
-                        this._initCommentUpdate(options);
-                        this._mergeFields(this.toJSON());
-                        return [4 /*yield*/, this.plebbit.ipfsClient.add(JSON.stringify(__assign(__assign({}, this.toJSONCommentUpdate()), { signature: options.signature })))];
-                    case 2:
-                        file = _b.sent();
-                        return [4 /*yield*/, this.plebbit.ipfsClient.name.publish(file.path, {
-                                lifetime: "72h",
-                                key: this.ipnsKeyName,
-                                allowOffline: true
-                            })];
-                    case 3:
-                        _b.sent();
-                        log.trace("Linked comment (".concat(this.cid, ") ipns name(").concat(this.ipnsName, ") to ipfs file (").concat(file.path, ")"));
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
     Comment.prototype.publish = function () {
         return __awaiter(this, void 0, void 0, function () {
+            var signatureValidity;
             return __generator(this, function (_a) {
-                return [2 /*return*/, _super.prototype.publish.call(this)];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, (0, signatures_1.verifyComment)(this.toJSON(), this.plebbit, true)];
+                    case 1:
+                        signatureValidity = _a.sent();
+                        if (!signatureValidity.valid)
+                            throw Error("Failed to validate signature before publishing due to reason '".concat(signatureValidity.reason, "'"));
+                        return [2 /*return*/, _super.prototype.publish.call(this)];
+                }
             });
         });
     };

@@ -50,13 +50,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.randomElement = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.fetchCid = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.encode = exports.randomElement = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.fetchCid = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var util_1 = require("./runtime/node/util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var errors_1 = require("./errors");
 var err_code_1 = __importDefault(require("err-code"));
 var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
 var lodash_1 = __importDefault(require("lodash"));
+var safe_stable_stringify_1 = require("safe-stable-stringify");
 //This is temp. TODO replace this with accurate mapping
 exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -308,3 +309,10 @@ function randomElement(array) {
     return array[Math.floor(Math.random() * array.length)];
 }
 exports.randomElement = randomElement;
+function encode(obj) {
+    // May change in future
+    // We're encoding in cborg and decoding to make sure all JSON objects can be stringified and parsed determinstically
+    // Meaning the order of the fields will always be the same
+    return (0, safe_stable_stringify_1.stringify)(obj);
+}
+exports.encode = encode;

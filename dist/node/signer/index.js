@@ -36,12 +36,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createSigner = exports.Signer = exports.decrypt = exports.encrypt = exports.Signature = exports.verifyPublication = exports.signPublication = void 0;
+exports.createSigner = exports.Signer = exports.decrypt = exports.encrypt = exports.verifyVote = exports.verifySubplebbit = exports.verifyComment = exports.Signature = void 0;
 var util_1 = require("./util");
 var signatures_1 = require("./signatures");
-Object.defineProperty(exports, "signPublication", { enumerable: true, get: function () { return signatures_1.signPublication; } });
-Object.defineProperty(exports, "verifyPublication", { enumerable: true, get: function () { return signatures_1.verifyPublication; } });
 Object.defineProperty(exports, "Signature", { enumerable: true, get: function () { return signatures_1.Signature; } });
+Object.defineProperty(exports, "verifyComment", { enumerable: true, get: function () { return signatures_1.verifyComment; } });
+Object.defineProperty(exports, "verifySubplebbit", { enumerable: true, get: function () { return signatures_1.verifySubplebbit; } });
+Object.defineProperty(exports, "verifyVote", { enumerable: true, get: function () { return signatures_1.verifyVote; } });
 var encryption_1 = require("./encryption");
 Object.defineProperty(exports, "encrypt", { enumerable: true, get: function () { return encryption_1.encrypt; } });
 Object.defineProperty(exports, "decrypt", { enumerable: true, get: function () { return encryption_1.decrypt; } });

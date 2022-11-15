@@ -71,13 +71,13 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
         roles?: {
             [authorAddress: string]: SubplebbitRole;
         };
+        rules?: string[];
         lastPostCid?: string;
         challengeTypes?: ChallengeType[];
+        metrics?: SubplebbitMetrics;
         features?: SubplebbitFeatures;
         suggested?: SubplebbitSuggested;
-        rules?: string[];
         flairs?: Record<FlairOwner, Flair[]>;
-        metrics?: SubplebbitMetrics;
     };
     toJSON(): SubplebbitType;
     prePublish(): Promise<void>;
@@ -96,10 +96,11 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     private handleChallengeExchange;
     private defaultProvideCaptcha;
     private defaultValidateCaptcha;
+    private _publishCommentIpns;
     private syncComment;
     private syncIpnsWithDb;
     private _syncLoop;
     start(): Promise<void>;
     delete(): Promise<void>;
-    _addPublicationToDb(publication: CommentEdit | Vote | Comment | Post): Promise<string | CommentEdit | Vote | Comment | Post>;
+    _addPublicationToDb(publication: CommentEdit | Vote | Comment | Post): Promise<string | Comment | Post | Vote | CommentEdit>;
 }

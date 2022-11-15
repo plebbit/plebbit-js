@@ -33,8 +33,7 @@ export declare class Comment extends Publication implements CommentType {
     private _updateIntervalMs;
     constructor(props: CommentType, plebbit: Plebbit);
     _initProps(props: CommentType): void;
-    _initCommentUpdate(props: CommentType | CommentUpdate): void;
-    _mergeFields(props: CommentType): void;
+    _initCommentUpdate(props: CommentUpdate): void;
     getType(): PublicationTypeName;
     toJSON(): CommentType;
     toJSONPages(): CommentType;
@@ -66,6 +65,5 @@ export declare class Comment extends Publication implements CommentType {
     updateOnce(): Promise<void>;
     update(): Promise<void>;
     stop(): void;
-    edit(options: CommentUpdate): Promise<void>;
     publish(): Promise<void>;
 }

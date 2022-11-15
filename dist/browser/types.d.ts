@@ -101,7 +101,7 @@ export interface PublicationType extends Required<CreatePublicationOptions> {
     protocolVersion: ProtocolVersion;
 }
 interface CreatePublicationOptions {
-    author?: Partial<AuthorType>;
+    author?: Partial<Omit<AuthorType, "subplebbit" | "banExpiresAt">>;
     subplebbitAddress: string;
     timestamp?: number;
 }
