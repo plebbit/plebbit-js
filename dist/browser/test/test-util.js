@@ -59,12 +59,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.startSubplebbits = exports.getAllCommentsUnderSubplebbit = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
+exports.mockPlebbit = exports.startSubplebbits = exports.getAllCommentsUnderSubplebbit = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
 var util_1 = require("../util");
-var signer_1 = require("../signer");
 var index_1 = __importDefault(require("../index"));
-var err_code_1 = __importDefault(require("err-code"));
-var errors_1 = require("../errors");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 function generateRandomTimestamp(parentTimestamp) {
     var _a = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, (0, util_1.timestamp)()], lowerLimit = _a[0], upperLimit = _a[1];
@@ -81,9 +78,9 @@ function generateMockPost(subplebbitAddress, plebbit, signer, randomTimestamp, p
     if (randomTimestamp === void 0) { randomTimestamp = false; }
     if (postProps === void 0) { postProps = {}; }
     return __awaiter(this, void 0, void 0, function () {
-        var postTimestamp, postStartTestTime, _a, post, _b, validSignature, failedVerificationReason;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        var postTimestamp, postStartTestTime, _a, post;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     postTimestamp = (randomTimestamp && generateRandomTimestamp()) || (0, util_1.timestamp)();
                     postStartTestTime = Date.now() / 1000 + Math.random();
@@ -91,25 +88,18 @@ function generateMockPost(subplebbitAddress, plebbit, signer, randomTimestamp, p
                     if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, plebbit.createSigner()];
                 case 1:
-                    _a = (_c.sent());
-                    _c.label = 2;
+                    _a = (_b.sent());
+                    _b.label = 2;
                 case 2:
                     signer = _a;
                     return [4 /*yield*/, plebbit.createComment(__assign({ author: { displayName: "Mock Author - ".concat(postStartTestTime) }, signer: signer, title: "Mock Post - ".concat(postStartTestTime), content: "Mock content - ".concat(postStartTestTime), timestamp: postTimestamp, subplebbitAddress: subplebbitAddress }, postProps))];
                 case 3:
-                    post = _c.sent();
+                    post = _b.sent();
                     if (post.constructor.name !== "Post")
                         throw Error("createComment should return Post if title is provided");
                     post.once("challenge", function (challengeMsg) {
                         post.publishChallengeAnswers([]);
                     });
-                    return [4 /*yield*/, (0, signer_1.verifyPublication)(post, plebbit, post.getType())];
-                case 4:
-                    _b = _c.sent(), validSignature = _b[0], failedVerificationReason = _b[1];
-                    if (!validSignature)
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                            details: "generateMockPost: Failed verification reason: ".concat(failedVerificationReason)
-                        });
                     return [2 /*return*/, post];
             }
         });
@@ -120,9 +110,9 @@ function generateMockComment(parentPostOrComment, plebbit, signer, randomTimesta
     if (randomTimestamp === void 0) { randomTimestamp = false; }
     if (commentProps === void 0) { commentProps = {}; }
     return __awaiter(this, void 0, void 0, function () {
-        var commentTimestamp, commentTime, _a, comment, _b, validSignature, failedVerificationReason;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        var commentTimestamp, commentTime, _a, comment;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     if (!["Comment", "Post"].includes(parentPostOrComment.constructor.name))
                         throw Error("Need to have parentComment defined to generate mock comment");
@@ -132,23 +122,16 @@ function generateMockComment(parentPostOrComment, plebbit, signer, randomTimesta
                     if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, plebbit.createSigner()];
                 case 1:
-                    _a = (_c.sent());
-                    _c.label = 2;
+                    _a = (_b.sent());
+                    _b.label = 2;
                 case 2:
                     signer = _a;
                     return [4 /*yield*/, plebbit.createComment(__assign({ author: { displayName: "Mock Author - ".concat(commentTime) }, signer: signer, content: "Mock comment - ".concat(commentTime), parentCid: parentPostOrComment.cid, subplebbitAddress: parentPostOrComment.subplebbitAddress, timestamp: commentTimestamp }, commentProps))];
                 case 3:
-                    comment = _c.sent();
+                    comment = _b.sent();
                     comment.once("challenge", function (challengeMsg) {
                         comment.publishChallengeAnswers([]);
                     });
-                    return [4 /*yield*/, (0, signer_1.verifyPublication)(comment, plebbit, comment.getType())];
-                case 4:
-                    _b = _c.sent(), validSignature = _b[0], failedVerificationReason = _b[1];
-                    if (!validSignature)
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                            details: "generateMockComment: Failed verification reason: ".concat(failedVerificationReason)
-                        });
                     return [2 /*return*/, comment];
             }
         });
@@ -157,9 +140,9 @@ function generateMockComment(parentPostOrComment, plebbit, signer, randomTimesta
 exports.generateMockComment = generateMockComment;
 function generateMockVote(parentPostOrComment, vote, plebbit, signer) {
     return __awaiter(this, void 0, void 0, function () {
-        var voteTime, commentCid, _a, voteObj, _b, validSignature, failedVerificationReason;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        var voteTime, commentCid, _a, voteObj;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     voteTime = Date.now() / 1000;
                     commentCid = parentPostOrComment.cid || parentPostOrComment.postCid;
@@ -169,8 +152,8 @@ function generateMockVote(parentPostOrComment, vote, plebbit, signer) {
                     if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, plebbit.createSigner()];
                 case 1:
-                    _a = (_c.sent());
-                    _c.label = 2;
+                    _a = (_b.sent());
+                    _b.label = 2;
                 case 2:
                     signer = _a;
                     return [4 /*yield*/, plebbit.createVote({
@@ -181,17 +164,10 @@ function generateMockVote(parentPostOrComment, vote, plebbit, signer) {
                             subplebbitAddress: parentPostOrComment.subplebbitAddress
                         })];
                 case 3:
-                    voteObj = _c.sent();
+                    voteObj = _b.sent();
                     voteObj.once("challenge", function (challengeMsg) {
                         voteObj.publishChallengeAnswers([]);
                     });
-                    return [4 /*yield*/, (0, signer_1.verifyPublication)(voteObj, plebbit, voteObj.getType())];
-                case 4:
-                    _b = _c.sent(), validSignature = _b[0], failedVerificationReason = _b[1];
-                    if (!validSignature)
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                            details: "generateMockVote: Failed verification reason: ".concat(failedVerificationReason)
-                        });
                     return [2 /*return*/, voteObj];
             }
         });
@@ -573,3 +549,31 @@ function startSubplebbits(props) {
     });
 }
 exports.startSubplebbits = startSubplebbits;
+function mockPlebbit(dataPath) {
+    return __awaiter(this, void 0, void 0, function () {
+        var plebbit;
+        var _this = this;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, (0, index_1.default)({
+                        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
+                        pubsubHttpClientOptions: "http://localhost:5002/api/v0",
+                        dataPath: dataPath
+                    })];
+                case 1:
+                    plebbit = _a.sent();
+                    plebbit.resolver.resolveAuthorAddressIfNeeded = function (authorAddress) { return __awaiter(_this, void 0, void 0, function () {
+                        return __generator(this, function (_a) {
+                            if (authorAddress === "plebbit.eth")
+                                return [2 /*return*/, "QmayyhaKccEKfLS8jHbvPAUHP6fuHMSV7rpm97bFz1W44h"]; // signers[6].address
+                            else if (authorAddress === "testgibbreish.eth")
+                                throw new Error("Domain (".concat(authorAddress, ") has no plebbit-author-address"));
+                            return [2 /*return*/, authorAddress];
+                        });
+                    }); };
+                    return [2 /*return*/, plebbit];
+            }
+        });
+    });
+}
+exports.mockPlebbit = mockPlebbit;

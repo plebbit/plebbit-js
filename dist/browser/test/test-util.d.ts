@@ -19,3 +19,4 @@ export declare function startSubplebbits(props: {
     votesPerCommentToPublish: number;
     numOfCommentsToPublish: number;
 }): Promise<void>;
+export declare function mockPlebbit(dataPath?: string): Promise<Plebbit>;

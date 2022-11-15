@@ -84,6 +84,7 @@ var errors_1 = require("./errors");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var version_1 = __importDefault(require("./version"));
 var lodash_1 = __importDefault(require("lodash"));
+var signatures_1 = require("./signer/signatures");
 exports.pendingSubplebbitCreations = {};
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
@@ -158,9 +159,9 @@ var Plebbit = /** @class */ (function (_super) {
     };
     Plebbit.prototype.getSubplebbit = function (subplebbitAddress) {
         return __awaiter(this, void 0, void 0, function () {
-            var resolvedSubplebbitAddress, subplebbitJson, _a, signatureIsVerified, failedVerificationReason;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var resolvedSubplebbitAddress, subplebbitJson, signatureValidity;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
                         if (!this.resolver.isDomain(subplebbitAddress) && !is_ipfs_1.default.cid(subplebbitAddress))
                             throw (0, err_code_1.default)(Error(errors_1.messages.ERR_INVALID_SUBPLEBBIT_ADDRESS), errors_1.codes.ERR_INVALID_SUBPLEBBIT_ADDRESS, {
@@ -168,16 +169,16 @@ var Plebbit = /** @class */ (function (_super) {
                             });
                         return [4 /*yield*/, this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
                     case 1:
-                        resolvedSubplebbitAddress = _b.sent();
+                        resolvedSubplebbitAddress = _a.sent();
                         return [4 /*yield*/, (0, util_2.loadIpnsAsJson)(resolvedSubplebbitAddress, this)];
                     case 2:
-                        subplebbitJson = _b.sent();
-                        return [4 /*yield*/, (0, signer_1.verifyPublication)(subplebbitJson, this, "subplebbit")];
+                        subplebbitJson = _a.sent();
+                        return [4 /*yield*/, (0, signer_1.verifySubplebbit)(subplebbitJson, this)];
                     case 3:
-                        _a = _b.sent(), signatureIsVerified = _a[0], failedVerificationReason = _a[1];
-                        if (!signatureIsVerified)
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                                details: "getSubplebbit: Failed verification reason: ".concat(failedVerificationReason)
+                        signatureValidity = _a.sent();
+                        if (!signatureValidity.valid)
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SIGNATURE_IS_INVALID), errors_1.codes.ERR_SIGNATURE_IS_INVALID, {
+                                details: "getSubplebbit: Failed verification reason: ".concat(signatureValidity.reason)
                             });
                         return [2 /*return*/, new subplebbit_1.Subplebbit(subplebbitJson, this)];
                 }
@@ -186,9 +187,9 @@ var Plebbit = /** @class */ (function (_super) {
     };
     Plebbit.prototype.getComment = function (cid) {
         return __awaiter(this, void 0, void 0, function () {
-            var commentJson, _a, signatureIsVerified, failedVerificationReason, title;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var commentJson, signatureValidity, title;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
                         if (!is_ipfs_1.default.cid(cid))
                             throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.codes.ERR_CID_IS_INVALID, {
@@ -196,13 +197,13 @@ var Plebbit = /** @class */ (function (_super) {
                             });
                         return [4 /*yield*/, (0, util_2.loadIpfsFileAsJson)(cid, this)];
                     case 1:
-                        commentJson = _b.sent();
-                        return [4 /*yield*/, (0, signer_1.verifyPublication)(commentJson, this, "comment")];
+                        commentJson = _a.sent();
+                        return [4 /*yield*/, (0, signer_1.verifyComment)(commentJson, this, true)];
                     case 2:
-                        _a = _b.sent(), signatureIsVerified = _a[0], failedVerificationReason = _a[1];
-                        if (!signatureIsVerified)
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                                details: "getComment: Failed verification reason: ".concat(failedVerificationReason, ", ").concat(commentJson.depth === 0 ? "post" : "comment", ": ").concat(JSON.stringify(commentJson))
+                        signatureValidity = _a.sent();
+                        if (!signatureValidity.valid)
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SIGNATURE_IS_INVALID), errors_1.codes.ERR_SIGNATURE_IS_INVALID, {
+                                details: "getComment: Failed verification reason: ".concat(signatureValidity.reason, ", ").concat(commentJson.depth === 0 ? "post" : "comment", ": ").concat(JSON.stringify(commentJson))
                             });
                         title = commentJson.title;
                         return [2 /*return*/, typeof title === "string"
@@ -230,7 +231,7 @@ var Plebbit = /** @class */ (function (_super) {
                             options.author = __assign(__assign({}, options.author), { address: options.signer.address });
                             log("CreateCommentOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
                         }
-                        return [4 /*yield*/, (0, signer_1.signPublication)(options, options.signer, this, "comment")];
+                        return [4 /*yield*/, (0, signatures_1.signComment)(options, options.signer, this)];
                     case 1:
                         commentSignature = _b.sent();
                         finalProps = __assign(__assign({}, options), { signature: commentSignature, protocolVersion: version_1.default.PROTOCOL_VERSION });
@@ -365,7 +366,7 @@ var Plebbit = /** @class */ (function (_super) {
                             options.author = __assign(__assign({}, options.author), { address: options.signer.address });
                             log.trace("CreateVoteOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
                         }
-                        return [4 /*yield*/, (0, signer_1.signPublication)(options, options.signer, this, "vote")];
+                        return [4 /*yield*/, (0, signatures_1.signVote)(options, options.signer, this)];
                     case 1:
                         voteSignature = _b.sent();
                         voteProps = __assign(__assign({}, options), { signature: voteSignature, protocolVersion: version_1.default.PROTOCOL_VERSION });
@@ -397,7 +398,7 @@ var Plebbit = /** @class */ (function (_super) {
                         }
                         _b = [__assign({}, options)];
                         _c = {};
-                        return [4 /*yield*/, (0, signer_1.signPublication)(options, options.signer, this, "commentedit")];
+                        return [4 /*yield*/, (0, signatures_1.signCommentEdit)(options, options.signer, this)];
                     case 1:
                         commentEditProps = __assign.apply(void 0, _b.concat([(_c.signature = _d.sent(), _c.protocolVersion = version_1.default.PROTOCOL_VERSION, _c)]));
                         return [2 /*return*/, new comment_edit_1.CommentEdit(commentEditProps, this)];

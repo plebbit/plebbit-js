@@ -69,6 +69,7 @@ var publication_1 = __importDefault(require("./publication"));
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var errors_1 = require("./errors");
 var err_code_1 = __importDefault(require("err-code"));
+var signer_1 = require("./signer");
 var Vote = /** @class */ (function (_super) {
     __extends(Vote, _super);
     function Vote(props, plebbit) {
@@ -88,14 +89,23 @@ var Vote = /** @class */ (function (_super) {
     };
     Vote.prototype.publish = function () {
         return __awaiter(this, void 0, void 0, function () {
+            var signatureValidity;
             return __generator(this, function (_a) {
-                if (![-1, 0, 1].includes(this.vote))
-                    throw Error("Vote.vote (".concat(this.vote, ") can only be -1, 0, or 1"));
-                if (!is_ipfs_1.default.cid(this.commentCid))
-                    throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.codes.ERR_CID_IS_INVALID, {
-                        details: "Vote.publish: commentCid (".concat(this.commentCid, ") is invalid as a CID")
-                    });
-                return [2 /*return*/, _super.prototype.publish.call(this)];
+                switch (_a.label) {
+                    case 0:
+                        if (![-1, 0, 1].includes(this.vote))
+                            throw Error("Vote.vote (".concat(this.vote, ") can only be -1, 0, or 1"));
+                        if (!is_ipfs_1.default.cid(this.commentCid))
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.codes.ERR_CID_IS_INVALID, {
+                                details: "Vote.publish: commentCid (".concat(this.commentCid, ") is invalid as a CID")
+                            });
+                        return [4 /*yield*/, (0, signer_1.verifyVote)(this.toJSON(), this.plebbit, true)];
+                    case 1:
+                        signatureValidity = _a.sent();
+                        if (!signatureValidity.valid)
+                            throw Error("Failed to validate signature before publishing due to reason '".concat(signatureValidity.reason, "'"));
+                        return [2 /*return*/, _super.prototype.publish.call(this)];
+                }
             });
         });
     };

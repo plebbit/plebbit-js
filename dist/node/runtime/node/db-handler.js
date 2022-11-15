@@ -737,10 +737,10 @@ var DbHandler = /** @class */ (function () {
                         modEdits = _a.sent();
                         hasModEditedCommentFlairBefore = modEdits.some(function (modEdit) { return Boolean(modEdit.flair); });
                         flairIfNeeded = hasModEditedCommentFlairBefore || !edit.flair ? undefined : { flair: JSON.stringify(edit.flair) };
-                        newProps = (0, util_1.removeKeysWithUndefinedValues)(__assign({ authorEdit: JSON.stringify(edit), original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) }, flairIfNeeded));
+                        newProps = (0, util_1.removeKeysWithUndefinedValues)(__assign({ authorEdit: JSON.stringify(lodash_1.default.omit(edit, ["authorAddress", "challengeRequestId"])) }, flairIfNeeded));
                         return [3 /*break*/, 4];
                     case 3:
-                        newProps = __assign(__assign({}, edit), { original: JSON.stringify(commentToBeEdited.original || commentToBeEdited.toJSONSkeleton()) });
+                        newProps = edit;
                         _a.label = 4;
                     case 4: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid)];
                     case 5:

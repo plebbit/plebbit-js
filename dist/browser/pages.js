@@ -41,11 +41,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Page = exports.Pages = void 0;
 var util_1 = require("./util");
-var signer_1 = require("./signer");
 var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("./errors");
-var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
+var signatures_1 = require("./signer/signatures");
 var Pages = /** @class */ (function () {
     function Pages(props) {
         this.pages = props.pages;
@@ -54,12 +53,10 @@ var Pages = /** @class */ (function () {
     }
     Pages.prototype.getPage = function (pageCid) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, page, _a, verifyComment;
-            var _this = this;
+            var page, _a, signatureValidity;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:pages:getPage");
                         if (!is_ipfs_1.default.cid(pageCid))
                             throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.codes.ERR_CID_IS_INVALID, {
                                 details: "getPage: cid (".concat(pageCid, ") is invalid as a CID")
@@ -70,51 +67,11 @@ var Pages = /** @class */ (function () {
                         return [4 /*yield*/, (0, util_1.loadIpfsFileAsJson)(pageCid, this.subplebbit.plebbit)];
                     case 1:
                         page = new (_a.apply(Page, [void 0, _b.sent()]))();
-                        verifyComment = function (comment, parentComment) { return __awaiter(_this, void 0, void 0, function () {
-                            var _a, signatureIsVerified, failedVerificationReason, preloadedCommentsChunks;
-                            var _this = this;
-                            return __generator(this, function (_b) {
-                                switch (_b.label) {
-                                    case 0:
-                                        if (comment.subplebbitAddress !== this.subplebbit.address)
-                                            throw Error("Comment in page should be under the same subplebbit");
-                                        if (parentComment && parentComment.cid !== comment.parentCid)
-                                            throw Error("Comment under parent comment/post should have parentCid initialized");
-                                        return [4 /*yield*/, (0, signer_1.verifyPublication)(comment, this.subplebbit.plebbit, "comment")];
-                                    case 1:
-                                        _a = _b.sent(), signatureIsVerified = _a[0], failedVerificationReason = _a[1];
-                                        if (!signatureIsVerified)
-                                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_FAILED_TO_VERIFY_SIGNATURE), errors_1.codes.ERR_FAILED_TO_VERIFY_SIGNATURE, {
-                                                details: "getPage: Failed verification reason: ".concat(failedVerificationReason, ", ").concat(comment.depth === 0 ? "post" : "comment", ": ").concat(JSON.stringify(comment))
-                                            });
-                                        log.trace("Comment (".concat(comment.cid, ") has been verified. Will attempt to verify its ").concat(comment.replyCount, " replies"));
-                                        if (!comment.replies) return [3 /*break*/, 3];
-                                        preloadedCommentsChunks = Object.keys(comment.replies.pages).map(function (sortType) { return comment.replies.pages[sortType].comments; });
-                                        return [4 /*yield*/, Promise.all(preloadedCommentsChunks.map(function (preloadedComments) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
-                                                switch (_a.label) {
-                                                    case 0: return [4 /*yield*/, Promise.all(preloadedComments.map(function (preloadedComment) { return verifyComment(preloadedComment, comment); }))];
-                                                    case 1: return [2 /*return*/, _a.sent()];
-                                                }
-                                            }); }); }))];
-                                    case 2:
-                                        _b.sent();
-                                        _b.label = 3;
-                                    case 3: return [2 /*return*/];
-                                }
-                            });
-                        }); };
-                        return [4 /*yield*/, Promise.all(page.comments.map(function (comment) { return __awaiter(_this, void 0, void 0, function () {
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0: return [4 /*yield*/, verifyComment(comment, undefined)];
-                                        case 1:
-                                            _a.sent();
-                                            return [2 /*return*/];
-                                    }
-                                });
-                            }); }))];
+                        return [4 /*yield*/, (0, signatures_1.verifyPage)(page, this.subplebbit.plebbit, this.subplebbit.address)];
                     case 2:
-                        _b.sent();
+                        signatureValidity = _b.sent();
+                        if (!signatureValidity.valid)
+                            throw Error(signatureValidity.reason);
                         return [2 /*return*/, page];
                 }
             });

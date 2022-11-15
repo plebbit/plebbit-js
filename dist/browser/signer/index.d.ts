@@ -1,5 +1,5 @@
 import { CreateSignerOptions, SignerType } from "../types";
-export { signPublication, verifyPublication, Signature } from "./signatures";
+export { Signature, verifyComment, verifySubplebbit, verifyVote } from "./signatures";
 export { encrypt, decrypt } from "./encryption";
 export declare class Signer implements SignerType {
     type: "rsa";
