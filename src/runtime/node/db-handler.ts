@@ -651,9 +651,9 @@ export class DbHandler {
         await this._baseTransaction(trx)(TABLES.SIGNERS).insert(signer);
     }
 
-    async querySubplebbitSigner(trx?: Transaction): Promise<Signer> {
-        const signerRaw = await this._baseTransaction(trx)(TABLES.SIGNERS).where({ usage: "subplebbit" }).first();
-        return new Signer(signerRaw);
+    async querySubplebbitSigner(trx?: Transaction): Promise<Signer | undefined> {
+        const signerRaw: SignerType | undefined = await this._baseTransaction(trx)(TABLES.SIGNERS).where({ usage: "subplebbit" }).first();
+        return signerRaw ? new Signer(signerRaw) : undefined;
     }
 
     async querySigner(ipnsKeyName: string, trx?: Transaction): Promise<Signer | undefined> {
