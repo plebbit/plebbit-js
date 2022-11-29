@@ -652,7 +652,8 @@ export class DbHandler {
     }
 
     async querySubplebbitSigner(trx?: Transaction): Promise<Signer> {
-        return this._baseTransaction(trx)(TABLES.SIGNERS).where({ usage: "subplebbit" }).first();
+        const signerRaw = await this._baseTransaction(trx)(TABLES.SIGNERS).where({ usage: "subplebbit" }).first();
+        return new Signer(signerRaw);
     }
 
     async querySigner(ipnsKeyName: string, trx?: Transaction): Promise<Signer | undefined> {
