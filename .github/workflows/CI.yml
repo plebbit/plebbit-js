@@ -9,7 +9,6 @@ on:
       - 'test/**'
       - 'src/**'
       - 'config/**'
-      # - '.github/**'
       - 'package.json'
       - 'package-lock.json'
   push:
@@ -43,7 +42,6 @@ jobs:
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
       - run: npm run test:server & npm run test:server:wait-on
-      - run:   npm run test:browser
   test-node:
     runs-on: ubuntu-latest
     needs: setup-test-server
