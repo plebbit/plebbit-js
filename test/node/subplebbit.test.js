@@ -307,4 +307,25 @@ describe("subplebbit", async () => {
         const subsAfterDeletion = await plebbit.listSubplebbits();
         expect(subsAfterDeletion).to.not.include(subplebbit.address);
     });
+
+    it(`Deleted sub keys are not listed in node`, async () => {
+        const ipfsKeys = await subplebbit.plebbit.ipfsClient.key.list();
+        const subKeyExists = ipfsKeys.some((key) => key.name === subplebbit.address);
+        expect(subKeyExists).to.be.false;
+    });
+
+    it(`Can start a sub with only sqlite3 file`, async () => {
+        // This should be ran after deleting sub test
+        // We're making an assumption here that ipfsKey is not imported in the ipfs node
+        const databaseConfig = {
+            client: "sqlite3",
+            connection: {
+                filename: `${plebbit.dataPath}/subplebbits/deleted/${subplebbit.address}`
+            },
+            useNullAsDefault: true
+        };
+        subplebbit = await plebbit.createSubplebbit({ database: databaseConfig });
+
+        assert.isFulfilled(subplebbit.start());
+    });
 });
