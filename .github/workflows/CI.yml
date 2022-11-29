@@ -23,7 +23,7 @@ on:
       - 'package-lock.json'
 
 jobs:
-  setup-test-server:
+  test-plebbit-js:
     runs-on: ubuntu-latest
 
     steps:
@@ -31,7 +31,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16
-          cache: 'npm'
 
       - run: npm ci
       - run: npm run build
@@ -42,42 +41,8 @@ jobs:
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
       - run: npm run test:server & npm run test:server:wait-on
-  test-node:
-    runs-on: ubuntu-latest
-    needs: setup-test-server
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: 'npm'
-      - run: npm ci && npm run build && npm run webpack
       - run: npm run test:node:parallel
-
-  test-chrome:
-    runs-on: ubuntu-latest
-    needs: setup-test-server
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: 'npm'
-      - run: npm ci && npm run build && npm run webpack
-      - run: CHROME_BIN=$(which chrome) npm run test:browser:chrome
-  
-  test-firefox:
-    runs-on: ubuntu-latest
-    needs: setup-test-server
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: 'npm'
-      - run: npm ci && npm run build && npm run webpack
-      - run: FIREFOX_BIN=$(which firefox) npm run test:browser:firefox
-
+      - run: CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) npm run test:browser
 
   test-plebbit-react-hooks:
     uses: ./.github/workflows/CI-plebbit-react-hooks.yml
