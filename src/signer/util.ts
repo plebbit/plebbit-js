@@ -14,13 +14,13 @@ export const getPlebbitAddressFromPrivateKeyPem = async (privateKeyPem): Promise
     return peerId.toB58String().trim();
 };
 
-export const getPlebbitAddressFromPublicKeyPem = async (publicKeyPem): Promise<string> => {
+export const getPlebbitAddressFromPublicKeyPem = async (publicKeyPem: string): Promise<string> => {
     validatePublicKeyPem(publicKeyPem);
     const peerId = await getPeerIdFromPublicKeyPem(publicKeyPem);
     return peerId.toB58String().trim();
 };
 
-export const getIpfsKeyFromPrivateKeyPem = async (privateKeyPem, password = "") => {
+export const getIpfsKeyFromPrivateKeyPem = async (privateKeyPem: string, password = "") => {
     validatePrivateKeyPem(privateKeyPem);
     // you can optionally encrypt the PEM by providing a password
     // https://en.wikipedia.org/wiki/PKCS_8

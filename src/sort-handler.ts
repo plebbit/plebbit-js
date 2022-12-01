@@ -6,6 +6,7 @@ import { Comment } from "./comment";
 import { CommentType, PostSort, PostSortName, ReplySort, ReplySortName, SortProps, Timeframe } from "./types";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
+import { CACHE_KEYS } from "./constants";
 
 export const POSTS_SORT_TYPES: PostSort = {
     hot: { score: (...args) => hotScore(...args) },
@@ -192,7 +193,7 @@ export class SortHandler {
 
     async generatePagesUnderComment(comment?: Comment | CommentType, trx?): Promise<Pages | undefined> {
         if (comment?.replyCount === 0) return undefined;
-        const key = comment?.cid || "subplebbit"; // If comment is undefined then we're generating page for subplebbit
+        const key = comment?.cid || CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]; // If comment is undefined then we're generating page for subplebbit
         const cachedPageJson = await this.subplebbit.dbHandler?.keyvGet(key);
         if (!cachedPageJson || JSON.stringify(cachedPageJson) === "{}") {
             await this.subplebbit.dbHandler?.keyvDelete(key);
@@ -200,7 +201,8 @@ export class SortHandler {
             const cachedPage = new Pages({ ...cachedPageJson, subplebbit: this.subplebbit });
             return cachedPage;
         }
-        const subplebbitPostCount = key === "subplebbit" && (await this.subplebbit.dbHandler?.queryCountOfPosts(trx));
+        const subplebbitPostCount =
+            key === CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT] && (await this.subplebbit.dbHandler?.queryCountOfPosts(trx));
 
         if (subplebbitPostCount === 0)
             // If subplebbit and has no posts, then return undefined
@@ -232,7 +234,7 @@ export class SortHandler {
         const cachesToDelete: string[] = [
             dbComment.cid,
             ...(await this.subplebbit.dbHandler.queryParentsOfComment(dbComment, undefined)).map((comment) => <string>comment.cid),
-            "subplebbit"
+            CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]
         ];
         log.trace(`Caches to delete: ${cachesToDelete}`);
         await this.subplebbit.dbHandler?.keyvDelete(cachesToDelete);

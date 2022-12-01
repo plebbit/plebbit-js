@@ -60,6 +60,7 @@ import {
     verifySubplebbit,
     verifyVote
 } from "./signer/signatures";
+import { CACHE_KEYS } from "./constants";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
@@ -256,32 +257,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         await this.initDbIfNeeded();
         // import ipfs key into ipfs node
 
-        let subplebbitIpfsNodeKey, error;
-        try {
-            subplebbitIpfsNodeKey = (await this.plebbit.ipfsClient.key.list()).filter((key) => key.name === this.signer.address)[0];
-        } catch (e) {
-            error = e;
-        }
-        if (error) throw Error(`Failed to list keys from ipfs node due to error: ${error}`);
-        if (!this.signer) throw Error(`Failed to import subplebbit.signer into ipfs node since it's undefined`);
-        if (!subplebbitIpfsNodeKey) {
-            const ipfsKey = await nativeFunctions.importSignerIntoIpfsNode(
-                { ...this.signer, ipnsKeyName: this.signer.address },
-                this.plebbit
-            );
-            this.ipnsKeyName = ipfsKey.Name;
-            log(`Imported subplebbit keys into ipfs node,`, ipfsKey);
-        } else {
-            log.trace(`Subplebbit key is already in ipfs node, no need to import key, `, subplebbitIpfsNodeKey);
-            this.ipnsKeyName = subplebbitIpfsNodeKey["name"] || subplebbitIpfsNodeKey["Name"];
-        }
+        const cachedSubplebbit: SubplebbitType | undefined = await this.dbHandler?.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
+        if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")
+            this.initSubplebbit({ ...cachedSubplebbit, ...removeKeysWithUndefinedValues(this.toJSONInternal()) }); // Init subplebbit fields from DB
 
         const cachedSubplebbit: SubplebbitType | undefined = await this.dbHandler?.keyvGet(this.address);
         if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")
             this.initSubplebbit({ ...cachedSubplebbit, ...removeKeysWithUndefinedValues(this.toJSON()) }); // Init subplebbit fields from DB
 
-        if (!lodash.isEqual(this.toJSON(), await this.dbHandler?.keyvGet(this.address)))
-            await this.dbHandler?.keyvSet(this.address, this.toJSON());
+        if (!lodash.isEqual(this.toJSONInternal(), await this.dbHandler?.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT])))
+            await this.dbHandler?.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternal());
     }
 
     private async assertDomainResolvesCorrectly(domain: string) {
@@ -322,7 +307,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.initSubplebbit(newSubplebbitOptions);
 
         log(`Subplebbit (${this.address}) props (${Object.keys(newSubplebbitOptions)}) has been edited`);
-        await this.dbHandler.keyvSet(this.address, this.toJSON());
+        await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternal());
 
         return this;
     }
@@ -950,7 +935,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.updateSubplebbitIpns();
 
             RUNNING_SUBPLEBBITS[this.signer.address] = true;
-            await this.dbHandler.keyvSet(this.address, this.toJSON());
+            await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternal());
         } catch (e) {
             log.error(`Failed to sync due to error,`, e);
         }
