@@ -100,7 +100,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     private _challengeToPublication: Record<string, DecryptedChallengeRequestMessageType["publication"]>;
     private provideCaptchaCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[ChallengeType[], string | undefined]>;
     private validateCaptchaAnswerCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>;
-    private ipnsKeyName?: string;
     private sortHandler: SortHandler;
     private _updateInterval?: any;
     private _updateIntervalMs: number;
@@ -136,7 +135,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.lastPostCid = mergedProps.lastPostCid;
         this.database = mergedProps.database;
         this.address = mergedProps.address;
-        this.ipnsKeyName = mergedProps.ipnsKeyName;
         this.pubsubTopic = mergedProps.pubsubTopic;
         this.challengeTypes = mergedProps.challengeTypes;
         this.metricsCid = mergedProps.metricsCid;
@@ -158,25 +156,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.signature = mergedProps.signature;
     }
 
-    private async initSignerIfNeeded() {
-        const log = Logger("plebbit-js:subplebbit:prePublish");
-        if (this.dbHandler) {
-            const dbSigner = await this.dbHandler.querySubplebbitSigner(undefined);
-            if (!dbSigner) {
-                log.trace(`Subplebbit has no signer in DB, will insert provided signer from createSubplebbitOptions into DB`);
-                await this.dbHandler.insertSigner(
-                    {
-                        ...this.signer,
-                        ipnsKeyName: this.signer.address,
-                        usage: "subplebbit"
-                    },
-                    undefined
-                );
-            } else if (!this.signer) {
-                log.trace(`Subplebbit loaded signer from DB`);
-                this.signer = dbSigner;
-            }
-        }
+    private async _initSignerProps() {
+        if (!this.signer.ipfsKey) this.signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKeyPem(this.signer.privateKey));
+        if (!this.signer.ipnsKeyName) this.signer.ipnsKeyName = this.signer.address;
+        this.signer = new Signer(this.signer);
 
         if (typeof this.signer?.publicKey !== "string") throw Error("subplebbit.signer.publicKey is not defined");
         this.encryption = {
@@ -216,7 +199,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     toJSONInternal() {
         return {
             ...this.toJSON(),
-            ipnsKeyName: this.ipnsKeyName,
             database: this.database,
             signer: this.signer
         };
@@ -402,12 +384,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (!currentIpns || encode(currentIpns) !== encode(this.toJSON()) || lastPublishOverTwentyMinutes) {
             this.updatedAt = timestamp();
             this.signature = await signSubplebbit(this.toJSON(), this.signer);
-            const subIpnsCacheKey = sha256("ipns" + this.address);
-            await this.dbHandler?.keyvSet(subIpnsCacheKey, this.toJSON());
             const file = await this.plebbit.ipfsClient.add(encode(this.toJSON()));
             await this.plebbit.ipfsClient.name.publish(file.path, {
                 lifetime: "72h", // TODO decide on optimal time later
-                key: this.ipnsKeyName,
+                key: this.signer.ipnsKeyName,
                 allowOffline: true
             });
             this.emit("update", this);
@@ -571,7 +551,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             // Comment and Post need to add file to ipfs
             const ipnsKeyName = sha256(encode(postOrCommentOrVote.toJSONSkeleton()));
 
-            if (await this.dbHandler?.querySigner(ipnsKeyName)) {
+            if (await this.dbHandler.querySigner(ipnsKeyName)) {
                 const msg = `Failed to insert ${
                     postOrCommentOrVote.constructor.name
                 } due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`;
@@ -581,8 +561,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
             const ipfsSigner = new Signer({
                 ...(await this.plebbit.createSigner()),
-                ipnsKeyName: ipnsKeyName,
-                usage: "comment"
+                ipnsKeyName
             });
             await this.dbHandler.insertSigner(ipfsSigner, undefined);
             postOrCommentOrVote.setCommentIpnsKey(await nativeFunctions.importSignerIntoIpfsNode(ipfsSigner, this.plebbit));
@@ -1007,10 +986,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         //@ts-ignore
         await this.plebbit.ipfsClient.block.rm(resolvedAddress, { force: true });
 
-        if (this.ipnsKeyName)
+        if (this.signer.ipnsKeyName)
             // Key may not exist on ipfs node
             try {
-                await this.plebbit.ipfsClient.key.rm(this.ipnsKeyName);
+                await this.plebbit.ipfsClient.key.rm(this.signer.ipnsKeyName);
             } catch {}
     }
 

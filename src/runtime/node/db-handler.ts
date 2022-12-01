@@ -7,7 +7,6 @@ import path from "path";
 import assert from "assert";
 import fs from "fs";
 import Keyv from "keyv";
-import { Signer } from "../../signer";
 import Transaction = Knex.Transaction;
 import {
     AuthorDbType,
@@ -226,7 +225,6 @@ export class DbHandler {
             table.text("publicKey").notNullable().unique();
             table.text("address").nullable();
             table.text("type").notNullable(); // RSA or any other type
-            table.enum("usage", Object.values(["comment", "subplebbit"])).notNullable();
             table.binary("ipfsKey").notNullable().unique();
         });
     }
@@ -651,13 +649,8 @@ export class DbHandler {
         await this._baseTransaction(trx)(TABLES.SIGNERS).insert(signer);
     }
 
-    async querySubplebbitSigner(trx?: Transaction): Promise<Signer | undefined> {
-        const signerRaw: SignerType | undefined = await this._baseTransaction(trx)(TABLES.SIGNERS).where({ usage: "subplebbit" }).first();
-        return signerRaw ? new Signer(signerRaw) : undefined;
-    }
-
-    async querySigner(ipnsKeyName: string, trx?: Transaction): Promise<Signer | undefined> {
-        return this._baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName: ipnsKeyName }).first();
+    async querySigner(ipnsKeyName: string, trx?: Transaction): Promise<SignerType | undefined> {
+        return this._baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName }).first();
     }
 
     async queryCommentsGroupByDepth(trx?: Knex.Transaction): Promise<CommentType[][]> {

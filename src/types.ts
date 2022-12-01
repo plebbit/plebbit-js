@@ -37,7 +37,6 @@ export interface SignerType {
     publicKey?: string;
     address?: string;
     ipfsKey?: Uint8Array;
-    usage?: "comment" | "subplebbit";
     ipnsKeyName?: string;
 }
 export type Encrypted = {
