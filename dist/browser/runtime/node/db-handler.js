@@ -509,7 +509,7 @@ var DbHandler = /** @class */ (function () {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
                         _b = (_a = Object).keys;
-                        return [4 /*yield*/, this._knex(dstTable).select("*").first()];
+                        return [4 /*yield*/, this._knex(dstTable).columnInfo()];
                     case 1:
                         dstTableColumns = _b.apply(_a, [_c.sent()]);
                         return [4 /*yield*/, this._knex(srcTable).select("*")];
