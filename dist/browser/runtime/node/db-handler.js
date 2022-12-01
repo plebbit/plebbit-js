@@ -503,21 +503,26 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype._copyTable = function (srcTable, dstTable) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, srcRecords;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var log, dstTableColumns, _a, _b, srcRecords, srcRecordFiltered;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
-                        return [4 /*yield*/, this._knex(srcTable).select("*")];
+                        _b = (_a = Object).keys;
+                        return [4 /*yield*/, this._knex(dstTable).select("*").first()];
                     case 1:
-                        srcRecords = _a.sent();
-                        log("Attempting to copy ".concat(srcRecords.length, " ").concat(srcTable));
-                        if (!(srcRecords.length > 0)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, this._knex(dstTable).insert(srcRecords)];
+                        dstTableColumns = _b.apply(_a, [_c.sent()]);
+                        return [4 /*yield*/, this._knex(srcTable).select("*")];
                     case 2:
-                        _a.sent();
-                        _a.label = 3;
+                        srcRecords = _c.sent();
+                        if (!(srcRecords.length > 0)) return [3 /*break*/, 4];
+                        log("Attempting to copy ".concat(srcRecords.length, " ").concat(srcTable));
+                        srcRecordFiltered = srcRecords.map(function (record) { return lodash_1.default.pick(record, dstTableColumns); });
+                        return [4 /*yield*/, this._knex(dstTable).insert(srcRecordFiltered)];
                     case 3:
+                        _c.sent();
+                        _c.label = 4;
+                    case 4:
                         log("copied table ".concat(srcTable, " to table ").concat(dstTable));
                         return [2 /*return*/];
                 }
