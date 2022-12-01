@@ -68,7 +68,6 @@ var path_1 = __importDefault(require("path"));
 var assert_1 = __importDefault(require("assert"));
 var fs_1 = __importDefault(require("fs"));
 var keyv_1 = __importDefault(require("keyv"));
-var signer_1 = require("../../signer");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var util_2 = require("./util");
 var version_1 = __importDefault(require("../../version"));
@@ -368,7 +367,6 @@ var DbHandler = /** @class */ (function () {
                             table.text("publicKey").notNullable().unique();
                             table.text("address").nullable();
                             table.text("type").notNullable(); // RSA or any other type
-                            table.enum("usage", Object.values(["comment", "subplebbit"])).notNullable();
                             table.binary("ipfsKey").notNullable().unique();
                         })];
                     case 1:
@@ -1096,19 +1094,6 @@ var DbHandler = /** @class */ (function () {
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
-                }
-            });
-        });
-    };
-    DbHandler.prototype.querySubplebbitSigner = function (trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            var signerRaw;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.SIGNERS).where({ usage: "subplebbit" }).first()];
-                    case 1:
-                        signerRaw = _a.sent();
-                        return [2 /*return*/, signerRaw ? new signer_1.Signer(signerRaw) : undefined];
                 }
             });
         });

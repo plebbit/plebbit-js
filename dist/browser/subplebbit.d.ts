@@ -40,7 +40,6 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     private _challengeToPublication;
     private provideCaptchaCallback;
     private validateCaptchaAnswerCallback;
-    private ipnsKeyName?;
     private sortHandler;
     private _updateInterval?;
     private _updateIntervalMs;
@@ -49,12 +48,11 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     private _sync;
     constructor(props: CreateSubplebbitOptions, plebbit: Plebbit);
     initSubplebbit(newProps: SubplebbitType | SubplebbitEditOptions): void;
-    private initSignerIfNeeded;
+    private _initSignerProps;
     private initDbIfNeeded;
     setProvideCaptchaCallback(newCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[ChallengeType[], string | undefined]>): void;
     setValidateCaptchaAnswerCallback(newCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>): void;
     toJSONInternal(): {
-        ipnsKeyName: string;
         database: any;
         signer: Signer;
         signature: SignatureType;
@@ -80,6 +78,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
         flairs?: Record<FlairOwner, Flair[]>;
     };
     toJSON(): SubplebbitType;
+    private _importSignerIntoIpfsIfNeeded;
     prePublish(): Promise<void>;
     private assertDomainResolvesCorrectly;
     edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit>;

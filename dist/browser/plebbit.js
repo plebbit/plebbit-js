@@ -251,12 +251,13 @@ var Plebbit = /** @class */ (function (_super) {
         return false;
     };
     Plebbit.prototype.createSubplebbit = function (options) {
+        var _a, _b, _c, _d;
         if (options === void 0) { options = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, canRunSub, newSub, remoteSub, subHasBeenCreatedBefore, _a, localSubs, derivedAddress, _b;
+            var log, canRunSub, newSub, remoteSub, subHasBeenCreatedBefore, _e, localSubs, derivedAddress, _f;
             var _this = this;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            return __generator(this, function (_g) {
+                switch (_g.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
                         canRunSub = this._canRunSub();
@@ -295,55 +296,67 @@ var Plebbit = /** @class */ (function (_super) {
                                 return [2 /*return*/, new subplebbit_1.Subplebbit(options, this)];
                             });
                         }); };
-                        if (!(options.address && !options.signer)) return [3 /*break*/, 4];
-                        if (!!canRunSub) return [3 /*break*/, 1];
-                        return [2 /*return*/, remoteSub()];
-                    case 1: return [4 /*yield*/, this.listSubplebbits()];
+                        if (!(!options.address &&
+                            ((_b = (_a = options === null || options === void 0 ? void 0 : options.database) === null || _a === void 0 ? void 0 : _a.connection) === null || _b === void 0 ? void 0 : _b.filename) &&
+                            ((_d = (_c = options === null || options === void 0 ? void 0 : options.database) === null || _c === void 0 ? void 0 : _c.connection) === null || _d === void 0 ? void 0 : _d.filename) !== ":memory:")) return [3 /*break*/, 2];
+                        options.address = options.database.connection.filename.split(/[\\\/]/).pop();
+                        return [4 /*yield*/, util_1.nativeFunctions.copyDbToDatapathIfNeeded(options.database, this.dataPath)];
+                    case 1:
+                        _g.sent();
+                        _g.label = 2;
                     case 2:
-                        subHasBeenCreatedBefore = (_c.sent()).includes(options.address);
+                        if (!(options.address && !options.signer)) return [3 /*break*/, 6];
+                        if (!!canRunSub) return [3 /*break*/, 3];
+                        return [2 /*return*/, remoteSub()];
+                    case 3: return [4 /*yield*/, this.listSubplebbits()];
+                    case 4:
+                        subHasBeenCreatedBefore = (_g.sent()).includes(options.address);
                         if (subHasBeenCreatedBefore)
                             return [2 /*return*/, newSub()];
                         else
                             return [2 /*return*/, remoteSub()];
-                        _c.label = 3;
-                    case 3: return [3 /*break*/, 13];
-                    case 4:
-                        if (!(!options.address && !options.signer)) return [3 /*break*/, 8];
-                        if (!!canRunSub) return [3 /*break*/, 5];
-                        throw Error("missing nativeFunctions required to create a subplebbit");
-                    case 5:
-                        _a = options;
-                        return [4 /*yield*/, this.createSigner()];
+                        _g.label = 5;
+                    case 5: return [3 /*break*/, 15];
                     case 6:
-                        _a.signer = _c.sent();
+                        if (!(!options.address && !options.signer)) return [3 /*break*/, 10];
+                        if (!!canRunSub) return [3 /*break*/, 7];
+                        throw Error("missing nativeFunctions required to create a subplebbit");
+                    case 7:
+                        _e = options;
+                        return [4 /*yield*/, this.createSigner()];
+                    case 8:
+                        _e.signer = _g.sent();
+                        options.address = options.signer.address;
                         log("Did not provide CreateSubplebbitOptions.signer, generated random signer with address (".concat(options.signer.address, ")"));
                         return [2 /*return*/, newSub()];
-                    case 7: return [3 /*break*/, 13];
-                    case 8:
-                        if (!(!options.address && options.signer)) return [3 /*break*/, 12];
+                    case 9: return [3 /*break*/, 15];
+                    case 10:
+                        if (!(!options.address && options.signer)) return [3 /*break*/, 14];
                         if (!canRunSub)
                             throw Error("missing nativeFunctions required to create a subplebbit");
                         return [4 /*yield*/, this.listSubplebbits()];
-                    case 9:
-                        localSubs = _c.sent();
-                        _b = options.signer.address;
-                        if (_b) return [3 /*break*/, 11];
-                        return [4 /*yield*/, (0, util_3.getPlebbitAddressFromPrivateKeyPem)(options.signer.privateKey)];
-                    case 10:
-                        _b = (_c.sent());
-                        _c.label = 11;
                     case 11:
-                        derivedAddress = _b;
+                        localSubs = _g.sent();
+                        _f = options.signer.address;
+                        if (_f) return [3 /*break*/, 13];
+                        return [4 /*yield*/, (0, util_3.getPlebbitAddressFromPrivateKeyPem)(options.signer.privateKey)];
+                    case 12:
+                        _f = (_g.sent());
+                        _g.label = 13;
+                    case 13:
+                        derivedAddress = _f;
                         if (localSubs.includes(derivedAddress))
                             options.address = derivedAddress;
+                        if (!options.address)
+                            options.address = options.signer.address;
                         return [2 /*return*/, newSub()];
-                    case 12:
+                    case 14:
                         if (!canRunSub)
                             return [2 /*return*/, remoteSub()];
                         else
                             return [2 /*return*/, newSub()];
-                        _c.label = 13;
-                    case 13: return [2 /*return*/];
+                        _g.label = 15;
+                    case 15: return [2 /*return*/];
                 }
             });
         });

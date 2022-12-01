@@ -1,6 +1,5 @@
 import Author from "../../author";
 import { Knex } from "knex";
-import { Signer } from "../../signer";
 import Transaction = Knex.Transaction;
 import { AuthorDbType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditForDbType, CommentEditType, CommentForDbType, CommentType, DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, PostType, SignerType, SubplebbitAuthor, SubplebbitMetrics, VoteForDbType, VoteType } from "../../types";
 export declare class DbHandler {
@@ -59,8 +58,7 @@ export declare class DbHandler {
     queryComment(cid: string, trx?: Transaction): Promise<CommentType | PostType | undefined>;
     queryLatestPost(trx?: Transaction): Promise<PostType | undefined>;
     insertSigner(signer: SignerType, trx?: Transaction): Promise<void>;
-    querySubplebbitSigner(trx?: Transaction): Promise<Signer | undefined>;
-    querySigner(ipnsKeyName: string, trx?: Transaction): Promise<Signer | undefined>;
+    querySigner(ipnsKeyName: string, trx?: Transaction): Promise<SignerType | undefined>;
     queryCommentsGroupByDepth(trx?: Knex.Transaction): Promise<CommentType[][]>;
     queryCountOfPosts(trx?: Knex.Transaction): Promise<number>;
     queryCommentsOfAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<CommentType[]>;

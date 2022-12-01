@@ -65,6 +65,7 @@ var pages_1 = require("./pages");
 var assert_1 = __importDefault(require("assert"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var lodash_1 = __importDefault(require("lodash"));
+var constants_1 = require("./constants");
 exports.POSTS_SORT_TYPES = {
     hot: { score: function () {
             var args = [];
@@ -386,7 +387,7 @@ var SortHandler = /** @class */ (function () {
                     case 0:
                         if ((comment === null || comment === void 0 ? void 0 : comment.replyCount) === 0)
                             return [2 /*return*/, undefined];
-                        key = (comment === null || comment === void 0 ? void 0 : comment.cid) || "subplebbit";
+                        key = (comment === null || comment === void 0 ? void 0 : comment.cid) || constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.POSTS_SUBPLEBBIT];
                         return [4 /*yield*/, ((_a = this.subplebbit.dbHandler) === null || _a === void 0 ? void 0 : _a.keyvGet(key))];
                     case 1:
                         cachedPageJson = _h.sent();
@@ -399,7 +400,7 @@ var SortHandler = /** @class */ (function () {
                         cachedPage = new pages_1.Pages(__assign(__assign({}, cachedPageJson), { subplebbit: this.subplebbit }));
                         return [2 /*return*/, cachedPage];
                     case 4:
-                        _e = key === "subplebbit";
+                        _e = key === constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.POSTS_SUBPLEBBIT];
                         if (!_e) return [3 /*break*/, 6];
                         return [4 /*yield*/, ((_c = this.subplebbit.dbHandler) === null || _c === void 0 ? void 0 : _c.queryCountOfPosts(trx))];
                     case 5:
@@ -448,7 +449,7 @@ var SortHandler = /** @class */ (function () {
                         return [4 /*yield*/, this.subplebbit.dbHandler.queryParentsOfComment(dbComment, undefined)];
                     case 1:
                         cachesToDelete = __spreadArray.apply(void 0, [__spreadArray.apply(void 0, _b.concat([(_c.sent()).map(function (comment) { return comment.cid; }), true])), [
-                                "subplebbit"
+                                constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.POSTS_SUBPLEBBIT]
                             ], false]);
                         log.trace("Caches to delete: ".concat(cachesToDelete));
                         return [4 /*yield*/, ((_a = this.subplebbit.dbHandler) === null || _a === void 0 ? void 0 : _a.keyvDelete(cachesToDelete))];
