@@ -21,9 +21,15 @@ export class Signer implements SignerType {
         this.privateKey = props.privateKey;
         this.publicKey = props.publicKey;
         this.address = props.address;
-        this.ipfsKey = props.ipfsKey ? new Uint8Array(props.ipfsKey) : undefined;
-        this.usage = props.usage;
         this.ipnsKeyName = props.ipnsKeyName;
+
+        this.ipfsKey =
+            props.ipfsKey?.constructor?.name === "Object"
+                ? new Uint8Array(Object.values(props.ipfsKey))
+                : props.ipfsKey
+                ? new Uint8Array(props.ipfsKey)
+                : undefined;
+        if (this.ipfsKey && this.ipfsKey.byteLength === 0) debugger;
     }
 }
 

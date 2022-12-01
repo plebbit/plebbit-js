@@ -458,6 +458,7 @@ export type NativeFunctions = {
     // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
     importSignerIntoIpfsNode: (signer: SignerType, plebbit: Plebbit) => Promise<{ Id: string; Name: string }>;
     deleteSubplebbit(subplebbitAddress: string, dataPath: string): Promise<void>;
+    copyDbToDatapathIfNeeded(databaseConfig: CreateSubplebbitOptions["database"], dataPath: string): Promise<void>;
 };
 
 export type OnlyDefinedProperties<T> = Pick<

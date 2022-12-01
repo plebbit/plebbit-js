@@ -27,6 +27,7 @@ import {
     FlairOwner,
     ProtocolVersion,
     SignatureType,
+    SignerType,
     SubplebbitEditOptions,
     SubplebbitEncryption,
     SubplebbitFeatures,
@@ -39,7 +40,7 @@ import {
 import { Comment } from "./comment";
 import Vote from "./vote";
 import Post from "./post";
-import { getPlebbitAddressFromPublicKeyPem } from "./signer/util";
+import { getIpfsKeyFromPrivateKeyPem, getPlebbitAddressFromPublicKeyPem } from "./signer/util";
 import { v4 as uuidv4 } from "uuid";
 import { AUTHOR_EDIT_FIELDS, CommentEdit, MOD_EDIT_FIELDS } from "./comment-edit";
 import errcode from "err-code";
@@ -181,7 +182,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         await this.dbHandler.initDbIfNeeded();
         if (!this.sortHandler)
             this.sortHandler = new SortHandler({ address: this.address, plebbit: this.plebbit, dbHandler: this.dbHandler });
-        await this.initSignerIfNeeded();
     }
 
     setProvideCaptchaCallback(
@@ -227,23 +227,27 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         };
     }
 
+    private async _importSignerIntoIpfsIfNeeded(signer: SignerType) {
+        if (!signer.ipnsKeyName) throw Error(`signer.ipnsKeyName need to be defined before importing singer into IPFS`);
+        const keyExistsInNode = (await this.plebbit.ipfsClient.key.list()).some((key) => key.name === signer.ipnsKeyName);
+        if (!keyExistsInNode) await nativeFunctions.importSignerIntoIpfsNode(signer, this.plebbit);
+    }
+
     // TODO rename and make this private
     async prePublish() {
         // Import ipfs key into node (if not imported already)
         // Initialize signer
         // Initialize address (needs signer)
         // Initialize db (needs address)
-        const log = Logger("plebbit-js:subplebbit:prePublish");
-
         await this.initDbIfNeeded();
 
         const cachedSubplebbit: SubplebbitType | undefined = await this.dbHandler?.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
         if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")
             this.initSubplebbit({ ...cachedSubplebbit, ...removeKeysWithUndefinedValues(this.toJSONInternal()) }); // Init subplebbit fields from DB
 
-        const cachedSubplebbit: SubplebbitType | undefined = await this.dbHandler?.keyvGet(this.address);
-        if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")
-            this.initSubplebbit({ ...cachedSubplebbit, ...removeKeysWithUndefinedValues(this.toJSON()) }); // Init subplebbit fields from DB
+        // import ipfs key into ipfs node
+        await this._initSignerProps();
+        await this._importSignerIntoIpfsIfNeeded(this.signer);
 
         if (!lodash.isEqual(this.toJSONInternal(), await this.dbHandler?.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT])))
             await this.dbHandler?.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternal());
@@ -860,6 +864,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     private async _publishCommentIpns(dbComment: Comment, options: CommentUpdate) {
         dbComment._initCommentUpdate(options);
+        const signerRaw = await this.dbHandler.querySigner(dbComment.ipnsKeyName);
+        if (!signerRaw) throw Error(`Comment ${dbComment.cid} IPNS signer is not stored in DB`);
+        const commentIpnsSigner = new Signer(signerRaw);
+        await this._importSignerIntoIpfsIfNeeded(commentIpnsSigner);
         const file = await this.plebbit.ipfsClient.add(encode({ ...dbComment.toJSONCommentUpdate(), signature: options.signature }));
         await this.plebbit.ipfsClient.name.publish(file.path, {
             lifetime: "72h",

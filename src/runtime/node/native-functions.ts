@@ -1,5 +1,5 @@
-import { DbHandlerPublicAPI, IpfsHttpClientPublicAPI, NativeFunctions, SignerType } from "../../types";
-import { promises as fs } from "fs";
+import { CreateSubplebbitOptions, DbHandlerPublicAPI, IpfsHttpClientPublicAPI, NativeFunctions, SignerType } from "../../types";
+import fs from "fs/promises";
 import path from "path";
 import assert from "assert";
 
@@ -126,7 +126,7 @@ const nativeFunctions: NativeFunctions = {
         const data = new FormData();
         if (typeof signer.ipnsKeyName !== "string")
             throw Error("Signer.ipnsKeyName needs to be defined before importing key into IPFS node");
-        if (signer.ipfsKey?.constructor?.name !== "Uint8Array")
+        if (signer.ipfsKey?.constructor?.name !== "Uint8Array" || signer.ipfsKey.byteLength <= 0)
             throw Error("Signer.ipfsKey needs to be defined before importing key into IPFS node");
         const ipfsKeyFile = Buffer.from(signer.ipfsKey);
 
@@ -149,6 +149,17 @@ const nativeFunctions: NativeFunctions = {
         const newPath = path.join(dataPath, "subplebbits", "deleted", subplebbitAddress);
         await fs.mkdir(path.join(dataPath, "subplebbits", "deleted"), { recursive: true });
         await fs.rename(oldPath, newPath);
+    },
+    copyDbToDatapathIfNeeded: async (databaseConfig: CreateSubplebbitOptions["database"], plebbitDataPath: string) => {
+        await fs.mkdir(path.join(plebbitDataPath, "subplebbits"), { recursive: true });
+        const expectedPath = path.join(plebbitDataPath, "subplebbits", path.basename(databaseConfig.connection.filename));
+
+        try {
+            await fs.stat(expectedPath);
+        } catch {
+            // Copy db to data path if db is not in data path
+            await fs.cp(databaseConfig.connection.filename, expectedPath);
+        }
     }
 };
 
