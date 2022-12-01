@@ -1,6 +1,6 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { generateMockPost } = require("../../dist/node/test/test-util");
+const { generateMockPost, generateMockComment } = require("../../dist/node/test/test-util");
 const { timestamp, encode } = require("../../dist/node/util");
 const { messages, codes } = require("../../dist/node/errors");
 const chai = require("chai");
@@ -18,6 +18,13 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 describe("subplebbit", async () => {
     before(async () => {
         plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        subplebbitSigner = await plebbit.createSigner();
+        plebbit.resolver.resolveSubplebbitAddressIfNeeded = async (subplebbitAddress) => {
+            if (subplebbitAddress === "plebbit.eth") return subplebbitSigner.address;
+            else if (subplebbitAddress === "plebbit2.eth") return signers[2];
+            else if (subplebbitAddress === "testgibbreish.eth") throw new Error(`Domain (${subplebbitAddress}) has no subplebbit-address`);
+            return subplebbitAddress;
+        };
     });
     after(async () => {
         // Delete DB
@@ -60,6 +67,7 @@ describe("subplebbit", async () => {
             pubsubHttpClientOptions: `http://localhost:5003/api/v0`,
             dataPath: globalThis["window"]?.plebbitDataPath
         });
+        onlinePlebbit.resolver = plebbit.resolver;
         const startTime = timestamp();
 
         const title = `Test online plebbit`;
@@ -74,12 +82,12 @@ describe("subplebbit", async () => {
     });
 
     it("create new subplebbit from signer", async () => {
-        subplebbitSigner = await plebbit.createSigner();
         const title = `Test subplebbit - ${Date.now() / 1000}`;
         subplebbit = await plebbit.createSubplebbit({
             signer: subplebbitSigner,
             title
         });
+        subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
         subplebbit._syncIntervalMs = syncInterval;
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
@@ -122,12 +130,7 @@ describe("subplebbit", async () => {
 
     it(`Can edit a subplebbit to have ENS domain as address`, async () => {
         const address = JSON.parse(JSON.stringify(subplebbit.address));
-        plebbit.resolver.resolveSubplebbitAddressIfNeeded = async (subplebbitAddress) => {
-            if (subplebbitAddress === "plebbit.eth") return address;
-            else if (subplebbitAddress === "plebbit2.eth") return signers[2];
-            else if (subplebbitAddress === "testgibbreish.eth") throw new Error(`Domain (${subplebbitAddress}) has no subplebbit-address`);
-            return subplebbitAddress;
-        };
+
         await subplebbit.edit({ address: "plebbit.eth" });
         expect(subplebbit.address).to.equal("plebbit.eth");
         await new Promise((resolve) => subplebbit.once("update", resolve));
@@ -159,7 +162,8 @@ describe("subplebbit", async () => {
             loadedSubplebbit._updateIntervalMs = syncInterval;
             await loadedSubplebbit.update();
 
-            const post = await subplebbit._addPublicationToDb(await generateMockPost("plebbit.eth", plebbit, signers[0]));
+            const post = await generateMockPost("plebbit.eth", plebbit);
+            await post.publish();
 
             loadedSubplebbit.on("update", async (updatedSubplebbit) => {
                 if (!updatedSubplebbit.posts) return;
@@ -175,11 +179,7 @@ describe("subplebbit", async () => {
     it(`Can call subplebbit.posts.getPage on a remote sub with no posts`, async () => {
         const pageCid = subplebbit.posts?.pageCids?.hot;
         expect(pageCid).to.be.a.string;
-        const plebbitWithDifferentPath = await Plebbit({
-            dataPath: plebbit.dataPath.replace(".plebbit", ".plebbit2"),
-            ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5002/api/v0`
-        });
+        const plebbitWithDifferentPath = await mockPlebbit(plebbit.dataPath.replace(".plebbit", ".plebbit2"));
         const emptySubplebbit = await plebbitWithDifferentPath.createSubplebbit({ address: subplebbit.address }); // This should generate an empty subplebbit
         const actualPage = await subplebbit.posts.getPage(pageCid);
         const fetchedSubplebbitPage = await emptySubplebbit.posts.getPage(pageCid);
@@ -310,7 +310,7 @@ describe("subplebbit", async () => {
 
     it(`Deleted sub keys are not listed in node`, async () => {
         const ipfsKeys = await subplebbit.plebbit.ipfsClient.key.list();
-        const subKeyExists = ipfsKeys.some((key) => key.name === subplebbit.address);
+        const subKeyExists = ipfsKeys.some((key) => key.name === subplebbit.signer.ipnsKeyName);
         expect(subKeyExists).to.be.false;
     });
 
@@ -324,8 +324,25 @@ describe("subplebbit", async () => {
             },
             useNullAsDefault: true
         };
-        subplebbit = await plebbit.createSubplebbit({ database: databaseConfig });
+        const subFromDb = await plebbit.createSubplebbit({ database: databaseConfig });
+        subFromDb.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
 
-        assert.isFulfilled(subplebbit.start());
+        expect(JSON.stringify(subplebbit.toJSON())).to.equal(JSON.stringify(subFromDb.toJSON()));
+        expect(subplebbit.signer).to.deep.equal(subFromDb.signer);
+        expect(await plebbit.listSubplebbits()).to.include(subFromDb.address);
+
+        subFromDb._syncIntervalMs = syncInterval;
+        assert.isFulfilled(subFromDb.start());
+
+        const commentToPostUnder = await plebbit.createComment(subFromDb.posts.pages.hot.comments[0]);
+        commentToPostUnder._updateIntervalMs = syncInterval;
+
+        const mockComment = await generateMockComment(commentToPostUnder, plebbit);
+        await mockComment.publish();
+
+        await new Promise((resolve) => {
+            commentToPostUnder.update();
+            commentToPostUnder.once("update", resolve);
+        });
     });
 });
