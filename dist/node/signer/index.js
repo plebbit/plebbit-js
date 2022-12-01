@@ -48,13 +48,20 @@ Object.defineProperty(exports, "encrypt", { enumerable: true, get: function () {
 Object.defineProperty(exports, "decrypt", { enumerable: true, get: function () { return encryption_1.decrypt; } });
 var Signer = /** @class */ (function () {
     function Signer(props) {
+        var _a, _b;
         this.type = props.type;
         this.privateKey = props.privateKey;
         this.publicKey = props.publicKey;
         this.address = props.address;
-        this.ipfsKey = props.ipfsKey ? new Uint8Array(props.ipfsKey) : undefined;
-        this.usage = props.usage;
         this.ipnsKeyName = props.ipnsKeyName;
+        this.ipfsKey =
+            ((_b = (_a = props.ipfsKey) === null || _a === void 0 ? void 0 : _a.constructor) === null || _b === void 0 ? void 0 : _b.name) === "Object"
+                ? new Uint8Array(Object.values(props.ipfsKey))
+                : props.ipfsKey
+                    ? new Uint8Array(props.ipfsKey)
+                    : undefined;
+        if (this.ipfsKey && this.ipfsKey.byteLength === 0)
+            debugger;
     }
     return Signer;
 }());

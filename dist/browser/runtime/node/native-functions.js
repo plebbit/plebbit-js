@@ -57,7 +57,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var fs_1 = require("fs");
+var promises_1 = __importDefault(require("fs/promises"));
 var path_1 = __importDefault(require("path"));
 var assert_1 = __importDefault(require("assert"));
 var plebbit_1 = require("../../plebbit");
@@ -100,10 +100,10 @@ var nativeFunctions = {
                 case 0:
                     (0, assert_1.default)(typeof dataPath === "string", "Data path is not defined");
                     subplebbitsPath = path_1.default.join(dataPath, "subplebbits");
-                    return [4 /*yield*/, fs_1.promises.mkdir(subplebbitsPath, { recursive: true })];
+                    return [4 /*yield*/, promises_1.default.mkdir(subplebbitsPath, { recursive: true })];
                 case 1:
                     _a.sent();
-                    return [4 /*yield*/, fs_1.promises.readdir(subplebbitsPath, { withFileTypes: true })];
+                    return [4 /*yield*/, promises_1.default.readdir(subplebbitsPath, { withFileTypes: true })];
                 case 2:
                     addresses = (_a.sent())
                         .filter(function (file) { return file.isFile() && !Boolean(plebbit_1.pendingSubplebbitCreations[file.name]) && !/-journal$/.test(file.name); } // Ignore sqlite journal files
@@ -264,7 +264,7 @@ var nativeFunctions = {
                     data = new form_data_1.default();
                     if (typeof signer.ipnsKeyName !== "string")
                         throw Error("Signer.ipnsKeyName needs to be defined before importing key into IPFS node");
-                    if (((_b = (_a = signer.ipfsKey) === null || _a === void 0 ? void 0 : _a.constructor) === null || _b === void 0 ? void 0 : _b.name) !== "Uint8Array")
+                    if (((_b = (_a = signer.ipfsKey) === null || _a === void 0 ? void 0 : _a.constructor) === null || _b === void 0 ? void 0 : _b.name) !== "Uint8Array" || signer.ipfsKey.byteLength <= 0)
                         throw Error("Signer.ipfsKey needs to be defined before importing key into IPFS node");
                     ipfsKeyFile = Buffer.from(signer.ipfsKey);
                     data.append("file", ipfsKeyFile);
@@ -294,13 +294,40 @@ var nativeFunctions = {
                 case 0:
                     oldPath = path_1.default.join(dataPath, "subplebbits", subplebbitAddress);
                     newPath = path_1.default.join(dataPath, "subplebbits", "deleted", subplebbitAddress);
-                    return [4 /*yield*/, fs_1.promises.mkdir(path_1.default.join(dataPath, "subplebbits", "deleted"), { recursive: true })];
+                    return [4 /*yield*/, promises_1.default.mkdir(path_1.default.join(dataPath, "subplebbits", "deleted"), { recursive: true })];
                 case 1:
                     _a.sent();
-                    return [4 /*yield*/, fs_1.promises.rename(oldPath, newPath)];
+                    return [4 /*yield*/, promises_1.default.rename(oldPath, newPath)];
                 case 2:
                     _a.sent();
                     return [2 /*return*/];
+            }
+        });
+    }); },
+    copyDbToDatapathIfNeeded: function (databaseConfig, plebbitDataPath) { return __awaiter(void 0, void 0, void 0, function () {
+        var expectedPath, _a;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0: return [4 /*yield*/, promises_1.default.mkdir(path_1.default.join(plebbitDataPath, "subplebbits"), { recursive: true })];
+                case 1:
+                    _b.sent();
+                    expectedPath = path_1.default.join(plebbitDataPath, "subplebbits", path_1.default.basename(databaseConfig.connection.filename));
+                    _b.label = 2;
+                case 2:
+                    _b.trys.push([2, 4, , 6]);
+                    return [4 /*yield*/, promises_1.default.stat(expectedPath)];
+                case 3:
+                    _b.sent();
+                    return [3 /*break*/, 6];
+                case 4:
+                    _a = _b.sent();
+                    // Copy db to data path if db is not in data path
+                    return [4 /*yield*/, promises_1.default.cp(databaseConfig.connection.filename, expectedPath)];
+                case 5:
+                    // Copy db to data path if db is not in data path
+                    _b.sent();
+                    return [3 /*break*/, 6];
+                case 6: return [2 /*return*/];
             }
         });
     }); }

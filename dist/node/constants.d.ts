@@ -1,0 +1,5 @@
+export declare enum CACHE_KEYS {
+    SUBPLEBBIT_IPNS = 0,
+    INTERNAL_SUBPLEBBIT = 1,
+    POSTS_SUBPLEBBIT = 2
+}
