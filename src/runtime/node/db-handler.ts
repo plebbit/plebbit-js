@@ -304,8 +304,7 @@ export class DbHandler {
 
     private async _copyTable(srcTable: string, dstTable: string) {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
-        const dstTableColumns = Object.keys(await this._knex(dstTable).select("*").first());
-
+        const dstTableColumns: string[] = Object.keys(await this._knex(dstTable).columnInfo());
         const srcRecords: Object[] = await this._knex(srcTable).select("*");
         if (srcRecords.length > 0) {
             log(`Attempting to copy ${srcRecords.length} ${srcTable}`);
