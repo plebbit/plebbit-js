@@ -253,9 +253,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         // Initialize db (needs address)
         const log = Logger("plebbit-js:subplebbit:prePublish");
 
-        if (!this.address && this.signer?.address) this.address = this.signer.address;
         await this.initDbIfNeeded();
-        // import ipfs key into ipfs node
 
         const cachedSubplebbit: SubplebbitType | undefined = await this.dbHandler?.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
         if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")

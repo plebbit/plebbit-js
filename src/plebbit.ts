@@ -202,6 +202,14 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             return new Subplebbit(options, this);
         };
 
+        if (
+            !options.address &&
+            (<CreateSubplebbitOptions>options)?.database?.connection?.filename &&
+            (<CreateSubplebbitOptions>options)?.database?.connection?.filename !== ":memory:"
+        ) {
+            options.address = (<CreateSubplebbitOptions>options).database.connection.filename.split(/[\\\/]/).pop();
+            await nativeFunctions.copyDbToDatapathIfNeeded((<CreateSubplebbitOptions>options).database, this.dataPath);
+        }
         if (options.address && !options.signer) {
             if (!canRunSub) return remoteSub();
             else {
@@ -213,6 +221,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             if (!canRunSub) throw Error(`missing nativeFunctions required to create a subplebbit`);
             else {
                 options.signer = await this.createSigner();
+                options.address = options.signer.address;
                 log(`Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${options.signer.address})`);
                 return newSub();
             }
@@ -222,6 +231,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             const localSubs = await this.listSubplebbits();
             const derivedAddress = options.signer.address || (await getPlebbitAddressFromPrivateKeyPem(options.signer.privateKey));
             if (localSubs.includes(derivedAddress)) options.address = derivedAddress;
+            if (!options.address) options.address = options.signer.address;
             return newSub();
         } else if (!canRunSub) return remoteSub();
         else return newSub();
