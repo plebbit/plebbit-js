@@ -304,10 +304,15 @@ export class DbHandler {
 
     private async _copyTable(srcTable: string, dstTable: string) {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
+        const dstTableColumns = Object.keys(await this._knex(dstTable).select("*").first());
 
-        const srcRecords = await this._knex(srcTable).select("*");
-        log(`Attempting to copy ${srcRecords.length} ${srcTable}`);
-        if (srcRecords.length > 0) await this._knex(dstTable).insert(srcRecords);
+        const srcRecords: Object[] = await this._knex(srcTable).select("*");
+        if (srcRecords.length > 0) {
+            log(`Attempting to copy ${srcRecords.length} ${srcTable}`);
+            // Remove fields that are not in dst table. Will prevent errors when migration from db version 2 to 3
+            const srcRecordFiltered = srcRecords.map((record) => lodash.pick(record, dstTableColumns));
+            await this._knex(dstTable).insert(srcRecordFiltered);
+        }
         log(`copied table ${srcTable} to table ${dstTable}`);
     }
 
