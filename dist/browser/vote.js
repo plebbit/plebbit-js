@@ -96,7 +96,7 @@ var Vote = /** @class */ (function (_super) {
                         if (![-1, 0, 1].includes(this.vote))
                             throw Error("Vote.vote (".concat(this.vote, ") can only be -1, 0, or 1"));
                         if (!is_ipfs_1.default.cid(this.commentCid))
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.codes.ERR_CID_IS_INVALID, {
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.messages[errors_1.messages.ERR_CID_IS_INVALID], {
                                 details: "Vote.publish: commentCid (".concat(this.commentCid, ") is invalid as a CID")
                             });
                         return [4 /*yield*/, (0, signer_1.verifyVote)(this.toJSON(), this.plebbit, true)];

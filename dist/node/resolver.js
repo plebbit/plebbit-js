@@ -93,7 +93,7 @@ var Resolver = /** @class */ (function () {
                     case 1:
                         resolver = _a.sent();
                         if (!resolver)
-                            throw (0, err_code_1.default)(new Error(errors_1.messages.ERR_ENS_RESOLVER_NOT_FOUND), errors_1.codes.ERR_ENS_RESOLVER_NOT_FOUND, {
+                            throw (0, err_code_1.default)(new Error(errors_1.messages.ERR_ENS_RESOLVER_NOT_FOUND), errors_1.messages[errors_1.messages.ERR_ENS_RESOLVER_NOT_FOUND], {
                                 details: "ensName: ".concat(ensName, ", blockchainProvider:"),
                                 blockchainProvider: blockchainProvider
                             });
@@ -101,7 +101,7 @@ var Resolver = /** @class */ (function () {
                     case 2:
                         txtRecordResult = _a.sent();
                         if (!txtRecordResult)
-                            throw (0, err_code_1.default)(new Error(errors_1.messages.ERR_ENS_TXT_RECORD_NOT_FOUND), errors_1.codes.ERR_ENS_TXT_RECORD_NOT_FOUND, {
+                            throw (0, err_code_1.default)(new Error(errors_1.messages.ERR_ENS_TXT_RECORD_NOT_FOUND), errors_1.messages[errors_1.messages.ERR_ENS_TXT_RECORD_NOT_FOUND], {
                                 details: "ensName: ".concat(ensName, ", txtRecordName: ").concat(txtRecordName, ", blockchainProvider:"),
                                 blockchainProvider: blockchainProvider
                             });
@@ -126,7 +126,7 @@ var Resolver = /** @class */ (function () {
                     case 1:
                         resolvedAuthorAddress = _a.sent();
                         if (!is_ipfs_1.default.cid(resolvedAuthorAddress))
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID), errors_1.codes.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID, {
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID), errors_1.messages[errors_1.messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID], {
                                 details: "resolver: Author address (".concat(authorAddress, ") resolves to an incorrect CID (").concat(resolvedAuthorAddress, ")")
                             });
                         return [2 /*return*/, resolvedAuthorAddress];
@@ -147,7 +147,7 @@ var Resolver = /** @class */ (function () {
                     case 1:
                         resolvedSubplebbitAddress = _a.sent();
                         if (!is_ipfs_1.default.cid(resolvedSubplebbitAddress))
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID), errors_1.codes.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID, {
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID), errors_1.messages[errors_1.messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID], {
                                 details: "resolver: subplebbitAddress (".concat(subplebbitAddress, ") resolves to an incorrect CID (").concat(resolvedSubplebbitAddress, ")")
                             });
                         return [2 /*return*/, resolvedSubplebbitAddress];

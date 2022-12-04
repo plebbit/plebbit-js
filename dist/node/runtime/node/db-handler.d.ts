@@ -7,7 +7,6 @@ export declare class DbHandler {
     private _subplebbit;
     private _currentTrxs;
     private _dbConfig;
-    private _userDbConfig?;
     private _keyv;
     private _createdTables;
     constructor(subplebbit: DbHandler["_subplebbit"]);

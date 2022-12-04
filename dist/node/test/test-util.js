@@ -274,6 +274,23 @@ function _mockPlebbit(signers, dataPath) {
         });
     });
 }
+function _setDatabase(subplebbit, databaseConfig) {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    //@ts-ignore
+                    subplebbit.dbHandler._dbConfig = databaseConfig;
+                    //@ts-ignore
+                    subplebbit.dbHandler._knex = undefined;
+                    return [4 /*yield*/, subplebbit.dbHandler.initDbIfNeeded()];
+                case 1:
+                    _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
 function _startMathCliSubplebbit(signers, database, syncInterval, dataPath) {
     return __awaiter(this, void 0, void 0, function () {
         var plebbit, signer, subplebbit;
@@ -286,9 +303,12 @@ function _startMathCliSubplebbit(signers, database, syncInterval, dataPath) {
                     return [4 /*yield*/, plebbit.createSigner(signers[1])];
                 case 2:
                     signer = _a.sent();
-                    return [4 /*yield*/, plebbit.createSubplebbit({ signer: signer, database: database })];
+                    return [4 /*yield*/, plebbit.createSubplebbit({ signer: signer })];
                 case 3:
                     subplebbit = _a.sent();
+                    return [4 /*yield*/, _setDatabase(subplebbit, database)];
+                case 4:
+                    _a.sent();
                     subplebbit.setProvideCaptchaCallback(function (challengeRequestMessage) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             // Expected return is:
@@ -307,7 +327,7 @@ function _startMathCliSubplebbit(signers, database, syncInterval, dataPath) {
                     //@ts-ignore
                     subplebbit._syncIntervalMs = syncInterval;
                     return [4 /*yield*/, subplebbit.start()];
-                case 4:
+                case 5:
                     _a.sent();
                     return [2 /*return*/, subplebbit];
             }
@@ -326,14 +346,17 @@ function _startImageCaptchaSubplebbit(signers, database, syncInterval, dataPath)
                     return [4 /*yield*/, plebbit.createSigner(signers[2])];
                 case 2:
                     signer = _a.sent();
-                    return [4 /*yield*/, plebbit.createSubplebbit({ signer: signer, database: database })];
+                    return [4 /*yield*/, plebbit.createSubplebbit({ signer: signer })];
                 case 3:
                     subplebbit = _a.sent();
+                    return [4 /*yield*/, _setDatabase(subplebbit, database)];
+                case 4:
+                    _a.sent();
                     // Image captcha are default
                     //@ts-ignore
                     subplebbit._syncIntervalMs = syncInterval;
                     return [4 /*yield*/, subplebbit.start()];
-                case 4:
+                case 5:
                     _a.sent();
                     subplebbit.setValidateCaptchaAnswerCallback(function (challengeAnswerMessage) { return __awaiter(_this, void 0, void 0, function () {
                         var challengeSuccess, challengeErrors;
@@ -359,16 +382,19 @@ function _startEnsSubplebbit(signers, database, syncInterval, dataPath) {
                     return [4 /*yield*/, plebbit.createSigner(signers[3])];
                 case 2:
                     signer = _a.sent();
-                    return [4 /*yield*/, plebbit.createSubplebbit({ signer: signer, database: database })];
+                    return [4 /*yield*/, plebbit.createSubplebbit({ signer: signer })];
                 case 3:
                     subplebbit = _a.sent();
+                    return [4 /*yield*/, _setDatabase(subplebbit, database)];
+                case 4:
+                    _a.sent();
                     //@ts-ignore
                     subplebbit._syncIntervalMs = syncInterval;
                     return [4 /*yield*/, subplebbit.start()];
-                case 4:
+                case 5:
                     _a.sent();
                     return [4 /*yield*/, subplebbit.edit({ address: "plebbit.eth" })];
-                case 5:
+                case 6:
                     _a.sent();
                     return [2 /*return*/];
             }
@@ -521,16 +547,19 @@ function startSubplebbits(props) {
                     return [4 /*yield*/, plebbit.createSigner(props.signers[0])];
                 case 2:
                     signer = _b.sent();
-                    return [4 /*yield*/, plebbit.createSubplebbit({ signer: signer, database: props.database })];
+                    return [4 /*yield*/, plebbit.createSubplebbit({ signer: signer })];
                 case 3:
                     subplebbit = _b.sent();
+                    return [4 /*yield*/, _setDatabase(subplebbit, props.database)];
+                case 4:
+                    _b.sent();
                     subplebbit.setProvideCaptchaCallback(function () { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                         return [2 /*return*/, [[], "Challenge skipped"]];
                     }); }); });
                     //@ts-ignore
                     subplebbit._syncIntervalMs = props.syncInterval;
                     return [4 /*yield*/, subplebbit.start()];
-                case 4:
+                case 5:
                     _b.sent();
                     console.time("populate");
                     return [4 /*yield*/, Promise.all([
@@ -539,7 +568,7 @@ function startSubplebbits(props) {
                             _startEnsSubplebbit(props.signers, props.database, props.syncInterval, props.dataPath),
                             _populateSubplebbit(subplebbit, props)
                         ])];
-                case 5:
+                case 6:
                     _a = _b.sent(), imageSubplebbit = _a[0], mathSubplebbit = _a[1];
                     console.timeEnd("populate");
                     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");

@@ -86,7 +86,7 @@ function fetchWithLimit(url, options) {
                 case 4:
                     e_1 = _d.sent();
                     if (e_1.message.includes("over limit"))
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT), errors_1.codes.ERR_OVER_DOWNLOAD_LIMIT, {
+                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT), errors_1.messages[errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT], {
                             details: "fetch: url (".concat(url, ") points to a file larger than download limit (").concat(DOWNLOAD_LIMIT_BYTES, ") bytes")
                         });
                     // If error is not related to size limit, then throw it again
@@ -109,7 +109,7 @@ function fetchWithLimit(url, options) {
                     if (done || !value)
                         return [3 /*break*/, 8];
                     if (value.length + totalBytesRead > DOWNLOAD_LIMIT_BYTES)
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT), errors_1.codes.ERR_OVER_DOWNLOAD_LIMIT, {
+                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT), errors_1.messages[errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT], {
                             details: "fetch: url (".concat(url, ") points to a file larger than download limit (").concat(DOWNLOAD_LIMIT_BYTES, ") bytes")
                         });
                     totalBytesRead += value.length;
@@ -130,7 +130,7 @@ function fetchCid(cid, plebbit, catOptions) {
                     if (!is_ipfs_1.default.cid(cid) && is_ipfs_1.default.path(cid))
                         cid = cid.split("/")[2];
                     if (!is_ipfs_1.default.cid(cid))
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.codes.ERR_CID_IS_INVALID, {
+                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.messages[errors_1.messages.ERR_CID_IS_INVALID], {
                             details: "fetchCid: CID (".concat(cid, ") is invalid")
                         });
                     if (!!plebbit.ipfsClient) return [3 /*break*/, 2];
@@ -164,11 +164,11 @@ function fetchCid(cid, plebbit, catOptions) {
                 case 8:
                     generatedCid = _b.sent();
                     if (fileContent.length === DOWNLOAD_LIMIT_BYTES && generatedCid !== cid)
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT), errors_1.codes.ERR_OVER_DOWNLOAD_LIMIT, {
+                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT), errors_1.messages[errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT], {
                             details: "fetchCid: CID (".concat(cid, ") points to a file larger than download limit ").concat(DOWNLOAD_LIMIT_BYTES)
                         });
                     if (generatedCid !== cid)
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_GENERATED_CID_DOES_NOT_MATCH), errors_1.codes.ERR_GENERATED_CID_DOES_NOT_MATCH, {
+                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_GENERATED_CID_DOES_NOT_MATCH), errors_1.messages[errors_1.messages.ERR_GENERATED_CID_DOES_NOT_MATCH], {
                             details: "fetchCid: Loaded file generates a different CID (".concat(generatedCid, ") than provided CID (").concat(cid, ")")
                         });
                     return [2 /*return*/, fileContent];
@@ -198,7 +198,7 @@ function loadIpnsAsJson(ipns, plebbit) {
             switch (_b.label) {
                 case 0:
                     if (typeof ipns !== "string")
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_IPNS_IS_INVALID), errors_1.codes.ERR_IPNS_IS_INVALID, {
+                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_IPNS_IS_INVALID), errors_1.messages[errors_1.messages.ERR_IPNS_IS_INVALID], {
                             details: "loadIpnsAsJson: ipns (".concat(ipns, ") is invalid")
                         });
                     if (!!plebbit.ipfsClient) return [3 /*break*/, 2];

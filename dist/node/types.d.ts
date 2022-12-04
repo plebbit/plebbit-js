@@ -1,5 +1,4 @@
 import { CID, IPFSHTTPClient, Options } from "ipfs-http-client";
-import { Knex } from "knex";
 import { Pages } from "./pages";
 import { DbHandler } from "./runtime/node/db-handler";
 import fetch from "node-fetch";
@@ -257,16 +256,6 @@ export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     signer?: SignerType;
     encryption?: SubplebbitEncryption;
     signature?: SignatureType;
-    database?: Omit<Knex.Config, "client" | "connection" | "pool" | "postProcessResponse" | "wrapIdentifier" | "seeds" | "log"> & {
-        connection: {
-            filename: string;
-            flags?: string[];
-            debug?: boolean;
-            expirationChecker?(): boolean;
-        };
-        client: string;
-        useNullAsDefault: true;
-    };
 }
 export interface SubplebbitEditOptions {
     title?: string;
@@ -386,7 +375,6 @@ export declare type NativeFunctions = {
         Name: string;
     }>;
     deleteSubplebbit(subplebbitAddress: string, dataPath: string): Promise<void>;
-    copyDbToDatapathIfNeeded(databaseConfig: CreateSubplebbitOptions["database"], dataPath: string): Promise<void>;
 };
 export declare type OnlyDefinedProperties<T> = Pick<T, {
     [Prop in keyof T]: T[Prop] extends undefined ? never : Prop;

@@ -303,33 +303,6 @@ var nativeFunctions = {
                     return [2 /*return*/];
             }
         });
-    }); },
-    copyDbToDatapathIfNeeded: function (databaseConfig, plebbitDataPath) { return __awaiter(void 0, void 0, void 0, function () {
-        var expectedPath, _a;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0: return [4 /*yield*/, promises_1.default.mkdir(path_1.default.join(plebbitDataPath, "subplebbits"), { recursive: true })];
-                case 1:
-                    _b.sent();
-                    expectedPath = path_1.default.join(plebbitDataPath, "subplebbits", path_1.default.basename(databaseConfig.connection.filename));
-                    _b.label = 2;
-                case 2:
-                    _b.trys.push([2, 4, , 6]);
-                    return [4 /*yield*/, promises_1.default.stat(expectedPath)];
-                case 3:
-                    _b.sent();
-                    return [3 /*break*/, 6];
-                case 4:
-                    _a = _b.sent();
-                    // Copy db to data path if db is not in data path
-                    return [4 /*yield*/, promises_1.default.cp(databaseConfig.connection.filename, expectedPath)];
-                case 5:
-                    // Copy db to data path if db is not in data path
-                    _b.sent();
-                    return [3 /*break*/, 6];
-                case 6: return [2 /*return*/];
-            }
-        });
     }); }
 };
 exports.default = nativeFunctions;

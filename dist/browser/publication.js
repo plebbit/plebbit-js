@@ -220,15 +220,15 @@ var Publication = /** @class */ (function (_super) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:publication:publish");
                         if (typeof this.timestamp !== "number" || this.timestamp < 0)
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_PUBLICATION_MISSING_FIELD), errors_1.codes.ERR_PUBLICATION_MISSING_FIELD, {
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_PUBLICATION_MISSING_FIELD), errors_1.messages[errors_1.messages.ERR_PUBLICATION_MISSING_FIELD], {
                                 details: "".concat(this.getType(), ".publish: timestamp should be a number")
                             });
                         if (typeof ((_a = this.author) === null || _a === void 0 ? void 0 : _a.address) !== "string")
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_PUBLICATION_MISSING_FIELD), errors_1.codes.ERR_PUBLICATION_MISSING_FIELD, {
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_PUBLICATION_MISSING_FIELD), errors_1.messages[errors_1.messages.ERR_PUBLICATION_MISSING_FIELD], {
                                 details: "".concat(this.getType(), ".publish: author.address should be a string")
                             });
                         if (typeof this.subplebbitAddress !== "string")
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_PUBLICATION_MISSING_FIELD), errors_1.codes.ERR_PUBLICATION_MISSING_FIELD, {
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_PUBLICATION_MISSING_FIELD), errors_1.messages[errors_1.messages.ERR_PUBLICATION_MISSING_FIELD], {
                                 details: "".concat(this.getType(), ".publish: subplebbitAddress should be a string")
                             });
                         options = { acceptedChallengeTypes: [] };
@@ -237,11 +237,11 @@ var Publication = /** @class */ (function (_super) {
                     case 1:
                         _d.subplebbit = _j.sent();
                         if (typeof ((_c = (_b = this.subplebbit) === null || _b === void 0 ? void 0 : _b.encryption) === null || _c === void 0 ? void 0 : _c.publicKey) !== "string")
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SUBPLEBBIT_MISSING_FIELD), errors_1.codes.ERR_SUBPLEBBIT_MISSING_FIELD, {
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SUBPLEBBIT_MISSING_FIELD), errors_1.messages[errors_1.messages.ERR_SUBPLEBBIT_MISSING_FIELD], {
                                 details: "".concat(this.getType(), ".publish: subplebbit.encryption.publicKey does not exist")
                             });
                         if (typeof this.subplebbit.pubsubTopic !== "string")
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SUBPLEBBIT_MISSING_FIELD), errors_1.codes.ERR_SUBPLEBBIT_MISSING_FIELD, {
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SUBPLEBBIT_MISSING_FIELD), errors_1.messages[errors_1.messages.ERR_SUBPLEBBIT_MISSING_FIELD], {
                                 details: "".concat(this.getType(), ".publish: subplebbit.pubsubTopic does not exist")
                             });
                         return [4 /*yield*/, (0, signer_1.encrypt)(JSON.stringify(this), this.subplebbit.encryption.publicKey)];

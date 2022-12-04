@@ -134,7 +134,6 @@ var Subplebbit = /** @class */ (function (_super) {
         this.title = mergedProps.title;
         this.description = mergedProps.description;
         this.lastPostCid = mergedProps.lastPostCid;
-        this.database = mergedProps.database;
         this.address = mergedProps.address;
         this.pubsubTopic = mergedProps.pubsubTopic;
         this.challengeTypes = mergedProps.challengeTypes;
@@ -186,13 +185,13 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.initDbIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
+            var obsoleteCache, subCache, signerAddress, signer;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         if (!this.dbHandler) {
                             this.dbHandler = util_3.nativeFunctions.createDbHandler({
                                 address: this.address,
-                                database: this.database,
                                 plebbit: {
                                     dataPath: this.plebbit.dataPath
                                 }
@@ -203,7 +202,27 @@ var Subplebbit = /** @class */ (function (_super) {
                         _a.sent();
                         if (!this.sortHandler)
                             this.sortHandler = new sort_handler_1.SortHandler({ address: this.address, plebbit: this.plebbit, dbHandler: this.dbHandler });
-                        return [2 /*return*/];
+                        return [4 /*yield*/, this.dbHandler.keyvGet(this.address)];
+                    case 2:
+                        obsoleteCache = _a.sent();
+                        return [4 /*yield*/, this.dbHandler.keyvGet(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.INTERNAL_SUBPLEBBIT])];
+                    case 3:
+                        subCache = _a.sent();
+                        if (!(obsoleteCache && !subCache)) return [3 /*break*/, 7];
+                        return [4 /*yield*/, (0, util_2.getPlebbitAddressFromPublicKeyPem)(obsoleteCache.encryption.publicKey)];
+                    case 4:
+                        signerAddress = _a.sent();
+                        return [4 /*yield*/, this.dbHandler.querySigner(signerAddress)];
+                    case 5:
+                        signer = _a.sent();
+                        obsoleteCache.signer = signer;
+                        // We changed the name of internal subplebbit cache, need to explicitly copy old cache to new key here
+                        return [4 /*yield*/, this.dbHandler.keyvSet(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.INTERNAL_SUBPLEBBIT], obsoleteCache)];
+                    case 6:
+                        // We changed the name of internal subplebbit cache, need to explicitly copy old cache to new key here
+                        _a.sent();
+                        _a.label = 7;
+                    case 7: return [2 /*return*/];
                 }
             });
         });
@@ -215,7 +234,7 @@ var Subplebbit = /** @class */ (function (_super) {
         this.validateCaptchaAnswerCallback = newCallback;
     };
     Subplebbit.prototype.toJSONInternal = function () {
-        return __assign(__assign({}, this.toJSON()), { database: this.database, signer: this.signer });
+        return __assign(__assign({}, this.toJSON()), { signer: this.signer });
     };
     Subplebbit.prototype.toJSON = function () {
         var _a;
@@ -285,6 +304,8 @@ var Subplebbit = /** @class */ (function (_super) {
                         cachedSubplebbit = _g.sent();
                         if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")
                             this.initSubplebbit(__assign(__assign({}, cachedSubplebbit), (0, util_1.removeKeysWithUndefinedValues)(this.toJSONInternal()))); // Init subplebbit fields from DB
+                        if (!this.signer)
+                            throw Error("subplebbit.signer needs to be defined before proceeding");
                         // import ipfs key into ipfs node
                         return [4 /*yield*/, this._initSignerProps()];
                     case 3:
@@ -322,7 +343,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 2:
                         derivedAddress = _b.sent();
                         if (resolvedAddress !== derivedAddress)
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS), errors_1.codes.ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS, {
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS), errors_1.messages[errors_1.messages.ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS], {
                                 details: "subplebbit.address (".concat(this.address, "), resolved address (").concat(resolvedAddress, "), subplebbit.signer.address (").concat((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address, ")")
                             });
                         _b.label = 3;
@@ -349,7 +370,6 @@ var Subplebbit = /** @class */ (function (_super) {
                         this.initSubplebbit(newSubplebbitOptions);
                         return [4 /*yield*/, this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                                 address: this.address,
-                                database: this.database,
                                 plebbit: {
                                     dataPath: this.plebbit.dataPath
                                 }
@@ -1041,7 +1061,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, (0, from_string_1.fromString)((0, util_1.encode)(challengeVerification)))];
                     case 6:
                         _e.sent();
-                        err = (0, err_code_1.default)(Error(errors_1.messages.ERR_SIGNATURE_IS_INVALID), errors_1.codes.ERR_SIGNATURE_IS_INVALID, {
+                        err = (0, err_code_1.default)(Error(errors_1.messages.ERR_SIGNATURE_IS_INVALID), errors_1.messages[errors_1.messages.ERR_SIGNATURE_IS_INVALID], {
                             details: "subplebbit.handleChallengeExchange: Failed to verify ".concat(msgParsed.type, ", Failed verification reason: ").concat(validation.reason)
                         });
                         this.emit("error", err);
@@ -1297,11 +1317,11 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:start");
                         if (!((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address))
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SUB_SIGNER_NOT_DEFINED), errors_1.codes.ERR_SUB_SIGNER_NOT_DEFINED, {
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SUB_SIGNER_NOT_DEFINED), errors_1.messages[errors_1.messages.ERR_SUB_SIGNER_NOT_DEFINED], {
                                 details: "signer: ".concat(JSON.stringify(this.signer), ", address: ").concat(this.address)
                             });
                         if (this._sync || exports.RUNNING_SUBPLEBBITS[this.signer.address])
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SUB_ALREADY_STARTED), errors_1.codes.ERR_SUB_ALREADY_STARTED, {
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SUB_ALREADY_STARTED), errors_1.messages[errors_1.messages.ERR_SUB_ALREADY_STARTED], {
                                 details: "address: ".concat(this.address)
                             });
                         this._sync = true;
@@ -1348,7 +1368,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 1:
                         _b.sent();
                         if (typeof this.plebbit.dataPath !== "string")
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_DATA_PATH_IS_NOT_DEFINED), errors_1.codes.ERR_DATA_PATH_IS_NOT_DEFINED, {
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_DATA_PATH_IS_NOT_DEFINED), errors_1.messages[errors_1.messages.ERR_DATA_PATH_IS_NOT_DEFINED], {
                                 details: "delete: plebbitOptions.dataPath=".concat(this.plebbit.dataPath)
                             });
                         if (!this.plebbit.ipfsClient)

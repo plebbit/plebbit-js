@@ -154,7 +154,7 @@ function _validateAuthor(author, signer, plebbit) {
                 case 1:
                     derivedAddress = _a.sent();
                     if (derivedAddress !== author.address)
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER), errors_1.codes.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER);
+                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER), errors_1.messages[errors_1.messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER]);
                     _a.label = 2;
                 case 2: return [2 /*return*/];
             }
@@ -574,7 +574,7 @@ function verifyPage(page, plebbit, subplebbitAddress) {
                                 case 1:
                                     commentSignatureValidity = _b.sent();
                                     if (!commentSignatureValidity.valid)
-                                        throw (0, err_code_1.default)(Error(commentSignatureValidity.reason), errors_1.codes.ERR_SIGNATURE_IS_INVALID, {
+                                        throw (0, err_code_1.default)(Error(commentSignatureValidity.reason), errors_1.messages[errors_1.messages.ERR_SIGNATURE_IS_INVALID], {
                                             details: "getPage: Failed to verify comment ".concat(comment.cid, " due to '").concat(commentSignatureValidity.reason, "'")
                                         });
                                     return [4 /*yield*/, Promise.all(Object.values((_a = comment === null || comment === void 0 ? void 0 : comment.replies) === null || _a === void 0 ? void 0 : _a.pages).map(function (page) { return __awaiter(_this, void 0, void 0, function () {

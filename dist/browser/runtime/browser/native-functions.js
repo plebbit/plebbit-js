@@ -185,11 +185,6 @@ var nativeFunctions = {
         return __generator(this, function (_a) {
             throw Error("Shouldn't call importSignerIntoIpfsNode over native-functions of browser");
         });
-    }); },
-    copyDbToDatapathIfNeeded: function (databaseConfig, plebbitDataPath) { return __awaiter(void 0, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            throw Error("Shouldn't call copyDbToDatapathIfNeeded over native-functions of browser");
-        });
     }); }
 };
 exports.default = nativeFunctions;

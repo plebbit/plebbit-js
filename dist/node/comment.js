@@ -268,7 +268,7 @@ var Comment = /** @class */ (function (_super) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 if (typeof this.ipnsName !== "string")
-                    throw (0, err_code_1.default)(Error(errors_1.messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME), errors_1.codes.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME);
+                    throw (0, err_code_1.default)(Error(errors_1.messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME), errors_1.messages[errors_1.messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME]);
                 if (this._updateInterval)
                     return [2 /*return*/]; // Do nothing if it's already updating
                 this.updateOnce();

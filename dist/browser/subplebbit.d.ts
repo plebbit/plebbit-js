@@ -35,7 +35,6 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     rules?: string[];
     plebbit: Plebbit;
     dbHandler?: DbHandlerPublicAPI;
-    database?: any;
     private _challengeToSolution;
     private _challengeToPublication;
     private provideCaptchaCallback;
@@ -53,7 +52,6 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     setProvideCaptchaCallback(newCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[ChallengeType[], string | undefined]>): void;
     setValidateCaptchaAnswerCallback(newCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>): void;
     toJSONInternal(): {
-        database: any;
         signer: Signer;
         signature: SignatureType;
         encryption: SubplebbitEncryption;

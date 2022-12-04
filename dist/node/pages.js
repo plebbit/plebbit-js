@@ -58,7 +58,7 @@ var Pages = /** @class */ (function () {
                 switch (_b.label) {
                     case 0:
                         if (!is_ipfs_1.default.cid(pageCid))
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.codes.ERR_CID_IS_INVALID, {
+                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.messages[errors_1.messages.ERR_CID_IS_INVALID], {
                                 details: "getPage: cid (".concat(pageCid, ") is invalid as a CID")
                             });
                         if (typeof this.subplebbit.address !== "string")
