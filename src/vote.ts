@@ -2,7 +2,7 @@ import Publication from "./publication";
 import { PublicationTypeName, VoteForDbType, VoteType } from "./types";
 import { Plebbit } from "./plebbit";
 import isIPFS from "is-ipfs";
-import { codes, messages } from "./errors";
+import { messages } from "./errors";
 import errcode from "err-code";
 import { verifyVote } from "./signer";
 
@@ -41,7 +41,7 @@ class Vote extends Publication implements VoteType {
     async publish(): Promise<void> {
         if (![-1, 0, 1].includes(this.vote)) throw Error(`Vote.vote (${this.vote}) can only be -1, 0, or 1`);
         if (!isIPFS.cid(this.commentCid))
-            throw errcode(Error(messages.ERR_CID_IS_INVALID), codes.ERR_CID_IS_INVALID, {
+            throw errcode(Error(messages.ERR_CID_IS_INVALID), messages[messages.ERR_CID_IS_INVALID], {
                 details: `Vote.publish: commentCid (${this.commentCid}) is invalid as a CID`
             });
         const signatureValidity = await verifyVote(this.toJSON(), this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error

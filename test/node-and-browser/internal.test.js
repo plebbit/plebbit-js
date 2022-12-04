@@ -5,7 +5,7 @@ const fetch = require("node-fetch");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-const { messages, codes } = require("../../dist/node/errors");
+const { messages } = require("../../dist/node/errors");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);

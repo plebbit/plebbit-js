@@ -13,7 +13,7 @@ import {
     PublicationTypeName
 } from "./types";
 import errcode from "err-code";
-import { codes, messages } from "./errors";
+import { messages } from "./errors";
 
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "./plebbit";
@@ -275,7 +275,7 @@ export class Comment extends Publication implements CommentType {
 
     async update() {
         if (typeof this.ipnsName !== "string")
-            throw errcode(Error(messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME), codes.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME);
+            throw errcode(Error(messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME), messages[messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME]);
 
         if (this._updateInterval) return; // Do nothing if it's already updating
         this.updateOnce();

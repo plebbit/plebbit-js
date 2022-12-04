@@ -45,7 +45,7 @@ import {
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
 import errcode from "err-code";
-import { codes, messages } from "../errors";
+import { messages } from "../errors";
 
 interface ValidationResult {
     valid: boolean;
@@ -95,7 +95,10 @@ async function _validateAuthor(author: CreateCommentOptions["author"], signer: S
     if (isIPFS.cid(author.address)) {
         const derivedAddress = await getPlebbitAddressFromPrivateKeyPem(signer.privateKey);
         if (derivedAddress !== author.address)
-            throw errcode(Error(messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER), codes.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER);
+            throw errcode(
+                Error(messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER),
+                messages[messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER]
+            );
     }
 }
 
@@ -395,7 +398,7 @@ export async function verifyPage(page: PageType, plebbit: Plebbit, subplebbitAdd
 
         const commentSignatureValidity = await verifyComment(comment, plebbit, true);
         if (!commentSignatureValidity.valid)
-            throw errcode(Error(commentSignatureValidity.reason), codes.ERR_SIGNATURE_IS_INVALID, {
+            throw errcode(Error(commentSignatureValidity.reason), messages[messages.ERR_SIGNATURE_IS_INVALID], {
                 details: `getPage: Failed to verify comment ${comment.cid} due to '${commentSignatureValidity.reason}'`
             });
 

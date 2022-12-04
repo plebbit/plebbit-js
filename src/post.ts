@@ -1,7 +1,7 @@
 import { Comment } from "./comment";
 import { PostType } from "./types";
 import errcode from "err-code";
-import { codes, messages } from "./errors";
+import { messages } from "./errors";
 import { Plebbit } from "./plebbit";
 
 class Post extends Comment implements PostType {
@@ -40,7 +40,7 @@ class Post extends Comment implements PostType {
 
     async publish(): Promise<void> {
         if (typeof this.title !== "string")
-            throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), codes.ERR_PUBLICATION_MISSING_FIELD, {
+            throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), messages[messages.ERR_PUBLICATION_MISSING_FIELD], {
                 details: `${this.getType()}.publish: title should be a string`
             });
         return super.publish();

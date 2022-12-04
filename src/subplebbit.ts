@@ -44,7 +44,7 @@ import { getIpfsKeyFromPrivateKeyPem, getPlebbitAddressFromPublicKeyPem } from "
 import { v4 as uuidv4 } from "uuid";
 import { AUTHOR_EDIT_FIELDS, CommentEdit, MOD_EDIT_FIELDS } from "./comment-edit";
 import errcode from "err-code";
-import { codes, messages } from "./errors";
+import { messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 import { nativeFunctions } from "./runtime/node/util";
 import env from "./version";
@@ -267,7 +267,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             if (resolvedAddress !== derivedAddress)
                 throw errcode(
                     Error(messages.ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS),
-                    codes.ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS,
+                    messages[messages.ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS],
                     {
                         details: `subplebbit.address (${this.address}), resolved address (${resolvedAddress}), subplebbit.signer.address (${this.signer?.address})`
                     }
@@ -808,7 +808,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
             await this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(encode(challengeVerification)));
 
-            const err = errcode(Error(messages.ERR_SIGNATURE_IS_INVALID), codes.ERR_SIGNATURE_IS_INVALID, {
+            const err = errcode(Error(messages.ERR_SIGNATURE_IS_INVALID), messages[messages.ERR_SIGNATURE_IS_INVALID], {
                 details: `subplebbit.handleChallengeExchange: Failed to verify ${msgParsed.type}, Failed verification reason: ${validation.reason}`
             });
             this.emit("error", err);
@@ -946,11 +946,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const log = Logger("plebbit-js:subplebbit:start");
 
         if (!this.signer?.address)
-            throw errcode(Error(messages.ERR_SUB_SIGNER_NOT_DEFINED), codes.ERR_SUB_SIGNER_NOT_DEFINED, {
+            throw errcode(Error(messages.ERR_SUB_SIGNER_NOT_DEFINED), messages[messages.ERR_SUB_SIGNER_NOT_DEFINED], {
                 details: `signer: ${JSON.stringify(this.signer)}, address: ${this.address}`
             });
         if (this._sync || RUNNING_SUBPLEBBITS[this.signer.address])
-            throw errcode(Error(messages.ERR_SUB_ALREADY_STARTED), codes.ERR_SUB_ALREADY_STARTED, {
+            throw errcode(Error(messages.ERR_SUB_ALREADY_STARTED), messages[messages.ERR_SUB_ALREADY_STARTED], {
                 details: `address: ${this.address}`
             });
         this._sync = true;
@@ -984,7 +984,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async delete() {
         await this.stop();
         if (typeof this.plebbit.dataPath !== "string")
-            throw errcode(Error(messages.ERR_DATA_PATH_IS_NOT_DEFINED), codes.ERR_DATA_PATH_IS_NOT_DEFINED, {
+            throw errcode(Error(messages.ERR_DATA_PATH_IS_NOT_DEFINED), messages[messages.ERR_DATA_PATH_IS_NOT_DEFINED], {
                 details: `delete: plebbitOptions.dataPath=${this.plebbit.dataPath}`
             });
         if (!this.plebbit.ipfsClient) throw Error("Ipfs client is not defined");

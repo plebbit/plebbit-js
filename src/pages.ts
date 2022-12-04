@@ -3,7 +3,7 @@ import { Subplebbit } from "./subplebbit";
 
 import { CommentType, PagesType, PageType, PostSortName, ReplySortName } from "./types";
 import errcode from "err-code";
-import { codes, messages } from "./errors";
+import { messages } from "./errors";
 import isIPFS from "is-ipfs";
 import { verifyPage } from "./signer/signatures";
 
@@ -19,7 +19,7 @@ export class Pages implements PagesType {
 
     async getPage(pageCid: string): Promise<Page> {
         if (!isIPFS.cid(pageCid))
-            throw errcode(Error(messages.ERR_CID_IS_INVALID), codes.ERR_CID_IS_INVALID, {
+            throw errcode(Error(messages.ERR_CID_IS_INVALID), messages[messages.ERR_CID_IS_INVALID], {
                 details: `getPage: cid (${pageCid}) is invalid as a CID`
             });
 

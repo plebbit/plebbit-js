@@ -1,7 +1,7 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
 const { generateMockPost, generateMockComment } = require("../../dist/node/test/test-util");
-const { messages, codes } = require("../../dist/node/errors");
+const { messages } = require("../../dist/node/errors");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");

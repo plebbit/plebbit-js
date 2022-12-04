@@ -3,7 +3,7 @@ import { Plebbit } from "./plebbit";
 import { BlockchainProvider } from "./types";
 import assert from "assert";
 import errcode from "err-code";
-import { codes, messages } from "./errors";
+import { messages } from "./errors";
 import isIPFS from "is-ipfs";
 import Logger from "@plebbit/plebbit-logger";
 
@@ -57,13 +57,13 @@ export class Resolver {
         const blockchainProvider = this._getBlockchainProvider("eth");
         const resolver = await blockchainProvider.getResolver(ensName);
         if (!resolver)
-            throw errcode(new Error(messages.ERR_ENS_RESOLVER_NOT_FOUND), codes.ERR_ENS_RESOLVER_NOT_FOUND, {
+            throw errcode(new Error(messages.ERR_ENS_RESOLVER_NOT_FOUND), messages[messages.ERR_ENS_RESOLVER_NOT_FOUND], {
                 details: `ensName: ${ensName}, blockchainProvider:`,
                 blockchainProvider
             });
         const txtRecordResult = await resolver.getText(txtRecordName);
         if (!txtRecordResult)
-            throw errcode(new Error(messages.ERR_ENS_TXT_RECORD_NOT_FOUND), codes.ERR_ENS_TXT_RECORD_NOT_FOUND, {
+            throw errcode(new Error(messages.ERR_ENS_TXT_RECORD_NOT_FOUND), messages[messages.ERR_ENS_TXT_RECORD_NOT_FOUND], {
                 details: `ensName: ${ensName}, txtRecordName: ${txtRecordName}, blockchainProvider:`,
                 blockchainProvider
             });
@@ -83,7 +83,7 @@ export class Resolver {
             if (!isIPFS.cid(resolvedAuthorAddress))
                 throw errcode(
                     Error(messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID),
-                    codes.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID,
+                    messages[messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID],
                     {
                         details: `resolver: Author address (${authorAddress}) resolves to an incorrect CID (${resolvedAuthorAddress})`
                     }
@@ -99,7 +99,7 @@ export class Resolver {
             if (!isIPFS.cid(resolvedSubplebbitAddress))
                 throw errcode(
                     Error(messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID),
-                    codes.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID,
+                    messages[messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID],
                     {
                         details: `resolver: subplebbitAddress (${subplebbitAddress}) resolves to an incorrect CID (${resolvedSubplebbitAddress})`
                     }

@@ -18,7 +18,7 @@ import {
     PublicationTypeName
 } from "./types";
 import errcode from "err-code";
-import { codes, messages } from "./errors";
+import { messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
 import { Plebbit } from "./plebbit";
@@ -159,16 +159,16 @@ class Publication extends EventEmitter implements PublicationType {
         const log = Logger("plebbit-js:publication:publish");
 
         if (typeof this.timestamp !== "number" || this.timestamp < 0)
-            throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), codes.ERR_PUBLICATION_MISSING_FIELD, {
+            throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), messages[messages.ERR_PUBLICATION_MISSING_FIELD], {
                 details: `${this.getType()}.publish: timestamp should be a number`
             });
 
         if (typeof this.author?.address !== "string")
-            throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), codes.ERR_PUBLICATION_MISSING_FIELD, {
+            throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), messages[messages.ERR_PUBLICATION_MISSING_FIELD], {
                 details: `${this.getType()}.publish: author.address should be a string`
             });
         if (typeof this.subplebbitAddress !== "string")
-            throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), codes.ERR_PUBLICATION_MISSING_FIELD, {
+            throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), messages[messages.ERR_PUBLICATION_MISSING_FIELD], {
                 details: `${this.getType()}.publish: subplebbitAddress should be a string`
             });
 
@@ -176,12 +176,12 @@ class Publication extends EventEmitter implements PublicationType {
         this.subplebbit = await this.plebbit.getSubplebbit(this.subplebbitAddress);
 
         if (typeof this.subplebbit?.encryption?.publicKey !== "string")
-            throw errcode(Error(messages.ERR_SUBPLEBBIT_MISSING_FIELD), codes.ERR_SUBPLEBBIT_MISSING_FIELD, {
+            throw errcode(Error(messages.ERR_SUBPLEBBIT_MISSING_FIELD), messages[messages.ERR_SUBPLEBBIT_MISSING_FIELD], {
                 details: `${this.getType()}.publish: subplebbit.encryption.publicKey does not exist`
             });
 
         if (typeof this.subplebbit.pubsubTopic !== "string")
-            throw errcode(Error(messages.ERR_SUBPLEBBIT_MISSING_FIELD), codes.ERR_SUBPLEBBIT_MISSING_FIELD, {
+            throw errcode(Error(messages.ERR_SUBPLEBBIT_MISSING_FIELD), messages[messages.ERR_SUBPLEBBIT_MISSING_FIELD], {
                 details: `${this.getType()}.publish: subplebbit.pubsubTopic does not exist`
             });
 

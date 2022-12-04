@@ -2,7 +2,7 @@ import { Plebbit } from "./plebbit";
 import { CommentType, OnlyDefinedProperties, Timeframe } from "./types";
 import { nativeFunctions } from "./runtime/node/util";
 import isIPFS from "is-ipfs";
-import { codes, messages } from "./errors";
+import { messages } from "./errors";
 import errcode from "err-code";
 import Hash from "ipfs-only-hash";
 import lodash from "lodash";
@@ -28,7 +28,7 @@ async function fetchWithLimit(url: string, options?): Promise<[resText: string, 
         if (res?.body?.getReader === undefined) return [await res.text(), res];
     } catch (e) {
         if (e.message.includes("over limit"))
-            throw errcode(Error(messages.ERR_OVER_DOWNLOAD_LIMIT), codes.ERR_OVER_DOWNLOAD_LIMIT, {
+            throw errcode(Error(messages.ERR_OVER_DOWNLOAD_LIMIT), messages[messages.ERR_OVER_DOWNLOAD_LIMIT], {
                 details: `fetch: url (${url}) points to a file larger than download limit (${DOWNLOAD_LIMIT_BYTES}) bytes`
             });
         // If error is not related to size limit, then throw it again
@@ -51,7 +51,7 @@ async function fetchWithLimit(url: string, options?): Promise<[resText: string, 
             if (value) resText += decoder.decode(value);
             if (done || !value) break;
             if (value.length + totalBytesRead > DOWNLOAD_LIMIT_BYTES)
-                throw errcode(Error(messages.ERR_OVER_DOWNLOAD_LIMIT), codes.ERR_OVER_DOWNLOAD_LIMIT, {
+                throw errcode(Error(messages.ERR_OVER_DOWNLOAD_LIMIT), messages[messages.ERR_OVER_DOWNLOAD_LIMIT], {
                     details: `fetch: url (${url}) points to a file larger than download limit (${DOWNLOAD_LIMIT_BYTES}) bytes`
                 });
             totalBytesRead += value.length;
@@ -63,7 +63,7 @@ async function fetchWithLimit(url: string, options?): Promise<[resText: string, 
 export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { length: DOWNLOAD_LIMIT_BYTES }): Promise<string> {
     if (!isIPFS.cid(cid) && isIPFS.path(cid)) cid = cid.split("/")[2];
     if (!isIPFS.cid(cid))
-        throw errcode(Error(messages.ERR_CID_IS_INVALID), codes.ERR_CID_IS_INVALID, {
+        throw errcode(Error(messages.ERR_CID_IS_INVALID), messages[messages.ERR_CID_IS_INVALID], {
             details: `fetchCid: CID (${cid}) is invalid`
         });
     let fileContent: string | undefined;
@@ -84,11 +84,11 @@ export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { len
 
     const generatedCid: string = await Hash.of(fileContent);
     if (fileContent.length === DOWNLOAD_LIMIT_BYTES && generatedCid !== cid)
-        throw errcode(Error(messages.ERR_OVER_DOWNLOAD_LIMIT), codes.ERR_OVER_DOWNLOAD_LIMIT, {
+        throw errcode(Error(messages.ERR_OVER_DOWNLOAD_LIMIT), messages[messages.ERR_OVER_DOWNLOAD_LIMIT], {
             details: `fetchCid: CID (${cid}) points to a file larger than download limit ${DOWNLOAD_LIMIT_BYTES}`
         });
     if (generatedCid !== cid)
-        throw errcode(Error(messages.ERR_GENERATED_CID_DOES_NOT_MATCH), codes.ERR_GENERATED_CID_DOES_NOT_MATCH, {
+        throw errcode(Error(messages.ERR_GENERATED_CID_DOES_NOT_MATCH), messages[messages.ERR_GENERATED_CID_DOES_NOT_MATCH], {
             details: `fetchCid: Loaded file generates a different CID (${generatedCid}) than provided CID (${cid})`
         });
     return fileContent;
@@ -100,7 +100,7 @@ export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit) {
 
 export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
     if (typeof ipns !== "string")
-        throw errcode(Error(messages.ERR_IPNS_IS_INVALID), codes.ERR_IPNS_IS_INVALID, {
+        throw errcode(Error(messages.ERR_IPNS_IS_INVALID), messages[messages.ERR_IPNS_IS_INVALID], {
             details: `loadIpnsAsJson: ipns (${ipns}) is invalid`
         });
     if (!plebbit.ipfsClient) {
