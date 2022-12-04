@@ -6,6 +6,8 @@ const { messages, codes } = require("../../dist/node/errors");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
+const path = require("path");
+const fs = require("fs");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const syncInterval = 300;
@@ -300,5 +302,10 @@ describe("subplebbit", async () => {
         const ipfsKeys = await subplebbit.plebbit.ipfsClient.key.list();
         const subKeyExists = ipfsKeys.some((key) => key.name === subplebbit.signer.ipnsKeyName);
         expect(subKeyExists).to.be.false;
+    });
+
+    it(`Deleted sub db is moved to datapath/subplebbits/deleted`, async () => {
+        const expectedPath = path.join(plebbit.dataPath, "subplebbits", "deleted", subplebbit.address);
+        expect(fs.existsSync(expectedPath)).to.be.true;
     });
 });
