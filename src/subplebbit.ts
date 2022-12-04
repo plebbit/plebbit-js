@@ -179,6 +179,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         await this.dbHandler.initDbIfNeeded();
         if (!this.sortHandler)
             this.sortHandler = new SortHandler({ address: this.address, plebbit: this.plebbit, dbHandler: this.dbHandler });
+        const obsoleteCache: SubplebbitType | undefined = await this.dbHandler.keyvGet(this.address);
+        const subCache: SubplebbitType | undefined = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
+        if (obsoleteCache && !subCache) {
+            // We're migrating from DB version 2 to 3
+            const signerAddress = await getPlebbitAddressFromPublicKeyPem(obsoleteCache.encryption.publicKey);
+            const signer: SignerType = await this.dbHandler.querySigner(signerAddress); // Need to include signer explicitly since in db version 2 we didn't include signer in cache
+            obsoleteCache.signer = signer;
+            // We changed the name of internal subplebbit cache, need to explicitly copy old cache to new key here
+            await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], obsoleteCache);
+        }
     }
 
     setProvideCaptchaCallback(
