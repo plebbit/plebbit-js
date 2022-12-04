@@ -9,7 +9,7 @@ const path = require("path");
 const fs = require("fs");
 const { generateMockPost, generateMockComment } = require("../../dist/node/test/test-util");
 
-const pathToDbFixtureVersionTwo = "test/fixtures/subplebbit_db_version_2/QmbdJpNU6cAgSXHjUNnSBrUZGBtStKPkdwKyiffqRy1x6c";
+const pathToDbFixtureVersionTwo = "test/fixtures/subplebbit_db_version_2/Qmd3ts5tdvGztqkb3Uuir3i6pLXgpaZ7N5kvgJvSeYFnZ4";
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
@@ -58,8 +58,8 @@ describe("DB Migration", () => {
         const mockComment = await generateMockComment(commentToPostUnder, plebbit);
         await mockComment.publish();
 
-        await new Promise((resolve) => {
-            commentToPostUnder.update();
+        await new Promise(async (resolve) => {
+            await commentToPostUnder.update();
             commentToPostUnder.once("update", resolve);
         });
     });
