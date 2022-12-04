@@ -283,12 +283,6 @@ export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     signer?: SignerType;
     encryption?: SubplebbitEncryption;
     signature?: SignatureType; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
-
-    database?: Omit<Knex.Config, "client" | "connection" | "pool" | "postProcessResponse" | "wrapIdentifier" | "seeds" | "log"> & {
-        connection: { filename: string; flags?: string[]; debug?: boolean; expirationChecker?(): boolean };
-        client: string;
-        useNullAsDefault: true;
-    }; // "client" field causes an error in plebbit-cli tsoa routes generation. Easier to omit it here than to debug there
 }
 
 export interface SubplebbitEditOptions {
@@ -458,7 +452,6 @@ export type NativeFunctions = {
     // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
     importSignerIntoIpfsNode: (signer: SignerType, plebbit: Plebbit) => Promise<{ Id: string; Name: string }>;
     deleteSubplebbit(subplebbitAddress: string, dataPath: string): Promise<void>;
-    copyDbToDatapathIfNeeded(databaseConfig: CreateSubplebbitOptions["database"], dataPath: string): Promise<void>;
 };
 
 export type OnlyDefinedProperties<T> = Pick<

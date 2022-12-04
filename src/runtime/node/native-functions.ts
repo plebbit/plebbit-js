@@ -149,17 +149,6 @@ const nativeFunctions: NativeFunctions = {
         const newPath = path.join(dataPath, "subplebbits", "deleted", subplebbitAddress);
         await fs.mkdir(path.join(dataPath, "subplebbits", "deleted"), { recursive: true });
         await fs.rename(oldPath, newPath);
-    },
-    copyDbToDatapathIfNeeded: async (databaseConfig: CreateSubplebbitOptions["database"], plebbitDataPath: string) => {
-        await fs.mkdir(path.join(plebbitDataPath, "subplebbits"), { recursive: true });
-        const expectedPath = path.join(plebbitDataPath, "subplebbits", path.basename(databaseConfig.connection.filename));
-
-        try {
-            await fs.stat(expectedPath);
-        } catch {
-            // Copy db to data path if db is not in data path
-            await fs.cp(databaseConfig.connection.filename, expectedPath);
-        }
     }
 };
 

@@ -67,9 +67,6 @@ const nativeFunctions: NativeFunctions = {
     },
     importSignerIntoIpfsNode: async (signer: SignerType, plebbit: Plebbit): Promise<{ Id: string; Name: string }> => {
         throw Error("Shouldn't call importSignerIntoIpfsNode over native-functions of browser");
-    },
-    copyDbToDatapathIfNeeded: async (databaseConfig: any, plebbitDataPath: string) => {
-        throw Error("Shouldn't call copyDbToDatapathIfNeeded over native-functions of browser");
     }
 };
 

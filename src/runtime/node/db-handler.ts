@@ -45,39 +45,32 @@ const TABLES = Object.freeze({
 
 export class DbHandler {
     private _knex: Knex;
-    private _subplebbit: Pick<Subplebbit, "address" | "database"> & {
+    private _subplebbit: Pick<Subplebbit, "address"> & {
         plebbit: Pick<Plebbit, "dataPath">;
     };
     private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
-    private _dbConfig: any;
-    private _userDbConfig?: Knex.Config;
+    private _dbConfig: Knex.Config<any>;
     private _keyv: Keyv; // Don't change any here to Keyv since it will crash for browsers
     private _createdTables: boolean;
 
     constructor(subplebbit: DbHandler["_subplebbit"]) {
-        this._userDbConfig = subplebbit.database;
         this._subplebbit = subplebbit;
         this._currentTrxs = {};
         this._createdTables = false;
     }
 
     async initDbIfNeeded() {
-        const log = Logger("plebbit-js:db-handler:initDbIfNeeded");
         assert(
             typeof this._subplebbit.address === "string" && this._subplebbit.address.length > 0,
             `DbHandler needs to be an instantiated with a Subplebbit that has a valid address, (${this._subplebbit.address}) was provided`
         );
-        this._dbConfig = this._dbConfig || this._userDbConfig;
-        if (!this._dbConfig) {
-            this._dbConfig = await getDefaultSubplebbitDbConfig(this._subplebbit);
-            log(`User did not provide a database config. Defaulting to: `, this._dbConfig);
-        }
+        if (!this._dbConfig) this._dbConfig = await getDefaultSubplebbitDbConfig(this._subplebbit);
+
         if (!this._knex) this._knex = knex(this._dbConfig);
 
         if (!this._createdTables) await this.createTablesIfNeeded();
 
-        // TODO make this work with DBs other than sqlite
-        if (!this._keyv) this._keyv = new Keyv(`sqlite://${this._dbConfig?.connection?.filename}`);
+        if (!this._keyv) this._keyv = new Keyv(`sqlite://${(<any>this._dbConfig.connection).filename}`);
     }
 
     getDbConfig(): Knex.Config {
@@ -702,7 +695,7 @@ export class DbHandler {
     async changeDbFilename(newDbFileName: string, newSubplebbit: DbHandler["_subplebbit"]) {
         const log = Logger("plebbit-js:db-handler:changeDbFilename");
 
-        const oldPathString = this._dbConfig?.connection?.filename;
+        const oldPathString = (<any>this._dbConfig.connection).filename;
         assert.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
         if (oldPathString === ":memory:") {
             log.trace(`No need to change file name of db since it's in memory`);
@@ -716,7 +709,7 @@ export class DbHandler {
         this._dbConfig = {
             ...this._dbConfig,
             connection: {
-                ...this._dbConfig.connection,
+                ...(<any>this._dbConfig.connection),
                 filename: newPath
             }
         };

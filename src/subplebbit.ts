@@ -93,7 +93,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     plebbit: Plebbit;
     dbHandler?: DbHandlerPublicAPI;
-    database?: any;
 
     // private
 
@@ -134,7 +133,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.title = mergedProps.title;
         this.description = mergedProps.description;
         this.lastPostCid = mergedProps.lastPostCid;
-        this.database = mergedProps.database;
         this.address = mergedProps.address;
         this.pubsubTopic = mergedProps.pubsubTopic;
         this.challengeTypes = mergedProps.challengeTypes;
@@ -173,7 +171,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (!this.dbHandler) {
             this.dbHandler = nativeFunctions.createDbHandler({
                 address: this.address,
-                database: this.database,
                 plebbit: {
                     dataPath: this.plebbit.dataPath
                 }
@@ -199,7 +196,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     toJSONInternal() {
         return {
             ...this.toJSON(),
-            database: this.database,
             signer: this.signer
         };
     }
@@ -282,7 +278,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.initSubplebbit(newSubplebbitOptions);
             await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                 address: this.address,
-                database: this.database,
                 plebbit: {
                     dataPath: this.plebbit.dataPath
                 }

@@ -148,10 +148,20 @@ async function _mockPlebbit(signers: SignerType[], dataPath: string) {
     return plebbit;
 }
 
+async function _setDatabase(subplebbit: Subplebbit, databaseConfig: any) {
+    //@ts-ignore
+    subplebbit.dbHandler._dbConfig = databaseConfig;
+    //@ts-ignore
+    subplebbit.dbHandler._knex = undefined;
+    await subplebbit.dbHandler.initDbIfNeeded();
+}
+
 async function _startMathCliSubplebbit(signers: SignerType[], database: any, syncInterval: number, dataPath: string) {
     const plebbit = await _mockPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[1]);
-    const subplebbit = await plebbit.createSubplebbit({ signer, database });
+    const subplebbit = await plebbit.createSubplebbit({ signer });
+    await _setDatabase(subplebbit, database);
+
     subplebbit.setProvideCaptchaCallback(async (challengeRequestMessage) => {
         // Expected return is:
         // Challenge[], reason for skipping captcha (if it's skipped by nullifying Challenge[])
@@ -172,7 +182,8 @@ async function _startMathCliSubplebbit(signers: SignerType[], database: any, syn
 async function _startImageCaptchaSubplebbit(signers: SignerType[], database: any, syncInterval: number, dataPath: string) {
     const plebbit = await _mockPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[2]);
-    const subplebbit = await plebbit.createSubplebbit({ signer, database });
+    const subplebbit = await plebbit.createSubplebbit({ signer });
+    await _setDatabase(subplebbit, database);
 
     // Image captcha are default
     //@ts-ignore
@@ -189,7 +200,8 @@ async function _startImageCaptchaSubplebbit(signers: SignerType[], database: any
 async function _startEnsSubplebbit(signers: SignerType[], database: any, syncInterval: number, dataPath: string) {
     const plebbit = await _mockPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[3]);
-    const subplebbit = await plebbit.createSubplebbit({ signer, database });
+    const subplebbit = await plebbit.createSubplebbit({ signer });
+    await _setDatabase(subplebbit, database);
     //@ts-ignore
     subplebbit._syncIntervalMs = syncInterval;
     await subplebbit.start();
@@ -284,7 +296,9 @@ export async function startSubplebbits(props: {
 }) {
     const plebbit = await _mockPlebbit(props.signers, props.dataPath);
     const signer = await plebbit.createSigner(props.signers[0]);
-    const subplebbit = await plebbit.createSubplebbit({ signer, database: props.database });
+    const subplebbit = await plebbit.createSubplebbit({ signer });
+    await _setDatabase(subplebbit, props.database);
+
     subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
 
     //@ts-ignore

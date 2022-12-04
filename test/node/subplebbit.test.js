@@ -49,18 +49,6 @@ describe("subplebbit", async () => {
         })
     );
 
-    it(`Can customize database config for subplebbit`, async () => {
-        const databaseConfig = {
-            client: "sqlite3",
-            connection: {
-                filename: ":memory:"
-            },
-            useNullAsDefault: true
-        };
-        const subWithDbConfig = await plebbit.createSubplebbit({ database: databaseConfig });
-        expect(subWithDbConfig.dbHandler.getDbConfig()).to.deep.equal(databaseConfig);
-    });
-
     it(`createSubplebbit on IPFS node doesn't take more than 10s`, async () => {
         const onlinePlebbit = await Plebbit({
             ipfsHttpClientOptions: "http://localhost:5003/api/v0",
@@ -312,37 +300,5 @@ describe("subplebbit", async () => {
         const ipfsKeys = await subplebbit.plebbit.ipfsClient.key.list();
         const subKeyExists = ipfsKeys.some((key) => key.name === subplebbit.signer.ipnsKeyName);
         expect(subKeyExists).to.be.false;
-    });
-
-    it(`Can start a sub with only sqlite3 file`, async () => {
-        // This should be ran after deleting sub test
-        // We're making an assumption here that ipfsKey is not imported in the ipfs node
-        const databaseConfig = {
-            client: "sqlite3",
-            connection: {
-                filename: `${plebbit.dataPath}/subplebbits/deleted/${subplebbit.address}`
-            },
-            useNullAsDefault: true
-        };
-        const subFromDb = await plebbit.createSubplebbit({ database: databaseConfig });
-        subFromDb.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
-
-        expect(JSON.stringify(subplebbit.toJSON())).to.equal(JSON.stringify(subFromDb.toJSON()));
-        expect(subplebbit.signer).to.deep.equal(subFromDb.signer);
-        expect(await plebbit.listSubplebbits()).to.include(subFromDb.address);
-
-        subFromDb._syncIntervalMs = syncInterval;
-        assert.isFulfilled(subFromDb.start());
-
-        const commentToPostUnder = await plebbit.createComment(subFromDb.posts.pages.hot.comments[0]);
-        commentToPostUnder._updateIntervalMs = syncInterval;
-
-        const mockComment = await generateMockComment(commentToPostUnder, plebbit);
-        await mockComment.publish();
-
-        await new Promise((resolve) => {
-            commentToPostUnder.update();
-            commentToPostUnder.once("update", resolve);
-        });
     });
 });

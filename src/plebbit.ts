@@ -202,14 +202,6 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             return new Subplebbit(options, this);
         };
 
-        if (
-            !options.address &&
-            (<CreateSubplebbitOptions>options)?.database?.connection?.filename &&
-            (<CreateSubplebbitOptions>options)?.database?.connection?.filename !== ":memory:"
-        ) {
-            options.address = (<CreateSubplebbitOptions>options).database.connection.filename.split(/[\\\/]/).pop();
-            await nativeFunctions.copyDbToDatapathIfNeeded((<CreateSubplebbitOptions>options).database, this.dataPath);
-        }
         if (options.address && !options.signer) {
             if (!canRunSub) return remoteSub();
             else {
