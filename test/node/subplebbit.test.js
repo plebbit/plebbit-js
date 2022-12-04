@@ -1,6 +1,6 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { generateMockPost, generateMockComment } = require("../../dist/node/test/test-util");
+const { generateMockPost } = require("../../dist/node/test/test-util");
 const { timestamp, encode } = require("../../dist/node/util");
 const { messages, codes } = require("../../dist/node/errors");
 const chai = require("chai");
@@ -216,18 +216,6 @@ describe("subplebbit", async () => {
 
             interval = setInterval(loop, 50);
         }));
-
-    it.skip(`DB get migrated successfully`, async () => {
-        // TODO this test is not through at all. Rewrite it at some point
-        const originalDbVersion = await subplebbit.dbHandler.getDbVersion();
-        await subplebbit.dbHandler._knex.raw("PRAGMA user_version = 999999"); // Force a migrate
-        await subplebbit.stop(); // Clear out dbHandler
-        subplebbit._syncIntervalMs = syncInterval;
-        await subplebbit.start();
-
-        const currentDbVersion = await subplebbit.dbHandler.getDbVersion();
-        expect(currentDbVersion).to.equal(originalDbVersion); // If they're equal, that means all tables have been migrated
-    });
 
     it(`local subplebbit retains fields upon createSubplebbit(address)`, async () => {
         const createdSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
