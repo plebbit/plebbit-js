@@ -51,6 +51,7 @@ describe("DB Migration", () => {
 
         subplebbit._syncIntervalMs = syncInterval;
         assert.isFulfilled(subplebbit.start());
+        await new Promise((resolve) => subplebbit.once("update", resolve)); // Ensure IPNS is published
 
         const commentToPostUnder = await plebbit.createComment(subplebbit.posts.pages.hot.comments[0]);
         commentToPostUnder._updateIntervalMs = syncInterval;
