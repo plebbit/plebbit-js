@@ -245,6 +245,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")
             this.initSubplebbit({ ...cachedSubplebbit, ...removeKeysWithUndefinedValues(this.toJSONInternal()) }); // Init subplebbit fields from DB
 
+        if (!this.signer) throw Error(`subplebbit.signer needs to be defined before proceeding`);
         // import ipfs key into ipfs node
         await this._initSignerProps();
         await this._importSignerIntoIpfsIfNeeded(this.signer);
