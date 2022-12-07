@@ -98,7 +98,6 @@ export class Resolver {
     }
 
     isDomain(address: string): boolean {
-        if (address?.endsWith(".eth")) return true;
-        return false;
+        return /(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]/.test(address);
     }
 }
