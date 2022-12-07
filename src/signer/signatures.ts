@@ -44,7 +44,6 @@ import {
 } from "../types";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
-import errcode from "err-code";
 import { messages } from "../errors";
 
 interface ValidationResult {
@@ -257,23 +256,24 @@ const _verifyPublicationSignature = async (publicationToBeVerified: PublicationT
 };
 
 const _verifyPublicationWithAuthor = async (
-    publicationJson: PublicationToVerify,
+    publicationJson: VoteType | CommentType | CommentEditType,
     plebbit: Plebbit,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult & { newAddress?: string }> => {
-    if (publicationJson["author"]) {
-        const authorSignatureValidity = await _verifyAuthor(<VoteType | CommentType | CommentEditType>publicationJson, plebbit);
+    // Validate author
+    const authorSignatureValidity = await _verifyAuthor(publicationJson, plebbit);
 
-        if (!authorSignatureValidity.valid) return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
+    if (!authorSignatureValidity.valid) return { valid: false, reason: authorSignatureValidity.reason };
 
-        if (!overrideAuthorAddressIfInvalid && authorSignatureValidity.newAddress)
-            return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
+    if (!overrideAuthorAddressIfInvalid && authorSignatureValidity.newAddress)
+        return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
 
-        if (authorSignatureValidity?.newAddress) return { valid: true, newAddress: authorSignatureValidity.newAddress };
-    }
+    // Validate signature
 
     const signatureValidity = await _verifyPublicationSignature(publicationJson);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
+
+    if (authorSignatureValidity?.newAddress) return { valid: true, newAddress: authorSignatureValidity.newAddress };
 
     return { valid: true };
 };
@@ -315,6 +315,7 @@ export async function verifyComment(
         if (!authorEditValidation.valid) return authorEditValidation;
         if (comment.authorEdit.content && comment.content !== comment.authorEdit.content)
             return { valid: false, reason: messages.ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT };
+
         if (overrideAuthorAddressIfInvalid && authorEditValidation.newAddress)
             comment.authorEdit.author.address = authorEditValidation.newAddress;
     }
@@ -395,15 +396,28 @@ export async function verifyChallengeVerification(verification: ChallengeVerific
 
 export async function verifyPage(page: PageType, plebbit: Plebbit, subplebbitAddress: string): Promise<ValidationResult> {
     const verifyCommentInPage = async (comment: CommentType, parentComment?: CommentType) => {
-        if (comment.subplebbitAddress !== subplebbitAddress) throw Error(messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB);
-        if (parentComment && parentComment.cid !== comment.parentCid) throw Error(messages.ERR_PARENT_CID_NOT_AS_EXPECTED);
+        if (comment.subplebbitAddress !== subplebbitAddress)
+            throwWithErrorCode(
+                "ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB",
+                `verifyPage: Failed to verify page due to comment (${comment.cid}) having a subplebbit address (${comment.subplebbitAddress}) that is different than the address of the subplebbit that generate this page (${subplebbitAddress})`
+            );
+        if (parentComment && parentComment.cid !== comment.parentCid)
+            throwWithErrorCode(
+                "ERR_PARENT_CID_NOT_AS_EXPECTED",
+                `verifyPage: Failed to verify page due to comment (${comment.cid}) having an unexpected parent cid (${comment.parentCid}), the expected parent cid (${parentComment.cid})`
+            );
 
         const commentSignatureValidity = await verifyComment(comment, plebbit, true);
-        if (!commentSignatureValidity.valid)
+        if (!commentSignatureValidity.valid) {
+            //@ts-ignore
+            const code: keyof typeof messages = Object.entries(messages).filter(
+                ([_, error]) => error === commentSignatureValidity.reason
+            )[0][0];
             throwWithErrorCode(
-                "ERR_SIGNATURE_IS_INVALID",
-                `getPage: Failed to verify comment ${comment.cid} due to '${commentSignatureValidity.reason}'`
+                code,
+                `verifyPage: Failed to verify page due to comment ${comment.cid} with invalid signature due to '${commentSignatureValidity.reason}'`
             );
+        }
 
         await Promise.all(
             Object.values(comment?.replies?.pages).map(
