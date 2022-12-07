@@ -42,10 +42,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Resolver = void 0;
 var ethers_1 = require("ethers");
 var assert_1 = __importDefault(require("assert"));
-var err_code_1 = __importDefault(require("err-code"));
-var errors_1 = require("./errors");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
+var util_1 = require("./util");
 var Resolver = /** @class */ (function () {
     function Resolver(options) {
         this.blockchainProviders = options.blockchainProviders;
@@ -93,19 +92,13 @@ var Resolver = /** @class */ (function () {
                     case 1:
                         resolver = _a.sent();
                         if (!resolver)
-                            throw (0, err_code_1.default)(new Error(errors_1.messages.ERR_ENS_RESOLVER_NOT_FOUND), errors_1.messages[errors_1.messages.ERR_ENS_RESOLVER_NOT_FOUND], {
-                                details: "ensName: ".concat(ensName, ", blockchainProvider:"),
-                                blockchainProvider: blockchainProvider
-                            });
+                            (0, util_1.throwWithErrorCode)("ERR_ENS_RESOLVER_NOT_FOUND", "ensName: ".concat(ensName, ", blockchainProvider: ").concat(blockchainProvider));
                         return [4 /*yield*/, resolver.getText(txtRecordName)];
                     case 2:
                         txtRecordResult = _a.sent();
                         if (!txtRecordResult)
-                            throw (0, err_code_1.default)(new Error(errors_1.messages.ERR_ENS_TXT_RECORD_NOT_FOUND), errors_1.messages[errors_1.messages.ERR_ENS_TXT_RECORD_NOT_FOUND], {
-                                details: "ensName: ".concat(ensName, ", txtRecordName: ").concat(txtRecordName, ", blockchainProvider:"),
-                                blockchainProvider: blockchainProvider
-                            });
-                        log.trace("Resolved text record name (".concat(txtRecordName, ") of ENS (").concat(ensName, ") to ").concat(txtRecordResult));
+                            (0, util_1.throwWithErrorCode)("ERR_ENS_TXT_RECORD_NOT_FOUND", "ensName: ".concat(ensName, ", txtRecordName: ").concat(txtRecordName, ", blockchainProvider: ").concat(blockchainProvider));
+                        log("Resolved text record name (".concat(txtRecordName, ") of ENS (").concat(ensName, ") to ").concat(txtRecordResult));
                         this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // Expire memory ENS cache after an hour
                         return [2 /*return*/, txtRecordResult];
                 }
@@ -126,9 +119,7 @@ var Resolver = /** @class */ (function () {
                     case 1:
                         resolvedAuthorAddress = _a.sent();
                         if (!is_ipfs_1.default.cid(resolvedAuthorAddress))
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID), errors_1.messages[errors_1.messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID], {
-                                details: "resolver: Author address (".concat(authorAddress, ") resolves to an incorrect CID (").concat(resolvedAuthorAddress, ")")
-                            });
+                            (0, util_1.throwWithErrorCode)("ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID", "resolver: Author address (".concat(authorAddress, ") resolves to an incorrect CID (").concat(resolvedAuthorAddress, ")"));
                         return [2 /*return*/, resolvedAuthorAddress];
                     case 2: return [2 /*return*/, authorAddress];
                 }
@@ -147,9 +138,7 @@ var Resolver = /** @class */ (function () {
                     case 1:
                         resolvedSubplebbitAddress = _a.sent();
                         if (!is_ipfs_1.default.cid(resolvedSubplebbitAddress))
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID), errors_1.messages[errors_1.messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID], {
-                                details: "resolver: subplebbitAddress (".concat(subplebbitAddress, ") resolves to an incorrect CID (").concat(resolvedSubplebbitAddress, ")")
-                            });
+                            (0, util_1.throwWithErrorCode)("ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID", "resolver: subplebbitAddress (".concat(subplebbitAddress, ") resolves to an incorrect CID (").concat(resolvedSubplebbitAddress, ")"));
                         return [2 /*return*/, resolvedSubplebbitAddress];
                     case 2: return [2 /*return*/, subplebbitAddress];
                 }
@@ -157,9 +146,7 @@ var Resolver = /** @class */ (function () {
         });
     };
     Resolver.prototype.isDomain = function (address) {
-        if (address === null || address === void 0 ? void 0 : address.endsWith(".eth"))
-            return true;
-        return false;
+        return /(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]/.test(address);
     };
     return Resolver;
 }());

@@ -41,8 +41,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Page = exports.Pages = void 0;
 var util_1 = require("./util");
-var err_code_1 = __importDefault(require("err-code"));
-var errors_1 = require("./errors");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var signatures_1 = require("./signer/signatures");
 var Pages = /** @class */ (function () {
@@ -58,9 +56,7 @@ var Pages = /** @class */ (function () {
                 switch (_b.label) {
                     case 0:
                         if (!is_ipfs_1.default.cid(pageCid))
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.messages[errors_1.messages.ERR_CID_IS_INVALID], {
-                                details: "getPage: cid (".concat(pageCid, ") is invalid as a CID")
-                            });
+                            (0, util_1.throwWithErrorCode)("ERR_CID_IS_INVALID", "getPage: cid (".concat(pageCid, ") is invalid as a CID"));
                         if (typeof this.subplebbit.address !== "string")
                             throw Error("Address of subplebbit is needed to load pages");
                         _a = Page.bind;

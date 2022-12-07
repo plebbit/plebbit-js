@@ -75,10 +75,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CommentEdit = exports.AUTHOR_EDIT_FIELDS = exports.MOD_EDIT_FIELDS = void 0;
-var assert_1 = __importDefault(require("assert"));
 var publication_1 = __importDefault(require("./publication"));
 var signatures_1 = require("./signer/signatures");
 var util_1 = require("./util");
+var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var PUBLICATION_FIELDS = [
     "author",
     "protocolVersion",
@@ -140,12 +140,13 @@ var CommentEdit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         // TODO if publishing with content,reason, deleted, verify that publisher is original author
-                        (0, assert_1.default)(this.commentCid, "Need commentCid to be defined to publish CommentEdit");
+                        if (!is_ipfs_1.default.cid(this.commentCid))
+                            (0, util_1.throwWithErrorCode)("ERR_CID_IS_INVALID", "commentEdit.publish: commentCid (".concat(this.commentCid, ") is invalid as a CID"));
                         return [4 /*yield*/, (0, signatures_1.verifyCommentEdit)(this.toJSON(), this.plebbit, true)];
                     case 1:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)
-                            throw Error("Failed to validate signature before publishing due to reason '".concat(signatureValidity.reason, "'"));
+                            (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", "commentEdit.publish: Failed to publish due to invalid signature. Reason=".concat(signatureValidity.reason));
                         return [2 /*return*/, _super.prototype.publish.call(this)];
                 }
             });

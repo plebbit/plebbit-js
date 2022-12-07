@@ -50,7 +50,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.encode = exports.randomElement = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.fetchCid = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.throwWithErrorCode = exports.encode = exports.randomElement = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.fetchCid = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var util_1 = require("./runtime/browser/util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var errors_1 = require("./errors");
@@ -86,9 +86,7 @@ function fetchWithLimit(url, options) {
                 case 4:
                     e_1 = _d.sent();
                     if (e_1.message.includes("over limit"))
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT), errors_1.messages[errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT], {
-                            details: "fetch: url (".concat(url, ") points to a file larger than download limit (").concat(DOWNLOAD_LIMIT_BYTES, ") bytes")
-                        });
+                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", "fetch: url (".concat(url, ") points to a file larger than download limit (").concat(DOWNLOAD_LIMIT_BYTES, ") bytes"));
                     // If error is not related to size limit, then throw it again
                     throw e_1;
                 case 5:
@@ -109,9 +107,7 @@ function fetchWithLimit(url, options) {
                     if (done || !value)
                         return [3 /*break*/, 8];
                     if (value.length + totalBytesRead > DOWNLOAD_LIMIT_BYTES)
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT), errors_1.messages[errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT], {
-                            details: "fetch: url (".concat(url, ") points to a file larger than download limit (").concat(DOWNLOAD_LIMIT_BYTES, ") bytes")
-                        });
+                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", "fetch: url (".concat(url, ") points to a file larger than download limit (").concat(DOWNLOAD_LIMIT_BYTES, ") bytes"));
                     totalBytesRead += value.length;
                     return [3 /*break*/, 6];
                 case 8: return [2 /*return*/, [resText, res]];
@@ -130,9 +126,7 @@ function fetchCid(cid, plebbit, catOptions) {
                     if (!is_ipfs_1.default.cid(cid) && is_ipfs_1.default.path(cid))
                         cid = cid.split("/")[2];
                     if (!is_ipfs_1.default.cid(cid))
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_CID_IS_INVALID), errors_1.messages[errors_1.messages.ERR_CID_IS_INVALID], {
-                            details: "fetchCid: CID (".concat(cid, ") is invalid")
-                        });
+                        throwWithErrorCode("ERR_CID_IS_INVALID", "fetchCid: (".concat(cid, ") is invalid as a CID"));
                     if (!!plebbit.ipfsClient) return [3 /*break*/, 2];
                     url = "".concat(plebbit.ipfsGatewayUrl, "/ipfs/").concat(cid);
                     return [4 /*yield*/, fetchWithLimit(url, { cache: "force-cache" })];
@@ -158,19 +152,15 @@ function fetchCid(cid, plebbit, catOptions) {
                     return [3 /*break*/, 6];
                 case 6:
                     if (typeof fileContent !== "string")
-                        throw Error("Was not able to load IPFS (".concat(cid, ") due to error: ").concat(error));
+                        throw Error("Was not able to load file with CID (".concat(cid, ") due to error: ").concat(error));
                     _b.label = 7;
                 case 7: return [4 /*yield*/, ipfs_only_hash_1.default.of(fileContent)];
                 case 8:
                     generatedCid = _b.sent();
                     if (fileContent.length === DOWNLOAD_LIMIT_BYTES && generatedCid !== cid)
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT), errors_1.messages[errors_1.messages.ERR_OVER_DOWNLOAD_LIMIT], {
-                            details: "fetchCid: CID (".concat(cid, ") points to a file larger than download limit ").concat(DOWNLOAD_LIMIT_BYTES)
-                        });
+                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", "fetchCid: CID (".concat(cid, ") points to a file larger than download limit ").concat(DOWNLOAD_LIMIT_BYTES));
                     if (generatedCid !== cid)
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_GENERATED_CID_DOES_NOT_MATCH), errors_1.messages[errors_1.messages.ERR_GENERATED_CID_DOES_NOT_MATCH], {
-                            details: "fetchCid: Loaded file generates a different CID (".concat(generatedCid, ") than provided CID (").concat(cid, ")")
-                        });
+                        throwWithErrorCode("ERR_GENERATED_CID_DOES_NOT_MATCH", "fetchCid: Loaded file generates a different CID (".concat(generatedCid, ") than provided CID (").concat(cid, ")"));
                     return [2 /*return*/, fileContent];
             }
         });
@@ -198,9 +188,7 @@ function loadIpnsAsJson(ipns, plebbit) {
             switch (_b.label) {
                 case 0:
                     if (typeof ipns !== "string")
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_IPNS_IS_INVALID), errors_1.messages[errors_1.messages.ERR_IPNS_IS_INVALID], {
-                            details: "loadIpnsAsJson: ipns (".concat(ipns, ") is invalid")
-                        });
+                        throwWithErrorCode("ERR_IPNS_IS_INVALID", "loadIpnsAsJson: ipns (".concat(ipns, ") is undefined"));
                     if (!!plebbit.ipfsClient) return [3 /*break*/, 2];
                     url = "".concat(plebbit.ipfsGatewayUrl, "/ipns/").concat(ipns);
                     return [4 /*yield*/, fetchWithLimit(url, { cache: "no-store", size: DOWNLOAD_LIMIT_BYTES })];
@@ -316,3 +304,9 @@ function encode(obj) {
     return (0, safe_stable_stringify_1.stringify)(obj);
 }
 exports.encode = encode;
+function throwWithErrorCode(code, details) {
+    throw (0, err_code_1.default)(Error(errors_1.messages[code]), errors_1.messages[errors_1.messages[code]], {
+        details: details
+    });
+}
+exports.throwWithErrorCode = throwWithErrorCode;

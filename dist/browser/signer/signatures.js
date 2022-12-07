@@ -83,7 +83,6 @@ var util_2 = require("../util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var lodash_1 = __importDefault(require("lodash"));
-var err_code_1 = __importDefault(require("err-code"));
 var errors_1 = require("../errors");
 var Signature = /** @class */ (function () {
     function Signature(props) {
@@ -143,7 +142,7 @@ var verifyBufferRsa = function (bufferToSign, bufferSignature, publicKeyPem) { r
     });
 }); };
 exports.verifyBufferRsa = verifyBufferRsa;
-function _validateAuthor(author, signer, plebbit) {
+function _validateAuthorIpns(author, signer, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
         var derivedAddress;
         return __generator(this, function (_a) {
@@ -154,9 +153,17 @@ function _validateAuthor(author, signer, plebbit) {
                 case 1:
                     derivedAddress = _a.sent();
                     if (derivedAddress !== author.address)
-                        throw (0, err_code_1.default)(Error(errors_1.messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER), errors_1.messages[errors_1.messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER]);
-                    _a.label = 2;
-                case 2: return [2 /*return*/];
+                        (0, util_2.throwWithErrorCode)("ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER", "author.address=".concat(author.address, ", signer.address=").concat(derivedAddress));
+                    return [3 /*break*/, 3];
+                case 2:
+                    if (plebbit.resolver.isDomain(author.address)) {
+                        // As of now do nothing to verify authors with domain as addresses
+                        // This may change in the future
+                    }
+                    else
+                        (0, util_2.throwWithErrorCode)("ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS", "author.address = '".concat(author.address, "'"));
+                    _a.label = 3;
+                case 3: return [2 /*return*/];
             }
         });
     });
@@ -192,7 +199,7 @@ function signComment(comment, signer, plebbit) {
             switch (_a.label) {
                 case 0:
                     log = (0, plebbit_logger_1.default)("plebbit-js:signatures:signComment");
-                    return [4 /*yield*/, _validateAuthor(comment.author, signer, plebbit)];
+                    return [4 /*yield*/, _validateAuthorIpns(comment.author, signer, plebbit)];
                 case 1:
                     _a.sent();
                     signedPropertyNames = ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"];
@@ -209,7 +216,7 @@ function signVote(vote, signer, plebbit) {
             switch (_a.label) {
                 case 0:
                     log = (0, plebbit_logger_1.default)("plebbit-js:signatures:signVote");
-                    return [4 /*yield*/, _validateAuthor(vote.author, signer, plebbit)];
+                    return [4 /*yield*/, _validateAuthorIpns(vote.author, signer, plebbit)];
                 case 1:
                     _a.sent();
                     signedPropertyNames = ["subplebbitAddress", "author", "timestamp", "vote", "commentCid"];
@@ -226,7 +233,7 @@ function signCommentEdit(edit, signer, plebbit) {
             switch (_a.label) {
                 case 0:
                     log = (0, plebbit_logger_1.default)("plebbit-js:signatures:signCommentEdit");
-                    return [4 /*yield*/, _validateAuthor(edit.author, signer, plebbit)];
+                    return [4 /*yield*/, _validateAuthorIpns(edit.author, signer, plebbit)];
                 case 1:
                     _a.sent();
                     signedPropertyNames = ["author", "timestamp", "subplebbitAddress", "content", "commentCid", "deleted", "spoiler", "pinned", "locked", "removed", "moderatorReason", "flair", "reason", "commentAuthor"];
@@ -303,38 +310,44 @@ function signChallengeVerification(challengeVerification, signer) {
 }
 exports.signChallengeVerification = signChallengeVerification;
 // Verify functions
-var _verifyAuthor = function (publicationJson, plebbit, returnDerivedAuthorAddressIfInvalid) { return __awaiter(void 0, void 0, void 0, function () {
+var _verifyAuthor = function (publicationJson, plebbit) { return __awaiter(void 0, void 0, void 0, function () {
     var log, resolvedAuthorAddress, derivedAddress, authorPeerId, signaturePeerId;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
                 log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifyAuthor");
-                if (!(plebbit.resolver.isDomain(publicationJson.author.address) &&
-                    plebbit.resolveAuthorAddresses &&
-                    returnDerivedAuthorAddressIfInvalid)) return [3 /*break*/, 3];
+                if (!((_a = publicationJson.author) === null || _a === void 0 ? void 0 : _a.address))
+                    return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS }];
+                if (!plebbit.resolver.isDomain(publicationJson.author.address)) return [3 /*break*/, 3];
+                if (!plebbit.resolveAuthorAddresses)
+                    return [2 /*return*/, { valid: true }]; // Skip domain validation if plebbit.resolveAuthorAddresses=false
                 return [4 /*yield*/, plebbit.resolver.resolveAuthorAddressIfNeeded(publicationJson.author.address)];
             case 1:
-                resolvedAuthorAddress = _a.sent();
+                resolvedAuthorAddress = _b.sent();
                 return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPublicKeyPem)(publicationJson.signature.publicKey)];
             case 2:
-                derivedAddress = _a.sent();
+                derivedAddress = _b.sent();
                 if (resolvedAuthorAddress !== derivedAddress) {
                     // Means plebbit-author-address text record is resolving to another address (outdated?)
                     // Will always use address derived from publication.signature.publicKey as truth
                     log.error("domain (".concat(publicationJson.author.address, ") resolved address (").concat(resolvedAuthorAddress, ") is invalid, changing publication.author.address to derived address ").concat(derivedAddress));
                     return [2 /*return*/, { valid: true, newAddress: derivedAddress }];
                 }
-                return [3 /*break*/, 5];
+                return [3 /*break*/, 6];
             case 3:
-                if (!!plebbit.resolver.isDomain(publicationJson.author.address)) return [3 /*break*/, 5];
+                if (!is_ipfs_1.default.cid(publicationJson.author.address)) return [3 /*break*/, 5];
                 authorPeerId = peer_id_1.default.createFromB58String(publicationJson.author.address);
                 return [4 /*yield*/, (0, util_1.getPeerIdFromPublicKeyPem)(publicationJson.signature.publicKey)];
             case 4:
-                signaturePeerId = _a.sent();
+                signaturePeerId = _b.sent();
                 if (!signaturePeerId.equals(authorPeerId))
                     return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE }];
-                _a.label = 5;
-            case 5: return [2 /*return*/, { valid: true }];
+                return [3 /*break*/, 6];
+            case 5: return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS }];
+            case 6: 
+            // Author
+            return [2 /*return*/, { valid: true }];
         }
     });
 }); };
@@ -356,23 +369,20 @@ var _verifyPublicationWithAuthor = function (publicationJson, plebbit, overrideA
     var authorSignatureValidity, signatureValidity;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0:
-                if (!publicationJson["author"]) return [3 /*break*/, 2];
-                return [4 /*yield*/, _verifyAuthor(publicationJson, plebbit, true)];
+            case 0: return [4 /*yield*/, _verifyAuthor(publicationJson, plebbit)];
             case 1:
                 authorSignatureValidity = _a.sent();
                 if (!authorSignatureValidity.valid)
-                    return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE }];
+                    return [2 /*return*/, { valid: false, reason: authorSignatureValidity.reason }];
                 if (!overrideAuthorAddressIfInvalid && authorSignatureValidity.newAddress)
                     return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE }];
-                if (authorSignatureValidity === null || authorSignatureValidity === void 0 ? void 0 : authorSignatureValidity.newAddress)
-                    return [2 /*return*/, { valid: true, newAddress: authorSignatureValidity.newAddress }];
-                _a.label = 2;
-            case 2: return [4 /*yield*/, _verifyPublicationSignature(publicationJson)];
-            case 3:
+                return [4 /*yield*/, _verifyPublicationSignature(publicationJson)];
+            case 2:
                 signatureValidity = _a.sent();
                 if (!signatureValidity)
                     return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SIGNATURE_IS_INVALID }];
+                if (authorSignatureValidity === null || authorSignatureValidity === void 0 ? void 0 : authorSignatureValidity.newAddress)
+                    return [2 /*return*/, { valid: true, newAddress: authorSignatureValidity.newAddress }];
                 return [2 /*return*/, { valid: true }];
         }
     });
@@ -560,23 +570,26 @@ function verifyPage(page, plebbit, subplebbitAddress) {
             switch (_a.label) {
                 case 0:
                     verifyCommentInPage = function (comment, parentComment) { return __awaiter(_this, void 0, void 0, function () {
-                        var commentSignatureValidity;
+                        var commentSignatureValidity, code;
                         var _this = this;
                         var _a;
                         return __generator(this, function (_b) {
                             switch (_b.label) {
                                 case 0:
                                     if (comment.subplebbitAddress !== subplebbitAddress)
-                                        throw Error(errors_1.messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB);
+                                        (0, util_2.throwWithErrorCode)("ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB", "verifyPage: Failed to verify page due to comment (".concat(comment.cid, ") having a subplebbit address (").concat(comment.subplebbitAddress, ") that is different than the address of the subplebbit that generate this page (").concat(subplebbitAddress, ")"));
                                     if (parentComment && parentComment.cid !== comment.parentCid)
-                                        throw Error(errors_1.messages.ERR_PARENT_CID_NOT_AS_EXPECTED);
+                                        (0, util_2.throwWithErrorCode)("ERR_PARENT_CID_NOT_AS_EXPECTED", "verifyPage: Failed to verify page due to comment (".concat(comment.cid, ") having an unexpected parent cid (").concat(comment.parentCid, "), the expected parent cid (").concat(parentComment.cid, ")"));
                                     return [4 /*yield*/, verifyComment(comment, plebbit, true)];
                                 case 1:
                                     commentSignatureValidity = _b.sent();
-                                    if (!commentSignatureValidity.valid)
-                                        throw (0, err_code_1.default)(Error(commentSignatureValidity.reason), errors_1.messages[errors_1.messages.ERR_SIGNATURE_IS_INVALID], {
-                                            details: "getPage: Failed to verify comment ".concat(comment.cid, " due to '").concat(commentSignatureValidity.reason, "'")
-                                        });
+                                    if (!commentSignatureValidity.valid) {
+                                        code = Object.entries(errors_1.messages).filter(function (_a) {
+                                            var _ = _a[0], error = _a[1];
+                                            return error === commentSignatureValidity.reason;
+                                        })[0][0];
+                                        (0, util_2.throwWithErrorCode)(code, "verifyPage: Failed to verify page due to comment ".concat(comment.cid, " with invalid signature due to '").concat(commentSignatureValidity.reason, "'"));
+                                    }
                                     return [4 /*yield*/, Promise.all(Object.values((_a = comment === null || comment === void 0 ? void 0 : comment.replies) === null || _a === void 0 ? void 0 : _a.pages).map(function (page) { return __awaiter(_this, void 0, void 0, function () {
                                             var _this = this;
                                             return __generator(this, function (_a) {

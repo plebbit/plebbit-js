@@ -60,8 +60,6 @@ var Signer = /** @class */ (function () {
                 : props.ipfsKey
                     ? new Uint8Array(props.ipfsKey)
                     : undefined;
-        if (this.ipfsKey && this.ipfsKey.byteLength === 0)
-            debugger;
     }
     return Signer;
 }());

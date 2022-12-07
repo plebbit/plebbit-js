@@ -17,6 +17,7 @@ export declare enum messages {
     ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit",
     ERR_GENERATED_CID_DOES_NOT_MATCH = "The CID generated from loaded content does not match the provided CID",
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",
+    ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS = "author.address is not a domain or IPNS",
     ERR_SIGNATURE_IS_INVALID = "Signature of publication is invalid",
     ERR_AUTHOR_NOT_MATCHING_SIGNATURE = "comment.author.address doesn't match comment.signature.publicKey",
     ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY = "subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey",

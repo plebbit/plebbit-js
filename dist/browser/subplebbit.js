@@ -343,9 +343,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 2:
                         derivedAddress = _b.sent();
                         if (resolvedAddress !== derivedAddress)
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS), errors_1.messages[errors_1.messages.ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS], {
-                                details: "subplebbit.address (".concat(this.address, "), resolved address (").concat(resolvedAddress, "), subplebbit.signer.address (").concat((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address, ")")
-                            });
+                            (0, util_1.throwWithErrorCode)("ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS", "subplebbit.address (".concat(this.address, "), resolved address (").concat(resolvedAddress, "), subplebbit.signer.address (").concat((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address, ")"));
                         _b.label = 3;
                     case 3: return [2 /*return*/];
                 }
@@ -1317,13 +1315,9 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:start");
                         if (!((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address))
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SUB_SIGNER_NOT_DEFINED), errors_1.messages[errors_1.messages.ERR_SUB_SIGNER_NOT_DEFINED], {
-                                details: "signer: ".concat(JSON.stringify(this.signer), ", address: ").concat(this.address)
-                            });
+                            (0, util_1.throwWithErrorCode)("ERR_SUB_SIGNER_NOT_DEFINED", "signer: ".concat(JSON.stringify(this.signer), ", address: ").concat(this.address));
                         if (this._sync || exports.RUNNING_SUBPLEBBITS[this.signer.address])
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_SUB_ALREADY_STARTED), errors_1.messages[errors_1.messages.ERR_SUB_ALREADY_STARTED], {
-                                details: "address: ".concat(this.address)
-                            });
+                            (0, util_1.throwWithErrorCode)("ERR_SUB_ALREADY_STARTED", "address: ".concat(this.address));
                         this._sync = true;
                         exports.RUNNING_SUBPLEBBITS[this.signer.address] = true;
                         if (!this.provideCaptchaCallback) {
@@ -1368,9 +1362,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 1:
                         _b.sent();
                         if (typeof this.plebbit.dataPath !== "string")
-                            throw (0, err_code_1.default)(Error(errors_1.messages.ERR_DATA_PATH_IS_NOT_DEFINED), errors_1.messages[errors_1.messages.ERR_DATA_PATH_IS_NOT_DEFINED], {
-                                details: "delete: plebbitOptions.dataPath=".concat(this.plebbit.dataPath)
-                            });
+                            (0, util_1.throwWithErrorCode)("ERR_DATA_PATH_IS_NOT_DEFINED", "delete: plebbitOptions.dataPath=".concat(this.plebbit.dataPath));
                         if (!this.plebbit.ipfsClient)
                             throw Error("Ipfs client is not defined");
                         return [4 /*yield*/, util_3.nativeFunctions.deleteSubplebbit(this.address, this.plebbit.dataPath)];
