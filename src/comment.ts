@@ -1,4 +1,4 @@
-import { loadIpnsAsJson, removeKeysWithUndefinedValues } from "./util";
+import { loadIpnsAsJson, removeKeysWithUndefinedValues, throwWithErrorCode } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
 import {
@@ -12,8 +12,6 @@ import {
     ProtocolVersion,
     PublicationTypeName
 } from "./types";
-import errcode from "err-code";
-import { messages } from "./errors";
 
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "./plebbit";
@@ -274,8 +272,7 @@ export class Comment extends Publication implements CommentType {
     }
 
     async update() {
-        if (typeof this.ipnsName !== "string")
-            throw errcode(Error(messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME), messages[messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME]);
+        if (typeof this.ipnsName !== "string") throwWithErrorCode("ERR_COMMENT_UPDATE_MISSING_IPNS_NAME");
 
         if (this._updateInterval) return; // Do nothing if it's already updating
         this.updateOnce();
@@ -289,7 +286,10 @@ export class Comment extends Publication implements CommentType {
     async publish(): Promise<void> {
         const signatureValidity = await verifyComment(this.toJSON(), this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid)
-            throw Error(`Failed to validate signature before publishing due to reason '${signatureValidity.reason}'`);
+            throwWithErrorCode(
+                "ERR_SIGNATURE_IS_INVALID",
+                `comment.publish: Failed to publish due to invalid signature. Reason=${signatureValidity.reason}`
+            );
 
         return super.publish();
     }

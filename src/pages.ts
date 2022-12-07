@@ -1,9 +1,7 @@
-import { loadIpfsFileAsJson } from "./util";
+import { loadIpfsFileAsJson, throwWithErrorCode } from "./util";
 import { Subplebbit } from "./subplebbit";
 
 import { CommentType, PagesType, PageType, PostSortName, ReplySortName } from "./types";
-import errcode from "err-code";
-import { messages } from "./errors";
 import isIPFS from "is-ipfs";
 import { verifyPage } from "./signer/signatures";
 
@@ -18,10 +16,7 @@ export class Pages implements PagesType {
     }
 
     async getPage(pageCid: string): Promise<Page> {
-        if (!isIPFS.cid(pageCid))
-            throw errcode(Error(messages.ERR_CID_IS_INVALID), messages[messages.ERR_CID_IS_INVALID], {
-                details: `getPage: cid (${pageCid}) is invalid as a CID`
-            });
+        if (!isIPFS.cid(pageCid)) throwWithErrorCode("ERR_CID_IS_INVALID", `getPage: cid (${pageCid}) is invalid as a CID`);
 
         if (typeof this.subplebbit.address !== "string") throw Error("Address of subplebbit is needed to load pages");
 

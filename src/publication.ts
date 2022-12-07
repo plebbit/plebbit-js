@@ -17,13 +17,12 @@ import {
     PublicationType,
     PublicationTypeName
 } from "./types";
-import errcode from "err-code";
-import { messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
 import { Plebbit } from "./plebbit";
 import { Subplebbit } from "./subplebbit";
 import { signChallengeAnswer, signChallengeRequest, verifyChallengeMessage, verifyChallengeVerification } from "./signer/signatures";
+import { throwWithErrorCode } from "./util";
 
 class Publication extends EventEmitter implements PublicationType {
     subplebbitAddress: string;
@@ -155,35 +154,39 @@ class Publication extends EventEmitter implements PublicationType {
         this.emit("challengeanswer", challengeAnswer);
     }
 
+    private _validatePublicationFields() {
+        if (typeof this.timestamp !== "number" || this.timestamp < 0)
+            throwWithErrorCode(
+                "ERR_PUBLICATION_MISSING_FIELD",
+                `${this.getType()}.publish: timestamp (${this.timestamp}) should be a positive number`
+            );
+
+        if (typeof this.author?.address !== "string")
+            throwWithErrorCode(
+                "ERR_PUBLICATION_MISSING_FIELD",
+                `${this.getType()}.publish: author.address (${this.author.address}) should be a string`
+            );
+        if (typeof this.subplebbitAddress !== "string")
+            throwWithErrorCode("ERR_PUBLICATION_MISSING_FIELD", `${this.getType()}.publish: subplebbitAddress should be a string`);
+    }
+
+    private _validateSubFields() {
+        if (typeof this.subplebbit?.encryption?.publicKey !== "string")
+            throwWithErrorCode("ERR_SUBPLEBBIT_MISSING_FIELD", `${this.getType()}.publish: subplebbit.encryption.publicKey does not exist`);
+
+        if (typeof this.subplebbit.pubsubTopic !== "string")
+            throwWithErrorCode("ERR_SUBPLEBBIT_MISSING_FIELD", `${this.getType()}.publish: subplebbit.pubsubTopic does not exist`);
+    }
+
     async publish() {
         const log = Logger("plebbit-js:publication:publish");
 
-        if (typeof this.timestamp !== "number" || this.timestamp < 0)
-            throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), messages[messages.ERR_PUBLICATION_MISSING_FIELD], {
-                details: `${this.getType()}.publish: timestamp should be a number`
-            });
-
-        if (typeof this.author?.address !== "string")
-            throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), messages[messages.ERR_PUBLICATION_MISSING_FIELD], {
-                details: `${this.getType()}.publish: author.address should be a string`
-            });
-        if (typeof this.subplebbitAddress !== "string")
-            throw errcode(Error(messages.ERR_PUBLICATION_MISSING_FIELD), messages[messages.ERR_PUBLICATION_MISSING_FIELD], {
-                details: `${this.getType()}.publish: subplebbitAddress should be a string`
-            });
+        this._validatePublicationFields();
 
         const options = { acceptedChallengeTypes: [] };
         this.subplebbit = await this.plebbit.getSubplebbit(this.subplebbitAddress);
 
-        if (typeof this.subplebbit?.encryption?.publicKey !== "string")
-            throw errcode(Error(messages.ERR_SUBPLEBBIT_MISSING_FIELD), messages[messages.ERR_SUBPLEBBIT_MISSING_FIELD], {
-                details: `${this.getType()}.publish: subplebbit.encryption.publicKey does not exist`
-            });
-
-        if (typeof this.subplebbit.pubsubTopic !== "string")
-            throw errcode(Error(messages.ERR_SUBPLEBBIT_MISSING_FIELD), messages[messages.ERR_SUBPLEBBIT_MISSING_FIELD], {
-                details: `${this.getType()}.publish: subplebbit.pubsubTopic does not exist`
-            });
+        this._validateSubFields();
 
         const encryptedPublication = await encrypt(JSON.stringify(this), this.subplebbit.encryption.publicKey);
 

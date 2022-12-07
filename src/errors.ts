@@ -19,6 +19,7 @@ export enum messages {
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",
+    ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS = "author.address is not a domain or IPNS",
 
     // Verify Signature errors
     ERR_SIGNATURE_IS_INVALID = "Signature of publication is invalid",

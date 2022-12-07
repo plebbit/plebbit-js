@@ -4,7 +4,7 @@ import { sha256 } from "js-sha256";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
 import { SortHandler } from "./sort-handler";
-import { encode, loadIpnsAsJson, removeKeysWithUndefinedValues, timestamp } from "./util";
+import { encode, loadIpnsAsJson, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
 import { decrypt, encrypt, Signer } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
@@ -265,12 +265,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(domain);
             const derivedAddress = await getPlebbitAddressFromPublicKeyPem(this.encryption.publicKey);
             if (resolvedAddress !== derivedAddress)
-                throw errcode(
-                    Error(messages.ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS),
-                    messages[messages.ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS],
-                    {
-                        details: `subplebbit.address (${this.address}), resolved address (${resolvedAddress}), subplebbit.signer.address (${this.signer?.address})`
-                    }
+                throwWithErrorCode(
+                    "ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS",
+                    `subplebbit.address (${this.address}), resolved address (${resolvedAddress}), subplebbit.signer.address (${this.signer?.address})`
                 );
         }
     }
@@ -946,13 +943,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const log = Logger("plebbit-js:subplebbit:start");
 
         if (!this.signer?.address)
-            throw errcode(Error(messages.ERR_SUB_SIGNER_NOT_DEFINED), messages[messages.ERR_SUB_SIGNER_NOT_DEFINED], {
-                details: `signer: ${JSON.stringify(this.signer)}, address: ${this.address}`
-            });
+            throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED", `signer: ${JSON.stringify(this.signer)}, address: ${this.address}`);
         if (this._sync || RUNNING_SUBPLEBBITS[this.signer.address])
-            throw errcode(Error(messages.ERR_SUB_ALREADY_STARTED), messages[messages.ERR_SUB_ALREADY_STARTED], {
-                details: `address: ${this.address}`
-            });
+            throwWithErrorCode("ERR_SUB_ALREADY_STARTED", `address: ${this.address}`);
         this._sync = true;
         RUNNING_SUBPLEBBITS[this.signer.address] = true;
         if (!this.provideCaptchaCallback) {
@@ -984,9 +977,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async delete() {
         await this.stop();
         if (typeof this.plebbit.dataPath !== "string")
-            throw errcode(Error(messages.ERR_DATA_PATH_IS_NOT_DEFINED), messages[messages.ERR_DATA_PATH_IS_NOT_DEFINED], {
-                details: `delete: plebbitOptions.dataPath=${this.plebbit.dataPath}`
-            });
+            throwWithErrorCode("ERR_DATA_PATH_IS_NOT_DEFINED", `delete: plebbitOptions.dataPath=${this.plebbit.dataPath}`);
         if (!this.plebbit.ipfsClient) throw Error("Ipfs client is not defined");
 
         await nativeFunctions.deleteSubplebbit(this.address, this.plebbit.dataPath);

@@ -2,10 +2,9 @@ import { ethers } from "ethers";
 import { Plebbit } from "./plebbit";
 import { BlockchainProvider } from "./types";
 import assert from "assert";
-import errcode from "err-code";
-import { messages } from "./errors";
 import isIPFS from "is-ipfs";
 import Logger from "@plebbit/plebbit-logger";
+import { throwWithErrorCode } from "./util";
 
 export class Resolver {
     blockchainProviders: { [chainTicker: string]: BlockchainProvider };
@@ -56,19 +55,15 @@ export class Resolver {
         }
         const blockchainProvider = this._getBlockchainProvider("eth");
         const resolver = await blockchainProvider.getResolver(ensName);
-        if (!resolver)
-            throw errcode(new Error(messages.ERR_ENS_RESOLVER_NOT_FOUND), messages[messages.ERR_ENS_RESOLVER_NOT_FOUND], {
-                details: `ensName: ${ensName}, blockchainProvider:`,
-                blockchainProvider
-            });
+        if (!resolver) throwWithErrorCode("ERR_ENS_RESOLVER_NOT_FOUND", `ensName: ${ensName}, blockchainProvider: ${blockchainProvider}`);
         const txtRecordResult = await resolver.getText(txtRecordName);
         if (!txtRecordResult)
-            throw errcode(new Error(messages.ERR_ENS_TXT_RECORD_NOT_FOUND), messages[messages.ERR_ENS_TXT_RECORD_NOT_FOUND], {
-                details: `ensName: ${ensName}, txtRecordName: ${txtRecordName}, blockchainProvider:`,
-                blockchainProvider
-            });
+            throwWithErrorCode(
+                "ERR_ENS_TXT_RECORD_NOT_FOUND",
+                `ensName: ${ensName}, txtRecordName: ${txtRecordName}, blockchainProvider: ${blockchainProvider}`
+            );
 
-        log.trace(`Resolved text record name (${txtRecordName}) of ENS (${ensName}) to ${txtRecordResult}`);
+        log(`Resolved text record name (${txtRecordName}) of ENS (${ensName}) to ${txtRecordResult}`);
 
         this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // Expire memory ENS cache after an hour
 
@@ -81,12 +76,9 @@ export class Resolver {
         if (authorAddress.endsWith(".eth")) {
             const resolvedAuthorAddress = await this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address");
             if (!isIPFS.cid(resolvedAuthorAddress))
-                throw errcode(
-                    Error(messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID),
-                    messages[messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID],
-                    {
-                        details: `resolver: Author address (${authorAddress}) resolves to an incorrect CID (${resolvedAuthorAddress})`
-                    }
+                throwWithErrorCode(
+                    "ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID",
+                    `resolver: Author address (${authorAddress}) resolves to an incorrect CID (${resolvedAuthorAddress})`
                 );
             return resolvedAuthorAddress;
         } else return authorAddress;
@@ -97,12 +89,9 @@ export class Resolver {
         if (subplebbitAddress.endsWith(".eth")) {
             const resolvedSubplebbitAddress = await this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address");
             if (!isIPFS.cid(resolvedSubplebbitAddress))
-                throw errcode(
-                    Error(messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID),
-                    messages[messages.ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID],
-                    {
-                        details: `resolver: subplebbitAddress (${subplebbitAddress}) resolves to an incorrect CID (${resolvedSubplebbitAddress})`
-                    }
+                throwWithErrorCode(
+                    "ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID",
+                    `resolver: subplebbitAddress (${subplebbitAddress}) resolves to an incorrect CID (${resolvedSubplebbitAddress})`
                 );
             return resolvedSubplebbitAddress;
         } else return subplebbitAddress;

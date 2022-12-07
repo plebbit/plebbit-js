@@ -95,9 +95,9 @@ async function _validateAuthor(author: CreateCommentOptions["author"], signer: S
     if (isIPFS.cid(author.address)) {
         const derivedAddress = await getPlebbitAddressFromPrivateKeyPem(signer.privateKey);
         if (derivedAddress !== author.address)
-            throw errcode(
-                Error(messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER),
-                messages[messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER]
+            throwWithErrorCode(
+                "ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER",
+                `author.address=${author.address}, signer.address=${derivedAddress}`
             );
     }
 }
@@ -398,9 +398,10 @@ export async function verifyPage(page: PageType, plebbit: Plebbit, subplebbitAdd
 
         const commentSignatureValidity = await verifyComment(comment, plebbit, true);
         if (!commentSignatureValidity.valid)
-            throw errcode(Error(commentSignatureValidity.reason), messages[messages.ERR_SIGNATURE_IS_INVALID], {
-                details: `getPage: Failed to verify comment ${comment.cid} due to '${commentSignatureValidity.reason}'`
-            });
+            throwWithErrorCode(
+                "ERR_SIGNATURE_IS_INVALID",
+                `getPage: Failed to verify comment ${comment.cid} due to '${commentSignatureValidity.reason}'`
+            );
 
         await Promise.all(
             Object.values(comment?.replies?.pages).map(

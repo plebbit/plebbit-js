@@ -12,7 +12,8 @@ import {
     PublicationType,
     PublicationTypeName
 } from "./types";
-import { removeKeysWithUndefinedValues } from "./util";
+import { removeKeysWithUndefinedValues, throwWithErrorCode } from "./util";
+import isIPFS from "is-ipfs";
 
 const PUBLICATION_FIELDS: (keyof Required<PublicationType>)[] = [
     "author",
@@ -108,11 +109,14 @@ export class CommentEdit extends Publication implements CommentEditType {
 
     async publish(): Promise<void> {
         // TODO if publishing with content,reason, deleted, verify that publisher is original author
-        assert(this.commentCid, "Need commentCid to be defined to publish CommentEdit");
+        if (!isIPFS.cid(this.commentCid))
+            throwWithErrorCode("ERR_CID_IS_INVALID", `commentEdit.publish: commentCid (${this.commentCid}) is invalid as a CID`);
         const signatureValidity = await verifyCommentEdit(this.toJSON(), this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid)
-            throw Error(`Failed to validate signature before publishing due to reason '${signatureValidity.reason}'`);
-
+            throwWithErrorCode(
+                "ERR_SIGNATURE_IS_INVALID",
+                `commentEdit.publish: Failed to publish due to invalid signature. Reason=${signatureValidity.reason}`
+            );
         return super.publish();
     }
 }

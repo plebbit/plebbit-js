@@ -18,7 +18,7 @@ import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util"
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
-import { fetchCid, loadIpfsFileAsJson, loadIpnsAsJson, removeKeysWithUndefinedValues, timestamp } from "./util";
+import { fetchCid, loadIpfsFileAsJson, loadIpnsAsJson, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
 import Vote from "./vote";
 import { createSigner, Signer, verifyComment, verifySubplebbit } from "./signer";
 import { Resolver } from "./resolver";
@@ -27,8 +27,6 @@ import { CommentEdit } from "./comment-edit";
 import { getPlebbitAddressFromPrivateKeyPem } from "./signer/util";
 import EventEmitter from "events";
 import isIPFS from "is-ipfs";
-import errcode from "err-code";
-import { messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
 import lodash from "lodash";
@@ -101,34 +99,26 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
         if (!this.resolver.isDomain(subplebbitAddress) && !isIPFS.cid(subplebbitAddress))
-            throw errcode(Error(messages.ERR_INVALID_SUBPLEBBIT_ADDRESS), messages[messages.ERR_INVALID_SUBPLEBBIT_ADDRESS], {
-                details: `getSubplebbit: subplebbitAddress (${subplebbitAddress}) can't be used to get a subplebbit`
-            });
+            throwWithErrorCode(
+                "ERR_INVALID_SUBPLEBBIT_ADDRESS",
+                `getSubplebbit: subplebbitAddress (${subplebbitAddress}) can't be used to get a subplebbit`
+            );
         const resolvedSubplebbitAddress = await this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
         const subplebbitJson: SubplebbitType = await loadIpnsAsJson(resolvedSubplebbitAddress, this);
         const signatureValidity = await verifySubplebbit(subplebbitJson, this);
 
         if (!signatureValidity.valid)
-            throw errcode(Error(messages.ERR_SIGNATURE_IS_INVALID), messages[messages.ERR_SIGNATURE_IS_INVALID], {
-                details: `getSubplebbit: Failed verification reason: ${signatureValidity.reason}`
-            });
+            throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", `getSubplebbit: Failed verification reason: ${signatureValidity.reason}`);
 
         return new Subplebbit(subplebbitJson, this);
     }
 
     async getComment(cid: string): Promise<Comment | Post> {
-        if (!isIPFS.cid(cid))
-            throw errcode(Error(messages.ERR_CID_IS_INVALID), messages[messages.ERR_CID_IS_INVALID], {
-                details: `getComment: cid (${cid}) is invalid as a CID`
-            });
+        if (!isIPFS.cid(cid)) throwWithErrorCode("ERR_CID_IS_INVALID", `getComment: cid (${cid}) is invalid as a CID`);
         const commentJson: CommentIpfsType = await loadIpfsFileAsJson(cid, this);
         const signatureValidity = await verifyComment(commentJson, this, true);
         if (!signatureValidity.valid)
-            throw errcode(Error(messages.ERR_SIGNATURE_IS_INVALID), messages[messages.ERR_SIGNATURE_IS_INVALID], {
-                details: `getComment: Failed verification reason: ${signatureValidity.reason}, ${
-                    commentJson.depth === 0 ? "post" : "comment"
-                }: ${JSON.stringify(commentJson)}`
-            });
+            throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", `getComment: Failed verification reason: ${signatureValidity.reason}`);
 
         const title = commentJson.title;
         return typeof title === "string"
@@ -180,9 +170,10 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         const newSub = async () => {
             if (!canRunSub) throw Error("missing nativeFunctions required to create a subplebbit");
             if (canRunSub && !this.dataPath)
-                throw errcode(Error(messages.ERR_DATA_PATH_IS_NOT_DEFINED), messages[messages.ERR_DATA_PATH_IS_NOT_DEFINED], {
-                    details: `createSubplebbit: canRunSub=${canRunSub}, plebbitOptions.dataPath=${this.dataPath}`
-                });
+                throwWithErrorCode(
+                    "ERR_DATA_PATH_IS_NOT_DEFINED",
+                    `createSubplebbit: canRunSub=${canRunSub}, plebbitOptions.dataPath=${this.dataPath}`
+                );
             const subplebbit = new Subplebbit(options, this);
             const key = subplebbit.address || <string>subplebbit.signer.address;
             const subHasBeenCreatedBefore = (await this.listSubplebbits()).includes(key);
@@ -277,9 +268,10 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     async listSubplebbits(): Promise<string[]> {
         const canRunSub = this._canRunSub();
         if (canRunSub && !this.dataPath)
-            throw errcode(Error(messages.ERR_DATA_PATH_IS_NOT_DEFINED), messages[messages.ERR_DATA_PATH_IS_NOT_DEFINED], {
-                details: `listSubplebbits: canRunSub=${canRunSub}, plebbitOptions.dataPath=${this.dataPath}`
-            });
+            throwWithErrorCode(
+                "ERR_DATA_PATH_IS_NOT_DEFINED",
+                `listSubplebbits: canRunSub=${canRunSub}, plebbitOptions.dataPath=${this.dataPath}`
+            );
         return nativeFunctions.listSubplebbits(this.dataPath);
     }
 
