@@ -8,7 +8,7 @@ import * as cborg from "cborg";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import PeerId from "peer-id";
-import { removeKeysWithUndefinedValues } from "../util";
+import { removeKeysWithUndefinedValues, throwWithErrorCode } from "../util";
 import { Plebbit } from "../plebbit";
 import isIPFS from "is-ipfs";
 
@@ -91,7 +91,7 @@ export const verifyBufferRsa = async (bufferToSign, bufferSignature, publicKeyPe
     return await peerId.pubKey.verify(bufferToSign, bufferSignature);
 };
 
-async function _validateAuthor(author: CreateCommentOptions["author"], signer: SignerType, plebbit: Plebbit) {
+async function _validateAuthorIpns(author: CreateCommentOptions["author"], signer: SignerType, plebbit: Plebbit) {
     if (isIPFS.cid(author.address)) {
         const derivedAddress = await getPlebbitAddressFromPrivateKeyPem(signer.privateKey);
         if (derivedAddress !== author.address)
@@ -99,7 +99,10 @@ async function _validateAuthor(author: CreateCommentOptions["author"], signer: S
                 "ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER",
                 `author.address=${author.address}, signer.address=${derivedAddress}`
             );
-    }
+    } else if (plebbit.resolver.isDomain(author.address)) {
+        // As of now do nothing to verify authors with domain as addresses
+        // This may change in the future
+    } else throwWithErrorCode("ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS", `author.address = '${author.address}'`);
 }
 
 async function _sign(
@@ -126,7 +129,7 @@ async function _sign(
 
 export async function signComment(comment: CreateCommentOptions, signer: SignerType, plebbit: Plebbit): Promise<Signature> {
     const log = Logger("plebbit-js:signatures:signComment");
-    await _validateAuthor(comment.author, signer, plebbit);
+    await _validateAuthorIpns(comment.author, signer, plebbit);
 
     //prettier-ignore
     const signedPropertyNames: CommentSignedPropertyNames = ["subplebbitAddress","author","timestamp","content","title","link","parentCid"];
@@ -135,7 +138,7 @@ export async function signComment(comment: CreateCommentOptions, signer: SignerT
 
 export async function signVote(vote: CreateVoteOptions, signer: SignerType, plebbit: Plebbit): Promise<Signature> {
     const log = Logger("plebbit-js:signatures:signVote");
-    await _validateAuthor(vote.author, signer, plebbit);
+    await _validateAuthorIpns(vote.author, signer, plebbit);
 
     const signedPropertyNames: VoteSignedPropertyNames = ["subplebbitAddress", "author", "timestamp", "vote", "commentCid"];
     return _sign(signedPropertyNames, vote, signer, log);
@@ -143,7 +146,7 @@ export async function signVote(vote: CreateVoteOptions, signer: SignerType, pleb
 
 export async function signCommentEdit(edit: CreateCommentEditOptions, signer: SignerType, plebbit: Plebbit): Promise<Signature> {
     const log = Logger("plebbit-js:signatures:signCommentEdit");
-    await _validateAuthor(edit.author, signer, plebbit);
+    await _validateAuthorIpns(edit.author, signer, plebbit);
     //prettier-ignore
     const signedPropertyNames: CommentEditSignedPropertyNames = ["author","timestamp","subplebbitAddress","content","commentCid","deleted","spoiler","pinned","locked","removed","moderatorReason","flair","reason","commentAuthor"];
     return _sign(signedPropertyNames, edit, signer, log);
@@ -211,16 +214,12 @@ export async function signChallengeVerification(
 // Verify functions
 const _verifyAuthor = async (
     publicationJson: CommentEditType | VoteType | CommentType,
-    plebbit: Plebbit,
-    returnDerivedAuthorAddressIfInvalid: boolean
+    plebbit: Plebbit
 ): Promise<ValidationResult & { newAddress?: string }> => {
     const log = Logger("plebbit-js:signatures:verifyAuthor");
 
-    if (
-        plebbit.resolver.isDomain(publicationJson.author.address) &&
-        plebbit.resolveAuthorAddresses &&
-        returnDerivedAuthorAddressIfInvalid
-    ) {
+    if (plebbit.resolver.isDomain(publicationJson.author.address)) {
+        if (!plebbit.resolveAuthorAddresses) return { valid: true }; // Skip domain validation if plebbit.resolveAuthorAddresses=false
         const resolvedAuthorAddress = await plebbit.resolver.resolveAuthorAddressIfNeeded(publicationJson.author.address);
         const derivedAddress = await getPlebbitAddressFromPublicKeyPem(publicationJson.signature.publicKey);
         if (resolvedAuthorAddress !== derivedAddress) {
@@ -231,11 +230,12 @@ const _verifyAuthor = async (
             );
             return { valid: true, newAddress: derivedAddress };
         }
-    } else if (!plebbit.resolver.isDomain(publicationJson.author.address)) {
+    } else if (isIPFS.cid(publicationJson.author.address)) {
         const authorPeerId = PeerId.createFromB58String(publicationJson.author.address);
         const signaturePeerId = await getPeerIdFromPublicKeyPem(publicationJson.signature.publicKey);
         if (!signaturePeerId.equals(authorPeerId)) return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
-    }
+    } else return { valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS };
+    // Author
     return { valid: true };
 };
 
@@ -260,7 +260,7 @@ const _verifyPublicationWithAuthor = async (
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult & { newAddress?: string }> => {
     if (publicationJson["author"]) {
-        const authorSignatureValidity = await _verifyAuthor(<VoteType | CommentType | CommentEditType>publicationJson, plebbit, true);
+        const authorSignatureValidity = await _verifyAuthor(<VoteType | CommentType | CommentEditType>publicationJson, plebbit);
 
         if (!authorSignatureValidity.valid) return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
 
