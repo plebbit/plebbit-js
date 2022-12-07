@@ -5,18 +5,18 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const { messages } = require("../../../dist/node/errors");
-const { verifyCommentEdit } = require("../../../dist/node/signer/signatures");
+const { verifyCommentEdit, signCommentEdit } = require("../../../dist/node/signer/signatures");
 const { mockPlebbit } = require("../../../dist/node/test/test-util");
 
 describe("Sign commentedit", async () => {
-    let plebbit, subplebbit;
+    let plebbit, subplebbit, edit;
     before(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
     });
 
     it(`Can sign and validate commentEdit correctly`, async () => {
-        const edit = await plebbit.createCommentEdit({
+        edit = await plebbit.createCommentEdit({
             subplebbitAddress: subplebbit.address,
             commentCid: subplebbit.lastPostCid,
             reason: "New comment edit",
@@ -26,6 +26,19 @@ describe("Sign commentedit", async () => {
 
         const verification = await verifyCommentEdit(edit, plebbit);
         expect(verification).to.deep.equal({ valid: true });
+    });
+
+    it(`signCommentEdit throws with author.address not being an IPNS or domain`, async () => {
+        const cloneEdit = JSON.parse(JSON.stringify(edit));
+        delete cloneEdit["signature"];
+        cloneEdit.author.address = "gibbreish";
+        assert.isRejected(signCommentEdit(cloneEdit, signers[7]), messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS);
+    });
+    it(`SignCommentEdit throws with author.address=undefined`, async () => {
+        const cloneEdit = JSON.parse(JSON.stringify(edit));
+        delete cloneEdit["signature"];
+        cloneEdit.author.address = undefined;
+        assert.isRejected(signCommentEdit(cloneEdit, signers[7]), messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS);
     });
 });
 

@@ -26,7 +26,7 @@ const fixtureSignature = {
 };
 
 describe("sign comment", async () => {
-    let plebbit;
+    let plebbit, signedCommentClone;
     before(async () => {
         plebbit = await mockPlebbit();
     });
@@ -45,6 +45,7 @@ describe("sign comment", async () => {
         const signedComment = { signature: signature.toJSON(), ...comment };
         const verificaiton = await verifyComment(signedComment, plebbit);
         expect(verificaiton).to.deep.equal({ valid: true });
+        signedCommentClone = JSON.parse(JSON.stringify(signedComment));
     });
 
     it("Can sign a comment with an imported key", async () => {
@@ -80,6 +81,19 @@ describe("sign comment", async () => {
         // Trying to sign a publication with author.address !== randomSigner.address
         // should throw an error
         await assert.isRejected(signComment(fixtureComment, randomSigner, plebbit), messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER);
+    });
+
+    it(`signComment throws with author.address not being an IPNS or domain`, async () => {
+        const cloneComment = JSON.parse(JSON.stringify(signedCommentClone));
+        delete cloneComment["signature"];
+        cloneComment.author.address = "gibbreish";
+        assert.isRejected(signComment(cloneComment, signers[7]), messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS);
+    });
+    it(`signComment throws with author.address=undefined`, async () => {
+        const cloneComment = JSON.parse(JSON.stringify(signedCommentClone));
+        delete cloneComment["signature"];
+        cloneComment.author.address = undefined;
+        assert.isRejected(signComment(cloneComment, signers[7]), messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS);
     });
     it("can sign a comment with author.displayName = undefined", async () => {
         const signer = signers[4];
