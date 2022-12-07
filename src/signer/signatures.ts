@@ -218,6 +218,8 @@ const _verifyAuthor = async (
 ): Promise<ValidationResult & { newAddress?: string }> => {
     const log = Logger("plebbit-js:signatures:verifyAuthor");
 
+    if (!publicationJson.author?.address) return { valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS };
+
     if (plebbit.resolver.isDomain(publicationJson.author.address)) {
         if (!plebbit.resolveAuthorAddresses) return { valid: true }; // Skip domain validation if plebbit.resolveAuthorAddresses=false
         const resolvedAuthorAddress = await plebbit.resolver.resolveAuthorAddressIfNeeded(publicationJson.author.address);
