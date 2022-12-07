@@ -44,6 +44,7 @@
         "@types/uuid": "8.3.4",
         "assert": "2.0.0",
         "buffer": "6.0.3",
+        "skia-canvas": "1.0.0",
         "captcha-canvas": "3.2.1",
         "err-code": "3.0.1",
         "ethers": "5.7.2",
