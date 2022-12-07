@@ -57,4 +57,17 @@ describe("Verify vote", async () => {
         const verification = await verifyVote(vote, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
+
+    it(`verifyVote invalidates a vote with author.address not a domain or IPNS`, async () => {
+        const vote = JSON.parse(JSON.stringify(require("../../fixtures/valid_vote.json")));
+        vote.author.address = "gibbresish"; // Not a domain or IPNS
+        const verification = await verifyVote(vote, plebbit);
+        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS });
+    });
+    it("verifyVote invalidates a vote with author.author.address = undefined", async () => {
+        const vote = JSON.parse(JSON.stringify(require("../../fixtures/valid_vote.json")));
+        vote.author.address = undefined; // Not a domain or IPNS
+        const verification = await verifyVote(vote, plebbit);
+        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS });
+    });
 });

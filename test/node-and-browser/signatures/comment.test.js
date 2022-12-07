@@ -155,6 +155,19 @@ describe("verify Comment", async () => {
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR });
     });
 
+    it(`verifyComment invalidates a comment with author.address not a domain or IPNS`, async () => {
+        const comment = JSON.parse(JSON.stringify({ ...fixtureComment, signature: fixtureSignature }));
+        comment.author.address = "gibbresish"; // Not a domain or IPNS
+        const verification = await verifyComment(comment, plebbit);
+        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS });
+    });
+    it("verifyComment invalidates a comment with author.author.address = undefined", async () => {
+        const comment = JSON.parse(JSON.stringify({ ...fixtureComment, signature: fixtureSignature }));
+        comment.author.address = undefined; // Not a domain or IPNS
+        const verification = await verifyComment(comment, plebbit);
+        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS });
+    });
+
     // TODO when flairs are implemented
     it(`Can sign and verify a comment with flair`);
     it(`Can verify a comment whose author.flair have been changed`);
