@@ -900,7 +900,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         ) {
             log.trace(`Attempting to update Comment (${dbComment.cid})`);
             await this.sortHandler.deleteCommentPageCache(dbComment);
-            dbComment.author.subplebbit = await this.dbHandler.querySubplebbitAuthorFields(dbComment.cid);
+            dbComment.author.subplebbit = await this.dbHandler.querySubplebbitAuthorFields(dbComment.author.address);
             dbComment.setUpdatedAt(timestamp());
             await this.dbHandler.upsertComment(dbComment.toJSONForDb(undefined), dbComment.author.toJSONForDb(), undefined); // Need to insert comment in DB before generating pages so props updated above would be included in pages
             dbComment.setReplies(await this.sortHandler.generatePagesUnderComment(dbComment, undefined));

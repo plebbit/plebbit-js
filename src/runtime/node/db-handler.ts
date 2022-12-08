@@ -646,7 +646,7 @@ export class DbHandler {
         await this._baseTransaction(trx)(TABLES.SIGNERS).insert(signer);
     }
 
-    async querySigner(ipnsKeyName: string, trx?: Transaction): Promise<SignerType | undefined> {
+    async querySigner(ipnsKeyName: string, trx?: Transaction): Promise<(SignerType & { ipnsKeyName: string }) | undefined> {
         return this._baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName }).first();
     }
 
@@ -674,8 +674,7 @@ export class DbHandler {
         return this._createCommentsFromRows(await this._baseCommentQuery(trx).where({ authorAddress }));
     }
 
-    async querySubplebbitAuthorFields(cid: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor> {
-        const authorAddress: string = (await this._baseCommentQuery(trx).select("authorAddress").where({ cid }).first())["authorAddress"];
+    async querySubplebbitAuthorFields(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor> {
         const authorComments = await this.queryCommentsOfAuthor(authorAddress);
         const authorPosts = authorComments.filter((comment) => comment.depth === 0);
         const authorReplies = authorComments.filter((comment) => <number>comment.depth > 0);
