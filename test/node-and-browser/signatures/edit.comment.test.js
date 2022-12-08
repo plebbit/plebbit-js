@@ -66,7 +66,7 @@ describe("Verify CommentEdit", async () => {
         const verification = await verifyCommentEdit(edit, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS });
     });
-    it("verifyCommentEdit invalidates a commentEdit with author.author.address = undefined", async () => {
+    it("verifyCommentEdit invalidates a commentEdit with author.address = undefined", async () => {
         const edit = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_edit.json")));
         edit.author.address = undefined; // Not a domain or IPNS
         const verification = await verifyCommentEdit(edit, plebbit);
