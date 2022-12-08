@@ -34,7 +34,7 @@ describe("encryption", () => {
         let encryptedKey;
 
         before(async () => {
-            encryptedKey = await encryptBufferRsa(key, authorSignerFixture.publicKey);
+            encryptedKey = await encryptBufferRsa(key, await authorSignerFixture.getPublicKey());
         });
 
         it("encrypted key is string of correct length", () => {
@@ -53,7 +53,7 @@ describe("encryption", () => {
 
         before(async () => {
             key = await generateKeyAesCbc();
-            encryptedKey = await encryptBufferRsa(key, authorSignerFixture.publicKey);
+            encryptedKey = await encryptBufferRsa(key, await authorSignerFixture.getPublicKey());
         });
 
         it("generated key is Uint8Array of correct length", () => {
@@ -153,7 +153,7 @@ describe("encryption", () => {
         let encryptedPublication;
 
         before(async () => {
-            encryptedPublication = await encrypt(JSON.stringify(fixtureComment), authorSignerFixture.publicKey);
+            encryptedPublication = await encrypt(JSON.stringify(fixtureComment), await authorSignerFixture.getPublicKey());
         });
 
         it("encrypted publication has expected properties", async () => {

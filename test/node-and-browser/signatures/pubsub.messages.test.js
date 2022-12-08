@@ -15,7 +15,7 @@ const { messages } = require("../../../dist/node/errors");
 const { ChallengeAnswerMessage } = require("../../../dist/node/challenge");
 const version = require("../../../dist/node/version");
 
-const mathCliSubplebbitAddress = signers[1].address;
+const mathCliSubplebbitAddress = signers.rawSigners[1].address;
 
 describe("challengerequest", async () => {
     let plebbit;
@@ -28,7 +28,7 @@ describe("challengerequest", async () => {
         expect(verificaiton).to.deep.equal({ valid: true });
     });
     it(`Valid live ChallengeRequest gets validated correctly`, async () => {
-        const comment = await generateMockPost(signers[0].address, plebbit, signers[5]);
+        const comment = await generateMockPost(await signers[0].getAddress(), plebbit, signers[5]);
         await comment.publish();
         // comment.challenge (ChallengeRequest) should be defined now
         expect(comment.challenge).to.be.a("object");
@@ -40,7 +40,7 @@ describe("challengerequest", async () => {
         return new Promise(async (resolve) => {
             const tempPlebbit = await Plebbit(plebbit);
             tempPlebbit.resolver = plebbit.resolver;
-            const comment = await generateMockPost(signers[0].address, tempPlebbit, signers[6]);
+            const comment = await generateMockPost(await signers[0].getAddress(), tempPlebbit, signers[6]);
 
             await Promise.all([new Promise((resolve) => comment.once("challengeverification", resolve)), comment.publish()]);
 
@@ -191,7 +191,7 @@ describe("challengeverification", async () => {
         expect(verificaiton).to.deep.equal({ valid: true });
     });
     it(`Valid live challengeverification gets validated correctly`, async () => {
-        const comment = await generateMockPost(signers[0].address, plebbit, signers[6]);
+        const comment = await generateMockPost(await signers[0].getAddress(), plebbit, signers[6]);
         await comment.publish();
 
         await new Promise((resolve) => {

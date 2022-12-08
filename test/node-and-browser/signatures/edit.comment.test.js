@@ -12,7 +12,7 @@ describe("Sign commentedit", async () => {
     let plebbit, subplebbit, edit;
     before(async () => {
         plebbit = await mockPlebbit();
-        subplebbit = await plebbit.getSubplebbit(signers[0].address);
+        subplebbit = await plebbit.getSubplebbit(await signers[0].getAddress());
     });
 
     it(`Can sign and validate commentEdit correctly`, async () => {

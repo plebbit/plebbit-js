@@ -12,7 +12,7 @@ chai.use(chaiAsPromised);
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-const subplebbitAddress = signers[0].address;
+const subplebbitAddress = signers.rawSigners[0].address;
 
 const previousVotes = [];
 const updateInterval = 100;

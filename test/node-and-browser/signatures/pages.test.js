@@ -12,7 +12,7 @@ describe(`verify pages`, async () => {
     let plebbit, subplebbit;
     before(async () => {
         plebbit = await mockPlebbit();
-        subplebbit = await plebbit.getSubplebbit(signers[0].address);
+        subplebbit = await plebbit.getSubplebbit(await signers[0].getAddress());
     });
 
     it(`Can validate page from live subplebbit`, async () => {
@@ -41,7 +41,7 @@ describe(`verify pages`, async () => {
 
         const verification = await verifyPage(invalidPage, tempPlebbit, "QmbdJpNU6cAgSXHjUNnSBrUZGBtStKPkdwKyiffqRy1x6c"); // comments[commentWithDomainAddressIndex] author address should be modified after
         expect(verification).to.deep.equal({ valid: true });
-        expect(invalidPage.comments[commentWithDomainAddressIndex].author.address).to.equal(signers[6].address);
+        expect(invalidPage.comments[commentWithDomainAddressIndex].author.address).to.equal(await signers[6].getAddress());
     });
 
     describe(`A sub owner changing any of comment fields in page will invalidate`, async () => {

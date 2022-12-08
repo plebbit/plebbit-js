@@ -1,3 +1,5 @@
+const { Signer } = require("../../dist/node/signer");
+
 const signers = [];
 
 signers[0] = {
@@ -440,4 +442,5 @@ rOuqgdLmFyfw0Hxe4E3TYP2wNgz9LoYfoJpuk1w5bbzDBMULimt4UdpZZhO01ss8
     address: "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGyx"
 };
 
-module.exports = signers;
+module.exports = signers.map((props) => new Signer(props));
+module.exports.rawSigners = signers;

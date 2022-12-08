@@ -6,8 +6,8 @@ const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-const mathCliSubplebbitAddress = signers[1].address;
-const imageCaptchaSubplebbitAddress = signers[2].address;
+const mathCliSubplebbitAddress = signers.rawSigners[1].address;
+const imageCaptchaSubplebbitAddress = signers.rawSigners[2].address;
 
 describe("math-cli", async () => {
     let plebbit;

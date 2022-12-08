@@ -92,7 +92,7 @@ describe("subplebbit", async () => {
         const props = { title: "subplebbit = await createSubplebbit(await createSubplebbit)" };
         const createdSub = await plebbit.createSubplebbit(await plebbit.createSubplebbit(props));
         expect(createdSub.title).to.equal(props.title);
-        expect(createdSub.signer.address).to.be.a("string");
+        expect(createdSub.address).to.be.a("string");
     });
 
     it("subplebbit.edit", async () => {

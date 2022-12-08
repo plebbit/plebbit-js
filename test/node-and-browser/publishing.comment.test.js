@@ -9,7 +9,7 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 let plebbit, signer;
-const subplebbitAddress = signers[0].address;
+const subplebbitAddress = signers.rawSigners[0].address;
 const mockComments = [];
 const updateInterval = 100;
 
