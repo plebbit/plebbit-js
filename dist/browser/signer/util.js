@@ -245,3 +245,4 @@ var validatePublicKeyPem = function (publicKeyPem) {
     if (!publicKeyPem.startsWith("-----BEGIN PUBLIC KEY-----"))
         throw Error("invalid public key pem '".concat(publicKeyPem, "' not public key pem"));
 };
+//# sourceMappingURL=util.js.map

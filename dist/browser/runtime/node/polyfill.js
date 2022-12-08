@@ -5,3 +5,4 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // nothing to polyfill in node
 // must export a function and call it or this file isn't read
 exports.default = (function () { });
+//# sourceMappingURL=polyfill.js.map

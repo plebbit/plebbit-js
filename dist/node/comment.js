@@ -296,3 +296,4 @@ var Comment = /** @class */ (function (_super) {
     return Comment;
 }(publication_1.default));
 exports.Comment = Comment;
+//# sourceMappingURL=comment.js.map

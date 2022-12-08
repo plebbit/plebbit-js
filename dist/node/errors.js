@@ -40,3 +40,4 @@ var messages;
     messages["ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST"] = "The parent of this comment does not exist";
     messages["ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED"] = "The parent cid of this comment is not defined";
 })(messages = exports.messages || (exports.messages = {}));
+//# sourceMappingURL=errors.js.map

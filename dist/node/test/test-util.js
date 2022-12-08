@@ -61,6 +61,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.mockPlebbit = exports.startSubplebbits = exports.getAllCommentsUnderSubplebbit = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
 var util_1 = require("../util");
+var signer_1 = require("../signer");
 var index_1 = __importDefault(require("../index"));
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 function generateRandomTimestamp(parentTimestamp) {
@@ -253,7 +254,7 @@ function _mockPlebbit(signers, dataPath) {
                     plebbit.resolver.resolveAuthorAddressIfNeeded = function (authorAddress) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             if (authorAddress === "plebbit.eth")
-                                return [2 /*return*/, signers[6].address];
+                                return [2 /*return*/, signers[6].getAddress()];
                             else if (authorAddress === "testgibbreish.eth")
                                 return [2 /*return*/, undefined];
                             return [2 /*return*/, authorAddress];
@@ -263,7 +264,7 @@ function _mockPlebbit(signers, dataPath) {
                     plebbit.resolver.resolveSubplebbitAddressIfNeeded = function (subplebbitAddress) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             if (subplebbitAddress === "plebbit.eth")
-                                return [2 /*return*/, signers[3].address];
+                                return [2 /*return*/, signers[3].getAddress()];
                             else if (plebbit.resolver.isDomain(subplebbitAddress))
                                 throw Error("".concat(subplebbitAddress, " has no subplebbit-address"));
                             return [2 /*return*/, subplebbitAddress];
@@ -503,33 +504,40 @@ function _publishVotes(comments, subplebbit, votesPerCommentToPublish, signers) 
 }
 function _populateSubplebbit(subplebbit, props) {
     return __awaiter(this, void 0, void 0, function () {
-        var posts, replies;
-        var _a;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0: return [4 /*yield*/, subplebbit.edit({
-                        roles: (_a = {},
-                            _a[props.signers[1].address] = { role: "owner" },
-                            _a[props.signers[2].address] = { role: "admin" },
-                            _a[props.signers[3].address] = { role: "moderator" },
-                            _a)
-                    })];
+        var _a, _b, posts, replies;
+        var _c, _d;
+        return __generator(this, function (_e) {
+            switch (_e.label) {
+                case 0:
+                    _b = (_a = subplebbit).edit;
+                    _c = {};
+                    _d = {};
+                    return [4 /*yield*/, props.signers[1].getAddress()];
                 case 1:
-                    _b.sent();
-                    return [4 /*yield*/, _publishComments([], subplebbit, props.numOfCommentsToPublish, props.signers)];
+                    _d[_e.sent()] = { role: "owner" };
+                    return [4 /*yield*/, props.signers[2].getAddress()];
                 case 2:
-                    posts = _b.sent();
+                    _d[_e.sent()] = { role: "admin" };
+                    return [4 /*yield*/, props.signers[3].getAddress()];
+                case 3: return [4 /*yield*/, _b.apply(_a, [(_c.roles = (_d[_e.sent()] = { role: "moderator" },
+                            _d),
+                            _c)])];
+                case 4:
+                    _e.sent();
+                    return [4 /*yield*/, _publishComments([], subplebbit, props.numOfCommentsToPublish, props.signers)];
+                case 5:
+                    posts = _e.sent();
                     console.log("Have successfully published ".concat(posts.length, " posts"));
                     return [4 /*yield*/, Promise.all([
                             _publishComments([posts[0]], subplebbit, props.numOfCommentsToPublish, props.signers),
                             _publishVotes(posts, subplebbit, props.votesPerCommentToPublish, props.signers)
                         ])];
-                case 3:
-                    replies = (_b.sent())[0];
+                case 6:
+                    replies = (_e.sent())[0];
                     console.log("Have sucessfully published ".concat(replies.length, " replies"));
                     return [4 /*yield*/, _publishVotes(replies, subplebbit, props.votesPerCommentToPublish, props.signers)];
-                case 4:
-                    _b.sent();
+                case 7:
+                    _e.sent();
                     return [2 /*return*/];
             }
         });
@@ -537,22 +545,24 @@ function _populateSubplebbit(subplebbit, props) {
 }
 function startSubplebbits(props) {
     return __awaiter(this, void 0, void 0, function () {
-        var plebbit, signer, subplebbit, _a, imageSubplebbit, mathSubplebbit;
+        var _a, plebbit, subplebbit, _b, imageSubplebbit, mathSubplebbit;
         var _this = this;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0: return [4 /*yield*/, _mockPlebbit(props.signers, props.dataPath)];
+        return __generator(this, function (_c) {
+            switch (_c.label) {
+                case 0:
+                    _a = props;
+                    return [4 /*yield*/, Promise.all(props.signers.map(function (signerProps) { return new signer_1.Signer(signerProps); }))];
                 case 1:
-                    plebbit = _b.sent();
-                    return [4 /*yield*/, plebbit.createSigner(props.signers[0])];
+                    _a.signers = _c.sent();
+                    return [4 /*yield*/, _mockPlebbit(props.signers, props.dataPath)];
                 case 2:
-                    signer = _b.sent();
-                    return [4 /*yield*/, plebbit.createSubplebbit({ signer: signer })];
+                    plebbit = _c.sent();
+                    return [4 /*yield*/, plebbit.createSubplebbit({ signer: props.signers[0] })];
                 case 3:
-                    subplebbit = _b.sent();
+                    subplebbit = _c.sent();
                     return [4 /*yield*/, _setDatabase(subplebbit, props.database)];
                 case 4:
-                    _b.sent();
+                    _c.sent();
                     subplebbit.setProvideCaptchaCallback(function () { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                         return [2 /*return*/, [[], "Challenge skipped"]];
                     }); }); });
@@ -560,7 +570,7 @@ function startSubplebbits(props) {
                     subplebbit._syncIntervalMs = props.syncInterval;
                     return [4 /*yield*/, subplebbit.start()];
                 case 5:
-                    _b.sent();
+                    _c.sent();
                     console.time("populate");
                     return [4 /*yield*/, Promise.all([
                             _startImageCaptchaSubplebbit(props.signers, props.database, props.syncInterval, props.dataPath),
@@ -569,7 +579,7 @@ function startSubplebbits(props) {
                             _populateSubplebbit(subplebbit, props)
                         ])];
                 case 6:
-                    _a = _b.sent(), imageSubplebbit = _a[0], mathSubplebbit = _a[1];
+                    _b = _c.sent(), imageSubplebbit = _b[0], mathSubplebbit = _b[1];
                     console.timeEnd("populate");
                     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
                     return [2 /*return*/];
@@ -606,3 +616,4 @@ function mockPlebbit(dataPath) {
     });
 }
 exports.mockPlebbit = mockPlebbit;
+//# sourceMappingURL=test-util.js.map

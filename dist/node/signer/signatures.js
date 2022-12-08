@@ -170,9 +170,10 @@ function _validateAuthorIpns(author, signer, plebbit) {
 }
 function _sign(signedPropertyNames, publication, signer, log) {
     return __awaiter(this, void 0, void 0, function () {
-        var fieldsToSign, publicationEncoded, signatureData, _a;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var fieldsToSign, publicationEncoded, signatureData, _a, _b;
+        var _c;
+        return __generator(this, function (_d) {
+            switch (_d.label) {
                 case 0:
                     fieldsToSign = __assign(__assign({}, lodash_1.default.fromPairs(signedPropertyNames.map(function (name) { return [name, undefined]; }))), lodash_1.default.pick((0, util_2.removeKeysWithUndefinedValues)(publication), signedPropertyNames));
                     log.trace("fields to sign: ", fieldsToSign);
@@ -180,14 +181,17 @@ function _sign(signedPropertyNames, publication, signer, log) {
                     _a = to_string_1.toString;
                     return [4 /*yield*/, (0, exports.signBufferRsa)(publicationEncoded, signer.privateKey)];
                 case 1:
-                    signatureData = _a.apply(void 0, [_b.sent(), "base64"]);
+                    signatureData = _a.apply(void 0, [_d.sent(), "base64"]);
                     log.trace("fields have been signed, signature:", signatureData);
-                    return [2 /*return*/, new Signature({
-                            signature: signatureData,
-                            publicKey: signer.publicKey,
-                            type: signer.type,
-                            signedPropertyNames: signedPropertyNames
-                        })];
+                    _b = Signature.bind;
+                    _c = {
+                        signature: signatureData
+                    };
+                    return [4 /*yield*/, signer.getPublicKey()];
+                case 2: return [2 /*return*/, new (_b.apply(Signature, [void 0, (_c.publicKey = _d.sent(),
+                            _c.type = signer.type,
+                            _c.signedPropertyNames = signedPropertyNames,
+                            _c)]))()];
             }
         });
     });
@@ -623,3 +627,4 @@ function verifyPage(page, plebbit, subplebbitAddress) {
     });
 }
 exports.verifyPage = verifyPage;
+//# sourceMappingURL=signatures.js.map

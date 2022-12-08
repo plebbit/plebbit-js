@@ -159,3 +159,4 @@ var ChallengeVerificationMessage = /** @class */ (function () {
     return ChallengeVerificationMessage;
 }());
 exports.ChallengeVerificationMessage = ChallengeVerificationMessage;
+//# sourceMappingURL=challenge.js.map
