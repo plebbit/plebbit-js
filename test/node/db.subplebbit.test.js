@@ -38,14 +38,15 @@ describe("DB Migration", () => {
         plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
     });
 
-    it(`Can migrate from DB version 2 to 3`, async () => {
+    // No need to test for migration from 3 to 4 since 3 was not released to the public
+    it(`Can migrate from DB version 2 to 4`, async () => {
         const subAddress = path.basename(pathToDbFixtureVersionTwo); // This sub has a DB version 2
         // Once we start the sub, it's gonna attempt to migrate to the latest DB version (3 currently)
 
         const subplebbit = await plebbit.createSubplebbit({ address: subAddress });
 
         const currentDbVersion = await subplebbit.dbHandler.getDbVersion();
-        expect(currentDbVersion).to.equal(3); // If they're equal, that means all tables have been migrated
+        expect(currentDbVersion).to.equal(4); // If they're equal, that means all tables have been migrated
 
         subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
 
