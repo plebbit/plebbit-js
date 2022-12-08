@@ -156,14 +156,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     private async _initSignerProps() {
-        if (!this.signer.ipfsKey) this.signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKeyPem(this.signer.privateKey));
-        if (!this.signer.ipnsKeyName) this.signer.ipnsKeyName = this.signer.address;
-        this.signer = new Signer(this.signer);
-
-        if (typeof this.signer?.publicKey !== "string") throw Error("subplebbit.signer.publicKey is not defined");
+        if (!this.signer.ipnsKeyName) this.signer.ipnsKeyName = await this.signer.getAddress();
         this.encryption = {
             type: "aes-cbc",
-            publicKey: this.signer.publicKey
+            publicKey: await this.signer.getPublicKey()
         };
     }
 
@@ -233,10 +229,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         };
     }
 
-    private async _importSignerIntoIpfsIfNeeded(signer: SignerType) {
+    private async _importSignerIntoIpfsIfNeeded(signer: Signer) {
         if (!signer.ipnsKeyName) throw Error(`signer.ipnsKeyName need to be defined before importing singer into IPFS`);
         const keyExistsInNode = (await this.plebbit.ipfsClient.key.list()).some((key) => key.name === signer.ipnsKeyName);
-        if (!keyExistsInNode) await nativeFunctions.importSignerIntoIpfsNode(signer, this.plebbit);
+        if (!keyExistsInNode) await nativeFunctions.importSignerIntoIpfsNode(signer.ipnsKeyName, await signer.getIpfsKey(), this.plebbit);
     }
 
     // TODO rename and make this private
@@ -267,7 +263,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             if (resolvedAddress !== derivedAddress)
                 throwWithErrorCode(
                     "ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS",
-                    `subplebbit.address (${this.address}), resolved address (${resolvedAddress}), subplebbit.signer.address (${this.signer?.address})`
+                    `subplebbit.address (${
+                        this.address
+                    }), resolved address (${resolvedAddress}), subplebbit.signer.address (${await this.signer.getAddress()})`
                 );
         }
     }
@@ -350,7 +348,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic);
             this.dbHandler?.destoryConnection();
             this.dbHandler = undefined;
-            RUNNING_SUBPLEBBITS[this.signer.address] = false;
+            RUNNING_SUBPLEBBITS[await this.signer.getAddress()] = false;
         }
     }
 
@@ -571,7 +569,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 ipnsKeyName
             });
             await this.dbHandler.insertSigner(ipfsSigner, undefined);
-            postOrCommentOrVote.setCommentIpnsKey(await nativeFunctions.importSignerIntoIpfsNode(ipfsSigner, this.plebbit));
+            postOrCommentOrVote.setCommentIpnsKey(
+                await nativeFunctions.importSignerIntoIpfsNode(ipfsSigner.ipnsKeyName, await ipfsSigner.getIpfsKey(), this.plebbit)
+            );
 
             if (postOrCommentOrVote instanceof Post) {
                 const trx = await this.dbHandler.createTransaction(challengeRequestId);
@@ -922,7 +922,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.sortHandler.cacheCommentsPages();
             await this.updateSubplebbitIpns();
 
-            RUNNING_SUBPLEBBITS[this.signer.address] = true;
+            RUNNING_SUBPLEBBITS[await this.signer.getAddress()] = true;
             await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternal());
         } catch (e) {
             log.error(`Failed to sync due to error,`, e);
@@ -942,12 +942,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async start() {
         const log = Logger("plebbit-js:subplebbit:start");
 
-        if (!this.signer?.address)
-            throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED", `signer: ${JSON.stringify(this.signer)}, address: ${this.address}`);
-        if (this._sync || RUNNING_SUBPLEBBITS[this.signer.address])
+        if (!this.signer)
+            throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED", `signer: ${JSON.stringify(this.signer)}, subplebbit.address: ${this.address}`);
+        if (this._sync || RUNNING_SUBPLEBBITS[await this.signer.getAddress()])
             throwWithErrorCode("ERR_SUB_ALREADY_STARTED", `address: ${this.address}`);
         this._sync = true;
-        RUNNING_SUBPLEBBITS[this.signer.address] = true;
+        RUNNING_SUBPLEBBITS[await this.signer.getAddress()] = true;
         if (!this.provideCaptchaCallback) {
             log("Subplebbit owner has not provided any captcha. Will go with default image captcha");
             this.provideCaptchaCallback = this.defaultProvideCaptcha;

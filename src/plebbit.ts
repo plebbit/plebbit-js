@@ -135,12 +135,13 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             options.timestamp = timestamp();
             log.trace(`User hasn't provided a timestamp in createCommentOptions, defaulting to (${options.timestamp})`);
         }
+        options.signer = options.signer instanceof Signer ? options.signer : new Signer(options.signer);
         if (!options?.author?.address) {
-            options.author = { ...options.author, address: options.signer.address };
-            log(`CreateCommentOptions did not provide author.address, will define it to signer.address (${options.signer.address})`);
+            options.author = { ...options.author, address: await (<Signer>options.signer).getAddress() };
+            log(`CreateCommentOptions did not provide author.address, will define it to signer.address (${options.author.address})`);
         }
 
-        const commentSignature = await signComment(<CreateCommentOptions>options, options.signer, this);
+        const commentSignature = await signComment(<CreateCommentOptions>options, <Signer>options.signer, this);
 
         const finalProps: CommentType | PostType = {
             ...(<CommentType>options), // TODO Take out cast later
@@ -175,7 +176,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
                     `createSubplebbit: canRunSub=${canRunSub}, plebbitOptions.dataPath=${this.dataPath}`
                 );
             const subplebbit = new Subplebbit(options, this);
-            const key = subplebbit.address || <string>subplebbit.signer.address;
+            const key = subplebbit.address || (await subplebbit.signer.getAddress());
             const subHasBeenCreatedBefore = (await this.listSubplebbits()).includes(key);
             if (!subHasBeenCreatedBefore && pendingSubplebbitCreations[key])
                 throw Error("Can't recreate a pending subplebbit that is waiting to be created");
@@ -204,17 +205,18 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             if (!canRunSub) throw Error(`missing nativeFunctions required to create a subplebbit`);
             else {
                 options.signer = await this.createSigner();
-                options.address = options.signer.address;
-                log(`Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${options.signer.address})`);
+                options.address = await (<Signer>options.signer).getAddress();
+                log(`Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${options.address})`);
                 return newSub();
             }
         } else if (!options.address && options.signer) {
             if (!canRunSub) throw Error(`missing nativeFunctions required to create a subplebbit`);
 
             const localSubs = await this.listSubplebbits();
-            const derivedAddress = options.signer.address || (await getPlebbitAddressFromPrivateKeyPem(options.signer.privateKey));
+            options.signer = options.signer instanceof Signer ? options.signer : new Signer(options.signer);
+            const derivedAddress = await (<Signer>options.signer).getAddress();
             if (localSubs.includes(derivedAddress)) options.address = derivedAddress;
-            if (!options.address) options.address = options.signer.address;
+            if (!options.address) options.address = derivedAddress;
             return newSub();
         } else if (!canRunSub) return remoteSub();
         else return newSub();
@@ -227,11 +229,12 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             options.timestamp = timestamp();
             log.trace(`User hasn't provided a timestamp in createVote, defaulting to (${options.timestamp})`);
         }
+        options.signer = options.signer instanceof Signer ? options.signer : new Signer(options.signer);
         if (!options?.author?.address) {
-            options.author = { ...options.author, address: options.signer.address };
-            log.trace(`CreateVoteOptions did not provide author.address, will define it to signer.address (${options.signer.address})`);
+            options.author = { ...options.author, address: await (<Signer>options.signer).getAddress() };
+            log.trace(`CreateVoteOptions did not provide author.address, will define it to signer.address (${options.author.address})`);
         }
-        const voteSignature = await signVote(<CreateVoteOptions>options, options.signer, this);
+        const voteSignature = await signVote(<CreateVoteOptions>options, <Signer>options.signer, this);
         const voteProps: VoteType = <VoteType>{ ...options, signature: voteSignature, protocolVersion: env.PROTOCOL_VERSION }; // TODO remove cast here
         return new Vote(voteProps, this);
     }
@@ -244,18 +247,17 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             options.timestamp = timestamp();
             log.trace(`User hasn't provided editTimestamp in createCommentEdit, defaulted to (${options.timestamp})`);
         }
+        options.signer = options.signer instanceof Signer ? options.signer : new Signer(options.signer);
 
         if (!options?.author?.address) {
-            if (typeof options.signer.address !== "string") throw Error("createCommentEditOptions.signer.address is not defined");
-
-            options.author = { ...options.author, address: options.signer.address };
+            options.author = { ...options.author, address: await (<Signer>options.signer).getAddress() };
             log.trace(
-                `CreateCommentEditOptions did not provide author.address, will define it to signer.address (${options.signer.address})`
+                `CreateCommentEditOptions did not provide author.address, will define it to signer.address (${options.author.address})`
             );
         }
         const commentEditProps = {
             ...options,
-            signature: await signCommentEdit(<CreateCommentEditOptions>options, options.signer, this),
+            signature: await signCommentEdit(<CreateCommentEditOptions>options, <Signer>options.signer, this),
             protocolVersion: env.PROTOCOL_VERSION
         };
         return new CommentEdit(commentEditProps, this);

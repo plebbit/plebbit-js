@@ -9,26 +9,29 @@ export { Signature, verifyComment, verifySubplebbit, verifyVote } from "./signat
 export { encrypt, decrypt } from "./encryption";
 
 export class Signer implements SignerType {
-    type: "rsa";
-    privateKey: string;
-    publicKey?: string;
-    address?: string;
-    ipfsKey?: Uint8Array;
+    readonly type: "rsa";
+    readonly privateKey: string;
+    private publicKey?: string;
+    private address?: string;
+    private ipfsKey?: Uint8Array;
     ipnsKeyName?: string;
 
-    constructor(props: SignerType) {
+    constructor(props: Pick<SignerType, "privateKey" | "type" | "ipnsKeyName">) {
         this.type = props.type;
         this.privateKey = props.privateKey;
-        this.publicKey = props.publicKey;
-        this.address = props.address;
         this.ipnsKeyName = props.ipnsKeyName;
-
-        this.ipfsKey =
-            props.ipfsKey?.constructor?.name === "Object"
-                ? new Uint8Array(Object.values(props.ipfsKey))
-                : props.ipfsKey
-                ? new Uint8Array(props.ipfsKey)
-                : undefined;
+    }
+    async getPublicKey() {
+        if (!this.publicKey) this.publicKey = await getPublicKeyPemFromPrivateKeyPem(this.privateKey);
+        return this.publicKey;
+    }
+    async getAddress() {
+        if (!this.address) this.address = await getPlebbitAddressFromPrivateKeyPem(this.privateKey);
+        return this.address;
+    }
+    async getIpfsKey() {
+        if (!this.ipfsKey) this.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKeyPem(this.privateKey));
+        return this.ipfsKey;
     }
 }
 
@@ -42,15 +45,8 @@ export const createSigner = async (createSignerOptions: CreateSignerOptions = {}
     }
     if (typeof signerType !== "string") throw Error("createSignerOptions does not include type");
 
-    const publicKeyPem = await getPublicKeyPemFromPrivateKeyPem(privateKey);
-    const address = await getPlebbitAddressFromPrivateKeyPem(privateKey);
-    const ipfsKey = await getIpfsKeyFromPrivateKeyPem(privateKey);
-
     return new Signer({
         privateKey: privateKey,
-        type: signerType,
-        publicKey: publicKeyPem,
-        address: address,
-        ipfsKey: ipfsKey
+        type: signerType
     });
 };
