@@ -22,6 +22,7 @@ var messages;
     messages["ERR_GENERATED_CID_DOES_NOT_MATCH"] = "The CID generated from loaded content does not match the provided CID";
     // Sign errors
     messages["ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER"] = "comment.author.address does not match signer.address";
+    messages["ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS"] = "author.address is not a domain or IPNS";
     // Verify Signature errors
     messages["ERR_SIGNATURE_IS_INVALID"] = "Signature of publication is invalid";
     messages["ERR_AUTHOR_NOT_MATCHING_SIGNATURE"] = "comment.author.address doesn't match comment.signature.publicKey";

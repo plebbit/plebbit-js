@@ -69,8 +69,6 @@ exports.Comment = void 0;
 var util_1 = require("./util");
 var publication_1 = __importDefault(require("./publication"));
 var pages_1 = require("./pages");
-var err_code_1 = __importDefault(require("err-code"));
-var errors_1 = require("./errors");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var lodash_1 = __importDefault(require("lodash"));
 var signatures_1 = require("./signer/signatures");
@@ -268,7 +266,7 @@ var Comment = /** @class */ (function (_super) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 if (typeof this.ipnsName !== "string")
-                    throw (0, err_code_1.default)(Error(errors_1.messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME), errors_1.messages[errors_1.messages.ERR_COMMENT_UPDATE_MISSING_IPNS_NAME]);
+                    (0, util_1.throwWithErrorCode)("ERR_COMMENT_UPDATE_MISSING_IPNS_NAME");
                 if (this._updateInterval)
                     return [2 /*return*/]; // Do nothing if it's already updating
                 this.updateOnce();
@@ -289,7 +287,7 @@ var Comment = /** @class */ (function (_super) {
                     case 1:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)
-                            throw Error("Failed to validate signature before publishing due to reason '".concat(signatureValidity.reason, "'"));
+                            (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", "comment.publish: Failed to publish due to invalid signature. Reason=".concat(signatureValidity.reason));
                         return [2 /*return*/, _super.prototype.publish.call(this)];
                 }
             });

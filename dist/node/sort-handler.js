@@ -182,7 +182,6 @@ var SortHandler = /** @class */ (function () {
                     case 2:
                         if (!(i >= 0)) return [3 /*break*/, 5];
                         pageComments = chunksWithReplies[i].map(function (c) { return c.toJSONPages(); });
-                        pageComments.forEach(function (c) { return (0, assert_1.default)(typeof c.upvoteCount === "number"); });
                         page = new pages_1.Page({
                             nextCid: cids[i + 1],
                             comments: pageComments

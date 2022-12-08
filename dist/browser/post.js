@@ -61,13 +61,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 var comment_1 = require("./comment");
-var err_code_1 = __importDefault(require("err-code"));
-var errors_1 = require("./errors");
+var util_1 = require("./util");
 var Post = /** @class */ (function (_super) {
     __extends(Post, _super);
     function Post(props, plebbit) {
@@ -91,9 +87,7 @@ var Post = /** @class */ (function (_super) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 if (typeof this.title !== "string")
-                    throw (0, err_code_1.default)(Error(errors_1.messages.ERR_PUBLICATION_MISSING_FIELD), errors_1.messages[errors_1.messages.ERR_PUBLICATION_MISSING_FIELD], {
-                        details: "".concat(this.getType(), ".publish: title should be a string")
-                    });
+                    (0, util_1.throwWithErrorCode)("ERR_PUBLICATION_MISSING_FIELD", "".concat(this.getType(), ".publish: title (").concat(this.title, ") should be a string"));
                 return [2 /*return*/, _super.prototype.publish.call(this)];
             });
         });
