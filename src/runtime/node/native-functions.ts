@@ -122,19 +122,18 @@ const nativeFunctions: NativeFunctions = {
             block: { rm: blockRm }
         };
     },
-    importSignerIntoIpfsNode: async (signer: SignerType, plebbit: Plebbit): Promise<{ Id: string; Name: string }> => {
+    importSignerIntoIpfsNode: async (ipnsKeyName: string, ipfsKey: Uint8Array, plebbit: Plebbit): Promise<{ Id: string; Name: string }> => {
         const data = new FormData();
-        if (typeof signer.ipnsKeyName !== "string")
-            throw Error("Signer.ipnsKeyName needs to be defined before importing key into IPFS node");
-        if (signer.ipfsKey?.constructor?.name !== "Uint8Array" || signer.ipfsKey.byteLength <= 0)
-            throw Error("Signer.ipfsKey needs to be defined before importing key into IPFS node");
-        const ipfsKeyFile = Buffer.from(signer.ipfsKey);
+        if (typeof ipnsKeyName !== "string") throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
+        if (ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
+            throw Error("ipfsKey needs to be defined before importing key into IPFS node");
+        const ipfsKeyFile = Buffer.from(ipfsKey);
 
         data.append("file", ipfsKeyFile);
         const nodeUrl =
             typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
         if (!nodeUrl) throw Error("Can't figure out ipfs node URL");
-        const url = `${nodeUrl}/key/import?arg=${signer.ipnsKeyName}`;
+        const url = `${nodeUrl}/key/import?arg=${ipnsKeyName}`;
         const res = await nativeFunctions.fetch(url, {
             method: "POST",
             body: data

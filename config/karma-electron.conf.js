@@ -97,7 +97,6 @@ module.exports = function (config) {
                 // customimze electron create window options
                 browserWindowOptions: {
                     webPreferences: {
-                        // TODO: enable context isolation after plebbit-js native functions api is implemented
                         nodeIntegration: false,
                         contextIsolation: true,
 

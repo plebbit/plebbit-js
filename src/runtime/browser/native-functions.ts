@@ -65,7 +65,7 @@ const nativeFunctions: NativeFunctions = {
             block: { rm: blockRm }
         };
     },
-    importSignerIntoIpfsNode: async (signer: SignerType, plebbit: Plebbit): Promise<{ Id: string; Name: string }> => {
+    importSignerIntoIpfsNode: async () => {
         throw Error("Shouldn't call importSignerIntoIpfsNode over native-functions of browser");
     }
 };
