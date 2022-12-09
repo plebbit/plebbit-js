@@ -40,7 +40,12 @@ import {
 import { Comment } from "./comment";
 import Vote from "./vote";
 import Post from "./post";
-import { getIpfsKeyFromPrivateKeyPem, getPlebbitAddressFromPublicKeyPem } from "./signer/util";
+import {
+    getIpfsKeyFromPrivateKeyPem,
+    getPlebbitAddressFromPrivateKeyPem,
+    getPlebbitAddressFromPublicKeyPem,
+    getPublicKeyPemFromPrivateKeyPem
+} from "./signer/util";
 import { v4 as uuidv4 } from "uuid";
 import { AUTHOR_EDIT_FIELDS, CommentEdit, MOD_EDIT_FIELDS } from "./comment-edit";
 import errcode from "err-code";
@@ -158,9 +163,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     private async _initSignerProps() {
         if (!this.signer.ipfsKey) this.signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKeyPem(this.signer.privateKey));
         if (!this.signer.ipnsKeyName) this.signer.ipnsKeyName = this.signer.address;
-        this.signer = new Signer(this.signer);
+        if (!this.signer.publicKey) this.signer.publicKey = await getPublicKeyPemFromPrivateKeyPem(this.signer.privateKey);
+        if (!this.signer.address) this.signer.address = await getPlebbitAddressFromPrivateKeyPem(this.signer.privateKey);
 
-        if (typeof this.signer?.publicKey !== "string") throw Error("subplebbit.signer.publicKey is not defined");
         this.encryption = {
             type: "aes-cbc",
             publicKey: this.signer.publicKey
@@ -236,7 +241,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     private async _importSignerIntoIpfsIfNeeded(signer: SignerType) {
         if (!signer.ipnsKeyName) throw Error(`signer.ipnsKeyName need to be defined before importing singer into IPFS`);
         const keyExistsInNode = (await this.plebbit.ipfsClient.key.list()).some((key) => key.name === signer.ipnsKeyName);
-        if (!keyExistsInNode) await nativeFunctions.importSignerIntoIpfsNode(signer, this.plebbit);
+        if (!keyExistsInNode) await nativeFunctions.importSignerIntoIpfsNode(signer.ipnsKeyName, signer.ipfsKey, this.plebbit);
     }
 
     // TODO rename and make this private
@@ -570,8 +575,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 ...(await this.plebbit.createSigner()),
                 ipnsKeyName
             });
-            await this.dbHandler.insertSigner(ipfsSigner, undefined);
-            postOrCommentOrVote.setCommentIpnsKey(await nativeFunctions.importSignerIntoIpfsNode(ipfsSigner, this.plebbit));
+            ipfsSigner.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKeyPem(ipfsSigner.privateKey));
+            await this.dbHandler.insertSigner(lodash.pick(ipfsSigner, ["ipnsKeyName", "privateKey", "type"]), undefined);
+            postOrCommentOrVote.setCommentIpnsKey(
+                await nativeFunctions.importSignerIntoIpfsNode(ipfsSigner.ipnsKeyName, ipfsSigner.ipfsKey, this.plebbit)
+            );
 
             if (postOrCommentOrVote instanceof Post) {
                 const trx = await this.dbHandler.createTransaction(challengeRequestId);
@@ -869,7 +877,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         dbComment._initCommentUpdate(options);
         const signerRaw = await this.dbHandler.querySigner(dbComment.ipnsKeyName);
         if (!signerRaw) throw Error(`Comment ${dbComment.cid} IPNS signer is not stored in DB`);
-        const commentIpnsSigner = new Signer(signerRaw);
+        const commentIpnsSigner = new Signer({ ...signerRaw, ipfsKey: await getIpfsKeyFromPrivateKeyPem(signerRaw.privateKey) });
         await this._importSignerIntoIpfsIfNeeded(commentIpnsSigner);
         const file = await this.plebbit.ipfsClient.add(encode({ ...dbComment.toJSONCommentUpdate(), signature: options.signature }));
         await this.plebbit.ipfsClient.name.publish(file.path, {

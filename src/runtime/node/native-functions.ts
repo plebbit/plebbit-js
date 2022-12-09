@@ -125,7 +125,7 @@ const nativeFunctions: NativeFunctions = {
     importSignerIntoIpfsNode: async (ipnsKeyName: string, ipfsKey: Uint8Array, plebbit: Plebbit): Promise<{ Id: string; Name: string }> => {
         const data = new FormData();
         if (typeof ipnsKeyName !== "string") throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
-        if (ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
+        if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
             throw Error("ipfsKey needs to be defined before importing key into IPFS node");
         const ipfsKeyFile = Buffer.from(ipfsKey);
 

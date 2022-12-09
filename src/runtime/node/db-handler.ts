@@ -215,10 +215,7 @@ export class DbHandler {
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("ipnsKeyName").notNullable().unique().primary();
             table.text("privateKey").notNullable().unique();
-            table.text("publicKey").notNullable().unique();
-            table.text("address").nullable();
             table.text("type").notNullable(); // RSA or any other type
-            table.binary("ipfsKey").notNullable().unique();
         });
     }
 
@@ -642,11 +639,14 @@ export class DbHandler {
         return post;
     }
 
-    async insertSigner(signer: SignerType, trx?: Transaction) {
+    async insertSigner(signer: Pick<SignerType, "type" | "privateKey" | "ipnsKeyName">, trx?: Transaction) {
         await this._baseTransaction(trx)(TABLES.SIGNERS).insert(signer);
     }
 
-    async querySigner(ipnsKeyName: string, trx?: Transaction): Promise<(SignerType & { ipnsKeyName: string }) | undefined> {
+    async querySigner(
+        ipnsKeyName: string,
+        trx?: Transaction
+    ): Promise<(Pick<SignerType, "type" | "privateKey"> & { ipnsKeyName: string }) | undefined> {
         return this._baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName }).first();
     }
 

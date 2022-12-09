@@ -42,15 +42,15 @@ export const createSigner = async (createSignerOptions: CreateSignerOptions = {}
     }
     if (typeof signerType !== "string") throw Error("createSignerOptions does not include type");
 
-    const publicKeyPem = await getPublicKeyPemFromPrivateKeyPem(privateKey);
-    const address = await getPlebbitAddressFromPrivateKeyPem(privateKey);
-    const ipfsKey = await getIpfsKeyFromPrivateKeyPem(privateKey);
+    const [publicKey, address] = await Promise.all([
+        getPublicKeyPemFromPrivateKeyPem(privateKey),
+        getPlebbitAddressFromPrivateKeyPem(privateKey)
+    ]);
 
     return new Signer({
-        privateKey: privateKey,
         type: signerType,
-        publicKey: publicKeyPem,
-        address: address,
-        ipfsKey: ipfsKey
+        publicKey,
+        address,
+        privateKey
     });
 };

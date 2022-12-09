@@ -26,7 +26,7 @@ function generateRandomTimestamp(parentTimestamp?: number): number {
 export async function generateMockPost(
     subplebbitAddress: string,
     plebbit: Plebbit,
-    signer?: Signer,
+    signer?: SignerType,
     randomTimestamp = false,
     postProps: Partial<CreateCommentOptions | PostType> = {}
 ) {
@@ -53,7 +53,7 @@ export async function generateMockPost(
 export async function generateMockComment(
     parentPostOrComment: Post | Comment,
     plebbit: Plebbit,
-    signer?: Signer,
+    signer?: SignerType,
     randomTimestamp = false,
     commentProps: Partial<CreateCommentOptions | CommentType> = {}
 ): Promise<Comment> {
@@ -82,7 +82,7 @@ export async function generateMockVote(
     parentPostOrComment: Comment | Post,
     vote: -1 | 0 | 1,
     plebbit: Plebbit,
-    signer?: Signer
+    signer?: SignerType
 ): Promise<Vote> {
     const voteTime = Date.now() / 1000;
     const commentCid = parentPostOrComment.cid || parentPostOrComment.postCid;
