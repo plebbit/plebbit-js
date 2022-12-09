@@ -215,7 +215,10 @@ export class DbHandler {
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("ipnsKeyName").notNullable().unique().primary();
             table.text("privateKey").notNullable().unique();
+            table.text("publicKey").notNullable().unique();
+            table.text("address").nullable();
             table.text("type").notNullable(); // RSA or any other type
+            table.binary("ipfsKey").notNullable().unique();
         });
     }
 

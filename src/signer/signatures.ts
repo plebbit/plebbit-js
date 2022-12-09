@@ -36,6 +36,7 @@ import {
     PublicationToVerify,
     SignatureType,
     SignedPropertyNames,
+    SignerType,
     SubplebbitSignedPropertyNames,
     SubplebbitType,
     VoteSignedPropertyNames,
@@ -44,7 +45,6 @@ import {
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
 import { messages } from "../errors";
-import { Signer } from ".";
 
 interface ValidationResult {
     valid: boolean;
@@ -90,7 +90,7 @@ export const verifyBufferRsa = async (bufferToSign, bufferSignature, publicKeyPe
     return await peerId.pubKey.verify(bufferToSign, bufferSignature);
 };
 
-async function _validateAuthorIpns(author: CreateCommentOptions["author"], signer: Signer, plebbit: Plebbit) {
+async function _validateAuthorIpns(author: CreateCommentOptions["author"], signer: SignerType, plebbit: Plebbit) {
     if (isIPFS.cid(author.address)) {
         const derivedAddress = await getPlebbitAddressFromPrivateKeyPem(signer.privateKey);
         if (derivedAddress !== author.address)
@@ -107,7 +107,7 @@ async function _validateAuthorIpns(author: CreateCommentOptions["author"], signe
 async function _sign(
     signedPropertyNames: SignedPropertyNames,
     publication: PublicationsToSign,
-    signer: Signer,
+    signer: SignerType,
     log: Logger
 ): Promise<Signature> {
     const fieldsToSign = {
@@ -120,13 +120,13 @@ async function _sign(
     log.trace(`fields have been signed, signature:`, signatureData);
     return new Signature({
         signature: signatureData,
-        publicKey: await signer.getPublicKey(),
+        publicKey: signer.publicKey,
         type: signer.type,
         signedPropertyNames: signedPropertyNames
     });
 }
 
-export async function signComment(comment: CreateCommentOptions, signer: Signer, plebbit: Plebbit): Promise<Signature> {
+export async function signComment(comment: CreateCommentOptions, signer: SignerType, plebbit: Plebbit): Promise<Signature> {
     const log = Logger("plebbit-js:signatures:signComment");
     await _validateAuthorIpns(comment.author, signer, plebbit);
 
@@ -135,7 +135,7 @@ export async function signComment(comment: CreateCommentOptions, signer: Signer,
     return _sign(signedPropertyNames, comment, signer, log);
 }
 
-export async function signVote(vote: CreateVoteOptions, signer: Signer, plebbit: Plebbit): Promise<Signature> {
+export async function signVote(vote: CreateVoteOptions, signer: SignerType, plebbit: Plebbit): Promise<Signature> {
     const log = Logger("plebbit-js:signatures:signVote");
     await _validateAuthorIpns(vote.author, signer, plebbit);
 
@@ -143,7 +143,7 @@ export async function signVote(vote: CreateVoteOptions, signer: Signer, plebbit:
     return _sign(signedPropertyNames, vote, signer, log);
 }
 
-export async function signCommentEdit(edit: CreateCommentEditOptions, signer: Signer, plebbit: Plebbit): Promise<Signature> {
+export async function signCommentEdit(edit: CreateCommentEditOptions, signer: SignerType, plebbit: Plebbit): Promise<Signature> {
     const log = Logger("plebbit-js:signatures:signCommentEdit");
     await _validateAuthorIpns(edit.author, signer, plebbit);
     //prettier-ignore
@@ -151,7 +151,7 @@ export async function signCommentEdit(edit: CreateCommentEditOptions, signer: Si
     return _sign(signedPropertyNames, edit, signer, log);
 }
 
-export async function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: Signer): Promise<Signature> {
+export async function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType): Promise<Signature> {
     const log = Logger("plebbit-js:signatures:signCommentUpdate");
     // Not sure, should we validate update.authorEdit here?
     //prettier-ignore
@@ -159,7 +159,7 @@ export async function signCommentUpdate(update: Omit<CommentUpdate, "signature">
     return _sign(signedPropertyNames, update, signer, log);
 }
 
-export async function signSubplebbit(subplebbit: Omit<SubplebbitType, "signature">, signer: Signer): Promise<Signature> {
+export async function signSubplebbit(subplebbit: Omit<SubplebbitType, "signature">, signer: SignerType): Promise<Signature> {
     const log = Logger("plebbit-js:signatures:signSubplebbit");
     //prettier-ignore
     const signedPropertyNames: SubplebbitSignedPropertyNames = ["title","description","roles","pubsubTopic","lastPostCid","posts","challengeTypes","metricsCid","createdAt","updatedAt","features","suggested","rules","address","flairs","encryption"];
@@ -167,7 +167,10 @@ export async function signSubplebbit(subplebbit: Omit<SubplebbitType, "signature
     return _sign(signedPropertyNames, subplebbit, signer, log);
 }
 
-export async function signChallengeRequest(request: Omit<ChallengeRequestMessageType, "signature">, signer: Signer): Promise<Signature> {
+export async function signChallengeRequest(
+    request: Omit<ChallengeRequestMessageType, "signature">,
+    signer: SignerType
+): Promise<Signature> {
     const log = Logger("plebbit-js:signatures:signChallengeRequest");
     //prettier-ignore
     const signedPropertyNames: ChallengeRequestMessageSignedPropertyNames = ["type", "challengeRequestId", "encryptedPublication", "acceptedChallengeTypes"];
@@ -175,7 +178,10 @@ export async function signChallengeRequest(request: Omit<ChallengeRequestMessage
     return _sign(signedPropertyNames, request, signer, log);
 }
 
-export async function signChallengeMessage(challengeMessage: Omit<ChallengeMessageType, "signature">, signer: Signer): Promise<Signature> {
+export async function signChallengeMessage(
+    challengeMessage: Omit<ChallengeMessageType, "signature">,
+    signer: SignerType
+): Promise<Signature> {
     const log = Logger("plebbit-js:signatures:signChallengeMessage");
     const signedPropertyNames: ChallengeMessageSignedPropertyNames = ["type", "challengeRequestId", "encryptedChallenges"];
 
@@ -184,7 +190,7 @@ export async function signChallengeMessage(challengeMessage: Omit<ChallengeMessa
 
 export async function signChallengeAnswer(
     challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">,
-    signer: Signer
+    signer: SignerType
 ): Promise<Signature> {
     const log = Logger("plebbit-js:signatures:signChallengeAnswer");
     //prettier-ignore
@@ -195,7 +201,7 @@ export async function signChallengeAnswer(
 
 export async function signChallengeVerification(
     challengeVerification: Omit<ChallengeVerificationMessageType, "signature">,
-    signer: Signer
+    signer: SignerType
 ): Promise<Signature> {
     const log = Logger("plebbit-js:signatures:signChallengeVerification");
     //prettier-ignore

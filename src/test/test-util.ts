@@ -7,7 +7,7 @@ import PlebbitIndex from "../index";
 import Vote from "../vote";
 import { Pages } from "../pages";
 import { Subplebbit } from "../subplebbit";
-import { CommentType, CreateCommentOptions, PostType } from "../types";
+import { CommentType, CreateCommentOptions, PostType, SignerType } from "../types";
 import isIPFS from "is-ipfs";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
@@ -127,7 +127,7 @@ export async function getAllCommentsUnderSubplebbit(subplebbit: Subplebbit): Pro
     return (await Promise.all(subplebbit.posts?.pages.hot?.comments.map(getChildrenComments) || [])).flat();
 }
 
-async function _mockPlebbit(signers: Signer[], dataPath: string) {
+async function _mockPlebbit(signers: SignerType[], dataPath: string) {
     const plebbit = await PlebbitIndex({
         ipfsHttpClientOptions: "http://localhost:5001/api/v0",
         pubsubHttpClientOptions: `http://localhost:5002/api/v0`,
@@ -135,13 +135,13 @@ async function _mockPlebbit(signers: Signer[], dataPath: string) {
     });
     //@ts-ignore
     plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-        if (authorAddress === "plebbit.eth") return signers[6].getAddress();
+        if (authorAddress === "plebbit.eth") return signers[6].address;
         else if (authorAddress === "testgibbreish.eth") return undefined;
         return authorAddress;
     };
     //@ts-ignore
     plebbit.resolver.resolveSubplebbitAddressIfNeeded = async (subplebbitAddress) => {
-        if (subplebbitAddress === "plebbit.eth") return signers[3].getAddress();
+        if (subplebbitAddress === "plebbit.eth") return signers[3].address;
         else if (plebbit.resolver.isDomain(subplebbitAddress)) throw Error(`${subplebbitAddress} has no subplebbit-address`);
         return subplebbitAddress;
     };
@@ -156,7 +156,7 @@ async function _setDatabase(subplebbit: Subplebbit, databaseConfig: any) {
     await subplebbit.dbHandler.initDbIfNeeded();
 }
 
-async function _startMathCliSubplebbit(signers: Signer[], database: any, syncInterval: number, dataPath: string) {
+async function _startMathCliSubplebbit(signers: SignerType[], database: any, syncInterval: number, dataPath: string) {
     const plebbit = await _mockPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[1]);
     const subplebbit = await plebbit.createSubplebbit({ signer });
@@ -179,7 +179,7 @@ async function _startMathCliSubplebbit(signers: Signer[], database: any, syncInt
     return subplebbit;
 }
 
-async function _startImageCaptchaSubplebbit(signers: Signer[], database: any, syncInterval: number, dataPath: string) {
+async function _startImageCaptchaSubplebbit(signers: SignerType[], database: any, syncInterval: number, dataPath: string) {
     const plebbit = await _mockPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[2]);
     const subplebbit = await plebbit.createSubplebbit({ signer });
@@ -197,7 +197,7 @@ async function _startImageCaptchaSubplebbit(signers: Signer[], database: any, sy
     return subplebbit;
 }
 
-async function _startEnsSubplebbit(signers: Signer[], database: any, syncInterval: number, dataPath: string) {
+async function _startEnsSubplebbit(signers: SignerType[], database: any, syncInterval: number, dataPath: string) {
     const plebbit = await _mockPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[3]);
     const subplebbit = await plebbit.createSubplebbit({ signer });
@@ -208,7 +208,7 @@ async function _startEnsSubplebbit(signers: Signer[], database: any, syncInterva
     await subplebbit.edit({ address: "plebbit.eth" });
 }
 
-async function _publishComments(parentComments: Comment[], subplebbit: Subplebbit, numOfCommentsToPublish: number, signers: Signer[]) {
+async function _publishComments(parentComments: Comment[], subplebbit: Subplebbit, numOfCommentsToPublish: number, signers: SignerType[]) {
     const comments: Comment[] = [];
     if (parentComments.length === 0)
         await Promise.all(
@@ -236,7 +236,7 @@ async function _publishComments(parentComments: Comment[], subplebbit: Subplebbi
     return comments;
 }
 
-async function _publishVotes(comments: Comment[], subplebbit: Subplebbit, votesPerCommentToPublish: number, signers: Signer[]) {
+async function _publishVotes(comments: Comment[], subplebbit: Subplebbit, votesPerCommentToPublish: number, signers: SignerType[]) {
     const votes: Vote[] = [];
     await Promise.all(
         comments.map(async (comment) => {
@@ -262,7 +262,7 @@ async function _publishVotes(comments: Comment[], subplebbit: Subplebbit, votesP
 async function _populateSubplebbit(
     subplebbit: Subplebbit,
     props: {
-        signers: Signer[];
+        signers: SignerType[];
         syncInterval: number;
         database: any;
         votesPerCommentToPublish: number;
@@ -271,9 +271,9 @@ async function _populateSubplebbit(
 ) {
     await subplebbit.edit({
         roles: {
-            [await props.signers[1].getAddress()]: { role: "owner" },
-            [await props.signers[2].getAddress()]: { role: "admin" },
-            [await props.signers[3].getAddress()]: { role: "moderator" }
+            [props.signers[1].address]: { role: "owner" },
+            [props.signers[2].address]: { role: "admin" },
+            [props.signers[3].address]: { role: "moderator" }
         }
     });
     const posts = await _publishComments([], subplebbit, props.numOfCommentsToPublish, props.signers); // If no comment[] is provided, we publish posts
@@ -287,17 +287,16 @@ async function _populateSubplebbit(
 }
 
 export async function startSubplebbits(props: {
-    signers: Signer[];
+    signers: SignerType[];
     syncInterval: number;
     dataPath: string;
     database: any;
     votesPerCommentToPublish: number;
     numOfCommentsToPublish: number;
 }) {
-    props.signers = await Promise.all(props.signers.map((signerProps) => new Signer(signerProps)));
     const plebbit = await _mockPlebbit(props.signers, props.dataPath);
-
-    const subplebbit = await plebbit.createSubplebbit({ signer: props.signers[0] });
+    const signer = await plebbit.createSigner(props.signers[0]);
+    const subplebbit = await plebbit.createSubplebbit({ signer });
     await _setDatabase(subplebbit, props.database);
 
     subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);

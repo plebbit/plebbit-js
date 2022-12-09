@@ -34,6 +34,9 @@ export interface PagesType {
 export interface SignerType {
     type: "rsa";
     privateKey: string;
+    publicKey?: string;
+    address?: string;
+    ipfsKey?: Uint8Array;
     ipnsKeyName?: string;
 }
 export type Encrypted = {
