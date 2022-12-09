@@ -370,7 +370,7 @@ export declare type NativeFunctions = {
         image: string;
         text: string;
     }>;
-    importSignerIntoIpfsNode: (signer: SignerType, plebbit: Plebbit) => Promise<{
+    importSignerIntoIpfsNode: (ipnsKeyName: string, ipfsKey: Uint8Array, plebbit: Plebbit) => Promise<{
         Id: string;
         Name: string;
     }>;

@@ -67,9 +67,9 @@ exports.Signer = Signer;
 var createSigner = function (createSignerOptions) {
     if (createSignerOptions === void 0) { createSignerOptions = {}; }
     return __awaiter(void 0, void 0, void 0, function () {
-        var privateKey, signerType, publicKeyPem, address, ipfsKey;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var privateKey, signerType, _a, publicKey, address;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     privateKey = createSignerOptions.privateKey, signerType = createSignerOptions.type;
                     if (!privateKey) return [3 /*break*/, 1];
@@ -78,27 +78,23 @@ var createSigner = function (createSignerOptions) {
                     return [3 /*break*/, 3];
                 case 1: return [4 /*yield*/, (0, util_1.generatePrivateKeyPem)()];
                 case 2:
-                    privateKey = _a.sent();
+                    privateKey = _b.sent();
                     signerType = "rsa";
-                    _a.label = 3;
+                    _b.label = 3;
                 case 3:
                     if (typeof signerType !== "string")
                         throw Error("createSignerOptions does not include type");
-                    return [4 /*yield*/, (0, util_1.getPublicKeyPemFromPrivateKeyPem)(privateKey)];
+                    return [4 /*yield*/, Promise.all([
+                            (0, util_1.getPublicKeyPemFromPrivateKeyPem)(privateKey),
+                            (0, util_1.getPlebbitAddressFromPrivateKeyPem)(privateKey)
+                        ])];
                 case 4:
-                    publicKeyPem = _a.sent();
-                    return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPrivateKeyPem)(privateKey)];
-                case 5:
-                    address = _a.sent();
-                    return [4 /*yield*/, (0, util_1.getIpfsKeyFromPrivateKeyPem)(privateKey)];
-                case 6:
-                    ipfsKey = _a.sent();
+                    _a = _b.sent(), publicKey = _a[0], address = _a[1];
                     return [2 /*return*/, new Signer({
-                            privateKey: privateKey,
                             type: signerType,
-                            publicKey: publicKeyPem,
+                            publicKey: publicKey,
                             address: address,
-                            ipfsKey: ipfsKey
+                            privateKey: privateKey
                         })];
             }
         });

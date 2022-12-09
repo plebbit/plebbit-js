@@ -1,4 +1,3 @@
-import { Signer } from "../signer";
 import { Comment } from "../comment";
 import Post from "../post";
 import { Plebbit } from "../plebbit";
@@ -6,9 +5,9 @@ import Vote from "../vote";
 import { Pages } from "../pages";
 import { Subplebbit } from "../subplebbit";
 import { CommentType, CreateCommentOptions, PostType, SignerType } from "../types";
-export declare function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, signer?: Signer, randomTimestamp?: boolean, postProps?: Partial<CreateCommentOptions | PostType>): Promise<Comment | Post>;
-export declare function generateMockComment(parentPostOrComment: Post | Comment, plebbit: Plebbit, signer?: Signer, randomTimestamp?: boolean, commentProps?: Partial<CreateCommentOptions | CommentType>): Promise<Comment>;
-export declare function generateMockVote(parentPostOrComment: Comment | Post, vote: -1 | 0 | 1, plebbit: Plebbit, signer?: Signer): Promise<Vote>;
+export declare function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, signer?: SignerType, randomTimestamp?: boolean, postProps?: Partial<CreateCommentOptions | PostType>): Promise<Comment | Post>;
+export declare function generateMockComment(parentPostOrComment: Post | Comment, plebbit: Plebbit, signer?: SignerType, randomTimestamp?: boolean, commentProps?: Partial<CreateCommentOptions | CommentType>): Promise<Comment>;
+export declare function generateMockVote(parentPostOrComment: Comment | Post, vote: -1 | 0 | 1, plebbit: Plebbit, signer?: SignerType): Promise<Vote>;
 export declare function loadAllPages(pageCid: string, pagesInstance: Pages): Promise<Comment[]>;
 export declare function getAllCommentsUnderSubplebbit(subplebbit: Subplebbit): Promise<Comment[]>;
 export declare function startSubplebbits(props: {
