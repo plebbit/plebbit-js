@@ -10,7 +10,7 @@ const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-const subplebbitAddress = signers.rawSigners[0].address;
+const subplebbitAddress = signers[0].address;
 const updateInterval = 100;
 const roles = [
     { role: "owner", signer: signers[1] },

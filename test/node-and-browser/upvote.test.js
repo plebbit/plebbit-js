@@ -5,7 +5,7 @@ const { generateMockVote, generateMockPost, generateMockComment } = require("../
 const { timestamp, randomElement } = require("../../dist/node/util");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 
-const subplebbitAddress = signers.rawSigners[0].address;
+const subplebbitAddress = signers[0].address;
 
 const previousVotes = [];
 const updateInterval = 100;

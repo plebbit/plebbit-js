@@ -23,18 +23,16 @@ describe("Comments with Authors as domains", async () => {
                 signer: signers[6],
                 content: `Mock post - ${Date.now()}`,
                 title: "Mock post title",
-                subplebbitAddress: await signers[0].getAddress()
+                subplebbitAddress: signers[0].address
             });
 
             await mockPost.publish();
             expect(mockPost.author.address).to.equal("plebbit.eth");
-            expect(await plebbit.resolver.resolveAuthorAddressIfNeeded(mockPost.author.address)).to.equal(await signers[6].getAddress());
+            expect(await plebbit.resolver.resolveAuthorAddressIfNeeded(mockPost.author.address)).to.equal(signers[6].address);
 
             mockPost.once("challengeverification", async (challengeVerificationMessage, _) => {
                 expect(mockPost.author.address).to.equal("plebbit.eth");
-                expect(await plebbit.resolver.resolveAuthorAddressIfNeeded(mockPost.author.address)).to.equal(
-                    await signers[6].getAddress()
-                );
+                expect(await plebbit.resolver.resolveAuthorAddressIfNeeded(mockPost.author.address)).to.equal(signers[6].address);
                 expect(mockPost.ipnsKeyName).to.be.undefined;
                 expect(challengeVerificationMessage.challengeSuccess).to.be.true;
                 mockComments.push(mockPost);
@@ -49,13 +47,13 @@ describe("Comments with Authors as domains", async () => {
         // The purpose is to test whether server rejects publications that has different plebbit-author-address and signer address
         const tempPlebbit = await Plebbit(plebbit);
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) =>
-            authorAddress === "testgibbreish.eth" ? await signers[6].getAddress() : authorAddress;
+            authorAddress === "testgibbreish.eth" ? signers[6].address : authorAddress;
         const mockPost = await tempPlebbit.createComment({
             author: { displayName: `Mock Author - ${Date.now()}`, address: "testgibbreish.eth" },
             signer: signers[6],
             content: `Mock comment - ${Date.now()}`,
             title: "Mock post Title",
-            subplebbitAddress: await signers[0].getAddress()
+            subplebbitAddress: signers[0].address
         });
 
         await mockPost.publish();
@@ -73,10 +71,10 @@ describe("Comments with Authors as domains", async () => {
     it(`getComment corrects author.address to derived address in case plebbit-author-address points to another address`, async () => {
         const tempPlebbit = await Plebbit(plebbit);
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) =>
-            authorAddress === "plebbit.eth" ? await signers[7].getAddress() : authorAddress;
+            authorAddress === "plebbit.eth" ? signers[7].address : authorAddress;
         // verifyPublication in getComment should overwrite author.address to derived address
         const post = await tempPlebbit.getComment(mockComments[mockComments.length - 1].cid);
-        expect(post.author.address).to.equal(await signers[6].getAddress());
+        expect(post.author.address).to.equal(signers[6].address);
     });
 });
 
@@ -84,13 +82,13 @@ describe(`Vote with authors as domains`, async () => {
     let plebbit, subplebbit;
     before(async () => {
         plebbit = await mockPlebbit();
-        subplebbit = await plebbit.getSubplebbit(await signers[0].getAddress());
+        subplebbit = await plebbit.getSubplebbit(signers[0].address);
     });
 
     it(`Subplebbit rejects a Vote with author.address (domain) that resolves to a different signer`, async () => {
         const tempPlebbit = await Plebbit(plebbit);
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) =>
-            authorAddress === "testgibbreish.eth" ? await signers[6].getAddress() : authorAddress;
+            authorAddress === "testgibbreish.eth" ? signers[6].address : authorAddress;
         const vote = await tempPlebbit.createVote({
             author: { displayName: `Mock Author - ${Date.now()}`, address: "testgibbreish.eth" },
             signer: signers[6],

@@ -62,9 +62,9 @@ describe("signer (node and browser)", async () => {
         });
 
         it("can verify signature", async () => {
-            expect(await verifyBufferRsa(uint8array, uint8arraySignature, await authorSigner.getPublicKey())).to.equal(true);
-            expect(await verifyBufferRsa(buffer, bufferSignature, await authorSigner.getPublicKey())).to.equal(true);
-            expect(await verifyBufferRsa(buffer, bufferSignature, await randomSigner.getPublicKey())).to.equal(false);
+            expect(await verifyBufferRsa(uint8array, uint8arraySignature, authorSigner.publicKey)).to.equal(true);
+            expect(await verifyBufferRsa(buffer, bufferSignature, authorSigner.publicKey)).to.equal(true);
+            expect(await verifyBufferRsa(buffer, bufferSignature, randomSigner.publicKey)).to.equal(false);
         });
     });
 });

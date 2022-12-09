@@ -12,7 +12,7 @@ describe("Sign Vote", async () => {
     let plebbit, subplebbit, vote;
     before(async () => {
         plebbit = await mockPlebbit();
-        subplebbit = await plebbit.getSubplebbit(await signers[0].getAddress());
+        subplebbit = await plebbit.getSubplebbit(signers[0].address);
     });
     it(`Can sign and validate Vote correctly`, async () => {
         vote = await plebbit.createVote({

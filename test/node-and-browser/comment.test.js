@@ -10,7 +10,7 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 let plebbit;
-const subplebbitAddress = signers.rawSigners[0].address;
+const subplebbitAddress = signers[0].address;
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 

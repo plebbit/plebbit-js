@@ -10,7 +10,7 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 const updateInterval = 100;
-const subplebbitAddress = signers.rawSigners[0].address;
+const subplebbitAddress = signers[0].address;
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
@@ -58,27 +58,27 @@ describe("plebbit (node and browser)", async () => {
         it("without private key argument", async () => {
             expect(signer).not.to.equal(undefined);
             expect(signer.privateKey).to.match(/-----BEGIN ENCRYPTED PRIVATE KEY-----/);
-            expect(await signer.getPublicKey()).to.match(/-----BEGIN PUBLIC KEY-----/);
-            expect(await signer.getAddress()).to.match(/^Qm/);
+            expect(signer.publicKey).to.match(/-----BEGIN PUBLIC KEY-----/);
+            expect(signer.address).to.match(/^Qm/);
             expect(signer.type).to.equal("rsa");
-            expect((await signer.getIpfsKey()).constructor.name).to.equal("Uint8Array");
+            expect(signer.ipfsKey?.constructor.name).to.equal("Uint8Array");
         });
 
         it("with private key argument", async () => {
             const signer = await plebbit.createSigner({ privateKey: fixtureSigner.privateKey, type: "rsa" });
             expect(signer).not.to.equal(undefined);
             expect(signer.privateKey).to.equal(fixtureSigner.privateKey);
-            expect(await signer.getPublicKey()).to.equal(await fixtureSigner.getPublicKey());
-            expect(await signer.getAddress()).to.equal(await fixtureSigner.getAddress());
+            expect(signer.publicKey).to.equal(fixtureSigner.publicKey);
+            expect(signer.address).to.equal(fixtureSigner.address);
             expect(signer.type).to.equal("rsa");
-            expect((await signer.getIpfsKey()).constructor.name).to.equal("Uint8Array");
+            expect(signer.ipfsKey?.constructor.name).to.equal("Uint8Array");
         });
 
         it("generate same signer twice", async () => {
             const signer2 = await plebbit.createSigner({ privateKey: signer.privateKey, type: signer.type });
             expect(signer.privateKey).to.equal(signer2.privateKey);
-            expect(await signer.getPublicKey()).to.equal(await signer2.getPublicKey());
-            expect(await signer.getAddress()).to.equal(await signer2.getAddress());
+            expect(signer.publicKey).to.equal(signer2.publicKey);
+            expect(signer.address).to.equal(signer2.address);
             expect(signer.type).to.equal(signer2.type);
         });
     });
@@ -89,7 +89,7 @@ describe("plebbit (node and browser)", async () => {
             plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
         });
         it("loads post correctly", async () => {
-            const subplebbit = await plebbit.getSubplebbit(await subplebbitSigner.getAddress());
+            const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             expect(subplebbit.lastPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
             const expectedPostProps = await loadIpfsFileAsJson(subplebbit.lastPostCid, plebbit);
             const expectedPost = await plebbit.createComment({
@@ -110,7 +110,7 @@ describe("plebbit (node and browser)", async () => {
         });
 
         it("loads comment correctly", async () => {
-            const subplebbit = await plebbit.getSubplebbit(await subplebbitSigner.getAddress());
+            const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             const comment = subplebbit?.posts?.pages?.hot?.comments.filter((comment) => comment.replyCount > 0)[0]?.replies?.pages?.topAll
                 ?.comments[0];
             expect(comment).to.exist;
@@ -148,8 +148,8 @@ describe("plebbit (node and browser)", async () => {
             plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
         });
         it("loads subplebbit via IPNS address", async () => {
-            const _subplebbitIpns = await loadIpnsAsJson(await subplebbitSigner.getAddress(), plebbit);
-            const loadedSubplebbit = await plebbit.getSubplebbit(await subplebbitSigner.getAddress());
+            const _subplebbitIpns = await loadIpnsAsJson(subplebbitSigner.address, plebbit);
+            const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             // Remove undefined keys from json
             expect(JSON.parse(JSON.stringify(loadedSubplebbit.toJSON()))).to.deep.equals(_subplebbitIpns);
         });
@@ -166,7 +166,7 @@ describe("plebbit (node and browser)", async () => {
             const tempPlebbit = await Plebbit(plebbit);
 
             tempPlebbit.resolver.resolveSubplebbitAddressIfNeeded = async (address) =>
-                address === ensSubplebbitAddress ? await ensSubplebbitSigner.getAddress() : address;
+                address === ensSubplebbitAddress ? ensSubplebbitSigner.address : address;
             const subplebbit = await tempPlebbit.getSubplebbit(ensSubplebbitAddress);
             expect(subplebbit.address).to.equal(ensSubplebbitAddress);
             // I'd add more tests for subplebbit.title and subplebbit.description here but the ipfs node is offline, and won't be able to retrieve plebwhales.eth IPNS record
@@ -175,9 +175,9 @@ describe("plebbit (node and browser)", async () => {
         it(`A subplebbit with ENS domain for address can also be loaded from its IPNS`, async () => {
             const tempPlebbit = await Plebbit(plebbit);
             tempPlebbit.resolver.resolveSubplebbitAddressIfNeeded = async (address) =>
-                address === ensSubplebbitAddress ? await ensSubplebbitSigner.getAddress() : address;
+                address === ensSubplebbitAddress ? ensSubplebbitSigner.address : address;
 
-            const loadedSubplebbit = await tempPlebbit.getSubplebbit(await ensSubplebbitSigner.getAddress());
+            const loadedSubplebbit = await tempPlebbit.getSubplebbit(ensSubplebbitSigner.address);
             expect(loadedSubplebbit.address).to.equal(ensSubplebbitAddress);
         });
 
