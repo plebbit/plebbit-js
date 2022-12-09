@@ -358,7 +358,10 @@ var DbHandler = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
                             table.text("ipnsKeyName").notNullable().unique().primary();
                             table.text("privateKey").notNullable().unique();
+                            table.text("publicKey").notNullable().unique();
+                            table.text("address").nullable();
                             table.text("type").notNullable(); // RSA or any other type
+                            table.binary("ipfsKey").notNullable().unique();
                         })];
                     case 1:
                         _a.sent();
@@ -1159,20 +1162,23 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.querySubplebbitAuthorFields = function (authorAddress, trx) {
+    DbHandler.prototype.querySubplebbitAuthorFields = function (cid, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var authorComments, authorPosts, authorReplies, postScore, replyScore, lastCommentCid;
+            var authorAddress, authorComments, authorPosts, authorReplies, postScore, replyScore, lastCommentCid;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.queryCommentsOfAuthor(authorAddress)];
+                    case 0: return [4 /*yield*/, this._baseCommentQuery(trx).select("authorAddress").where({ cid: cid }).first()];
                     case 1:
+                        authorAddress = (_a.sent())["authorAddress"];
+                        return [4 /*yield*/, this.queryCommentsOfAuthor(authorAddress)];
+                    case 2:
                         authorComments = _a.sent();
                         authorPosts = authorComments.filter(function (comment) { return comment.depth === 0; });
                         authorReplies = authorComments.filter(function (comment) { return comment.depth > 0; });
                         postScore = (0, sumBy_1.default)(authorPosts, function (post) { return post.upvoteCount; }) - (0, sumBy_1.default)(authorPosts, function (post) { return post.downvoteCount; });
                         replyScore = (0, sumBy_1.default)(authorReplies, function (reply) { return reply.upvoteCount; }) - (0, sumBy_1.default)(authorReplies, function (reply) { return reply.downvoteCount; });
                         return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where({ authorAddress: authorAddress }).orderBy("id", "desc").first()];
-                    case 2:
+                    case 3:
                         lastCommentCid = (_a.sent())["cid"];
                         if (typeof lastCommentCid !== "string")
                             throw Error("lastCommentCid should be always defined");
@@ -1218,4 +1224,3 @@ var DbHandler = /** @class */ (function () {
     return DbHandler;
 }());
 exports.DbHandler = DbHandler;
-//# sourceMappingURL=db-handler.js.map

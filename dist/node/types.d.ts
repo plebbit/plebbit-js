@@ -34,6 +34,9 @@ export interface PagesType {
 export interface SignerType {
     type: "rsa";
     privateKey: string;
+    publicKey?: string;
+    address?: string;
+    ipfsKey?: Uint8Array;
     ipnsKeyName?: string;
 }
 export declare type Encrypted = {
@@ -367,7 +370,7 @@ export declare type NativeFunctions = {
         image: string;
         text: string;
     }>;
-    importSignerIntoIpfsNode: (ipnsKeyName: string, ipfsKey: Uint8Array, plebbit: Plebbit) => Promise<{
+    importSignerIntoIpfsNode: (signer: SignerType, plebbit: Plebbit) => Promise<{
         Id: string;
         Name: string;
     }>;

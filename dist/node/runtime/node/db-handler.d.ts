@@ -57,12 +57,10 @@ export declare class DbHandler {
     queryComment(cid: string, trx?: Transaction): Promise<CommentType | PostType | undefined>;
     queryLatestPost(trx?: Transaction): Promise<PostType | undefined>;
     insertSigner(signer: SignerType, trx?: Transaction): Promise<void>;
-    querySigner(ipnsKeyName: string, trx?: Transaction): Promise<(SignerType & {
-        ipnsKeyName: string;
-    }) | undefined>;
+    querySigner(ipnsKeyName: string, trx?: Transaction): Promise<SignerType | undefined>;
     queryCommentsGroupByDepth(trx?: Knex.Transaction): Promise<CommentType[][]>;
     queryCountOfPosts(trx?: Knex.Transaction): Promise<number>;
     queryCommentsOfAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<CommentType[]>;
-    querySubplebbitAuthorFields(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor>;
+    querySubplebbitAuthorFields(cid: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor>;
     changeDbFilename(newDbFileName: string, newSubplebbit: DbHandler["_subplebbit"]): Promise<void>;
 }

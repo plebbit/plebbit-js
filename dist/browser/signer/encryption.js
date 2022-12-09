@@ -175,4 +175,3 @@ var decrypt = function (encryptedString, encryptedKey, privateKeyPem, privateKey
     });
 };
 exports.decrypt = decrypt;
-//# sourceMappingURL=encryption.js.map

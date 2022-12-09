@@ -9,4 +9,3 @@ var DbHandler = /** @class */ (function () {
 }());
 exports.DbHandler = DbHandler;
 exports.default = DbHandler;
-//# sourceMappingURL=db-handler.js.map

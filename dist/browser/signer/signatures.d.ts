@@ -1,6 +1,5 @@
 import { Plebbit } from "../plebbit";
-import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditType, CommentType, CommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, PageType, SignatureType, SignedPropertyNames, SubplebbitType, VoteType } from "../types";
-import { Signer } from ".";
+import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditType, CommentType, CommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, PageType, SignatureType, SignedPropertyNames, SignerType, SubplebbitType, VoteType } from "../types";
 interface ValidationResult {
     valid: boolean;
     reason?: string;
@@ -20,15 +19,15 @@ export declare class Signature implements SignatureType {
 }
 export declare const signBufferRsa: (bufferToSign: any, privateKeyPem: any, privateKeyPemPassword?: string) => Promise<any>;
 export declare const verifyBufferRsa: (bufferToSign: any, bufferSignature: any, publicKeyPem: any) => Promise<any>;
-export declare function signComment(comment: CreateCommentOptions, signer: Signer, plebbit: Plebbit): Promise<Signature>;
-export declare function signVote(vote: CreateVoteOptions, signer: Signer, plebbit: Plebbit): Promise<Signature>;
-export declare function signCommentEdit(edit: CreateCommentEditOptions, signer: Signer, plebbit: Plebbit): Promise<Signature>;
-export declare function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: Signer): Promise<Signature>;
-export declare function signSubplebbit(subplebbit: Omit<SubplebbitType, "signature">, signer: Signer): Promise<Signature>;
-export declare function signChallengeRequest(request: Omit<ChallengeRequestMessageType, "signature">, signer: Signer): Promise<Signature>;
-export declare function signChallengeMessage(challengeMessage: Omit<ChallengeMessageType, "signature">, signer: Signer): Promise<Signature>;
-export declare function signChallengeAnswer(challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">, signer: Signer): Promise<Signature>;
-export declare function signChallengeVerification(challengeVerification: Omit<ChallengeVerificationMessageType, "signature">, signer: Signer): Promise<Signature>;
+export declare function signComment(comment: CreateCommentOptions, signer: SignerType, plebbit: Plebbit): Promise<Signature>;
+export declare function signVote(vote: CreateVoteOptions, signer: SignerType, plebbit: Plebbit): Promise<Signature>;
+export declare function signCommentEdit(edit: CreateCommentEditOptions, signer: SignerType, plebbit: Plebbit): Promise<Signature>;
+export declare function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType): Promise<Signature>;
+export declare function signSubplebbit(subplebbit: Omit<SubplebbitType, "signature">, signer: SignerType): Promise<Signature>;
+export declare function signChallengeRequest(request: Omit<ChallengeRequestMessageType, "signature">, signer: SignerType): Promise<Signature>;
+export declare function signChallengeMessage(challengeMessage: Omit<ChallengeMessageType, "signature">, signer: SignerType): Promise<Signature>;
+export declare function signChallengeAnswer(challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">, signer: SignerType): Promise<Signature>;
+export declare function signChallengeVerification(challengeVerification: Omit<ChallengeVerificationMessageType, "signature">, signer: SignerType): Promise<Signature>;
 export declare function verifyVote(vote: VoteType, plebbit: Plebbit, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
 export declare function verifyCommentEdit(edit: CommentEditType, plebbit: Plebbit, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
 export declare function verifyComment(comment: CommentType, plebbit: Plebbit, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;

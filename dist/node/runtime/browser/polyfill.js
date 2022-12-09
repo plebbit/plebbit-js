@@ -13,4 +13,3 @@ if (window.process.env === undefined) {
 }
 // must export a function and call it or this file isn't read
 exports.default = (function () { });
-//# sourceMappingURL=polyfill.js.map

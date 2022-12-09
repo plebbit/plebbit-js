@@ -275,4 +275,3 @@ var Publication = /** @class */ (function (_super) {
     return Publication;
 }(events_1.default));
 exports.default = Publication;
-//# sourceMappingURL=publication.js.map

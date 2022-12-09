@@ -255,34 +255,34 @@ var nativeFunctions = {
             block: { rm: blockRm }
         };
     },
-    importSignerIntoIpfsNode: function (ipnsKeyName, ipfsKey, plebbit) { return __awaiter(void 0, void 0, void 0, function () {
+    importSignerIntoIpfsNode: function (signer, plebbit) { return __awaiter(void 0, void 0, void 0, function () {
         var data, ipfsKeyFile, nodeUrl, url, res, resJson;
-        var _a;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var _a, _b;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
                     data = new form_data_1.default();
-                    if (typeof ipnsKeyName !== "string")
-                        throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
-                    if (((_a = ipfsKey.constructor) === null || _a === void 0 ? void 0 : _a.name) !== "Uint8Array" || ipfsKey.byteLength <= 0)
-                        throw Error("ipfsKey needs to be defined before importing key into IPFS node");
-                    ipfsKeyFile = Buffer.from(ipfsKey);
+                    if (typeof signer.ipnsKeyName !== "string")
+                        throw Error("Signer.ipnsKeyName needs to be defined before importing key into IPFS node");
+                    if (((_b = (_a = signer.ipfsKey) === null || _a === void 0 ? void 0 : _a.constructor) === null || _b === void 0 ? void 0 : _b.name) !== "Uint8Array" || signer.ipfsKey.byteLength <= 0)
+                        throw Error("Signer.ipfsKey needs to be defined before importing key into IPFS node");
+                    ipfsKeyFile = Buffer.from(signer.ipfsKey);
                     data.append("file", ipfsKeyFile);
                     nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
                     if (!nodeUrl)
                         throw Error("Can't figure out ipfs node URL");
-                    url = "".concat(nodeUrl, "/key/import?arg=").concat(ipnsKeyName);
+                    url = "".concat(nodeUrl, "/key/import?arg=").concat(signer.ipnsKeyName);
                     return [4 /*yield*/, nativeFunctions.fetch(url, {
                             method: "POST",
                             body: data
                         })];
                 case 1:
-                    res = _b.sent();
+                    res = _c.sent();
                     if (res.status !== 200)
                         throw Error("failed ipfs import key: '".concat(url, "' '").concat(res.status, "' '").concat(res.statusText, "'"));
                     return [4 /*yield*/, res.json()];
                 case 2:
-                    resJson = _b.sent();
+                    resJson = _c.sent();
                     return [2 /*return*/, resJson];
             }
         });
@@ -306,4 +306,3 @@ var nativeFunctions = {
     }); }
 };
 exports.default = nativeFunctions;
-//# sourceMappingURL=native-functions.js.map

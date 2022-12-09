@@ -109,4 +109,3 @@ var Vote = /** @class */ (function (_super) {
     return Vote;
 }(publication_1.default));
 exports.default = Vote;
-//# sourceMappingURL=vote.js.map
