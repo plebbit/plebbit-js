@@ -66,6 +66,7 @@ const testCommentFields = (comment) => {
     // Props that shouldn't be there
     expect(comment.ipnsKeyName).to.be.undefined;
     expect(comment.challengeRequestId).to.be.undefined;
+    expect(comment.signer).to.be.undefined;
 };
 
 const testSorting = async (sort, shouldTestCommentReplies) => {
