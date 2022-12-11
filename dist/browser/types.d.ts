@@ -49,7 +49,7 @@ export declare type SubplebbitEncryption = {
     publicKey: string;
 };
 export interface CreateCommentOptions extends CreatePublicationOptions {
-    signer: SignerType;
+    signer: SignerType | Pick<SignerType, "privateKey" | "type">;
     parentCid?: string;
     content?: string;
     title?: string;
@@ -60,7 +60,7 @@ export interface CreateCommentOptions extends CreatePublicationOptions {
 export interface CreateVoteOptions extends CreatePublicationOptions {
     commentCid: string;
     vote: 1 | 0 | -1;
-    signer: SignerType;
+    signer: SignerType | Pick<SignerType, "privateKey" | "type">;
 }
 export interface VoteType extends Omit<CreateVoteOptions, "signer">, PublicationType {
     author: AuthorType;
@@ -127,7 +127,7 @@ export interface ModeratorCommentEdit extends ModeratorCommentEditOptions, Publi
 }
 export declare type CommentAuthorEditOptions = Pick<AuthorType, "banExpiresAt" | "flair">;
 export interface CreateCommentEditOptions extends AuthorCommentEdit, ModeratorCommentEdit {
-    signer: SignerType;
+    signer: SignerType | Pick<SignerType, "privateKey" | "type">;
 }
 export declare type Nft = {
     chainTicker: string;
@@ -239,10 +239,11 @@ export declare type Flair = {
     expiresAt?: number;
 };
 export declare type FlairOwner = "post" | "author";
-export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"> {
+export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database" | "signer"> {
     signature: SignatureType;
     encryption: SubplebbitEncryption;
     address: string;
+    signer?: SignerType;
     createdAt: number;
     updatedAt: number;
     pubsubTopic: string;
@@ -253,7 +254,7 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
 export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     createdAt?: number;
     updatedAt?: number;
-    signer?: SignerType;
+    signer?: Pick<SignerType, "privateKey" | "type"> | SignerType;
     encryption?: SubplebbitEncryption;
     signature?: SignatureType;
 }

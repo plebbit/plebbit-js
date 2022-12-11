@@ -140,7 +140,7 @@ var Subplebbit = /** @class */ (function (_super) {
         this.metricsCid = mergedProps.metricsCid;
         this.createdAt = mergedProps.createdAt;
         this.updatedAt = mergedProps.updatedAt;
-        this.signer = mergedProps.signer ? new signer_1.Signer(mergedProps.signer) : undefined;
+        this.signer = mergedProps.signer;
         this.encryption = mergedProps.encryption;
         this.posts = new pages_1.Pages({
             pages: (_a = mergedProps === null || mergedProps === void 0 ? void 0 : mergedProps.posts) === null || _a === void 0 ? void 0 : _a.pages,

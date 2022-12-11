@@ -206,27 +206,35 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.createComment = function (options) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log, commentSignature, finalProps, title;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var log, finalOptions, _b, _c;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createComment");
                         if (!options.signer)
                             return [2 /*return*/, typeof options.title === "string" ? new post_1.default(options, this) : new comment_1.Comment(options, this)];
-                        if (!options.timestamp) {
-                            options.timestamp = (0, util_2.timestamp)();
-                            log.trace("User hasn't provided a timestamp in createCommentOptions, defaulting to (".concat(options.timestamp, ")"));
+                        finalOptions = options;
+                        if (!finalOptions.timestamp) {
+                            finalOptions.timestamp = (0, util_2.timestamp)();
+                            log.trace("User hasn't provided a timestamp in createCommentOptions, defaulting to (".concat(finalOptions.timestamp, ")"));
                         }
-                        if (!((_a = options === null || options === void 0 ? void 0 : options.author) === null || _a === void 0 ? void 0 : _a.address)) {
-                            options.author = __assign(__assign({}, options.author), { address: options.signer.address });
-                            log("CreateCommentOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
-                        }
-                        return [4 /*yield*/, (0, signatures_1.signComment)(options, options.signer, this)];
+                        if (!!finalOptions.signer.address) return [3 /*break*/, 2];
+                        _b = finalOptions.signer;
+                        return [4 /*yield*/, (0, util_3.getPlebbitAddressFromPrivateKeyPem)(finalOptions.signer.privateKey)];
                     case 1:
-                        commentSignature = _b.sent();
-                        finalProps = __assign(__assign({}, options), { signature: commentSignature, protocolVersion: version_1.default.PROTOCOL_VERSION });
-                        title = finalProps.title;
-                        return [2 /*return*/, typeof title === "string" ? new post_1.default(__assign(__assign({}, finalProps), { title: title }), this) : new comment_1.Comment(finalProps, this)];
+                        _b.address = _d.sent();
+                        _d.label = 2;
+                    case 2:
+                        if (!((_a = finalOptions === null || finalOptions === void 0 ? void 0 : finalOptions.author) === null || _a === void 0 ? void 0 : _a.address)) {
+                            finalOptions.author = __assign(__assign({}, finalOptions.author), { address: finalOptions.signer.address });
+                            log("CreateCommentOptions did not provide author.address, will define it to signer.address (".concat(finalOptions.signer.address, ")"));
+                        }
+                        _c = finalOptions;
+                        return [4 /*yield*/, (0, signatures_1.signComment)(options, finalOptions.signer, this)];
+                    case 3:
+                        _c.signature = _d.sent();
+                        finalOptions.protocolVersion = version_1.default.PROTOCOL_VERSION;
+                        return [2 /*return*/, typeof finalOptions.title === "string" ? new post_1.default(finalOptions, this) : new comment_1.Comment(finalOptions, this)];
                 }
             });
         });
@@ -243,15 +251,15 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.createSubplebbit = function (options) {
         if (options === void 0) { options = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, canRunSub, newSub, remoteSub, subHasBeenCreatedBefore, _a, localSubs, derivedAddress, _b;
+            var log, canRunSub, newSub, remoteSub, subHasBeenCreatedBefore, _a, signer;
             var _this = this;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
                         canRunSub = this._canRunSub();
                         newSub = function () { return __awaiter(_this, void 0, void 0, function () {
-                            var subplebbit, key, subHasBeenCreatedBefore;
+                            var subplebbit, subHasBeenCreatedBefore;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
@@ -260,19 +268,18 @@ var Plebbit = /** @class */ (function (_super) {
                                         if (canRunSub && !this.dataPath)
                                             (0, util_2.throwWithErrorCode)("ERR_DATA_PATH_IS_NOT_DEFINED", "createSubplebbit: canRunSub=".concat(canRunSub, ", plebbitOptions.dataPath=").concat(this.dataPath));
                                         subplebbit = new subplebbit_1.Subplebbit(options, this);
-                                        key = subplebbit.address || subplebbit.signer.address;
                                         return [4 /*yield*/, this.listSubplebbits()];
                                     case 1:
-                                        subHasBeenCreatedBefore = (_a.sent()).includes(key);
-                                        if (!subHasBeenCreatedBefore && exports.pendingSubplebbitCreations[key])
+                                        subHasBeenCreatedBefore = (_a.sent()).includes(subplebbit.address);
+                                        if (!subHasBeenCreatedBefore && exports.pendingSubplebbitCreations[subplebbit.address])
                                             throw Error("Can't recreate a pending subplebbit that is waiting to be created");
                                         if (!subHasBeenCreatedBefore)
-                                            exports.pendingSubplebbitCreations[key] = true;
+                                            exports.pendingSubplebbitCreations[subplebbit.address] = true;
                                         return [4 /*yield*/, subplebbit.prePublish()];
                                     case 2:
                                         _a.sent();
                                         if (!subHasBeenCreatedBefore)
-                                            exports.pendingSubplebbitCreations[key] = false;
+                                            exports.pendingSubplebbitCreations[subplebbit.address] = false;
                                         log("Created subplebbit (".concat(subplebbit.address, ") with props:"), (0, util_2.removeKeysWithUndefinedValues)(lodash_1.default.omit(subplebbit.toJSON(), ["signer"])));
                                         return [2 /*return*/, subplebbit];
                                 }
@@ -288,13 +295,13 @@ var Plebbit = /** @class */ (function (_super) {
                         return [2 /*return*/, remoteSub()];
                     case 1: return [4 /*yield*/, this.listSubplebbits()];
                     case 2:
-                        subHasBeenCreatedBefore = (_c.sent()).includes(options.address);
+                        subHasBeenCreatedBefore = (_b.sent()).includes(options.address);
                         if (subHasBeenCreatedBefore)
                             return [2 /*return*/, newSub()];
                         else
                             return [2 /*return*/, remoteSub()];
-                        _c.label = 3;
-                    case 3: return [3 /*break*/, 13];
+                        _b.label = 3;
+                    case 3: return [3 /*break*/, 11];
                     case 4:
                         if (!(!options.address && !options.signer)) return [3 /*break*/, 8];
                         if (!!canRunSub) return [3 /*break*/, 5];
@@ -303,38 +310,28 @@ var Plebbit = /** @class */ (function (_super) {
                         _a = options;
                         return [4 /*yield*/, this.createSigner()];
                     case 6:
-                        _a.signer = _c.sent();
+                        _a.signer = _b.sent();
                         options.address = options.signer.address;
-                        log("Did not provide CreateSubplebbitOptions.signer, generated random signer with address (".concat(options.signer.address, ")"));
+                        log("Did not provide CreateSubplebbitOptions.signer, generated random signer with address (".concat(options.address, ")"));
                         return [2 /*return*/, newSub()];
-                    case 7: return [3 /*break*/, 13];
+                    case 7: return [3 /*break*/, 11];
                     case 8:
-                        if (!(!options.address && options.signer)) return [3 /*break*/, 12];
+                        if (!(!options.address && options.signer)) return [3 /*break*/, 10];
                         if (!canRunSub)
                             throw Error("missing nativeFunctions required to create a subplebbit");
-                        return [4 /*yield*/, this.listSubplebbits()];
+                        return [4 /*yield*/, this.createSigner(options.signer)];
                     case 9:
-                        localSubs = _c.sent();
-                        _b = options.signer.address;
-                        if (_b) return [3 /*break*/, 11];
-                        return [4 /*yield*/, (0, util_3.getPlebbitAddressFromPrivateKeyPem)(options.signer.privateKey)];
-                    case 10:
-                        _b = (_c.sent());
-                        _c.label = 11;
-                    case 11:
-                        derivedAddress = _b;
-                        if (localSubs.includes(derivedAddress))
-                            options.address = derivedAddress;
-                        if (!options.address)
-                            options.address = options.signer.address;
+                        signer = _b.sent();
+                        options.address = signer.address;
+                        options.signer = signer;
                         return [2 /*return*/, newSub()];
-                    case 12:
+                    case 10:
                         if (!canRunSub)
                             return [2 /*return*/, remoteSub()];
                         else
                             return [2 /*return*/, newSub()];
-                        _c.label = 13;
-                    case 13: return [2 /*return*/];
+                        _b.label = 11;
+                    case 11: return [2 /*return*/];
                 }
             });
         });
@@ -342,26 +339,35 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.createVote = function (options) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log, voteSignature, voteProps;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var log, finalOptions, _b, _c;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createVote");
                         if (!options.signer)
                             return [2 /*return*/, new vote_1.default(options, this)];
-                        if (!options.timestamp) {
-                            options.timestamp = (0, util_2.timestamp)();
-                            log.trace("User hasn't provided a timestamp in createVote, defaulting to (".concat(options.timestamp, ")"));
+                        finalOptions = options;
+                        if (!finalOptions.timestamp) {
+                            finalOptions.timestamp = (0, util_2.timestamp)();
+                            log.trace("User hasn't provided a timestamp in createVote, defaulting to (".concat(finalOptions.timestamp, ")"));
                         }
-                        if (!((_a = options === null || options === void 0 ? void 0 : options.author) === null || _a === void 0 ? void 0 : _a.address)) {
-                            options.author = __assign(__assign({}, options.author), { address: options.signer.address });
-                            log.trace("CreateVoteOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
-                        }
-                        return [4 /*yield*/, (0, signatures_1.signVote)(options, options.signer, this)];
+                        if (!!finalOptions.signer.address) return [3 /*break*/, 2];
+                        _b = finalOptions.signer;
+                        return [4 /*yield*/, (0, util_3.getPlebbitAddressFromPrivateKeyPem)(finalOptions.signer.privateKey)];
                     case 1:
-                        voteSignature = _b.sent();
-                        voteProps = __assign(__assign({}, options), { signature: voteSignature, protocolVersion: version_1.default.PROTOCOL_VERSION });
-                        return [2 /*return*/, new vote_1.default(voteProps, this)];
+                        _b.address = _d.sent();
+                        _d.label = 2;
+                    case 2:
+                        if (!((_a = finalOptions === null || finalOptions === void 0 ? void 0 : finalOptions.author) === null || _a === void 0 ? void 0 : _a.address)) {
+                            finalOptions.author = __assign(__assign({}, finalOptions.author), { address: finalOptions.signer.address });
+                            log.trace("CreateVoteOptions did not provide author.address, will define it to signer.address (".concat(finalOptions.signer.address, ")"));
+                        }
+                        _c = finalOptions;
+                        return [4 /*yield*/, (0, signatures_1.signVote)(finalOptions, finalOptions.signer, this)];
+                    case 3:
+                        _c.signature = _d.sent();
+                        finalOptions.protocolVersion = version_1.default.PROTOCOL_VERSION;
+                        return [2 /*return*/, new vote_1.default(finalOptions, this)];
                 }
             });
         });
@@ -369,30 +375,35 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.createCommentEdit = function (options) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log, commentEditProps, _b;
-            var _c;
+            var log, finalOptions, _b, _c;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createCommentEdit");
                         if (!options.signer)
                             return [2 /*return*/, new comment_edit_1.CommentEdit(options, this)]; // User just wants to instantiate a CommentEdit object, not publish
-                        if (!options.timestamp) {
-                            options.timestamp = (0, util_2.timestamp)();
-                            log.trace("User hasn't provided editTimestamp in createCommentEdit, defaulted to (".concat(options.timestamp, ")"));
+                        finalOptions = options;
+                        if (!finalOptions.timestamp) {
+                            finalOptions.timestamp = (0, util_2.timestamp)();
+                            log.trace("User hasn't provided editTimestamp in createCommentEdit, defaulted to (".concat(finalOptions.timestamp, ")"));
                         }
-                        if (!((_a = options === null || options === void 0 ? void 0 : options.author) === null || _a === void 0 ? void 0 : _a.address)) {
-                            if (typeof options.signer.address !== "string")
-                                throw Error("createCommentEditOptions.signer.address is not defined");
-                            options.author = __assign(__assign({}, options.author), { address: options.signer.address });
-                            log.trace("CreateCommentEditOptions did not provide author.address, will define it to signer.address (".concat(options.signer.address, ")"));
-                        }
-                        _b = [__assign({}, options)];
-                        _c = {};
-                        return [4 /*yield*/, (0, signatures_1.signCommentEdit)(options, options.signer, this)];
+                        if (!!finalOptions.signer.address) return [3 /*break*/, 2];
+                        _b = finalOptions.signer;
+                        return [4 /*yield*/, (0, util_3.getPlebbitAddressFromPrivateKeyPem)(finalOptions.signer.privateKey)];
                     case 1:
-                        commentEditProps = __assign.apply(void 0, _b.concat([(_c.signature = _d.sent(), _c.protocolVersion = version_1.default.PROTOCOL_VERSION, _c)]));
-                        return [2 /*return*/, new comment_edit_1.CommentEdit(commentEditProps, this)];
+                        _b.address = _d.sent();
+                        _d.label = 2;
+                    case 2:
+                        if (!((_a = finalOptions === null || finalOptions === void 0 ? void 0 : finalOptions.author) === null || _a === void 0 ? void 0 : _a.address)) {
+                            options.author = __assign(__assign({}, options.author), { address: finalOptions.signer.address });
+                            log.trace("CreateCommentEditOptions did not provide author.address, will define it to signer.address (".concat(finalOptions.signer.address, ")"));
+                        }
+                        _c = finalOptions;
+                        return [4 /*yield*/, (0, signatures_1.signCommentEdit)(finalOptions, finalOptions.signer, this)];
+                    case 3:
+                        _c.signature = _d.sent();
+                        finalOptions.protocolVersion = version_1.default.PROTOCOL_VERSION;
+                        return [2 /*return*/, new comment_edit_1.CommentEdit(finalOptions, this)];
                 }
             });
         });
