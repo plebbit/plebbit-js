@@ -189,8 +189,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (obsoleteCache && !subCache) {
             // We're migrating from DB version 2 to 3
             const signerAddress = await getPlebbitAddressFromPublicKeyPem(obsoleteCache.encryption.publicKey);
-            const signer: SignerType = await this.dbHandler.querySigner(signerAddress); // Need to include signer explicitly since in db version 2 we didn't include signer in cache
-            obsoleteCache.signer = signer;
+            const signer = await this.dbHandler.querySigner(signerAddress); // Need to include signer explicitly since in db version 2 we didn't include signer in cache
+            obsoleteCache.signer = new Signer({ ...signer, address: await getPlebbitAddressFromPrivateKeyPem(signer.privateKey) });
             // We changed the name of internal subplebbit cache, need to explicitly copy old cache to new key here
             await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], obsoleteCache);
         }
@@ -238,10 +238,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         };
     }
 
-    private async _importSignerIntoIpfsIfNeeded(signer: SignerType) {
-        if (!signer.ipnsKeyName) throw Error(`signer.ipnsKeyName need to be defined before importing singer into IPFS`);
-        const keyExistsInNode = (await this.plebbit.ipfsClient.key.list()).some((key) => key.name === signer.ipnsKeyName);
-        if (!keyExistsInNode) await nativeFunctions.importSignerIntoIpfsNode(signer.ipnsKeyName, signer.ipfsKey, this.plebbit);
+    private async _importSignerIntoIpfsIfNeeded(ipnsKeyName: string, ipfsKey: Uint8Array) {
+        if (!ipnsKeyName) throw Error(`signer.ipnsKeyName need to be defined before importing singer into IPFS`);
+        const keyExistsInNode = (await this.plebbit.ipfsClient.key.list()).some((key) => key.name === ipnsKeyName);
+        if (!keyExistsInNode) await nativeFunctions.importSignerIntoIpfsNode(ipnsKeyName, ipfsKey, this.plebbit);
     }
 
     // TODO rename and make this private
@@ -259,7 +259,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (!this.signer) throw Error(`subplebbit.signer needs to be defined before proceeding`);
         // import ipfs key into ipfs node
         await this._initSignerProps();
-        await this._importSignerIntoIpfsIfNeeded(this.signer);
+        await this._importSignerIntoIpfsIfNeeded(this.signer.ipnsKeyName, this.signer.ipfsKey);
 
         if (!lodash.isEqual(this.toJSONInternal(), await this.dbHandler?.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT])))
             await this.dbHandler?.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternal());
@@ -877,8 +877,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         dbComment._initCommentUpdate(options);
         const signerRaw = await this.dbHandler.querySigner(dbComment.ipnsKeyName);
         if (!signerRaw) throw Error(`Comment ${dbComment.cid} IPNS signer is not stored in DB`);
-        const commentIpnsSigner = new Signer({ ...signerRaw, ipfsKey: await getIpfsKeyFromPrivateKeyPem(signerRaw.privateKey) });
-        await this._importSignerIntoIpfsIfNeeded(commentIpnsSigner);
+        await this._importSignerIntoIpfsIfNeeded(signerRaw.ipnsKeyName, await getIpfsKeyFromPrivateKeyPem(signerRaw.privateKey));
         const file = await this.plebbit.ipfsClient.add(encode({ ...dbComment.toJSONCommentUpdate(), signature: options.signature }));
         await this.plebbit.ipfsClient.name.publish(file.path, {
             lifetime: "72h",

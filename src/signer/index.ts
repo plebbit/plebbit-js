@@ -1,10 +1,5 @@
 import { CreateSignerOptions, SignerType } from "../types";
-import {
-    generatePrivateKeyPem,
-    getPublicKeyPemFromPrivateKeyPem,
-    getPlebbitAddressFromPrivateKeyPem,
-    getIpfsKeyFromPrivateKeyPem
-} from "./util";
+import { generatePrivateKeyPem, getPublicKeyPemFromPrivateKeyPem, getPlebbitAddressFromPrivateKeyPem } from "./util";
 export { Signature, verifyComment, verifySubplebbit, verifyVote } from "./signatures";
 export { encrypt, decrypt } from "./encryption";
 
@@ -12,7 +7,7 @@ export class Signer implements SignerType {
     type: "rsa";
     privateKey: string;
     publicKey?: string;
-    address?: string;
+    address: string;
     ipfsKey?: Uint8Array;
     ipnsKeyName?: string;
 
