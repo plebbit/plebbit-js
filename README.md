@@ -129,7 +129,7 @@ Signer {
   privateKey?: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
   type: 'rsa' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm https://eips.ethereum.org/EIPS/eip-191
   publicKey?: string // PEM format, optional, not needed for signing
-  address?: string // public key hash, optional, not needed for signing
+  address: string // public key hash, not needed for signing
   ipfsKey?: IpfsKey // a Key object used for importing into IpfsHttpClient https://docs.ipfs.io/reference/cli/#ipfs-key-import
 }
 Subplebbit /* (IPNS record Subplebbit.address) */ {

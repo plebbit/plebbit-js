@@ -877,7 +877,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         dbComment._initCommentUpdate(options);
         const signerRaw = await this.dbHandler.querySigner(dbComment.ipnsKeyName);
         if (!signerRaw) throw Error(`Comment ${dbComment.cid} IPNS signer is not stored in DB`);
-        await this._importSignerIntoIpfsIfNeeded(signerRaw.ipnsKeyName, await getIpfsKeyFromPrivateKeyPem(signerRaw.privateKey));
+        await this._importSignerIntoIpfsIfNeeded(
+            signerRaw.ipnsKeyName,
+            new Uint8Array(await getIpfsKeyFromPrivateKeyPem(signerRaw.privateKey))
+        );
         const file = await this.plebbit.ipfsClient.add(encode({ ...dbComment.toJSONCommentUpdate(), signature: options.signature }));
         await this.plebbit.ipfsClient.name.publish(file.path, {
             lifetime: "72h",
