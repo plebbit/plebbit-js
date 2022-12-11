@@ -5,7 +5,7 @@ export declare class Signer implements SignerType {
     type: "rsa";
     privateKey: string;
     publicKey?: string;
-    address?: string;
+    address: string;
     ipfsKey?: Uint8Array;
     ipnsKeyName?: string;
     constructor(props: SignerType);

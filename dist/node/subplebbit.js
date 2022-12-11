@@ -195,9 +195,10 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.initDbIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var obsoleteCache, subCache, signerAddress, signer;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var obsoleteCache, subCache, signerAddress, signer, _a, _b, _c;
+            var _d;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
                     case 0:
                         if (!this.dbHandler) {
                             this.dbHandler = util_3.nativeFunctions.createDbHandler({
@@ -209,30 +210,36 @@ var Subplebbit = /** @class */ (function (_super) {
                         }
                         return [4 /*yield*/, this.dbHandler.initDbIfNeeded()];
                     case 1:
-                        _a.sent();
+                        _e.sent();
                         if (!this.sortHandler)
                             this.sortHandler = new sort_handler_1.SortHandler({ address: this.address, plebbit: this.plebbit, dbHandler: this.dbHandler });
                         return [4 /*yield*/, this.dbHandler.keyvGet(this.address)];
                     case 2:
-                        obsoleteCache = _a.sent();
+                        obsoleteCache = _e.sent();
                         return [4 /*yield*/, this.dbHandler.keyvGet(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.INTERNAL_SUBPLEBBIT])];
                     case 3:
-                        subCache = _a.sent();
-                        if (!(obsoleteCache && !subCache)) return [3 /*break*/, 7];
+                        subCache = _e.sent();
+                        if (!(obsoleteCache && !subCache)) return [3 /*break*/, 8];
                         return [4 /*yield*/, (0, util_2.getPlebbitAddressFromPublicKeyPem)(obsoleteCache.encryption.publicKey)];
                     case 4:
-                        signerAddress = _a.sent();
+                        signerAddress = _e.sent();
                         return [4 /*yield*/, this.dbHandler.querySigner(signerAddress)];
                     case 5:
-                        signer = _a.sent();
-                        obsoleteCache.signer = signer;
+                        signer = _e.sent();
+                        _a = obsoleteCache;
+                        _b = signer_1.Signer.bind;
+                        _c = [__assign({}, signer)];
+                        _d = {};
+                        return [4 /*yield*/, (0, util_2.getPlebbitAddressFromPrivateKeyPem)(signer.privateKey)];
+                    case 6:
+                        _a.signer = new (_b.apply(signer_1.Signer, [void 0, __assign.apply(void 0, _c.concat([(_d.address = _e.sent(), _d)]))]))();
                         // We changed the name of internal subplebbit cache, need to explicitly copy old cache to new key here
                         return [4 /*yield*/, this.dbHandler.keyvSet(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.INTERNAL_SUBPLEBBIT], obsoleteCache)];
-                    case 6:
+                    case 7:
                         // We changed the name of internal subplebbit cache, need to explicitly copy old cache to new key here
-                        _a.sent();
-                        _a.label = 7;
-                    case 7: return [2 /*return*/];
+                        _e.sent();
+                        _e.label = 8;
+                    case 8: return [2 /*return*/];
                 }
             });
         });
@@ -269,19 +276,19 @@ var Subplebbit = /** @class */ (function (_super) {
             flairs: this.flairs
         };
     };
-    Subplebbit.prototype._importSignerIntoIpfsIfNeeded = function (signer) {
+    Subplebbit.prototype._importSignerIntoIpfsIfNeeded = function (ipnsKeyName, ipfsKey) {
         return __awaiter(this, void 0, void 0, function () {
             var keyExistsInNode;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!signer.ipnsKeyName)
+                        if (!ipnsKeyName)
                             throw Error("signer.ipnsKeyName need to be defined before importing singer into IPFS");
                         return [4 /*yield*/, this.plebbit.ipfsClient.key.list()];
                     case 1:
-                        keyExistsInNode = (_a.sent()).some(function (key) { return key.name === signer.ipnsKeyName; });
+                        keyExistsInNode = (_a.sent()).some(function (key) { return key.name === ipnsKeyName; });
                         if (!!keyExistsInNode) return [3 /*break*/, 3];
-                        return [4 /*yield*/, util_3.nativeFunctions.importSignerIntoIpfsNode(signer.ipnsKeyName, signer.ipfsKey, this.plebbit)];
+                        return [4 /*yield*/, util_3.nativeFunctions.importSignerIntoIpfsNode(ipnsKeyName, ipfsKey, this.plebbit)];
                     case 2:
                         _a.sent();
                         _a.label = 3;
@@ -321,7 +328,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 3:
                         // import ipfs key into ipfs node
                         _g.sent();
-                        return [4 /*yield*/, this._importSignerIntoIpfsIfNeeded(this.signer)];
+                        return [4 /*yield*/, this._importSignerIntoIpfsIfNeeded(this.signer.ipnsKeyName, this.signer.ipfsKey)];
                     case 4:
                         _g.sent();
                         _e = (_d = lodash_1.default).isEqual;
@@ -1167,8 +1174,7 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype._publishCommentIpns = function (dbComment, options) {
         return __awaiter(this, void 0, void 0, function () {
-            var signerRaw, commentIpnsSigner, _a, _b, file;
-            var _c;
+            var signerRaw, _a, _b, _c, file;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
@@ -1178,13 +1184,11 @@ var Subplebbit = /** @class */ (function (_super) {
                         signerRaw = _d.sent();
                         if (!signerRaw)
                             throw Error("Comment ".concat(dbComment.cid, " IPNS signer is not stored in DB"));
-                        _a = signer_1.Signer.bind;
-                        _b = [__assign({}, signerRaw)];
-                        _c = {};
+                        _a = this._importSignerIntoIpfsIfNeeded;
+                        _b = [signerRaw.ipnsKeyName];
+                        _c = Uint8Array.bind;
                         return [4 /*yield*/, (0, util_2.getIpfsKeyFromPrivateKeyPem)(signerRaw.privateKey)];
-                    case 2:
-                        commentIpnsSigner = new (_a.apply(signer_1.Signer, [void 0, __assign.apply(void 0, _b.concat([(_c.ipfsKey = _d.sent(), _c)]))]))();
-                        return [4 /*yield*/, this._importSignerIntoIpfsIfNeeded(commentIpnsSigner)];
+                    case 2: return [4 /*yield*/, _a.apply(this, _b.concat([new (_c.apply(Uint8Array, [void 0, _d.sent()]))()]))];
                     case 3:
                         _d.sent();
                         return [4 /*yield*/, this.plebbit.ipfsClient.add((0, util_1.encode)(__assign(__assign({}, dbComment.toJSONCommentUpdate()), { signature: options.signature })))];

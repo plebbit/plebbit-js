@@ -35,7 +35,7 @@ export interface SignerType {
     type: "rsa";
     privateKey: string;
     publicKey?: string;
-    address?: string;
+    address: string;
     ipfsKey?: Uint8Array;
     ipnsKeyName?: string;
 }
