@@ -144,7 +144,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.metricsCid = mergedProps.metricsCid;
         this.createdAt = mergedProps.createdAt;
         this.updatedAt = mergedProps.updatedAt;
-        this.signer = mergedProps.signer ? new Signer(mergedProps.signer) : undefined;
+        this.signer = mergedProps.signer;
         this.encryption = mergedProps.encryption;
         this.posts = new Pages({
             pages: mergedProps?.posts?.pages,

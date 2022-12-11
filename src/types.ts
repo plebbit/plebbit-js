@@ -50,7 +50,7 @@ export type SubplebbitEncryption = {
     publicKey: string; // PEM format https://en.wikipedia.org/wiki/PKCS_8
 };
 export interface CreateCommentOptions extends CreatePublicationOptions {
-    signer: SignerType;
+    signer: SignerType | Pick<SignerType, "privateKey" | "type">;
     parentCid?: string; // The parent comment CID, undefined if comment is a post, same as postCid if comment is top level
     content?: string; // Content of the comment, link posts have no content
     title?: string; // If comment is a post, it needs a title
@@ -62,7 +62,7 @@ export interface CreateCommentOptions extends CreatePublicationOptions {
 export interface CreateVoteOptions extends CreatePublicationOptions {
     commentCid: string;
     vote: 1 | 0 | -1;
-    signer: SignerType;
+    signer: SignerType | Pick<SignerType, "privateKey" | "type">;
 }
 
 export interface VoteType extends Omit<CreateVoteOptions, "signer">, PublicationType {
@@ -137,7 +137,7 @@ export interface AuthorCommentEdit extends AuthorCommentEditOptions, Publication
 export interface ModeratorCommentEdit extends ModeratorCommentEditOptions, PublicationType {}
 export type CommentAuthorEditOptions = Pick<AuthorType, "banExpiresAt" | "flair">;
 export interface CreateCommentEditOptions extends AuthorCommentEdit, ModeratorCommentEdit {
-    signer: SignerType;
+    signer: SignerType | Pick<SignerType, "privateKey" | "type">;
 }
 
 //*********************
@@ -266,10 +266,11 @@ export type Flair = {
 
 export type FlairOwner = "post" | "author";
 
-export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"> {
+export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database" | "signer"> {
     signature: SignatureType;
     encryption: SubplebbitEncryption;
     address: string;
+    signer?: SignerType;
     createdAt: number;
     updatedAt: number;
     pubsubTopic: string;
@@ -280,7 +281,7 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
 export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     createdAt?: number;
     updatedAt?: number;
-    signer?: SignerType;
+    signer?: Pick<SignerType, "privateKey" | "type"> | SignerType;
     encryption?: SubplebbitEncryption;
     signature?: SignatureType; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
 }
