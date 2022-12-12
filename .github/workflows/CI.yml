@@ -46,8 +46,8 @@ jobs:
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
       - run: npm run test:${{ matrix.testServer }} & npm run test:server:wait-on
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+      - name: Link chrome executable
+        run: ln -s /usr/bin/{google-chrome-stable, chrome}
       - run: npm run test:${{ matrix.testClient }}
 
   test-plebbit-react-hooks:
