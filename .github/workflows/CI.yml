@@ -25,12 +25,17 @@ on:
 jobs:
   test-plebbit-js:
     runs-on: ubuntu-latest
-
+    name: Test ${{ matrix.testClient }} client against ${{ matrix.testServer }} server
+    strategy:
+      matrix:
+        testServer: ["server:node"]
+        testClient: ["node:parallel", "browser:firefox", "browser:chrome"]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: 16
+          cache: 'npm'
 
       - run: npm ci
       - run: npm run build
@@ -40,9 +45,8 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
-      - run: npm run test:server & npm run test:server:wait-on
-      - run: npm run test:node:parallel
-      - run: CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) npm run test:browser
+      - run: npm run test:${{ matrix.testServer }} & npm run test:server:wait-on
+      - run: npm run test:${{ matrix.testClient }}
 
   test-plebbit-react-hooks:
     uses: ./.github/workflows/CI-plebbit-react-hooks.yml

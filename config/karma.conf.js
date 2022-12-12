@@ -12,13 +12,9 @@ const CustomChrome = {
 };
 
 // choose which browser you prefer
-let browsers = ["FirefoxHeadless", "CustomChrome"];
-
-// add firefox during CI
-// make sure non-headless DebugChrome is not included as it breaks the CI
-if (process.env.CI) {
-    browsers = ["CustomChrome", "FirefoxHeadless"];
-}
+const [browsers, browserPlugins] = [[], []];
+if (process.env["CHROME_BIN"]) browsers.push("CustomChrome") && browserPlugins.push(require("karma-chrome-launcher"));
+if (process.env["FIREFOX_BIN"]) browsers.push("FirefoxHeadless") && browserPlugins.push(require("karma-firefox-launcher"));
 
 // inject browser code before each test file
 let codeToInjectBefore = "";
@@ -40,8 +36,7 @@ module.exports = function (config) {
             mocha: mochaConfig
         },
         plugins: [
-            require("karma-chrome-launcher"),
-            require("karma-firefox-launcher"),
+            ...browserPlugins,
             require("karma-mocha"),
             require("karma-chai"),
             require("karma-sinon"),
