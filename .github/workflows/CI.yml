@@ -47,7 +47,7 @@ jobs:
 
       - run: npm run test:${{ matrix.testServer }} & npm run test:server:wait-on
       - name: Link chrome executable
-        run: ln -s /usr/bin/{google-chrome-stable, chrome}
+        run: sudo ln -s /usr/bin/google-chrome-stable /usr/bin/chrome
       - run: npm run test:${{ matrix.testClient }}
 
   test-plebbit-react-hooks:
