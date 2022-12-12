@@ -25,7 +25,7 @@ on:
 jobs:
   test-plebbit-js:
     runs-on: ubuntu-latest
-    name: Test ${{ matrix.testClient }} client against ${{ matrix.testServer }} server
+    name: Test ${{ matrix.testClient }} client against ${{ matrix.testServer }}
     strategy:
       matrix:
         testServer: ["server:node"]
