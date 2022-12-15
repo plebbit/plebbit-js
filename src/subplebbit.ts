@@ -63,6 +63,7 @@ import {
     verifyChallengeRequest,
     verifyComment,
     verifyCommentEdit,
+    verifyPage,
     verifySubplebbit,
     verifyVote
 } from "./signer/signatures";
@@ -246,10 +247,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     // TODO rename and make this private
     async prePublish() {
-        // Import ipfs key into node (if not imported already)
-        // Initialize signer
-        // Initialize address (needs signer)
-        // Initialize db (needs address)
         await this.initDbIfNeeded();
 
         const cachedSubplebbit: SubplebbitType | undefined = await this.dbHandler?.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
@@ -371,13 +368,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.dbHandler.querySubplebbitMetrics(undefined),
             this.sortHandler.generatePagesUnderComment(undefined, undefined)
         ]);
-        const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
-        let currentIpns: SubplebbitType | undefined;
-        try {
-            currentIpns = await loadIpnsAsJson(resolvedAddress, this.plebbit);
-        } catch (e) {
-            log(`${e}\n subplebbit IPNS (${resolvedAddress}) is not defined, will publish a new record`);
-        }
+
         if (subplebbitPosts) {
             if (!subplebbitPosts?.pages?.hot) throw Error("Generated pages for subplebbit.posts is missing pages");
             this.posts = new Pages({
@@ -387,6 +378,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 pageCids: subplebbitPosts.pageCids,
                 subplebbit: this
             });
+            const pageVerification = await verifyPage(this.posts.pages.hot, this.plebbit, this.address);
+            if (!pageVerification.valid) throw Error(`subplebbit.posts.hot is invalid due to (${pageVerification.reason})`);
+        }
+
+        const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
+        let currentIpns: SubplebbitType | undefined;
+        try {
+            currentIpns = await loadIpnsAsJson(resolvedAddress, this.plebbit);
+        } catch (e) {
+            log(`${e}\n subplebbit IPNS (${resolvedAddress}) is not defined, will publish a new record`);
         }
 
         this.metricsCid = (await this.plebbit.ipfsClient.add(encode(metrics))).path;
