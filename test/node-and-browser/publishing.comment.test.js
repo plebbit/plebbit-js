@@ -2,6 +2,7 @@ const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
 const { randomElement } = require("../../dist/node/util");
 const { generateMockPost, generateMockComment } = require("../../dist/node/test/test-util");
+const lodash = require("lodash");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
@@ -86,6 +87,60 @@ describe("publishing", async () => {
                 resolve();
             });
         }));
+
+    it(`Can publish a comment with author.avatar. Can also validate it after publishing`, async () => {
+        const post = await plebbit.createComment({
+            title: "Post with author.avatar " + Date.now(),
+            author: {
+                avatar: {
+                    address: "0x890a2e81836e0E76e0F49995e6b51ca6ce6F39ED",
+                    chainTicker: "matic",
+                    id: "8",
+                    signature: {
+                        signature:
+                            "0x52d29d32fcb1c5b3cd3638ccd67573985c4b01816a5e77fdfb0122488a0fdeb854ca6dae4fbdb0594db88e36ba83e87a321321fcfde498f84310a6b5cd543f3f1c",
+                        signedPropertyNames: ["domainSeparator", "authorAddress", "tokenAddress", "tokenId"],
+                        type: "eip191"
+                    }
+                }
+            },
+            signer: signers[8],
+            subplebbitAddress
+        });
+
+        await post.publish();
+
+        await new Promise((resolve) =>
+            post.once("challengeverification", (challengeVerificationMessage, updatedComment) => {
+                expect(challengeVerificationMessage.challengeSuccess).to.be.true;
+                expect(challengeVerificationMessage.reason).to.be.a("string");
+                expect(challengeVerificationMessage.publication).to.be.a("object");
+                expect(challengeVerificationMessage.encryptedPublication).to.be.a("object");
+                expect(challengeVerificationMessage.publication.author.avatar).to.deep.equal(post.author.avatar);
+                expect(challengeVerificationMessage.publication.title).to.equal(post.title);
+                resolve();
+            })
+        );
+
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+        subplebbit._updateIntervalMs = updateInterval;
+
+        await new Promise((resolve) => {
+            subplebbit.update();
+            subplebbit.on("update", (updatedSubplebbit) => {
+                const hotPageComments = updatedSubplebbit.posts.pages.hot.comments;
+                const avatarCommentInPage = hotPageComments.filter((comment) => comment.title === post.title)[0];
+
+                if (avatarCommentInPage) {
+                    expect(JSON.stringify(lodash.omit(avatarCommentInPage.author, "subplebbit"))).to.equal(
+                        JSON.stringify(post.author.toJSON())
+                    );
+                    expect(avatarCommentInPage.title).to.equal(post.title);
+                    subplebbit.stop() && resolve();
+                }
+            });
+        });
+    });
 
     it(`Publish a post with spoiler`, async () =>
         new Promise(async (resolve) => {
