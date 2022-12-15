@@ -15,7 +15,7 @@ describe("Test util functions", async () => {
     before(async () => {
         plebbit = await mockPlebbit();
         gatewayPlebbit = await Plebbit({
-            ipfsGatewayUrl: "http://127.0.0.1:8080"
+            ipfsGatewayUrl: "http://127.0.0.1:18080"
         });
     });
 

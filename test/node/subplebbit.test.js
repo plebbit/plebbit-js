@@ -53,8 +53,8 @@ describe("subplebbit", async () => {
 
     it(`createSubplebbit on IPFS node doesn't take more than 10s`, async () => {
         const onlinePlebbit = await Plebbit({
-            ipfsHttpClientOptions: "http://localhost:5003/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5003/api/v0`,
+            ipfsHttpClientOptions: "http://localhost:15003/api/v0",
+            pubsubHttpClientOptions: `http://localhost:15003/api/v0`,
             dataPath: globalThis["window"]?.plebbitDataPath
         });
         onlinePlebbit.resolver = plebbit.resolver;
@@ -180,8 +180,8 @@ describe("subplebbit", async () => {
         let sameSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
         await assert.isRejected(sameSubplebbit.start(), messages.ERR_SUB_ALREADY_STARTED);
         const anotherPlebbit = await Plebbit({
-            ipfsHttpClientOptions: "http://localhost:5004/api/v0",
-            pubsubHttpClientOptions: `http://localhost:5002/api/v0`,
+            ipfsHttpClientOptions: "http://localhost:15004/api/v0",
+            pubsubHttpClientOptions: `http://localhost:15002/api/v0`,
             dataPath: globalThis["window"]?.plebbitDataPath
         });
         anotherPlebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {

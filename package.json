@@ -13,7 +13,6 @@
         "test": "run-s test:node test:browser",
         "test:node": "mocha --config config/.mocharc.js test/{node,node-and-browser}/**/*.test.js",
         "test:node:parallel": "mocha --parallel --config config/.mocharc.js test/{node,node-and-browser}/**/*.test.js",
-        "test:node:no-internet": "NO_INTERNET=1 firejail --noprofile --net=none --join=test_server npx mocha --config config/.mocharc.js test/{node,node-and-browser}/**/*.test.js",
         "test:browser:chrome": "CHROME_BIN=$(which chrome) FIREFOX_BIN='' karma start config/karma.conf.js",
         "test:browser:firefox": "FIREFOX_BIN=$(which firefox) CHROME_BIN='' karma start config/karma.conf.js",
         "test:electron": "karma start config/karma-electron.conf.js",

@@ -1,5 +1,4 @@
 import { TIMEFRAMES_TO_SECONDS, timestamp } from "../util";
-import { Signer } from "../signer";
 import { Comment } from "../comment";
 import Post from "../post";
 import { Plebbit } from "../plebbit";
@@ -129,8 +128,8 @@ export async function getAllCommentsUnderSubplebbit(subplebbit: Subplebbit): Pro
 
 async function _mockPlebbit(signers: SignerType[], dataPath: string) {
     const plebbit = await PlebbitIndex({
-        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-        pubsubHttpClientOptions: `http://localhost:5002/api/v0`,
+        ipfsHttpClientOptions: "http://localhost:15001/api/v0",
+        pubsubHttpClientOptions: `http://localhost:15002/api/v0`,
         dataPath
     });
     //@ts-ignore
@@ -318,8 +317,8 @@ export async function startSubplebbits(props: {
 
 export async function mockPlebbit(dataPath?: string) {
     const plebbit = await PlebbitIndex({
-        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-        pubsubHttpClientOptions: `http://localhost:5002/api/v0`,
+        ipfsHttpClientOptions: "http://localhost:15001/api/v0",
+        pubsubHttpClientOptions: `http://localhost:15002/api/v0`,
         dataPath
     });
 

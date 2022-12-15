@@ -14,6 +14,7 @@ const ipfsPath = getIpfsPath();
 const path = require("path");
 const fs = require("fs");
 
+// const memoryDatabaseConfig = undefined;
 const memoryDatabaseConfig = {
     client: "sqlite3",
     connection: {
@@ -26,30 +27,30 @@ const memoryDatabaseConfig = {
 // very insecure do not do this in production
 const offlineNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-offline"),
-    apiPort: 5001,
-    gatewayPort: 8080,
+    apiPort: 15001,
+    gatewayPort: 18080,
     daemonArgs: "--offline"
 };
 const ipfsNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-pubsub"),
-    apiPort: 5002,
-    gatewayPort: 8081,
+    apiPort: 15002,
+    gatewayPort: 18081,
     daemonArgs: "--enable-pubsub-experiment",
     extraCommands: ["bootstrap rm --all"]
 };
 
 const onlineNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-online"),
-    apiPort: 5003,
-    gatewayPort: 8082,
+    apiPort: 15003,
+    gatewayPort: 18082,
     daemonArgs: "--enable-pubsub-experiment",
     extraCommands: []
 };
 
 const anotherOfflineNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-offline2"),
-    apiPort: 5004,
-    gatewayPort: 8083,
+    apiPort: 15004,
+    gatewayPort: 18083,
     daemonArgs: "--offline"
 };
 
@@ -130,7 +131,7 @@ const startIpfsNodes = async () => {
     if (process.env["NO_SUBPLEBBITS"] !== "1")
         await startSubplebbits({
             signers: signers,
-            syncInterval: 100,
+            syncInterval: 300,
             database: memoryDatabaseConfig,
             votesPerCommentToPublish: 10,
             numOfCommentsToPublish: 10
