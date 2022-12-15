@@ -243,8 +243,8 @@ function _mockPlebbit(signers, dataPath) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, (0, index_1.default)({
-                        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-                        pubsubHttpClientOptions: "http://localhost:5002/api/v0",
+                        ipfsHttpClientOptions: "http://localhost:15001/api/v0",
+                        pubsubHttpClientOptions: "http://localhost:15002/api/v0",
                         dataPath: dataPath
                     })];
                 case 1:
@@ -585,8 +585,8 @@ function mockPlebbit(dataPath) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, (0, index_1.default)({
-                        ipfsHttpClientOptions: "http://localhost:5001/api/v0",
-                        pubsubHttpClientOptions: "http://localhost:5002/api/v0",
+                        ipfsHttpClientOptions: "http://localhost:15001/api/v0",
+                        pubsubHttpClientOptions: "http://localhost:15002/api/v0",
                         dataPath: dataPath
                     })];
                 case 1:

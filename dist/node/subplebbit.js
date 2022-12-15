@@ -304,17 +304,8 @@ var Subplebbit = /** @class */ (function (_super) {
             var cachedSubplebbit, _d, _e, _f;
             return __generator(this, function (_g) {
                 switch (_g.label) {
-                    case 0: 
-                    // Import ipfs key into node (if not imported already)
-                    // Initialize signer
-                    // Initialize address (needs signer)
-                    // Initialize db (needs address)
-                    return [4 /*yield*/, this.initDbIfNeeded()];
+                    case 0: return [4 /*yield*/, this.initDbIfNeeded()];
                     case 1:
-                        // Import ipfs key into node (if not imported already)
-                        // Initialize signer
-                        // Initialize address (needs signer)
-                        // Initialize db (needs address)
                         _g.sent();
                         return [4 /*yield*/, ((_a = this.dbHandler) === null || _a === void 0 ? void 0 : _a.keyvGet(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.INTERNAL_SUBPLEBBIT]))];
                     case 2:
@@ -493,7 +484,7 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.updateSubplebbitIpns = function () {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log, trx, latestPost, _b, metrics, subplebbitPosts, resolvedAddress, currentIpns, e_3, _c, lastPublishOverTwentyMinutes, _d, file;
+            var log, trx, latestPost, _b, metrics, subplebbitPosts, pageVerification, resolvedAddress, currentIpns, e_3, _c, lastPublishOverTwentyMinutes, _d, file;
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
@@ -514,57 +505,62 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 4:
                         _b = _e.sent(), metrics = _b[0], subplebbitPosts = _b[1];
-                        return [4 /*yield*/, this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address)];
+                        if (!subplebbitPosts) return [3 /*break*/, 6];
+                        if (!((_a = subplebbitPosts === null || subplebbitPosts === void 0 ? void 0 : subplebbitPosts.pages) === null || _a === void 0 ? void 0 : _a.hot))
+                            throw Error("Generated pages for subplebbit.posts is missing pages");
+                        this.posts = new pages_1.Pages({
+                            pages: {
+                                hot: subplebbitPosts.pages.hot
+                            },
+                            pageCids: subplebbitPosts.pageCids,
+                            subplebbit: this
+                        });
+                        return [4 /*yield*/, (0, signatures_1.verifyPage)(this.posts.pages.hot, this.plebbit, this.address)];
                     case 5:
-                        resolvedAddress = _e.sent();
+                        pageVerification = _e.sent();
+                        if (!pageVerification.valid)
+                            throw Error("subplebbit.posts.hot is invalid due to (".concat(pageVerification.reason, ")"));
                         _e.label = 6;
-                    case 6:
-                        _e.trys.push([6, 8, , 9]);
-                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(resolvedAddress, this.plebbit)];
+                    case 6: return [4 /*yield*/, this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address)];
                     case 7:
-                        currentIpns = _e.sent();
-                        return [3 /*break*/, 9];
+                        resolvedAddress = _e.sent();
+                        _e.label = 8;
                     case 8:
+                        _e.trys.push([8, 10, , 11]);
+                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(resolvedAddress, this.plebbit)];
+                    case 9:
+                        currentIpns = _e.sent();
+                        return [3 /*break*/, 11];
+                    case 10:
                         e_3 = _e.sent();
                         log("".concat(e_3, "\n subplebbit IPNS (").concat(resolvedAddress, ") is not defined, will publish a new record"));
-                        return [3 /*break*/, 9];
-                    case 9:
-                        if (subplebbitPosts) {
-                            if (!((_a = subplebbitPosts === null || subplebbitPosts === void 0 ? void 0 : subplebbitPosts.pages) === null || _a === void 0 ? void 0 : _a.hot))
-                                throw Error("Generated pages for subplebbit.posts is missing pages");
-                            this.posts = new pages_1.Pages({
-                                pages: {
-                                    hot: subplebbitPosts.pages.hot
-                                },
-                                pageCids: subplebbitPosts.pageCids,
-                                subplebbit: this
-                            });
-                        }
+                        return [3 /*break*/, 11];
+                    case 11:
                         _c = this;
                         return [4 /*yield*/, this.plebbit.ipfsClient.add((0, util_1.encode)(metrics))];
-                    case 10:
+                    case 12:
                         _c.metricsCid = (_e.sent()).path;
                         lastPublishOverTwentyMinutes = this.updatedAt < (0, util_1.timestamp)() - 60 * 20;
-                        if (!(!currentIpns || (0, util_1.encode)(currentIpns) !== (0, util_1.encode)(this.toJSON()) || lastPublishOverTwentyMinutes)) return [3 /*break*/, 14];
+                        if (!(!currentIpns || (0, util_1.encode)(currentIpns) !== (0, util_1.encode)(this.toJSON()) || lastPublishOverTwentyMinutes)) return [3 /*break*/, 16];
                         this.updatedAt = (0, util_1.timestamp)();
                         _d = this;
                         return [4 /*yield*/, (0, signatures_1.signSubplebbit)(this.toJSON(), this.signer)];
-                    case 11:
+                    case 13:
                         _d.signature = _e.sent();
                         return [4 /*yield*/, this.plebbit.ipfsClient.add((0, util_1.encode)(this.toJSON()))];
-                    case 12:
+                    case 14:
                         file = _e.sent();
                         return [4 /*yield*/, this.plebbit.ipfsClient.name.publish(file.path, {
                                 lifetime: "72h",
                                 key: this.signer.ipnsKeyName,
                                 allowOffline: true
                             })];
-                    case 13:
+                    case 15:
                         _e.sent();
                         this.emit("update", this);
                         log.trace("Published a new IPNS record for sub(".concat(this.address, ")"));
-                        _e.label = 14;
-                    case 14: return [2 /*return*/];
+                        _e.label = 16;
+                    case 16: return [2 /*return*/];
                 }
             });
         });
