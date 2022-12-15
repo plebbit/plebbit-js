@@ -146,6 +146,12 @@ describe("verify Comment", async () => {
         expect(verification).to.deep.equal({ valid: true });
     });
 
+    it(`A comment with avatar fixture is validated correctly`, async () => {
+        const comment = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_avatar_fixture.json")));
+        const verification = await verifyComment(comment, plebbit, true);
+        expect(verification).to.deep.equal({ valid: true });
+    });
+
     it(`A comment with authorEdit signed by other than original author is invalidated`, async () => {
         const comment = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_with_author_edit.json")));
         comment.authorEdit.author.address = signers[7].address;
