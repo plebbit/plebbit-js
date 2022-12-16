@@ -322,8 +322,9 @@ export async function verifyComment(
 
     // This is the original comment that was published by the author. No CommentUpdate fields should be included here
     // The signature created by the user via createComment should be valid, since `authorComment` is an object that separates author comment from CommentUpdate
-    const authorComment = removeKeysWithUndefinedValues({
-        ...comment,
+    //@ts-ignore
+    const authorComment: CommentType = removeKeysWithUndefinedValues({
+        ...lodash.pick(comment, [...comment.signature.signedPropertyNames, "signature"]),
         content: comment.authorEdit?.content ? comment?.original?.content : comment.content,
         author: { ...lodash.omit(comment.author, ["banExpiresAt", "flair", "subplebbit"]), flair: comment.original?.author?.flair },
         flair: comment.original?.flair
