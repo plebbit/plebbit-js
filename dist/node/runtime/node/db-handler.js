@@ -815,7 +815,7 @@ var DbHandler = /** @class */ (function () {
         for (var field in newObj) {
             if (typeof newObj[field] === "string")
                 try {
-                    newObj[field] = JSON.parse(newObj[field]);
+                    newObj[field] = typeof JSON.parse(newObj[field]) === "object" ? JSON.parse(newObj[field]) : newObj[field];
                 }
                 catch (_c) { }
             if (((_b = (_a = newObj[field]) === null || _a === void 0 ? void 0 : _a.constructor) === null || _b === void 0 ? void 0 : _b.name) === "Object")
