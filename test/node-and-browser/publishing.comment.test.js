@@ -104,6 +104,7 @@ describe("publishing", async () => {
                     }
                 }
             },
+            content: "Test content" + Date.now(),
             signer: signers[8],
             subplebbitAddress
         });
