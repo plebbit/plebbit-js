@@ -69,6 +69,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -445,7 +454,7 @@ function verifyComment(comment, plebbit, overrideAuthorAddressIfInvalid) {
                         comment.authorEdit.author.address = authorEditValidation.newAddress;
                     _f.label = 2;
                 case 2:
-                    authorComment = (0, util_2.removeKeysWithUndefinedValues)(__assign(__assign({}, comment), { content: ((_a = comment.authorEdit) === null || _a === void 0 ? void 0 : _a.content) ? (_b = comment === null || comment === void 0 ? void 0 : comment.original) === null || _b === void 0 ? void 0 : _b.content : comment.content, author: __assign(__assign({}, lodash_1.default.omit(comment.author, ["banExpiresAt", "flair", "subplebbit"])), { flair: (_d = (_c = comment.original) === null || _c === void 0 ? void 0 : _c.author) === null || _d === void 0 ? void 0 : _d.flair }), flair: (_e = comment.original) === null || _e === void 0 ? void 0 : _e.flair }));
+                    authorComment = (0, util_2.removeKeysWithUndefinedValues)(__assign(__assign({}, lodash_1.default.pick(comment, __spreadArray(__spreadArray([], comment.signature.signedPropertyNames, true), ["signature"], false))), { content: ((_a = comment.authorEdit) === null || _a === void 0 ? void 0 : _a.content) ? (_b = comment === null || comment === void 0 ? void 0 : comment.original) === null || _b === void 0 ? void 0 : _b.content : comment.content, author: __assign(__assign({}, lodash_1.default.omit(comment.author, ["banExpiresAt", "flair", "subplebbit"])), { flair: (_d = (_c = comment.original) === null || _c === void 0 ? void 0 : _c.author) === null || _d === void 0 ? void 0 : _d.flair }), flair: (_e = comment.original) === null || _e === void 0 ? void 0 : _e.flair }));
                     return [4 /*yield*/, _verifyPublicationWithAuthor(authorComment, plebbit, overrideAuthorAddressIfInvalid)];
                 case 3:
                     authorCommentValidation = _f.sent();
