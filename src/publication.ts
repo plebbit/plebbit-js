@@ -48,8 +48,7 @@ class Publication extends EventEmitter implements PublicationType {
         this.timestamp = props.timestamp;
         this.signer = this.signer || props["signer"];
         this.signature = new Signature(props.signature);
-        assert(props.author?.address, "publication.author.address need to be defined");
-        this.author = new Author(props.author);
+        if (props.author) this.author = new Author(props.author);
         this.protocolVersion = props.protocolVersion;
     }
     // TODO make this private/protected
