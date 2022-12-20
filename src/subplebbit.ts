@@ -162,7 +162,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     private async _initSignerProps() {
-        if (!this.signer.ipfsKey) this.signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKeyPem(this.signer.privateKey));
+        if (!this.signer?.ipfsKey?.byteLength || this.signer?.ipfsKey?.byteLength <= 0)
+            this.signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKeyPem(this.signer.privateKey));
         if (!this.signer.ipnsKeyName) this.signer.ipnsKeyName = this.signer.address;
         if (!this.signer.publicKey) this.signer.publicKey = await getPublicKeyPemFromPrivateKeyPem(this.signer.privateKey);
         if (!this.signer.address) this.signer.address = await getPlebbitAddressFromPrivateKeyPem(this.signer.privateKey);
