@@ -86,13 +86,12 @@ var Publication = /** @class */ (function (_super) {
         return _this;
     }
     Publication.prototype._initProps = function (props) {
-        var _a;
         this.subplebbitAddress = props.subplebbitAddress;
         this.timestamp = props.timestamp;
         this.signer = this.signer || props["signer"];
         this.signature = new signer_1.Signature(props.signature);
-        (0, assert_1.default)((_a = props.author) === null || _a === void 0 ? void 0 : _a.address, "publication.author.address need to be defined");
-        this.author = new author_1.default(props.author);
+        if (props.author)
+            this.author = new author_1.default(props.author);
         this.protocolVersion = props.protocolVersion;
     };
     // TODO make this private/protected
