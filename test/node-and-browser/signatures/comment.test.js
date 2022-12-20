@@ -25,6 +25,20 @@ const fixtureSignature = {
     signedPropertyNames: ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"]
 };
 
+const signCommentJsonAlongWithObject = async (commentJson, plebbit) => {
+    const commentJsonSignature = await signComment(commentJson, commentJson.signer, plebbit);
+    const commentObjSignature = await signComment(await plebbit.createComment(commentJson), commentJson.signer, plebbit);
+    expect(commentJsonSignature).to.deep.equal(commentObjSignature);
+    return commentJsonSignature;
+};
+
+const verifyCommentJsonAlongWithObject = async (commentJson, plebbit, overrideAuthorAddressIfInvalid) => {
+    const commentObjRes = await verifyComment(await plebbit.createComment(commentJson), plebbit, overrideAuthorAddressIfInvalid);
+    const commentJsonRes = await verifyComment(commentJson, plebbit, overrideAuthorAddressIfInvalid);
+    expect(commentJsonRes).to.deep.equal(commentObjRes);
+    return commentObjRes;
+};
+
 describe("sign comment", async () => {
     let plebbit, signedCommentClone;
     before(async () => {
@@ -38,12 +52,13 @@ describe("sign comment", async () => {
             author: { address: signer.address },
             timestamp: timestamp(),
             title: "Test post signature",
-            content: "some content..."
+            content: "some content...",
+            signer
         };
-        const signature = await signComment(comment, signer, plebbit);
+        const signature = await signCommentJsonAlongWithObject(comment, plebbit);
         expect(signature.publicKey).to.equal(signer.publicKey);
         const signedComment = { signature: signature.toJSON(), ...comment };
-        const verificaiton = await verifyComment(signedComment, plebbit);
+        const verificaiton = await verifyCommentJsonAlongWithObject(signedComment, plebbit);
         expect(verificaiton).to.deep.equal({ valid: true });
         signedCommentClone = JSON.parse(JSON.stringify(signedComment));
     });
@@ -55,20 +70,18 @@ describe("sign comment", async () => {
             author: { address: signer.address },
             timestamp: timestamp(),
             title: "Test post signature",
-            content: "some content..."
+            content: "some content...",
+            signer
         };
-        const signature = await signComment(comment, signer, plebbit, "comment");
+        const signature = await signCommentJsonAlongWithObject(comment, plebbit);
         const signedComment = { signature: signature.toJSON(), ...comment };
         expect(signedComment.signature.publicKey).to.be.equal(signers[1].publicKey, "Generated public key should be same as provided");
-        const verificaiton = await verifyComment(signedComment, plebbit);
+        const verificaiton = await verifyCommentJsonAlongWithObject(signedComment, plebbit);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
 
     it("signComment author signature is correct", async () => {
-        const authorSigner = signers[1];
-
-        const authorSignature = await signComment(fixtureComment, authorSigner, plebbit);
-
+        const authorSignature = await signCommentJsonAlongWithObject({ ...fixtureComment, signer: signers[1] }, plebbit);
         expect(authorSignature).to.exist;
         expect(authorSignature.signature).to.equal(fixtureSignature.signature);
         expect(authorSignature.publicKey).to.equal(fixtureSignature.publicKey);
@@ -98,14 +111,14 @@ describe("sign comment", async () => {
     it("can sign a comment with author.displayName = undefined", async () => {
         const signer = signers[4];
 
-        const comment = await plebbit.createComment({
+        const comment = {
             title: "comment title",
             content: "comment content",
             subplebbitAddress: signer.address,
             signer,
             author: { address: signer.address }
-        });
-        const res = await verifyComment(comment, plebbit);
+        };
+        const res = await verifyCommentJsonAlongWithObject(comment, plebbit);
         expect(res).to.deep.equal({ valid: true });
     });
 });
@@ -118,7 +131,7 @@ describe("verify Comment", async () => {
     it(`Reject a comment with author.subplebbit provided by actual author(check if ipfs file)`);
     it(`Valid signature fixture is validated correctly`, async () => {
         const fixtureWithSignature = { ...fixtureComment, signature: fixtureSignature };
-        const verification = await verifyComment(fixtureWithSignature, plebbit);
+        const verification = await verifyCommentJsonAlongWithObject(fixtureWithSignature, plebbit);
         expect(verification).to.deep.equal({ valid: true });
     });
 
@@ -127,7 +140,7 @@ describe("verify Comment", async () => {
         invalidSignature.signedPropertyNames = invalidSignature.signedPropertyNames.slice(1); // Invalidate signature
 
         const wronglySignedPublication = { ...fixtureComment, signature: invalidSignature };
-        const verification = await verifyComment(wronglySignedPublication, plebbit);
+        const verification = await verifyCommentJsonAlongWithObject(wronglySignedPublication, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
@@ -136,19 +149,19 @@ describe("verify Comment", async () => {
         //prettier-ignore
         const comment = {"subplebbitAddress":"QmRcyUK7jUhFyPTEvwWyfGZEAaSoDugNJ8PZSC4PWRjUqd","timestamp":1661902265,"signature":{"signature":"js6v39xc7y8yiFlj7DuBVIXiEgdNQcEdD3EXElOjX4ZkQP/b9TbqPulpfQ+EeGLq8UFnhfd2lJXDYvDx25ku8fyKR4fIFTMY9WDId3bHuDiWgbtgfA6+RRTL4eV9Ld2FVNLdsR2DCSxlcAvCc+M2rzzGDEQCZ85GbkCNBZ9jOypOEO1dW626jc41Q/6ddmI8nSV5iFDfw1jyvNE8JElWs5v7S58YcYO3CN0PlHEZgZ9dnfBkO9FihaFp25QDZgZJrXxCmPwQFRiNMe9Wlz7IeEEzop3TZ+PyExpbEG50rcyltkYUJ3LVxJfEQD/ZZ/Im3gTESLadz3aRWfjgfZ/L3A","publicKey":"-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxJS1ZMx9uqCFdiauIH5e\nJho2CtarYP3zAFzqvbPm1pBLm738I4DotkzvVIbgFHRu7a2wgq0+bUjwg4yX3z7N\nFjetiBaT+hEIMFYKyobsv65ebInsqMYIPNVbn380xLzb5zMyPEL6pBuvGdmQZlRD\ngXDuHiCh66IPLizd8KGWJMSQXOcAhLt+NRcdHSSCLkibcQOHs52dKc0qYvGHd25h\nKPs+dE4d/A86aLRSD5w/yGwiJA8Jn+nLFbOLiEf775L6tOO35OF6PHiXo21BTl0o\nS4Eh9DIlPT7fNhEg+HhQFoQ7VHQLq76OVYpXBCnhIRUaPko5EgjNfrqwG6R1lPZF\nkwIDAQAB\n-----END PUBLIC KEY-----","type":"rsa","signedPropertyNames":["subplebbitAddress","author","timestamp","content","title","link","parentCid"]},"author":{"address":"QmXGrdUi1PbSaApyDHbSoPdx2HkGsBAvTGFDTKoFrpuFxq"},"protocolVersion":"1.0.0","content":"Check the title\n","title":"I'll stick to reddit. Thank you very much.","ipnsName":"k2k4r8nz40czmblfjgzo79tmex2wuo4y8zwi51843fac1rrx823g7lk8","depth":0};
 
-        const verification = await verifyComment(comment, plebbit);
+        const verification = await verifyCommentJsonAlongWithObject(comment, plebbit);
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`A comment with authorEdit fixture is validated correctly`, async () => {
         const comment = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_with_author_edit.json")));
-        const verification = await verifyComment(comment, plebbit);
+        const verification = await verifyCommentJsonAlongWithObject(comment, plebbit);
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`A comment with avatar fixture is validated correctly`, async () => {
         const comment = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_avatar_fixture.json")));
-        const verification = await verifyComment(comment, plebbit, true);
+        const verification = await verifyCommentJsonAlongWithObject(comment, plebbit, true);
         expect(verification).to.deep.equal({ valid: true });
     });
 
@@ -157,20 +170,20 @@ describe("verify Comment", async () => {
         comment.authorEdit.author.address = signers[7].address;
         comment.authorEdit.signature = await signCommentEdit(comment.authorEdit, signers[7], plebbit);
 
-        const verification = await verifyComment(comment, plebbit);
+        const verification = await verifyCommentJsonAlongWithObject(comment, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR });
     });
 
     it(`verifyComment invalidates a comment with author.address not a domain or IPNS`, async () => {
         const comment = JSON.parse(JSON.stringify({ ...fixtureComment, signature: fixtureSignature }));
         comment.author.address = "gibbresish"; // Not a domain or IPNS
-        const verification = await verifyComment(comment, plebbit);
+        const verification = await verifyCommentJsonAlongWithObject(comment, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS });
     });
     it("verifyComment invalidates a comment with author.address = undefined", async () => {
         const comment = JSON.parse(JSON.stringify({ ...fixtureComment, signature: fixtureSignature }));
         comment.author.address = undefined; // Not a domain or IPNS
-        const verification = await verifyComment(comment, plebbit);
+        const verification = await verifyCommentJsonAlongWithObject(comment, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS });
     });
 
@@ -189,16 +202,16 @@ describe(`Comment with author.address as domain`, async () => {
         const tempPlebbit = await Plebbit(plebbit);
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "testDomain.eth" ? fixtureComment.author.address : authorAddress;
-        const commentWithInvalidDomain = JSON.parse(JSON.stringify(fixtureComment));
+        const commentWithInvalidDomain = { ...JSON.parse(JSON.stringify(fixtureComment)), signer: signers[1] };
         commentWithInvalidDomain.author.address = "testDomain.eth";
         const signedPublication = {
             ...commentWithInvalidDomain,
-            signature: await signComment(commentWithInvalidDomain, signers[1], tempPlebbit)
+            signature: await signCommentJsonAlongWithObject(commentWithInvalidDomain, tempPlebbit)
         };
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "testDomain.eth" ? signers[6].address : authorAddress; // testDomain.eth no longer points to the same author
 
-        const verificaiton = await verifyComment(signedPublication, tempPlebbit, true);
+        const verificaiton = await verifyCommentJsonAlongWithObject(signedPublication, tempPlebbit, true);
         expect(verificaiton).to.deep.equal({ valid: true });
         expect(signedPublication.author.address).to.equal(fixtureComment.author.address); // It has been corrected to the original signer even though resolver is resolving to signers[6]
     });
@@ -208,7 +221,7 @@ describe(`Comment with author.address as domain`, async () => {
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress; // This would invalidate the fixture author address. Should be corrected
 
-        const verification = await verifyComment(comment, tempPlebbit, true);
+        const verification = await verifyCommentJsonAlongWithObject(comment, tempPlebbit, true);
         expect(verification).to.deep.equal({ valid: true });
 
         expect(comment.author.address).to.equal(signers[6].address);
@@ -220,7 +233,7 @@ describe(`Comment with author.address as domain`, async () => {
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress; // This would invalidate the fixture author address. Should be corrected
 
-        const verification = await verifyComment(comment, tempPlebbit, false);
+        const verification = await verifyCommentJsonAlongWithObject(comment, tempPlebbit, false);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE });
     });
 });
