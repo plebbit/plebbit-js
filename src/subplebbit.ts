@@ -392,9 +392,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         this.metricsCid = (await this.plebbit.ipfsClient.add(encode(metrics))).path;
 
-        const lastPublishOverTwentyMinutes = this.updatedAt < timestamp() - 60 * 20;
+        const lastPublishTooOld = this.updatedAt < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
 
-        if (!currentIpns || encode(currentIpns) !== encode(this.toJSON()) || lastPublishOverTwentyMinutes) {
+        if (!currentIpns || encode(currentIpns) !== encode(this.toJSON()) || lastPublishTooOld) {
             this.updatedAt = timestamp();
             this.signature = await signSubplebbit(this.toJSON(), this.signer);
             const file = await this.plebbit.ipfsClient.add(encode(this.toJSON()));
