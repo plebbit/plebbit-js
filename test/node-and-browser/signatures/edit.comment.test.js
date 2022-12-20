@@ -8,6 +8,17 @@ const { messages } = require("../../../dist/node/errors");
 const { verifyCommentEdit, signCommentEdit } = require("../../../dist/node/signer/signatures");
 const { mockPlebbit } = require("../../../dist/node/test/test-util");
 
+const verifyCommentEditJsonAlongWithObject = async (commentEditJson, plebbit, overrideAuthorAddressIfInvalid) => {
+    const commentEditObjRes = await verifyCommentEdit(
+        await plebbit.createCommentEdit(commentEditJson),
+        plebbit,
+        overrideAuthorAddressIfInvalid
+    );
+    const commentEditJsonRes = await verifyCommentEdit(commentEditJson, plebbit, overrideAuthorAddressIfInvalid);
+    expect(commentEditJsonRes).to.deep.equal(commentEditObjRes);
+    return commentEditObjRes;
+};
+
 describe("Sign commentedit", async () => {
     let plebbit, subplebbit, edit;
     before(async () => {
@@ -15,7 +26,7 @@ describe("Sign commentedit", async () => {
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
     });
 
-    it(`Can sign and validate commentEdit correctly`, async () => {
+    it(`plebbit.createCommentEdit creates a valid CommentEdit`, async () => {
         edit = await plebbit.createCommentEdit({
             subplebbitAddress: subplebbit.address,
             commentCid: subplebbit.lastPostCid,
@@ -24,7 +35,7 @@ describe("Sign commentedit", async () => {
             signer: signers[7]
         });
 
-        const verification = await verifyCommentEdit(edit, plebbit);
+        const verification = await verifyCommentEditJsonAlongWithObject(edit, plebbit);
         expect(verification).to.deep.equal({ valid: true });
     });
 
@@ -49,27 +60,27 @@ describe("Verify CommentEdit", async () => {
     });
     it(`Valid CommentEdit signature fixture is validated correctly`, async () => {
         const edit = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_edit.json")));
-        const verification = await verifyCommentEdit(edit, plebbit);
+        const verification = await verifyCommentEditJsonAlongWithObject(edit, plebbit);
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`Invalid CommentEdit signature gets invalidated correctly`, async () => {
         const edit = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_edit.json")));
         edit.reason += "1234"; // Should invalidate comment edit
-        const verification = await verifyCommentEdit(edit, plebbit);
+        const verification = await verifyCommentEditJsonAlongWithObject(edit, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
     it(`verifyCommentEdit invalidates a commentEdit with author.address not a domain or IPNS`, async () => {
         const edit = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_edit.json")));
         edit.author.address = "gibbresish"; // Not a domain or IPNS
-        const verification = await verifyCommentEdit(edit, plebbit);
+        const verification = await verifyCommentEditJsonAlongWithObject(edit, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS });
     });
     it("verifyCommentEdit invalidates a commentEdit with author.address = undefined", async () => {
         const edit = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_edit.json")));
         edit.author.address = undefined; // Not a domain or IPNS
-        const verification = await verifyCommentEdit(edit, plebbit);
+        const verification = await verifyCommentEditJsonAlongWithObject(edit, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS });
     });
 });
