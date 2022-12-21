@@ -155,34 +155,35 @@ var Subplebbit = /** @class */ (function (_super) {
         this.signature = mergedProps.signature;
     };
     Subplebbit.prototype._initSignerProps = function () {
+        var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function () {
-            var _a, _b, _c, _d;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
+            var _e, _f, _g, _h;
+            return __generator(this, function (_j) {
+                switch (_j.label) {
                     case 0:
-                        if (!!this.signer.ipfsKey) return [3 /*break*/, 2];
-                        _a = this.signer;
-                        _b = Uint8Array.bind;
+                        if (!(!((_b = (_a = this.signer) === null || _a === void 0 ? void 0 : _a.ipfsKey) === null || _b === void 0 ? void 0 : _b.byteLength) || ((_d = (_c = this.signer) === null || _c === void 0 ? void 0 : _c.ipfsKey) === null || _d === void 0 ? void 0 : _d.byteLength) <= 0)) return [3 /*break*/, 2];
+                        _e = this.signer;
+                        _f = Uint8Array.bind;
                         return [4 /*yield*/, (0, util_2.getIpfsKeyFromPrivateKeyPem)(this.signer.privateKey)];
                     case 1:
-                        _a.ipfsKey = new (_b.apply(Uint8Array, [void 0, _e.sent()]))();
-                        _e.label = 2;
+                        _e.ipfsKey = new (_f.apply(Uint8Array, [void 0, _j.sent()]))();
+                        _j.label = 2;
                     case 2:
                         if (!this.signer.ipnsKeyName)
                             this.signer.ipnsKeyName = this.signer.address;
                         if (!!this.signer.publicKey) return [3 /*break*/, 4];
-                        _c = this.signer;
+                        _g = this.signer;
                         return [4 /*yield*/, (0, util_2.getPublicKeyPemFromPrivateKeyPem)(this.signer.privateKey)];
                     case 3:
-                        _c.publicKey = _e.sent();
-                        _e.label = 4;
+                        _g.publicKey = _j.sent();
+                        _j.label = 4;
                     case 4:
                         if (!!this.signer.address) return [3 /*break*/, 6];
-                        _d = this.signer;
+                        _h = this.signer;
                         return [4 /*yield*/, (0, util_2.getPlebbitAddressFromPrivateKeyPem)(this.signer.privateKey)];
                     case 5:
-                        _d.address = _e.sent();
-                        _e.label = 6;
+                        _h.address = _j.sent();
+                        _j.label = 6;
                     case 6:
                         this.encryption = {
                             type: "aes-cbc",
@@ -484,7 +485,7 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.updateSubplebbitIpns = function () {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log, trx, latestPost, _b, metrics, subplebbitPosts, pageVerification, resolvedAddress, currentIpns, e_3, _c, lastPublishOverTwentyMinutes, _d, file;
+            var log, trx, latestPost, _b, metrics, subplebbitPosts, pageVerification, resolvedAddress, currentIpns, e_3, _c, lastPublishTooOld, _d, file;
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
@@ -540,8 +541,8 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.plebbit.ipfsClient.add((0, util_1.encode)(metrics))];
                     case 12:
                         _c.metricsCid = (_e.sent()).path;
-                        lastPublishOverTwentyMinutes = this.updatedAt < (0, util_1.timestamp)() - 60 * 20;
-                        if (!(!currentIpns || (0, util_1.encode)(currentIpns) !== (0, util_1.encode)(this.toJSON()) || lastPublishOverTwentyMinutes)) return [3 /*break*/, 16];
+                        lastPublishTooOld = this.updatedAt < (0, util_1.timestamp)() - 60 * 15;
+                        if (!(!currentIpns || (0, util_1.encode)(currentIpns) !== (0, util_1.encode)(this.toJSON()) || lastPublishTooOld)) return [3 /*break*/, 16];
                         this.updatedAt = (0, util_1.timestamp)();
                         _d = this;
                         return [4 /*yield*/, (0, signatures_1.signSubplebbit)(this.toJSON(), this.signer)];

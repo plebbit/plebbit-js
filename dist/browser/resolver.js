@@ -83,10 +83,8 @@ var Resolver = /** @class */ (function () {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:resolver:_resolveEnsTxtRecord");
                         cachedResponse = this.plebbit._memCache.get(ensName + txtRecordName);
-                        if (cachedResponse && typeof cachedResponse === "string") {
-                            log("ENS (".concat(ensName, ") text record (").concat(txtRecordName, ") is already cached: ").concat(cachedResponse));
+                        if (cachedResponse && typeof cachedResponse === "string")
                             return [2 /*return*/, cachedResponse];
-                        }
                         blockchainProvider = this._getBlockchainProvider("eth");
                         return [4 /*yield*/, blockchainProvider.getResolver(ensName)];
                     case 1:
@@ -98,7 +96,7 @@ var Resolver = /** @class */ (function () {
                         txtRecordResult = _a.sent();
                         if (!txtRecordResult)
                             (0, util_1.throwWithErrorCode)("ERR_ENS_TXT_RECORD_NOT_FOUND", "ensName: ".concat(ensName, ", txtRecordName: ").concat(txtRecordName, ", blockchainProvider: ").concat(blockchainProvider));
-                        log("Resolved text record name (".concat(txtRecordName, ") of ENS (").concat(ensName, ") to ").concat(txtRecordResult));
+                        log.trace("Resolved text record name (".concat(txtRecordName, ") of ENS (").concat(ensName, ") to ").concat(txtRecordResult));
                         this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // Expire memory ENS cache after an hour
                         return [2 /*return*/, txtRecordResult];
                 }
