@@ -196,6 +196,22 @@ describe("plebbit (node and browser)", async () => {
             const createdSubplebbit = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(loadedSubplebbit)));
             expect(loadedSubplebbit.toJSON()).to.deep.equal(createdSubplebbit.toJSON());
         });
+
+        it(`Sub JSON props does not change by creating a Subplebbit object via plebbit.createSubplebbit`, async () => {
+            const subJson = JSON.parse(JSON.stringify(require("../fixtures/valid_subplebbit.json")));
+            const subObj = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(require("../fixtures/valid_subplebbit.json"))));
+            expect(subJson.lastPostCid).to.equal(subObj.lastPostCid);
+            expect(subJson.pubsubTopic).to.equal(subObj.pubsubTopic);
+            expect(subJson.address).to.equal(subObj.address);
+            expect(subJson.metricsCid).to.equal(subObj.metricsCid);
+            expect(subJson.createdAt).to.equal(subObj.createdAt);
+            expect(subJson.updatedAt).to.equal(subObj.updatedAt);
+            expect(subJson.encryption).to.deep.equal(subObj.encryption);
+            expect(subJson.roles).to.deep.equal(subObj.roles);
+            expect(subJson.signature).to.deep.equal(subObj.signature);
+
+            expect(subJson.posts).to.deep.equal(subObj.posts.toJSON());
+        });
     });
 
     describe("plebbit.fetchCid", async () => {
