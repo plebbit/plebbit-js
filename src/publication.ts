@@ -41,6 +41,7 @@ class Publication extends EventEmitter implements PublicationType {
         super();
         this.plebbit = plebbit;
         this._initProps(props);
+        this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
     }
 
     _initProps(props: PublicationType) {
@@ -120,7 +121,7 @@ class Publication extends EventEmitter implements PublicationType {
                 );
 
             this.emit("challengeverification", { ...msgParsed, publication: decryptedPublication }, this);
-            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this));
+            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange);
         }
     }
 
@@ -203,7 +204,7 @@ class Publication extends EventEmitter implements PublicationType {
 
         await Promise.all([
             this.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, uint8ArrayFromString(JSON.stringify(this.challenge))),
-            this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this))
+            this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange)
         ]);
         log(`Sent a challenge request (${this.challenge.challengeRequestId})`);
         this.emit("challengerequest", this.challenge);
