@@ -1,6 +1,6 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { generateMockPost } = require("../../dist/node/test/test-util");
+const { generateMockPost, waitTillNewCommentIsPublished } = require("../../dist/node/test/test-util");
 const { timestamp, encode } = require("../../dist/node/util");
 const { messages } = require("../../dist/node/errors");
 const chai = require("chai");
@@ -30,26 +30,41 @@ describe("subplebbit", async () => {
     });
     after(async () => {
         // Delete DB
-        await subplebbit.stop();
+        if (subplebbit) await subplebbit.stop();
     });
 
     [{}, { title: `Test title - ${Date.now()}` }].map((subArgs) =>
         it(`createSubplebbit(${JSON.stringify(subArgs)})`, async () => {
-            return new Promise(async (resolve) => {
-                const newSubplebbit = await plebbit.createSubplebbit(subArgs);
-                newSubplebbit._syncIntervalMs = syncInterval;
-                await newSubplebbit.start();
+            const newSubplebbit = await plebbit.createSubplebbit(subArgs);
+            newSubplebbit._syncIntervalMs = syncInterval;
+            await newSubplebbit.start();
+            await new Promise((resolve) => {
                 newSubplebbit.once("update", async () => {
                     // Sub has finished its first sync loop, should have address now
                     expect(newSubplebbit.address).to.equal(newSubplebbit.signer.address);
                     const subplebbitIpns = await plebbit.getSubplebbit(newSubplebbit.address);
                     expect(subplebbitIpns.address).to.equal(newSubplebbit.signer.address);
-                    await newSubplebbit.stop();
                     resolve();
                 });
             });
+            await newSubplebbit.stop();
         })
     );
+
+    it(`Can start a sub after stopping it`, async () => {
+        const newSubplebbit = await plebbit.createSubplebbit({});
+        newSubplebbit._syncIntervalMs = syncInterval;
+        newSubplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
+
+        await newSubplebbit.start();
+        await new Promise((resolve) => newSubplebbit.once("update", resolve));
+
+        await waitTillNewCommentIsPublished(newSubplebbit.address, plebbit);
+        await newSubplebbit.stop();
+        await newSubplebbit.start();
+        await waitTillNewCommentIsPublished(newSubplebbit.address, plebbit);
+        await newSubplebbit.stop();
+    });
 
     it(`createSubplebbit on IPFS node doesn't take more than 10s`, async () => {
         const onlinePlebbit = await Plebbit({
@@ -88,6 +103,16 @@ describe("subplebbit", async () => {
         expect(encode(subplebbit.toJSON())).to.equal(encode(loadedSubplebbit.toJSON()));
     });
 
+    it(`Sub can receive publications sequentially`, async () => {
+        await waitTillNewCommentIsPublished(subplebbit.address, plebbit);
+        await waitTillNewCommentIsPublished(subplebbit.address, plebbit);
+        await waitTillNewCommentIsPublished(subplebbit.address, plebbit);
+    });
+
+    it(`Sub can receive publications parallely`, async () => {
+        await Promise.all(new Array(3).fill(null).map(() => waitTillNewCommentIsPublished(subplebbit.address, plebbit)));
+    });
+
     it(`subplebbit = await createSubplebbit(await createSubplebbit)`, async () => {
         const props = { title: "subplebbit = await createSubplebbit(await createSubplebbit)" };
         const createdSub = await plebbit.createSubplebbit(await plebbit.createSubplebbit(props));
@@ -119,13 +144,17 @@ describe("subplebbit", async () => {
     });
 
     it(`Can edit a subplebbit to have ENS domain as address`, async () => {
-        const address = JSON.parse(JSON.stringify(subplebbit.address));
-
         await subplebbit.edit({ address: "plebbit.eth" });
         expect(subplebbit.address).to.equal("plebbit.eth");
         await new Promise((resolve) => subplebbit.once("update", resolve));
         const loadedSubplebbit = await plebbit.getSubplebbit("plebbit.eth");
+        // Sub is expected to have empty pages after changing its address because all comments pre-change had comment.subplebbitAddress = oldAddress
+        // comments with subplebbitAddress that is not the current sub address will not be included in pages
         expect(loadedSubplebbit.address).to.equal("plebbit.eth");
+        // subplebbit.posts should omit all comments that referenced the old subplebbit address
+        // So in essence it should be empty
+        expect(loadedSubplebbit.posts.pages).to.deep.equal({});
+        expect(loadedSubplebbit.posts.pageCids).to.deep.equal({});
         expect(subplebbit.address).to.equal("plebbit.eth");
         expect(encode(loadedSubplebbit.toJSON())).to.equal(encode(subplebbit.toJSON()));
     });
@@ -146,25 +175,45 @@ describe("subplebbit", async () => {
         expect(subplebbit.address).to.equal("plebbit.eth");
     });
 
-    it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () =>
-        new Promise(async (resolve) => {
-            const loadedSubplebbit = await plebbit.getSubplebbit("plebbit.eth");
-            loadedSubplebbit._updateIntervalMs = syncInterval;
-            await loadedSubplebbit.update();
+    it(`Started Sub can receive publications on new address after editing address`, async () => {
+        const newPlebbit = await Plebbit(plebbit);
+        const newSub = await newPlebbit.createSubplebbit({});
+        const subAddress = JSON.parse(JSON.stringify(newSub.address));
+        newPlebbit.resolver.resolveSubplebbitAddressIfNeeded = (subplebbitAddress) =>
+            subplebbitAddress === "testPub.eth" ? subAddress : subplebbitAddress;
+        newSub.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
+        newSub._syncIntervalMs = syncInterval;
+        await newSub.start();
+        await new Promise((resolve) => newSub.once("update", resolve));
+        await waitTillNewCommentIsPublished(newSub.address, newPlebbit);
+        await newSub.edit({ address: "testPub.eth" });
+        await waitTillNewCommentIsPublished(newSub.address, newPlebbit);
+    });
 
-            const post = await generateMockPost("plebbit.eth", plebbit);
-            await post.publish();
+    it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () => {
+        await subplebbit.stop();
+        await subplebbit.start();
+        const loadedSubplebbit = await plebbit.getSubplebbit("plebbit.eth");
+        loadedSubplebbit._updateIntervalMs = syncInterval;
+        await loadedSubplebbit.update();
 
+        const post = await generateMockPost(subplebbit.address, plebbit);
+        await post.publish();
+
+        await new Promise((resolve) => post.once("challengeverification", resolve));
+
+        await new Promise((resolve) => {
             loadedSubplebbit.on("update", async (updatedSubplebbit) => {
                 if (!updatedSubplebbit.posts) return;
                 expect(updatedSubplebbit.address).to.equal("plebbit.eth");
                 expect(updatedSubplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.content === post.content)).to.be.true;
                 expect(updatedSubplebbit.lastPostCid).to.equal(post.cid);
-                await loadedSubplebbit.stop();
-                await loadedSubplebbit.removeAllListeners();
                 resolve();
             });
-        }));
+        });
+        await loadedSubplebbit.stop();
+        await loadedSubplebbit.removeAllListeners();
+    });
 
     it(`Can call subplebbit.posts.getPage on a remote sub with no posts`, async () => {
         const pageCid = subplebbit.posts?.pageCids?.hot;

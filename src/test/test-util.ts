@@ -34,17 +34,15 @@ export async function generateMockPost(
     signer = signer || (await plebbit.createSigner());
     const post = await plebbit.createComment({
         author: { displayName: `Mock Author - ${postStartTestTime}` },
-        signer: signer,
         title: `Mock Post - ${postStartTestTime}`,
         content: `Mock content - ${postStartTestTime}`,
+        signer,
         timestamp: postTimestamp,
-        subplebbitAddress: subplebbitAddress,
+        subplebbitAddress,
         ...postProps
     });
     if (post.constructor.name !== "Post") throw Error("createComment should return Post if title is provided");
-    post.once("challenge", (challengeMsg) => {
-        post.publishChallengeAnswers([]);
-    });
+    post.once("challenge", (challengeMsg) => post.publishChallengeAnswers([]));
 
     return post;
 }
@@ -70,9 +68,7 @@ export async function generateMockComment(
         timestamp: commentTimestamp,
         ...commentProps
     });
-    comment.once("challenge", (challengeMsg) => {
-        comment.publishChallengeAnswers([]);
-    });
+    comment.once("challenge", (challengeMsg) => comment.publishChallengeAnswers([]));
 
     return comment;
 }
@@ -328,4 +324,23 @@ export async function mockPlebbit(dataPath?: string) {
         return authorAddress;
     };
     return plebbit;
+}
+
+export async function waitTillNewCommentIsPublished(subplebbitAddress: string, plebbit: Plebbit) {
+    const post = await generateMockPost(subplebbitAddress, plebbit, undefined, true, { content: `Content ${Date.now() + Math.random()}` });
+    const loadedSub = await plebbit.getSubplebbit(subplebbitAddress);
+    //@ts-ignore
+    loadedSub._updateIntervalMs = 100;
+    await loadedSub.update();
+    await post.publish();
+
+    await new Promise((resolve) => post.once("challengeverification", resolve));
+
+    await new Promise((resolve) => {
+        loadedSub.on("update", (updatedSubplebbit: Subplebbit) => {
+            if (!updatedSubplebbit.posts.pages.hot) return;
+            if (updatedSubplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === post.cid)) resolve(1);
+        });
+    });
+    loadedSub.removeAllListeners("update");
 }
