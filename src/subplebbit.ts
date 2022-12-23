@@ -350,9 +350,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
             this._syncInterval = clearInterval(this._syncInterval);
 
-            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic);
-            this.dbHandler?.destoryConnection();
-            this.dbHandler = undefined;
+            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic, this.handleChallengeExchange.bind(this));
+            this.dbHandler!.destoryConnection();
+            this.dbHandler = this.sortHandler = undefined;
             RUNNING_SUBPLEBBITS[this.signer.address] = false;
         }
     }
@@ -977,10 +977,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.createdAt = timestamp();
             log(`Subplebbit (${this.address}) createdAt has been set to ${this.createdAt}`);
         }
-        await this.plebbit.pubsubIpfsClient.pubsub.subscribe(
-            this.pubsubTopic,
-            async (pubsubMessage) => await this.handleChallengeExchange(pubsubMessage)
-        );
+        await this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, this.handleChallengeExchange.bind(this));
         log.trace(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
         this.syncIpnsWithDb()
             .then(() => this._syncLoop(this._syncIntervalMs))

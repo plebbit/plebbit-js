@@ -120,7 +120,7 @@ class Publication extends EventEmitter implements PublicationType {
                 );
 
             this.emit("challengeverification", { ...msgParsed, publication: decryptedPublication }, this);
-            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic);
+            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this));
         }
     }
 
