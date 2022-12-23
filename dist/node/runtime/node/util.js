@@ -48,21 +48,20 @@ exports.mkdir = fs_1.promises.mkdir;
 var getDefaultDataPath = function () { return path_1.default.join(process.cwd(), ".plebbit"); };
 exports.getDefaultDataPath = getDefaultDataPath;
 var getDefaultSubplebbitDbConfig = function (subplebbit) { return __awaiter(void 0, void 0, void 0, function () {
-    var dbPath, dir;
+    var dbPath, dir, filename;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                (0, assert_1.default)(typeof subplebbit.plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get deafult subplebbit db config");
+                (0, assert_1.default)(typeof subplebbit.plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get default subplebbit db config");
                 dbPath = path_1.default.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
                 dir = path_1.default.dirname(dbPath);
                 return [4 /*yield*/, (0, exports.mkdir)(dir, { recursive: true })];
             case 1:
                 _a.sent();
+                filename = process.env["DB_MEMORY"] ? ":memory:" : dbPath;
                 return [2 /*return*/, {
                         client: "sqlite3",
-                        connection: {
-                            filename: dbPath
-                        },
+                        connection: { filename: filename },
                         useNullAsDefault: true,
                         acquireConnectionTimeout: 120000
                     }];

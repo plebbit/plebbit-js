@@ -83,6 +83,7 @@ var Publication = /** @class */ (function (_super) {
         var _this = _super.call(this) || this;
         _this.plebbit = plebbit;
         _this._initProps(props);
+        _this.handleChallengeExchange = _this.handleChallengeExchange.bind(_this);
         return _this;
     }
     Publication.prototype._initProps = function (props) {
@@ -161,7 +162,7 @@ var Publication = /** @class */ (function (_super) {
                         _e.label = 7;
                     case 7:
                         this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication }), this);
-                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic)];
+                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange)];
                     case 8:
                         _e.sent();
                         _e.label = 9;
@@ -260,7 +261,7 @@ var Publication = /** @class */ (function (_super) {
                         log.trace("Attempting to publish ".concat(this.getType(), " with options"), options);
                         return [4 /*yield*/, Promise.all([
                                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(this.challenge))),
-                                this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange.bind(this))
+                                this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange)
                             ])];
                     case 4:
                         _f.sent();

@@ -59,7 +59,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mockPlebbit = exports.startSubplebbits = exports.getAllCommentsUnderSubplebbit = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
+exports.waitTillNewCommentIsPublished = exports.mockPlebbit = exports.startSubplebbits = exports.getAllCommentsUnderSubplebbit = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
 var util_1 = require("../util");
 var index_1 = __importDefault(require("../index"));
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
@@ -92,14 +92,12 @@ function generateMockPost(subplebbitAddress, plebbit, signer, randomTimestamp, p
                     _b.label = 2;
                 case 2:
                     signer = _a;
-                    return [4 /*yield*/, plebbit.createComment(__assign({ author: { displayName: "Mock Author - ".concat(postStartTestTime) }, signer: signer, title: "Mock Post - ".concat(postStartTestTime), content: "Mock content - ".concat(postStartTestTime), timestamp: postTimestamp, subplebbitAddress: subplebbitAddress }, postProps))];
+                    return [4 /*yield*/, plebbit.createComment(__assign({ author: { displayName: "Mock Author - ".concat(postStartTestTime) }, title: "Mock Post - ".concat(postStartTestTime), content: "Mock content - ".concat(postStartTestTime), signer: signer, timestamp: postTimestamp, subplebbitAddress: subplebbitAddress }, postProps))];
                 case 3:
                     post = _b.sent();
                     if (post.constructor.name !== "Post")
                         throw Error("createComment should return Post if title is provided");
-                    post.once("challenge", function (challengeMsg) {
-                        post.publishChallengeAnswers([]);
-                    });
+                    post.once("challenge", function (challengeMsg) { return post.publishChallengeAnswers([]); });
                     return [2 /*return*/, post];
             }
         });
@@ -129,9 +127,7 @@ function generateMockComment(parentPostOrComment, plebbit, signer, randomTimesta
                     return [4 /*yield*/, plebbit.createComment(__assign({ author: { displayName: "Mock Author - ".concat(commentTime) }, signer: signer, content: "Mock comment - ".concat(commentTime), parentCid: parentPostOrComment.cid, subplebbitAddress: parentPostOrComment.subplebbitAddress, timestamp: commentTimestamp }, commentProps))];
                 case 3:
                     comment = _b.sent();
-                    comment.once("challenge", function (challengeMsg) {
-                        comment.publishChallengeAnswers([]);
-                    });
+                    comment.once("challenge", function (challengeMsg) { return comment.publishChallengeAnswers([]); });
                     return [2 /*return*/, comment];
             }
         });
@@ -606,3 +602,43 @@ function mockPlebbit(dataPath) {
     });
 }
 exports.mockPlebbit = mockPlebbit;
+function waitTillNewCommentIsPublished(subplebbitAddress, plebbit) {
+    return __awaiter(this, void 0, void 0, function () {
+        var post, loadedSub;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, generateMockPost(subplebbitAddress, plebbit, undefined, true, { content: "Content ".concat(Date.now() + Math.random()) })];
+                case 1:
+                    post = _a.sent();
+                    return [4 /*yield*/, plebbit.getSubplebbit(subplebbitAddress)];
+                case 2:
+                    loadedSub = _a.sent();
+                    //@ts-ignore
+                    loadedSub._updateIntervalMs = 100;
+                    return [4 /*yield*/, loadedSub.update()];
+                case 3:
+                    _a.sent();
+                    return [4 /*yield*/, post.publish()];
+                case 4:
+                    _a.sent();
+                    return [4 /*yield*/, new Promise(function (resolve) { return post.once("challengeverification", resolve); })];
+                case 5:
+                    _a.sent();
+                    return [4 /*yield*/, new Promise(function (resolve) {
+                            loadedSub.on("update", function (updatedSubplebbit) {
+                                var _a, _b, _c, _d;
+                                if (!updatedSubplebbit.posts.pages.hot)
+                                    return;
+                                if ((_d = (_c = (_b = (_a = updatedSubplebbit === null || updatedSubplebbit === void 0 ? void 0 : updatedSubplebbit.posts) === null || _a === void 0 ? void 0 : _a.pages) === null || _b === void 0 ? void 0 : _b.hot) === null || _c === void 0 ? void 0 : _c.comments) === null || _d === void 0 ? void 0 : _d.some(function (comment) { return comment.cid === post.cid; }))
+                                    resolve(1);
+                            });
+                        })];
+                case 6:
+                    _a.sent();
+                    loadedSub.removeAllListeners("update");
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.waitTillNewCommentIsPublished = waitTillNewCommentIsPublished;

@@ -19,3 +19,4 @@ export declare function startSubplebbits(props: {
     numOfCommentsToPublish: number;
 }): Promise<void>;
 export declare function mockPlebbit(dataPath?: string): Promise<Plebbit>;
+export declare function waitTillNewCommentIsPublished(subplebbitAddress: string, plebbit: Plebbit): Promise<void>;

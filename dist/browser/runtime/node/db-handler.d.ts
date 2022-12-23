@@ -61,7 +61,7 @@ export declare class DbHandler {
         ipnsKeyName: string;
     }) | undefined>;
     queryCommentsGroupByDepth(trx?: Knex.Transaction): Promise<CommentType[][]>;
-    queryCountOfPosts(trx?: Knex.Transaction): Promise<number>;
+    queryCountOfPosts(subplebbitAddress: string, trx?: Knex.Transaction): Promise<number>;
     queryCommentsOfAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<CommentType[]>;
     querySubplebbitAuthorFields(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor>;
     changeDbFilename(newDbFileName: string, newSubplebbit: DbHandler["_subplebbit"]): Promise<void>;

@@ -1131,12 +1131,12 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.queryCountOfPosts = function (trx) {
+    DbHandler.prototype.queryCountOfPosts = function (subplebbitAddress, trx) {
         return __awaiter(this, void 0, void 0, function () {
             var obj;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).count().where({ depth: 0 }).first()];
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).count().where({ depth: 0, subplebbitAddress: subplebbitAddress }).first()];
                     case 1:
                         obj = _a.sent();
                         if (!obj)

@@ -48,6 +48,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     constructor(props: CreateSubplebbitOptions, plebbit: Plebbit);
     initSubplebbit(newProps: SubplebbitType | SubplebbitEditOptions): void;
     private _initSignerProps;
+    private _migrateFromDbV2IfNeeded;
     private initDbIfNeeded;
     setProvideCaptchaCallback(newCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[ChallengeType[], string | undefined]>): void;
     setValidateCaptchaAnswerCallback(newCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>): void;
