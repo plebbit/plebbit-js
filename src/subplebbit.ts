@@ -296,6 +296,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     dataPath: this.plebbit.dataPath
                 }
             });
+            await this.dbHandler.keyvDelete(CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]); // To trigger a new subplebbit.posts
+            this.sortHandler = new SortHandler({ address: this.address, plebbit: this.plebbit, dbHandler: this.dbHandler });
+            this.posts = undefined;
         }
 
         this.initSubplebbit(newSubplebbitOptions);
