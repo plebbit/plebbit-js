@@ -377,18 +377,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.sortHandler.generatePagesUnderComment(undefined, undefined)
         ]);
 
-        if (subplebbitPosts) {
-            if (!subplebbitPosts?.pages?.hot) throw Error("Generated pages for subplebbit.posts is missing pages");
-            this.posts = new Pages({
-                pages: {
-                    hot: subplebbitPosts.pages.hot
-                },
-                pageCids: subplebbitPosts.pageCids,
-                subplebbit: this
-            });
-            const pageVerification = await verifyPage(this.posts.pages.hot, this.plebbit, this.address);
-            if (!pageVerification.valid) throw Error(`subplebbit.posts.hot is invalid due to (${pageVerification.reason})`);
-        }
+        this.posts = new Pages({
+            pages: lodash.pick(subplebbitPosts.pages, "hot"),
+            pageCids: subplebbitPosts.pageCids,
+            subplebbit: subplebbitPosts.subplebbit
+        });
 
         const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
         let currentIpns: SubplebbitType | undefined;
@@ -404,7 +397,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         if (!currentIpns || encode(currentIpns) !== encode(this.toJSON()) || lastPublishTooOld) {
             this.updatedAt = timestamp();
-            this.signature = await signSubplebbit(this.toJSON(), this.signer);
+            const newSignature = await signSubplebbit(this.toJSON(), this.signer);
+            const signatureValidation = await verifySubplebbit({ ...this.toJSON(), signature: newSignature }, this.plebbit);
+            if (!signatureValidation.valid)
+                throw Error(`Newly generated subplebbit JSON has an invalid signature due to reason (${signatureValidation.reason})`);
+            this.signature = newSignature;
+
             const file = await this.plebbit.ipfsClient.add(encode(this.toJSON()));
             await this.plebbit.ipfsClient.name.publish(file.path, {
                 lifetime: "72h", // TODO decide on optimal time later
@@ -946,7 +944,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.updateSubplebbitIpns();
 
             RUNNING_SUBPLEBBITS[this.signer.address] = true;
-            await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternal());
+            if (this.dbHandler) await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternal());
         } catch (e) {
             log.error(`Failed to sync due to error,`, e);
         }
@@ -976,8 +974,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.provideCaptchaCallback = this.defaultProvideCaptcha;
             this.validateCaptchaAnswerCallback = this.defaultValidateCaptcha;
         }
+        await this.initDbIfNeeded();
         if (typeof this.pubsubTopic !== "string") {
-            this.pubsubTopic = this.address;
+            this.pubsubTopic = lodash.clone(this.address);
             log(`Defaulted subplebbit (${this.address}) pubsub topic to ${this.pubsubTopic} since sub owner hasn't provided any`);
         }
         if (typeof this.createdAt !== "number") {
