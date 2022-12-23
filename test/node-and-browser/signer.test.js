@@ -30,6 +30,7 @@ describe("signer (node and browser)", async () => {
         before(async () => {
             bufferSignature = await signBufferRsa(buffer, authorSigner.privateKey);
             uint8arraySignature = await signBufferRsa(uint8array, authorSigner.privateKey);
+            expect(bufferSignature).to.deep.equal(uint8arraySignature);
         });
 
         it("can't sign strings", async () => {

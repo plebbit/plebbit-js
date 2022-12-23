@@ -37,7 +37,7 @@ const testCommentFields = (comment) => {
     }
 
     expect(comment.signature).to.be.a("object");
-    expect(comment.subplebbitAddress).to.be.a("string");
+    expect(comment.subplebbitAddress).to.equal(subplebbitAddress);
     expect(comment.timestamp).to.be.a("number");
 
     // Verify CommentUpdate fields
