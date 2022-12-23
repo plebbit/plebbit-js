@@ -502,6 +502,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             ? await this.plebbit.createCommentEdit(<CommentEditType>publication)
             : await this.plebbit.createComment(<CommentType>publication);
 
+        if (postOrCommentOrVote.subplebbitAddress !== this.address) {
+            log(`(${challengeRequestId}): `, messages.ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS);
+            return messages.ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS;
+        }
         if (postOrCommentOrVote?.author?.address) {
             // Check if author is banned
             const author = await this.dbHandler.queryAuthor(postOrCommentOrVote.author.address);
