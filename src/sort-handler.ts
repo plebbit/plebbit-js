@@ -108,7 +108,9 @@ export class SortHandler {
     }
 
     async sortCommentsByHot(parentCid?: string, trx?) {
-        const comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(parentCid, trx);
+        const comments = (await this.subplebbit.dbHandler.queryCommentsUnderComment(parentCid, trx)).filter(
+            (comment) => comment.subplebbitAddress === this.subplebbit.address
+        );
         if (comments.length === 0) return [undefined, undefined];
         return this.sortComments(comments, "hot");
     }
@@ -116,12 +118,14 @@ export class SortHandler {
     async sortCommentsByTop(parentCid: string | undefined, sortName: PostSortName | ReplySortName, trx?) {
         const sortProps: SortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
         assert(sortProps.timeframe, "Need timeframe to sort top");
-        const comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(
-            parentCid,
-            timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe],
-            Number.MAX_SAFE_INTEGER,
-            trx
-        );
+        const comments = (
+            await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(
+                parentCid,
+                timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe],
+                Number.MAX_SAFE_INTEGER,
+                trx
+            )
+        ).filter((comment) => comment.subplebbitAddress === this.subplebbit.address);
         if (comments.length === 0) return [undefined, undefined];
         return this.sortComments(comments, sortName);
     }
@@ -129,18 +133,22 @@ export class SortHandler {
     async sortCommentsByControversial(parentCid: string | undefined, sortName: PostSortName | ReplySortName, trx?) {
         const sortProps: SortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
         assert(sortProps.timeframe, "Need timeframe to sort controversial");
-        const comments = await this.subplebbit.dbHandler.queryCommentsBetweenTimestampRange(
-            parentCid,
-            timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe],
-            Number.MAX_SAFE_INTEGER,
-            trx
-        );
+        const comments = (
+            await this.subplebbit.dbHandler.queryCommentsBetweenTimestampRange(
+                parentCid,
+                timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe],
+                Number.MAX_SAFE_INTEGER,
+                trx
+            )
+        ).filter((comment) => comment.subplebbitAddress === this.subplebbit.address);
         if (comments.length === 0) return [undefined, undefined];
         return this.sortComments(comments, sortName);
     }
 
     async sortCommentsByNew(parentCid?: string, trx?) {
-        const comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, "desc", trx);
+        const comments = (await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, "desc", trx)).filter(
+            (comment) => comment.subplebbitAddress === this.subplebbit.address
+        );
         if (comments.length === 0) return [undefined, undefined];
         return this.sortComments(comments, "new");
     }
@@ -176,7 +184,6 @@ export class SortHandler {
                     comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", trx);
                 else comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx);
                 if (comments.length === 0) return [undefined, undefined];
-                assert(comments.every((comment) => typeof comment.upvoteCount === "number" && typeof comment.downvoteCount === "number"));
                 return this.sortComments(comments, sortName);
             });
         }
@@ -195,17 +202,22 @@ export class SortHandler {
         const key = comment?.cid || CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]; // If comment is undefined then we're generating page for subplebbit
         const cachedPageJson = await this.subplebbit.dbHandler?.keyvGet(key);
         if (!cachedPageJson || JSON.stringify(cachedPageJson) === "{}") {
-            await this.subplebbit.dbHandler?.keyvDelete(key);
+            await this.subplebbit.dbHandler!.keyvDelete(key);
         } else {
             const cachedPage = new Pages({ ...cachedPageJson, subplebbit: this.subplebbit });
             return cachedPage;
         }
         const subplebbitPostCount =
-            key === CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT] && (await this.subplebbit.dbHandler?.queryCountOfPosts(trx));
+            key === CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT] &&
+            (await this.subplebbit.dbHandler!.queryCountOfPosts(this.subplebbit.address, trx));
 
         if (subplebbitPostCount === 0)
             // If subplebbit and has no posts, then return undefined
-            return undefined;
+            return new Pages({
+                pages: {},
+                pageCids: {},
+                subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
+            });
 
         const res = await Promise.all(this.getSortPromises(comment, trx));
 

@@ -65,11 +65,8 @@ export class DbHandler {
             `DbHandler needs to be an instantiated with a Subplebbit that has a valid address, (${this._subplebbit.address}) was provided`
         );
         if (!this._dbConfig) this._dbConfig = await getDefaultSubplebbitDbConfig(this._subplebbit);
-
         if (!this._knex) this._knex = knex(this._dbConfig);
-
         if (!this._createdTables) await this.createTablesIfNeeded();
-
         if (!this._keyv) this._keyv = new Keyv(`sqlite://${(<any>this._dbConfig.connection).filename}`);
     }
 
@@ -664,8 +661,8 @@ export class DbHandler {
         return comments;
     }
 
-    async queryCountOfPosts(trx?: Knex.Transaction): Promise<number> {
-        const obj = await this._baseTransaction(trx)(TABLES.COMMENTS).count().where({ depth: 0 }).first();
+    async queryCountOfPosts(subplebbitAddress: string, trx?: Knex.Transaction): Promise<number> {
+        const obj = await this._baseTransaction(trx)(TABLES.COMMENTS).count().where({ depth: 0, subplebbitAddress }).first();
         if (!obj) return 0;
         return Number(obj["count(*)"]);
     }
