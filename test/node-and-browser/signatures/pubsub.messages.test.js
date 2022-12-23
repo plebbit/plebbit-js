@@ -59,7 +59,7 @@ describe("challengerequest", async () => {
                     expect(msgParsed.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
                     expect(msgParsed.publication).to.be.undefined;
                     expect(msgParsed.encryptedPublication).to.be.undefined;
-                    tempPlebbit.pubsubIpfsClient.pubsub.unsubscribe();
+                    tempPlebbit.pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, arguments.callee);
                     resolve();
                 }
             });
@@ -127,14 +127,14 @@ describe("challengeanswer", async () => {
         const tempPlebbit = await Plebbit(plebbit);
         tempPlebbit.resolver = plebbit.resolver;
 
-        const comment = await generateMockPost(mathCliSubplebbitAddress, tempPlebbit, signers[6]);
+        const comment = await generateMockPost(mathCliSubplebbitAddress, await Plebbit(plebbit), signers[6]);
 
         comment.removeAllListeners();
         await comment.publish();
 
         await new Promise(async (resolve) => {
             comment.once("challenge", async () => {
-                comment.plebbit.pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic);
+                comment.plebbit.pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, comment.handleChallengeExchange);
                 const toSignAnswer = {
                     type: "CHALLENGEANSWER",
                     challengeRequestId: comment.challenge.challengeRequestId,
@@ -171,7 +171,7 @@ describe("challengeanswer", async () => {
                         expect(msgParsed.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
                         expect(msgParsed.publication).to.be.undefined;
                         expect(msgParsed.encryptedPublication).to.be.undefined;
-                        tempPlebbit.pubsubIpfsClient.pubsub.unsubscribe();
+                        tempPlebbit.pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, arguments.callee);
                         resolve();
                     }
                 });
