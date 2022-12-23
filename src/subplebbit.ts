@@ -126,6 +126,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.update = this.update.bind(this);
         this.stop = this.stop.bind(this);
         this.edit = this.edit.bind(this);
+        this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
 
         this.on("error", (...args) => this.plebbit.emit("error", ...args));
 
@@ -350,7 +351,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
             this._syncInterval = clearInterval(this._syncInterval);
 
-            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic, this.handleChallengeExchange.bind(this));
+            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic, this.handleChallengeExchange);
             this.dbHandler!.destoryConnection();
             this.dbHandler = this.sortHandler = undefined;
             RUNNING_SUBPLEBBITS[this.signer.address] = false;
@@ -977,7 +978,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.createdAt = timestamp();
             log(`Subplebbit (${this.address}) createdAt has been set to ${this.createdAt}`);
         }
-        await this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, this.handleChallengeExchange.bind(this));
+        await this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, this.handleChallengeExchange);
         log.trace(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
         this.syncIpnsWithDb()
             .then(() => this._syncLoop(this._syncIntervalMs))
