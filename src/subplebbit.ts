@@ -336,7 +336,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (!updateValidity.valid) {
             log.error(`Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
             this.emit("error", `Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
-        } else if (!lodash.isEqual(this.toJSON(), subplebbitIpns)) {
+        } else if (encode(this.toJSON()) !== encode(subplebbitIpns)) {
             this.initSubplebbit(subplebbitIpns);
             log(`Remote Subplebbit received a new update. Will emit an update event`);
             this.emit("update", this);
