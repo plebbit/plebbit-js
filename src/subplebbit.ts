@@ -175,6 +175,19 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         };
     }
 
+    private async _migrateFromDbV2IfNeeded() {
+        const obsoleteCache: SubplebbitType | undefined = await this.dbHandler.keyvGet(this.address);
+        const subCache: SubplebbitType | undefined = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
+        if (obsoleteCache && !subCache) {
+            // We're migrating from DB version 2 to 4+
+            const signerAddress = await getPlebbitAddressFromPublicKeyPem(obsoleteCache.encryption.publicKey);
+            const signer = await this.dbHandler.querySigner(signerAddress); // Need to include signer explicitly since in db version 2 we didn't include signer in cache
+            obsoleteCache.signer = new Signer({ ...signer, address: await getPlebbitAddressFromPrivateKeyPem(signer.privateKey) });
+            // We changed the name of internal subplebbit cache, need to explicitly copy old cache to new key here
+            await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], obsoleteCache);
+        }
+    }
+
     private async initDbIfNeeded() {
         if (!this.dbHandler) {
             this.dbHandler = nativeFunctions.createDbHandler({
@@ -183,20 +196,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     dataPath: this.plebbit.dataPath
                 }
             });
+            this.sortHandler = new SortHandler({ address: this.address, plebbit: this.plebbit, dbHandler: this.dbHandler });
         }
         await this.dbHandler.initDbIfNeeded();
-        if (!this.sortHandler)
-            this.sortHandler = new SortHandler({ address: this.address, plebbit: this.plebbit, dbHandler: this.dbHandler });
-        const obsoleteCache: SubplebbitType | undefined = await this.dbHandler.keyvGet(this.address);
-        const subCache: SubplebbitType | undefined = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
-        if (obsoleteCache && !subCache) {
-            // We're migrating from DB version 2 to 3
-            const signerAddress = await getPlebbitAddressFromPublicKeyPem(obsoleteCache.encryption.publicKey);
-            const signer = await this.dbHandler.querySigner(signerAddress); // Need to include signer explicitly since in db version 2 we didn't include signer in cache
-            obsoleteCache.signer = new Signer({ ...signer, address: await getPlebbitAddressFromPrivateKeyPem(signer.privateKey) });
-            // We changed the name of internal subplebbit cache, need to explicitly copy old cache to new key here
-            await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], obsoleteCache);
-        }
+        await this._migrateFromDbV2IfNeeded();
     }
 
     setProvideCaptchaCallback(
