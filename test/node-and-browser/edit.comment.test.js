@@ -227,7 +227,25 @@ describe(`banExpiresAt`, async () => {
         );
     });
 
-    it(`Regular author can't ban a comment`);
+    it(`Regular author can't ban another author`, async () => {
+        const tryToBanComment = await waitTillNewCommentIsPublished(subplebbitAddress, plebbit);
+
+        const banCommentEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: tryToBanComment.subplebbitAddress,
+            commentCid: tryToBanComment.cid,
+            commentAuthor: { banExpiresAt: authorBanExpiresAt + 1000 },
+            signer: await plebbit.createSigner()
+        });
+        await banCommentEdit.publish();
+
+        await new Promise((resolve) =>
+            banCommentEdit.once("challengeverification", async (challengeVerificationMessage, updatedCommentEdit) => {
+                expect(challengeVerificationMessage.challengeSuccess).to.be.false;
+                expect(challengeVerificationMessage.reason).to.equal(messages.ERR_UNAUTHORIZED_COMMENT_EDIT);
+                resolve();
+            })
+        );
+    });
 });
 
 describe("Delete comments", async () => {
