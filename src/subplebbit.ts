@@ -415,9 +415,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     private async handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string) {
-        const log = Logger("plebbit-js:subplebbit:handleChallengeExchange:storePublicationIfValid:handleCommentEdit");
+        const log = Logger("plebbit-js:subplebbit:handleCommentEdit");
 
-        let commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
+        const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
         const editorAddress = await getPlebbitAddressFromPublicKeyPem(commentEdit.signature.publicKey);
         const modRole = this.roles && this.roles[editorAddress];
         if (commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey) {
@@ -430,10 +430,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 }
             }
 
-            await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId));
+            await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId), commentEdit.author.toJSONForDb());
             // If comment.flair is last modified by a mod, then reject
             await this.dbHandler.editComment(commentEdit.toJSONForDb(challengeRequestId));
-            // const commentAfterEdit = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
             log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEdit.toJSON());
         } else if (modRole) {
             log.trace(
@@ -450,14 +449,15 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 }
             }
 
-            await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId));
+            await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId), commentEdit.author.toJSONForDb());
             await this.dbHandler.editComment(commentEdit.toJSONForDb(challengeRequestId));
 
             if (commentEdit.commentAuthor) {
                 // A mod is is trying to ban an author or add a flair to author
                 const newAuthorProps: AuthorDbType = {
                     address: commentToBeEdited?.author.address,
-                    ...commentEdit.commentAuthor
+                    banExpiresAt: commentEdit.commentAuthor.banExpiresAt,
+                    flair: commentEdit.commentAuthor.flair
                 };
                 await this.dbHandler.updateAuthor(newAuthorProps, true);
                 log(

@@ -30,9 +30,9 @@ import Logger from "@plebbit/plebbit-logger";
 import { getDefaultSubplebbitDbConfig } from "./util";
 import env from "../../version";
 import { Plebbit } from "../../plebbit";
-import { Comment } from "../../comment";
 import sumBy from "lodash/sumBy";
 import lodash from "lodash";
+import { MOD_EDIT_FIELDS } from "../../comment-edit";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -320,18 +320,13 @@ export class DbHandler {
 
         await this._baseTransaction(trx)(TABLES.AUTHORS).update(onlyNewProps).where("address", newAuthorProps.address);
         if (updateCommentsAuthor) {
-            const commentsWithAuthor: CommentType[] = await this._createCommentsFromRows(
-                await this._baseCommentQuery(trx).where("authorAddress", newAuthorProps.address)
-            );
+            const commentsWithAuthor: CommentType[] = await this.queryCommentsOfAuthor(newAuthorProps.address);
             await Promise.all(
                 commentsWithAuthor.map(async (commentProps: CommentType) => {
-                    //@ts-ignore
-                    const comment = new Comment(commentProps, this._subplebbit.plebbit);
-                    const newOriginal = comment.original?.author
-                        ? comment.original
-                        : { ...comment.original, author: comment.author.toJSON() };
-                    const newCommentProps = { author: { ...comment.author.toJSON(), ...onlyNewProps }, original: newOriginal };
-                    await this._baseTransaction(trx)(TABLES.COMMENTS).update(newCommentProps).where("cid", comment.cid);
+                    const newCommentProps = {
+                        author: JSON.stringify({ ...commentProps.author, ...onlyNewProps })
+                    };
+                    await this._baseTransaction(trx)(TABLES.COMMENTS).update(newCommentProps).where("cid", commentProps.cid);
                 })
             );
         }
@@ -370,7 +365,9 @@ export class DbHandler {
         else await this._baseTransaction(trx)(TABLES.COMMENTS).insert(comment);
     }
 
-    async insertEdit(edit: CommentEditForDbType, trx?: Transaction) {
+    async insertEdit(edit: CommentEditForDbType, author: AuthorDbType, trx?: Transaction) {
+        const authorDb = await this.queryAuthor(author.address);
+        if (!authorDb) await this._upsertAuthor(author);
         await this._baseTransaction(trx)(TABLES.EDITS).insert(edit);
     }
 
@@ -392,28 +389,26 @@ export class DbHandler {
     async editComment(edit: CommentEditForDbType, trx?: Transaction) {
         // Fields that need to be merged
         // flair
-        assert(edit.commentCid);
         const commentProps = await this.queryComment(edit.commentCid);
-        assert(commentProps);
-        // We usually call plebbit.createComment but since dbHandler is called over context isolation we will not be able to get a Comment instance out of createComment
-        // So we had to resort to creating a Comment instance manually
-        // @ts-ignore
-        const commentToBeEdited = new Comment(commentProps, this._subplebbit.plebbit);
 
-        const isEditFromAuthor = commentToBeEdited.signature.publicKey === edit.signature.publicKey;
-        let newProps: Object;
+        const isEditFromAuthor = commentProps.signature.publicKey === edit.signature.publicKey;
         if (isEditFromAuthor) {
             const modEdits = await this.queryEditsSorted(edit.commentCid, "mod", trx);
             const hasModEditedCommentFlairBefore = modEdits.some((modEdit) => Boolean(modEdit.flair));
             const flairIfNeeded = hasModEditedCommentFlairBefore || !edit.flair ? undefined : { flair: JSON.stringify(edit.flair) };
 
-            newProps = removeKeysWithUndefinedValues({
+            const authorNewProps = removeKeysWithUndefinedValues({
                 authorEdit: JSON.stringify(lodash.omit(edit, ["authorAddress", "challengeRequestId"])),
                 ...flairIfNeeded
             });
-        } else newProps = edit;
-
-        await this._baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid);
+            await this._baseTransaction(trx)(TABLES.COMMENTS).update(authorNewProps).where("cid", edit.commentCid);
+        } else {
+            const commentCidIndex = MOD_EDIT_FIELDS.findIndex((value) => value === "commentCid");
+            let modNewProps = removeKeysWithUndefinedValues(lodash.pick(edit, MOD_EDIT_FIELDS.slice(commentCidIndex + 1)));
+            modNewProps = lodash.omit(modNewProps, "commentAuthor");
+            if (JSON.stringify(modNewProps) !== "{}")
+                await this._baseTransaction(trx)(TABLES.COMMENTS).update(modNewProps).where("cid", edit.commentCid);
+        }
     }
 
     async upsertChallenge(
