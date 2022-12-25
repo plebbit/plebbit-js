@@ -343,4 +343,5 @@ export async function waitTillNewCommentIsPublished(subplebbitAddress: string, p
         });
     });
     loadedSub.removeAllListeners("update");
+    return post;
 }
