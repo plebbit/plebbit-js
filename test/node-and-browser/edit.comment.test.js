@@ -1,12 +1,12 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { generateMockPost, waitTillNewCommentIsPublished } = require("../../dist/node/test/test-util");
+const { generateMockPost, waitTillNewCommentIsPublished, mockPlebbit } = require("../../dist/node/test/test-util");
+const { timestamp } = require("../../dist/node/util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const { messages } = require("../../dist/node/errors");
-const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
@@ -19,12 +19,11 @@ const roles = [
 ];
 
 describe("Editing", async () => {
-    let plebbit, commentToBeEdited, signer;
+    let plebbit, commentToBeEdited;
 
     before(async () => {
         plebbit = await mockPlebbit();
 
-        signer = await plebbit.createSigner();
         commentToBeEdited = await waitTillNewCommentIsPublished(subplebbitAddress, plebbit);
         commentToBeEdited._updateIntervalMs = updateInterval;
         await Promise.all([new Promise((resolve) => commentToBeEdited.once("update", resolve)), commentToBeEdited.update()]);
@@ -140,65 +139,64 @@ describe("Editing", async () => {
     );
 });
 
-describe.skip("Mod function", async () => {
+describe("CommentEdit for mods", async () => {
     let plebbit, commentToBeBanned, authorBanExpiresAt;
 
     before(async () => {
         plebbit = await mockPlebbit();
         commentToBeBanned = await waitTillNewCommentIsPublished(subplebbitAddress, plebbit);
-
-        await commentToBeBanned.update(updateInterval);
-        authorBanExpiresAt = timestamp() + 6; // Ban stays for four seconds
+        commentToBeBanned._updateIntervalMs = updateInterval;
+        await Promise.all([new Promise((resolve) => commentToBeBanned.once("update", resolve)), commentToBeBanned.update()]);
+        authorBanExpiresAt = timestamp() + 6; // Ban stays for six seconds
     });
 
     after(async () => {
         await commentToBeBanned.stop();
     });
 
-    it(`Mod can ban an author for a comment`, async () =>
-        new Promise(async (resolve) => {
-            const modSigner = roles[2].signer;
-            const banCommentEdit = await plebbit.createCommentEdit({
-                subplebbitAddress: commentToBeBanned.subplebbitAddress,
-                commentCid: commentToBeBanned.cid,
-                authorBanExpiresAt: authorBanExpiresAt,
-                signer: modSigner
-            });
-            await banCommentEdit.publish();
-            commentToBeBanned.once("update", async (updatedComment) => {
-                expect(updatedComment.authorBanExpiresAt).to.equals(authorBanExpiresAt, "Author ban expires is not included");
-                const newCommentByBannedAuthor = await generateMockPost(
-                    commentToBeBanned.subplebbitAddress,
-                    plebbit,
-                    commentToBeBanned.signer
-                );
-                await newCommentByBannedAuthor.publish();
-                newCommentByBannedAuthor.once("challengeverification", async (challengeVerificationMessage, updatedCommentEdit) => {
-                    expect(challengeVerificationMessage.challengeSuccess).to.be.false;
-                    expect(challengeVerificationMessage.reason).to.be.equal(messages.ERR_AUTHOR_IS_BANNED);
-                    resolve();
-                });
-            });
-        }));
+    it(`Mod can ban an author for a comment`, async () => {
+        const modSigner = roles[2].signer;
+        const banCommentEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: commentToBeBanned.subplebbitAddress,
+            commentCid: commentToBeBanned.cid,
+            commentAuthor: { banExpiresAt: authorBanExpiresAt },
+            signer: modSigner
+        });
+        expect(banCommentEdit.commentAuthor.banExpiresAt).to.equal(authorBanExpiresAt);
+        await banCommentEdit.publish();
+        await new Promise((resolve) => commentToBeBanned.once("update", resolve));
+        expect(commentToBeBanned.author.banExpiresAt).to.equals(authorBanExpiresAt);
+        const newCommentByBannedAuthor = await generateMockPost(commentToBeBanned.subplebbitAddress, plebbit, commentToBeBanned.signer);
+        await newCommentByBannedAuthor.publish();
+        await new Promise((resolve) =>
+            newCommentByBannedAuthor.once("challengeverification", async (challengeVerificationMessage, updatedCommentEdit) => {
+                expect(challengeVerificationMessage.challengeSuccess).to.be.false;
+                expect(challengeVerificationMessage.reason).to.be.equal(messages.ERR_AUTHOR_IS_BANNED);
+                resolve();
+            })
+        );
+    });
 
-    it(`Banned author can publish after authorBanExpiresAt ends`, async () =>
-        new Promise(async (resolve) => {
-            const waitTillAuthorBanExpiresEnds = (resolve) => {
-                if (timestamp() > authorBanExpiresAt) resolve();
-                else setTimeout((_) => waitTillAuthorBanExpiresEnds(resolve), 100);
-            };
-            await new Promise(waitTillAuthorBanExpiresEnds);
-            assert(timestamp() > authorBanExpiresAt);
-            const newCommentByBannedAuthor = await generateMockPost(commentToBeBanned.subplebbitAddress, plebbit, commentToBeBanned.signer);
-            await newCommentByBannedAuthor.publish();
+    it(`Banned author can publish after authorBanExpiresAt ends`, async () => {
+        const waitTillAuthorBanExpiresEnds = (resolve) => {
+            if (timestamp() > authorBanExpiresAt) resolve();
+            else setTimeout(() => waitTillAuthorBanExpiresEnds(resolve), 100);
+        };
+        await new Promise(waitTillAuthorBanExpiresEnds);
+        expect(timestamp()).to.be.greaterThan(authorBanExpiresAt);
+        const newCommentByBannedAuthor = await generateMockPost(commentToBeBanned.subplebbitAddress, plebbit, commentToBeBanned.signer);
+        await newCommentByBannedAuthor.publish();
+
+        await new Promise((resolve) =>
             newCommentByBannedAuthor.once("challengeverification", async (challengeVerificationMessage, updatedCommentEdit) => {
                 expect(challengeVerificationMessage.challengeSuccess).to.be.true;
                 expect(challengeVerificationMessage.reason).to.be.not.a.string;
                 resolve();
-            });
-        }));
+            })
+        );
+    });
 
-    async(`Mod editing their own comment`);
+    it(`Mods can edit their own comment`);
 });
 
 describe("Delete comments", async () => {
