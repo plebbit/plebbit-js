@@ -18,7 +18,7 @@ const roles = [
     { role: "mod", signer: signers[3] }
 ];
 
-describe("Editing", async () => {
+describe("Editing comment.content", async () => {
     let plebbit, commentToBeEdited;
 
     before(async () => {
@@ -33,7 +33,19 @@ describe("Editing", async () => {
         await commentToBeEdited.stop();
     });
 
-    it("Fails to edit a comment if not original author", async function () {
+    it(`(edit: CommentEdit) === plebbit.createCommentEdit(JSON.parse(JSON.stringify(edit)))`, async () => {
+        const edit = await plebbit.createCommentEdit({
+            subplebbitAddress: commentToBeEdited.subplebbitAddress,
+            commentCid: commentToBeEdited.cid,
+            reason: "editReason",
+            content: "editedText",
+            signer: signers[7] // Create a new signer, different than the signer of the original comment
+        });
+        const editFromStringifiedEdit = await plebbit.createCommentEdit(JSON.parse(JSON.stringify(edit)));
+        expect(JSON.stringify(edit)).to.equal(JSON.stringify(editFromStringifiedEdit));
+    });
+
+    it("Fails to edit content if not original author", async function () {
         const editedText = "This should fail";
         const editReason = "To test whether editing a comment fails";
         const commentEdit = await plebbit.createCommentEdit({
@@ -54,19 +66,7 @@ describe("Editing", async () => {
         );
     });
 
-    it(`(edit: CommentEdit) === plebbit.createCommentEdit(JSON.parse(JSON.stringify(edit)))`, async () => {
-        const edit = await plebbit.createCommentEdit({
-            subplebbitAddress: commentToBeEdited.subplebbitAddress,
-            commentCid: commentToBeEdited.cid,
-            reason: "editReason",
-            content: "editedText",
-            signer: signers[7] // Create a new signer, different than the signer of the original comment
-        });
-        const editFromStringifiedEdit = await plebbit.createCommentEdit(JSON.parse(JSON.stringify(edit)));
-        expect(JSON.stringify(edit)).to.equal(JSON.stringify(editFromStringifiedEdit));
-    });
-
-    it("Author can edit comment.content", async function () {
+    it("Original Author can edit content", async function () {
         const editedText = "edit test";
         const editReason = "To test editing a comment";
 
@@ -91,7 +91,7 @@ describe("Editing", async () => {
         expect(commentToBeEdited.authorEdit.challengeRequestId).to.be.undefined;
     });
 
-    it(`Author can modify comment.content again, while preserving comment.originalContent`, async () => {
+    it(`Author can modify content again, while preserving comment.originalContent`, async () => {
         const editedText = "Double edit test";
         const editReason = "To test double editing a comment";
         const originalContent = commentToBeEdited.original.content;
@@ -114,7 +114,38 @@ describe("Editing", async () => {
     });
 
     roles.map((roleTest) =>
-        it(`${roleTest.role} can't edit comment.content`, async () => {
+        it(`${roleTest.role} Can modify their own comment content`, async () => {
+            const commentToEdit = await waitTillNewCommentIsPublished(subplebbitAddress, plebbit, { signer: roleTest.signer });
+            const originalContent = JSON.parse(JSON.stringify(commentToEdit.content));
+            commentToEdit._updateIntervalMs = updateInterval;
+            await Promise.all([new Promise((resolve) => commentToEdit.once("update", resolve)), commentToEdit.update()]);
+            const editedText = `${roleTest.role} role testing CommentEdit`;
+            const editReason = `For ${roleTest.role} role to test editing a comment`;
+            const commentEdit = await plebbit.createCommentEdit({
+                subplebbitAddress: commentToEdit.subplebbitAddress,
+                commentCid: commentToEdit.cid,
+                reason: editReason,
+                content: editedText,
+                signer: roleTest.signer
+            });
+            await commentEdit.publish();
+            await new Promise((resolve) =>
+                commentEdit.once("challengeverification", async (challengeVerificationMessage, updatedCommentEdit) => {
+                    expect(challengeVerificationMessage.challengeSuccess).to.be.true;
+                    resolve();
+                })
+            );
+            await new Promise((resolve) => commentToEdit.once("update", resolve));
+            expect(commentToEdit.authorEdit.content).to.equal(editedText);
+            expect(commentToEdit.content).to.equal(editedText);
+            expect(commentToEdit.original?.content).to.equal(originalContent);
+            expect(commentToEdit.authorEdit.reason).to.equal(editReason);
+            expect(commentToEdit.author.subplebbit.lastCommentCid).to.equal(commentToEdit.cid);
+        })
+    );
+
+    roles.map((roleTest) =>
+        it(`${roleTest.role} can't edit another author comment.content`, async () => {
             const editedText = `${roleTest.role} role testing CommentEdit`;
             const editReason = `For ${roleTest.role} role to test editing a comment`;
             const commentEdit = await plebbit.createCommentEdit({
@@ -139,7 +170,7 @@ describe("Editing", async () => {
     );
 });
 
-describe("CommentEdit for mods", async () => {
+describe(`banExpiresAt`, async () => {
     let plebbit, commentToBeBanned, authorBanExpiresAt;
 
     before(async () => {
@@ -196,7 +227,7 @@ describe("CommentEdit for mods", async () => {
         );
     });
 
-    it(`Mods can edit their own comment`);
+    it(`Regular author can't ban a comment`);
 });
 
 describe("Delete comments", async () => {

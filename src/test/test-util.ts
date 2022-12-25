@@ -326,8 +326,11 @@ export async function mockPlebbit(dataPath?: string) {
     return plebbit;
 }
 
-export async function waitTillNewCommentIsPublished(subplebbitAddress: string, plebbit: Plebbit) {
-    const post = await generateMockPost(subplebbitAddress, plebbit, undefined, true, { content: `Content ${Date.now() + Math.random()}` });
+export async function waitTillNewCommentIsPublished(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<PostType>) {
+    const post = await generateMockPost(subplebbitAddress, plebbit, undefined, true, {
+        content: `Content ${Date.now() + Math.random()}`,
+        ...postProps
+    });
     const loadedSub = await plebbit.getSubplebbit(subplebbitAddress);
     //@ts-ignore
     loadedSub._updateIntervalMs = 100;
