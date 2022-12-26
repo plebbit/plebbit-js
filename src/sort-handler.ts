@@ -109,7 +109,7 @@ export class SortHandler {
 
     async sortCommentsByHot(parentCid?: string, trx?) {
         const comments = (await this.subplebbit.dbHandler.queryCommentsUnderComment(parentCid, trx)).filter(
-            (comment) => comment.subplebbitAddress === this.subplebbit.address
+            (comment) => comment.subplebbitAddress === this.subplebbit.address && !comment.removed && !comment?.authorEdit?.deleted
         );
         if (comments.length === 0) return [undefined, undefined];
         return this.sortComments(comments, "hot");
@@ -125,7 +125,7 @@ export class SortHandler {
                 Number.MAX_SAFE_INTEGER,
                 trx
             )
-        ).filter((comment) => comment.subplebbitAddress === this.subplebbit.address);
+        ).filter((comment) => comment.subplebbitAddress === this.subplebbit.address && !comment.removed && !comment?.authorEdit?.deleted);
         if (comments.length === 0) return [undefined, undefined];
         return this.sortComments(comments, sortName);
     }
@@ -140,14 +140,14 @@ export class SortHandler {
                 Number.MAX_SAFE_INTEGER,
                 trx
             )
-        ).filter((comment) => comment.subplebbitAddress === this.subplebbit.address);
+        ).filter((comment) => comment.subplebbitAddress === this.subplebbit.address && !comment.removed && !comment?.authorEdit?.deleted);
         if (comments.length === 0) return [undefined, undefined];
         return this.sortComments(comments, sortName);
     }
 
     async sortCommentsByNew(parentCid?: string, trx?) {
         const comments = (await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, "desc", trx)).filter(
-            (comment) => comment.subplebbitAddress === this.subplebbit.address
+            (comment) => comment.subplebbitAddress === this.subplebbit.address && !comment.removed && !comment?.authorEdit?.deleted
         );
         if (comments.length === 0) return [undefined, undefined];
         return this.sortComments(comments, "new");
@@ -170,7 +170,7 @@ export class SortHandler {
 
     private _getRepliesPromises(comment: Comment | CommentType, trx?) {
         return (Object.keys(REPLIES_SORT_TYPES) as Array<keyof typeof REPLIES_SORT_TYPES>).map(async (sortName: ReplySortName) => {
-            let comments: CommentType[];
+            let comments: CommentType[] = [];
             if (sortName === "topAll")
                 comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(
                     comment.cid,
@@ -181,7 +181,11 @@ export class SortHandler {
             else if (sortName === "old") comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", trx);
             else comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx);
 
+            comments = comments.filter(
+                (comment) => comment.subplebbitAddress === this.subplebbit.address && !comment.removed && !comment?.authorEdit?.deleted
+            );
             if (comments.length === 0) return [undefined, undefined];
+
             return this.sortComments(comments, sortName);
         });
     }
@@ -195,8 +199,8 @@ export class SortHandler {
     }
 
     async generateRepliesPages(comment: Comment | CommentType, trx?): Promise<Pages | undefined> {
-        if (comment?.replyCount === 0) return undefined;
-        const cachedReplies = await this.subplebbit.dbHandler?.keyvGet(comment.cid);
+        if (comment.replyCount === 0) return undefined;
+        const cachedReplies = await this.subplebbit.dbHandler!.keyvGet(comment.cid);
         if (cachedReplies) return new Pages({ ...cachedReplies, subplebbit: this.subplebbit });
 
         const res = await Promise.all(this._getRepliesPromises(comment, trx));
@@ -213,7 +217,7 @@ export class SortHandler {
             subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
         });
 
-        await this.subplebbit.dbHandler?.keyvSet(comment.cid, pages.toJSON());
+        await this.subplebbit.dbHandler!.keyvSet(comment.cid, pages.toJSON());
 
         return pages;
     }
