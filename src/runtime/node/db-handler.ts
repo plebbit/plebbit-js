@@ -469,7 +469,9 @@ export class DbHandler {
 
     private _parseJsonFields(obj: Object) {
         const newObj = { ...obj };
+        const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed"];
         for (const field in newObj) {
+            if (booleanFields.includes(field) && typeof newObj[field] === "number") newObj[field] = Boolean(newObj[field]);
             if (typeof newObj[field] === "string")
                 try {
                     newObj[field] = typeof JSON.parse(newObj[field]) === "object" ? JSON.parse(newObj[field]) : newObj[field];
