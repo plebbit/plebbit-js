@@ -419,7 +419,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
         const editorAddress = await getPlebbitAddressFromPublicKeyPem(commentEdit.signature.publicKey);
-        const modRole = this.roles && this.roles[editorAddress];
+        const modRole = this.roles && this.roles[commentEdit.author.address];
         if (commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey) {
             // CommentEdit is signed by original author
             for (const editField of Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON()))) {
