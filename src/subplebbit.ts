@@ -374,7 +374,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         const [metrics, subplebbitPosts] = await Promise.all([
             this.dbHandler.querySubplebbitMetrics(undefined),
-            this.sortHandler.generatePagesUnderComment(undefined, undefined)
+            this.sortHandler.generateSubplebbitPosts(undefined)
         ]);
 
         this.posts = new Pages({
@@ -923,7 +923,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             dbComment.author.subplebbit = await this.dbHandler.querySubplebbitAuthorFields(dbComment.author.address);
             dbComment.setUpdatedAt(timestamp());
             await this.dbHandler.upsertComment(dbComment.toJSONForDb(undefined), dbComment.author.toJSONForDb(), undefined); // Need to insert comment in DB before generating pages so props updated above would be included in pages
-            dbComment.setReplies(await this.sortHandler.generatePagesUnderComment(dbComment, undefined));
+            dbComment.setReplies(await this.sortHandler.generateRepliesPages(dbComment, undefined));
             const subplebbitSignature = await signCommentUpdate(dbComment.toJSONCommentUpdate(), this.signer);
             return this._publishCommentIpns(dbComment, { ...dbComment.toJSONCommentUpdate(), signature: subplebbitSignature });
         }
