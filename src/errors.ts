@@ -44,5 +44,8 @@ export enum messages {
     ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST = "The parent of this comment does not exist",
     ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "The parent cid of this comment is not defined",
     ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS = "The subplebbitAddress field of publication is not the same as the subplebbit being published to",
-    ERR_AUTHOR_IS_BANNED = "Author is banned"
+    ERR_AUTHOR_IS_BANNED = "Author is banned",
+    ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED = "The parent of this publication has been removed",
+    ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED = "The parent of this publication has been deleted",
+    ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD = "CommentEdit includes a field that cannot be used for authors"
 }

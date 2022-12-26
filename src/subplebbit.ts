@@ -543,6 +543,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 return messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST;
             }
 
+            if (parent.removed) {
+                log(`(${challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED);
+                return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED;
+            }
+
+            if (parent.authorEdit?.deleted) {
+                log(`(${challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
+                return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED;
+            }
+
             if (parent.timestamp > postOrCommentOrVote.timestamp) {
                 log(`(${challengeRequestId}): `, messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT);
                 return messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT;
