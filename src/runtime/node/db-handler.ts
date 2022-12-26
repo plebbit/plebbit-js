@@ -161,11 +161,11 @@ export class DbHandler {
             table.json("authorEdit").nullable();
             table.json("flair").nullable();
             table.timestamp("updatedAt").nullable().checkPositive();
-            table.boolean("deleted").nullable();
-            table.boolean("spoiler").nullable();
-            table.boolean("pinned").nullable();
-            table.boolean("locked").nullable();
-            table.boolean("removed").nullable();
+            table.boolean("deleted").defaultTo(false);
+            table.boolean("spoiler").defaultTo(false);
+            table.boolean("pinned").defaultTo(false);
+            table.boolean("locked").defaultTo(false);
+            table.boolean("removed").defaultTo(false);
             table.text("moderatorReason").nullable();
             table.text("protocolVersion").notNullable();
         });
@@ -460,7 +460,9 @@ export class DbHandler {
             .from(`${TABLES.COMMENTS} AS comments2`)
             .count("")
             .where({
-                "comments2.parentCid": this._knex.raw(`${TABLES.COMMENTS}.cid`)
+                "comments2.parentCid": this._knex.raw(`${TABLES.COMMENTS}.cid`),
+                "comments2.deleted": false,
+                "comments2.removed": false
             })
             .as("replyCount");
 
