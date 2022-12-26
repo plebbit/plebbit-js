@@ -424,7 +424,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             // CommentEdit is signed by original author
             for (const editField of Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON()))) {
                 if (!AUTHOR_EDIT_FIELDS.includes(<any>editField)) {
-                    const msg = `Author (${editorAddress}) included field (${editField}) that cannot be used for a author's CommentEdit`;
+                    const msg = messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD;
                     log(`(${challengeRequestId}): `, msg);
                     return msg;
                 }
@@ -443,7 +443,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
             for (const editField of Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON()))) {
                 if (!MOD_EDIT_FIELDS.includes(<any>editField)) {
-                    const msg = `${modRole.role} (${editorAddress}) included field (${editField}) that cannot be used for a mod's CommentEdit`;
+                    const msg = messages.ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD;
                     log(`(${challengeRequestId}): `, msg);
                     return msg;
                 }
@@ -478,7 +478,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     private async handleVote(newVote: Vote, challengeRequestId: string) {
-        const log = Logger("plebbit-js:subplebbit:handleChallengeExchange:storePublicationIfValid:handleVote");
+        const log = Logger("plebbit-js:subplebbit:handleVote");
 
         const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address);
 
