@@ -162,6 +162,7 @@ describe("Test pages sorting", async () => {
     });
 
     describe("subplebbit.posts", async () => {
+        it(`Hot page is pre-loaded`, async () => expect(Object.keys(subplebbit.posts.pages)).to.deep.equal(["hot"]));
         postSortObjects.map((sort) => it(`${sort.type} pages are sorted correctly`, async () => await testSorting(sort, false)));
     });
 
