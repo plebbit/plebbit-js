@@ -543,12 +543,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 return messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST;
             }
 
-            if (parent.removed) {
+            if (parent.removed && !(postOrCommentOrVote instanceof CommentEdit)) {
                 log(`(${challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED);
                 return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED;
             }
 
-            if (parent.authorEdit?.deleted) {
+            if (parent.authorEdit?.deleted && !(postOrCommentOrVote instanceof CommentEdit)) {
                 log(`(${challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
                 return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED;
             }
