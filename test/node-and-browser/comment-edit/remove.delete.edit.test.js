@@ -228,11 +228,136 @@ describe(`Marking reply as removed`, async () => {
     });
 });
 
-describe("Marking comment as deleted", async () => {
-    it(`Regular author can't mark a comment that is not theirs as deleted`);
-    it(`Author can delete their own comment`);
-    it(`Deleted post don't show in subplebbit posts`);
-    it(`Deleted comments don't show in replies pages`);
-    it(`Mod can delete their own comment`);
-    it(`Sub rejects votes or comments under deleted comment`);
+describe("Marking post as deleted", async () => {
+    let plebbit, postToDelete, modPostToDelete;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        [postToDelete, modPostToDelete] = await Promise.all([
+            waitTillNewCommentIsPublished(subplebbitAddress, plebbit),
+            waitTillNewCommentIsPublished(subplebbitAddress, plebbit, { signer: roles[2].signer })
+        ]);
+    });
+    it(`Regular author can't mark a post that is not theirs as deleted`, async () => {
+        const removeEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: postToDelete.subplebbitAddress,
+            commentCid: postToDelete.cid,
+            moderatorReason: "To delete a post" + Date.now(),
+            deleted: true,
+            signer: await plebbit.createSigner()
+        });
+        await removeEdit.publish();
+        await new Promise((resolve) =>
+            removeEdit.once("challengeverification", (verificationMsg, _) => {
+                expect(verificationMsg.challengeSuccess).to.be.false;
+                expect(verificationMsg.reason).to.equal(messages.ERR_UNAUTHORIZED_COMMENT_EDIT);
+                resolve();
+            })
+        );
+    });
+
+    it(`Author of post can delete their own post`, async () => {
+        const removeEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: postToDelete.subplebbitAddress,
+            commentCid: postToDelete.cid,
+            deleted: true,
+            signer: postToDelete.signer
+        });
+        await removeEdit.publish();
+        await new Promise((resolve) =>
+            removeEdit.once("challengeverification", (verificationMsg, _) => {
+                expect(verificationMsg.challengeSuccess).to.be.true;
+                resolve();
+            })
+        );
+    });
+    it(`Deleted post is omitted from subplebbit.posts`, async () => {
+        const sub = await plebbit.getSubplebbit(postToDelete.subplebbitAddress);
+        const isPostInPages = async () => {
+            const pages = await Promise.all(Object.values(sub.posts.pageCids).map((pageCid) => sub.posts.getPage(pageCid)));
+            return pages.some((page) => page.comments.some((comment) => comment.cid === postToDelete.cid));
+        };
+        if (!(await isPostInPages())) return;
+
+        sub._updateIntervalMs = updateInterval;
+        await sub.update();
+        await new Promise((resolve) =>
+            sub.on("update", async () => {
+                if (!(await isPostInPages())) resolve();
+            })
+        );
+        sub.stop();
+    });
+
+    it(`Sub rejects votes or comments under deleted post`, async () => {
+        const replyUnderDeletedPost = await generateMockComment(postToDelete, plebbit);
+        const voteUnderDeletedComment = await generateMockVote(postToDelete, 1, plebbit);
+        await Promise.all([replyUnderDeletedPost.publish(), voteUnderDeletedComment.publish()]);
+        await Promise.all(
+            [replyUnderDeletedPost, voteUnderDeletedComment].map(
+                (pub) =>
+                    new Promise((resolve) =>
+                        pub.once("challengeverification", (verificationMsg, _) => {
+                            expect(verificationMsg.challengeSuccess).to.be.false;
+                            expect(verificationMsg.reason).to.equal(messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
+                            resolve();
+                        })
+                    )
+            )
+        );
+    });
+    it(`Mod can delete their own post`, async () => {
+        const deleteEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: modPostToDelete.subplebbitAddress,
+            commentCid: modPostToDelete.cid,
+            deleted: true,
+            signer: modPostToDelete.signer
+        });
+        await deleteEdit.publish();
+        await new Promise((resolve) =>
+            deleteEdit.once("challengeverification", (verificationMsg, _) => {
+                expect(verificationMsg.challengeSuccess).to.be.true;
+                resolve();
+            })
+        );
+    });
+    it(`Author can undelete their own post`, async () => {
+        const undeleteEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: postToDelete.subplebbitAddress,
+            commentCid: postToDelete.cid,
+            deleted: false,
+            signer: postToDelete.signer
+        });
+        await undeleteEdit.publish();
+        await new Promise((resolve) =>
+            undeleteEdit.once("challengeverification", (verificationMsg, _) => {
+                expect(verificationMsg.challengeSuccess).to.be.true;
+                resolve();
+            })
+        );
+    });
+    it(`Mod can undelete their own post`, async () => {
+        const undeleteEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: modPostToDelete.subplebbitAddress,
+            commentCid: modPostToDelete.cid,
+            deleted: false,
+            signer: modPostToDelete.signer
+        });
+        await undeleteEdit.publish();
+        await new Promise((resolve) =>
+            undeleteEdit.once("challengeverification", (verificationMsg, _) => {
+                expect(verificationMsg.challengeSuccess).to.be.true;
+                resolve();
+            })
+        );
+    });
+});
+
+describe("Marking reply as deleted", async () => {
+    it(`Regular author can't mark a reply that is not theirs as deleted`, async () => {});
+    it(`Author can delete their own reply`);
+    it(`Deleted reply don't show in subplebbit posts`);
+    it(`Deleted replies don't show in comment.replies pages`);
+    it(`Mod can delete their own replies`);
+    it(`Sub rejects votes or replies under replies comment`);
 });
