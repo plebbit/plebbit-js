@@ -176,21 +176,55 @@ describe(`Marking reply as removed`, async () => {
         expect(post.replyCount).to.equal(1);
     });
 
-    describe(`Removed replies show up in subplebbit.posts with 'removed'=true`, async () => {
-        const loadedSub = await plebbit.getSubpelbbit(post.subplebbitAddress);
+    it(`Removed replies show up in subplebbit.posts with 'removed'=true`, async () => {
+        const loadedSub = await plebbit.getSubplebbit(post.subplebbitAddress);
         const subPages = await Promise.all(Object.values(loadedSub.posts.pageCids).map((pageCid) => loadedSub.posts.getPage(pageCid)));
 
         await Promise.all(
             subPages.map(async (page) => {
                 const postInPage = page.comments.find((comment) => comment.cid === post.cid);
                 const postPages = await Promise.all(
-                    Object.values(postInPage.replies.pageCids).map((pageCid) => postInPage.replies.getPage(pageCid))
+                    Object.values(postInPage.replies.pageCids).map((pageCid) => loadedSub.posts.getPage(pageCid))
                 );
                 postPages.forEach((page) => expect(page.comments[0].removed).to.be.true);
             })
         );
+    });
 
-        describe("Mod can unremove a reply");
+    it("Mod can unremove a reply", async () => {
+        const unremoveEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: replyToBeRemoved.subplebbitAddress,
+            commentCid: replyToBeRemoved.cid,
+            moderatorReason: "To unremove a reply" + Date.now(),
+            removed: false,
+            signer: roles[2].signer
+        });
+        await unremoveEdit.publish();
+        await new Promise((resolve) =>
+            unremoveEdit.once("challengeverification", (verificationMsg, _) => {
+                expect(verificationMsg.challengeSuccess).to.be.true;
+                resolve();
+            })
+        );
+
+        await new Promise((resolve) => replyToBeRemoved.once("update", resolve));
+        expect(replyToBeRemoved.removed).to.be.false;
+        expect(replyToBeRemoved.moderatorReason).to.equal(unremoveEdit.moderatorReason);
+
+        const sub = await plebbit.getSubplebbit(replyToBeRemoved.subplebbitAddress);
+        const subPages = await Promise.all(Object.values(sub.posts.pageCids).map((pageCid) => sub.posts.getPage(pageCid)));
+
+        subPages.forEach(async (page) => {
+            const postInPage = page.comments.find((comment) => comment.cid === post.cid);
+            const repliesPages = await Promise.all(
+                Object.values(postInPage.replies.pageCids).map((pageCid) => postInPage.replies.getPage(pageCid))
+            );
+            repliesPages.forEach(
+                (page) =>
+                    expect(page.comments[0].removed).to.be.false &&
+                    expect(page.comments[0].moderatorReason).to.equal(unremoveEdit.moderatorReason)
+            );
+        });
     });
 });
 
