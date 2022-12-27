@@ -273,6 +273,24 @@ describe("Marking post as deleted", async () => {
         );
     });
 
+    it(`Mod delete a post that is not theirs`, async () => {
+        const removeEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: postToDelete.subplebbitAddress,
+            commentCid: postToDelete.cid,
+            moderatorReason: "To delete a post" + Date.now(),
+            deleted: true,
+            signer: roles[2].signer
+        });
+        await removeEdit.publish();
+        await new Promise((resolve) =>
+            removeEdit.once("challengeverification", (verificationMsg, _) => {
+                expect(verificationMsg.challengeSuccess).to.be.false;
+                expect(verificationMsg.reason).to.equal(messages.ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD);
+                resolve();
+            })
+        );
+    });
+
     it(`Author of post can delete their own post`, async () => {
         const removeEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToDelete.subplebbitAddress,
