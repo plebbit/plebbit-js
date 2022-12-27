@@ -191,6 +191,23 @@ describe(`Marking reply as removed`, async () => {
         );
     });
 
+    it(`Author can't unremove a reply`, async () => {
+        const unremoveEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: replyToBeRemoved.subplebbitAddress,
+            commentCid: replyToBeRemoved.cid,
+            moderatorReason: "To unremove a reply by author" + Date.now(),
+            removed: false,
+            signer: replyToBeRemoved.signer
+        });
+        await unremoveEdit.publish();
+        await new Promise((resolve) =>
+            unremoveEdit.once("challengeverification", (verificationMsg, _) => {
+                expect(verificationMsg.challengeSuccess).to.be.false;
+                expect(verificationMsg.reason).to.equal(messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD);
+                resolve();
+            })
+        );
+    });
     it("Mod can unremove a reply", async () => {
         const unremoveEdit = await plebbit.createCommentEdit({
             subplebbitAddress: replyToBeRemoved.subplebbitAddress,
