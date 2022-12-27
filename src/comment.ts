@@ -119,7 +119,8 @@ export class Comment extends Publication implements CommentType {
             postCid: this.postCid,
             depth: this.depth,
             thumbnailUrl: this.thumbnailUrl,
-            ipnsKeyName: this.ipnsKeyName
+            ipnsKeyName: this.ipnsKeyName,
+            deleted: this.deleted
         };
     }
 
