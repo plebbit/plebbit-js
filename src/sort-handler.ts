@@ -58,7 +58,6 @@ export class SortHandler {
                 );
             })
         );
-        assert(this.subplebbit.plebbit.ipfsClient);
         for (let i = chunksWithReplies.length - 1; i >= 0; i--) {
             const pageComments = chunksWithReplies[i].map((c) => c.toJSONPages());
             const page = new Page({
@@ -181,9 +180,7 @@ export class SortHandler {
             else if (sortName === "old") comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", trx);
             else comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx);
 
-            comments = comments.filter(
-                (comment) => comment.subplebbitAddress === this.subplebbit.address && !comment.removed && !comment?.authorEdit?.deleted
-            );
+            comments = comments.filter((comment) => comment.subplebbitAddress === this.subplebbit.address);
             if (comments.length === 0) return [undefined, undefined];
 
             return this.sortComments(comments, sortName);

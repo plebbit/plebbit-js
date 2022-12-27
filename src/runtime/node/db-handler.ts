@@ -460,9 +460,7 @@ export class DbHandler {
             .from(`${TABLES.COMMENTS} AS comments2`)
             .count("")
             .where({
-                "comments2.parentCid": this._knex.raw(`${TABLES.COMMENTS}.cid`),
-                "comments2.deleted": false,
-                "comments2.removed": false
+                "comments2.parentCid": this._knex.raw(`${TABLES.COMMENTS}.cid`)
             })
             .as("replyCount");
 
