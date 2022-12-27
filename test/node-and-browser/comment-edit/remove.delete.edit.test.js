@@ -155,7 +155,8 @@ describe(`Marking reply as removed`, async () => {
         post.stop();
         replyToBeRemoved.stop();
     });
-    it(`Removed replies show in parent comment pages with 'removed' = true`, async () => {
+
+    it(`Mod can remove a reply`, async () => {
         expect(post.replies.pages.topAll.comments[0].cid).to.equal(replyToBeRemoved.cid); // Have at least one comment
         expect(post.replies.pages.topAll.comments[0].removed).to.be.false; // Have at least one comment
         expect(post.replyCount).to.equal(1);
@@ -167,6 +168,15 @@ describe(`Marking reply as removed`, async () => {
             signer: roles[2].signer // Mod role
         });
         await removeEdit.publish();
+
+        await new Promise((resolve) =>
+            removeEdit.once("challengeverification", (verificationMsg, _) => {
+                expect(verificationMsg.challengeSuccess).to.be.true;
+                resolve();
+            })
+        );
+    });
+    it(`Removed replies show in parent comment pages with 'removed' = true`, async () => {
         await Promise.all([
             new Promise((resolve) => replyToBeRemoved.once("update", resolve)),
             new Promise((resolve) => post.once("update", resolve))
@@ -273,7 +283,7 @@ describe("Marking post as deleted", async () => {
         );
     });
 
-    it(`Mod delete a post that is not theirs`, async () => {
+    it(`Mod can't delete a post that is not theirs`, async () => {
         const removeEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToDelete.subplebbitAddress,
             commentCid: postToDelete.cid,
@@ -389,10 +399,62 @@ describe("Marking post as deleted", async () => {
 });
 
 describe("Marking reply as deleted", async () => {
-    it(`Regular author can't mark a reply that is not theirs as deleted`, async () => {});
-    it(`Author can delete their own reply`);
-    it(`Deleted reply don't show in subplebbit posts`);
-    it(`Deleted replies don't show in comment.replies pages`);
-    it(`Mod can delete their own replies`);
-    it(`Sub rejects votes or replies under replies comment`);
+    let plebbit, replyToDelete, post;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        post = await waitTillNewCommentIsPublished(subplebbitAddress, plebbit);
+        post._updateIntervalMs = updateInterval;
+        await Promise.all([post.update(), new Promise((resolve) => post.once("update", resolve))]);
+        expect(post.replies.pages.topAll).to.be.undefined;
+        replyToDelete = await generateMockComment(post, plebbit);
+        replyToDelete._updateIntervalMs = updateInterval;
+        await replyToDelete.publish();
+        await new Promise((resolve) => post.once("update", resolve));
+        await replyToDelete.update();
+    });
+    after(async () => {
+        post.stop();
+        replyToDelete.stop();
+    });
+
+    it(`Author can delete their own reply`, async () => {
+        const deleteEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: replyToDelete.subplebbitAddress,
+            commentCid: replyToDelete.cid,
+            deleted: true,
+            signer: replyToDelete.signer
+        });
+        await deleteEdit.publish();
+
+        await new Promise((resolve) =>
+            deleteEdit.once("challengeverification", (verificationMsg, _) => {
+                expect(verificationMsg.challengeSuccess).to.be.true;
+                resolve();
+            })
+        );
+    });
+    it(`Deleted replies show in parent comment pages with 'deleted' = true`, async () => {
+        await Promise.all([
+            new Promise((resolve) => replyToDelete.once("update", resolve)),
+            new Promise((resolve) => post.once("update", resolve))
+        ]);
+        expect(replyToDelete.deleted).to.be.true;
+        expect(post.replies.pages.topAll.comments[0].deleted).to.be.true;
+        expect(post.replyCount).to.equal(1);
+    });
+    it(`Deleted replies show up in subplebbit.posts with 'deleted' = true`, async () => {
+        const loadedSub = await plebbit.getSubplebbit(post.subplebbitAddress);
+        const subPages = await Promise.all(Object.values(loadedSub.posts.pageCids).map((pageCid) => loadedSub.posts.getPage(pageCid)));
+
+        await Promise.all(
+            subPages.map(async (page) => {
+                const postInPage = page.comments.find((comment) => comment.cid === post.cid);
+                const postPages = await Promise.all(
+                    Object.values(postInPage.replies.pageCids).map((pageCid) => loadedSub.posts.getPage(pageCid))
+                );
+                postPages.forEach((page) => expect(page.comments[0].deleted).to.be.true);
+            })
+        );
+    });
 });
