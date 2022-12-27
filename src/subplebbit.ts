@@ -921,21 +921,30 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             );
         }
 
+        const updateTriggerKey = CACHE_KEYS[CACHE_KEYS.PREFIX_TRIGGER_COMMENT_UPDATE].concat(dbComment.cid);
+        const updateTriggered = await this.dbHandler.keyvGet(updateTriggerKey);
         if (
             !commentIpns ||
-            !lodash.isEqual(
-                lodash.omit(commentIpns, ["replies", "signature"]),
-                removeKeysWithUndefinedValues(lodash.omit(dbComment.toJSONCommentUpdate(), ["replies", "signature"]))
-            )
+            updateTriggered ||
+            encode(lodash.omit(commentIpns, ["replies", "signature"])) !==
+                encode(lodash.omit(dbComment.toJSONCommentUpdate(), ["replies", "signature"]))
         ) {
-            log.trace(`Attempting to update Comment (${dbComment.cid})`);
+            log(`Attempting to update Comment (${dbComment.cid})`);
             await this.sortHandler.deleteCommentPageCache(dbComment);
             dbComment.author.subplebbit = await this.dbHandler.querySubplebbitAuthorFields(dbComment.author.address);
             dbComment.setUpdatedAt(timestamp());
             await this.dbHandler.upsertComment(dbComment.toJSONForDb(undefined), dbComment.author.toJSONForDb(), undefined); // Need to insert comment in DB before generating pages so props updated above would be included in pages
             dbComment.setReplies(await this.sortHandler.generateRepliesPages(dbComment, undefined));
-            const subplebbitSignature = await signCommentUpdate(dbComment.toJSONCommentUpdate(), this.signer);
-            return this._publishCommentIpns(dbComment, { ...dbComment.toJSONCommentUpdate(), signature: subplebbitSignature });
+            const newIpns = await this._publishCommentIpns(dbComment, {
+                ...dbComment.toJSONCommentUpdate(),
+                signature: await signCommentUpdate(dbComment.toJSONCommentUpdate(), this.signer)
+            });
+            await this.dbHandler.keyvDelete(updateTriggerKey);
+            if (dbComment.parentCid) {
+                const triggerParentUpdateKey = CACHE_KEYS[CACHE_KEYS.PREFIX_TRIGGER_COMMENT_UPDATE].concat(dbComment.parentCid);
+                await this.dbHandler.keyvSet(triggerParentUpdateKey, true);
+            }
+            return newIpns;
         }
         log.trace(`Comment (${dbComment.cid}) is up-to-date and does not need syncing`);
     }
