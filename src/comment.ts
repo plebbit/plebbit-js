@@ -281,7 +281,7 @@ export class Comment extends Publication implements CommentType {
     }
 
     stop() {
-        clearInterval(this._updateInterval);
+        this._updateInterval = clearInterval(this._updateInterval);
     }
 
     async publish(): Promise<void> {
