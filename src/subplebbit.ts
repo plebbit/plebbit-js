@@ -553,6 +553,18 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED;
             }
 
+            const post = await this.dbHandler.queryComment(parent.postCid);
+
+            if (post.removed && !(postOrCommentOrVote instanceof CommentEdit)) {
+                log(`(${challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED);
+                return messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED;
+            }
+
+            if (post.deleted && !(postOrCommentOrVote instanceof CommentEdit)) {
+                log(`(${challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
+                return messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED;
+            }
+
             if (parent.timestamp > postOrCommentOrVote.timestamp) {
                 log(`(${challengeRequestId}): `, messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT);
                 return messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT;
