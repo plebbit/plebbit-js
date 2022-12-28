@@ -279,7 +279,7 @@ describe(`Marking reply as removed`, async () => {
 });
 
 describe("Marking post as deleted", async () => {
-    let plebbit, postToDelete, modPostToDelete;
+    let plebbit, postToDelete, modPostToDelete, postReply;
 
     before(async () => {
         plebbit = await mockPlebbit();
@@ -287,6 +287,7 @@ describe("Marking post as deleted", async () => {
             publishRandomPost(subplebbitAddress, plebbit),
             publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer })
         ]);
+        postReply = await publishRandomReply(postToDelete, plebbit);
     });
     it(`Regular author can't mark a post that is not theirs as deleted`, async () => {
         const removeEdit = await plebbit.createCommentEdit({
@@ -339,6 +340,25 @@ describe("Marking post as deleted", async () => {
             })
         );
     });
+
+    it(`Can't publish a reply or vote under a reply of a deleted post`, async () => {
+        const [reply, vote] = [await generateMockComment(postReply, plebbit), await generateMockVote(postReply, 1, plebbit)];
+
+        await Promise.all([reply.publish(), vote.publish()]);
+        await Promise.all(
+            [reply, vote].map(
+                (pub) =>
+                    new Promise((resolve) =>
+                        pub.once("challengeverification", (verificationMsg, _) => {
+                            expect(verificationMsg.challengeSuccess).to.be.false;
+                            expect(verificationMsg.reason).to.equal(messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
+                            resolve();
+                        })
+                    )
+            )
+        );
+    });
+
     it(`Deleted post is omitted from subplebbit.posts`, async () => {
         const sub = await plebbit.getSubplebbit(postToDelete.subplebbitAddress);
         const isPostInPages = async () => {
