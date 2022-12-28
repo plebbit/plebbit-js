@@ -285,7 +285,8 @@ describe(`Marking reply as removed`, async () => {
     });
 
     it(`A new CommentUpdate is published for unremoving a reply`, async () => {
-        await new Promise((resolve) => replyToBeRemoved.once("update", resolve));
+        await new Promise((resolve) => replyToBeRemoved.on("update", () => !replyToBeRemoved.removed && resolve()));
+        replyToBeRemoved.removeAllListeners("update");
         expect(replyToBeRemoved.removed).to.be.false;
         expect(replyToBeRemoved.moderatorReason).to.equal("To unremove a reply");
     });
