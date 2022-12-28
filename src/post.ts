@@ -19,7 +19,6 @@ class Post extends Comment implements PostType {
         this.thumbnailUrl = props.thumbnailUrl;
         this.title = props.title;
         this.parentCid = undefined;
-        this.depth = 0;
         this.link = props.link;
     }
 
