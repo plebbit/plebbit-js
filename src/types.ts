@@ -106,7 +106,7 @@ export interface PublicationType extends Required<CreatePublicationOptions> {
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
 }
 
-interface CreatePublicationOptions {
+export interface CreatePublicationOptions {
     author?: Partial<Omit<AuthorType, "subplebbit" | "banExpiresAt">>;
     subplebbitAddress: string; // all publications are directed to a subplebbit owner
     timestamp?: number; // // Time of publishing in seconds, Math.round(Date.now() / 1000) if undefined
@@ -357,7 +357,7 @@ export interface CommentType extends Partial<CommentUpdate>, Omit<CreateCommentO
     signer?: SignerType;
     original?: Pick<Partial<CommentType>, "author" | "content" | "flair">;
     thumbnailUrl?: string;
-    deleted?: boolean; // An alias for authorEdit.deleted
+    deleted?: CommentUpdate["authorEdit"]["deleted"]; // An alias for authorEdit.deleted
     cid?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
     ipnsName?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
 }
