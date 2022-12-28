@@ -473,12 +473,13 @@ describe("Marking post as deleted", async () => {
 });
 
 describe("Marking reply as deleted", async () => {
-    let plebbit, replyToDelete, post;
+    let plebbit, replyToDelete, post, replyUnderDeletedReply;
 
     before(async () => {
         plebbit = await mockPlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit);
         replyToDelete = await publishRandomReply(post, plebbit);
+        replyUnderDeletedReply = await publishRandomReply(replyToDelete, plebbit);
         await Promise.all([replyToDelete.update(), post.update()]);
     });
     after(async () => {
@@ -525,5 +526,28 @@ describe("Marking reply as deleted", async () => {
             })
         );
     });
-    it(`Can publish a reply or vote under a reply of a deleted reply`);
+
+    it(`Can publish a reply or vote under a reply of a deleted reply`, async () => {
+        // post
+        //   -- replyToDeleted (removed=true)
+        //     -- replyUnderDeletedReply (removed = false)
+        // We're testing publishing under replyUnderDeletedReply
+        const [reply, vote] = [
+            await generateMockComment(replyUnderDeletedReply, plebbit),
+            await generateMockVote(replyUnderDeletedReply, 1, plebbit)
+        ];
+
+        await Promise.all([reply.publish(), vote.publish()]);
+        await Promise.all(
+            [reply, vote].map(
+                (pub) =>
+                    new Promise((resolve) =>
+                        pub.once("challengeverification", (verificationMsg, _) => {
+                            expect(verificationMsg.challengeSuccess).to.be.true;
+                            resolve();
+                        })
+                    )
+            )
+        );
+    });
 });
