@@ -27,11 +27,11 @@ Publication {
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
 }
 Comment extends Publication /* (IPFS file) */ {
-  postCid?: string // helps faster loading post info for reply direct linking, should be added by the subplebbit owner not author
+  postCid?: string // helps faster loading post info for reply direct linking, added by the subplebbit owner not author
   parentCid?: string // same as postCid for top level comments
   content: string
   previousCid: string // each post is a linked list
-  depth: number // 0 = post, 1 = top level reply, 2+ = nested reply
+  depth: number // 0 = post, 1 = top level reply, 2+ = nested reply, added by the subplebbit owner not author
   ipnsName: string // each post/comment needs its own IPNS record (CommentUpdate) for its mutable data like edits, vote counts, comments
   spoiler?: boolean
   flair?: Flair // arbitrary colored string added by the author or mods to describe the author or comment
@@ -39,7 +39,7 @@ Comment extends Publication /* (IPFS file) */ {
 Post extends Comment /* (IPFS file) */ {
   postCid?: undefined // a post can't know its own CID
   parentCid?: undefined // posts have no parent
-  depth: 0 // posts have 0 depth
+  depth: 0 // posts have 0 depth, added by the subplebbit owner not author
   title: string
   link?: string
   thumbnailUrl?: string // fetched by subplebbit owner, not author, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
