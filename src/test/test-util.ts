@@ -333,7 +333,12 @@ async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
     await loadedSub.update();
     await comment.publish();
 
-    await new Promise((resolve) => comment.once("challengeverification", resolve));
+    await new Promise((resolve) =>
+        comment.once("challengeverification", (verificationMsg) => {
+            if (!verificationMsg.challengeSuccess) throw Error("Failed to publish comment");
+            else resolve(1);
+        })
+    );
 
     await comment.update();
 
@@ -361,7 +366,7 @@ async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
 }
 
 export async function publishRandomReply(parentComment: Comment, plebbit: Plebbit, commentProps: Partial<CommentType>): Promise<Comment> {
-    const reply = await generateMockComment(parentComment, plebbit, undefined, true, {
+    const reply = await generateMockComment(parentComment, plebbit, commentProps?.signer, false, {
         content: `Content ${Date.now() + Math.random()}`,
         ...commentProps
     });
@@ -370,7 +375,7 @@ export async function publishRandomReply(parentComment: Comment, plebbit: Plebbi
 }
 
 export async function publishRandomPost(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<PostType>) {
-    const post = await generateMockPost(subplebbitAddress, plebbit, undefined, true, {
+    const post = await generateMockPost(subplebbitAddress, plebbit, postProps?.signer, false, {
         content: `Content ${Date.now() + Math.random()}`,
         ...postProps
     });
