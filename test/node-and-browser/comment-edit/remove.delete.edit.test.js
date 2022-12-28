@@ -1,5 +1,11 @@
 const signers = require("../../fixtures/signers");
-const { waitTillNewCommentIsPublished, mockPlebbit, generateMockComment, generateMockVote } = require("../../../dist/node/test/test-util");
+const {
+    publishRandomPost,
+    publishRandomReply,
+    mockPlebbit,
+    generateMockComment,
+    generateMockVote
+} = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
 
@@ -15,9 +21,8 @@ describe(`Marking posts as removed`, async () => {
     let plebbit, postToRemove;
     before(async () => {
         plebbit = await mockPlebbit();
-        postToRemove = await waitTillNewCommentIsPublished(subplebbitAddress, plebbit);
-        postToRemove._updateIntervalMs = updateInterval;
-        await Promise.all([new Promise((resolve) => postToRemove.once("update", resolve)), postToRemove.update()]);
+        postToRemove = await publishRandomPost(subplebbitAddress, plebbit);
+        await postToRemove.update();
     });
     after(async () => {
         postToRemove.stop();
@@ -26,7 +31,7 @@ describe(`Marking posts as removed`, async () => {
         const removeEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToRemove.subplebbitAddress,
             commentCid: postToRemove.cid,
-            moderatorReason: "To remove a post" + Date.now(),
+            moderatorReason: "To remove a post",
             removed: true,
             signer: roles[2].signer // Mod role
         });
@@ -37,10 +42,12 @@ describe(`Marking posts as removed`, async () => {
                 resolve();
             })
         );
+    });
 
+    it(`A new CommentUpdate is published with removed=true`, async () => {
         await new Promise((resolve) => postToRemove.once("update", resolve));
         expect(postToRemove.removed).to.be.true;
-        expect(postToRemove.moderatorReason).to.equal(removeEdit.moderatorReason);
+        expect(postToRemove.moderatorReason).to.equal("To remove a post");
     });
     it(`Removed post don't show in subplebbit.posts`, async () => {
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
@@ -79,7 +86,7 @@ describe(`Marking posts as removed`, async () => {
         );
     });
     it(`Author of post can't mark it as removed`, async () => {
-        const postToBeRemoved = await waitTillNewCommentIsPublished(subplebbitAddress, plebbit);
+        const postToBeRemoved = await publishRandomPost(subplebbitAddress, plebbit);
         const removeEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToBeRemoved.subplebbitAddress,
             commentCid: postToBeRemoved.cid,
@@ -140,15 +147,9 @@ describe(`Marking reply as removed`, async () => {
     let plebbit, post, replyToBeRemoved;
     before(async () => {
         plebbit = await mockPlebbit();
-        post = await waitTillNewCommentIsPublished(subplebbitAddress, plebbit);
-        post._updateIntervalMs = updateInterval;
-        await Promise.all([post.update(), new Promise((resolve) => post.once("update", resolve))]);
-        expect(post.replies.pages.topAll).to.be.undefined;
-        replyToBeRemoved = await generateMockComment(post, plebbit);
-        replyToBeRemoved._updateIntervalMs = updateInterval;
-        await replyToBeRemoved.publish();
-        await new Promise((resolve) => post.once("update", resolve));
-        await replyToBeRemoved.update();
+        post = await publishRandomPost(subplebbitAddress, plebbit);
+        replyToBeRemoved = await publishRandomReply(post, plebbit);
+        await Promise.all([replyToBeRemoved.update(), post.update(), new Promise((resolve) => post.once("update", resolve))]);
     });
 
     after(async () => {
@@ -157,8 +158,8 @@ describe(`Marking reply as removed`, async () => {
     });
 
     it(`Mod can remove a reply`, async () => {
-        expect(post.replies.pages.topAll.comments[0].cid).to.equal(replyToBeRemoved.cid); // Have at least one comment
-        expect(post.replies.pages.topAll.comments[0].removed).to.be.false; // Have at least one comment
+        expect(post.replies.pages.topAll.comments[0].cid).to.equal(replyToBeRemoved.cid);
+        expect(post.replies.pages.topAll.comments[0].removed).to.be.false;
         expect(post.replyCount).to.equal(1);
         const removeEdit = await plebbit.createCommentEdit({
             subplebbitAddress: replyToBeRemoved.subplebbitAddress,
@@ -253,6 +254,11 @@ describe(`Marking reply as removed`, async () => {
             );
         });
     });
+
+    it.skip(`Can't publish a reply under a reply of a removed post`, async () => {
+        const post = await waitTillNewPostIsPublished(subplebbitAddress, plebbit);
+    });
+    it(`Can publish a reply under a reply of a removed reply`);
 });
 
 describe("Marking post as deleted", async () => {
@@ -261,8 +267,8 @@ describe("Marking post as deleted", async () => {
     before(async () => {
         plebbit = await mockPlebbit();
         [postToDelete, modPostToDelete] = await Promise.all([
-            waitTillNewCommentIsPublished(subplebbitAddress, plebbit),
-            waitTillNewCommentIsPublished(subplebbitAddress, plebbit, { signer: roles[2].signer })
+            publishRandomPost(subplebbitAddress, plebbit),
+            publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer })
         ]);
     });
     it(`Regular author can't mark a post that is not theirs as deleted`, async () => {
@@ -403,15 +409,9 @@ describe("Marking reply as deleted", async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        post = await waitTillNewCommentIsPublished(subplebbitAddress, plebbit);
-        post._updateIntervalMs = updateInterval;
-        await Promise.all([post.update(), new Promise((resolve) => post.once("update", resolve))]);
-        expect(post.replies.pages.topAll).to.be.undefined;
-        replyToDelete = await generateMockComment(post, plebbit);
-        replyToDelete._updateIntervalMs = updateInterval;
-        await replyToDelete.publish();
-        await new Promise((resolve) => post.once("update", resolve));
-        await replyToDelete.update();
+        post = await publishRandomPost(subplebbitAddress, plebbit);
+        replyToDelete = await publishRandomReply(post, plebbit);
+        await Promise.all([replyToDelete.update(), post.update()]);
     });
     after(async () => {
         post.stop();
@@ -457,4 +457,6 @@ describe("Marking reply as deleted", async () => {
             })
         );
     });
+    it(`Can't publish a reply under a non deleted reply of a deleted post`);
+    it(`Can publish a reply under a non deleted reply of a deleted reply`);
 });

@@ -326,26 +326,54 @@ export async function mockPlebbit(dataPath?: string) {
     return plebbit;
 }
 
-export async function waitTillNewCommentIsPublished(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<PostType>) {
+async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
+    const loadedSub = await plebbit.getSubplebbit(comment.subplebbitAddress);
+    //@ts-ignore
+    loadedSub._updateIntervalMs = comment._updateIntervalMs = 200;
+    await loadedSub.update();
+    await comment.publish();
+
+    await new Promise((resolve) => comment.once("challengeverification", resolve));
+
+    await comment.update();
+
+    if (comment.depth === 0)
+        await new Promise((resolve) =>
+            loadedSub.on("update", () => loadedSub.posts.pages.hot.comments.some((post) => post.cid === comment.cid) && resolve(1))
+        );
+    else {
+        const parentComment = await plebbit.getComment(comment.parentCid);
+        //@ts-ignore
+        parentComment._updateIntervalMs = 200;
+        await Promise.all([
+            parentComment.update(),
+            new Promise((resolve) =>
+                parentComment.on(
+                    "update",
+                    () => parentComment.replies.pages.topAll?.comments?.some((tComment) => tComment.cid === comment.cid) && resolve(1)
+                )
+            )
+        ]);
+        parentComment.stop();
+    }
+
+    loadedSub.stop() && comment.stop();
+}
+
+export async function publishRandomReply(parentComment: Comment, plebbit: Plebbit, commentProps: Partial<CommentType>): Promise<Comment> {
+    const reply = await generateMockComment(parentComment, plebbit, undefined, true, {
+        content: `Content ${Date.now() + Math.random()}`,
+        ...commentProps
+    });
+    await _waitTillCommentIsOnline(reply, plebbit);
+    return reply;
+}
+
+export async function publishRandomPost(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<PostType>) {
     const post = await generateMockPost(subplebbitAddress, plebbit, undefined, true, {
         content: `Content ${Date.now() + Math.random()}`,
         ...postProps
     });
-    const loadedSub = await plebbit.getSubplebbit(subplebbitAddress);
-    //@ts-ignore
-    loadedSub._updateIntervalMs = 100;
-    await loadedSub.update();
-    await post.publish();
-
-    await new Promise((resolve) => post.once("challengeverification", resolve));
-
-    await new Promise((resolve) => {
-        loadedSub.on("update", (updatedSubplebbit: Subplebbit) => {
-            if (!updatedSubplebbit.posts.pages.hot) return;
-            if (updatedSubplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === post.cid)) resolve(1);
-        });
-    });
-    loadedSub.removeAllListeners("update");
-    loadedSub.stop();
+    await _waitTillCommentIsOnline(post, plebbit);
     return post;
 }
