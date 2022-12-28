@@ -164,11 +164,12 @@ describe(`Marking posts as removed`, async () => {
 });
 
 describe(`Marking reply as removed`, async () => {
-    let plebbit, post, replyToBeRemoved;
+    let plebbit, post, replyToBeRemoved, replyUnderRemovedReply;
     before(async () => {
         plebbit = await mockPlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit);
         replyToBeRemoved = await publishRandomReply(post, plebbit);
+        replyUnderRemovedReply = await publishRandomReply(replyToBeRemoved, plebbit);
         await Promise.all([replyToBeRemoved.update(), post.update(), new Promise((resolve) => post.once("update", resolve))]);
     });
 
@@ -184,7 +185,7 @@ describe(`Marking reply as removed`, async () => {
         const removeEdit = await plebbit.createCommentEdit({
             subplebbitAddress: replyToBeRemoved.subplebbitAddress,
             commentCid: replyToBeRemoved.cid,
-            moderatorReason: "To remove a reply" + Date.now(),
+            moderatorReason: "To remove a reply",
             removed: true,
             signer: roles[2].signer // Mod role
         });
@@ -197,11 +198,14 @@ describe(`Marking reply as removed`, async () => {
             })
         );
     });
+
+    it(`A new CommentUpdate is published for removing a reply`, async () => {
+        await new Promise((resolve) => replyToBeRemoved.once("update", resolve));
+        expect(replyToBeRemoved.removed).to.be.true;
+        expect(replyToBeRemoved.moderatorReason).to.equal("To remove a reply");
+    });
     it(`Removed replies show in parent comment pages with 'removed' = true`, async () => {
-        await Promise.all([
-            new Promise((resolve) => replyToBeRemoved.once("update", resolve)),
-            new Promise((resolve) => post.once("update", resolve))
-        ]);
+        await Promise.all([new Promise((resolve) => post.once("update", resolve))]);
         expect(replyToBeRemoved.removed).to.be.true;
         expect(post.replies.pages.topAll.comments[0].removed).to.be.true;
         expect(post.replyCount).to.equal(1);
@@ -219,6 +223,30 @@ describe(`Marking reply as removed`, async () => {
                 );
                 postPages.forEach((page) => expect(page.comments[0].removed).to.be.true);
             })
+        );
+    });
+
+    it(`Can publish a reply or vote under a reply of a removed reply`, async () => {
+        // post
+        //   -- replyToBeRemoved (removed=true)
+        //     -- replyUnderRemovedReply (removed = false)
+        // We're testing publishing under replyUnderRemovedReply
+        const [reply, vote] = [
+            await generateMockComment(replyUnderRemovedReply, plebbit),
+            await generateMockVote(replyUnderRemovedReply, 1, plebbit)
+        ];
+
+        await Promise.all([reply.publish(), vote.publish()]);
+        await Promise.all(
+            [reply, vote].map(
+                (pub) =>
+                    new Promise((resolve) =>
+                        pub.once("challengeverification", (verificationMsg, _) => {
+                            expect(verificationMsg.challengeSuccess).to.be.true;
+                            resolve();
+                        })
+                    )
+            )
         );
     });
 
@@ -243,7 +271,7 @@ describe(`Marking reply as removed`, async () => {
         const unremoveEdit = await plebbit.createCommentEdit({
             subplebbitAddress: replyToBeRemoved.subplebbitAddress,
             commentCid: replyToBeRemoved.cid,
-            moderatorReason: "To unremove a reply" + Date.now(),
+            moderatorReason: "To unremove a reply",
             removed: false,
             signer: roles[2].signer
         });
@@ -254,11 +282,15 @@ describe(`Marking reply as removed`, async () => {
                 resolve();
             })
         );
+    });
 
+    it(`A new CommentUpdate is published for unremoving a reply`, async () => {
         await new Promise((resolve) => replyToBeRemoved.once("update", resolve));
         expect(replyToBeRemoved.removed).to.be.false;
-        expect(replyToBeRemoved.moderatorReason).to.equal(unremoveEdit.moderatorReason);
+        expect(replyToBeRemoved.moderatorReason).to.equal("To unremove a reply");
+    });
 
+    it(`Unremoved reply is shown in subplebbit.posts`, async () => {
         const sub = await plebbit.getSubplebbit(replyToBeRemoved.subplebbitAddress);
         const subPages = await Promise.all(Object.values(sub.posts.pageCids).map((pageCid) => sub.posts.getPage(pageCid)));
 
@@ -274,8 +306,6 @@ describe(`Marking reply as removed`, async () => {
             );
         });
     });
-
-    it(`Can publish a reply under a reply of a removed reply`);
 });
 
 describe("Marking post as deleted", async () => {
@@ -494,6 +524,5 @@ describe("Marking reply as deleted", async () => {
             })
         );
     });
-    it(`Can't publish a reply under a non deleted reply of a deleted post`);
-    it(`Can publish a reply under a non deleted reply of a deleted reply`);
+    it(`Can publish a reply or vote under a reply of a deleted reply`);
 });
