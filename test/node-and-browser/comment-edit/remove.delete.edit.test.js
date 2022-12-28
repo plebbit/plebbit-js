@@ -18,10 +18,11 @@ const roles = [
 ];
 
 describe(`Marking posts as removed`, async () => {
-    let plebbit, postToRemove;
+    let plebbit, postToRemove, postReply;
     before(async () => {
         plebbit = await mockPlebbit();
         postToRemove = await publishRandomPost(subplebbitAddress, plebbit);
+        postReply = await publishRandomReply(postToRemove, plebbit);
         await postToRemove.update();
     });
     after(async () => {
@@ -85,6 +86,25 @@ describe(`Marking posts as removed`, async () => {
             )
         );
     });
+
+    it(`Can't publish a reply or vote under a reply of a removed post`, async () => {
+        const [reply, vote] = [await generateMockComment(postReply, plebbit), await generateMockVote(postReply, 1, plebbit)];
+
+        await Promise.all([reply.publish(), vote.publish()]);
+        await Promise.all(
+            [reply, vote].map(
+                (pub) =>
+                    new Promise((resolve) =>
+                        pub.once("challengeverification", (verificationMsg, _) => {
+                            expect(verificationMsg.challengeSuccess).to.be.false;
+                            expect(verificationMsg.reason).to.equal(messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED);
+                            resolve();
+                        })
+                    )
+            )
+        );
+    });
+
     it(`Author of post can't mark it as removed`, async () => {
         const postToBeRemoved = await publishRandomPost(subplebbitAddress, plebbit);
         const removeEdit = await plebbit.createCommentEdit({
@@ -255,9 +275,6 @@ describe(`Marking reply as removed`, async () => {
         });
     });
 
-    it.skip(`Can't publish a reply under a reply of a removed post`, async () => {
-        const post = await waitTillNewPostIsPublished(subplebbitAddress, plebbit);
-    });
     it(`Can publish a reply under a reply of a removed reply`);
 });
 
