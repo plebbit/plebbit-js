@@ -284,13 +284,6 @@ describe(`Marking reply as removed`, async () => {
         );
     });
 
-    it(`A new CommentUpdate is published for unremoving a reply`, async () => {
-        await new Promise((resolve) => replyToBeRemoved.on("update", () => !replyToBeRemoved.removed && resolve()));
-        replyToBeRemoved.removeAllListeners("update");
-        expect(replyToBeRemoved.removed).to.be.false;
-        expect(replyToBeRemoved.moderatorReason).to.equal("To unremove a reply");
-    });
-
     it(`Unremoved reply is shown in subplebbit.posts`, async () => {
         const sub = await plebbit.getSubplebbit(replyToBeRemoved.subplebbitAddress);
         const subPages = await Promise.all(Object.values(sub.posts.pageCids).map((pageCid) => sub.posts.getPage(pageCid)));
@@ -307,6 +300,13 @@ describe(`Marking reply as removed`, async () => {
             );
         });
     });
+});
+
+it(`A new CommentUpdate is published for unremoving a reply`, async () => {
+    await new Promise((resolve) => replyToBeRemoved.on("update", () => !replyToBeRemoved.removed && resolve()));
+    replyToBeRemoved.removeAllListeners("update");
+    expect(replyToBeRemoved.removed).to.be.false;
+    expect(replyToBeRemoved.moderatorReason).to.equal("To unremove a reply");
 });
 
 describe("Marking post as deleted", async () => {
