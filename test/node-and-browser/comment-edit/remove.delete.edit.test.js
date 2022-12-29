@@ -128,7 +128,7 @@ describe(`Marking posts as removed`, async () => {
         const unremoveEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToRemove.subplebbitAddress,
             commentCid: postToRemove.cid,
-            moderatorReason: "To unremove a post" + Date.now(),
+            moderatorReason: "To unremove a post",
             removed: false,
             signer: roles[2].signer
         });
@@ -139,11 +139,9 @@ describe(`Marking posts as removed`, async () => {
                 resolve();
             })
         );
+    });
 
-        await new Promise((resolve) => postToRemove.once("update", resolve));
-        expect(postToRemove.removed).to.be.false;
-        expect(postToRemove.moderatorReason).to.equal(unremoveEdit.moderatorReason);
-
+    it(`Unremoved post in included in subplebbit.posts with removed=false`, async () => {
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
         sub._updateIntervalMs = updateInterval;
         await Promise.all([
@@ -155,11 +153,17 @@ describe(`Marking posts as removed`, async () => {
         await sub.stop();
         const subPages = await Promise.all(Object.values(sub.posts.pageCids).map((pageCid) => sub.posts.getPage(pageCid)));
 
-        subPages.forEach((page) => {
+        for (const page of subPages) {
             const postInPage = page.comments.find((comment) => comment.cid === postToRemove.cid);
             expect(postInPage).to.exist;
             expect(postInPage.removed).to.equal(false);
-        });
+        }
+    });
+
+    it(`A new CommentUpdate is published for unremoving a post`, async () => {
+        // await new Promise((resolve) => postToRemove.once("update", resolve));
+        expect(postToRemove.removed).to.be.false;
+        expect(postToRemove.moderatorReason).to.equal("To unremove a post");
     });
 });
 
@@ -205,8 +209,7 @@ describe(`Marking reply as removed`, async () => {
         expect(replyToBeRemoved.moderatorReason).to.equal("To remove a reply");
     });
     it(`Removed replies show in parent comment pages with 'removed' = true`, async () => {
-        await Promise.all([new Promise((resolve) => post.once("update", resolve))]);
-        expect(replyToBeRemoved.removed).to.be.true;
+        await new Promise((resolve) => post.once("update", resolve));
         expect(post.replies.pages.topAll.comments[0].removed).to.be.true;
         expect(post.replyCount).to.equal(1);
     });
@@ -221,7 +224,7 @@ describe(`Marking reply as removed`, async () => {
                 const postPages = await Promise.all(
                     Object.values(postInPage.replies.pageCids).map((pageCid) => loadedSub.posts.getPage(pageCid))
                 );
-                postPages.forEach((page) => expect(page.comments[0].removed).to.be.true);
+                for (const page of postPages) expect(page.comments[0].removed).to.be.true;
             })
         );
     });
@@ -284,29 +287,35 @@ describe(`Marking reply as removed`, async () => {
         );
     });
 
+    it(`A new CommentUpdate is published for unremoving a reply`, async () => {
+        if (replyToBeRemoved.removed)
+            await new Promise((resolve) => replyToBeRemoved.on("update", () => !replyToBeRemoved.removed && resolve()));
+        replyToBeRemoved.removeAllListeners("update");
+        expect(replyToBeRemoved.removed).to.be.false;
+        expect(replyToBeRemoved.moderatorReason).to.equal("To unremove a reply");
+    });
+
     it(`Unremoved reply is shown in subplebbit.posts`, async () => {
         const sub = await plebbit.getSubplebbit(replyToBeRemoved.subplebbitAddress);
+        const isUnremovedInpage = () =>
+            sub.posts.pages.hot.comments.find((comment) => comment.cid === post.cid).replies.pages.topAll.comments[0].removed === false;
+        if (!isUnremovedInpage()) {
+            sub._updateIntervalMs = updateInterval;
+            await sub.update();
+            await new Promise((resolve) => sub.on("update", () => isUnremovedInpage() && resolve()));
+            await sub.stop();
+        }
         const subPages = await Promise.all(Object.values(sub.posts.pageCids).map((pageCid) => sub.posts.getPage(pageCid)));
 
-        subPages.forEach(async (page) => {
+        for (const page of subPages) {
             const postInPage = page.comments.find((comment) => comment.cid === post.cid);
-            const repliesPages = await Promise.all(
-                Object.values(postInPage.replies.pageCids).map((pageCid) => postInPage.replies.getPage(pageCid))
-            );
-            repliesPages.forEach(
-                (page) =>
-                    expect(page.comments[0].removed).to.be.false &&
-                    expect(page.comments[0].moderatorReason).to.equal(unremoveEdit.moderatorReason)
-            );
-        });
+            const repliesPages = await Promise.all(Object.values(postInPage.replies.pageCids).map((pageCid) => sub.posts.getPage(pageCid)));
+            for (const replyPage of repliesPages) {
+                expect(replyPage.comments[0].removed).to.be.false;
+                expect(replyPage.comments[0].moderatorReason).to.equal("To unremove a reply");
+            }
+        }
     });
-});
-
-it(`A new CommentUpdate is published for unremoving a reply`, async () => {
-    await new Promise((resolve) => replyToBeRemoved.on("update", () => !replyToBeRemoved.removed && resolve()));
-    replyToBeRemoved.removeAllListeners("update");
-    expect(replyToBeRemoved.removed).to.be.false;
-    expect(replyToBeRemoved.moderatorReason).to.equal("To unremove a reply");
 });
 
 describe("Marking post as deleted", async () => {
@@ -503,17 +512,23 @@ describe("Marking reply as deleted", async () => {
             })
         );
     });
-    it(`Deleted replies show in parent comment pages with 'deleted' = true`, async () => {
-        await Promise.all([
-            new Promise((resolve) => replyToDelete.once("update", resolve)),
-            new Promise((resolve) => post.once("update", resolve))
-        ]);
+    it(`A new CommentUpdate is pushed for removing a reply`, async () => {
+        await new Promise((resolve) => replyToDelete.once("update", resolve));
         expect(replyToDelete.deleted).to.be.true;
+    });
+    it(`Deleted replies show in parent comment pages with 'deleted' = true`, async () => {
+        if (!post.replies.pages.topAll.comments[0].deleted) await new Promise((resolve) => post.once("update", resolve));
         expect(post.replies.pages.topAll.comments[0].deleted).to.be.true;
         expect(post.replyCount).to.equal(1);
     });
     it(`Deleted replies show up in subplebbit.posts with 'deleted' = true`, async () => {
         const loadedSub = await plebbit.getSubplebbit(post.subplebbitAddress);
+        loadedSub._updateIntervalMs = updateInterval;
+        await loadedSub.update();
+        const isDeletedInPage = () =>
+            loadedSub.posts.pages.hot.comments.find((comment) => comment.cid === post.cid).replies?.pages?.topAll?.comments[0]?.deleted;
+        if (!isDeletedInPage()) await new Promise((resolve) => loadedSub.on("update", () => isDeletedInPage() && resolve()));
+        await loadedSub.stop();
         const subPages = await Promise.all(Object.values(loadedSub.posts.pageCids).map((pageCid) => loadedSub.posts.getPage(pageCid)));
 
         await Promise.all(
@@ -522,7 +537,7 @@ describe("Marking reply as deleted", async () => {
                 const postPages = await Promise.all(
                     Object.values(postInPage.replies.pageCids).map((pageCid) => loadedSub.posts.getPage(pageCid))
                 );
-                postPages.forEach((page) => expect(page.comments[0].deleted).to.be.true);
+                for (const page of postPages) expect(page.comments[0].deleted).to.be.true;
             })
         );
     });
