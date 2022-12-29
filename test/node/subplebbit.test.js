@@ -74,16 +74,20 @@ describe("subplebbit", async () => {
         });
         onlinePlebbit.resolver = plebbit.resolver;
         const startTime = timestamp();
-
         const title = `Test online plebbit`;
-
         const createdSub = await onlinePlebbit.createSubplebbit({ title: title });
-
         const endTime = timestamp();
-
         await createdSub.stop();
-
         expect(endTime).to.be.lessThanOrEqual(startTime + 10, "createSubplebbit took more than 10s in an online ipfs node");
+    });
+
+    it(`createSubplebbit({signer: {privateKey}})`, async () => {
+        const signer = await plebbit.createSigner();
+        const sub = await plebbit.createSubplebbit({ signer: { privateKey: signer.privateKey, type: "rsa" } });
+        expect(sub.address).to.equal(signer.address);
+        await sub.start();
+        await new Promise((resolve) => sub.once("update", resolve));
+        await sub.stop();
     });
 
     it("create new subplebbit from signer", async () => {
