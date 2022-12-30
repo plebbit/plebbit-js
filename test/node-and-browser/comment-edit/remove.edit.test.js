@@ -168,7 +168,7 @@ describe(`Removing post`, async () => {
     });
 });
 
-describe.only(`Removing reply`, async () => {
+describe(`Removing reply`, async () => {
     let plebbit, post, replyToBeRemoved, replyUnderRemovedReply;
     before(async () => {
         plebbit = await mockPlebbit();
