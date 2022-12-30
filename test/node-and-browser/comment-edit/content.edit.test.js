@@ -1,5 +1,5 @@
 const signers = require("../../fixtures/signers");
-const { waitTillNewCommentIsPublished, mockPlebbit } = require("../../../dist/node/test/test-util");
+const { mockPlebbit, publishRandomPost } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
 
@@ -17,8 +17,7 @@ describe("Editing comment.content", async () => {
     before(async () => {
         plebbit = await mockPlebbit();
 
-        commentToBeEdited = await waitTillNewCommentIsPublished(subplebbitAddress, plebbit);
-        commentToBeEdited._updateIntervalMs = updateInterval;
+        commentToBeEdited = await publishRandomPost(subplebbitAddress, plebbit);
         await Promise.all([new Promise((resolve) => commentToBeEdited.once("update", resolve)), commentToBeEdited.update()]);
     });
 
@@ -96,7 +95,7 @@ describe("Editing comment.content", async () => {
 
     roles.map((roleTest) =>
         it(`${roleTest.role} Can modify their own comment content`, async () => {
-            const commentToEdit = await waitTillNewCommentIsPublished(subplebbitAddress, plebbit, { signer: roleTest.signer });
+            const commentToEdit = await publishRandomPost(subplebbitAddress, plebbit, { signer: roleTest.signer });
             const originalContent = JSON.parse(JSON.stringify(commentToEdit.content));
             commentToEdit._updateIntervalMs = updateInterval;
             await Promise.all([new Promise((resolve) => commentToEdit.once("update", resolve)), commentToEdit.update()]);

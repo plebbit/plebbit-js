@@ -1,5 +1,5 @@
 const signers = require("../../fixtures/signers");
-const { waitTillNewCommentIsPublished, mockPlebbit, generateMockPost } = require("../../../dist/node/test/test-util");
+const { mockPlebbit, generateMockPost, publishRandomPost } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
 const { timestamp } = require("../../../dist/node/util");
@@ -17,8 +17,7 @@ describe(`Banning authors`, async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        commentToBeBanned = await waitTillNewCommentIsPublished(subplebbitAddress, plebbit);
-        commentToBeBanned._updateIntervalMs = updateInterval;
+        commentToBeBanned = await publishRandomPost(subplebbitAddress, plebbit);
         await Promise.all([new Promise((resolve) => commentToBeBanned.once("update", resolve)), commentToBeBanned.update()]);
         authorBanExpiresAt = timestamp() + 6; // Ban stays for six seconds
     });
@@ -70,7 +69,7 @@ describe(`Banning authors`, async () => {
     });
 
     it(`Regular author can't ban another author`, async () => {
-        const tryToBanComment = await waitTillNewCommentIsPublished(subplebbitAddress, plebbit);
+        const tryToBanComment = await publishRandomPost(subplebbitAddress, plebbit);
 
         const banCommentEdit = await plebbit.createCommentEdit({
             subplebbitAddress: tryToBanComment.subplebbitAddress,

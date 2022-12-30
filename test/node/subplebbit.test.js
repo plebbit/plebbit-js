@@ -1,6 +1,6 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { generateMockPost, waitTillNewCommentIsPublished } = require("../../dist/node/test/test-util");
+const { generateMockPost, publishRandomPost } = require("../../dist/node/test/test-util");
 const { timestamp, encode } = require("../../dist/node/util");
 const { messages } = require("../../dist/node/errors");
 const chai = require("chai");
@@ -59,10 +59,10 @@ describe("subplebbit", async () => {
         await newSubplebbit.start();
         await new Promise((resolve) => newSubplebbit.once("update", resolve));
 
-        await waitTillNewCommentIsPublished(newSubplebbit.address, plebbit);
+        await publishRandomPost(newSubplebbit.address, plebbit);
         await newSubplebbit.stop();
         await newSubplebbit.start();
-        await waitTillNewCommentIsPublished(newSubplebbit.address, plebbit);
+        await publishRandomPost(newSubplebbit.address, plebbit);
         await newSubplebbit.stop();
     });
 
@@ -108,13 +108,13 @@ describe("subplebbit", async () => {
     });
 
     it(`Sub can receive publications sequentially`, async () => {
-        await waitTillNewCommentIsPublished(subplebbit.address, plebbit);
-        await waitTillNewCommentIsPublished(subplebbit.address, plebbit);
-        await waitTillNewCommentIsPublished(subplebbit.address, plebbit);
+        await publishRandomPost(subplebbit.address, plebbit);
+        await publishRandomPost(subplebbit.address, plebbit);
+        await publishRandomPost(subplebbit.address, plebbit);
     });
 
     it(`Sub can receive publications parallely`, async () => {
-        await Promise.all(new Array(3).fill(null).map(() => waitTillNewCommentIsPublished(subplebbit.address, plebbit)));
+        await Promise.all(new Array(3).fill(null).map(() => publishRandomPost(subplebbit.address, plebbit)));
     });
 
     it(`subplebbit = await createSubplebbit(await createSubplebbit)`, async () => {
@@ -189,9 +189,9 @@ describe("subplebbit", async () => {
         newSub._syncIntervalMs = syncInterval;
         await newSub.start();
         await new Promise((resolve) => newSub.once("update", resolve));
-        await waitTillNewCommentIsPublished(newSub.address, newPlebbit);
+        await publishRandomPost(newSub.address, newPlebbit);
         await newSub.edit({ address: "testPub.eth" });
-        await waitTillNewCommentIsPublished(newSub.address, newPlebbit);
+        await publishRandomPost(newSub.address, newPlebbit);
     });
 
     it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () => {
