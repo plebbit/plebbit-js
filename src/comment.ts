@@ -89,12 +89,12 @@ export class Comment extends Publication implements CommentType {
         this.updatedAt = props.updatedAt;
         this.setReplies(props.replies);
         this.deleted = props.authorEdit?.deleted;
-        this.spoiler = props.spoiler;
         this.pinned = props.pinned;
         this.locked = props.locked;
         this.removed = props.removed;
         this.moderatorReason = props.moderatorReason;
         this.authorEdit = props.authorEdit;
+        this.spoiler = props.authorEdit?.spoiler ?? props.spoiler;
         this.protocolVersion = props.protocolVersion;
         if (props.author?.banExpiresAt) this.author.banExpiresAt = props.author.banExpiresAt;
         if (props.author?.flair) this.author.flair = props.author.flair;
