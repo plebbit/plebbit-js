@@ -1,0 +1,144 @@
+const signers = require("../../fixtures/signers");
+const { mockPlebbit, publishRandomPost } = require("../../../dist/node/test/test-util");
+const { expect } = require("chai");
+const { messages } = require("../../../dist/node/errors");
+
+const subplebbitAddress = signers[0].address;
+const updateInterval = 300;
+const roles = [
+    { role: "owner", signer: signers[1] },
+    { role: "admin", signer: signers[2] },
+    { role: "mod", signer: signers[3] }
+];
+describe(`Marking comment as spoiler`, async () => {
+    let plebbit, authorPost;
+    before(async () => {
+        plebbit = await mockPlebbit();
+        authorPost = await publishRandomPost(subplebbitAddress, plebbit);
+        await authorPost.update();
+    });
+
+    after(async () => {
+        await authorPost.stop();
+    });
+
+    it(`Regular author can't mark another author comment as spoiler`, async () => {
+        const spoilerEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: authorPost.subplebbitAddress,
+            commentCid: authorPost.cid,
+            spoiler: true,
+            signer: await plebbit.createSigner()
+        });
+        await spoilerEdit.publish();
+        await new Promise((resolve) =>
+            spoilerEdit.once("challengeverification", (verificationMsg) => {
+                expect(verificationMsg.challengeSuccess).to.be.false;
+                expect(verificationMsg.reason).to.equal(messages.ERR_UNAUTHORIZED_COMMENT_EDIT);
+                resolve();
+            })
+        );
+    });
+
+    it(`Author can mark their own comment as spoiler`, async () => {
+        expect(authorPost.spoiler).to.be.false;
+
+        const spoilerEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: authorPost.subplebbitAddress,
+            commentCid: authorPost.cid,
+            spoiler: true,
+            signer: authorPost.signer
+        });
+        await spoilerEdit.publish();
+        await new Promise((resolve) =>
+            spoilerEdit.once("challengeverification", (verificationMsg) => {
+                expect(verificationMsg.challengeSuccess).to.be.true;
+                resolve();
+            })
+        );
+    });
+    it(`A new CommentUpdate is published with spoiler=true`, async () => {
+        await new Promise((resolve) => authorPost.once("update", resolve));
+        expect(authorPost.authorEdit.spoiler).to.be.true;
+        expect(authorPost.spoiler).to.be.true;
+    });
+    it(`Author can unspoiler their comment`, async () => {
+        const unspoilerEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: authorPost.subplebbitAddress,
+            commentCid: authorPost.cid,
+            spoiler: false,
+            signer: authorPost.signer
+        });
+        await unspoilerEdit.publish();
+        await new Promise((resolve) =>
+            unspoilerEdit.once("challengeverification", (verificationMsg) => {
+                expect(verificationMsg.challengeSuccess).to.be.true;
+                resolve();
+            })
+        );
+    });
+    it(`A new CommentUpdate is published with spoiler=false`, async () => {
+        if (authorPost.spoiler) await new Promise((resolve) => authorPost.on("update", () => !authorPost.spoiler && resolve()));
+        authorPost.removeAllListeners("update");
+        expect(authorPost.authorEdit.spoiler).to.be.false;
+        expect(authorPost.spoiler).to.be.false;
+    });
+    it(`Mod can mark an author comment as spoiler`, async () => {
+        const randomPost = await publishRandomPost(subplebbitAddress, plebbit);
+        const spoilerEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: randomPost.subplebbitAddress,
+            commentCid: randomPost.cid,
+            spoiler: true,
+            signer: roles[2].signer
+        });
+        await spoilerEdit.publish();
+        await new Promise((resolve) =>
+            spoilerEdit.once("challengeverification", (verificationMsg) => {
+                expect(verificationMsg.challengeSuccess).to.be.true;
+                resolve();
+            })
+        );
+    });
+
+    it(`Mod can mark their own comment as spoiler`, async () => {
+        const modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer });
+        const spoilerEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: modPost.subplebbitAddress,
+            commentCid: modPost.cid,
+            spoiler: true,
+            signer: roles[2].signer
+        });
+        await spoilerEdit.publish();
+        await new Promise((resolve) =>
+            spoilerEdit.once("challengeverification", (verificationMsg) => {
+                expect(verificationMsg.challengeSuccess).to.be.true;
+                resolve();
+            })
+        );
+    });
+
+    it(`A comment that was published with spoiler=true can be edited to spoiler=false`, async () => {
+        const spoilerPost = await publishRandomPost(subplebbitAddress, plebbit, { spoiler: true });
+        expect(spoilerPost.spoiler).to.be.true;
+        expect(spoilerPost.authorEdit?.spoiler).to.be.undefined;
+        await spoilerPost.update();
+
+        const spoilerEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: spoilerPost.subplebbitAddress,
+            commentCid: spoilerPost.cid,
+            spoiler: false,
+            signer: spoilerPost.signer
+        });
+        await spoilerEdit.publish();
+        await new Promise((resolve) =>
+            spoilerEdit.once("challengeverification", (verificationMsg) => {
+                expect(verificationMsg.challengeSuccess).to.be.true;
+                resolve();
+            })
+        );
+
+        await new Promise((resolve) => spoilerPost.once("update", resolve));
+        await spoilerPost.stop();
+        expect(spoilerPost.spoiler).to.be.false;
+        expect(spoilerPost.authorEdit.spoiler).to.be.false;
+    });
+});
