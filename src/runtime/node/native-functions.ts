@@ -133,7 +133,7 @@ const nativeFunctions: NativeFunctions = {
         const nodeUrl =
             typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
         if (!nodeUrl) throw Error("Can't figure out ipfs node URL");
-        const url = `${nodeUrl}/key/import?arg=${ipnsKeyName}`;
+        const url = `${nodeUrl}/key/import?arg=${ipnsKeyName}&ipns-base=b58mh`;
         const res = await nativeFunctions.fetch(url, {
             method: "POST",
             body: data
