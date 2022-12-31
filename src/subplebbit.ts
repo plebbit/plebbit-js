@@ -941,7 +941,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             encode(lodash.omit(commentIpns, ["replies", "signature"])) !==
                 encode(lodash.omit(dbComment.toJSONCommentUpdate(), ["replies", "signature"]))
         ) {
-            log(`Attempting to update Comment (${dbComment.cid})`);
+            log.trace(`Attempting to update Comment (${dbComment.cid})`);
             await this.sortHandler.deleteCommentPageCache(dbComment);
             dbComment.author.subplebbit = await this.dbHandler.querySubplebbitAuthorFields(dbComment.author.address);
             dbComment.setUpdatedAt(timestamp());
@@ -961,9 +961,21 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         log.trace(`Comment (${dbComment.cid}) is up-to-date and does not need syncing`);
     }
 
+    private async _listenToIncomingRequests() {
+        const log = Logger("plebbit-js:subplebbit:sync");
+        // Make sure subplebbit listens to pubsub topic
+        const subscribedTopics = await this.plebbit.pubsubIpfsClient.pubsub.ls();
+        if (!subscribedTopics.includes(this.pubsubTopic)) {
+            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic); // Make sure it's not hanging
+            await this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, this.handleChallengeExchange);
+            log.trace(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
+        }
+    }
+
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:subplebbit:sync");
 
+        await this._listenToIncomingRequests();
         log.trace("Starting to sync IPNS with DB");
         try {
             const dbComments = await this.dbHandler.queryComments();
@@ -1013,8 +1025,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.createdAt = timestamp();
             log(`Subplebbit (${this.address}) createdAt has been set to ${this.createdAt}`);
         }
-        await this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, this.handleChallengeExchange);
-        log.trace(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
         this.syncIpnsWithDb()
             .then(() => this._syncLoop(this._syncIntervalMs))
             .catch((reason) => {

@@ -105,7 +105,8 @@ const nativeFunctions: NativeFunctions = {
             pubsub: {
                 subscribe: ipfsClient.pubsub.subscribe,
                 unsubscribe: ipfsClient.pubsub.unsubscribe,
-                publish: ipfsClient.pubsub.publish
+                publish: ipfsClient.pubsub.publish,
+                ls: ipfsClient.pubsub.ls
             },
             name: {
                 publish: ipfsClient.name.publish,

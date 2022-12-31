@@ -66,6 +66,21 @@ describe("subplebbit", async () => {
         await newSubplebbit.stop();
     });
 
+    it(`Sub can receive publications after pubsub topic subscription disconnects`, async () => {
+        // There are cases where ipfs node can fail and be restarted
+        // When that happens, the subscription to subplebbit.pubsubTopic will not be restored
+        // The restoration of subscription should happen within the sync loop of Subplebbit
+        const sub = await plebbit.createSubplebbit();
+        sub._syncIntervalMs = syncInterval;
+        sub.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
+
+        await sub.start();
+        await new Promise((resolve) => sub.once("update", resolve));
+        await publishRandomPost(sub.address, plebbit);
+        await sub.plebbit.pubsubIpfsClient.pubsub.unsubscribe(sub.pubsubTopic);
+        await publishRandomPost(sub.address, plebbit);
+    });
+
     it(`createSubplebbit on IPFS node doesn't take more than 10s`, async () => {
         const onlinePlebbit = await Plebbit({
             ipfsHttpClientOptions: "http://localhost:15003/api/v0",
