@@ -49,6 +49,8 @@ describe(`Locking posts`, async () => {
         await publishWithExpectedResult(lockedEdit, false, messages.ERR_UNAUTHORIZED_COMMENT_EDIT);
     });
 
+    it(`Author can't publish a post with locked=true`);
+
     it(`Mod Can't lock a reply`, async () => {
         // This is prior to locking the post
         const lockedEdit = await plebbit.createCommentEdit({

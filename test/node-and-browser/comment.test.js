@@ -43,6 +43,8 @@ describe("comment (node and browser)", async () => {
             expect(comment.toJSON()).to.deep.equal(nestedComment.toJSON());
         });
 
+        it(`comment.update() is working as expected after calling comment.stop()`);
+
         it(`Subplebbit reject a comment with subplebbitAddress that is not equal subplebbit.address`);
 
         it("Subplebbit reject a comment under a non existent parent", async () => {
