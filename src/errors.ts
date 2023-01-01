@@ -49,6 +49,7 @@ export enum messages {
     ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED = "The parent of this publication has been deleted",
     ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD = "CommentEdit includes a field that cannot be used for authors",
     ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD = "CommentEdit includes a field that cannot be used for mods",
+    ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
     ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED = "The post of this publication has been deleted",
     ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED = "The post of this publication has been removed"
 }
