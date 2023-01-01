@@ -71,7 +71,7 @@ export class CommentEdit extends Publication implements CommentEditType {
         this.flair = props.flair;
         this.spoiler = props.spoiler;
         this.pinned = props.pinned;
-        this.locked = props.pinned;
+        this.locked = props.locked;
         this.removed = props.removed;
         this.moderatorReason = props.moderatorReason;
         this.commentAuthor = props.commentAuthor;

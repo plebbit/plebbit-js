@@ -571,6 +571,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 return messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED;
             }
 
+            if (post.locked && !(postOrCommentOrVote instanceof CommentEdit)) {
+                log(`(${challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
+                return messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED;
+            }
+
             if (parent.timestamp > postOrCommentOrVote.timestamp) {
                 log(`(${challengeRequestId}): `, messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT);
                 return messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT;
