@@ -8,6 +8,7 @@ import { Pages } from "../pages";
 import { Subplebbit } from "../subplebbit";
 import { CommentType, CreateCommentOptions, PostType, SignerType } from "../types";
 import isIPFS from "is-ipfs";
+import Publication from "../publication";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -381,4 +382,17 @@ export async function publishRandomPost(subplebbitAddress: string, plebbit: Pleb
     });
     await _waitTillCommentIsOnline(post, plebbit);
     return post;
+}
+
+export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
+    await publication.publish();
+    await new Promise((resolve) =>
+        publication.once("challengeverification", (verificationMsg) => {
+            if (verificationMsg.challengeSuccess !== expectedChallengeSuccess)
+                throw `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${verificationMsg.challengeSuccess})`;
+            if (expectedReason && expectedReason !== verificationMsg.reason)
+                throw `Expected reason to be (${expectedReason}) and got (${verificationMsg.reason})`;
+            resolve(1);
+        })
+    );
 }
