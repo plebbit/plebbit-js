@@ -5,7 +5,8 @@ const {
     mockPlebbit,
     generateMockComment,
     generateMockVote,
-    publishWithExpectedResult
+    publishWithExpectedResult,
+    loadAllPages
 } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
@@ -113,8 +114,8 @@ describe(`Removing post`, async () => {
     it(`Unremoved post in included in subplebbit.posts with removed=false`, async () => {
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
         const isUnremovedInPage = async () => {
-            const newPage = await sub.posts.getPage(sub.posts.pageCids.new);
-            return newPage.comments.find((comment) => comment.cid === postToRemove.cid);
+            const newComments = await loadAllPages(sub.posts.pageCids.new, sub.posts);
+            return newComments.some((comment) => comment.cid === postToRemove.cid);
         };
         if (!(await isUnremovedInPage())) {
             sub._updateIntervalMs = updateInterval;
@@ -122,10 +123,9 @@ describe(`Removing post`, async () => {
             await new Promise((resolve) => sub.on("update", async () => (await isUnremovedInPage()) && resolve()));
             await sub.stop();
         }
-        const subPages = await Promise.all(Object.values(sub.posts.pageCids).map((pageCid) => sub.posts.getPage(pageCid)));
-
-        for (const page of subPages) {
-            const postInPage = page.comments.find((comment) => comment.cid === postToRemove.cid);
+        for (const pageCid of Object.values(sub.posts.pageCids)) {
+            const pageComments = await loadAllPages(pageCid, sub.posts);
+            const postInPage = pageComments.find((comment) => comment.cid === postToRemove.cid);
             expect(postInPage).to.exist;
             expect(postInPage.removed).to.equal(false);
         }

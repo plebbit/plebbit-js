@@ -5,7 +5,8 @@ const {
     mockPlebbit,
     generateMockComment,
     generateMockVote,
-    publishWithExpectedResult
+    publishWithExpectedResult,
+    loadAllPages
 } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
@@ -71,14 +72,20 @@ describe("Deleting a post", async () => {
     it(`Deleted post is omitted from subplebbit.posts`, async () => {
         const sub = await plebbit.getSubplebbit(postToDelete.subplebbitAddress);
         const isPostInPages = async () => {
-            const pages = await Promise.all(Object.values(sub.posts.pageCids).map((pageCid) => sub.posts.getPage(pageCid)));
-            return pages.some((page) => page.comments.some((comment) => comment.cid === postToDelete.cid));
+            const newComments = await loadAllPages(sub.posts.pageCids.new, sub.posts);
+            return newComments.some((comment) => comment.cid === postToDelete.cid);
         };
         if (await isPostInPages()) {
             sub._updateIntervalMs = updateInterval;
             await sub.update();
             await new Promise((resolve) => sub.on("update", async () => !(await isPostInPages()) && resolve()));
             sub.stop();
+        }
+
+        for (const pageCid of Object.values(sub.posts.pageCids)) {
+            const pageComments = await loadAllPages(pageCid, sub.posts);
+            const postInPage = pageComments.find((comment) => comment.cid === postToDelete.cid);
+            expect(postInPage).to.be.undefined;
         }
     });
 
