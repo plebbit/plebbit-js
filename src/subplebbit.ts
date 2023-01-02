@@ -449,7 +449,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 }
             }
 
-            if (commentEdit.hasOwnProperty("locked") && commentToBeEdited.depth !== 0) {
+            if (typeof commentEdit.locked === "boolean" && commentToBeEdited.depth !== 0) {
                 const msg = messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY;
                 log(`(${challengeRequestId}): `, msg);
                 return msg;
