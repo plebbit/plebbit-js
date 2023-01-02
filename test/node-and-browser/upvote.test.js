@@ -1,14 +1,7 @@
 const Plebbit = require("../../dist/node");
 const { expect } = require("chai");
 const signers = require("../fixtures/signers");
-const {
-    generateMockVote,
-    generateMockPost,
-    generateMockComment,
-    publishRandomPost,
-    publishRandomReply,
-    publishWithExpectedResult
-} = require("../../dist/node/test/test-util");
+const { generateMockVote, publishRandomPost, publishRandomReply, publishWithExpectedResult } = require("../../dist/node/test/test-util");
 const { timestamp, randomElement } = require("../../dist/node/util");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 const lodash = require("lodash");
@@ -16,7 +9,6 @@ const lodash = require("lodash");
 const subplebbitAddress = signers[0].address;
 
 const previousVotes = [];
-const updateInterval = 100;
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
@@ -44,7 +36,7 @@ describe("Test upvote", async () => {
 
     it("Can upvote a post", async () => {
         const originalUpvote = lodash.clone(postToVote.upvoteCount);
-        const vote = await generateMockVote(postToVote, 1, plebbit, randomElement(signers));
+        const vote = await generateMockVote(postToVote, 1, plebbit);
         await publishWithExpectedResult(vote, true);
         await new Promise((resolve) => postToVote.once("update", resolve));
         expect(postToVote.upvoteCount).to.be.equal(originalUpvote + 1);
@@ -56,7 +48,7 @@ describe("Test upvote", async () => {
 
     it(`Can upvote a reply`, async () => {
         const originalUpvote = lodash.clone(replyToVote.downvoteCount);
-        const vote = await generateMockVote(replyToVote, 1, plebbit, randomElement(signers));
+        const vote = await generateMockVote(replyToVote, 1, plebbit);
         await publishWithExpectedResult(vote, true);
         await new Promise((resolve) => replyToVote.once("update", resolve));
         expect(replyToVote.upvoteCount).to.equal(originalUpvote + 1);
