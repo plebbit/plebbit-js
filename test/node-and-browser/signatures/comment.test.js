@@ -116,9 +116,11 @@ describe("sign comment", async () => {
             content: "comment content",
             subplebbitAddress: signer.address,
             signer,
-            author: { address: signer.address }
+            author: { address: signer.address },
+            timestamp: 12345678
         };
-        const res = await verifyCommentJsonAlongWithObject(comment, plebbit);
+        const signature = await signCommentJsonAlongWithObject(comment, plebbit);
+        const res = await verifyCommentJsonAlongWithObject({ ...comment, signature }, plebbit);
         expect(res).to.deep.equal({ valid: true });
     });
 });
