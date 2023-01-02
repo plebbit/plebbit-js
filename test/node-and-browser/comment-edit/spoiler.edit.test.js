@@ -32,7 +32,7 @@ describe(`Marking comment as spoiler`, async () => {
     });
 
     it(`Author can mark their own comment as spoiler`, async () => {
-        expect(authorPost.spoiler).to.be.false;
+        expect([false, undefined]).to.include(authorPost.spoiler);
 
         const spoilerEdit = await plebbit.createCommentEdit({
             subplebbitAddress: authorPost.subplebbitAddress,

@@ -28,7 +28,7 @@ describe(`Test Downvote`, async () => {
         postToVote = await publishRandomPost(subplebbitAddress, plebbit, { signer });
         replyToVote = await publishRandomReply(postToVote, plebbit, { signer });
 
-        await Promise.all([postToVote.update(), replyToVote.update()]);
+        await Promise.all([postToVote.update(), replyToVote.update(), new Promise((resolve) => postToVote.once("update", resolve))]);
     });
     after(async () => {
         await postToVote.stop();

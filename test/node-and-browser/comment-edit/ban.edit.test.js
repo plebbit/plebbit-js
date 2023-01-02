@@ -18,7 +18,7 @@ describe(`Banning authors`, async () => {
         plebbit = await mockPlebbit();
         commentToBeBanned = await publishRandomPost(subplebbitAddress, plebbit);
         await commentToBeBanned.update();
-        authorBanExpiresAt = timestamp() + 2; // Ban stays for six seconds
+        authorBanExpiresAt = timestamp() + 8; // Ban stays for eight seconds
     });
 
     after(async () => {
@@ -26,27 +26,28 @@ describe(`Banning authors`, async () => {
     });
 
     it(`Mod can ban an author for a comment`, async () => {
-        const modSigner = roles[2].signer;
         const banCommentEdit = await plebbit.createCommentEdit({
             subplebbitAddress: commentToBeBanned.subplebbitAddress,
             commentCid: commentToBeBanned.cid,
             commentAuthor: { banExpiresAt: authorBanExpiresAt },
-            signer: modSigner
+            signer: roles[2].signer
         });
         expect(banCommentEdit.commentAuthor.banExpiresAt).to.equal(authorBanExpiresAt);
         await publishWithExpectedResult(banCommentEdit, true);
+    });
+
+    it(`A new CommentUpdate with comment.author.banExpiresAt is published`, async () => {
         await new Promise((resolve) => commentToBeBanned.once("update", resolve));
         expect(commentToBeBanned.author.banExpiresAt).to.equals(authorBanExpiresAt);
+    });
+
+    it(`Banned author can't publish`, async () => {
         const newCommentByBannedAuthor = await generateMockPost(commentToBeBanned.subplebbitAddress, plebbit, commentToBeBanned.signer);
         await publishWithExpectedResult(newCommentByBannedAuthor, false, messages.ERR_AUTHOR_IS_BANNED);
     });
 
     it(`Banned author can publish after authorBanExpiresAt ends`, async () => {
-        const waitTillAuthorBanExpiresEnds = (resolve) => {
-            if (timestamp() > authorBanExpiresAt) resolve();
-            else setTimeout(() => waitTillAuthorBanExpiresEnds(resolve), 100);
-        };
-        await new Promise(waitTillAuthorBanExpiresEnds);
+        await new Promise((resolve) => setTimeout(resolve, (authorBanExpiresAt - timestamp()) * 1000.0 + 1000));
         expect(timestamp()).to.be.greaterThan(authorBanExpiresAt);
         const newCommentByBannedAuthor = await generateMockPost(commentToBeBanned.subplebbitAddress, plebbit, commentToBeBanned.signer);
         await publishWithExpectedResult(newCommentByBannedAuthor, true);
