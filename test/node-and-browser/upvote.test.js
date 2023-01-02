@@ -40,6 +40,7 @@ describe("Test upvote", async () => {
         await publishWithExpectedResult(vote, true);
         await new Promise((resolve) => postToVote.once("update", resolve));
         expect(postToVote.upvoteCount).to.be.equal(originalUpvote + 1);
+        expect(postToVote.downvoteCount).to.be.equal(0);
         expect(postToVote.author.subplebbit.replyScore).to.equal(0);
         expect(postToVote.author.subplebbit.postScore).to.equal(1);
         expect(postToVote.author.subplebbit.lastCommentCid).to.equal(replyToVote.cid);
@@ -52,6 +53,7 @@ describe("Test upvote", async () => {
         await publishWithExpectedResult(vote, true);
         await new Promise((resolve) => replyToVote.once("update", resolve));
         expect(replyToVote.upvoteCount).to.equal(originalUpvote + 1);
+        expect(replyToVote.downvoteCount).to.equal(0);
         expect(replyToVote.author.subplebbit.replyScore).to.equal(1);
         expect(replyToVote.author.subplebbit.postScore).to.equal(1);
         expect(replyToVote.author.subplebbit.lastCommentCid).to.equal(replyToVote.cid);

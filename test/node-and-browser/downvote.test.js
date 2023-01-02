@@ -7,7 +7,6 @@ const {
     publishWithExpectedResult,
     mockPlebbit
 } = require("../../dist/node/test/test-util");
-const { randomElement } = require("../../dist/node/util");
 const { messages } = require("../../dist/node/errors");
 const lodash = require("lodash");
 
@@ -37,11 +36,12 @@ describe(`Test Downvote`, async () => {
     });
 
     it("Can downvote a post", async () => {
-        const originalDownvote = postToVote.downvoteCount;
+        const originalDownvote = lodash.clone(postToVote.downvoteCount);
         const vote = await generateMockVote(postToVote, -1, plebbit);
         await publishWithExpectedResult(vote, true);
         await new Promise((resolve) => postToVote.once("update", resolve));
         expect(postToVote.downvoteCount).to.equal(originalDownvote + 1);
+        expect(postToVote.upvoteCount).to.equal(0);
         expect(postToVote.author.subplebbit.replyScore).to.equal(0);
         expect(postToVote.author.subplebbit.postScore).to.equal(-1);
         expect(postToVote.author.subplebbit.lastCommentCid).to.equal(replyToVote.cid);
@@ -55,6 +55,7 @@ describe(`Test Downvote`, async () => {
         await new Promise((resolve) => replyToVote.once("update", resolve));
 
         expect(replyToVote.downvoteCount).to.equal(originalDownvote + 1);
+        expect(replyToVote.upvoteCount).to.equal(0);
         expect(replyToVote.author.subplebbit.replyScore).to.equal(-1);
         expect(replyToVote.author.subplebbit.postScore).to.equal(-1);
         expect(replyToVote.author.subplebbit.lastCommentCid).to.equal(replyToVote.cid);

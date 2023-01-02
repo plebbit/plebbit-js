@@ -12,7 +12,7 @@ const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
 
 const subplebbitAddress = signers[0].address;
-const updateInterval = 300;
+const updateInterval = 100;
 const roles = [
     { role: "owner", signer: signers[1] },
     { role: "admin", signer: signers[2] },
@@ -48,18 +48,21 @@ describe(`Removing post`, async () => {
     });
     it(`Removed post don't show in subplebbit.posts`, async () => {
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
-        const isPostInPages = async () => {
-            const pages = await Promise.all(Object.values(sub.posts.pageCids).map((pageCid) => sub.posts.getPage(pageCid)));
-            const isPostInAnyPage = pages.some((page) => page.comments.some((comment) => comment.cid === postToRemove.cid));
-            return isPostInAnyPage;
+        const isPostInAnyPage = async () => {
+            for (const pageCid of Object.values(sub.posts.pageCids)) {
+                const pageComments = await loadAllPages(pageCid, sub.posts);
+                const isPostInPage = pageComments.some((comment) => comment.cid === postToRemove.cid);
+                if (isPostInPage) return true;
+            }
+            return false;
         };
-        if (!(await isPostInPages())) return;
+        if (!(await isPostInAnyPage())) return;
 
         sub._updateIntervalMs = updateInterval;
         await sub.update();
         await new Promise((resolve) =>
             sub.on("update", async () => {
-                if (!(await isPostInPages())) resolve();
+                if (!(await isPostInAnyPage())) resolve();
             })
         );
         sub.stop();
