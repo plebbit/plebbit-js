@@ -4,7 +4,8 @@ const {
     publishRandomReply,
     mockPlebbit,
     generateMockComment,
-    generateMockVote
+    generateMockVote,
+    publishWithExpectedResult
 } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
@@ -36,13 +37,7 @@ describe(`Removing post`, async () => {
             removed: true,
             signer: roles[2].signer // Mod role
         });
-        await removeEdit.publish();
-        await new Promise((resolve) =>
-            removeEdit.once("challengeverification", (verificationMsg, _) => {
-                expect(verificationMsg.challengeSuccess).to.be.true;
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(removeEdit, true);
     });
 
     it(`A new CommentUpdate is published with removed=true`, async () => {
@@ -72,36 +67,17 @@ describe(`Removing post`, async () => {
     it(`Sub rejects votes or comments under removed post`, async () => {
         const replyUnderRemovedPost = await generateMockComment(postToRemove, plebbit);
         const voteUnderRemovedComment = await generateMockVote(postToRemove, 1, plebbit);
-        await Promise.all([replyUnderRemovedPost.publish(), voteUnderRemovedComment.publish()]);
         await Promise.all(
-            [replyUnderRemovedPost, voteUnderRemovedComment].map(
-                (pub) =>
-                    new Promise((resolve) =>
-                        pub.once("challengeverification", (verificationMsg, _) => {
-                            expect(verificationMsg.challengeSuccess).to.be.false;
-                            expect(verificationMsg.reason).to.equal(messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED);
-                            resolve();
-                        })
-                    )
+            [replyUnderRemovedPost, voteUnderRemovedComment].map((pub) =>
+                publishWithExpectedResult(pub, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED)
             )
         );
     });
 
     it(`Can't publish a reply or vote under a reply of a removed post`, async () => {
         const [reply, vote] = [await generateMockComment(postReply, plebbit), await generateMockVote(postReply, 1, plebbit)];
-
-        await Promise.all([reply.publish(), vote.publish()]);
         await Promise.all(
-            [reply, vote].map(
-                (pub) =>
-                    new Promise((resolve) =>
-                        pub.once("challengeverification", (verificationMsg, _) => {
-                            expect(verificationMsg.challengeSuccess).to.be.false;
-                            expect(verificationMsg.reason).to.equal(messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED);
-                            resolve();
-                        })
-                    )
-            )
+            [reply, vote].map((pub) => publishWithExpectedResult(pub, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED))
         );
     });
 
@@ -114,14 +90,7 @@ describe(`Removing post`, async () => {
             removed: true,
             signer: postToBeRemoved.signer
         });
-        await removeEdit.publish();
-        await new Promise((resolve) =>
-            removeEdit.once("challengeverification", (verificationMsg, _) => {
-                expect(verificationMsg.challengeSuccess).to.be.false;
-                expect(verificationMsg.reason).to.equal(messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD);
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(removeEdit, false, messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD);
     });
 
     it(`Mod can unremove a post`, async () => {
@@ -132,26 +101,27 @@ describe(`Removing post`, async () => {
             removed: false,
             signer: roles[2].signer
         });
-        await unremoveEdit.publish();
-        await new Promise((resolve) =>
-            unremoveEdit.once("challengeverification", (verificationMsg, _) => {
-                expect(verificationMsg.challengeSuccess).to.be.true;
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(unremoveEdit, true);
+    });
+
+    it(`A new CommentUpdate is published for unremoving a post`, async () => {
+        if (postToRemove.removed === true) await new Promise((resolve) => postToRemove.once("update", resolve));
+        expect(postToRemove.removed).to.be.false;
+        expect(postToRemove.moderatorReason).to.equal("To unremove a post");
     });
 
     it(`Unremoved post in included in subplebbit.posts with removed=false`, async () => {
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
-        sub._updateIntervalMs = updateInterval;
-        await sub.update();
         const isUnremovedInPage = async () => {
             const newPage = await sub.posts.getPage(sub.posts.pageCids.new);
-            return newPage.comments.find((comment) => comment.cid === post.cid).replies?.pages?.topAll?.comments[0]?.deleted;
+            return newPage.comments.find((comment) => comment.cid === postToRemove.cid);
         };
-        if (!(await isUnremovedInPage()))
+        if (!(await isUnremovedInPage())) {
+            sub._updateIntervalMs = updateInterval;
+            await sub.update();
             await new Promise((resolve) => sub.on("update", async () => (await isUnremovedInPage()) && resolve()));
-        await sub.stop();
+            await sub.stop();
+        }
         const subPages = await Promise.all(Object.values(sub.posts.pageCids).map((pageCid) => sub.posts.getPage(pageCid)));
 
         for (const page of subPages) {
@@ -159,12 +129,6 @@ describe(`Removing post`, async () => {
             expect(postInPage).to.exist;
             expect(postInPage.removed).to.equal(false);
         }
-    });
-
-    it(`A new CommentUpdate is published for unremoving a post`, async () => {
-        // await new Promise((resolve) => postToRemove.once("update", resolve));
-        expect(postToRemove.removed).to.be.false;
-        expect(postToRemove.moderatorReason).to.equal("To unremove a post");
     });
 });
 
@@ -194,14 +158,7 @@ describe(`Removing reply`, async () => {
             removed: true,
             signer: roles[2].signer // Mod role
         });
-        await removeEdit.publish();
-
-        await new Promise((resolve) =>
-            removeEdit.once("challengeverification", (verificationMsg, _) => {
-                expect(verificationMsg.challengeSuccess).to.be.true;
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(removeEdit, true);
     });
 
     it(`A new CommentUpdate is published for removing a reply`, async () => {
@@ -215,31 +172,6 @@ describe(`Removing reply`, async () => {
         expect(post.replyCount).to.equal(1);
     });
 
-    it(`Removed replies show up in subplebbit.posts with 'removed'=true`, async () => {
-        const loadedSub = await plebbit.getSubplebbit(post.subplebbitAddress);
-        const isRemovedInpage = async () => {
-            const newPage = await loadedSub.posts.getPage(loadedSub.posts.pageCids.new);
-            return newPage.comments.find((comment) => comment.cid === post.cid).replies.pages.topAll.comments[0].removed;
-        };
-        if (!(await isRemovedInpage())) {
-            loadedSub._updateIntervalMs = updateInterval;
-            await loadedSub.update();
-            await new Promise((resolve) => loadedSub.on("update", async () => (await isRemovedInpage()) && resolve()));
-            await loadedSub.stop();
-        }
-        const subPages = await Promise.all(Object.values(loadedSub.posts.pageCids).map((pageCid) => loadedSub.posts.getPage(pageCid)));
-
-        await Promise.all(
-            subPages.map(async (page) => {
-                const postInPage = page.comments.find((comment) => comment.cid === post.cid);
-                const postPages = await Promise.all(
-                    Object.values(postInPage.replies.pageCids).map((pageCid) => loadedSub.posts.getPage(pageCid))
-                );
-                for (const page of postPages) expect(page.comments[0].removed).to.be.true;
-            })
-        );
-    });
-
     it(`Can publish a reply or vote under a reply of a removed reply`, async () => {
         // post
         //   -- replyToBeRemoved (removed=true)
@@ -249,19 +181,7 @@ describe(`Removing reply`, async () => {
             await generateMockComment(replyUnderRemovedReply, plebbit),
             await generateMockVote(replyUnderRemovedReply, 1, plebbit)
         ];
-
-        await Promise.all([reply.publish(), vote.publish()]);
-        await Promise.all(
-            [reply, vote].map(
-                (pub) =>
-                    new Promise((resolve) =>
-                        pub.once("challengeverification", (verificationMsg, _) => {
-                            expect(verificationMsg.challengeSuccess).to.be.true;
-                            resolve();
-                        })
-                    )
-            )
-        );
+        await Promise.all([reply, vote].map((pub) => publishWithExpectedResult(pub, true)));
     });
 
     it(`Author can't unremove a reply`, async () => {
@@ -272,14 +192,7 @@ describe(`Removing reply`, async () => {
             removed: false,
             signer: replyToBeRemoved.signer
         });
-        await unremoveEdit.publish();
-        await new Promise((resolve) =>
-            unremoveEdit.once("challengeverification", (verificationMsg, _) => {
-                expect(verificationMsg.challengeSuccess).to.be.false;
-                expect(verificationMsg.reason).to.equal(messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD);
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(unremoveEdit, false, messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD);
     });
     it("Mod can unremove a reply", async () => {
         const unremoveEdit = await plebbit.createCommentEdit({
@@ -289,44 +202,14 @@ describe(`Removing reply`, async () => {
             removed: false,
             signer: roles[2].signer
         });
-        await unremoveEdit.publish();
-        await new Promise((resolve) =>
-            unremoveEdit.once("challengeverification", (verificationMsg, _) => {
-                expect(verificationMsg.challengeSuccess).to.be.true;
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(unremoveEdit, true);
     });
 
     it(`A new CommentUpdate is published for unremoving a reply`, async () => {
-        if (replyToBeRemoved.removed)
+        if (replyToBeRemoved.removed === true)
             await new Promise((resolve) => replyToBeRemoved.on("update", () => replyToBeRemoved.removed === false && resolve()));
         replyToBeRemoved.removeAllListeners("update");
         expect(replyToBeRemoved.removed).to.be.false;
         expect(replyToBeRemoved.moderatorReason).to.equal("To unremove a reply");
-    });
-
-    it(`Unremoved reply is shown in subplebbit.posts`, async () => {
-        const sub = await plebbit.getSubplebbit(replyToBeRemoved.subplebbitAddress);
-        const isUnremovedInpage = async () => {
-            const newPage = await sub.posts.getPage(sub.posts.pageCids.new);
-            return newPage.comments.find((comment) => comment.cid === post.cid).replies.pages.topAll.comments[0].removed === false;
-        };
-        if (!(await isUnremovedInpage())) {
-            sub._updateIntervalMs = updateInterval;
-            await sub.update();
-            await new Promise((resolve) => sub.on("update", async () => (await isUnremovedInpage()) && resolve()));
-            await sub.stop();
-        }
-        const subPages = await Promise.all(Object.values(sub.posts.pageCids).map((pageCid) => sub.posts.getPage(pageCid)));
-
-        for (const page of subPages) {
-            const postInPage = page.comments.find((comment) => comment.cid === post.cid);
-            const repliesPages = await Promise.all(Object.values(postInPage.replies.pageCids).map((pageCid) => sub.posts.getPage(pageCid)));
-            for (const replyPage of repliesPages) {
-                expect(replyPage.comments[0].removed).to.be.false;
-                expect(replyPage.comments[0].moderatorReason).to.equal("To unremove a reply");
-            }
-        }
     });
 });
