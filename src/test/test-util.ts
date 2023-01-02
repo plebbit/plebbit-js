@@ -330,13 +330,13 @@ export async function mockPlebbit(dataPath?: string) {
 async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
     const loadedSub = await plebbit.getSubplebbit(comment.subplebbitAddress);
     //@ts-ignore
-    loadedSub._updateIntervalMs = comment._updateIntervalMs = 200;
+    loadedSub._updateIntervalMs = comment._updateIntervalMs = 100;
     await loadedSub.update();
     await comment.publish();
 
     await new Promise((resolve) =>
         comment.once("challengeverification", (verificationMsg) => {
-            if (!verificationMsg.challengeSuccess) throw Error("Failed to publish comment");
+            if (!verificationMsg.challengeSuccess) throw Error(`Failed to publish comment due to (${verificationMsg.reason})`);
             else resolve(1);
         })
     );
@@ -350,7 +350,7 @@ async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
     else {
         const parentComment = await plebbit.getComment(comment.parentCid);
         //@ts-ignore
-        parentComment._updateIntervalMs = 200;
+        parentComment._updateIntervalMs = 100;
         await Promise.all([
             parentComment.update(),
             new Promise((resolve) =>

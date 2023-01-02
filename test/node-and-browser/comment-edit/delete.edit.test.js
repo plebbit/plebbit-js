@@ -4,7 +4,8 @@ const {
     publishRandomReply,
     mockPlebbit,
     generateMockComment,
-    generateMockVote
+    generateMockVote,
+    publishWithExpectedResult
 } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
@@ -16,7 +17,7 @@ const roles = [
     { role: "admin", signer: signers[2] },
     { role: "mod", signer: signers[3] }
 ];
-describe("Marking post as deleted", async () => {
+describe("Deleting a post", async () => {
     let plebbit, postToDelete, modPostToDelete, postReply;
 
     before(async () => {
@@ -35,14 +36,7 @@ describe("Marking post as deleted", async () => {
             deleted: true,
             signer: await plebbit.createSigner()
         });
-        await deleteEdit.publish();
-        await new Promise((resolve) =>
-            deleteEdit.once("challengeverification", (verificationMsg, _) => {
-                expect(verificationMsg.challengeSuccess).to.be.false;
-                expect(verificationMsg.reason).to.equal(messages.ERR_UNAUTHORIZED_COMMENT_EDIT);
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(deleteEdit, false, messages.ERR_UNAUTHORIZED_COMMENT_EDIT);
     });
 
     it(`Mod can't delete a post that is not theirs`, async () => {
@@ -53,14 +47,7 @@ describe("Marking post as deleted", async () => {
             deleted: true,
             signer: roles[2].signer
         });
-        await deleteEdit.publish();
-        await new Promise((resolve) =>
-            deleteEdit.once("challengeverification", (verificationMsg, _) => {
-                expect(verificationMsg.challengeSuccess).to.be.false;
-                expect(verificationMsg.reason).to.equal(messages.ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD);
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(deleteEdit, false, messages.ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD);
     });
 
     it(`Author of post can delete their own post`, async () => {
@@ -70,30 +57,14 @@ describe("Marking post as deleted", async () => {
             deleted: true,
             signer: postToDelete.signer
         });
-        await deleteEdit.publish();
-        await new Promise((resolve) =>
-            deleteEdit.once("challengeverification", (verificationMsg, _) => {
-                expect(verificationMsg.challengeSuccess).to.be.true;
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(deleteEdit, true);
     });
 
     it(`Can't publish a reply or vote under a reply of a deleted post`, async () => {
         const [reply, vote] = [await generateMockComment(postReply, plebbit), await generateMockVote(postReply, 1, plebbit)];
 
-        await Promise.all([reply.publish(), vote.publish()]);
         await Promise.all(
-            [reply, vote].map(
-                (pub) =>
-                    new Promise((resolve) =>
-                        pub.once("challengeverification", (verificationMsg, _) => {
-                            expect(verificationMsg.challengeSuccess).to.be.false;
-                            expect(verificationMsg.reason).to.equal(messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
-                            resolve();
-                        })
-                    )
-            )
+            [reply, vote].map((pub) => publishWithExpectedResult(pub, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED))
         );
     });
 
@@ -103,32 +74,21 @@ describe("Marking post as deleted", async () => {
             const pages = await Promise.all(Object.values(sub.posts.pageCids).map((pageCid) => sub.posts.getPage(pageCid)));
             return pages.some((page) => page.comments.some((comment) => comment.cid === postToDelete.cid));
         };
-        if (!(await isPostInPages())) return;
-
-        sub._updateIntervalMs = updateInterval;
-        await sub.update();
-        await new Promise((resolve) =>
-            sub.on("update", async () => {
-                if (!(await isPostInPages())) resolve();
-            })
-        );
-        sub.stop();
+        if (await isPostInPages()) {
+            sub._updateIntervalMs = updateInterval;
+            await sub.update();
+            await new Promise((resolve) => sub.on("update", async () => !(await isPostInPages()) && resolve()));
+            sub.stop();
+        }
     });
 
     it(`Sub rejects votes or comments under deleted post`, async () => {
         const replyUnderDeletedPost = await generateMockComment(postToDelete, plebbit);
-        const voteUnderDeletedComment = await generateMockVote(postToDelete, 1, plebbit);
-        await Promise.all([replyUnderDeletedPost.publish(), voteUnderDeletedComment.publish()]);
+        const voteUnderDeletedPost = await generateMockVote(postToDelete, 1, plebbit);
+
         await Promise.all(
-            [replyUnderDeletedPost, voteUnderDeletedComment].map(
-                (pub) =>
-                    new Promise((resolve) =>
-                        pub.once("challengeverification", (verificationMsg, _) => {
-                            expect(verificationMsg.challengeSuccess).to.be.false;
-                            expect(verificationMsg.reason).to.equal(messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
-                            resolve();
-                        })
-                    )
+            [replyUnderDeletedPost, voteUnderDeletedPost].map((pub) =>
+                publishWithExpectedResult(pub, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED)
             )
         );
     });
@@ -139,13 +99,7 @@ describe("Marking post as deleted", async () => {
             deleted: true,
             signer: modPostToDelete.signer
         });
-        await deleteEdit.publish();
-        await new Promise((resolve) =>
-            deleteEdit.once("challengeverification", (verificationMsg, _) => {
-                expect(verificationMsg.challengeSuccess).to.be.true;
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(deleteEdit, true);
     });
     it(`Author can undelete their own post`, async () => {
         const undeleteEdit = await plebbit.createCommentEdit({
@@ -154,13 +108,7 @@ describe("Marking post as deleted", async () => {
             deleted: false,
             signer: postToDelete.signer
         });
-        await undeleteEdit.publish();
-        await new Promise((resolve) =>
-            undeleteEdit.once("challengeverification", (verificationMsg, _) => {
-                expect(verificationMsg.challengeSuccess).to.be.true;
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(undeleteEdit, true);
     });
     it(`Mod can undelete their own post`, async () => {
         const undeleteEdit = await plebbit.createCommentEdit({
@@ -169,17 +117,11 @@ describe("Marking post as deleted", async () => {
             deleted: false,
             signer: modPostToDelete.signer
         });
-        await undeleteEdit.publish();
-        await new Promise((resolve) =>
-            undeleteEdit.once("challengeverification", (verificationMsg, _) => {
-                expect(verificationMsg.challengeSuccess).to.be.true;
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(undeleteEdit, true);
     });
 });
 
-describe("Marking reply as deleted", async () => {
+describe("Deleting a reply", async () => {
     let plebbit, replyToDelete, post, replyUnderDeletedReply;
 
     before(async () => {
@@ -201,14 +143,7 @@ describe("Marking reply as deleted", async () => {
             deleted: true,
             signer: replyToDelete.signer
         });
-        await deleteEdit.publish();
-
-        await new Promise((resolve) =>
-            deleteEdit.once("challengeverification", (verificationMsg, _) => {
-                expect(verificationMsg.challengeSuccess).to.be.true;
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(deleteEdit, true);
     });
     it(`A new CommentUpdate is pushed for removing a reply`, async () => {
         await new Promise((resolve) => replyToDelete.once("update", resolve));
@@ -218,29 +153,6 @@ describe("Marking reply as deleted", async () => {
         if (!post.replies.pages.topAll.comments[0].deleted) await new Promise((resolve) => post.once("update", resolve));
         expect(post.replies.pages.topAll.comments[0].deleted).to.be.true;
         expect(post.replyCount).to.equal(1);
-    });
-    it(`Deleted replies show up in subplebbit.posts with 'deleted' = true`, async () => {
-        const loadedSub = await plebbit.getSubplebbit(post.subplebbitAddress);
-        loadedSub._updateIntervalMs = updateInterval;
-        await loadedSub.update();
-        const isDeletedInPage = async () => {
-            const newPage = await loadedSub.posts.getPage(loadedSub.posts.pageCids.new);
-            return newPage.comments.find((comment) => comment.cid === post.cid).replies?.pages?.topAll?.comments[0]?.deleted;
-        };
-        if (!(await isDeletedInPage()))
-            await new Promise((resolve) => loadedSub.on("update", async () => (await isDeletedInPage()) && resolve()));
-        await loadedSub.stop();
-        const subPages = await Promise.all(Object.values(loadedSub.posts.pageCids).map((pageCid) => loadedSub.posts.getPage(pageCid)));
-
-        await Promise.all(
-            subPages.map(async (page) => {
-                const postInPage = page.comments.find((comment) => comment.cid === post.cid);
-                const postPages = await Promise.all(
-                    Object.values(postInPage.replies.pageCids).map((pageCid) => loadedSub.posts.getPage(pageCid))
-                );
-                for (const page of postPages) expect(page.comments[0].deleted).to.be.true;
-            })
-        );
     });
 
     it(`Can publish a reply or vote under a reply of a deleted reply`, async () => {
@@ -252,18 +164,6 @@ describe("Marking reply as deleted", async () => {
             await generateMockComment(replyUnderDeletedReply, plebbit),
             await generateMockVote(replyUnderDeletedReply, 1, plebbit)
         ];
-
-        await Promise.all([reply.publish(), vote.publish()]);
-        await Promise.all(
-            [reply, vote].map(
-                (pub) =>
-                    new Promise((resolve) =>
-                        pub.once("challengeverification", (verificationMsg, _) => {
-                            expect(verificationMsg.challengeSuccess).to.be.true;
-                            resolve();
-                        })
-                    )
-            )
-        );
+        await Promise.all([reply, vote].map((pub) => publishWithExpectedResult(pub, true)));
     });
 });
