@@ -5,7 +5,6 @@ const { messages } = require("../../../dist/node/errors");
 const { timestamp } = require("../../../dist/node/util");
 
 const subplebbitAddress = signers[0].address;
-const updateInterval = 300;
 const roles = [
     { role: "owner", signer: signers[1] },
     { role: "admin", signer: signers[2] },

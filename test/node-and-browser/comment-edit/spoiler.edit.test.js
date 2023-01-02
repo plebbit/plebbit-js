@@ -1,10 +1,9 @@
 const signers = require("../../fixtures/signers");
-const { mockPlebbit, publishRandomPost } = require("../../../dist/node/test/test-util");
+const { mockPlebbit, publishRandomPost, publishWithExpectedResult } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
 
 const subplebbitAddress = signers[0].address;
-const updateInterval = 300;
 const roles = [
     { role: "owner", signer: signers[1] },
     { role: "admin", signer: signers[2] },
@@ -29,14 +28,7 @@ describe(`Marking comment as spoiler`, async () => {
             spoiler: true,
             signer: await plebbit.createSigner()
         });
-        await spoilerEdit.publish();
-        await new Promise((resolve) =>
-            spoilerEdit.once("challengeverification", (verificationMsg) => {
-                expect(verificationMsg.challengeSuccess).to.be.false;
-                expect(verificationMsg.reason).to.equal(messages.ERR_UNAUTHORIZED_COMMENT_EDIT);
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(spoilerEdit, false, messages.ERR_UNAUTHORIZED_COMMENT_EDIT);
     });
 
     it(`Author can mark their own comment as spoiler`, async () => {
@@ -48,13 +40,7 @@ describe(`Marking comment as spoiler`, async () => {
             spoiler: true,
             signer: authorPost.signer
         });
-        await spoilerEdit.publish();
-        await new Promise((resolve) =>
-            spoilerEdit.once("challengeverification", (verificationMsg) => {
-                expect(verificationMsg.challengeSuccess).to.be.true;
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(spoilerEdit, true);
     });
     it(`A new CommentUpdate is published with spoiler=true`, async () => {
         await new Promise((resolve) => authorPost.once("update", resolve));
@@ -68,13 +54,7 @@ describe(`Marking comment as spoiler`, async () => {
             spoiler: false,
             signer: authorPost.signer
         });
-        await unspoilerEdit.publish();
-        await new Promise((resolve) =>
-            unspoilerEdit.once("challengeverification", (verificationMsg) => {
-                expect(verificationMsg.challengeSuccess).to.be.true;
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(unspoilerEdit, true);
     });
     it(`A new CommentUpdate is published with spoiler=false`, async () => {
         if (authorPost.spoiler) await new Promise((resolve) => authorPost.on("update", () => !authorPost.spoiler && resolve()));
@@ -90,13 +70,7 @@ describe(`Marking comment as spoiler`, async () => {
             spoiler: true,
             signer: roles[2].signer
         });
-        await spoilerEdit.publish();
-        await new Promise((resolve) =>
-            spoilerEdit.once("challengeverification", (verificationMsg) => {
-                expect(verificationMsg.challengeSuccess).to.be.true;
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(spoilerEdit, true);
     });
 
     it(`Mod can mark their own comment as spoiler`, async () => {
@@ -107,13 +81,7 @@ describe(`Marking comment as spoiler`, async () => {
             spoiler: true,
             signer: roles[2].signer
         });
-        await spoilerEdit.publish();
-        await new Promise((resolve) =>
-            spoilerEdit.once("challengeverification", (verificationMsg) => {
-                expect(verificationMsg.challengeSuccess).to.be.true;
-                resolve();
-            })
-        );
+        await publishWithExpectedResult(spoilerEdit, true);
     });
 
     it(`A comment that was published with spoiler=true can be edited to spoiler=false`, async () => {
@@ -128,16 +96,9 @@ describe(`Marking comment as spoiler`, async () => {
             spoiler: false,
             signer: spoilerPost.signer
         });
-        await spoilerEdit.publish();
-        await new Promise((resolve) =>
-            spoilerEdit.once("challengeverification", (verificationMsg) => {
-                expect(verificationMsg.challengeSuccess).to.be.true;
-                resolve();
-            })
-        );
-
+        await publishWithExpectedResult(spoilerEdit, true);
         await new Promise((resolve) => spoilerPost.once("update", resolve));
-        await spoilerPost.stop();
+        spoilerPost.stop();
         expect(spoilerPost.spoiler).to.be.false;
         expect(spoilerPost.authorEdit.spoiler).to.be.false;
     });
