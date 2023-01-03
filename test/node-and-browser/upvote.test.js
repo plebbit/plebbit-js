@@ -5,6 +5,7 @@ const { generateMockVote, publishRandomPost, publishRandomReply, publishWithExpe
 const { timestamp, randomElement } = require("../../dist/node/util");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 const lodash = require("lodash");
+const { default: waitUntil } = require("async-wait-until");
 
 const subplebbitAddress = signers[0].address;
 
@@ -38,7 +39,8 @@ describe("Test upvote", async () => {
         const originalUpvote = lodash.clone(postToVote.upvoteCount);
         const vote = await generateMockVote(postToVote, 1, plebbit);
         await publishWithExpectedResult(vote, true);
-        await new Promise((resolve) => postToVote.once("update", resolve));
+        await waitUntil(() => postToVote.upvoteCount === originalUpvote + 1, { timeout: 20000 });
+
         expect(postToVote.upvoteCount).to.be.equal(originalUpvote + 1);
         expect(postToVote.downvoteCount).to.be.equal(0);
         expect(postToVote.author.subplebbit.replyScore).to.equal(0);
@@ -51,7 +53,7 @@ describe("Test upvote", async () => {
         const originalUpvote = lodash.clone(replyToVote.downvoteCount);
         const vote = await generateMockVote(replyToVote, 1, plebbit);
         await publishWithExpectedResult(vote, true);
-        await new Promise((resolve) => replyToVote.once("update", resolve));
+        await waitUntil(() => replyToVote.upvoteCount === originalUpvote + 1, { timeout: 20000 });
         expect(replyToVote.upvoteCount).to.equal(originalUpvote + 1);
         expect(replyToVote.downvoteCount).to.equal(0);
         expect(replyToVote.author.subplebbit.replyScore).to.equal(1);
@@ -70,7 +72,8 @@ describe("Test upvote", async () => {
             vote: -1
         });
         await publishWithExpectedResult(vote, true);
-        await new Promise((resolve) => postToVote.once("update", resolve));
+        await waitUntil(() => postToVote.upvoteCount === originalUpvote - 1, { timeout: 20000 });
+
         expect(postToVote.upvoteCount).to.equal(originalUpvote - 1);
         expect(postToVote.downvoteCount).to.equal(originalDownvote + 1);
         expect(postToVote.author.subplebbit.postScore).to.equal(-1);
@@ -87,7 +90,8 @@ describe("Test upvote", async () => {
             vote: -1
         });
         await publishWithExpectedResult(vote, true);
-        await new Promise((resolve) => replyToVote.once("update", resolve));
+        await waitUntil(() => replyToVote.upvoteCount === originalUpvote - 1, { timeout: 20000 });
+
         expect(replyToVote.upvoteCount).to.equal(originalUpvote - 1);
         expect(replyToVote.downvoteCount).to.equal(originalDownvote + 1);
         expect(replyToVote.author.subplebbit.postScore).to.equal(-1);

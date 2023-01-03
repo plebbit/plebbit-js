@@ -10,6 +10,7 @@ const {
 } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
+const { default: waitUntil } = require("async-wait-until");
 
 const subplebbitAddress = signers[0].address;
 const updateInterval = 300;
@@ -165,7 +166,8 @@ describe(`Removing reply`, async () => {
     });
 
     it(`A new CommentUpdate is published for removing a reply`, async () => {
-        if (!replyToBeRemoved.removed) await new Promise((resolve) => replyToBeRemoved.once("update", resolve));
+        await waitUntil(() => replyToBeRemoved.removed === true, { timeout: 20000 });
+
         expect(replyToBeRemoved.removed).to.be.true;
         expect(replyToBeRemoved.moderatorReason).to.equal("To remove a reply");
     });
@@ -209,8 +211,7 @@ describe(`Removing reply`, async () => {
     });
 
     it(`A new CommentUpdate is published for unremoving a reply`, async () => {
-        if (replyToBeRemoved.removed === true)
-            await new Promise((resolve) => replyToBeRemoved.on("update", () => replyToBeRemoved.removed === false && resolve()));
+        await waitUntil(() => replyToBeRemoved.removed === false, { timeout: 20000 });
         replyToBeRemoved.removeAllListeners("update");
         expect(replyToBeRemoved.removed).to.be.false;
         expect(replyToBeRemoved.moderatorReason).to.equal("To unremove a reply");
