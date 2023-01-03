@@ -461,7 +461,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             if (commentEdit.commentAuthor) {
                 // A mod is is trying to ban an author or add a flair to author
                 const newAuthorProps: AuthorDbType = {
-                    address: commentToBeEdited?.author.address,
+                    address: commentToBeEdited.author.address,
                     banExpiresAt: commentEdit.commentAuthor.banExpiresAt,
                     flair: commentEdit.commentAuthor.flair
                 };
@@ -996,7 +996,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.sortHandler.cacheCommentsPages();
             await this.updateSubplebbitIpns();
 
-            RUNNING_SUBPLEBBITS[this.signer.address] = true;
             if (this.dbHandler) await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternal());
         } catch (e) {
             log.error(`Failed to sync due to error,`, e);

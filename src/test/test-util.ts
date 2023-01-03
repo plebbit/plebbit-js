@@ -301,7 +301,7 @@ export async function startSubplebbits(props: {
     subplebbit._syncIntervalMs = props.syncInterval;
     await subplebbit.start();
     console.time("populate");
-    const [imageSubplebbit, mathSubplebbit] = await Promise.all([
+    await Promise.all([
         _startImageCaptchaSubplebbit(props.signers, props.database, props.syncInterval, props.dataPath),
         _startMathCliSubplebbit(props.signers, props.database, props.syncInterval, props.dataPath),
         _startEnsSubplebbit(props.signers, props.database, props.syncInterval, props.dataPath),
@@ -330,7 +330,7 @@ export async function mockPlebbit(dataPath?: string) {
 async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
     const loadedSub = await plebbit.getSubplebbit(comment.subplebbitAddress);
     //@ts-ignore
-    loadedSub._updateIntervalMs = comment._updateIntervalMs = 100;
+    loadedSub._updateIntervalMs = comment._updateIntervalMs = 300;
     await loadedSub.update();
     await comment.publish();
 
@@ -350,7 +350,7 @@ async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
     else {
         const parentComment = await plebbit.getComment(comment.parentCid);
         //@ts-ignore
-        parentComment._updateIntervalMs = 100;
+        parentComment._updateIntervalMs = 300;
         await Promise.all([
             parentComment.update(),
             new Promise((resolve) =>
@@ -386,13 +386,17 @@ export async function publishRandomPost(subplebbitAddress: string, plebbit: Pleb
 
 export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
     await publication.publish();
-    await new Promise((resolve) =>
+    await new Promise((resolve, reject) =>
         publication.once("challengeverification", (verificationMsg) => {
-            if (verificationMsg.challengeSuccess !== expectedChallengeSuccess)
-                throw `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${verificationMsg.challengeSuccess})`;
-            if (expectedReason && expectedReason !== verificationMsg.reason)
-                throw `Expected reason to be (${expectedReason}) and got (${verificationMsg.reason})`;
-            resolve(1);
+            if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
+                const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${verificationMsg.challengeSuccess})`;
+                console.error(msg);
+                reject(msg);
+            } else if (expectedReason && expectedReason !== verificationMsg.reason) {
+                const msg = `Expected reason to be (${expectedReason}) and got (${verificationMsg.reason})`;
+                console.error(msg);
+                reject(msg);
+            } else resolve(1);
         })
     );
 }

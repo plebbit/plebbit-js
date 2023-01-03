@@ -12,7 +12,7 @@ const { expect, assert } = chai;
 let plebbit, signer;
 const subplebbitAddress = signers[0].address;
 const mockComments = [];
-const updateInterval = 100;
+const updateInterval = 300;
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 

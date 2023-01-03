@@ -1,4 +1,4 @@
 module.exports = {
-    timeout: 160000,
+    timeout: 200000,
     require: "test/root-hook-mocha.js"
 };

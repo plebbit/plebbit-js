@@ -9,7 +9,7 @@ const { mockPlebbit } = require("../../dist/node/test/test-util");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-const updateInterval = 100;
+const updateInterval = 300;
 const subplebbitAddress = signers[0].address;
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
