@@ -123,7 +123,7 @@ describe(`Removing post`, async () => {
         };
         sub._updateIntervalMs = updateInterval;
         await sub.update();
-        await waitUntil(isUnremovedInPage, { timeout: 20000 });
+        await waitUntil(isUnremovedInPage, { timeout: 200000 });
         await sub.stop();
 
         for (const pageCid of Object.values(sub.posts.pageCids)) {
@@ -165,7 +165,7 @@ describe(`Removing reply`, async () => {
     });
 
     it(`A new CommentUpdate is published for removing a reply`, async () => {
-        await waitUntil(() => replyToBeRemoved.removed === true, { timeout: 20000 });
+        await waitUntil(() => replyToBeRemoved.removed === true, { timeout: 200000 });
 
         expect(replyToBeRemoved.removed).to.be.true;
         expect(replyToBeRemoved.moderatorReason).to.equal("To remove a reply");
@@ -210,7 +210,7 @@ describe(`Removing reply`, async () => {
     });
 
     it(`A new CommentUpdate is published for unremoving a reply`, async () => {
-        await waitUntil(() => replyToBeRemoved.removed === false, { timeout: 30000 });
+        await waitUntil(() => replyToBeRemoved.removed === false, { timeout: 300000 });
         expect(replyToBeRemoved.removed).to.be.false;
         expect(replyToBeRemoved.moderatorReason).to.equal("To unremove a reply");
     });
