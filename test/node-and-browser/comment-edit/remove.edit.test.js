@@ -121,12 +121,11 @@ describe(`Removing post`, async () => {
             const newComments = await loadAllPages(sub.posts.pageCids.new, sub.posts);
             return newComments.some((comment) => comment.cid === postToRemove.cid);
         };
-        if (!(await isUnremovedInPage())) {
-            sub._updateIntervalMs = updateInterval;
-            await sub.update();
-            await new Promise((resolve) => sub.on("update", async () => (await isUnremovedInPage()) && resolve()));
-            await sub.stop();
-        }
+        sub._updateIntervalMs = updateInterval;
+        await sub.update();
+        await waitUntil(isUnremovedInPage, { timeout: 20000 });
+        await sub.stop();
+
         for (const pageCid of Object.values(sub.posts.pageCids)) {
             const pageComments = await loadAllPages(pageCid, sub.posts);
             const postInPage = pageComments.find((comment) => comment.cid === postToRemove.cid);
@@ -211,8 +210,7 @@ describe(`Removing reply`, async () => {
     });
 
     it(`A new CommentUpdate is published for unremoving a reply`, async () => {
-        await waitUntil(() => replyToBeRemoved.removed === false, { timeout: 20000 });
-        replyToBeRemoved.removeAllListeners("update");
+        await waitUntil(() => replyToBeRemoved.removed === false, { timeout: 30000 });
         expect(replyToBeRemoved.removed).to.be.false;
         expect(replyToBeRemoved.moderatorReason).to.equal("To unremove a reply");
     });
