@@ -33,7 +33,7 @@ module.exports = function (config) {
         // chai adds "expect" matchers
         // sinon adds mocking utils
         // NOTE: 'parallel' must be the first framework in the list
-        frameworks: ["mocha", "chai", "sinon"],
+        frameworks: ["parallel", "mocha", "chai", "sinon"],
         client: {
             mocha: mochaConfig
         },
@@ -43,6 +43,7 @@ module.exports = function (config) {
             require("karma-chai"),
             require("karma-sinon"),
             require("karma-spec-reporter"),
+            require("karma-parallel"),
             injectCodeBeforePlugin
         ],
 
