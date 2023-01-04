@@ -110,7 +110,7 @@ describe(`Removing post`, async () => {
     });
 
     it(`A new CommentUpdate is published for unremoving a post`, async () => {
-        if (postToRemove.removed === true) await new Promise((resolve) => postToRemove.once("update", resolve));
+        await waitUntil(() => postToRemove.removed === false, { timeout: 200000 });
         expect(postToRemove.removed).to.be.false;
         expect(postToRemove.moderatorReason).to.equal("To unremove a post");
     });
