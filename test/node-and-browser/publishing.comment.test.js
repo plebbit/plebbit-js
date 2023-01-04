@@ -1,10 +1,11 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { generateMockPost, generateMockComment } = require("../../dist/node/test/test-util");
+const { generateMockPost, generateMockComment, publishRandomReply } = require("../../dist/node/test/test-util");
 const lodash = require("lodash");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
+const { default: waitUntil } = require("async-wait-until");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -170,32 +171,28 @@ describe("publishing", async () => {
 
     [1, 2].map((depth) =>
         it(`Can publish comment with depth = ${depth}`, async () => {
-            return new Promise(async (resolve, reject) => {
-                const parentComment = mockComments[depth - 1];
-                parentComment._updateIntervalMs = updateInterval;
-                await Promise.all([new Promise((resolve) => parentComment.once("update", resolve)), parentComment.update()]);
+            const parentComment = mockComments[depth - 1];
+            parentComment._updateIntervalMs = updateInterval;
+            await parentComment.update();
+            await waitUntil(() => typeof parentComment.updatedAt === "number", { timeout: 200000 });
 
-                const mockComment = await generateMockComment(parentComment, plebbit, signer);
+            const originalReplyCount = lodash.clone(parentComment.replyCount);
+            expect(originalReplyCount).to.be.equal(0);
 
-                expect(parentComment.updatedAt).to.be.a("number");
-                const originalReplyCount = parentComment.replyCount;
-                expect(originalReplyCount).to.be.equal(0);
-                await mockComment.publish();
-                parentComment.once("update", async (updatedParentComment) => {
-                    expect(mockComment.parentCid).to.be.equal(updatedParentComment.cid);
-                    expect(mockComment.depth).to.be.equal(depth);
-                    expect(updatedParentComment.replyCount).to.equal(originalReplyCount + 1);
-                    expect(updatedParentComment.author.subplebbit.postScore).to.equal(0);
-                    expect(updatedParentComment.author.subplebbit.replyScore).to.equal(0);
-                    expect(updatedParentComment.author.subplebbit.lastCommentCid).to.equal(mockComment.cid);
-                    const parentLatestCommentCid = (await updatedParentComment.replies.getPage(updatedParentComment.replies.pageCids.new))
-                        .comments[0]?.cid;
-                    expect(parentLatestCommentCid).to.equal(mockComment.cid, "parentComment.replies.new should include new comment");
-                    mockComments.push(mockComment);
-                    await parentComment.stop();
-                    resolve();
-                });
-            });
+            const reply = await publishRandomReply(parentComment, plebbit, { signer });
+
+            await waitUntil(() => parentComment.replyCount === 1, { timeout: 200000 });
+
+            expect(reply.parentCid).to.be.equal(parentComment.cid);
+            expect(reply.depth).to.be.equal(depth);
+            expect(parentComment.replyCount).to.equal(originalReplyCount + 1);
+            expect(parentComment.author.subplebbit.postScore).to.equal(0);
+            expect(parentComment.author.subplebbit.replyScore).to.equal(0);
+            expect(parentComment.author.subplebbit.lastCommentCid).to.equal(reply.cid);
+            const parentLatestCommentCid = (await parentComment.replies.getPage(parentComment.replies.pageCids.new)).comments[0]?.cid;
+            expect(parentLatestCommentCid).to.equal(reply.cid);
+            mockComments.push(reply);
+            await parentComment.stop();
         })
     );
 });
