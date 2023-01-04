@@ -1,6 +1,5 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { randomElement } = require("../../dist/node/util");
 const { generateMockPost, generateMockComment } = require("../../dist/node/test/test-util");
 const lodash = require("lodash");
 const chai = require("chai");
@@ -38,13 +37,13 @@ describe("publishing", async () => {
     });
 
     it(`(comment: Comment) === plebbit.createComment(JSON.parse(JSON.stringify(comment)))`, async () => {
-        const comment = await generateMockComment(mockComments[0], plebbit, randomElement(signers));
+        const comment = await generateMockComment(mockComments[0], plebbit, lodash.sample(signers));
         const commentFromStringifiedComment = await plebbit.createComment(JSON.parse(JSON.stringify(comment)));
         expect(JSON.stringify(comment)).to.equal(JSON.stringify(commentFromStringifiedComment));
     });
 
     it(`(post: Post) === plebbit.createComment(JSON.parse(JSON.stringify(post)))`, async () => {
-        const post = await generateMockPost(subplebbitAddress, plebbit, randomElement(signers));
+        const post = await generateMockPost(subplebbitAddress, plebbit, lodash.sample(signers));
         const postFromStringifiedPost = await plebbit.createComment(JSON.parse(JSON.stringify(post)));
         expect(JSON.stringify(post)).to.equal(JSON.stringify(postFromStringifiedPost));
     });

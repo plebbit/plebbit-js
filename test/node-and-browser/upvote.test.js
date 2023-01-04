@@ -2,7 +2,7 @@ const Plebbit = require("../../dist/node");
 const { expect } = require("chai");
 const signers = require("../fixtures/signers");
 const { generateMockVote, publishRandomPost, publishRandomReply, publishWithExpectedResult } = require("../../dist/node/test/test-util");
-const { timestamp, randomElement } = require("../../dist/node/util");
+const { timestamp } = require("../../dist/node/util");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 const lodash = require("lodash");
 const { default: waitUntil } = require("async-wait-until");
@@ -30,7 +30,7 @@ describe("Test upvote", async () => {
     });
 
     it(`(vote: Vote) === plebbit.createVote(JSON.parse(JSON.stringify(vote)))`, async () => {
-        const vote = await generateMockVote(postToVote, 1, plebbit, randomElement(signers));
+        const vote = await generateMockVote(postToVote, 1, plebbit, lodash.sample(signers));
         const voteFromStringifiedVote = await plebbit.createVote(JSON.parse(JSON.stringify(vote)));
         expect(JSON.stringify(vote)).to.equal(JSON.stringify(voteFromStringifiedVote));
     });

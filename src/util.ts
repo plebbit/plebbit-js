@@ -192,10 +192,6 @@ export function removeKeysWithUndefinedValues<T extends Object>(object: T): Only
     return newObj;
 }
 
-export function randomElement<T>(array: Array<T>): T {
-    return array[Math.floor(Math.random() * array.length)];
-}
-
 export function encode(obj: Object): string {
     // May change in future
     // We're encoding in cborg and decoding to make sure all JSON objects can be stringified and parsed determinstically
