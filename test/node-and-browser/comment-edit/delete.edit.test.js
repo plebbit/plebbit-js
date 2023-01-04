@@ -34,7 +34,6 @@ describe("Deleting a post", async () => {
         const deleteEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToDelete.subplebbitAddress,
             commentCid: postToDelete.cid,
-            moderatorReason: "To delete a post" + Date.now(),
             deleted: true,
             signer: await plebbit.createSigner()
         });
@@ -45,7 +44,6 @@ describe("Deleting a post", async () => {
         const deleteEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToDelete.subplebbitAddress,
             commentCid: postToDelete.cid,
-            moderatorReason: "To delete a post" + Date.now(),
             deleted: true,
             signer: roles[2].signer
         });
