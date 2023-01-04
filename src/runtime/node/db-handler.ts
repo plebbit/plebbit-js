@@ -10,6 +10,7 @@ import Keyv from "keyv";
 import Transaction = Knex.Transaction;
 import {
     AuthorDbType,
+    AuthorType,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
     CommentEditForDbType,
@@ -304,7 +305,7 @@ export class DbHandler {
         log(`copied table ${srcTable} to table ${dstTable}`);
     }
 
-    private async _insertAuthor(author: AuthorDbType, trx?: Transaction) {
+    async insertAuthor(author: AuthorDbType, trx?: Transaction) {
         await this._baseTransaction(trx)(TABLES.AUTHORS).insert(author);
     }
 
@@ -320,7 +321,7 @@ export class DbHandler {
     ) {
         const onlyNewProps = removeKeysWithUndefinedValues(lodash.omit(newAuthorProps, ["address"]));
         // Iterate through all this author comments and update their comment.author
-        const commentsWithAuthor: CommentType[] = await this.queryCommentsOfAuthor(newAuthorProps.address);
+        const commentsWithAuthor: CommentType[] = await this.queryCommentsOfAuthor(newAuthorProps.address, trx);
         await Promise.all(
             commentsWithAuthor.map(async (commentProps: CommentType) => {
                 const newCommentProps: Pick<CommentForDbType, "author"> = {
@@ -331,21 +332,16 @@ export class DbHandler {
         );
     }
 
-    async queryAuthor(authorAddress: string, trx?: Transaction): Promise<Author | undefined> {
+    async queryAuthor(authorAddress: string, trx?: Transaction): Promise<AuthorType | undefined> {
         const authorProps = await this._baseTransaction(trx)(TABLES.AUTHORS).where({ address: authorAddress }).first();
-        if (authorProps) return new Author(authorProps);
+        return authorProps ? new Author(authorProps).toJSON() : undefined;
     }
 
-    async upsertVote(vote: VoteForDbType, author: AuthorDbType, trx?: Transaction) {
-        const authorDb = await this.queryAuthor(author.address);
-        if (!authorDb) await this._insertAuthor(author);
+    async upsertVote(vote: VoteForDbType, trx?: Transaction) {
         await this._baseTransaction(trx)(TABLES.VOTES).insert(vote).onConflict(["commentCid", "authorAddress"]).merge();
     }
 
-    async insertComment(comment: CommentForDbType, author: AuthorDbType, trx?: Transaction) {
-        const authorDb = await this.queryAuthor(author.address);
-        if (!authorDb) await this._insertAuthor(author);
-
+    async insertComment(comment: CommentForDbType, trx?: Transaction) {
         await this._baseTransaction(trx)(TABLES.COMMENTS).insert(comment);
     }
 
@@ -359,9 +355,7 @@ export class DbHandler {
         await this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid: comment.cid }).update(comment);
     }
 
-    async insertEdit(edit: CommentEditForDbType, author: AuthorDbType, trx?: Transaction) {
-        const authorDb = await this.queryAuthor(author.address);
-        if (!authorDb) await this._insertAuthor(author);
+    async insertEdit(edit: CommentEditForDbType, trx?: Transaction) {
         await this._baseTransaction(trx)(TABLES.EDITS).insert(edit);
     }
 
@@ -560,7 +554,7 @@ export class DbHandler {
         parentCid = parentCid || null;
 
         const commentsObjs = await this._baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", "desc");
-        return await this._createCommentsFromRows(commentsObjs);
+        return this._createCommentsFromRows(commentsObjs);
     }
 
     async queryParentsOfComment(comment: CommentType, trx?: Transaction): Promise<CommentType[]> {

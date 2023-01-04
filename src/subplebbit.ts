@@ -417,6 +417,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
+    private async _insertAuthorIfNotInDb(author: AuthorDbType, trx) {
+        if (!(await this.dbHandler.queryAuthor(author.address, trx))) await this.dbHandler.insertAuthor(author, trx);
+    }
+
     private async handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string) {
         const log = Logger("plebbit-js:subplebbit:handleCommentEdit");
 
@@ -433,9 +437,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 }
             }
 
-            await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId), commentEdit.author.toJSONForDb());
+            const trx = await this.dbHandler.createTransaction(challengeRequestId);
+
+            await this._insertAuthorIfNotInDb(commentEdit.author.toJSONForDb(), trx);
+            await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId), trx);
             // If comment.flair is last modified by a mod, then reject
-            await this.dbHandler.editComment(commentEdit.toJSONForDb(challengeRequestId));
+            await this.dbHandler.editComment(commentEdit.toJSONForDb(challengeRequestId), trx);
+            await this.dbHandler.commitTransaction(challengeRequestId);
             log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEdit.toJSON());
         } else if (modRole) {
             log.trace(
@@ -458,8 +466,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 return msg;
             }
 
-            await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId), commentEdit.author.toJSONForDb());
-            await this.dbHandler.editComment(commentEdit.toJSONForDb(challengeRequestId));
+            const trx = await this.dbHandler.createTransaction(challengeRequestId);
+
+            await this._insertAuthorIfNotInDb(commentEdit.author.toJSONForDb(), trx);
+
+            await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId), trx);
+            await this.dbHandler.editComment(commentEdit.toJSONForDb(challengeRequestId), trx);
 
             if (commentEdit.commentAuthor) {
                 // A mod is is trying to ban an author or add a flair to author
@@ -468,8 +480,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     banExpiresAt: commentEdit.commentAuthor.banExpiresAt,
                     flair: commentEdit.commentAuthor.flair
                 };
-                await this.dbHandler.updateAuthorInAuthorsTable(newAuthorProps);
-                await this.dbHandler.updateAuthorInCommentsTable(newAuthorProps);
+                await this.dbHandler.updateAuthorInAuthorsTable(newAuthorProps, trx);
+                await this.dbHandler.updateAuthorInCommentsTable(newAuthorProps, trx);
                 log(
                     `(${challengeRequestId}): `,
                     `Following props has been added to author (${newAuthorProps.address}): `,
@@ -478,6 +490,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     modRole
                 );
             }
+            await this.dbHandler.commitTransaction(challengeRequestId);
         } else {
             // CommentEdit is signed by someone who's not the original author or a mod. Reject it
             // Editor has no subplebbit role like owner, moderator or admin, and their signer is not the signer used in the original comment
@@ -497,7 +510,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             log(`(${challengeRequestId}): `, msg);
             return msg;
         } else {
-            await this.dbHandler.upsertVote(newVote.toJSONForDb(challengeRequestId), newVote.author.toJSONForDb(), undefined);
+            const trx = await this.dbHandler.createTransaction(challengeRequestId);
+            await this._insertAuthorIfNotInDb(newVote.author.toJSONForDb(), trx);
+            await this.dbHandler.upsertVote(newVote.toJSONForDb(challengeRequestId), trx);
+            await this.dbHandler.commitTransaction(challengeRequestId);
             log.trace(`(${challengeRequestId}): `, `Upserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
         }
     }
@@ -524,7 +540,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (postOrCommentOrVote?.author?.address) {
             // Check if author is banned
             const author = await this.dbHandler.queryAuthor(postOrCommentOrVote.author.address);
-            if (author?.banExpiresAt && author.banExpiresAt > timestamp()) {
+            if (typeof author?.banExpiresAt === "number" && author.banExpiresAt > timestamp()) {
                 log(`(${challengeRequestId}): `, messages.ERR_AUTHOR_IS_BANNED);
                 return messages.ERR_AUTHOR_IS_BANNED;
             }
@@ -631,17 +647,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             if (postOrCommentOrVote instanceof Post) {
                 const trx = await this.dbHandler.createTransaction(challengeRequestId);
                 postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPost(trx))?.cid);
+                await this._insertAuthorIfNotInDb(postOrCommentOrVote.author.toJSONForDb(), trx);
+
                 await this.dbHandler.commitTransaction(challengeRequestId);
                 postOrCommentOrVote.setDepth(0);
                 const file = await this.plebbit.ipfsClient.add(encode(postOrCommentOrVote.toJSONIpfs()));
                 postOrCommentOrVote.setPostCid(file.path);
                 postOrCommentOrVote.setCid(file.path);
                 postOrCommentOrVote.original = lodash.pick(postOrCommentOrVote.toJSON(), ["author", "content", "flair"]);
-                await this.dbHandler.insertComment(
-                    postOrCommentOrVote.toJSONForDb(challengeRequestId),
-                    postOrCommentOrVote.author.toJSONForDb(),
-                    undefined
-                );
+
+                await this.dbHandler.insertComment(postOrCommentOrVote.toJSONForDb(challengeRequestId));
 
                 postOrCommentOrVote.ipnsKeyName = postOrCommentOrVote.original = undefined; // so that ipnsKeyName and original would not be included in ChallengeVerification
                 log(`(${challengeRequestId}): `, `New post with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
@@ -652,6 +667,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx),
                     this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)
                 ]);
+
+                await this._insertAuthorIfNotInDb(postOrCommentOrVote.author.toJSONForDb(), trx);
                 await this.dbHandler.commitTransaction(challengeRequestId);
 
                 postOrCommentOrVote.setPreviousCid(commentsUnderParent[0]?.cid);
@@ -660,11 +677,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 const file = await this.plebbit.ipfsClient.add(encode(postOrCommentOrVote.toJSONIpfs()));
                 postOrCommentOrVote.setCid(file.path);
                 postOrCommentOrVote.original = lodash.pick(postOrCommentOrVote.toJSON(), ["author", "content", "flair"]);
-                await this.dbHandler.insertComment(
-                    postOrCommentOrVote.toJSONForDb(challengeRequestId),
-                    postOrCommentOrVote.author.toJSONForDb(),
-                    undefined
-                );
+
+                await this.dbHandler.insertComment(postOrCommentOrVote.toJSONForDb(challengeRequestId));
 
                 postOrCommentOrVote.ipnsKeyName = postOrCommentOrVote.original = undefined; // so that ipnsKeyName would not be included in ChallengeVerification
                 log(`(${challengeRequestId}): `, `New comment with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
@@ -956,7 +970,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             encode(lodash.omit(commentIpns, ["replies", "signature"])) !==
                 encode(lodash.omit(dbComment.toJSONCommentUpdate(), ["replies", "signature"]))
         ) {
-            log(`Attempting to update Comment (${dbComment.cid})`);
+            log.trace(`Attempting to update Comment (${dbComment.cid})`);
             await this.sortHandler.deleteCommentPageCache(dbComment);
             dbComment.author.subplebbit = await this.dbHandler.querySubplebbitAuthorFields(dbComment.author.address);
             dbComment.setUpdatedAt(timestamp());
