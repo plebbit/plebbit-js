@@ -263,8 +263,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         await this._initSignerProps();
         await this._importSignerIntoIpfsIfNeeded(this.signer.ipnsKeyName, this.signer.ipfsKey);
 
-        if (!lodash.isEqual(this.toJSONInternal(), await this.dbHandler?.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT])))
-            await this.dbHandler?.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternal());
+        const internalSubKey = CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT];
+        if (
+            !(await this.dbHandler.keyvHas(internalSubKey)) ||
+            encode(this.toJSONInternal()) !== encode(await this.dbHandler?.keyvGet(internalSubKey))
+        )
+            await this.dbHandler.keyvSet(internalSubKey, this.toJSONInternal());
     }
 
     private async assertDomainResolvesCorrectly(domain: string) {
