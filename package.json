@@ -16,7 +16,7 @@
         "test:browser:chrome": "CHROME_BIN=$(which chrome) FIREFOX_BIN='' karma start config/karma.conf.js",
         "test:browser:firefox": "FIREFOX_BIN=$(which firefox) CHROME_BIN='' karma start config/karma.conf.js",
         "test:electron": "karma start config/karma-electron.conf.js",
-        "test:server:node": "DB_MEMORY=1 node test/server/test-server.js",
+        "test:server:node": "node test/server/test-server.js",
         "test:server:electron": "NO_SUBPLEBBITS=1 node test/server/test-server.js & wait-on http://localhost:14952 --timeout 300000 && DB_MEMORY=1 karma start config/karma-server-electron.conf.js",
         "test:server:wait-on": "wait-on http://localhost:14952 --timeout 300000",
         "clean": "rimraf dist",

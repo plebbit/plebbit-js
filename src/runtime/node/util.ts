@@ -19,7 +19,7 @@ export const getDefaultSubplebbitDbConfig = async (
     const dir = path.dirname(dbPath);
     await mkdir(dir, { recursive: true });
 
-    const filename = process.env["DB_MEMORY"] ? ":memory:" : dbPath;
+    const filename = process.env["DB_MEMORY"] === "1" ? ":memory:" : dbPath;
 
     return {
         client: "sqlite3",
