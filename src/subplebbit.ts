@@ -27,7 +27,6 @@ import {
     FlairOwner,
     ProtocolVersion,
     SignatureType,
-    SignerType,
     SubplebbitEditOptions,
     SubplebbitEncryption,
     SubplebbitFeatures,
@@ -469,7 +468,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     banExpiresAt: commentEdit.commentAuthor.banExpiresAt,
                     flair: commentEdit.commentAuthor.flair
                 };
-                await this.dbHandler.updateAuthor(newAuthorProps, true);
+                await this.dbHandler.updateAuthorInAuthorsTable(newAuthorProps);
+                await this.dbHandler.updateAuthorInCommentsTable(newAuthorProps);
                 log(
                     `(${challengeRequestId}): `,
                     `Following props has been added to author (${newAuthorProps.address}): `,
@@ -570,7 +570,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 return messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED;
             }
 
-            if (post.deleted && !(postOrCommentOrVote instanceof CommentEdit)) {
+            if (post.authorEdit?.deleted && !(postOrCommentOrVote instanceof CommentEdit)) {
                 log(`(${challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
                 return messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED;
             }
@@ -637,7 +637,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 postOrCommentOrVote.setPostCid(file.path);
                 postOrCommentOrVote.setCid(file.path);
                 postOrCommentOrVote.original = lodash.pick(postOrCommentOrVote.toJSON(), ["author", "content", "flair"]);
-                await this.dbHandler.upsertComment(
+                await this.dbHandler.insertComment(
                     postOrCommentOrVote.toJSONForDb(challengeRequestId),
                     postOrCommentOrVote.author.toJSONForDb(),
                     undefined
@@ -660,7 +660,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 const file = await this.plebbit.ipfsClient.add(encode(postOrCommentOrVote.toJSONIpfs()));
                 postOrCommentOrVote.setCid(file.path);
                 postOrCommentOrVote.original = lodash.pick(postOrCommentOrVote.toJSON(), ["author", "content", "flair"]);
-                await this.dbHandler.upsertComment(
+                await this.dbHandler.insertComment(
                     postOrCommentOrVote.toJSONForDb(challengeRequestId),
                     postOrCommentOrVote.author.toJSONForDb(),
                     undefined
@@ -956,11 +956,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             encode(lodash.omit(commentIpns, ["replies", "signature"])) !==
                 encode(lodash.omit(dbComment.toJSONCommentUpdate(), ["replies", "signature"]))
         ) {
-            log.trace(`Attempting to update Comment (${dbComment.cid})`);
+            log(`Attempting to update Comment (${dbComment.cid})`);
             await this.sortHandler.deleteCommentPageCache(dbComment);
             dbComment.author.subplebbit = await this.dbHandler.querySubplebbitAuthorFields(dbComment.author.address);
             dbComment.setUpdatedAt(timestamp());
-            await this.dbHandler.upsertComment(dbComment.toJSONForDb(undefined), dbComment.author.toJSONForDb(), undefined); // Need to insert comment in DB before generating pages so props updated above would be included in pages
+            await this.dbHandler.updateComment(lodash.pick(dbComment.toJSONForDb(undefined), ["updatedAt", "cid"])); // Need to insert comment in DB before generating pages so props updated above would be included in pages
+            await this.dbHandler.updateAuthorInCommentsTable(lodash.pick(dbComment.author, ["address", "subplebbit"]));
             dbComment.setReplies(await this.sortHandler.generateRepliesPages(dbComment, undefined));
             const newIpns = await this._publishCommentIpns(dbComment, {
                 ...dbComment.toJSONCommentUpdate(),

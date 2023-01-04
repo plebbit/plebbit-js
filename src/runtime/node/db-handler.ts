@@ -10,7 +10,6 @@ import Keyv from "keyv";
 import Transaction = Knex.Transaction;
 import {
     AuthorDbType,
-    AuthorType,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
     CommentEditForDbType,
@@ -305,34 +304,31 @@ export class DbHandler {
         log(`copied table ${srcTable} to table ${dstTable}`);
     }
 
-    private async _upsertAuthor(author: AuthorDbType, trx?: Transaction, upsertOnlyWhenNew = true) {
-        assert(author instanceof Object);
-        assert(JSON.stringify(author) !== "{}");
-        let existingDbObject: AuthorDbType | undefined = author.address
-            ? await this._baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first()
-            : undefined;
-        if (existingDbObject && upsertOnlyWhenNew) return;
-        if (existingDbObject) existingDbObject = replaceXWithY(existingDbObject, null, undefined);
-        const newDbObject: AuthorType = author instanceof Author ? author.toJSONForDb() : author;
-        const mergedDbObject = { ...existingDbObject, ...newDbObject };
-        await this._baseTransaction(trx)(TABLES.AUTHORS).insert(mergedDbObject).onConflict(["address"]).merge();
+    private async _insertAuthor(author: AuthorDbType, trx?: Transaction) {
+        await this._baseTransaction(trx)(TABLES.AUTHORS).insert(author);
     }
 
-    async updateAuthor(newAuthorProps: AuthorDbType, updateCommentsAuthor = true, trx?: Transaction) {
+    async updateAuthorInAuthorsTable(newAuthorProps: AuthorDbType, trx?: Transaction) {
         const onlyNewProps: Omit<AuthorDbType, "address"> = removeKeysWithUndefinedValues(lodash.omit(newAuthorProps, ["address"]));
 
         await this._baseTransaction(trx)(TABLES.AUTHORS).update(onlyNewProps).where("address", newAuthorProps.address);
-        if (updateCommentsAuthor) {
-            const commentsWithAuthor: CommentType[] = await this.queryCommentsOfAuthor(newAuthorProps.address);
-            await Promise.all(
-                commentsWithAuthor.map(async (commentProps: CommentType) => {
-                    const newCommentProps = {
-                        author: JSON.stringify({ ...commentProps.author, ...onlyNewProps })
-                    };
-                    await this._baseTransaction(trx)(TABLES.COMMENTS).update(newCommentProps).where("cid", commentProps.cid);
-                })
-            );
-        }
+    }
+
+    async updateAuthorInCommentsTable(
+        newAuthorProps: Pick<CommentType["author"], "address" | "banExpiresAt" | "flair" | "previousCommentCid" | "subplebbit">,
+        trx?: Transaction
+    ) {
+        const onlyNewProps = removeKeysWithUndefinedValues(lodash.omit(newAuthorProps, ["address"]));
+        // Iterate through all this author comments and update their comment.author
+        const commentsWithAuthor: CommentType[] = await this.queryCommentsOfAuthor(newAuthorProps.address);
+        await Promise.all(
+            commentsWithAuthor.map(async (commentProps: CommentType) => {
+                const newCommentProps: Pick<CommentForDbType, "author"> = {
+                    author: JSON.stringify({ ...commentProps.author, ...lodash.omit(onlyNewProps) })
+                };
+                await this._baseTransaction(trx)(TABLES.COMMENTS).update(newCommentProps).where("cid", commentProps.cid);
+            })
+        );
     }
 
     async queryAuthor(authorAddress: string, trx?: Transaction): Promise<Author | undefined> {
@@ -341,36 +337,31 @@ export class DbHandler {
     }
 
     async upsertVote(vote: VoteForDbType, author: AuthorDbType, trx?: Transaction) {
-        await this._upsertAuthor(author, trx, true);
+        const authorDb = await this.queryAuthor(author.address);
+        if (!authorDb) await this._insertAuthor(author);
         await this._baseTransaction(trx)(TABLES.VOTES).insert(vote).onConflict(["commentCid", "authorAddress"]).merge();
     }
 
-    async upsertComment(comment: CommentForDbType, author: AuthorDbType, trx?: Transaction) {
-        assert(comment.cid, "Comment need to have a cid before upserting");
-        if (author)
-            // Skip adding author (For CommentEdit)
-            await this._upsertAuthor(author, trx, true);
+    async insertComment(comment: CommentForDbType, author: AuthorDbType, trx?: Transaction) {
+        const authorDb = await this.queryAuthor(author.address);
+        if (!authorDb) await this._insertAuthor(author);
 
-        const challengeRequestId: string | undefined =
-            comment.challengeRequestId ||
-            (
-                await this._baseTransaction(trx)(TABLES.COMMENTS)
-                    .where({
-                        cid: comment.cid
-                    })
-                    .first()
-            ).challengeRequestId;
+        await this._baseTransaction(trx)(TABLES.COMMENTS).insert(comment);
+    }
 
-        assert(challengeRequestId, "Need to have challengeRequestId before upserting");
-
-        if (await this.queryComment(comment.cid))
-            await this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid: comment.cid }).update(comment);
-        else await this._baseTransaction(trx)(TABLES.COMMENTS).insert(comment);
+    async updateComment(
+        comment: Partial<
+            Pick<CommentForDbType, "authorEdit" | "flair" | "locked" | "moderatorReason" | "pinned" | "removed" | "spoiler" | "updatedAt">
+        > &
+            Pick<CommentForDbType, "cid">,
+        trx?: Transaction
+    ) {
+        await this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid: comment.cid }).update(comment);
     }
 
     async insertEdit(edit: CommentEditForDbType, author: AuthorDbType, trx?: Transaction) {
         const authorDb = await this.queryAuthor(author.address);
-        if (!authorDb) await this._upsertAuthor(author);
+        if (!authorDb) await this._insertAuthor(author);
         await this._baseTransaction(trx)(TABLES.EDITS).insert(edit);
     }
 
@@ -392,7 +383,7 @@ export class DbHandler {
     async editComment(edit: CommentEditForDbType, trx?: Transaction) {
         // Fields that need to be merged
         // flair
-        const commentProps = await this.queryComment(edit.commentCid);
+        const commentProps = await this.queryComment(edit.commentCid, trx);
 
         const isEditFromAuthor = commentProps.signature.publicKey === edit.signature.publicKey;
         if (isEditFromAuthor) {
