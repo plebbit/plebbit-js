@@ -161,7 +161,6 @@ export class DbHandler {
             table.json("authorEdit").nullable();
             table.json("flair").nullable();
             table.timestamp("updatedAt").nullable().checkPositive();
-            table.boolean("deleted").defaultTo(false);
             table.boolean("spoiler").defaultTo(false);
             table.boolean("pinned").defaultTo(false);
             table.boolean("locked").defaultTo(false);

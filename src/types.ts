@@ -357,7 +357,6 @@ export interface CommentType extends Partial<CommentUpdate>, Omit<CreateCommentO
     signer?: SignerType;
     original?: Pick<Partial<CommentType>, "author" | "content" | "flair">;
     thumbnailUrl?: string;
-    deleted?: CommentUpdate["authorEdit"]["deleted"]; // An alias for authorEdit.deleted
     cid?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
     ipnsName?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
 }

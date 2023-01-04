@@ -45,7 +45,7 @@ export class Comment extends Publication implements CommentType {
     replies: Pages;
     authorEdit?: AuthorCommentEdit;
     flair?: Flair;
-    deleted?: boolean;
+    deleted?: CommentType["authorEdit"]["deleted"];
     spoiler?: boolean;
     pinned?: boolean;
     locked?: boolean;
@@ -119,16 +119,16 @@ export class Comment extends Publication implements CommentType {
             postCid: this.postCid,
             depth: this.depth,
             thumbnailUrl: this.thumbnailUrl,
-            ipnsKeyName: this.ipnsKeyName,
-            deleted: this.deleted
+            ipnsKeyName: this.ipnsKeyName
         };
     }
 
-    toJSONPages(): CommentType {
+    toJSONPages(): CommentType & { deleted?: CommentType["authorEdit"]["deleted"] } {
         return {
             ...lodash.omit(this.toJSON(), ["ipnsKeyName"]),
             ...this.toJSONCommentUpdate(true),
-            author: this.author.toJSON()
+            author: this.author.toJSON(),
+            deleted: this.deleted
         };
     }
 
