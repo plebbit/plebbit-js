@@ -1,12 +1,13 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { publishRandomPost } = require("../../dist/node/test/test-util");
+const { publishRandomPost, generateMockPost, publishWithExpectedResult } = require("../../dist/node/test/test-util");
 const { timestamp, encode } = require("../../dist/node/util");
 const { messages } = require("../../dist/node/errors");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 const path = require("path");
+const lodash = require("lodash");
 const fs = require("fs");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -207,12 +208,11 @@ describe("subplebbit", async () => {
     });
 
     it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () => {
-        await subplebbit.stop();
-        await subplebbit.start();
         const loadedSubplebbit = await plebbit.getSubplebbit("plebbit.eth");
-        const post = await publishRandomPost(subplebbit.address, plebbit);
         loadedSubplebbit._updateIntervalMs = syncInterval;
         await loadedSubplebbit.update();
+        const post = await generateMockPost(loadedSubplebbit.address, plebbit, lodash.sample(signers));
+        await publishWithExpectedResult(post, true);
         await new Promise((resolve) => loadedSubplebbit.once("update", resolve));
         await loadedSubplebbit.stop();
         expect(loadedSubplebbit.address).to.equal("plebbit.eth");
