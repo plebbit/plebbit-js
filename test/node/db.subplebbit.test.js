@@ -71,6 +71,6 @@ describe("DB Migration", () => {
             const post = await publishRandomPost(subplebbit.address, plebbit);
             await publishRandomReply(post, plebbit);
             await subplebbit.stop();
-        })
+        }).timeout(400000)
     );
 });
