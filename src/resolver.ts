@@ -75,8 +75,8 @@ export class Resolver {
             const resolvedAuthorAddress = await this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address");
             if (!isIPFS.cid(resolvedAuthorAddress))
                 throwWithErrorCode(
-                    "ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID",
-                    `resolver: Author address (${authorAddress}) resolves to an incorrect CID (${resolvedAuthorAddress})`
+                    "ERR_ENS_AUTHOR_ADDRESS_POINTS_TO_INVALID_IPNS",
+                    `resolver: Author address (${authorAddress}) resolves to an incorrect IPNS (${resolvedAuthorAddress})`
                 );
             return resolvedAuthorAddress;
         } else return authorAddress;
@@ -88,8 +88,8 @@ export class Resolver {
             const resolvedSubplebbitAddress = await this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address");
             if (!isIPFS.cid(resolvedSubplebbitAddress))
                 throwWithErrorCode(
-                    "ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID",
-                    `resolver: subplebbitAddress (${subplebbitAddress}) resolves to an incorrect CID (${resolvedSubplebbitAddress})`
+                    "ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_IPNS",
+                    `resolver: subplebbitAddress (${subplebbitAddress}) resolves to an incorrect IPNS (${resolvedSubplebbitAddress})`
                 );
             return resolvedSubplebbitAddress;
         } else return subplebbitAddress;
