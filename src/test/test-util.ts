@@ -197,6 +197,7 @@ async function _startEnsSubplebbit(signers: SignerType[], database: any, syncInt
     const plebbit = await _mockPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[3]);
     const subplebbit = await plebbit.createSubplebbit({ signer });
+    subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
     await _setDatabase(subplebbit, database);
     //@ts-ignore
     subplebbit._syncIntervalMs = syncInterval;
@@ -324,6 +325,12 @@ export async function mockPlebbit(dataPath?: string) {
         else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
         return authorAddress;
     };
+
+    plebbit.resolver.resolveSubplebbitAddressIfNeeded = async (subAddress) => {
+        if (subAddress === "plebbit.eth") return "QmZGLpFBpqRJZFFN12jHwBqrX63ZuYnt5Bo1TWGmpD1v4e"; // signers[3].address
+        else if (subAddress === "testgibbreish.eth") throw new Error(`Domain (${subAddress}) has no subplebbit-address`);
+        return subAddress;
+    };
     return plebbit;
 }
 
@@ -345,7 +352,7 @@ async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
 
     if (comment.depth === 0)
         await new Promise((resolve) =>
-            loadedSub.on("update", () => loadedSub.posts.pages.hot.comments.some((post) => post.cid === comment.cid) && resolve(1))
+            loadedSub.on("update", () => loadedSub.posts.pages?.hot?.comments?.some((post) => post.cid === comment.cid) && resolve(1))
         );
     else {
         const parentComment = await plebbit.getComment(comment.parentCid);

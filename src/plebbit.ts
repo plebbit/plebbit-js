@@ -250,11 +250,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
 
     async listSubplebbits(): Promise<string[]> {
         const canRunSub = this._canRunSub();
-        if (canRunSub && !this.dataPath)
-            throwWithErrorCode(
-                "ERR_DATA_PATH_IS_NOT_DEFINED",
-                `listSubplebbits: canRunSub=${canRunSub}, plebbitOptions.dataPath=${this.dataPath}`
-            );
+        if (!canRunSub || !this.dataPath) return [];
         return nativeFunctions.listSubplebbits(this.dataPath);
     }
 
