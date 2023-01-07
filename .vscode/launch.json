@@ -448,10 +448,10 @@
                 "--colors",
                 "--config",
                 "${workspaceFolder}/config/.mocharc.js",
-                "${workspaceFolder}/test/node/subplebbit.test.js"
+                "${workspaceFolder}/test/node/subplebbit/create.subplebbit.test.js"
             ],
             "internalConsoleOptions": "openOnSessionStart",
-            "name": "subplebbit.test.js (node)",
+            "name": "(Subplebbit) Create (node)",
             "console": "integratedTerminal",
 
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
@@ -459,6 +459,63 @@
             "skipFiles": ["<node_internals>/**"],
             "type": "node",
             "env": { "DEBUG": "plebbit-js:*, -plebbit-js:*:trace, -plebbit-js:trace" }
+        },
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node/subplebbit/start.subplebbit.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "(Subplebbit) Start (node)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": ["<node_internals>/**"],
+            "type": "node",
+            "env": { "DEBUG": "plebbit-js:*, -plebbit*trace" }
+        },
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node/subplebbit/edit.subplebbit.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "(Subplebbit) Edit (node)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": ["<node_internals>/**"],
+            "type": "node",
+            "env": { "DEBUG": "plebbit-js:*, -plebbit*trace" }
+        },
+        {
+            "args": [
+                "--timeout",
+                "999999",
+                "--colors",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.js",
+                "${workspaceFolder}/test/node/subplebbit/misc.subplebbit.test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "(Subplebbit) Misc (node)",
+            "console": "integratedTerminal",
+
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "request": "launch",
+            "skipFiles": ["<node_internals>/**"],
+            "type": "node",
+            "env": { "DEBUG": "plebbit-js:*" }
         },
         {
             "args": [
@@ -580,7 +637,7 @@
             "program": "${workspaceFolder}/test/server/test-server.js",
             "console": "integratedTerminal",
 
-            "env": { "DEBUG": "plebbit-js:*, -plebbit-js:*:trace, -plebbit-js:trace" }
+            "env": { "DEBUG": "plebbit-js:*, -plebbit-js:*:trace, -plebbit-js:trace", "DB_MEMORY": "1" }
         }
     ]
 }
