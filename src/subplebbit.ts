@@ -172,20 +172,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         };
     }
 
-    private async _migrateFromDbV2IfNeeded() {
-        const obsoleteCache: SubplebbitType | undefined = await this.dbHandler.keyvGet(this.address);
-        const subCache: SubplebbitType | undefined = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
-        if (obsoleteCache && !subCache) {
-            // We're migrating from DB version 2 to 4+
-            const signerAddress = await getPlebbitAddressFromPublicKeyPem(obsoleteCache.encryption.publicKey);
-            const signer = await this.dbHandler.querySigner(signerAddress); // Need to include signer explicitly since in db version 2 we didn't include signer in cache
-            obsoleteCache.signer = new Signer({ ...signer, address: await getPlebbitAddressFromPrivateKeyPem(signer.privateKey) });
-            // We changed the name of internal subplebbit cache, need to explicitly copy old cache to new key here
-            await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], obsoleteCache);
-        }
-    }
-
-    private async initDbIfNeeded() {
+    private async initDbHandlerIfNeeded() {
         if (!this.dbHandler) {
             this.dbHandler = nativeFunctions.createDbHandler({
                 address: this.address,
@@ -193,10 +180,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     dataPath: this.plebbit.dataPath
                 }
             });
+            await this.dbHandler.initDbConfigIfNeeded();
             this.sortHandler = new SortHandler({ address: this.address, plebbit: this.plebbit, dbHandler: this.dbHandler });
         }
-        await this.dbHandler.initDbIfNeeded();
-        await this._migrateFromDbV2IfNeeded();
     }
 
     setProvideCaptchaCallback(
@@ -251,15 +237,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async prePublish() {
         const log = Logger("plebbit-js:subplebbit:prePublish");
 
-        const dummyDbHandler = nativeFunctions.createDbHandler({
-            address: "",
-            plebbit: {
-                dataPath: this.plebbit.dataPath
-            }
-        }); // This dummy is used only for locking and unlocking
-
-        await dummyDbHandler.lockSubCreation(this.address);
-        await this.initDbIfNeeded();
+        await this.initDbHandlerIfNeeded();
+        await this.dbHandler.lockSubCreation(this.address);
+        await this.dbHandler.initDbIfNeeded();
 
         const internalStateKey = CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT];
 
@@ -305,7 +285,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 this.emit("error", editError);
             });
             log.trace(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
-            if (this._sync && !this.dbHandler.isDbInMemory()) await this.dbHandler.unlockSubStart(this.address);
+            if (this._sync) await this.dbHandler.unlockSubStart(this.address);
             this.initSubplebbit(newSubplebbitOptions);
             await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                 address: this.address,
@@ -316,7 +296,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.dbHandler.keyvDelete(CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]); // To trigger a new subplebbit.posts
             this.sortHandler = new SortHandler({ address: this.address, plebbit: this.plebbit, dbHandler: this.dbHandler });
             this.posts = undefined;
-            if (this._sync && !this.dbHandler.isDbInMemory()) await this.dbHandler.lockSubStart(this.address);
+            if (this._sync) await this.dbHandler.lockSubStart();
         }
 
         this.initSubplebbit(newSubplebbitOptions);
@@ -376,7 +356,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this._syncInterval = clearInterval(this._syncInterval);
 
             await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic, this.handleChallengeExchange);
-            if (!this.dbHandler.isDbInMemory()) await this.dbHandler.unlockSubStart(this.address);
+            await this.dbHandler.unlockSubStart();
             this.dbHandler!.destoryConnection();
             this.dbHandler = this.sortHandler = undefined;
         }
@@ -1048,18 +1028,17 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     async start() {
         const log = Logger("plebbit-js:subplebbit:start");
-        await this.initDbIfNeeded();
 
         if (!this.signer?.address)
             throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED", `signer: ${JSON.stringify(this.signer)}, address: ${this.address}`);
-        if (this._sync || (!this.dbHandler.isDbInMemory() && (await this.dbHandler.isSubStartLocked(this.address))))
-            throwWithErrorCode("ERR_SUB_ALREADY_STARTED", `address: ${this.address}`);
+        await this.initDbHandlerIfNeeded();
+        await this.dbHandler.lockSubStart(this.address); // Will throw if sub is locked already
         this._sync = true;
+        await this.dbHandler.initDbIfNeeded();
 
         // Import subplebbit keys onto ipfs node
         await this._importSignerIntoIpfsIfNeeded(this.signer.ipnsKeyName, this.signer.ipfsKey);
 
-        if (!this.dbHandler.isDbInMemory()) await this.dbHandler.lockSubStart(this.address);
         if (!this.provideCaptchaCallback) {
             log("Subplebbit owner has not provided any captcha. Will go with default image captcha");
             this.provideCaptchaCallback = this.defaultProvideCaptcha;

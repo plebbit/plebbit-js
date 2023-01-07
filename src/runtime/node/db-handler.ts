@@ -23,6 +23,7 @@ import {
     SignerType,
     SubplebbitAuthor,
     SubplebbitMetrics,
+    SubplebbitType,
     VoteForDbType,
     VoteType
 } from "../../types";
@@ -33,6 +34,9 @@ import { Plebbit } from "../../plebbit";
 import sumBy from "lodash/sumBy";
 import lodash from "lodash";
 import { MOD_EDIT_FIELDS } from "../../comment-edit";
+import { CACHE_KEYS } from "../../constants";
+import { getPlebbitAddressFromPrivateKeyPem, getPlebbitAddressFromPublicKeyPem } from "../../signer/util";
+import { Signer } from "../../signer";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -59,15 +63,20 @@ export class DbHandler {
         this._createdTables = false;
     }
 
+    async initDbConfigIfNeeded() {
+        if (!this._dbConfig) this._dbConfig = await getDefaultSubplebbitDbConfig(this._subplebbit);
+    }
+
     async initDbIfNeeded() {
         assert(
             typeof this._subplebbit.address === "string" && this._subplebbit.address.length > 0,
             `DbHandler needs to be an instantiated with a Subplebbit that has a valid address, (${this._subplebbit.address}) was provided`
         );
-        if (!this._dbConfig) this._dbConfig = await getDefaultSubplebbitDbConfig(this._subplebbit);
+        await this.initDbConfigIfNeeded();
         if (!this._knex) this._knex = knex(this._dbConfig);
         if (!this._createdTables) await this.createTablesIfNeeded();
         if (!this._keyv) this._keyv = new Keyv(`sqlite://${(<any>this._dbConfig.connection).filename}`);
+        await this._migrateFromDbV2IfNeeded();
     }
 
     getDbConfig(): Knex.Config {
@@ -708,6 +717,8 @@ export class DbHandler {
 
     // Locking functionality. Will most likely move to another file later
     async lockSubCreation(subAddress = this._subplebbit.address) {
+        if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
+
         const log = Logger("plebbit-js:lock:creation");
         if (this.isSubCreationLocked(subAddress)) throwWithErrorCode("ERR_SUB_CREATION_LOCKED", `subAddress=${subAddress}`);
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.create.lock`);
@@ -716,6 +727,8 @@ export class DbHandler {
     }
 
     async lockSubStart(subAddress = this._subplebbit.address) {
+        if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
+
         const log = Logger("plebbit-js:lock:start");
         if (this.isSubStartLocked(subAddress)) throwWithErrorCode("ERR_SUB_ALREADY_STARTED", `subAddress=${subAddress}`);
 
@@ -726,6 +739,8 @@ export class DbHandler {
     }
 
     async unlockSubCreation(subAddress = this._subplebbit.address) {
+        if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
+
         const log = Logger("plebbit-js:lock:creation");
         if (!this.isSubCreationLocked(subAddress)) throw `Sub creation is already unlocked`;
 
@@ -735,6 +750,8 @@ export class DbHandler {
     }
 
     async unlockSubStart(subAddress = this._subplebbit.address) {
+        if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
+
         const log = Logger("plebbit-js:lock:start");
         if (!this.isSubStartLocked(subAddress)) throw `Sub start is already unlocked`;
 
@@ -751,5 +768,20 @@ export class DbHandler {
     isSubStartLocked(subAddress = this._subplebbit.address) {
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
         return fs.existsSync(lockfilePath);
+    }
+
+    // Will most likely move to another file specialized in DB migration
+
+    private async _migrateFromDbV2IfNeeded() {
+        const obsoleteCache: SubplebbitType | undefined = await this.keyvGet(this._subplebbit.address);
+        const subCache: SubplebbitType | undefined = await this.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
+        if (obsoleteCache && !subCache) {
+            // We're migrating from DB version 2 to 4+
+            const signerAddress = await getPlebbitAddressFromPublicKeyPem(obsoleteCache.encryption.publicKey);
+            const signer = await this.querySigner(signerAddress); // Need to include signer explicitly since in db version 2 we didn't include signer in cache
+            obsoleteCache.signer = new Signer({ ...signer, address: await getPlebbitAddressFromPrivateKeyPem(signer.privateKey) });
+            // We changed the name of internal subplebbit cache, need to explicitly copy old cache to new key here
+            await this.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], obsoleteCache);
+        }
     }
 }
