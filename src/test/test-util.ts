@@ -144,7 +144,7 @@ async function _mockPlebbit(signers: SignerType[], dataPath: string) {
     return plebbit;
 }
 
-async function _startMathCliSubplebbit(signers: SignerType[], database: any, syncInterval: number, dataPath: string) {
+async function _startMathCliSubplebbit(signers: SignerType[], syncInterval: number, dataPath: string) {
     const plebbit = await _mockPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[1]);
     const subplebbit = await plebbit.createSubplebbit({ signer });
@@ -166,7 +166,7 @@ async function _startMathCliSubplebbit(signers: SignerType[], database: any, syn
     return subplebbit;
 }
 
-async function _startImageCaptchaSubplebbit(signers: SignerType[], database: any, syncInterval: number, dataPath: string) {
+async function _startImageCaptchaSubplebbit(signers: SignerType[], syncInterval: number, dataPath: string) {
     const plebbit = await _mockPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[2]);
     const subplebbit = await plebbit.createSubplebbit({ signer });
@@ -183,7 +183,7 @@ async function _startImageCaptchaSubplebbit(signers: SignerType[], database: any
     return subplebbit;
 }
 
-async function _startEnsSubplebbit(signers: SignerType[], database: any, syncInterval: number, dataPath: string) {
+async function _startEnsSubplebbit(signers: SignerType[], syncInterval: number, dataPath: string) {
     const plebbit = await _mockPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[3]);
     const subplebbit = await plebbit.createSubplebbit({ signer });
@@ -250,7 +250,6 @@ async function _populateSubplebbit(
     props: {
         signers: SignerType[];
         syncInterval: number;
-        database: any;
         votesPerCommentToPublish: number;
         numOfCommentsToPublish: number;
     }
@@ -276,7 +275,6 @@ export async function startSubplebbits(props: {
     signers: SignerType[];
     syncInterval: number;
     dataPath: string;
-    database: any;
     votesPerCommentToPublish: number;
     numOfCommentsToPublish: number;
 }) {
@@ -291,9 +289,9 @@ export async function startSubplebbits(props: {
     await subplebbit.start();
     console.time("populate");
     await Promise.all([
-        _startImageCaptchaSubplebbit(props.signers, props.database, props.syncInterval, props.dataPath),
-        _startMathCliSubplebbit(props.signers, props.database, props.syncInterval, props.dataPath),
-        _startEnsSubplebbit(props.signers, props.database, props.syncInterval, props.dataPath),
+        _startImageCaptchaSubplebbit(props.signers, props.syncInterval, props.dataPath),
+        _startMathCliSubplebbit(props.signers, props.syncInterval, props.dataPath),
+        _startEnsSubplebbit(props.signers, props.syncInterval, props.dataPath),
         _populateSubplebbit(subplebbit, props)
     ]);
     console.timeEnd("populate");

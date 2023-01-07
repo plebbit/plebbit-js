@@ -1,13 +1,6 @@
 import { startSubplebbits } from "../../dist/browser/test/test-util";
 import Plebbit from "../../dist/node";
 import signers from "../fixtures/signers";
-const memoryDatabaseConfig = {
-    client: "sqlite3",
-    connection: {
-        filename: ":memory:"
-    },
-    useNullAsDefault: true
-};
 
 Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
@@ -18,7 +11,6 @@ describe("plebbit", () => {
                 dataPath: window.plebbitDataPath,
                 signers: signers,
                 syncInterval: 100,
-                database: memoryDatabaseConfig,
                 votesPerCommentToPublish: 1,
                 numOfCommentsToPublish: 1
             });

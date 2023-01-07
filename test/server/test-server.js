@@ -14,15 +14,6 @@ const ipfsPath = getIpfsPath();
 const path = require("path");
 const fs = require("fs");
 
-// const memoryDatabaseConfig = undefined;
-const memoryDatabaseConfig = {
-    client: "sqlite3",
-    connection: {
-        filename: ":memory:"
-    },
-    useNullAsDefault: true
-};
-
 // allow * origin on ipfs api to bypass cors browser error
 // very insecure do not do this in production
 const offlineNodeArgs = {
@@ -132,7 +123,6 @@ const startIpfsNodes = async () => {
         await startSubplebbits({
             signers: signers,
             syncInterval: 300,
-            database: memoryDatabaseConfig,
             votesPerCommentToPublish: 10,
             numOfCommentsToPublish: 10
         });
