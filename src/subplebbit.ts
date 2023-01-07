@@ -71,8 +71,6 @@ import { CACHE_KEYS } from "./constants";
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
 
-export const RUNNING_SUBPLEBBITS: Record<string, boolean> = {};
-
 export class Subplebbit extends EventEmitter implements SubplebbitType {
     // public
     title?: string;
@@ -251,23 +249,38 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     // TODO rename and make this private
     async prePublish() {
+        const log = Logger("plebbit-js:subplebbit:prePublish");
+
+        const dummyDbHandler = nativeFunctions.createDbHandler({
+            address: "",
+            plebbit: {
+                dataPath: this.plebbit.dataPath
+            }
+        }); // This dummy is used only for locking and unlocking
+
+        await dummyDbHandler.lockSubCreation(this.address);
         await this.initDbIfNeeded();
 
-        const cachedSubplebbit: SubplebbitType | undefined = await this.dbHandler?.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
-        if (cachedSubplebbit && JSON.stringify(cachedSubplebbit) !== "{}")
+        const internalStateKey = CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT];
+
+        if (await this.dbHandler.keyvHas(internalStateKey)) {
+            log(`Merging internal subplebbit state from DB and current state`);
+            const cachedSubplebbit: SubplebbitType = await this.dbHandler.keyvGet(internalStateKey);
             this.initSubplebbit({ ...cachedSubplebbit, ...removeKeysWithUndefinedValues(this.toJSONInternal()) }); // Init subplebbit fields from DB
+        }
 
         if (!this.signer) throw Error(`subplebbit.signer needs to be defined before proceeding`);
-        // import ipfs key into ipfs node
         await this._initSignerProps();
-        await this._importSignerIntoIpfsIfNeeded(this.signer.ipnsKeyName, this.signer.ipfsKey);
 
-        const internalSubKey = CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT];
         if (
-            !(await this.dbHandler.keyvHas(internalSubKey)) ||
-            encode(this.toJSONInternal()) !== encode(await this.dbHandler?.keyvGet(internalSubKey))
-        )
-            await this.dbHandler.keyvSet(internalSubKey, this.toJSONInternal());
+            !(await this.dbHandler.keyvHas(internalStateKey)) ||
+            encode(this.toJSONInternal()) !== encode(await this.dbHandler?.keyvGet(internalStateKey))
+        ) {
+            log(`Updating the internal state of subplebbit in DB`);
+            await this.dbHandler.keyvSet(internalStateKey, this.toJSONInternal());
+        }
+
+        await this.dbHandler.unlockSubCreation(this.address);
     }
 
     private async assertDomainResolvesCorrectly(domain: string) {
@@ -292,6 +305,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 this.emit("error", editError);
             });
             log.trace(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
+            if (this._sync && !this.dbHandler.isDbInMemory()) await this.dbHandler.unlockSubStart(this.address);
             this.initSubplebbit(newSubplebbitOptions);
             await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                 address: this.address,
@@ -302,6 +316,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.dbHandler.keyvDelete(CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]); // To trigger a new subplebbit.posts
             this.sortHandler = new SortHandler({ address: this.address, plebbit: this.plebbit, dbHandler: this.dbHandler });
             this.posts = undefined;
+            if (this._sync && !this.dbHandler.isDbInMemory()) await this.dbHandler.lockSubStart(this.address);
         }
 
         this.initSubplebbit(newSubplebbitOptions);
@@ -361,9 +376,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this._syncInterval = clearInterval(this._syncInterval);
 
             await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic, this.handleChallengeExchange);
+            if (!this.dbHandler.isDbInMemory()) await this.dbHandler.unlockSubStart(this.address);
             this.dbHandler!.destoryConnection();
             this.dbHandler = this.sortHandler = undefined;
-            RUNNING_SUBPLEBBITS[this.signer.address] = false;
         }
     }
 
@@ -1033,19 +1048,24 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     async start() {
         const log = Logger("plebbit-js:subplebbit:start");
+        await this.initDbIfNeeded();
 
         if (!this.signer?.address)
             throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED", `signer: ${JSON.stringify(this.signer)}, address: ${this.address}`);
-        if (this._sync || RUNNING_SUBPLEBBITS[this.signer.address])
+        if (this._sync || (!this.dbHandler.isDbInMemory() && (await this.dbHandler.isSubStartLocked(this.address))))
             throwWithErrorCode("ERR_SUB_ALREADY_STARTED", `address: ${this.address}`);
         this._sync = true;
-        RUNNING_SUBPLEBBITS[this.signer.address] = true;
+
+        // Import subplebbit keys onto ipfs node
+        await this._importSignerIntoIpfsIfNeeded(this.signer.ipnsKeyName, this.signer.ipfsKey);
+
+        if (!this.dbHandler.isDbInMemory()) await this.dbHandler.lockSubStart(this.address);
         if (!this.provideCaptchaCallback) {
             log("Subplebbit owner has not provided any captcha. Will go with default image captcha");
             this.provideCaptchaCallback = this.defaultProvideCaptcha;
             this.validateCaptchaAnswerCallback = this.defaultValidateCaptcha;
         }
-        await this.initDbIfNeeded();
+
         if (typeof this.pubsubTopic !== "string") {
             this.pubsubTopic = lodash.clone(this.address);
             log(`Defaulted subplebbit (${this.address}) pubsub topic to ${this.pubsubTopic} since sub owner hasn't provided any`);
@@ -1054,6 +1074,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.createdAt = timestamp();
             log(`Subplebbit (${this.address}) createdAt has been set to ${this.createdAt}`);
         }
+
         this.syncIpnsWithDb()
             .then(() => this._syncLoop(this._syncIntervalMs))
             .catch((reason) => {

@@ -34,8 +34,6 @@ import env from "./version";
 import lodash from "lodash";
 import { signComment, signCommentEdit, signVote } from "./signer/signatures";
 
-export const pendingSubplebbitCreations: Record<string, boolean> = {};
-
 export class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
     pubsubIpfsClient: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">;
@@ -180,13 +178,9 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
                     "ERR_DATA_PATH_IS_NOT_DEFINED",
                     `createSubplebbit: canRunSub=${canRunSub}, plebbitOptions.dataPath=${this.dataPath}`
                 );
+
             const subplebbit = new Subplebbit(options, this);
-            const subHasBeenCreatedBefore = (await this.listSubplebbits()).includes(subplebbit.address);
-            if (!subHasBeenCreatedBefore && pendingSubplebbitCreations[subplebbit.address])
-                throw Error("Can't recreate a pending subplebbit that is waiting to be created");
-            if (!subHasBeenCreatedBefore) pendingSubplebbitCreations[subplebbit.address] = true;
-            await subplebbit.prePublish();
-            if (!subHasBeenCreatedBefore) pendingSubplebbitCreations[subplebbit.address] = false;
+            await subplebbit.prePublish(); // May fail because sub is already being created (locked)
             log(
                 `Created subplebbit (${subplebbit.address}) with props:`,
                 removeKeysWithUndefinedValues(lodash.omit(subplebbit.toJSON(), ["signer"]))

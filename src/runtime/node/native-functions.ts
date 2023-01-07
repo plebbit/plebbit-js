@@ -1,9 +1,9 @@
-import { CreateSubplebbitOptions, DbHandlerPublicAPI, IpfsHttpClientPublicAPI, NativeFunctions, SignerType } from "../../types";
+import { DbHandlerPublicAPI, IpfsHttpClientPublicAPI, NativeFunctions } from "../../types";
 import fs from "fs/promises";
 import path from "path";
 import assert from "assert";
 
-import { pendingSubplebbitCreations, Plebbit } from "../../plebbit";
+import { Plebbit } from "../../plebbit";
 import { DbHandler } from "./db-handler";
 
 import fetch from "node-fetch";
@@ -18,6 +18,7 @@ import { Agent as HttpAgent } from "http";
 import { Agent as HttpsAgent } from "https";
 import FormData from "form-data";
 import { Multiaddr } from "multiaddr";
+import * as fileType from "file-type";
 
 const nativeFunctions: NativeFunctions = {
     createImageCaptcha: async (...args): Promise<{ image: string; text: string }> => {
@@ -30,13 +31,15 @@ const nativeFunctions: NativeFunctions = {
     listSubplebbits: async (dataPath: string): Promise<string[]> => {
         assert(typeof dataPath === "string", "Data path is not defined");
         const subplebbitsPath = path.join(dataPath, "subplebbits");
+        const dbHandler = new DbHandler({ address: "", plebbit: { dataPath: dataPath } }); // Hollow db handler created just to use lock functionality
 
         await fs.mkdir(subplebbitsPath, { recursive: true });
 
         const addresses = (await fs.readdir(subplebbitsPath, { withFileTypes: true }))
-            .filter(
-                (file) => file.isFile() && !Boolean(pendingSubplebbitCreations[file.name]) && !/-journal$/.test(file.name) // Ignore sqlite journal files
-            )
+            .filter((file) => file.isFile()) // Filter directories out
+            .filter((file) => !/-journal$/.test(file.name)) // Filter SQLite3 journal files out
+            .filter(async (file) => (await fileType.fromFile(path.join(subplebbitsPath, file.name)))?.mime === "application/x-sqlite3") // Filter out non sqlite files
+            .filter((file) => !dbHandler.isSubCreationLocked(file.name)) // Filter out subs that are under creation
             .map((file) => file.name);
 
         return addresses;

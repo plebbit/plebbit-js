@@ -2,6 +2,7 @@ export enum messages {
     ERR_ENS_RESOLVER_NOT_FOUND = "ENS resolver is not found",
     ERR_ENS_TXT_RECORD_NOT_FOUND = "ENS resolver did not find the text record",
     ERR_SUB_SIGNER_NOT_DEFINED = "Subplebbit signer is not defined",
+    ERR_SUB_CREATION_LOCKED = "Subplebbit creation is locked",
     ERR_SUB_ALREADY_STARTED = "Subplebbit already started",
     ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS = "subplebbit-address is pointing to a different address than subplebbit.signer.address",
     ERR_SUB_CAN_EITHER_RUN_OR_UPDATE = "Subplebbit can either sync through .start() or update, but not both",

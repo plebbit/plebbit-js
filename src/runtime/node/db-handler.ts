@@ -1,6 +1,6 @@
 import { PUBSUB_MESSAGE_TYPES } from "../../challenge";
 import Author from "../../author";
-import { removeKeysWithUndefinedValues, replaceXWithY, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
+import { removeKeysWithUndefinedValues, replaceXWithY, throwWithErrorCode, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
 import knex, { Knex } from "knex";
 import { Subplebbit } from "../../subplebbit";
 import path from "path";
@@ -50,7 +50,7 @@ export class DbHandler {
     };
     private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
     private _dbConfig: Knex.Config<any>;
-    private _keyv: Keyv; // Don't change any here to Keyv since it will crash for browsers
+    private _keyv: Keyv;
     private _createdTables: boolean;
 
     constructor(subplebbit: DbHandler["_subplebbit"]) {
@@ -292,6 +292,12 @@ export class DbHandler {
         this._createdTables = true;
     }
 
+    isDbInMemory(): boolean {
+        // Is database stored in memory rather on disk?
+        //@ts-ignore
+        return this._dbConfig.connection.filename === ":memory:";
+    }
+
     private async _copyTable(srcTable: string, dstTable: string) {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
         const dstTableColumns: string[] = Object.keys(await this._knex(dstTable).columnInfo());
@@ -325,7 +331,7 @@ export class DbHandler {
         await Promise.all(
             commentsWithAuthor.map(async (commentProps: CommentType) => {
                 const newCommentProps: Pick<CommentForDbType, "author"> = {
-                    author: JSON.stringify({ ...commentProps.author, ...lodash.omit(onlyNewProps) })
+                    author: JSON.stringify({ ...commentProps.author, ...onlyNewProps })
                 };
                 await this._baseTransaction(trx)(TABLES.COMMENTS).update(newCommentProps).where("cid", commentProps.cid);
             })
@@ -698,5 +704,52 @@ export class DbHandler {
         this._knex = this._keyv = undefined;
         await this.initDbIfNeeded();
         log(`Changed db path from (${oldPathString}) to (${newPath})`);
+    }
+
+    // Locking functionality. Will most likely move to another file later
+    async lockSubCreation(subAddress = this._subplebbit.address) {
+        const log = Logger("plebbit-js:lock:creation");
+        if (this.isSubCreationLocked(subAddress)) throwWithErrorCode("ERR_SUB_CREATION_LOCKED", `subAddress=${subAddress}`);
+        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.create.lock`);
+        await fs.promises.writeFile(lockfilePath, "");
+        log(`Locked the creation of subplebbit (${subAddress}) successfully`);
+    }
+
+    async lockSubStart(subAddress = this._subplebbit.address) {
+        const log = Logger("plebbit-js:lock:start");
+        if (this.isSubStartLocked(subAddress)) throwWithErrorCode("ERR_SUB_ALREADY_STARTED", `subAddress=${subAddress}`);
+
+        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
+        await fs.promises.writeFile(lockfilePath, "");
+
+        log(`Locked the start of subplebbit (${subAddress}) successfully`);
+    }
+
+    async unlockSubCreation(subAddress = this._subplebbit.address) {
+        const log = Logger("plebbit-js:lock:creation");
+        if (!this.isSubCreationLocked(subAddress)) throw `Sub creation is already unlocked`;
+
+        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.create.lock`);
+        await fs.promises.rm(lockfilePath);
+        log(`Unlocked creation of sub (${subAddress})`);
+    }
+
+    async unlockSubStart(subAddress = this._subplebbit.address) {
+        const log = Logger("plebbit-js:lock:start");
+        if (!this.isSubStartLocked(subAddress)) throw `Sub start is already unlocked`;
+
+        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
+        await fs.promises.rm(lockfilePath);
+        log(`Unlocked start of sub (${subAddress})`);
+    }
+
+    isSubCreationLocked(subAddress = this._subplebbit.address) {
+        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.create.lock`);
+        return fs.existsSync(lockfilePath);
+    }
+
+    isSubStartLocked(subAddress = this._subplebbit.address) {
+        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
+        return fs.existsSync(lockfilePath);
     }
 }
