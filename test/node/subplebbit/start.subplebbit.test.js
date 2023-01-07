@@ -3,6 +3,7 @@ const { publishRandomPost, mockPlebbit } = require("../../../dist/node/test/test
 const { messages } = require("../../../dist/node/errors");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
+const { default: waitUntil } = require("async-wait-until");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const syncInterval = 300;
@@ -42,6 +43,9 @@ describe(`subplebbit.start`, async () => {
         // When that happens, the subscription to subplebbit.pubsubTopic will not be restored
         // The restoration of subscription should happen within the sync loop of Subplebbit
         await subplebbit.plebbit.pubsubIpfsClient.pubsub.unsubscribe(subplebbit.pubsubTopic);
+        await waitUntil(async () => (await subplebbit.plebbit.pubsubIpfsClient.pubsub.ls()).includes(subplebbit.address), {
+            timeout: 150000
+        });
         await publishRandomPost(subplebbit.address, plebbit); // Should receive publication since subscription to pubsub topic has been restored
     });
 

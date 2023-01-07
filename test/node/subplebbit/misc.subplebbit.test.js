@@ -1,4 +1,5 @@
 const { mockPlebbit } = require("../../../dist/node/test/test-util");
+const { encode } = require("../../../dist/node/util");
 const path = require("path");
 const fs = require("fs");
 const { default: waitUntil } = require("async-wait-until");
@@ -50,7 +51,6 @@ describe("subplebbit", async () => {
         await subOne.edit({ title: newTitle });
         expect(subOne.title).to.equal(newTitle);
         await waitUntil(() => subTwo.title === newTitle);
-        await new Promise((resolve) => subTwo.on("update", () => subTwo.title === newTitle && resolve()));
         expect(subTwo.title).to.equal(newTitle);
         expect(subOne.title).to.equal(newTitle);
         expect(encode(subTwo.toJSON())).to.equal(encode(subOne.toJSON()));
@@ -64,10 +64,10 @@ describe("subplebbit", async () => {
     it(`Deleted sub is not listed in listSubplebbits`, async () => {
         const subs = await plebbit.listSubplebbits();
         expect(subs).to.include(subSigner.address);
-        const subRecreated = await plebbit.getSubplebbit(subSigner.address);
+        const subRecreated = await plebbit.createSubplebbit({ address: subSigner.address });
         await subRecreated.delete();
         const subsAfterDeletion = await plebbit.listSubplebbits();
-        expect(subsAfterDeletion).to.not.include(subRecreated.address);
+        expect(subsAfterDeletion).to.not.include(subSigner.address);
     });
 
     it(`Deleted sub ipfs keys are not listed in ipfs node`, async () => {
