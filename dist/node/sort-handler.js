@@ -162,7 +162,7 @@ var SortHandler = /** @class */ (function () {
                                                         case 0: return [4 /*yield*/, this.subplebbit.plebbit.createComment(commentProps)];
                                                         case 1:
                                                             comment = _a.sent();
-                                                            return [4 /*yield*/, this.generatePagesUnderComment(comment, undefined)];
+                                                            return [4 /*yield*/, this.generateRepliesPages(comment, undefined)];
                                                         case 2:
                                                             repliesPages = _a.sent();
                                                             comment.setReplies(repliesPages);
@@ -176,7 +176,6 @@ var SortHandler = /** @class */ (function () {
                             }); }))];
                     case 1:
                         chunksWithReplies = _c.sent();
-                        (0, assert_1.default)(this.subplebbit.plebbit.ipfsClient);
                         i = chunksWithReplies.length - 1;
                         _c.label = 2;
                     case 2:
@@ -243,7 +242,7 @@ var SortHandler = /** @class */ (function () {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsUnderComment(parentCid, trx)];
                     case 1:
-                        comments = (_a.sent()).filter(function (comment) { return comment.subplebbitAddress === _this.subplebbit.address; });
+                        comments = (_a.sent()).filter(function (comment) { var _a; return comment.subplebbitAddress === _this.subplebbit.address && !comment.removed && !((_a = comment === null || comment === void 0 ? void 0 : comment.authorEdit) === null || _a === void 0 ? void 0 : _a.deleted); });
                         if (comments.length === 0)
                             return [2 /*return*/, [undefined, undefined]];
                         return [2 /*return*/, this.sortComments(comments, "hot")];
@@ -262,7 +261,7 @@ var SortHandler = /** @class */ (function () {
                         (0, assert_1.default)(sortProps.timeframe, "Need timeframe to sort top");
                         return [4 /*yield*/, this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(parentCid, (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[sortProps.timeframe], Number.MAX_SAFE_INTEGER, trx)];
                     case 1:
-                        comments = (_a.sent()).filter(function (comment) { return comment.subplebbitAddress === _this.subplebbit.address; });
+                        comments = (_a.sent()).filter(function (comment) { var _a; return comment.subplebbitAddress === _this.subplebbit.address && !comment.removed && !((_a = comment === null || comment === void 0 ? void 0 : comment.authorEdit) === null || _a === void 0 ? void 0 : _a.deleted); });
                         if (comments.length === 0)
                             return [2 /*return*/, [undefined, undefined]];
                         return [2 /*return*/, this.sortComments(comments, sortName)];
@@ -281,7 +280,7 @@ var SortHandler = /** @class */ (function () {
                         (0, assert_1.default)(sortProps.timeframe, "Need timeframe to sort controversial");
                         return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsBetweenTimestampRange(parentCid, (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[sortProps.timeframe], Number.MAX_SAFE_INTEGER, trx)];
                     case 1:
-                        comments = (_a.sent()).filter(function (comment) { return comment.subplebbitAddress === _this.subplebbit.address; });
+                        comments = (_a.sent()).filter(function (comment) { var _a; return comment.subplebbitAddress === _this.subplebbit.address && !comment.removed && !((_a = comment === null || comment === void 0 ? void 0 : comment.authorEdit) === null || _a === void 0 ? void 0 : _a.deleted); });
                         if (comments.length === 0)
                             return [2 /*return*/, [undefined, undefined]];
                         return [2 /*return*/, this.sortComments(comments, sortName)];
@@ -297,7 +296,7 @@ var SortHandler = /** @class */ (function () {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, "desc", trx)];
                     case 1:
-                        comments = (_a.sent()).filter(function (comment) { return comment.subplebbitAddress === _this.subplebbit.address; });
+                        comments = (_a.sent()).filter(function (comment) { var _a; return comment.subplebbitAddress === _this.subplebbit.address && !comment.removed && !((_a = comment === null || comment === void 0 ? void 0 : comment.authorEdit) === null || _a === void 0 ? void 0 : _a.deleted); });
                         if (comments.length === 0)
                             return [2 /*return*/, [undefined, undefined]];
                         return [2 /*return*/, this.sortComments(comments, "new")];
@@ -305,52 +304,52 @@ var SortHandler = /** @class */ (function () {
             });
         });
     };
-    SortHandler.prototype.getSortPromises = function (comment, trx) {
+    SortHandler.prototype._getPostsPromises = function (trx) {
         var _this = this;
-        if (!comment) {
-            // Sorting posts on a subplebbit level
-            var sortPromises_1 = [this.sortCommentsByHot(undefined, trx), this.sortCommentsByNew(undefined, trx)];
-            Object.keys(exports.POSTS_SORT_TYPES)
-                .filter(function (postSort) { return postSort !== "hot" && postSort !== "new"; })
-                .forEach(function (postSortName) {
-                if (postSortName.includes("controversial"))
-                    sortPromises_1.push(_this.sortCommentsByControversial.bind(_this)(undefined, postSortName, trx));
-                else if (postSortName.includes("top"))
-                    sortPromises_1.push(_this.sortCommentsByTop.bind(_this)(undefined, postSortName, trx));
+        // Sorting posts on a subplebbit level
+        var sortPromises = [this.sortCommentsByHot(undefined, trx), this.sortCommentsByNew(undefined, trx)];
+        Object.keys(exports.POSTS_SORT_TYPES)
+            .filter(function (postSort) { return postSort !== "hot" && postSort !== "new"; })
+            .forEach(function (postSortName) {
+            if (postSortName.includes("controversial"))
+                sortPromises.push(_this.sortCommentsByControversial.bind(_this)(undefined, postSortName, trx));
+            else if (postSortName.includes("top"))
+                sortPromises.push(_this.sortCommentsByTop.bind(_this)(undefined, postSortName, trx));
+        });
+        return sortPromises;
+    };
+    SortHandler.prototype._getRepliesPromises = function (comment, trx) {
+        var _this = this;
+        return Object.keys(exports.REPLIES_SORT_TYPES).map(function (sortName) { return __awaiter(_this, void 0, void 0, function () {
+            var comments;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        comments = [];
+                        if (!(sortName === "topAll")) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(comment.cid, 0, Number.MAX_SAFE_INTEGER, trx)];
+                    case 1:
+                        comments = _a.sent();
+                        return [3 /*break*/, 6];
+                    case 2:
+                        if (!(sortName === "old")) return [3 /*break*/, 4];
+                        return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", trx)];
+                    case 3:
+                        comments = _a.sent();
+                        return [3 /*break*/, 6];
+                    case 4: return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx)];
+                    case 5:
+                        comments = _a.sent();
+                        _a.label = 6;
+                    case 6:
+                        comments = comments.filter(function (comment) { return comment.subplebbitAddress === _this.subplebbit.address; });
+                        if (comments.length === 0)
+                            return [2 /*return*/, [undefined, undefined]];
+                        return [2 /*return*/, this.sortComments(comments, sortName)];
+                }
             });
-            return sortPromises_1;
-        }
-        else {
-            return Object.keys(exports.REPLIES_SORT_TYPES).map(function (sortName) { return __awaiter(_this, void 0, void 0, function () {
-                var comments;
-                var _a;
-                return __generator(this, function (_b) {
-                    switch (_b.label) {
-                        case 0:
-                            (0, assert_1.default)((_a = this.subplebbit) === null || _a === void 0 ? void 0 : _a.dbHandler);
-                            if (!(sortName === "topAll")) return [3 /*break*/, 2];
-                            return [4 /*yield*/, this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(comment.cid, 0, Number.MAX_SAFE_INTEGER, trx)];
-                        case 1:
-                            comments = _b.sent();
-                            return [3 /*break*/, 6];
-                        case 2:
-                            if (!(sortName === "old")) return [3 /*break*/, 4];
-                            return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", trx)];
-                        case 3:
-                            comments = _b.sent();
-                            return [3 /*break*/, 6];
-                        case 4: return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx)];
-                        case 5:
-                            comments = _b.sent();
-                            _b.label = 6;
-                        case 6:
-                            if (comments.length === 0)
-                                return [2 /*return*/, [undefined, undefined]];
-                            return [2 /*return*/, this.sortComments(comments, sortName)];
-                    }
-                });
-            }); });
-        }
+        }); });
     };
     SortHandler.prototype.cacheCommentsPages = function (trx) {
         return __awaiter(this, void 0, void 0, function () {
@@ -365,14 +364,14 @@ var SortHandler = /** @class */ (function () {
                         _a.label = 2;
                     case 2:
                         if (!(i >= 0)) return [3 /*break*/, 5];
-                        return [4 /*yield*/, Promise.all(commentLevels[i].map(function (comment) { return _this.generatePagesUnderComment(comment, trx); }))];
+                        return [4 /*yield*/, Promise.all(commentLevels[i].map(function (comment) { return _this.generateRepliesPages(comment, trx); }))];
                     case 3:
                         _a.sent();
                         _a.label = 4;
                     case 4:
                         i--;
                         return [3 /*break*/, 2];
-                    case 5: return [4 /*yield*/, this.generatePagesUnderComment(undefined, trx)];
+                    case 5: return [4 /*yield*/, this.generateSubplebbitPosts(trx)];
                     case 6:
                         _a.sent();
                         return [2 /*return*/];
@@ -380,49 +379,25 @@ var SortHandler = /** @class */ (function () {
             });
         });
     };
-    SortHandler.prototype.generatePagesUnderComment = function (comment, trx) {
-        var _a, _b;
+    SortHandler.prototype.generateRepliesPages = function (comment, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var key, cachedPageJson, cachedPage, subplebbitPostCount, _c, res, _d, pagesRaw, pageCids, _i, res_1, _e, page, pageCid, pages;
-            return __generator(this, function (_f) {
-                switch (_f.label) {
+            var cachedReplies, res, _a, pagesRaw, pageCids, _i, res_1, _b, page, pageCid, pages;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        if ((comment === null || comment === void 0 ? void 0 : comment.replyCount) === 0)
+                        if (comment.replyCount === 0)
                             return [2 /*return*/, undefined];
-                        key = (comment === null || comment === void 0 ? void 0 : comment.cid) || constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.POSTS_SUBPLEBBIT];
-                        return [4 /*yield*/, ((_a = this.subplebbit.dbHandler) === null || _a === void 0 ? void 0 : _a.keyvGet(key))];
+                        return [4 /*yield*/, this.subplebbit.dbHandler.keyvGet(comment.cid)];
                     case 1:
-                        cachedPageJson = _f.sent();
-                        if (!(!cachedPageJson || JSON.stringify(cachedPageJson) === "{}")) return [3 /*break*/, 3];
-                        return [4 /*yield*/, this.subplebbit.dbHandler.keyvDelete(key)];
+                        cachedReplies = _c.sent();
+                        if (cachedReplies)
+                            return [2 /*return*/, new pages_1.Pages(__assign(__assign({}, cachedReplies), { subplebbit: this.subplebbit }))];
+                        return [4 /*yield*/, Promise.all(this._getRepliesPromises(comment, trx))];
                     case 2:
-                        _f.sent();
-                        return [3 /*break*/, 4];
-                    case 3:
-                        cachedPage = new pages_1.Pages(__assign(__assign({}, cachedPageJson), { subplebbit: this.subplebbit }));
-                        return [2 /*return*/, cachedPage];
-                    case 4:
-                        _c = key === constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.POSTS_SUBPLEBBIT];
-                        if (!_c) return [3 /*break*/, 6];
-                        return [4 /*yield*/, this.subplebbit.dbHandler.queryCountOfPosts(this.subplebbit.address, trx)];
-                    case 5:
-                        _c = (_f.sent());
-                        _f.label = 6;
-                    case 6:
-                        subplebbitPostCount = _c;
-                        if (subplebbitPostCount === 0)
-                            // If subplebbit and has no posts, then return undefined
-                            return [2 /*return*/, new pages_1.Pages({
-                                    pages: {},
-                                    pageCids: {},
-                                    subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
-                                })];
-                        return [4 /*yield*/, Promise.all(this.getSortPromises(comment, trx))];
-                    case 7:
-                        res = _f.sent();
-                        _d = [{}, {}], pagesRaw = _d[0], pageCids = _d[1];
+                        res = _c.sent();
+                        _a = [{}, {}], pagesRaw = _a[0], pageCids = _a[1];
                         for (_i = 0, res_1 = res; _i < res_1.length; _i++) {
-                            _e = res_1[_i], page = _e[0], pageCid = _e[1];
+                            _b = res_1[_i], page = _b[0], pageCid = _b[1];
                             pagesRaw = __assign(__assign({}, pagesRaw), page);
                             if (page)
                                 pageCids[Object.keys(page)[0]] = pageCid;
@@ -432,9 +407,52 @@ var SortHandler = /** @class */ (function () {
                             pageCids: pageCids,
                             subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
                         });
-                        return [4 /*yield*/, ((_b = this.subplebbit.dbHandler) === null || _b === void 0 ? void 0 : _b.keyvSet(key, pages.toJSON()))];
-                    case 8:
-                        _f.sent();
+                        return [4 /*yield*/, this.subplebbit.dbHandler.keyvSet(comment.cid, pages.toJSON())];
+                    case 3:
+                        _c.sent();
+                        return [2 /*return*/, pages];
+                }
+            });
+        });
+    };
+    SortHandler.prototype.generateSubplebbitPosts = function (trx) {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function () {
+            var subplebbitPostCount, cachedPosts, res, _c, pagesRaw, pageCids, _i, res_2, _d, page, pageCid, pages;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
+                    case 0: return [4 /*yield*/, this.subplebbit.dbHandler.queryCountOfPosts(this.subplebbit.address, trx)];
+                    case 1:
+                        subplebbitPostCount = _e.sent();
+                        if (subplebbitPostCount === 0)
+                            return [2 /*return*/, new pages_1.Pages({
+                                    pages: {},
+                                    pageCids: {},
+                                    subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
+                                })];
+                        return [4 /*yield*/, ((_a = this.subplebbit.dbHandler) === null || _a === void 0 ? void 0 : _a.keyvGet(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.POSTS_SUBPLEBBIT]))];
+                    case 2:
+                        cachedPosts = _e.sent();
+                        if (cachedPosts)
+                            return [2 /*return*/, new pages_1.Pages(__assign(__assign({}, cachedPosts), { subplebbit: this.subplebbit }))];
+                        return [4 /*yield*/, Promise.all(this._getPostsPromises(trx))];
+                    case 3:
+                        res = _e.sent();
+                        _c = [{}, {}], pagesRaw = _c[0], pageCids = _c[1];
+                        for (_i = 0, res_2 = res; _i < res_2.length; _i++) {
+                            _d = res_2[_i], page = _d[0], pageCid = _d[1];
+                            pagesRaw = __assign(__assign({}, pagesRaw), page);
+                            if (page)
+                                pageCids[Object.keys(page)[0]] = pageCid;
+                        }
+                        pages = new pages_1.Pages({
+                            pages: pagesRaw,
+                            pageCids: pageCids,
+                            subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
+                        });
+                        return [4 /*yield*/, ((_b = this.subplebbit.dbHandler) === null || _b === void 0 ? void 0 : _b.keyvSet(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.POSTS_SUBPLEBBIT], pages.toJSON()))];
+                    case 4:
+                        _e.sent();
                         return [2 /*return*/, pages];
                 }
             });

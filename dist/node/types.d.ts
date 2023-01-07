@@ -98,7 +98,7 @@ export interface PublicationType extends Required<CreatePublicationOptions> {
     signature: SignatureType;
     protocolVersion: ProtocolVersion;
 }
-interface CreatePublicationOptions {
+export interface CreatePublicationOptions {
     author?: Partial<Omit<AuthorType, "subplebbit" | "banExpiresAt">>;
     subplebbitAddress: string;
     timestamp?: number;
@@ -347,7 +347,7 @@ export declare type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHa
 export declare type IpfsHttpClientPublicAPI = {
     add: IPFSHTTPClient["add"];
     cat: (...p: Parameters<IPFSHTTPClient["cat"]>) => Promise<string | undefined>;
-    pubsub: Pick<IPFSHTTPClient["pubsub"], "subscribe" | "unsubscribe" | "publish">;
+    pubsub: Pick<IPFSHTTPClient["pubsub"], "subscribe" | "unsubscribe" | "publish" | "ls">;
     name: {
         resolve: (...p: Parameters<IPFSHTTPClient["name"]["resolve"]>) => Promise<string | undefined>;
         publish: IPFSHTTPClient["name"]["publish"];

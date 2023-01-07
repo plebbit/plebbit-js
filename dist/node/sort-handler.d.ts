@@ -14,8 +14,10 @@ export declare class SortHandler {
     sortCommentsByTop(parentCid: string | undefined, sortName: PostSortName | ReplySortName, trx?: any): Promise<any[] | [Partial<Record<"new" | "hot" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "old", Page>>, string]>;
     sortCommentsByControversial(parentCid: string | undefined, sortName: PostSortName | ReplySortName, trx?: any): Promise<any[] | [Partial<Record<"new" | "hot" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "old", Page>>, string]>;
     sortCommentsByNew(parentCid?: string, trx?: any): Promise<any[] | [Partial<Record<"new" | "hot" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "old", Page>>, string]>;
-    getSortPromises(comment?: Comment | CommentType, trx?: any): Promise<any[] | [Partial<Record<"new" | "hot" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "old", Page>>, string]>[];
+    private _getPostsPromises;
+    private _getRepliesPromises;
     cacheCommentsPages(trx?: any): Promise<void>;
-    generatePagesUnderComment(comment?: Comment | CommentType, trx?: any): Promise<Pages | undefined>;
+    generateRepliesPages(comment: Comment | CommentType, trx?: any): Promise<Pages | undefined>;
+    generateSubplebbitPosts(trx?: any): Promise<Pages>;
     deleteCommentPageCache(dbComment: CommentType): Promise<void>;
 }

@@ -117,7 +117,7 @@ var Resolver = /** @class */ (function () {
                     case 1:
                         resolvedAuthorAddress = _a.sent();
                         if (!is_ipfs_1.default.cid(resolvedAuthorAddress))
-                            (0, util_1.throwWithErrorCode)("ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID", "resolver: Author address (".concat(authorAddress, ") resolves to an incorrect CID (").concat(resolvedAuthorAddress, ")"));
+                            (0, util_1.throwWithErrorCode)("ERR_ENS_AUTHOR_ADDRESS_POINTS_TO_INVALID_IPNS", "resolver: Author address (".concat(authorAddress, ") resolves to an incorrect IPNS (").concat(resolvedAuthorAddress, ")"));
                         return [2 /*return*/, resolvedAuthorAddress];
                     case 2: return [2 /*return*/, authorAddress];
                 }
@@ -136,7 +136,7 @@ var Resolver = /** @class */ (function () {
                     case 1:
                         resolvedSubplebbitAddress = _a.sent();
                         if (!is_ipfs_1.default.cid(resolvedSubplebbitAddress))
-                            (0, util_1.throwWithErrorCode)("ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_CID", "resolver: subplebbitAddress (".concat(subplebbitAddress, ") resolves to an incorrect CID (").concat(resolvedSubplebbitAddress, ")"));
+                            (0, util_1.throwWithErrorCode)("ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_IPNS", "resolver: subplebbitAddress (".concat(subplebbitAddress, ") resolves to an incorrect IPNS (").concat(resolvedSubplebbitAddress, ")"));
                         return [2 /*return*/, resolvedSubplebbitAddress];
                     case 2: return [2 /*return*/, subplebbitAddress];
                 }

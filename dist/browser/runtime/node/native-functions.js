@@ -10,6 +10,29 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -60,7 +83,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var promises_1 = __importDefault(require("fs/promises"));
 var path_1 = __importDefault(require("path"));
 var assert_1 = __importDefault(require("assert"));
-var plebbit_1 = require("../../plebbit");
 var db_handler_1 = require("./db-handler");
 var node_fetch_1 = __importDefault(require("node-fetch"));
 var ipfs_http_client_1 = require("ipfs-http-client");
@@ -73,6 +95,7 @@ var http_1 = require("http");
 var https_1 = require("https");
 var form_data_1 = __importDefault(require("form-data"));
 var multiaddr_1 = require("multiaddr");
+var fileType = __importStar(require("file-type"));
 var nativeFunctions = {
     createImageCaptcha: function () {
         var args = [];
@@ -94,20 +117,30 @@ var nativeFunctions = {
         });
     },
     listSubplebbits: function (dataPath) { return __awaiter(void 0, void 0, void 0, function () {
-        var subplebbitsPath, addresses;
+        var subplebbitsPath, dbHandler, addresses;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     (0, assert_1.default)(typeof dataPath === "string", "Data path is not defined");
                     subplebbitsPath = path_1.default.join(dataPath, "subplebbits");
+                    dbHandler = new db_handler_1.DbHandler({ address: "", plebbit: { dataPath: dataPath } });
                     return [4 /*yield*/, promises_1.default.mkdir(subplebbitsPath, { recursive: true })];
                 case 1:
                     _a.sent();
                     return [4 /*yield*/, promises_1.default.readdir(subplebbitsPath, { withFileTypes: true })];
                 case 2:
                     addresses = (_a.sent())
-                        .filter(function (file) { return file.isFile() && !Boolean(plebbit_1.pendingSubplebbitCreations[file.name]) && !/-journal$/.test(file.name); } // Ignore sqlite journal files
-                    )
+                        .filter(function (file) { return file.isFile(); }) // Filter directories out
+                        .filter(function (file) { return !/-journal$/.test(file.name); }) // Filter SQLite3 journal files out
+                        .filter(function (file) { return !/create.lock$/.test(file.name); }) // Filter out create lock files
+                        .filter(function (file) { return !/start.lock$/.test(file.name); }) // Filter out start lock files
+                        .filter(function (file) { return __awaiter(void 0, void 0, void 0, function () { var _a; return __generator(this, function (_b) {
+                        switch (_b.label) {
+                            case 0: return [4 /*yield*/, fileType.fromFile(path_1.default.join(subplebbitsPath, file.name))];
+                            case 1: return [2 /*return*/, ((_a = (_b.sent())) === null || _a === void 0 ? void 0 : _a.mime) === "application/x-sqlite3"];
+                        }
+                    }); }); }) // Filter out non sqlite files
+                        .filter(function (file) { return !dbHandler.isSubCreationLocked(file.name); }) // Filter out subs that are under creation
                         .map(function (file) { return file.name; });
                     return [2 /*return*/, addresses];
             }
@@ -238,7 +271,8 @@ var nativeFunctions = {
             pubsub: {
                 subscribe: ipfsClient.pubsub.subscribe,
                 unsubscribe: ipfsClient.pubsub.unsubscribe,
-                publish: ipfsClient.pubsub.publish
+                publish: ipfsClient.pubsub.publish,
+                ls: ipfsClient.pubsub.ls
             },
             name: {
                 publish: ipfsClient.name.publish,
@@ -271,7 +305,7 @@ var nativeFunctions = {
                     nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
                     if (!nodeUrl)
                         throw Error("Can't figure out ipfs node URL");
-                    url = "".concat(nodeUrl, "/key/import?arg=").concat(ipnsKeyName);
+                    url = "".concat(nodeUrl, "/key/import?arg=").concat(ipnsKeyName, "&ipns-base=b58mh");
                     return [4 /*yield*/, nativeFunctions.fetch(url, {
                             method: "POST",
                             body: data

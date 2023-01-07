@@ -23,7 +23,7 @@ export declare class Comment extends Publication implements CommentType {
     replies: Pages;
     authorEdit?: AuthorCommentEdit;
     flair?: Flair;
-    deleted?: boolean;
+    deleted?: CommentType["authorEdit"]["deleted"];
     spoiler?: boolean;
     pinned?: boolean;
     locked?: boolean;
@@ -36,7 +36,9 @@ export declare class Comment extends Publication implements CommentType {
     _initCommentUpdate(props: CommentUpdate): void;
     getType(): PublicationTypeName;
     toJSON(): CommentType;
-    toJSONPages(): CommentType;
+    toJSONPages(): CommentType & {
+        deleted?: CommentType["authorEdit"]["deleted"];
+    };
     toJSONIpfs(): CommentIpfsType;
     toJSONSkeleton(): {
         content: string;

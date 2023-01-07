@@ -9,7 +9,6 @@ import { Comment } from "./comment";
 import Vote from "./vote";
 import Post from "./post";
 import { CommentEdit } from "./comment-edit";
-export declare const RUNNING_SUBPLEBBITS: Record<string, boolean>;
 export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     title?: string;
     description?: string;
@@ -48,8 +47,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     constructor(props: CreateSubplebbitOptions, plebbit: Plebbit);
     initSubplebbit(newProps: SubplebbitType | SubplebbitEditOptions): void;
     private _initSignerProps;
-    private _migrateFromDbV2IfNeeded;
-    private initDbIfNeeded;
+    private initDbHandlerIfNeeded;
     setProvideCaptchaCallback(newCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[ChallengeType[], string | undefined]>): void;
     setValidateCaptchaAnswerCallback(newCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>): void;
     toJSONInternal(): {
@@ -85,6 +83,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     update(): Promise<void>;
     stop(): Promise<void>;
     private updateSubplebbitIpns;
+    private _insertAuthorIfNotInDb;
     private handleCommentEdit;
     private handleVote;
     private storePublicationIfValid;
@@ -96,6 +95,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     private defaultValidateCaptcha;
     private _publishCommentIpns;
     private syncComment;
+    private _listenToIncomingRequests;
     private syncIpnsWithDb;
     private _syncLoop;
     start(): Promise<void>;

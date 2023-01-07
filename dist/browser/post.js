@@ -74,7 +74,6 @@ var Post = /** @class */ (function (_super) {
         this.thumbnailUrl = props.thumbnailUrl;
         this.title = props.title;
         this.parentCid = undefined;
-        this.depth = 0;
         this.link = props.link;
     };
     Post.prototype.toJSON = function () {

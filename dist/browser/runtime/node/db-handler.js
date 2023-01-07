@@ -71,9 +71,12 @@ var keyv_1 = __importDefault(require("keyv"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var util_2 = require("./util");
 var version_1 = __importDefault(require("../../version"));
-var comment_1 = require("../../comment");
 var sumBy_1 = __importDefault(require("lodash/sumBy"));
 var lodash_1 = __importDefault(require("lodash"));
+var comment_edit_1 = require("../../comment-edit");
+var constants_1 = require("../../constants");
+var util_3 = require("../../signer/util");
+var signer_1 = require("../../signer");
 var TABLES = Object.freeze({
     COMMENTS: "comments",
     VOTES: "votes",
@@ -88,30 +91,45 @@ var DbHandler = /** @class */ (function () {
         this._currentTrxs = {};
         this._createdTables = false;
     }
-    DbHandler.prototype.initDbIfNeeded = function () {
+    DbHandler.prototype.initDbConfigIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
             var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        (0, assert_1.default)(typeof this._subplebbit.address === "string" && this._subplebbit.address.length > 0, "DbHandler needs to be an instantiated with a Subplebbit that has a valid address, (".concat(this._subplebbit.address, ") was provided"));
                         if (!!this._dbConfig) return [3 /*break*/, 2];
                         _a = this;
                         return [4 /*yield*/, (0, util_2.getDefaultSubplebbitDbConfig)(this._subplebbit)];
                     case 1:
                         _a._dbConfig = _b.sent();
                         _b.label = 2;
-                    case 2:
+                    case 2: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.initDbIfNeeded = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        (0, assert_1.default)(typeof this._subplebbit.address === "string" && this._subplebbit.address.length > 0, "DbHandler needs to be an instantiated with a Subplebbit that has a valid address, (".concat(this._subplebbit.address, ") was provided"));
+                        return [4 /*yield*/, this.initDbConfigIfNeeded()];
+                    case 1:
+                        _a.sent();
                         if (!this._knex)
                             this._knex = (0, knex_1.default)(this._dbConfig);
-                        if (!!this._createdTables) return [3 /*break*/, 4];
+                        if (!!this._createdTables) return [3 /*break*/, 3];
                         return [4 /*yield*/, this.createTablesIfNeeded()];
+                    case 2:
+                        _a.sent();
+                        _a.label = 3;
                     case 3:
-                        _b.sent();
-                        _b.label = 4;
-                    case 4:
                         if (!this._keyv)
                             this._keyv = new keyv_1.default("sqlite://".concat(this._dbConfig.connection.filename));
+                        return [4 /*yield*/, this._migrateFromDbV2IfNeeded()];
+                    case 4:
+                        _a.sent();
                         return [2 /*return*/];
                 }
             });
@@ -128,7 +146,12 @@ var DbHandler = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this._keyv.get(key, options)];
                     case 1:
                         res = _a.sent();
-                        return [2 /*return*/, res];
+                        if (!(JSON.stringify(res) === "{}")) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.keyvDelete(key)];
+                    case 2:
+                        _a.sent();
+                        return [2 /*return*/, undefined];
+                    case 3: return [2 /*return*/, res];
                 }
             });
         });
@@ -273,11 +296,10 @@ var DbHandler = /** @class */ (function () {
                             table.json("authorEdit").nullable();
                             table.json("flair").nullable();
                             table.timestamp("updatedAt").nullable().checkPositive();
-                            table.boolean("deleted").nullable();
-                            table.boolean("spoiler").nullable();
-                            table.boolean("pinned").nullable();
-                            table.boolean("locked").nullable();
-                            table.boolean("removed").nullable();
+                            table.boolean("spoiler").defaultTo(false);
+                            table.boolean("pinned").defaultTo(false);
+                            table.boolean("locked").defaultTo(false);
+                            table.boolean("removed").defaultTo(false);
                             table.text("moderatorReason").nullable();
                             table.text("protocolVersion").notNullable();
                         })];
@@ -492,6 +514,11 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
+    DbHandler.prototype.isDbInMemory = function () {
+        // Is database stored in memory rather on disk?
+        //@ts-ignore
+        return this._dbConfig.connection.filename === ":memory:";
+    };
     DbHandler.prototype._copyTable = function (srcTable, dstTable) {
         return __awaiter(this, void 0, void 0, function () {
             var log, dstTableColumns, _a, _b, srcRecords, srcRecordFiltered;
@@ -520,79 +547,62 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype._upsertAuthor = function (author, trx, upsertOnlyWhenNew) {
-        if (upsertOnlyWhenNew === void 0) { upsertOnlyWhenNew = true; }
+    DbHandler.prototype.insertAuthor = function (author, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var existingDbObject, _a, newDbObject, mergedDbObject;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        (0, assert_1.default)(author instanceof Object);
-                        (0, assert_1.default)(JSON.stringify(author) !== "{}");
-                        if (!author.address) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.AUTHORS).where({ address: author.address }).first()];
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.AUTHORS).insert(author)];
                     case 1:
-                        _a = _b.sent();
-                        return [3 /*break*/, 3];
-                    case 2:
-                        _a = undefined;
-                        _b.label = 3;
-                    case 3:
-                        existingDbObject = _a;
-                        if (existingDbObject && upsertOnlyWhenNew)
-                            return [2 /*return*/];
-                        if (existingDbObject)
-                            existingDbObject = (0, util_1.replaceXWithY)(existingDbObject, null, undefined);
-                        newDbObject = author instanceof author_1.default ? author.toJSONForDb() : author;
-                        mergedDbObject = __assign(__assign({}, existingDbObject), newDbObject);
-                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.AUTHORS).insert(mergedDbObject).onConflict(["address"]).merge()];
-                    case 4:
-                        _b.sent();
+                        _a.sent();
                         return [2 /*return*/];
                 }
             });
         });
     };
-    DbHandler.prototype.updateAuthor = function (newAuthorProps, updateCommentsAuthor, trx) {
-        if (updateCommentsAuthor === void 0) { updateCommentsAuthor = true; }
+    DbHandler.prototype.updateAuthorInAuthorsTable = function (newAuthorProps, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var onlyNewProps, commentsWithAuthor, _a;
-            var _this = this;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var onlyNewProps;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
                         onlyNewProps = (0, util_1.removeKeysWithUndefinedValues)(lodash_1.default.omit(newAuthorProps, ["address"]));
                         return [4 /*yield*/, this._baseTransaction(trx)(TABLES.AUTHORS).update(onlyNewProps).where("address", newAuthorProps.address)];
                     case 1:
-                        _b.sent();
-                        if (!updateCommentsAuthor) return [3 /*break*/, 5];
-                        _a = this._createCommentsFromRows;
-                        return [4 /*yield*/, this._baseCommentQuery(trx).where("authorAddress", newAuthorProps.address)];
-                    case 2: return [4 /*yield*/, _a.apply(this, [_b.sent()])];
-                    case 3:
-                        commentsWithAuthor = _b.sent();
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.updateAuthorInCommentsTable = function (newAuthorProps, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            var onlyNewProps, commentsWithAuthor;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        onlyNewProps = (0, util_1.removeKeysWithUndefinedValues)(lodash_1.default.omit(newAuthorProps, ["address"]));
+                        return [4 /*yield*/, this.queryCommentsOfAuthor(newAuthorProps.address, trx)];
+                    case 1:
+                        commentsWithAuthor = _a.sent();
                         return [4 /*yield*/, Promise.all(commentsWithAuthor.map(function (commentProps) { return __awaiter(_this, void 0, void 0, function () {
-                                var comment, newOriginal, newCommentProps;
-                                var _a;
-                                return __generator(this, function (_b) {
-                                    switch (_b.label) {
+                                var newCommentProps;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
                                         case 0:
-                                            comment = new comment_1.Comment(commentProps, this._subplebbit.plebbit);
-                                            newOriginal = ((_a = comment.original) === null || _a === void 0 ? void 0 : _a.author)
-                                                ? comment.original
-                                                : __assign(__assign({}, comment.original), { author: comment.author.toJSON() });
-                                            newCommentProps = { author: __assign(__assign({}, comment.author.toJSON()), onlyNewProps), original: newOriginal };
-                                            return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).update(newCommentProps).where("cid", comment.cid)];
+                                            newCommentProps = {
+                                                author: JSON.stringify(__assign(__assign({}, commentProps.author), onlyNewProps))
+                                            };
+                                            return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).update(newCommentProps).where("cid", commentProps.cid)];
                                         case 1:
-                                            _b.sent();
+                                            _a.sent();
                                             return [2 /*return*/];
                                     }
                                 });
                             }); }))];
-                    case 4:
-                        _b.sent();
-                        _b.label = 5;
-                    case 5: return [2 /*return*/];
+                    case 2:
+                        _a.sent();
+                        return [2 /*return*/];
                 }
             });
         });
@@ -605,68 +615,43 @@ var DbHandler = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.AUTHORS).where({ address: authorAddress }).first()];
                     case 1:
                         authorProps = _a.sent();
-                        if (authorProps)
-                            return [2 /*return*/, new author_1.default(authorProps)];
-                        return [2 /*return*/];
+                        return [2 /*return*/, authorProps ? new author_1.default(authorProps).toJSON() : undefined];
                 }
             });
         });
     };
-    DbHandler.prototype.upsertVote = function (vote, author, trx) {
+    DbHandler.prototype.upsertVote = function (vote, trx) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._upsertAuthor(author, trx, true)];
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.VOTES).insert(vote).onConflict(["commentCid", "authorAddress"]).merge()];
                     case 1:
-                        _a.sent();
-                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.VOTES).insert(vote).onConflict(["commentCid", "authorAddress"]).merge()];
-                    case 2:
                         _a.sent();
                         return [2 /*return*/];
                 }
             });
         });
     };
-    DbHandler.prototype.upsertComment = function (comment, author, trx) {
+    DbHandler.prototype.insertComment = function (comment, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var challengeRequestId, _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        (0, assert_1.default)(comment.cid, "Comment need to have a cid before upserting");
-                        if (!author) return [3 /*break*/, 2];
-                        // Skip adding author (For CommentEdit)
-                        return [4 /*yield*/, this._upsertAuthor(author, trx, true)];
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).insert(comment)];
                     case 1:
-                        // Skip adding author (For CommentEdit)
-                        _b.sent();
-                        _b.label = 2;
-                    case 2:
-                        _a = comment.challengeRequestId;
-                        if (_a) return [3 /*break*/, 4];
-                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
-                                .where({
-                                cid: comment.cid
-                            })
-                                .first()];
-                    case 3:
-                        _a = (_b.sent()).challengeRequestId;
-                        _b.label = 4;
-                    case 4:
-                        challengeRequestId = _a;
-                        (0, assert_1.default)(challengeRequestId, "Need to have challengeRequestId before upserting");
-                        return [4 /*yield*/, this.queryComment(comment.cid)];
-                    case 5:
-                        if (!_b.sent()) return [3 /*break*/, 7];
-                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid: comment.cid }).update(comment)];
-                    case 6:
-                        _b.sent();
-                        return [3 /*break*/, 9];
-                    case 7: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).insert(comment)];
-                    case 8:
-                        _b.sent();
-                        _b.label = 9;
-                    case 9: return [2 /*return*/];
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.updateComment = function (comment, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid: comment.cid }).update(comment)];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
                 }
             });
         });
@@ -713,34 +698,34 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.editComment = function (edit, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var commentProps, commentToBeEdited, isEditFromAuthor, newProps, modEdits, hasModEditedCommentFlairBefore, flairIfNeeded;
+            var commentProps, isEditFromAuthor, modEdits, hasModEditedCommentFlairBefore, flairIfNeeded, authorNewProps, commentCidIndex, modNewProps;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        // Fields that need to be merged
-                        // flair
-                        (0, assert_1.default)(edit.commentCid);
-                        return [4 /*yield*/, this.queryComment(edit.commentCid)];
+                    case 0: return [4 /*yield*/, this.queryComment(edit.commentCid, trx)];
                     case 1:
                         commentProps = _a.sent();
-                        (0, assert_1.default)(commentProps);
-                        commentToBeEdited = new comment_1.Comment(commentProps, this._subplebbit.plebbit);
-                        isEditFromAuthor = commentToBeEdited.signature.publicKey === edit.signature.publicKey;
-                        if (!isEditFromAuthor) return [3 /*break*/, 3];
+                        isEditFromAuthor = commentProps.signature.publicKey === edit.signature.publicKey;
+                        if (!isEditFromAuthor) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.queryEditsSorted(edit.commentCid, "mod", trx)];
                     case 2:
                         modEdits = _a.sent();
                         hasModEditedCommentFlairBefore = modEdits.some(function (modEdit) { return Boolean(modEdit.flair); });
                         flairIfNeeded = hasModEditedCommentFlairBefore || !edit.flair ? undefined : { flair: JSON.stringify(edit.flair) };
-                        newProps = (0, util_1.removeKeysWithUndefinedValues)(__assign({ authorEdit: JSON.stringify(lodash_1.default.omit(edit, ["authorAddress", "challengeRequestId"])) }, flairIfNeeded));
-                        return [3 /*break*/, 4];
+                        authorNewProps = (0, util_1.removeKeysWithUndefinedValues)(__assign({ authorEdit: JSON.stringify(lodash_1.default.omit(edit, ["authorAddress", "challengeRequestId"])) }, flairIfNeeded));
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).update(authorNewProps).where("cid", edit.commentCid)];
                     case 3:
-                        newProps = edit;
-                        _a.label = 4;
-                    case 4: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).update(newProps).where("cid", edit.commentCid)];
+                        _a.sent();
+                        return [3 /*break*/, 6];
+                    case 4:
+                        commentCidIndex = comment_edit_1.MOD_EDIT_FIELDS.findIndex(function (value) { return value === "commentCid"; });
+                        modNewProps = (0, util_1.removeKeysWithUndefinedValues)(lodash_1.default.pick(edit, comment_edit_1.MOD_EDIT_FIELDS.slice(commentCidIndex + 1)));
+                        modNewProps = lodash_1.default.omit(modNewProps, "commentAuthor");
+                        if (!(JSON.stringify(modNewProps) !== "{}")) return [3 /*break*/, 6];
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).update(modNewProps).where("cid", edit.commentCid)];
                     case 5:
                         _a.sent();
-                        return [2 /*return*/];
+                        _a.label = 6;
+                    case 6: return [2 /*return*/];
                 }
             });
         });
@@ -812,7 +797,10 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype._parseJsonFields = function (obj) {
         var _a, _b;
         var newObj = __assign({}, obj);
+        var booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed"];
         for (var field in newObj) {
+            if (booleanFields.includes(field) && typeof newObj[field] === "number")
+                newObj[field] = Boolean(newObj[field]);
             if (typeof newObj[field] === "string")
                 try {
                     newObj[field] = typeof JSON.parse(newObj[field]) === "object" ? JSON.parse(newObj[field]) : newObj[field];
@@ -951,8 +939,7 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, this._baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", "desc")];
                     case 1:
                         commentsObjs = _a.sent();
-                        return [4 /*yield*/, this._createCommentsFromRows(commentsObjs)];
-                    case 2: return [2 /*return*/, _a.sent()];
+                        return [2 /*return*/, this._createCommentsFromRows(commentsObjs)];
                 }
             });
         });
@@ -1211,6 +1198,143 @@ var DbHandler = /** @class */ (function () {
                         _a.sent();
                         log("Changed db path from (".concat(oldPathString, ") to (").concat(newPath, ")"));
                         return [2 /*return*/];
+                }
+            });
+        });
+    };
+    // Locking functionality. Will most likely move to another file later
+    DbHandler.prototype.lockSubCreation = function (subAddress) {
+        if (subAddress === void 0) { subAddress = this._subplebbit.address; }
+        return __awaiter(this, void 0, void 0, function () {
+            var log, lockfilePath;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (subAddress === this._subplebbit.address && this.isDbInMemory())
+                            return [2 /*return*/];
+                        log = (0, plebbit_logger_1.default)("plebbit-js:lock:creation");
+                        if (this.isSubCreationLocked(subAddress))
+                            (0, util_1.throwWithErrorCode)("ERR_SUB_CREATION_LOCKED", "subAddress=".concat(subAddress));
+                        lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".create.lock"));
+                        return [4 /*yield*/, fs_1.default.promises.writeFile(lockfilePath, "")];
+                    case 1:
+                        _a.sent();
+                        log("Locked the creation of subplebbit (".concat(subAddress, ") successfully"));
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.lockSubStart = function (subAddress) {
+        if (subAddress === void 0) { subAddress = this._subplebbit.address; }
+        return __awaiter(this, void 0, void 0, function () {
+            var log, lockfilePath;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (subAddress === this._subplebbit.address && this.isDbInMemory())
+                            return [2 /*return*/];
+                        log = (0, plebbit_logger_1.default)("plebbit-js:lock:start");
+                        if (this.isSubStartLocked(subAddress))
+                            (0, util_1.throwWithErrorCode)("ERR_SUB_ALREADY_STARTED", "subAddress=".concat(subAddress));
+                        lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".start.lock"));
+                        return [4 /*yield*/, fs_1.default.promises.writeFile(lockfilePath, "")];
+                    case 1:
+                        _a.sent();
+                        log("Locked the start of subplebbit (".concat(subAddress, ") successfully"));
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.unlockSubCreation = function (subAddress) {
+        if (subAddress === void 0) { subAddress = this._subplebbit.address; }
+        return __awaiter(this, void 0, void 0, function () {
+            var log, lockfilePath;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (subAddress === this._subplebbit.address && this.isDbInMemory())
+                            return [2 /*return*/];
+                        log = (0, plebbit_logger_1.default)("plebbit-js:lock:creation");
+                        if (!this.isSubCreationLocked(subAddress))
+                            throw "Sub creation is already unlocked";
+                        lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".create.lock"));
+                        return [4 /*yield*/, fs_1.default.promises.rm(lockfilePath)];
+                    case 1:
+                        _a.sent();
+                        log("Unlocked creation of sub (".concat(subAddress, ")"));
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.unlockSubStart = function (subAddress) {
+        if (subAddress === void 0) { subAddress = this._subplebbit.address; }
+        return __awaiter(this, void 0, void 0, function () {
+            var log, lockfilePath;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (subAddress === this._subplebbit.address && this.isDbInMemory())
+                            return [2 /*return*/];
+                        log = (0, plebbit_logger_1.default)("plebbit-js:lock:start");
+                        if (!this.isSubStartLocked(subAddress))
+                            throw "Sub start is already unlocked";
+                        lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".start.lock"));
+                        return [4 /*yield*/, fs_1.default.promises.rm(lockfilePath)];
+                    case 1:
+                        _a.sent();
+                        log("Unlocked start of sub (".concat(subAddress, ")"));
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.isSubCreationLocked = function (subAddress) {
+        if (subAddress === void 0) { subAddress = this._subplebbit.address; }
+        var lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".create.lock"));
+        return fs_1.default.existsSync(lockfilePath);
+    };
+    DbHandler.prototype.isSubStartLocked = function (subAddress) {
+        if (subAddress === void 0) { subAddress = this._subplebbit.address; }
+        var lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".start.lock"));
+        return fs_1.default.existsSync(lockfilePath);
+    };
+    // Will most likely move to another file specialized in DB migration
+    DbHandler.prototype._migrateFromDbV2IfNeeded = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var obsoleteCache, subCache, signerAddress, signer, _a, _b, _c;
+            var _d;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
+                    case 0: return [4 /*yield*/, this.keyvGet(this._subplebbit.address)];
+                    case 1:
+                        obsoleteCache = _e.sent();
+                        return [4 /*yield*/, this.keyvGet(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.INTERNAL_SUBPLEBBIT])];
+                    case 2:
+                        subCache = _e.sent();
+                        if (!(obsoleteCache && !subCache)) return [3 /*break*/, 7];
+                        return [4 /*yield*/, (0, util_3.getPlebbitAddressFromPublicKeyPem)(obsoleteCache.encryption.publicKey)];
+                    case 3:
+                        signerAddress = _e.sent();
+                        return [4 /*yield*/, this.querySigner(signerAddress)];
+                    case 4:
+                        signer = _e.sent();
+                        _a = obsoleteCache;
+                        _b = signer_1.Signer.bind;
+                        _c = [__assign({}, signer)];
+                        _d = {};
+                        return [4 /*yield*/, (0, util_3.getPlebbitAddressFromPrivateKeyPem)(signer.privateKey)];
+                    case 5:
+                        _a.signer = new (_b.apply(signer_1.Signer, [void 0, __assign.apply(void 0, _c.concat([(_d.address = _e.sent(), _d)]))]))();
+                        // We changed the name of internal subplebbit cache, need to explicitly copy old cache to new key here
+                        return [4 /*yield*/, this.keyvSet(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.INTERNAL_SUBPLEBBIT], obsoleteCache)];
+                    case 6:
+                        // We changed the name of internal subplebbit cache, need to explicitly copy old cache to new key here
+                        _e.sent();
+                        _e.label = 7;
+                    case 7: return [2 /*return*/];
                 }
             });
         });

@@ -50,7 +50,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.throwWithErrorCode = exports.encode = exports.randomElement = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.fetchCid = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.throwWithErrorCode = exports.encode = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.fetchCid = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var util_1 = require("./runtime/node/util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var errors_1 = require("./errors");
@@ -87,8 +87,9 @@ function fetchWithLimit(url, options) {
                     e_1 = _d.sent();
                     if (e_1.message.includes("over limit"))
                         throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", "fetch: url (".concat(url, ") points to a file larger than download limit (").concat(DOWNLOAD_LIMIT_BYTES, ") bytes"));
-                    // If error is not related to size limit, then throw it again
-                    throw e_1;
+                    else
+                        throwWithErrorCode("ERR_FAILED_TO_FETCH_GENERIC", "url: ".concat(url));
+                    return [3 /*break*/, 5];
                 case 5:
                     if (!(((_b = res === null || res === void 0 ? void 0 : res.body) === null || _b === void 0 ? void 0 : _b.getReader) !== undefined)) return [3 /*break*/, 9];
                     totalBytesRead = 0;
@@ -293,10 +294,6 @@ function removeKeysWithUndefinedValues(object) {
     return newObj;
 }
 exports.removeKeysWithUndefinedValues = removeKeysWithUndefinedValues;
-function randomElement(array) {
-    return array[Math.floor(Math.random() * array.length)];
-}
-exports.randomElement = randomElement;
 function encode(obj) {
     // May change in future
     // We're encoding in cborg and decoding to make sure all JSON objects can be stringified and parsed determinstically

@@ -58,7 +58,7 @@ var getDefaultSubplebbitDbConfig = function (subplebbit) { return __awaiter(void
                 return [4 /*yield*/, (0, exports.mkdir)(dir, { recursive: true })];
             case 1:
                 _a.sent();
-                filename = process.env["DB_MEMORY"] ? ":memory:" : dbPath;
+                filename = process.env["DB_MEMORY"] === "1" ? ":memory:" : dbPath;
                 return [2 /*return*/, {
                         client: "sqlite3",
                         connection: { filename: filename },

@@ -1,7 +1,6 @@
-import Author from "../../author";
 import { Knex } from "knex";
 import Transaction = Knex.Transaction;
-import { AuthorDbType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditForDbType, CommentEditType, CommentForDbType, CommentType, DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, PostType, SignerType, SubplebbitAuthor, SubplebbitMetrics, VoteForDbType, VoteType } from "../../types";
+import { AuthorDbType, AuthorType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditForDbType, CommentEditType, CommentForDbType, CommentType, DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, PostType, SignerType, SubplebbitAuthor, SubplebbitMetrics, VoteForDbType, VoteType } from "../../types";
 export declare class DbHandler {
     private _knex;
     private _subplebbit;
@@ -10,6 +9,7 @@ export declare class DbHandler {
     private _keyv;
     private _createdTables;
     constructor(subplebbit: DbHandler["_subplebbit"]);
+    initDbConfigIfNeeded(): Promise<void>;
     initDbIfNeeded(): Promise<void>;
     getDbConfig(): Knex.Config;
     keyvGet(key: string, options?: {
@@ -31,12 +31,15 @@ export declare class DbHandler {
     private _createEditsTable;
     getDbVersion(): Promise<number>;
     createTablesIfNeeded(): Promise<void>;
+    isDbInMemory(): boolean;
     private _copyTable;
-    private _upsertAuthor;
-    updateAuthor(newAuthorProps: AuthorDbType, updateCommentsAuthor?: boolean, trx?: Transaction): Promise<void>;
-    queryAuthor(authorAddress: string, trx?: Transaction): Promise<Author | undefined>;
-    upsertVote(vote: VoteForDbType, author: AuthorDbType, trx?: Transaction): Promise<void>;
-    upsertComment(comment: CommentForDbType, author: AuthorDbType, trx?: Transaction): Promise<void>;
+    insertAuthor(author: AuthorDbType, trx?: Transaction): Promise<void>;
+    updateAuthorInAuthorsTable(newAuthorProps: AuthorDbType, trx?: Transaction): Promise<void>;
+    updateAuthorInCommentsTable(newAuthorProps: Pick<CommentType["author"], "address" | "banExpiresAt" | "flair" | "previousCommentCid" | "subplebbit">, trx?: Transaction): Promise<void>;
+    queryAuthor(authorAddress: string, trx?: Transaction): Promise<AuthorType | undefined>;
+    upsertVote(vote: VoteForDbType, trx?: Transaction): Promise<void>;
+    insertComment(comment: CommentForDbType, trx?: Transaction): Promise<void>;
+    updateComment(comment: Partial<Pick<CommentForDbType, "authorEdit" | "flair" | "locked" | "moderatorReason" | "pinned" | "removed" | "spoiler" | "updatedAt">> & Pick<CommentForDbType, "cid">, trx?: Transaction): Promise<void>;
     insertEdit(edit: CommentEditForDbType, trx?: Transaction): Promise<void>;
     queryEditsSorted(commentCid: string, editor?: "author" | "mod", trx?: Transaction): Promise<CommentEditType[]>;
     editComment(edit: CommentEditForDbType, trx?: Transaction): Promise<void>;
@@ -65,4 +68,11 @@ export declare class DbHandler {
     queryCommentsOfAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<CommentType[]>;
     querySubplebbitAuthorFields(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor>;
     changeDbFilename(newDbFileName: string, newSubplebbit: DbHandler["_subplebbit"]): Promise<void>;
+    lockSubCreation(subAddress?: string): Promise<void>;
+    lockSubStart(subAddress?: string): Promise<void>;
+    unlockSubCreation(subAddress?: string): Promise<void>;
+    unlockSubStart(subAddress?: string): Promise<void>;
+    isSubCreationLocked(subAddress?: string): boolean;
+    isSubStartLocked(subAddress?: string): boolean;
+    private _migrateFromDbV2IfNeeded;
 }

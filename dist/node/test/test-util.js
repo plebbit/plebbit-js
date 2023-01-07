@@ -59,7 +59,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.waitTillNewCommentIsPublished = exports.mockPlebbit = exports.startSubplebbits = exports.getAllCommentsUnderSubplebbit = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
+exports.publishWithExpectedResult = exports.publishRandomPost = exports.publishRandomReply = exports.mockPlebbit = exports.startSubplebbits = exports.getAllCommentsUnderSubplebbit = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
 var util_1 = require("../util");
 var index_1 = __importDefault(require("../index"));
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
@@ -270,24 +270,7 @@ function _mockPlebbit(signers, dataPath) {
         });
     });
 }
-function _setDatabase(subplebbit, databaseConfig) {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    //@ts-ignore
-                    subplebbit.dbHandler._dbConfig = databaseConfig;
-                    //@ts-ignore
-                    subplebbit.dbHandler._knex = undefined;
-                    return [4 /*yield*/, subplebbit.dbHandler.initDbIfNeeded()];
-                case 1:
-                    _a.sent();
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-function _startMathCliSubplebbit(signers, database, syncInterval, dataPath) {
+function _startMathCliSubplebbit(signers, syncInterval, dataPath) {
     return __awaiter(this, void 0, void 0, function () {
         var plebbit, signer, subplebbit;
         var _this = this;
@@ -302,9 +285,6 @@ function _startMathCliSubplebbit(signers, database, syncInterval, dataPath) {
                     return [4 /*yield*/, plebbit.createSubplebbit({ signer: signer })];
                 case 3:
                     subplebbit = _a.sent();
-                    return [4 /*yield*/, _setDatabase(subplebbit, database)];
-                case 4:
-                    _a.sent();
                     subplebbit.setProvideCaptchaCallback(function (challengeRequestMessage) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             // Expected return is:
@@ -323,14 +303,14 @@ function _startMathCliSubplebbit(signers, database, syncInterval, dataPath) {
                     //@ts-ignore
                     subplebbit._syncIntervalMs = syncInterval;
                     return [4 /*yield*/, subplebbit.start()];
-                case 5:
+                case 4:
                     _a.sent();
                     return [2 /*return*/, subplebbit];
             }
         });
     });
 }
-function _startImageCaptchaSubplebbit(signers, database, syncInterval, dataPath) {
+function _startImageCaptchaSubplebbit(signers, syncInterval, dataPath) {
     return __awaiter(this, void 0, void 0, function () {
         var plebbit, signer, subplebbit;
         var _this = this;
@@ -345,14 +325,11 @@ function _startImageCaptchaSubplebbit(signers, database, syncInterval, dataPath)
                     return [4 /*yield*/, plebbit.createSubplebbit({ signer: signer })];
                 case 3:
                     subplebbit = _a.sent();
-                    return [4 /*yield*/, _setDatabase(subplebbit, database)];
-                case 4:
-                    _a.sent();
                     // Image captcha are default
                     //@ts-ignore
                     subplebbit._syncIntervalMs = syncInterval;
                     return [4 /*yield*/, subplebbit.start()];
-                case 5:
+                case 4:
                     _a.sent();
                     subplebbit.setValidateCaptchaAnswerCallback(function (challengeAnswerMessage) { return __awaiter(_this, void 0, void 0, function () {
                         var challengeSuccess, challengeErrors;
@@ -367,9 +344,10 @@ function _startImageCaptchaSubplebbit(signers, database, syncInterval, dataPath)
         });
     });
 }
-function _startEnsSubplebbit(signers, database, syncInterval, dataPath) {
+function _startEnsSubplebbit(signers, syncInterval, dataPath) {
     return __awaiter(this, void 0, void 0, function () {
         var plebbit, signer, subplebbit;
+        var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, _mockPlebbit(signers, dataPath)];
@@ -381,16 +359,16 @@ function _startEnsSubplebbit(signers, database, syncInterval, dataPath) {
                     return [4 /*yield*/, plebbit.createSubplebbit({ signer: signer })];
                 case 3:
                     subplebbit = _a.sent();
-                    return [4 /*yield*/, _setDatabase(subplebbit, database)];
-                case 4:
-                    _a.sent();
+                    subplebbit.setProvideCaptchaCallback(function () { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                        return [2 /*return*/, [[], "Challenge skipped"]];
+                    }); }); });
                     //@ts-ignore
                     subplebbit._syncIntervalMs = syncInterval;
                     return [4 /*yield*/, subplebbit.start()];
-                case 5:
+                case 4:
                     _a.sent();
                     return [4 /*yield*/, subplebbit.edit({ address: "plebbit.eth" })];
-                case 6:
+                case 5:
                     _a.sent();
                     return [2 /*return*/];
             }
@@ -533,39 +511,36 @@ function _populateSubplebbit(subplebbit, props) {
 }
 function startSubplebbits(props) {
     return __awaiter(this, void 0, void 0, function () {
-        var plebbit, signer, subplebbit, _a, imageSubplebbit, mathSubplebbit;
+        var plebbit, signer, subplebbit;
         var _this = this;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
                 case 0: return [4 /*yield*/, _mockPlebbit(props.signers, props.dataPath)];
                 case 1:
-                    plebbit = _b.sent();
+                    plebbit = _a.sent();
                     return [4 /*yield*/, plebbit.createSigner(props.signers[0])];
                 case 2:
-                    signer = _b.sent();
+                    signer = _a.sent();
                     return [4 /*yield*/, plebbit.createSubplebbit({ signer: signer })];
                 case 3:
-                    subplebbit = _b.sent();
-                    return [4 /*yield*/, _setDatabase(subplebbit, props.database)];
-                case 4:
-                    _b.sent();
+                    subplebbit = _a.sent();
                     subplebbit.setProvideCaptchaCallback(function () { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                         return [2 /*return*/, [[], "Challenge skipped"]];
                     }); }); });
                     //@ts-ignore
                     subplebbit._syncIntervalMs = props.syncInterval;
                     return [4 /*yield*/, subplebbit.start()];
-                case 5:
-                    _b.sent();
+                case 4:
+                    _a.sent();
                     console.time("populate");
                     return [4 /*yield*/, Promise.all([
-                            _startImageCaptchaSubplebbit(props.signers, props.database, props.syncInterval, props.dataPath),
-                            _startMathCliSubplebbit(props.signers, props.database, props.syncInterval, props.dataPath),
-                            _startEnsSubplebbit(props.signers, props.database, props.syncInterval, props.dataPath),
+                            _startImageCaptchaSubplebbit(props.signers, props.syncInterval, props.dataPath),
+                            _startMathCliSubplebbit(props.signers, props.syncInterval, props.dataPath),
+                            _startEnsSubplebbit(props.signers, props.syncInterval, props.dataPath),
                             _populateSubplebbit(subplebbit, props)
                         ])];
-                case 6:
-                    _a = _b.sent(), imageSubplebbit = _a[0], mathSubplebbit = _a[1];
+                case 5:
+                    _a.sent();
                     console.timeEnd("populate");
                     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
                     return [2 /*return*/];
@@ -596,49 +571,141 @@ function mockPlebbit(dataPath) {
                             return [2 /*return*/, authorAddress];
                         });
                     }); };
+                    plebbit.resolver.resolveSubplebbitAddressIfNeeded = function (subAddress) { return __awaiter(_this, void 0, void 0, function () {
+                        return __generator(this, function (_a) {
+                            if (subAddress === "plebbit.eth")
+                                return [2 /*return*/, "QmZGLpFBpqRJZFFN12jHwBqrX63ZuYnt5Bo1TWGmpD1v4e"]; // signers[3].address
+                            else if (subAddress === "testgibbreish.eth")
+                                throw new Error("Domain (".concat(subAddress, ") has no subplebbit-address"));
+                            return [2 /*return*/, subAddress];
+                        });
+                    }); };
                     return [2 /*return*/, plebbit];
             }
         });
     });
 }
 exports.mockPlebbit = mockPlebbit;
-function waitTillNewCommentIsPublished(subplebbitAddress, plebbit) {
+function _waitTillCommentIsOnline(comment, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
-        var post, loadedSub;
+        var loadedSub, parentComment_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, generateMockPost(subplebbitAddress, plebbit, undefined, true, { content: "Content ".concat(Date.now() + Math.random()) })];
+                case 0: return [4 /*yield*/, plebbit.getSubplebbit(comment.subplebbitAddress)];
                 case 1:
-                    post = _a.sent();
-                    return [4 /*yield*/, plebbit.getSubplebbit(subplebbitAddress)];
-                case 2:
                     loadedSub = _a.sent();
                     //@ts-ignore
-                    loadedSub._updateIntervalMs = 100;
+                    loadedSub._updateIntervalMs = comment._updateIntervalMs = 300;
                     return [4 /*yield*/, loadedSub.update()];
+                case 2:
+                    _a.sent();
+                    return [4 /*yield*/, comment.publish()];
                 case 3:
                     _a.sent();
-                    return [4 /*yield*/, post.publish()];
-                case 4:
-                    _a.sent();
-                    return [4 /*yield*/, new Promise(function (resolve) { return post.once("challengeverification", resolve); })];
-                case 5:
-                    _a.sent();
                     return [4 /*yield*/, new Promise(function (resolve) {
-                            loadedSub.on("update", function (updatedSubplebbit) {
-                                var _a, _b, _c, _d;
-                                if (!updatedSubplebbit.posts.pages.hot)
-                                    return;
-                                if ((_d = (_c = (_b = (_a = updatedSubplebbit === null || updatedSubplebbit === void 0 ? void 0 : updatedSubplebbit.posts) === null || _a === void 0 ? void 0 : _a.pages) === null || _b === void 0 ? void 0 : _b.hot) === null || _c === void 0 ? void 0 : _c.comments) === null || _d === void 0 ? void 0 : _d.some(function (comment) { return comment.cid === post.cid; }))
+                            return comment.once("challengeverification", function (verificationMsg) {
+                                if (!verificationMsg.challengeSuccess)
+                                    throw Error("Failed to publish comment due to (".concat(verificationMsg.reason, ")"));
+                                else
                                     resolve(1);
                             });
                         })];
+                case 4:
+                    _a.sent();
+                    return [4 /*yield*/, comment.update()];
+                case 5:
+                    _a.sent();
+                    if (!(comment.depth === 0)) return [3 /*break*/, 7];
+                    return [4 /*yield*/, new Promise(function (resolve) {
+                            return loadedSub.on("update", function () { var _a, _b, _c; return ((_c = (_b = (_a = loadedSub.posts.pages) === null || _a === void 0 ? void 0 : _a.hot) === null || _b === void 0 ? void 0 : _b.comments) === null || _c === void 0 ? void 0 : _c.some(function (post) { return post.cid === comment.cid; })) && resolve(1); });
+                        })];
                 case 6:
                     _a.sent();
-                    loadedSub.removeAllListeners("update");
+                    return [3 /*break*/, 10];
+                case 7: return [4 /*yield*/, plebbit.getComment(comment.parentCid)];
+                case 8:
+                    parentComment_1 = _a.sent();
+                    //@ts-ignore
+                    parentComment_1._updateIntervalMs = 300;
+                    return [4 /*yield*/, Promise.all([
+                            parentComment_1.update(),
+                            new Promise(function (resolve) {
+                                return parentComment_1.on("update", function () { var _a, _b; return ((_b = (_a = parentComment_1.replies.pages.topAll) === null || _a === void 0 ? void 0 : _a.comments) === null || _b === void 0 ? void 0 : _b.some(function (tComment) { return tComment.cid === comment.cid; })) && resolve(1); });
+                            })
+                        ])];
+                case 9:
+                    _a.sent();
+                    parentComment_1.stop();
+                    _a.label = 10;
+                case 10:
+                    loadedSub.stop() && comment.stop();
                     return [2 /*return*/];
             }
         });
     });
 }
-exports.waitTillNewCommentIsPublished = waitTillNewCommentIsPublished;
+function publishRandomReply(parentComment, plebbit, commentProps) {
+    return __awaiter(this, void 0, void 0, function () {
+        var reply;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, generateMockComment(parentComment, plebbit, commentProps === null || commentProps === void 0 ? void 0 : commentProps.signer, false, __assign({ content: "Content ".concat(Date.now() + Math.random()) }, commentProps))];
+                case 1:
+                    reply = _a.sent();
+                    return [4 /*yield*/, _waitTillCommentIsOnline(reply, plebbit)];
+                case 2:
+                    _a.sent();
+                    return [2 /*return*/, reply];
+            }
+        });
+    });
+}
+exports.publishRandomReply = publishRandomReply;
+function publishRandomPost(subplebbitAddress, plebbit, postProps) {
+    return __awaiter(this, void 0, void 0, function () {
+        var post;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, generateMockPost(subplebbitAddress, plebbit, postProps === null || postProps === void 0 ? void 0 : postProps.signer, false, __assign({ content: "Content ".concat(Date.now() + Math.random()) }, postProps))];
+                case 1:
+                    post = _a.sent();
+                    return [4 /*yield*/, _waitTillCommentIsOnline(post, plebbit)];
+                case 2:
+                    _a.sent();
+                    return [2 /*return*/, post];
+            }
+        });
+    });
+}
+exports.publishRandomPost = publishRandomPost;
+function publishWithExpectedResult(publication, expectedChallengeSuccess, expectedReason) {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, publication.publish()];
+                case 1:
+                    _a.sent();
+                    return [4 /*yield*/, new Promise(function (resolve, reject) {
+                            return publication.once("challengeverification", function (verificationMsg) {
+                                if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
+                                    var msg = "Expected challengeSuccess to be (".concat(expectedChallengeSuccess, ") and got (").concat(verificationMsg.challengeSuccess, ")");
+                                    console.error(msg);
+                                    reject(msg);
+                                }
+                                else if (expectedReason && expectedReason !== verificationMsg.reason) {
+                                    var msg = "Expected reason to be (".concat(expectedReason, ") and got (").concat(verificationMsg.reason, ")");
+                                    console.error(msg);
+                                    reject(msg);
+                                }
+                                else
+                                    resolve(1);
+                            });
+                        })];
+                case 2:
+                    _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.publishWithExpectedResult = publishWithExpectedResult;

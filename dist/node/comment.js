@@ -101,27 +101,27 @@ var Comment = /** @class */ (function (_super) {
         this.stop = this.stop.bind(this);
     };
     Comment.prototype._initCommentUpdate = function (props) {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d, _e, _f, _g;
         this.upvoteCount = props.upvoteCount;
         this.downvoteCount = props.downvoteCount;
         this.replyCount = props.replyCount;
         this.updatedAt = props.updatedAt;
         this.setReplies(props.replies);
         this.deleted = (_a = props.authorEdit) === null || _a === void 0 ? void 0 : _a.deleted;
-        this.spoiler = props.spoiler;
         this.pinned = props.pinned;
         this.locked = props.locked;
         this.removed = props.removed;
         this.moderatorReason = props.moderatorReason;
         this.authorEdit = props.authorEdit;
+        this.spoiler = (_c = (_b = props.authorEdit) === null || _b === void 0 ? void 0 : _b.spoiler) !== null && _c !== void 0 ? _c : props.spoiler;
         this.protocolVersion = props.protocolVersion;
-        if ((_b = props.author) === null || _b === void 0 ? void 0 : _b.banExpiresAt)
+        if ((_d = props.author) === null || _d === void 0 ? void 0 : _d.banExpiresAt)
             this.author.banExpiresAt = props.author.banExpiresAt;
-        if ((_c = props.author) === null || _c === void 0 ? void 0 : _c.flair)
+        if ((_e = props.author) === null || _e === void 0 ? void 0 : _e.flair)
             this.author.flair = props.author.flair;
-        if ((_d = props.author) === null || _d === void 0 ? void 0 : _d.subplebbit)
+        if ((_f = props.author) === null || _f === void 0 ? void 0 : _f.subplebbit)
             this.author.subplebbit = props.author.subplebbit;
-        if ((_e = props.authorEdit) === null || _e === void 0 ? void 0 : _e.content)
+        if ((_g = props.authorEdit) === null || _g === void 0 ? void 0 : _g.content)
             this.content = props.authorEdit.content;
         // TODO set merged comment flair here
     };
@@ -132,7 +132,7 @@ var Comment = /** @class */ (function (_super) {
         return __assign(__assign(__assign({}, this.toJSONSkeleton()), (typeof this.updatedAt === "number" ? this.toJSONCommentUpdate() : undefined)), { cid: this.cid, original: this.original, author: this.author.toJSON(), previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl, ipnsKeyName: this.ipnsKeyName });
     };
     Comment.prototype.toJSONPages = function () {
-        return __assign(__assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["ipnsKeyName"])), this.toJSONCommentUpdate(true)), { author: this.author.toJSON() });
+        return __assign(__assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["ipnsKeyName"])), this.toJSONCommentUpdate(true)), { author: this.author.toJSON(), deleted: this.deleted });
     };
     Comment.prototype.toJSONIpfs = function () {
         if (typeof this.ipnsName !== "string")
@@ -276,7 +276,7 @@ var Comment = /** @class */ (function (_super) {
         });
     };
     Comment.prototype.stop = function () {
-        clearInterval(this._updateInterval);
+        this._updateInterval = clearInterval(this._updateInterval);
     };
     Comment.prototype.publish = function () {
         return __awaiter(this, void 0, void 0, function () {

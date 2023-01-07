@@ -9,7 +9,6 @@ import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
 import EventEmitter from "events";
-export declare const pendingSubplebbitCreations: Record<string, boolean>;
 export declare class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
     pubsubIpfsClient: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">;
@@ -27,6 +26,7 @@ export declare class Plebbit extends EventEmitter implements PlebbitOptions {
     _init(options: PlebbitOptions): Promise<void>;
     getSubplebbit(subplebbitAddress: string): Promise<Subplebbit>;
     getComment(cid: string): Promise<Comment | Post>;
+    private _initMissingFields;
     createComment(options: CreateCommentOptions | CommentType | PostType | Comment | Post): Promise<Comment | Post>;
     _canRunSub(): boolean;
     createSubplebbit(options?: CreateSubplebbitOptions | SubplebbitType): Promise<Subplebbit>;

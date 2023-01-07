@@ -15,6 +15,5 @@ export declare function topScore(comment: CommentType): number;
 export declare function newScore(comment: CommentType): number;
 export declare function oldScore(comment: CommentType): number;
 export declare function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T>;
-export declare function randomElement<T>(array: Array<T>): T;
 export declare function encode(obj: Object): string;
 export declare function throwWithErrorCode(code: keyof typeof messages, details?: string): void;
