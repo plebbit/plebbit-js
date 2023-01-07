@@ -69,24 +69,27 @@ describe(`Removing post`, async () => {
         sub.stop();
     });
 
-    it(`Sub rejects votes or comments under removed post`, async () => {
-        const replyUnderRemovedPost = await generateMockComment(postToRemove, plebbit);
-        const voteUnderRemovedComment = await generateMockVote(postToRemove, 1, plebbit);
-        await Promise.all(
-            [replyUnderRemovedPost, voteUnderRemovedComment].map((pub) =>
-                publishWithExpectedResult(pub, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED)
-            )
-        );
+    it(`Sub rejects votes on removed post`, async () => {
+        const vote = await generateMockVote(postToRemove, 1, plebbit);
+        await publishWithExpectedResult(vote, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED);
     });
 
-    it(`Can't publish a reply or vote under a reply of a removed post`, async () => {
-        const [reply, vote] = [await generateMockComment(postReply, plebbit), await generateMockVote(postReply, 1, plebbit)];
-        await Promise.all(
-            [reply, vote].map((pub) => publishWithExpectedResult(pub, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED))
-        );
+    it(`Sub rejects replies on removed post`, async () => {
+        const reply = await generateMockComment(postToRemove, plebbit);
+        await publishWithExpectedResult(reply, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED);
     });
 
-    it(`Author of post can't mark it as removed`, async () => {
+    it(`Sub rejects votes on a reply of a removed post`, async () => {
+        const vote = await generateMockVote(postReply, 1, plebbit);
+        await publishWithExpectedResult(vote, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED);
+    });
+
+    it(`Sub rejects replies on a reply of a removed post`, async () => {
+        const reply = await generateMockComment(postReply, plebbit);
+        await publishWithExpectedResult(reply, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED);
+    });
+
+    it(`Author of post can't remove it`, async () => {
         const postToBeRemoved = await publishRandomPost(subplebbitAddress, plebbit);
         const removeEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToBeRemoved.subplebbitAddress,
