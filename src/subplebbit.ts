@@ -1079,7 +1079,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         //@ts-ignore
         await this.plebbit.ipfsClient.block.rm(resolvedAddress, { force: true });
 
-        if (this.signer.ipnsKeyName)
+        if (typeof this.signer?.ipnsKeyName === "string")
             // Key may not exist on ipfs node
             try {
                 await this.plebbit.ipfsClient.key.rm(this.signer.ipnsKeyName);
