@@ -238,7 +238,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const log = Logger("plebbit-js:subplebbit:prePublish");
 
         await this.initDbHandlerIfNeeded();
-        await this.dbHandler.lockSubCreation(this.address);
+        await this.dbHandler.lockSubCreation();
         await this.dbHandler.initDbIfNeeded();
 
         const internalStateKey = CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT];
@@ -260,7 +260,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.dbHandler.keyvSet(internalStateKey, this.toJSONInternal());
         }
 
-        await this.dbHandler.unlockSubCreation(this.address);
+        await this.dbHandler.unlockSubCreation();
     }
 
     private async assertDomainResolvesCorrectly(domain: string) {
@@ -285,7 +285,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 this.emit("error", editError);
             });
             log.trace(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
-            if (this._sync) await this.dbHandler.unlockSubStart(this.address);
+            if (this._sync) await this.dbHandler.unlockSubStart();
             this.initSubplebbit(newSubplebbitOptions);
             await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                 address: this.address,
@@ -1032,7 +1032,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (!this.signer?.address)
             throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED", `signer: ${JSON.stringify(this.signer)}, address: ${this.address}`);
         await this.initDbHandlerIfNeeded();
-        await this.dbHandler.lockSubStart(this.address); // Will throw if sub is locked already
+        await this.dbHandler.lockSubStart(); // Will throw if sub is locked already
         this._sync = true;
         await this.dbHandler.initDbIfNeeded();
 
