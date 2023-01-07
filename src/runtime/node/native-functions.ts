@@ -38,6 +38,8 @@ const nativeFunctions: NativeFunctions = {
         const addresses = (await fs.readdir(subplebbitsPath, { withFileTypes: true }))
             .filter((file) => file.isFile()) // Filter directories out
             .filter((file) => !/-journal$/.test(file.name)) // Filter SQLite3 journal files out
+            .filter((file) => !/create.lock$/.test(file.name)) // Filter out create lock files
+            .filter((file) => !/start.lock$/.test(file.name)) // Filter out start lock files
             .filter(async (file) => (await fileType.fromFile(path.join(subplebbitsPath, file.name)))?.mime === "application/x-sqlite3") // Filter out non sqlite files
             .filter((file) => !dbHandler.isSubCreationLocked(file.name)) // Filter out subs that are under creation
             .map((file) => file.name);
