@@ -195,8 +195,11 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         if (options.address && !options.signer) {
             if (!canRunSub) return remoteSub();
             else {
+                const dbHandler = nativeFunctions.createDbHandler({ address: options.address, plebbit: this });
                 const subHasBeenCreatedBefore = (await this.listSubplebbits()).includes(options.address);
                 if (subHasBeenCreatedBefore) return newSub();
+                else if (await dbHandler.isSubCreationLocked())
+                    throwWithErrorCode("ERR_SUB_CREATION_LOCKED", `subAddress=${options.address}`);
                 else return remoteSub();
             }
         } else if (!options.address && !options.signer) {
