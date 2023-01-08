@@ -25,8 +25,7 @@ describe("subplebbit", async () => {
 
         plebbit.createSubplebbit({ signer: subSigner, title: title });
 
-        let listedSubs;
-        await waitUntil(async () => (listedSubs = await plebbit.listSubplebbits()).includes(subSigner.address), {
+        await waitUntil(async () => (await plebbit.listSubplebbits()).includes(subSigner.address), {
             timeout: 200000
         });
 

@@ -1,9 +1,14 @@
 const Plebbit = require("../../../dist/node");
 const { mockPlebbit } = require("../../../dist/node/test/test-util");
 const { timestamp, encode } = require("../../../dist/node/util");
+const path = require("path");
+const { messages } = require("../../../dist/node/errors");
+const fs = require("fs");
+const { default: waitUntil } = require("async-wait-until");
+const branchy = require("branchy");
+
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
-const { messages } = require("../../../dist/node/errors");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const syncInterval = 300;
@@ -101,12 +106,81 @@ describe(`plebbit.createSubplebbit`, async () => {
         expect(createdSubplebbit.description).to.equal("nothing also");
         await createdSubplebbit.stop();
     });
+});
+
+describe.only("Create lock", async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+    });
+    it(`Fail to create subplebbit if create lock is present`, async () => {
+        const subSigner = await plebbit.createSigner();
+        const subDbLockPath = path.join(plebbit.dataPath, "subplebbits", `${subSigner.address}.create.lock`);
+        plebbit.createSubplebbit({ signer: subSigner });
+        await waitUntil(() => fs.existsSync(subDbLockPath));
+        expect(await plebbit.listSubplebbits()).to.not.include(subSigner.address);
+        expect(fs.existsSync(subDbLockPath)).to.be.true;
+        await assert.isRejected(plebbit.createSubplebbit({ address: subSigner.address }), messages.ERR_SUB_CREATION_LOCKED);
+    });
+
+    it(`Can create subplebbit as soon as create lock is unlocked`, async () => {
+        const subSigner = await plebbit.createSigner();
+        const subDbLockPath = path.join(plebbit.dataPath, "subplebbits", `${subSigner.address}.create.lock`);
+        plebbit.createSubplebbit({ signer: subSigner });
+        await waitUntil(() => fs.existsSync(subDbLockPath));
+        const watcher = fs.promises.watch(subDbLockPath, {});
+        let eventCount = 0;
+        for await (const event of watcher) {
+            eventCount++;
+            if (eventCount === 2) break;
+        }
+        expect(fs.existsSync(subDbLockPath)).to.be.false;
+        await assert.isFulfilled(plebbit.createSubplebbit({ address: subSigner.address }));
+    });
 
     it(`createSubplebbit will throw if user attempted to recreate the same sub concurrently`, async () => {
         const subSigner = await plebbit.createSigner();
 
         const firstPromise = plebbit.createSubplebbit({ signer: subSigner });
-        await assert.isRejected(plebbit.createSubplebbit({ signer: subSigner }), messages.ERR_SUB_CREATION_LOCKED);
+        await assert.isRejected(plebbit.createSubplebbit({ address: subSigner.address }), messages.ERR_SUB_CREATION_LOCKED);
         (await firstPromise).stop();
+    });
+
+    it(`Can create subplebbit if create lock is stale (10s)`, async () => {
+        // Lock is considered stale if lock has not been updated in 10000 ms (10s)
+        const sub = await plebbit.createSubplebbit();
+
+        const lockPath = path.join(plebbit.dataPath, "subplebbits", `${sub.address}.create.lock`);
+        await fs.promises.mkdir(lockPath); // Artifically create a create lock
+
+        await assert.isRejected(plebbit.createSubplebbit({ address: sub.address }), messages.ERR_SUB_CREATION_LOCKED);
+        await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for 10s
+        await assert.isFulfilled(plebbit.createSubplebbit({ address: sub.address }));
+        await sub.stop();
+    });
+
+    it.only(`Same sub can't be created in different processes`, async () => {
+        // Have to import all these packages because forked process doesn't have them
+        const createSubInDifferentProcess = branchy(async (subAddress) => {
+            const { mockPlebbit } = require("../../../dist/node/test/test-util");
+            const chai = require("chai");
+            const chaiAsPromised = require("chai-as-promised");
+            chai.use(chaiAsPromised);
+            const { expect, assert } = chai;
+            const { messages } = require("../../../dist/node/errors");
+            const path = require("path");
+            const fs = require("fs");
+            const { default: waitUntil } = require("async-wait-until");
+            const branchPlebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+            const lockPath = path.join(branchPlebbit.dataPath, "subplebbits", `${subAddress}.create.lock`);
+            await waitUntil(() => fs.existsSync(lockPath), { intervalBetweenAttempts: 25 });
+            await assert.isRejected(branchPlebbit.createSubplebbit({ address: subAddress }), messages.ERR_SUB_CREATION_LOCKED);
+        });
+        const subSigner = await plebbit.createSigner();
+        const sub = await plebbit.createSubplebbit({ signer: subSigner });
+
+        await Promise.all([createSubInDifferentProcess(subSigner.address), sub.dbHandler.lockSubCreation()]);
+        await sub.dbHandler.unlockSubCreation();
+        await sub.stop();
     });
 });
