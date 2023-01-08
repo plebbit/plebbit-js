@@ -76,6 +76,7 @@
         "@types/url-parse": "1.4.8",
         "async-wait-until": "^2.0.12",
         "babel-loader": "9.1.0",
+        "branchy": "2.0.0",
         "chai": "4.3.7",
         "chai-as-promised": "7.1.1",
         "chokidar": "3.5.3",
