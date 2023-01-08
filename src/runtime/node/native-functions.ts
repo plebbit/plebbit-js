@@ -35,16 +35,21 @@ const nativeFunctions: NativeFunctions = {
 
         await fs.mkdir(subplebbitsPath, { recursive: true });
 
-        const addresses = (await fs.readdir(subplebbitsPath, { withFileTypes: true }))
+        const files = (await fs.readdir(subplebbitsPath, { withFileTypes: true }))
             .filter((file) => file.isFile()) // Filter directories out
             .filter((file) => !/-journal$/.test(file.name)) // Filter SQLite3 journal files out
-            .filter((file) => !/create.lock$/.test(file.name)) // Filter out create lock files
-            .filter((file) => !/start.lock$/.test(file.name)) // Filter out start lock files
-            .filter(async (file) => (await fileType.fromFile(path.join(subplebbitsPath, file.name)))?.mime === "application/x-sqlite3") // Filter out non sqlite files
-            .filter((file) => !dbHandler.isSubCreationLocked(file.name)) // Filter out subs that are under creation
             .map((file) => file.name);
 
-        return addresses;
+        const filterResults = await Promise.all(
+            files.map(async (address) => {
+                const typeOfFile = await fileType.fromFile(path.join(subplebbitsPath, address));
+                return typeOfFile?.mime === "application/x-sqlite3" && !(await dbHandler.isSubCreationLocked(address));
+            })
+        );
+
+        const filtered_results = files.filter((_, i) => filterResults[i]);
+
+        return filtered_results;
     },
 
     createDbHandler: (subplebbit: DbHandler["_subplebbit"]): DbHandlerPublicAPI => {
