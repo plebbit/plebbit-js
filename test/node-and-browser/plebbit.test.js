@@ -1,7 +1,7 @@
 const Plebbit = require("../../dist/node");
 const fixtureSigner = require("../fixtures/signers")[0];
 const signers = require("../fixtures/signers");
-const { loadIpfsFileAsJson, loadIpnsAsJson } = require("../../dist/node/util");
+const { loadIpfsFileAsJson, loadIpnsAsJson, encode } = require("../../dist/node/util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { messages } = require("../../dist/node/errors");
@@ -149,7 +149,7 @@ describe("plebbit (node and browser)", async () => {
             const _subplebbitIpns = await loadIpnsAsJson(subplebbitSigner.address, plebbit);
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             // Remove undefined keys from json
-            expect(JSON.parse(JSON.stringify(loadedSubplebbit.toJSON()))).to.deep.equals(_subplebbitIpns);
+            expect(encode(loadedSubplebbit.toJSON())).to.equals(encode(_subplebbitIpns));
         });
 
         it("Throws an error when subplebbit address is incorrect", async () => {

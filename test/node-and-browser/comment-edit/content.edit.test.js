@@ -3,6 +3,7 @@ const { mockPlebbit, publishRandomPost, publishWithExpectedResult } = require(".
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
 const lodash = require("lodash");
+const { default: waitUntil } = require("async-wait-until");
 const subplebbitAddress = signers[0].address;
 const roles = [
     { role: "owner", signer: signers[1] },
@@ -99,7 +100,7 @@ describe("Editing comment.content", async () => {
                 signer: roleTest.signer
             });
             await publishWithExpectedResult(commentEdit, true);
-            await new Promise((resolve) => commentToEdit.once("update", resolve));
+            await waitUntil(() => commentToEdit.authorEdit?.content === editedText, { timeout: 200000 });
             expect(commentToEdit.authorEdit.content).to.equal(editedText);
             expect(commentToEdit.content).to.equal(editedText);
             expect(commentToEdit.original?.content).to.equal(originalContent);
