@@ -7,6 +7,7 @@ const lodash = require("lodash");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
+const { default: waitUntil } = require("async-wait-until");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -54,7 +55,7 @@ describe("comment (node and browser)", async () => {
             await loadedSubplebbit.update();
             const post = await generateMockPost(loadedSubplebbit.address, plebbit, lodash.sample(signers));
             await publishWithExpectedResult(post, true);
-            await new Promise((resolve) => loadedSubplebbit.once("update", resolve));
+            await waitUntil(loadedSubplebbit.lastPostCid === post.cid, { timeout: 200000 });
             await loadedSubplebbit.stop();
             expect(loadedSubplebbit.address).to.equal("plebbit.eth");
             expect(loadedSubplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === post.cid)).to.be.true;
