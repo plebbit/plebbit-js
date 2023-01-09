@@ -3,7 +3,7 @@ import { Page, Pages } from "./pages";
 import { Subplebbit } from "./subplebbit";
 import assert from "assert";
 import { Comment } from "./comment";
-import { CommentType, PostSort, PostSortName, ReplySort, ReplySortName, SortProps, Timeframe } from "./types";
+import { CommentType, PageType, PostSort, PostSortName, ReplySort, ReplySortName, SortProps, Timeframe } from "./types";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
 import { CACHE_KEYS } from "./constants";
@@ -32,7 +32,15 @@ export const REPLIES_SORT_TYPES: ReplySort = {
     old: {}
 };
 
-export const SORTED_POSTS_PAGE_SIZE = 50;
+export type PageOptions = {
+    excludeRemovedComments: boolean;
+    excludeDeletedComments: boolean;
+    excludeCommentsWithDifferentSubAddress: boolean;
+    ensurePinnedCommentsAreOnTop: boolean;
+    pageSize: number;
+};
+
+type PageGenerationRes = Record<Partial<PostSortName | ReplySortName>, { pages: Page[]; cids: string[] }>;
 
 export class SortHandler {
     subplebbit: Pick<Subplebbit, "dbHandler" | "plebbit" | "address">;
@@ -41,11 +49,11 @@ export class SortHandler {
         this.subplebbit = subplebbit;
     }
 
-    async chunksToListOfPage(chunks: CommentType[][]): Promise<[Page[], string[]]> {
+    private async commentChunksToPages(chunks: CommentType[][], sortName: PostSortName | ReplySortName): Promise<PageGenerationRes> {
         assert(chunks.length > 0);
 
         const listOfPage: Page[] = new Array(chunks.length);
-        const cids = new Array(chunks.length);
+        const cids: string[] = new Array(chunks.length);
         const chunksWithReplies: Comment[][] = await Promise.all(
             chunks.map(async (chunk) => {
                 return await Promise.all(
@@ -67,15 +75,12 @@ export class SortHandler {
             cids[i] = (await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(page))).path;
             listOfPage[i] = page;
         }
-        return [listOfPage, cids];
+
+        return <PageGenerationRes>{ [sortName]: { pages: listOfPage, cids } };
     }
 
     // Resolves to sortedComments
-    async sortComments(
-        comments: CommentType[],
-        sortName: PostSortName | ReplySortName,
-        limit = SORTED_POSTS_PAGE_SIZE
-    ): Promise<[Partial<Record<PostSortName | ReplySortName, Page>>, string]> {
+    async sortComments(comments: CommentType[], sortName: PostSortName | ReplySortName, options: PageOptions): Promise<PageGenerationRes> {
         let commentsSorted: CommentType[];
         const sortProps: SortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
         if (sortProps.hasOwnProperty("score") && typeof sortProps.score !== "function")
@@ -92,99 +97,139 @@ export class SortHandler {
                 .sort((postA, postB) => postB.score - postA.score)
                 .map((comment) => comment.comment);
 
-        const commentsChunks = lodash.chunk(commentsSorted, limit);
+        if (options.ensurePinnedCommentsAreOnTop)
+            commentsSorted.sort((commentA, commentB) => Number(commentB.pinned) - Number(commentA.pinned));
 
-        const [listOfPage, cids] = await this.chunksToListOfPage(commentsChunks);
+        const commentsChunks = lodash.chunk(commentsSorted, options.pageSize);
 
-        const expectedNumOfPages = Math.ceil(comments.length / limit);
+        const res = await this.commentChunksToPages(commentsChunks, sortName);
+
+        const listOfPage = Object.values(res)[0].pages;
+
+        const expectedNumOfPages = Math.ceil(comments.length / options.pageSize);
         assert.equal(
             listOfPage.length,
             expectedNumOfPages,
             `Should generate ${expectedNumOfPages} pages for sort ${sortName} while it generated ${listOfPage.length}`
         );
 
-        return [{ [sortName]: listOfPage[0] }, cids[0]];
+        return res;
     }
 
-    async sortCommentsByHot(parentCid?: string, trx?) {
-        const comments = (await this.subplebbit.dbHandler.queryCommentsUnderComment(parentCid, trx)).filter(
-            (comment) => comment.subplebbitAddress === this.subplebbit.address && !comment.removed && !comment?.authorEdit?.deleted
-        );
-        if (comments.length === 0) return [undefined, undefined];
-        return this.sortComments(comments, "hot");
+    async sortCommentsByHot(parentCid: string | undefined, options: PageOptions, trx?): Promise<PageGenerationRes | undefined> {
+        const comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(parentCid, options, trx);
+        if (comments.length === 0) return undefined;
+        return this.sortComments(comments, "hot", options);
     }
 
-    async sortCommentsByTop(parentCid: string | undefined, sortName: PostSortName | ReplySortName, trx?) {
+    async sortCommentsByTop(
+        parentCid: string | undefined,
+        sortName: PostSortName | ReplySortName,
+        options: PageOptions,
+        trx?
+    ): Promise<PageGenerationRes | undefined> {
         const sortProps: SortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
         assert(sortProps.timeframe, "Need timeframe to sort top");
-        const comments = (
-            await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(
-                parentCid,
-                timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe],
-                Number.MAX_SAFE_INTEGER,
-                trx
-            )
-        ).filter((comment) => comment.subplebbitAddress === this.subplebbit.address && !comment.removed && !comment?.authorEdit?.deleted);
-        if (comments.length === 0) return [undefined, undefined];
-        return this.sortComments(comments, sortName);
+        const comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(
+            parentCid,
+            timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe],
+            Number.MAX_SAFE_INTEGER,
+            options,
+            trx
+        );
+        if (comments.length === 0) return undefined;
+        return this.sortComments(comments, sortName, options);
     }
 
-    async sortCommentsByControversial(parentCid: string | undefined, sortName: PostSortName | ReplySortName, trx?) {
+    async sortCommentsByControversial(
+        parentCid: string | undefined,
+        sortName: PostSortName | ReplySortName,
+        options: PageOptions,
+        trx?
+    ): Promise<PageGenerationRes | undefined> {
         const sortProps: SortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
         assert(sortProps.timeframe, "Need timeframe to sort controversial");
-        const comments = (
-            await this.subplebbit.dbHandler.queryCommentsBetweenTimestampRange(
-                parentCid,
-                timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe],
-                Number.MAX_SAFE_INTEGER,
-                trx
-            )
-        ).filter((comment) => comment.subplebbitAddress === this.subplebbit.address && !comment.removed && !comment?.authorEdit?.deleted);
-        if (comments.length === 0) return [undefined, undefined];
-        return this.sortComments(comments, sortName);
-    }
-
-    async sortCommentsByNew(parentCid?: string, trx?) {
-        const comments = (await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, "desc", trx)).filter(
-            (comment) => comment.subplebbitAddress === this.subplebbit.address && !comment.removed && !comment?.authorEdit?.deleted
+        const comments = await this.subplebbit.dbHandler.queryCommentsBetweenTimestampRange(
+            parentCid,
+            timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe],
+            Number.MAX_SAFE_INTEGER,
+            options,
+            trx
         );
-        if (comments.length === 0) return [undefined, undefined];
-        return this.sortComments(comments, "new");
+        if (comments.length === 0) return undefined;
+        return this.sortComments(comments, sortName, options);
     }
 
-    private _getPostsPromises(trx?) {
-        // Sorting posts on a subplebbit level
-        const sortPromises = [this.sortCommentsByHot(undefined, trx), this.sortCommentsByNew(undefined, trx)];
-
-        (Object.keys(POSTS_SORT_TYPES) as Array<keyof typeof POSTS_SORT_TYPES>)
-            .filter((postSort) => postSort !== "hot" && postSort !== "new")
-            .forEach((postSortName) => {
-                if (postSortName.includes("controversial"))
-                    sortPromises.push(this.sortCommentsByControversial.bind(this)(undefined, postSortName, trx));
-                else if (postSortName.includes("top")) sortPromises.push(this.sortCommentsByTop.bind(this)(undefined, postSortName, trx));
-            });
-
-        return sortPromises;
+    async sortCommentsByNew(parentCid: string | undefined, options: PageOptions, trx?): Promise<PageGenerationRes | undefined> {
+        const comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, "desc", options, trx);
+        if (comments.length === 0) return undefined;
+        return this.sortComments(comments, "new", options);
     }
 
-    private _getRepliesPromises(comment: Comment | CommentType, trx?) {
-        return (Object.keys(REPLIES_SORT_TYPES) as Array<keyof typeof REPLIES_SORT_TYPES>).map(async (sortName: ReplySortName) => {
-            let comments: CommentType[] = [];
-            if (sortName === "topAll")
-                comments = await this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(
-                    comment.cid,
-                    0,
-                    Number.MAX_SAFE_INTEGER,
-                    trx
-                );
-            else if (sortName === "old") comments = await this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", trx);
-            else comments = await this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx);
-
-            comments = comments.filter((comment) => comment.subplebbitAddress === this.subplebbit.address);
-            if (comments.length === 0) return [undefined, undefined];
-
-            return this.sortComments(comments, sortName);
+    private _generationResToPages(res: PageGenerationRes[]): Pages | undefined {
+        res = res.filter((res) => Boolean(res));
+        if (res.length === 0) return undefined;
+        const mergedObject: PageGenerationRes = Object.assign({}, ...res);
+        const pages = new Pages({
+            pages: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages.pages[0] }))),
+            pageCids: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages.cids[0] }))),
+            subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
         });
+        return pages;
+    }
+
+    private async _generateSubplebbitPosts(trx?): Promise<Pages | undefined> {
+        // Sorting posts on a subplebbit level
+        const pageOptions: PageOptions = {
+            ensurePinnedCommentsAreOnTop: true,
+            excludeCommentsWithDifferentSubAddress: true,
+            excludeDeletedComments: true,
+            excludeRemovedComments: true,
+            pageSize: 50
+        };
+        const sortPromises: Promise<PageGenerationRes>[] = [
+            this.sortCommentsByHot(undefined, pageOptions, trx),
+            this.sortCommentsByNew(undefined, pageOptions, trx)
+        ];
+
+        sortPromises.push(
+            ...Object.keys(POSTS_SORT_TYPES)
+                .filter((key) => key.startsWith("controversial"))
+                .map((sortName) => this.sortCommentsByControversial.bind(this)(undefined, sortName, pageOptions, trx))
+        );
+
+        sortPromises.push(
+            ...Object.keys(POSTS_SORT_TYPES)
+                .filter((key) => key.startsWith("top"))
+                .map((sortName) => this.sortCommentsByTop.bind(this)(undefined, sortName, pageOptions, trx))
+        );
+
+        const sorts = await Promise.all(sortPromises);
+
+        return this._generationResToPages(sorts); 
+    }
+
+    private async _generateCommentReplies(comment: Comment | CommentType, trx?): Promise<Pages | undefined> {
+        const pageOptions: PageOptions = {
+            ensurePinnedCommentsAreOnTop: true,
+            excludeCommentsWithDifferentSubAddress: true,
+            excludeDeletedComments: false,
+            excludeRemovedComments: false,
+            pageSize: 50
+        };
+        // Promises have to be in the same order as REPLIES_SORT_TYPES => [topAll, new, controversialAll, old]
+
+        const sorts = await Promise.all([
+            this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(comment.cid, 0, Number.MAX_SAFE_INTEGER, pageOptions, trx),
+            this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "desc", pageOptions, trx),
+            this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, pageOptions, trx), // Controversial will be sorted in-code
+            this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", pageOptions, trx)
+        ]);
+        const res = await Promise.all(
+            sorts.map((sort, i) => this.sortComments(sort, Object.keys(REPLIES_SORT_TYPES)[i] as ReplySortName, pageOptions))
+        );
+
+        return this._generationResToPages(res);
     }
 
     async cacheCommentsPages(trx?) {
@@ -196,56 +241,35 @@ export class SortHandler {
     }
 
     async generateRepliesPages(comment: Comment | CommentType, trx?): Promise<Pages | undefined> {
+        const log = Logger("plebbit-js:sort-handler:generateRepliesPages");
         if (comment.replyCount === 0) return undefined;
         const cacheKey = CACHE_KEYS[CACHE_KEYS.PREFIX_COMMENT_REPLIES_].concat(comment.cid);
         const cachedReplies: PageType | undefined = await this.subplebbit.dbHandler!.keyvGet(cacheKey);
         if (cachedReplies) return new Pages({ ...cachedReplies, subplebbit: this.subplebbit });
 
-        const res = await Promise.all(this._getRepliesPromises(comment, trx));
+        const pages = await this._generateCommentReplies(comment, trx);
 
-        let [pagesRaw, pageCids] = [{}, {}];
-        for (const [page, pageCid] of res) {
-            pagesRaw = { ...pagesRaw, ...page };
-            if (page) pageCids[Object.keys(page)[0]] = pageCid;
+        if (pages) {
+            await this.subplebbit.dbHandler!.keyvSet(cacheKey, pages.toJSON());
+            log(`Generated replies pages for comment (${comment.cid})`);
         }
-
-        const pages = new Pages({
-            pages: pagesRaw,
-            pageCids: pageCids,
-            subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
-        });
-
-        await this.subplebbit.dbHandler!.keyvSet(comment.cid, pages.toJSON());
 
         return pages;
     }
 
     async generateSubplebbitPosts(trx?) {
+        const log = Logger("plebbit-js:sort-handler:generateSubplebbitPosts");
+
         const subplebbitPostCount = await this.subplebbit.dbHandler!.queryCountOfPosts(this.subplebbit.address, trx);
-        if (subplebbitPostCount === 0)
-            return new Pages({
-                pages: {},
-                pageCids: {},
-                subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
-            });
+        if (subplebbitPostCount === 0) return undefined;
         const cachedPosts = await this.subplebbit.dbHandler?.keyvGet(CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]);
         if (cachedPosts) return new Pages({ ...cachedPosts, subplebbit: this.subplebbit });
 
-        const res = await Promise.all(this._getPostsPromises(trx));
-
-        let [pagesRaw, pageCids] = [{}, {}];
-        for (const [page, pageCid] of res) {
-            pagesRaw = { ...pagesRaw, ...page };
-            if (page) pageCids[Object.keys(page)[0]] = pageCid;
+        const pages = await this._generateSubplebbitPosts(trx);
+        if (pages) {
+            await this.subplebbit.dbHandler?.keyvSet(CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT], pages.toJSON());
+            log(`Generated new subplebbit.posts for sub (${this.subplebbit.address})`);
         }
-
-        const pages = new Pages({
-            pages: pagesRaw,
-            pageCids: pageCids,
-            subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
-        });
-
-        await this.subplebbit.dbHandler?.keyvSet(CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT], pages.toJSON());
 
         return pages;
     }

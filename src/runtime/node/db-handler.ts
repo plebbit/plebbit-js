@@ -39,6 +39,7 @@ import { getPlebbitAddressFromPrivateKeyPem, getPlebbitAddressFromPublicKeyPem }
 import { Signer } from "../../signer";
 
 import * as lockfile from "proper-lockfile";
+import { PageOptions } from "../../sort-handler";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -48,6 +49,14 @@ const TABLES = Object.freeze({
     SIGNERS: "signers", // To store private keys of subplebbit and comments' IPNS,
     EDITS: "edits"
 });
+
+const defaultPageOption: PageOptions = {
+    excludeDeletedComments: false,
+    excludeRemovedComments: false,
+    ensurePinnedCommentsAreOnTop: false,
+    excludeCommentsWithDifferentSubAddress: true,
+    pageSize: 50
+};
 
 export class DbHandler {
     private _knex: Knex;
@@ -442,7 +451,7 @@ export class DbHandler {
         return (await this._createVotesFromRows(voteObj))[0];
     }
 
-    private _baseCommentQuery(trx?: Transaction) {
+    private _baseCommentQuery(trx?: Transaction, options = defaultPageOption) {
         const upvoteQuery = this._baseTransaction(trx)(TABLES.VOTES)
             .count(`${TABLES.VOTES}.vote`)
             .where({
@@ -465,7 +474,15 @@ export class DbHandler {
             })
             .as("replyCount");
 
-        return this._baseTransaction(trx)(TABLES.COMMENTS).select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery);
+        let query = this._baseTransaction(trx)(TABLES.COMMENTS)
+            .select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery)
+            .jsonExtract("authorEdit", "$.deleted", "deleted", true);
+
+        if (options.excludeCommentsWithDifferentSubAddress) query = query.where({ subplebbitAddress: this._subplebbit.address });
+        if (options.excludeRemovedComments) query = query.whereNot("removed", 1);
+        if (options.excludeDeletedComments) query = query.andWhereRaw("`deleted` is not 1");
+
+        return query;
     }
 
     private _parseJsonFields(obj: Object) {
@@ -521,10 +538,12 @@ export class DbHandler {
         );
     }
 
-    async queryCommentsSortedByTimestamp(parentCid: string | undefined | null, order = "desc", trx?: Transaction) {
+    async queryCommentsSortedByTimestamp(parentCid: string | undefined | null, order = "desc", options, trx?: Transaction) {
         parentCid = parentCid || null;
 
-        const commentObj = await this._baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", order);
+        const commentObj = await this._baseCommentQuery(trx, options)
+            .where({ parentCid: parentCid, subplebbitAddress: this._subplebbit.address })
+            .orderBy("timestamp", order);
         return this._createCommentsFromRows(commentObj);
     }
 
@@ -532,14 +551,19 @@ export class DbHandler {
         parentCid: string | undefined | null,
         timestamp1: number,
         timestamp2: number,
+        options: PageOptions,
         trx?: Transaction
     ): Promise<CommentType[] | PostType[]> {
         parentCid = parentCid || null;
 
         if (timestamp1 === Number.NEGATIVE_INFINITY) timestamp1 = 0;
-        const rawCommentObjs = await this._baseCommentQuery(trx)
+        const finalQuery = this._baseCommentQuery(trx, options)
             .where({ parentCid: parentCid })
             .whereBetween("timestamp", [timestamp1, timestamp2]);
+        const rawCommentObjs = await finalQuery;
+
+        assert(!rawCommentObjs.some((comment) => comment.timestamp < timestamp1 || comment.timestamp > timestamp2));
+
         return this._createCommentsFromRows(rawCommentObjs);
     }
 
@@ -547,6 +571,7 @@ export class DbHandler {
         parentCid: string | undefined | null,
         timestamp1: number,
         timestamp2: number,
+        options: PageOptions,
         trx?: Transaction
     ): Promise<CommentType[] | PostType[]> {
         if (timestamp1 === Number.NEGATIVE_INFINITY) timestamp1 = 0;
@@ -557,7 +582,7 @@ export class DbHandler {
                 [`${TABLES.COMMENTS}.cid`]: this._knex.raw(`${TABLES.VOTES}.commentCid`)
             })
             .as("topScore");
-        const rawCommentsObjs = await this._baseCommentQuery(trx)
+        const rawCommentsObjs = await this._baseCommentQuery(trx, options)
             .select(topScoreQuery)
             .groupBy(`${TABLES.COMMENTS}.cid`)
             .orderBy("topScore", "desc")
@@ -567,10 +592,15 @@ export class DbHandler {
         return this._createCommentsFromRows(rawCommentsObjs);
     }
 
-    async queryCommentsUnderComment(parentCid: string | undefined | null, trx?: Transaction): Promise<CommentType[] | PostType[]> {
+    async queryCommentsUnderComment(
+        parentCid: string | undefined | null,
+        options: Partial<PageOptions>,
+        trx?: Transaction
+    ): Promise<CommentType[] | PostType[]> {
+        const queryOptions = { ...defaultPageOption, ...options };
         parentCid = parentCid || null;
 
-        const commentsObjs = await this._baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", "desc");
+        const commentsObjs = await this._baseCommentQuery(trx, queryOptions).where({ parentCid: parentCid }).orderBy("timestamp", "desc");
         return this._createCommentsFromRows(commentsObjs);
     }
 

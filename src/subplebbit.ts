@@ -376,9 +376,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         ]);
 
         this.posts = new Pages({
-            pages: lodash.pick(subplebbitPosts.pages, "hot"),
-            pageCids: subplebbitPosts.pageCids,
-            subplebbit: subplebbitPosts.subplebbit
+            pages: lodash.pick(subplebbitPosts?.pages, "hot"),
+            pageCids: subplebbitPosts?.pageCids,
+            subplebbit: subplebbitPosts?.subplebbit
         });
 
         const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
@@ -659,7 +659,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 // Comment
                 const trx = await this.dbHandler.createTransaction(challengeRequestId);
                 const [commentsUnderParent, parent] = await Promise.all([
-                    this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx),
+                    this.dbHandler.queryCommentsUnderComment(
+                        postOrCommentOrVote.parentCid,
+                        { excludeDeletedComments: true, excludeRemovedComments: true },
+                        trx
+                    ),
                     this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)
                 ]);
 
