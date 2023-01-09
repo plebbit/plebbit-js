@@ -171,7 +171,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         const canRunSub = this._canRunSub();
 
-        const newSub = async () => {
+        const localSub = async () => {
             if (!canRunSub) throw Error("missing nativeFunctions required to create a subplebbit");
             if (canRunSub && !this.dataPath)
                 throwWithErrorCode(
@@ -196,10 +196,8 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             if (!canRunSub) return remoteSub();
             else {
                 const dbHandler = nativeFunctions.createDbHandler({ address: options.address, plebbit: this });
-                const subHasBeenCreatedBefore = (await this.listSubplebbits()).includes(options.address);
-                if (subHasBeenCreatedBefore) return newSub();
-                else if (await dbHandler.isSubCreationLocked())
-                    throwWithErrorCode("ERR_SUB_CREATION_LOCKED", `subAddress=${options.address}`);
+                const isSubLocal = dbHandler.subDbExists();
+                if (isSubLocal) return localSub();
                 else return remoteSub();
             }
         } else if (!options.address && !options.signer) {
@@ -208,16 +206,16 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
                 options.signer = await this.createSigner();
                 options.address = (<Signer>options.signer).address;
                 log(`Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${options.address})`);
-                return newSub();
+                return localSub();
             }
         } else if (!options.address && options.signer) {
             if (!canRunSub) throw Error(`missing nativeFunctions required to create a subplebbit`);
             const signer = await this.createSigner(options.signer);
             options.address = signer.address;
             options.signer = signer;
-            return newSub();
+            return localSub();
         } else if (!canRunSub) return remoteSub();
-        else return newSub();
+        else return localSub();
     }
 
     async createVote(options: CreateVoteOptions | VoteType): Promise<Vote> {

@@ -796,6 +796,11 @@ export class DbHandler {
         return lockfile.check(subDbPath, { lockfilePath });
     }
 
+    subDbExists(subAddress = this._subplebbit.address) {
+        const dbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        return fs.existsSync(dbPath);
+    }
+
     // Will most likely move to another file specialized in DB migration
 
     private async _migrateFromDbV2IfNeeded() {
