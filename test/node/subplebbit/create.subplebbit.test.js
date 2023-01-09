@@ -108,7 +108,7 @@ describe(`plebbit.createSubplebbit`, async () => {
     });
 });
 
-describe.only("Create lock", async () => {
+describe("Create lock", async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
@@ -159,7 +159,7 @@ describe.only("Create lock", async () => {
         await sub.stop();
     });
 
-    it.only(`Same sub can't be created in different processes`, async () => {
+    it(`Same sub can't be created in different processes`, async () => {
         // Have to import all these packages because forked process doesn't have them
         const createSubInDifferentProcess = branchy(async (subAddress) => {
             const { mockPlebbit } = require("../../../dist/node/test/test-util");
