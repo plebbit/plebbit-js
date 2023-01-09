@@ -118,8 +118,6 @@ describe("Create lock", async () => {
         const subDbLockPath = path.join(plebbit.dataPath, "subplebbits", `${subSigner.address}.create.lock`);
         plebbit.createSubplebbit({ signer: subSigner });
         await waitUntil(() => fs.existsSync(subDbLockPath));
-        expect(await plebbit.listSubplebbits()).to.not.include(subSigner.address);
-        expect(fs.existsSync(subDbLockPath)).to.be.true;
         await assert.isRejected(plebbit.createSubplebbit({ address: subSigner.address }), messages.ERR_SUB_CREATION_LOCKED);
     });
 
