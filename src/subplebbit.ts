@@ -957,7 +957,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             );
         }
 
-        const updateTriggerKey = CACHE_KEYS[CACHE_KEYS.PREFIX_TRIGGER_COMMENT_UPDATE].concat(dbComment.cid);
+        const updateTriggerKey = CACHE_KEYS[CACHE_KEYS.PREFIX_TRIGGER_COMMENT_UPDATE_].concat(dbComment.cid);
         const updateTriggered = await this.dbHandler.keyvGet(updateTriggerKey);
         if (
             !commentIpns ||
@@ -978,7 +978,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
             await this.dbHandler.keyvDelete(updateTriggerKey);
             if (dbComment.parentCid) {
-                const triggerParentUpdateKey = CACHE_KEYS[CACHE_KEYS.PREFIX_TRIGGER_COMMENT_UPDATE].concat(dbComment.parentCid);
+                const triggerParentUpdateKey = CACHE_KEYS[CACHE_KEYS.PREFIX_TRIGGER_COMMENT_UPDATE_].concat(dbComment.parentCid);
                 await this.dbHandler.keyvSet(triggerParentUpdateKey, true);
             }
             return newIpns;

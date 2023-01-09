@@ -197,7 +197,8 @@ export class SortHandler {
 
     async generateRepliesPages(comment: Comment | CommentType, trx?): Promise<Pages | undefined> {
         if (comment.replyCount === 0) return undefined;
-        const cachedReplies = await this.subplebbit.dbHandler!.keyvGet(comment.cid);
+        const cacheKey = CACHE_KEYS[CACHE_KEYS.PREFIX_COMMENT_REPLIES_].concat(comment.cid);
+        const cachedReplies: PageType | undefined = await this.subplebbit.dbHandler!.keyvGet(cacheKey);
         if (cachedReplies) return new Pages({ ...cachedReplies, subplebbit: this.subplebbit });
 
         const res = await Promise.all(this._getRepliesPromises(comment, trx));
@@ -252,10 +253,12 @@ export class SortHandler {
     async deleteCommentPageCache(dbComment: CommentType) {
         const log = Logger("plebbit-js:sort-handler:deleteCommentPageCache");
 
+        const cacheKey = (cid: string) => CACHE_KEYS[CACHE_KEYS.PREFIX_COMMENT_REPLIES_].concat(cid);
+
         assert(this.subplebbit.dbHandler && dbComment.cid);
         const cachesToDelete: string[] = [
-            dbComment.cid,
-            ...(await this.subplebbit.dbHandler.queryParentsOfComment(dbComment, undefined)).map((comment) => <string>comment.cid),
+            cacheKey(dbComment.cid),
+            ...(await this.subplebbit.dbHandler.queryParentsOfComment(dbComment, undefined)).map((comment) => cacheKey(comment.cid)),
             CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]
         ];
         log.trace(`Caches to delete: ${cachesToDelete}`);
