@@ -175,8 +175,13 @@ describe(`Removing reply`, async () => {
     });
     it(`Removed replies show in parent comment pages with 'removed' = true`, async () => {
         if (!post.replies.pages.topAll.comments[0].removed) await new Promise((resolve) => post.once("update", resolve));
-        expect(post.replies.pages.topAll.comments[0].removed).to.be.true;
         expect(post.replyCount).to.equal(1);
+        const repliesPages = await Promise.all(Object.values(post.replies.pageCids).map((cid) => loadAllPages(cid, post.replies)));
+        for (const comments of repliesPages) {
+            const commentInPage = comments.find((comment) => comment.cid === replyToBeRemoved.cid);
+            expect(commentInPage).to.exist;
+            expect(commentInPage.removed).to.be.true;
+        }
     });
 
     it(`Can publish a reply or vote under a reply of a removed reply`, async () => {
