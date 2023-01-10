@@ -178,15 +178,9 @@ export class SortHandler {
         return pages;
     }
 
-    private async _generateSubplebbitPosts(trx?): Promise<Pages | undefined> {
+    private async _generateSubplebbitPosts(trx, pageOptions: PageOptions): Promise<Pages | undefined> {
         // Sorting posts on a subplebbit level
-        const pageOptions: PageOptions = {
-            ensurePinnedCommentsAreOnTop: true,
-            excludeCommentsWithDifferentSubAddress: true,
-            excludeDeletedComments: true,
-            excludeRemovedComments: true,
-            pageSize: 50
-        };
+
         const sortPromises: Promise<PageGenerationRes>[] = [
             this.sortCommentsByHot(undefined, pageOptions, trx),
             this.sortCommentsByNew(undefined, pageOptions, trx)
@@ -206,7 +200,7 @@ export class SortHandler {
 
         const sorts = await Promise.all(sortPromises);
 
-        return this._generationResToPages(sorts); 
+        return this._generationResToPages(sorts);
     }
 
     private async _generateCommentReplies(comment: Comment | CommentType, trx?): Promise<Pages | undefined> {
@@ -248,30 +242,35 @@ export class SortHandler {
         if (cachedReplies) return new Pages({ ...cachedReplies, subplebbit: this.subplebbit });
 
         const pages = await this._generateCommentReplies(comment, trx);
+        // TODO assert here
 
-        if (pages) {
-            await this.subplebbit.dbHandler!.keyvSet(cacheKey, pages.toJSON());
-            log(`Generated replies pages for comment (${comment.cid})`);
-        }
+        if (pages) await this.subplebbit.dbHandler!.keyvSet(cacheKey, pages.toJSON());
 
         return pages;
     }
 
     async generateSubplebbitPosts(trx?) {
-        const log = Logger("plebbit-js:sort-handler:generateSubplebbitPosts");
-
-        const subplebbitPostCount = await this.subplebbit.dbHandler!.queryCountOfPosts(this.subplebbit.address, trx);
+        const pageOptions: PageOptions = {
+            ensurePinnedCommentsAreOnTop: true,
+            excludeCommentsWithDifferentSubAddress: true,
+            excludeDeletedComments: true,
+            excludeRemovedComments: true,
+            pageSize: 50
+        };
+        const subplebbitPostCount = await this.subplebbit.dbHandler!.queryCountOfPosts(pageOptions, trx);
         if (subplebbitPostCount === 0) return undefined;
-        const cachedPosts = await this.subplebbit.dbHandler?.keyvGet(CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]);
+
+        const cacheKey = CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT];
+
+        const cachedPosts: Pages | undefined = await this.subplebbit.dbHandler?.keyvGet(cacheKey);
         if (cachedPosts) return new Pages({ ...cachedPosts, subplebbit: this.subplebbit });
 
-        const pages = await this._generateSubplebbitPosts(trx);
-        if (pages) {
-            await this.subplebbit.dbHandler?.keyvSet(CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT], pages.toJSON());
-            log(`Generated new subplebbit.posts for sub (${this.subplebbit.address})`);
-        }
+        const pages = await this._generateSubplebbitPosts(trx, pageOptions);
+        if (!pages && subplebbitPostCount > 0)
+            throw Error(`Pages are empty even though subplebbit(${this.subplebbit.address}) has ${subplebbitPostCount} posts`);
+        if (!pages) return undefined;
 
-        return pages;
+        await this.subplebbit.dbHandler?.keyvSet(cacheKey, pages.toJSON());
     }
 
     async deleteCommentPageCache(dbComment: CommentType) {

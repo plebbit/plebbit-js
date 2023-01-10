@@ -538,13 +538,11 @@ export class DbHandler {
         );
     }
 
-    async queryCommentsSortedByTimestamp(parentCid: string | undefined | null, order = "desc", options, trx?: Transaction) {
+    async queryCommentsSortedByTimestamp(parentCid: string | undefined | null, order = "desc", options: PageOptions, trx?: Transaction) {
         parentCid = parentCid || null;
 
-        const commentObj = await this._baseCommentQuery(trx, options)
-            .where({ parentCid: parentCid, subplebbitAddress: this._subplebbit.address })
-            .orderBy("timestamp", order);
-        return this._createCommentsFromRows(commentObj);
+        const comments = await this._baseCommentQuery(trx, options).where({ parentCid: parentCid }).orderBy("timestamp", order);
+        return this._createCommentsFromRows(comments);
     }
 
     async queryCommentsBetweenTimestampRange(
@@ -693,8 +691,8 @@ export class DbHandler {
         return comments;
     }
 
-    async queryCountOfPosts(subplebbitAddress: string, trx?: Knex.Transaction): Promise<number> {
-        const obj = await this._baseTransaction(trx)(TABLES.COMMENTS).count().where({ depth: 0, subplebbitAddress }).first();
+    async queryCountOfPosts(pageOptions: PageOptions, trx?: Knex.Transaction): Promise<number> {
+        const obj = await this._baseCommentQuery(trx, pageOptions).count().where({ depth: 0 }).first();
         if (!obj) return 0;
         return Number(obj["count(*)"]);
     }

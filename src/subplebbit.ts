@@ -376,8 +376,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         ]);
 
         this.posts = new Pages({
-            pages: lodash.pick(subplebbitPosts?.pages, "hot"),
-            pageCids: subplebbitPosts?.pageCids,
+            pages: lodash.pick(subplebbitPosts?.pages, "hot") || {},
+            pageCids: subplebbitPosts?.pageCids || {},
             subplebbit: subplebbitPosts?.subplebbit
         });
 
