@@ -1,4 +1,4 @@
-const { mockPlebbit } = require("../../../dist/node/test/test-util");
+const { mockPlebbit, publishRandomPost } = require("../../../dist/node/test/test-util");
 const { encode } = require("../../../dist/node/util");
 const path = require("path");
 const fs = require("fs");
@@ -78,5 +78,26 @@ describe("subplebbit", async () => {
     it(`Deleted sub db is moved to datapath/subplebbits/deleted`, async () => {
         const expectedPath = path.join(plebbit.dataPath, "subplebbits", "deleted", subSigner.address);
         expect(fs.existsSync(expectedPath)).to.be.true;
+    });
+});
+
+describe(`subplebbit.lastPostCid`, async () => {
+    let plebbit, sub;
+    before(async () => {
+        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        sub = await plebbit.createSubplebbit();
+        sub._syncIntervalMs = syncInterval;
+        sub.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
+        await sub.start();
+        await new Promise((resolve) => sub.once("update", resolve));
+    });
+
+    after(async () => await sub.stop());
+
+    it(`subplebbit.lastPostCid reflects latest post published`, async () => {
+        expect(sub.lastPostCid).to.be.undefined;
+        const post = await publishRandomPost(sub.address, plebbit);
+        await waitUntil(() => sub.lastPostCid === post.cid, { timeout: 200000 });
+        expect(sub.lastPostCid).to.equal(post.cid);
     });
 });
