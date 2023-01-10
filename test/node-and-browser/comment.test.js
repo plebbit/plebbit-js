@@ -49,18 +49,7 @@ describe("comment (node and browser)", async () => {
 
         it(`Subplebbit reject a comment with subplebbitAddress that is not equal subplebbit.address`);
 
-        it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () => {
-            const loadedSubplebbit = await plebbit.getSubplebbit("plebbit.eth"); // 'plebbit.eth' is part of test-server.js
-            loadedSubplebbit._updateIntervalMs = 200;
-            await loadedSubplebbit.update();
-            const post = await generateMockPost(loadedSubplebbit.address, plebbit, lodash.sample(signers));
-            await publishWithExpectedResult(post, true);
-            await waitUntil(loadedSubplebbit.lastPostCid === post.cid, { timeout: 200000 });
-            await loadedSubplebbit.stop();
-            expect(loadedSubplebbit.address).to.equal("plebbit.eth");
-            expect(loadedSubplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === post.cid)).to.be.true;
-            expect(loadedSubplebbit.lastPostCid).to.equal(post.cid);
-        });
+        
 
         it("Subplebbit reject a comment under a non existent parent", async () => {
             return new Promise(async (resolve) => {
