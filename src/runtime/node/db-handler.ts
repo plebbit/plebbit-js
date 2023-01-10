@@ -723,14 +723,16 @@ export class DbHandler {
 
         const oldPathString = (<any>this._dbConfig.connection).filename;
         assert.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
+        this._currentTrxs = {};
+        this._subplebbit = newSubplebbit;
         if (oldPathString === ":memory:") {
             log.trace(`No need to change file name of db since it's in memory`);
             return;
         }
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbFileName });
+
         await fs.promises.mkdir(path.dirname(newPath), { recursive: true });
-        this._currentTrxs = {};
-        this._subplebbit = newSubplebbit;
+
         await fs.promises.cp(oldPathString, newPath);
         this._dbConfig = {
             ...this._dbConfig,
