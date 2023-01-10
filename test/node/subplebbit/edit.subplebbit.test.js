@@ -1,5 +1,5 @@
 const Plebbit = require("../../../dist/node");
-const { publishRandomPost, mockPlebbit } = require("../../../dist/node/test/test-util");
+const { publishRandomPost, mockPlebbit, loadAllPages } = require("../../../dist/node/test/test-util");
 const { encode } = require("../../../dist/node/util");
 const lodash = require("lodash");
 const { default: waitUntil } = require("async-wait-until");
@@ -14,7 +14,7 @@ const syncInterval = 300;
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 describe(`subplebbit.edit`, async () => {
-    let plebbit, subplebbit;
+    let plebbit, subplebbit, postToPublishAfterEdit;
     before(async () => {
         plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
         subplebbit = await plebbit.createSubplebbit({});
@@ -62,12 +62,24 @@ describe(`subplebbit.edit`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
         // subplebbit.posts should omit all comments that referenced the old subplebbit address
         // So in essence it should be empty
-        expect(loadedSubplebbit.posts.pages).to.be.undefined;
-        expect(loadedSubplebbit.posts.pageCids).to.be.undefined;
+        expect(loadedSubplebbit.posts.pages).to.deep.equal({});
+        expect(loadedSubplebbit.posts.pageCids).to.deep.equal({});
     });
 
     it(`Started Sub can receive publications on new ENS address`, async () => {
-        await publishRandomPost(subplebbit.address, plebbit);
+        postToPublishAfterEdit = await publishRandomPost(subplebbit.address, plebbit);
+    });
+
+    it(`Posts submitted to new sub address are shown in subplebbit.posts`, async () => {
+        await waitUntil(() => subplebbit.posts.pages.hot.comments.some((comment) => comment.cid === postToPublishAfterEdit.cid), {
+            timeout: 20000
+        });
+        expect(Object.values(subplebbit.posts.pageCids).length).to.be.greaterThan(1);
+        for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
+            const pageComments = await loadAllPages(pageCid, subplebbit.posts);
+            expect(pageComments.length).to.equal(1);
+            expect(pageComments[0].cid).to.equal(postToPublishAfterEdit.cid);
+        }
     });
 
     it(`Can edit subplebbit.address to a new domain if subplebbit-address record does not exist or does not match signer.address`, async () => {
