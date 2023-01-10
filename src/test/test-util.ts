@@ -98,18 +98,15 @@ export async function generateMockVote(
     return voteObj;
 }
 
-export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promise<Comment[]> {
+export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promise<CommentType[]> {
     if (!isIPFS.cid(pageCid)) throw Error(`loadAllPages: pageCid (${pageCid}) is not a valid CID`);
     let sortedCommentsPage = await pagesInstance.getPage(pageCid);
-    let sortedComments: Comment[] | CommentType[] = sortedCommentsPage.comments;
+    let sortedComments: CommentType[] = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {
         sortedCommentsPage = await pagesInstance.getPage(sortedCommentsPage.nextCid);
         sortedComments = sortedComments.concat(sortedCommentsPage.comments);
     }
-    sortedComments = await Promise.all(
-        sortedComments.map(async (commentProps) => pagesInstance.subplebbit.plebbit.createComment(commentProps))
-    );
-    return <Comment[]>sortedComments;
+    return sortedComments;
 }
 
 export async function getAllCommentsUnderSubplebbit(subplebbit: Subplebbit): Promise<Comment[]> {

@@ -108,18 +108,17 @@ const testSorting = async (sort, shouldTestCommentReplies) => {
 
     if (shouldTestCommentReplies) {
         await Promise.all(
-            posts.map(async (currentPost) => {
-                if (currentPost.replyCount === 0) return undefined;
-                await Promise.all(
+            posts
+                .filter((post) => post.replyCount > 0)
+                .map((currentPost) => {
                     sortNames.map(async (currentSortName) => {
                         const alreadySortedComments =
                             (currentPost.replies.pageCids[currentSortName] &&
-                                (await loadAllPages(currentPost.replies.pageCids[currentSortName], currentPost.replies))) ||
+                                (await loadAllPages(currentPost.replies.pageCids[currentSortName], subplebbit.posts))) ||
                             [];
                         if (sortNames.length === 1) expect(currentPost.replyCount).to.equal(alreadySortedComments.length); // If sort with no timeframe then sortedComments should equal post.replyCount
                         return testListOfSortedComments(alreadySortedComments, currentSortName);
-                    })
-                );
+                    });
             })
         );
     } else
