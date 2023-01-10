@@ -25,10 +25,10 @@ describe("Deleting a post", async () => {
     before(async () => {
         plebbit = await mockPlebbit();
         [postToDelete, modPostToDelete] = await Promise.all([
-            publishRandomPost(subplebbitAddress, plebbit, { signer: lodash.sample(signers) }),
+            publishRandomPost(subplebbitAddress, plebbit),
             publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer })
         ]);
-        postReply = await publishRandomReply(postToDelete, plebbit, { signer: lodash.sample(signers) });
+        postReply = await publishRandomReply(postToDelete, plebbit);
     });
     it(`Regular author can't mark a post that is not theirs as deleted`, async () => {
         const deleteEdit = await plebbit.createCommentEdit({

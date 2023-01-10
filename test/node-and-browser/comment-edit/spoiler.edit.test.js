@@ -2,6 +2,7 @@ const signers = require("../../fixtures/signers");
 const { mockPlebbit, publishRandomPost, publishWithExpectedResult } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
+const { default: waitUntil } = require("async-wait-until");
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -97,7 +98,7 @@ describe(`Marking comment as spoiler`, async () => {
             signer: spoilerPost.signer
         });
         await publishWithExpectedResult(spoilerEdit, true);
-        await new Promise((resolve) => spoilerPost.once("update", resolve));
+        await waitUntil(() => spoilerPost.spoiler === false, { timeout: 200000 });
         spoilerPost.stop();
         expect(spoilerPost.spoiler).to.be.false;
         expect(spoilerPost.authorEdit.spoiler).to.be.false;
