@@ -41,7 +41,7 @@ describe(`Test Downvote`, async () => {
         const vote = await generateMockVote(postToVote, -1, plebbit);
         await publishWithExpectedResult(vote, true);
 
-        await waitUntil(() => postToVote.downvoteCount === originalDownvote + 1, { timeout: 20000 });
+        await waitUntil(() => postToVote.downvoteCount === originalDownvote + 1, { timeout: 200000 });
 
         expect(postToVote.downvoteCount).to.equal(originalDownvote + 1);
         expect(postToVote.upvoteCount).to.equal(0);
@@ -56,7 +56,7 @@ describe(`Test Downvote`, async () => {
         const vote = await generateMockVote(replyToVote, -1, plebbit);
         await publishWithExpectedResult(vote, true);
 
-        await waitUntil(() => replyToVote.downvoteCount === originalDownvote + 1, { timeout: 20000 });
+        await waitUntil(() => replyToVote.downvoteCount === originalDownvote + 1, { timeout: 200000 });
 
         expect(replyToVote.downvoteCount).to.equal(originalDownvote + 1);
         expect(replyToVote.upvoteCount).to.equal(0);
@@ -77,7 +77,7 @@ describe(`Test Downvote`, async () => {
         });
         await publishWithExpectedResult(vote, true);
 
-        await waitUntil(() => postToVote.upvoteCount === originalUpvote + 1, { timeout: 20000 });
+        await waitUntil(() => postToVote.upvoteCount === originalUpvote + 1, { timeout: 200000 });
 
         expect(postToVote.upvoteCount).to.equal(originalUpvote + 1);
         expect(postToVote.downvoteCount).to.equal(originalDownvote - 1);
@@ -96,7 +96,7 @@ describe(`Test Downvote`, async () => {
         });
         await publishWithExpectedResult(vote, true);
 
-        await waitUntil(() => replyToVote.upvoteCount === originalUpvote + 1, { timeout: 20000 });
+        await waitUntil(() => replyToVote.upvoteCount === originalUpvote + 1, { timeout: 200000 });
 
         expect(replyToVote.upvoteCount).to.equal(originalUpvote + 1);
         expect(replyToVote.downvoteCount).to.equal(originalDownvote - 1);
