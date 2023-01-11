@@ -1,4 +1,4 @@
-import { controversialScore, hotScore, TIMEFRAMES_TO_SECONDS, timestamp } from "./util";
+import { controversialScore, hotScore, newScore, oldScore, TIMEFRAMES_TO_SECONDS, timestamp, topScore } from "./util";
 import { Page, Pages } from "./pages";
 import { Subplebbit } from "./subplebbit";
 import assert from "assert";
@@ -9,27 +9,28 @@ import lodash from "lodash";
 import { CACHE_KEYS } from "./constants";
 
 export const POSTS_SORT_TYPES: PostSort = {
-    hot: { score: (...args) => hotScore(...args) },
-    new: {},
-    topHour: { timeframe: "HOUR" },
-    topDay: { timeframe: "DAY" },
-    topWeek: { timeframe: "WEEK" },
-    topMonth: { timeframe: "MONTH" },
-    topYear: { timeframe: "YEAR" },
-    topAll: { timeframe: "ALL" },
-    controversialHour: { score: (...args) => controversialScore(...args), timeframe: "HOUR" },
-    controversialDay: { timeframe: "DAY", score: (...args) => controversialScore(...args) },
-    controversialWeek: { timeframe: "WEEK", score: (...args) => controversialScore(...args) },
-    controversialMonth: { timeframe: "MONTH", score: (...args) => controversialScore(...args) },
-    controversialYear: { timeframe: "YEAR", score: (...args) => controversialScore(...args) },
-    controversialAll: { timeframe: "ALL", score: (...args) => controversialScore(...args) }
+    hot: { score: (...args) => hotScore(...args), dbSorted: false },
+    new: { score: (...args) => newScore(...args), dbSorted: true },
+    topHour: { timeframe: "HOUR", score: (...args) => topScore(...args), dbSorted: true },
+    topDay: { timeframe: "DAY", score: (...args) => topScore(...args), dbSorted: true },
+    topWeek: { timeframe: "WEEK", score: (...args) => topScore(...args), dbSorted: true },
+    topMonth: { timeframe: "MONTH", score: (...args) => topScore(...args), dbSorted: true },
+    topYear: { timeframe: "YEAR", score: (...args) => topScore(...args), dbSorted: true },
+    topAll: { timeframe: "ALL", score: (...args) => topScore(...args), dbSorted: true },
+    controversialHour: { timeframe: "HOUR", score: (...args) => controversialScore(...args), dbSorted: false },
+    controversialDay: { timeframe: "DAY", score: (...args) => controversialScore(...args), dbSorted: false },
+    controversialWeek: { timeframe: "WEEK", score: (...args) => controversialScore(...args), dbSorted: false },
+    controversialMonth: { timeframe: "MONTH", score: (...args) => controversialScore(...args), dbSorted: false },
+    controversialYear: { timeframe: "YEAR", score: (...args) => controversialScore(...args), dbSorted: false },
+    controversialAll: { timeframe: "ALL", score: (...args) => controversialScore(...args), dbSorted: false }
 };
 
 export const REPLIES_SORT_TYPES: ReplySort = {
-    topAll: { timeframe: "ALL" },
-    new: {},
-    controversialAll: { timeframe: "ALL", score: (...args) => controversialScore(...args) },
-    old: {}
+    ...lodash.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
+    old: {
+        score: (...args) => oldScore(...args),
+        dbSorted: true
+    }
 };
 
 export type PageOptions = {
@@ -86,8 +87,7 @@ export class SortHandler {
         if (sortProps.hasOwnProperty("score") && typeof sortProps.score !== "function")
             throw Error(`SortProps[${sortName}] is not defined`);
 
-        if (!sortProps.score) commentsSorted = comments;
-        // If sort type has no score function, that means it already has been sorted by DB
+        if (sortProps.dbSorted) commentsSorted = comments; // already sorted
         else
             commentsSorted = comments
                 .map((comment: CommentType) => ({
@@ -98,7 +98,7 @@ export class SortHandler {
                 .map((comment) => comment.comment);
 
         if (options.ensurePinnedCommentsAreOnTop)
-            commentsSorted.sort((commentA, commentB) => Number(commentB.pinned) - Number(commentA.pinned));
+            commentsSorted = commentsSorted.sort((commentA, commentB) => Number(commentB.pinned) || 0 - Number(commentA.pinned) || 0);
 
         const commentsChunks = lodash.chunk(commentsSorted, options.pageSize);
 
@@ -235,7 +235,6 @@ export class SortHandler {
     }
 
     async generateRepliesPages(comment: Comment | CommentType, trx?): Promise<Pages | undefined> {
-        const log = Logger("plebbit-js:sort-handler:generateRepliesPages");
         if (comment.replyCount === 0) return undefined;
         const cacheKey = CACHE_KEYS[CACHE_KEYS.PREFIX_COMMENT_REPLIES_].concat(comment.cid);
         const cachedReplies: PageType | undefined = await this.subplebbit.dbHandler!.keyvGet(cacheKey);

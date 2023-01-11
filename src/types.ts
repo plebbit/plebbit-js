@@ -321,7 +321,7 @@ export type PostSortName =
     | "controversialAll";
 export type ReplySortName = "topAll" | "new" | "old" | "controversialAll";
 
-export type SortProps = { score?: (comment: CommentType) => number; timeframe?: Timeframe };
+export type SortProps = { score: (comment: CommentType) => number; timeframe?: Timeframe; dbSorted: boolean };
 
 export type PostSort = Record<PostSortName, SortProps>; // If score is undefined means it's sorted from db, no need to sort in code
 
