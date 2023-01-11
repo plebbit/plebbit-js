@@ -25,6 +25,15 @@ describe(`Banning authors`, async () => {
         await commentToBeBanned.stop();
     });
 
+    it(`Author can't publish a Post with author.banExpirestAt defined`);
+
+    it(`Author can't publish a Comment with author.banExpirestAt defined`);
+
+    it(`Author can't publish a Vote with author.banExpirestAt defined`);
+
+    it(`Author can't publish a CommentEdit with author.banExpirestAt defined`);
+
+
     it(`Mod can ban an author for a comment`, async () => {
         const banCommentEdit = await plebbit.createCommentEdit({
             subplebbitAddress: commentToBeBanned.subplebbitAddress,

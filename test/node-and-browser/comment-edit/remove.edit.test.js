@@ -31,6 +31,9 @@ describe(`Removing post`, async () => {
     after(async () => {
         postToRemove.stop();
     });
+
+    it(`Author can't publish a Post with removed=true`);
+
     it(`Mod can mark a post as removed`, async () => {
         const removeEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToRemove.subplebbitAddress,
@@ -152,6 +155,8 @@ describe(`Removing reply`, async () => {
         post.stop();
         replyToBeRemoved.stop();
     });
+
+    it(`Author can't publish a Comment with removed=true`);
 
     it(`Mod can remove a reply`, async () => {
         expect(post.replies.pages.topAll.comments[0].cid).to.equal(replyToBeRemoved.cid);

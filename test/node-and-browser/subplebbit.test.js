@@ -71,7 +71,12 @@ describe("subplebbit.update", async () => {
         const post = await generateMockPost(loadedSubplebbit.address, plebbit, lodash.sample(signers));
         await publishWithExpectedResult(post, true);
         const oldUpdatedAt = lodash.clone(loadedSubplebbit.updatedAt);
-        await waitUntil(() => loadedSubplebbit.lastPostCid === post.cid, { timeout: 90000 });
+        await waitUntil(
+            () =>
+                loadedSubplebbit.lastPostCid === post.cid &&
+                loadedSubplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === post.cid),
+            { timeout: 90000 }
+        );
         await loadedSubplebbit.stop();
         expect(oldUpdatedAt).to.not.equal(loadedSubplebbit.updatedAt);
         expect(loadedSubplebbit.address).to.equal("plebbit.eth");
@@ -79,7 +84,6 @@ describe("subplebbit.update", async () => {
         expect(loadedSubplebbit.lastPostCid).to.equal(post.cid);
     });
 });
-
 
 describe("plebbit.getSubplebbit", async () => {
     let plebbit;

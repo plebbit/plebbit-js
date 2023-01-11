@@ -51,6 +51,8 @@ describe(`Locking posts`, async () => {
 
     it(`Author can't publish a post with locked=true`);
 
+    it(`Author can't publish a comment with locked=true`);
+
     it(`Mod Can't lock a reply`, async () => {
         // This is prior to locking the post
         const lockedEdit = await plebbit.createCommentEdit({
