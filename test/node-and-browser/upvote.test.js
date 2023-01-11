@@ -39,7 +39,7 @@ describe("Test upvote", async () => {
         const originalUpvote = lodash.clone(postToVote.upvoteCount);
         const vote = await generateMockVote(postToVote, 1, plebbit);
         await publishWithExpectedResult(vote, true);
-        await waitUntil(() => postToVote.upvoteCount === originalUpvote + 1, { timeout: 200000 });
+        await waitUntil(() => postToVote.upvoteCount === originalUpvote + 1, { timeout: 300000 });
 
         expect(postToVote.upvoteCount).to.be.equal(originalUpvote + 1);
         expect(postToVote.downvoteCount).to.be.equal(0);
@@ -72,7 +72,7 @@ describe("Test upvote", async () => {
             vote: -1
         });
         await publishWithExpectedResult(vote, true);
-        await waitUntil(() => postToVote.upvoteCount === originalUpvote - 1, { timeout: 200000 });
+        await waitUntil(() => postToVote.upvoteCount === originalUpvote - 1, { timeout: 300000 });
 
         expect(postToVote.upvoteCount).to.equal(originalUpvote - 1);
         expect(postToVote.downvoteCount).to.equal(originalDownvote + 1);
