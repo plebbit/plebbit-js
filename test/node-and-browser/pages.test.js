@@ -1,14 +1,16 @@
-const { controversialScore, hotScore, newScore, oldScore, TIMEFRAMES_TO_SECONDS, topScore } = require("../../dist/node/util");
+const { TIMEFRAMES_TO_SECONDS } = require("../../dist/node/util");
 const Plebbit = require("../../dist/node");
 const { expect } = require("chai");
 const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../dist/node/sort-handler");
 const signers = require("../fixtures/signers");
-const { loadAllPages } = require("../../dist/node/test/test-util");
-const { mockPlebbit } = require("../../dist/node/test/test-util");
+const { loadAllPages, publishRandomPost, mockPlebbit } = require("../../dist/node/test/test-util");
+const lodash = require("lodash");
 
-let plebbit, subplebbit;
-let posts;
+let subplebbit;
+const subCommentPages = {};
 const subplebbitAddress = signers[0].address;
+
+// TODO add a test where you load all posts using lastPostCid and compare them with pages
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
@@ -69,105 +71,105 @@ const testCommentFields = (comment) => {
     expect(comment.signer).to.be.undefined;
 };
 
-const testSorting = async (sort, shouldTestCommentReplies) => {
-    // if shouldTestCommentReplies = true, we will test comment.replies. Else test subplebbit.posts
-    // We use a plebbit for each comment/vote so that when we unsubscribe from a pubsub it doesn't affect other publications
+const testListOfSortedComments = (sortedComments, sortName) => {
+    console.log(`Testing sort ${sortName}. There are ${sortedComments.length} comments under ${sortName}`);
 
-    const testListOfSortedComments = (alreadySortedComments, currentSortName) => {
-        console.log(`Testing sort ${currentSortName}. There are ${alreadySortedComments.length} comments under ${currentSortName}`);
+    const currentTimeframe = Object.keys(TIMEFRAMES_TO_SECONDS).filter((timeframe) =>
+        sortName.toLowerCase().includes(timeframe.toLowerCase())
+    )[0];
+    console.log(`Current sort ${sortName} current timeframe = ${currentTimeframe}`);
 
-        const currentTimeframe = Object.keys(TIMEFRAMES_TO_SECONDS).filter((timeframe) =>
-            currentSortName.toLowerCase().includes(timeframe.toLowerCase())
-        )[0];
-        console.log(`Current sort ${currentSortName} current timeframe = ${currentTimeframe}`);
-        for (let j = 0; j < alreadySortedComments.length - 1; j++) {
-            // Check if timestamp is within [timestamp() - timeframe, subplebbit.updatedAt]
-            testCommentFields(alreadySortedComments[j]);
-            if (currentTimeframe) {
-                // If sort types are more than 1 that means this particular sort type has timeframes
-                const syncIntervalSeconds = 5 * 60;
+    for (let j = 0; j < sortedComments.length - 1; j++) {
+        // Check if timestamp is within [timestamp() - timeframe, subplebbit.updatedAt]
+        testCommentFields(sortedComments[j]);
+        if (currentTimeframe) {
+            const syncIntervalSeconds = 5 * 60;
 
-                const sortStart = subplebbit.updatedAt - TIMEFRAMES_TO_SECONDS[currentTimeframe] - syncIntervalSeconds; // Should probably add extra buffer here
-                const errMsg = `${currentSortName} sort includes posts from different timeframes`;
-                expect(alreadySortedComments[j].timestamp).to.be.greaterThanOrEqual(sortStart, errMsg);
-                expect(alreadySortedComments[j].timestamp).to.be.lessThanOrEqual(subplebbit.updatedAt, errMsg);
-                expect(alreadySortedComments[j + 1].timestamp).to.be.greaterThanOrEqual(sortStart, errMsg);
-                expect(alreadySortedComments[j + 1].timestamp).to.be.lessThanOrEqual(subplebbit.updatedAt, errMsg);
-            }
-
-            const scoreA = sort.scoreFunction(alreadySortedComments[j]);
-            const scoreB = sort.scoreFunction(alreadySortedComments[j + 1]);
-            expect(scoreA).to.be.greaterThanOrEqual(scoreB);
+            const sortStart = subplebbit.updatedAt - TIMEFRAMES_TO_SECONDS[currentTimeframe] - syncIntervalSeconds; // Should probably add extra buffer here
+            const errMsg = `${sortName} sort includes posts from different timeframes`;
+            expect(sortedComments[j].timestamp).to.be.greaterThanOrEqual(sortStart, errMsg);
+            expect(sortedComments[j].timestamp).to.be.lessThanOrEqual(subplebbit.updatedAt, errMsg);
+            expect(sortedComments[j + 1].timestamp).to.be.greaterThanOrEqual(sortStart, errMsg);
+            expect(sortedComments[j + 1].timestamp).to.be.lessThanOrEqual(subplebbit.updatedAt, errMsg);
         }
-        console.log(`Passed tests for current sort ${currentSortName}`);
-    };
+        if (sortedComments[j].pinned) continue; // Ignore pinned posts as they don't follow regular sorting
 
-    const sortNames = Object.keys(shouldTestCommentReplies ? REPLIES_SORT_TYPES : POSTS_SORT_TYPES).filter((sortName) =>
-        sortName.includes(sort.type)
-    );
-
-    if (shouldTestCommentReplies) {
-        await Promise.all(
-            posts
-                .filter((post) => post.replyCount > 0)
-                .map((currentPost) => {
-                    sortNames.map(async (currentSortName) => {
-                        const alreadySortedComments =
-                            (currentPost.replies.pageCids[currentSortName] &&
-                                (await loadAllPages(currentPost.replies.pageCids[currentSortName], subplebbit.posts))) ||
-                            [];
-                        if (sortNames.length === 1) expect(currentPost.replyCount).to.equal(alreadySortedComments.length); // If sort with no timeframe then sortedComments should equal post.replyCount
-                        return testListOfSortedComments(alreadySortedComments, currentSortName);
-                    });
-            })
-        );
-    } else
-        await Promise.all(
-            sortNames.map(async (currentSortName) => {
-                const alreadySortedComments =
-                    (subplebbit.posts.pageCids[currentSortName] &&
-                        (await loadAllPages(subplebbit.posts.pageCids[currentSortName], subplebbit.posts))) ||
-                    [];
-                return testListOfSortedComments(alreadySortedComments, currentSortName);
-            })
-        );
-
-    console.log(`Passed all tests for sort ${sort.type}`);
+        const sort = { ...POSTS_SORT_TYPES, ...REPLIES_SORT_TYPES }[sortName];
+        const scoreA = sort.score(sortedComments[j]);
+        const scoreB = sort.score(sortedComments[j + 1]);
+        expect(scoreA).to.be.greaterThanOrEqual(scoreB);
+    }
+    console.log(`Passed tests for current sort ${sortName}`);
 };
 
-const postSortObjects = [
-    { type: "new", scoreFunction: newScore },
-    {
-        type: "top",
-        scoreFunction: topScore
-    },
-    {
-        type: "controversial",
-        scoreFunction: controversialScore
-    },
-    {
-        type: "hot",
-        scoreFunction: hotScore
-    }
-];
+const testPostsSort = async (sortName) => {
+    const posts = await loadAllPages(subplebbit.posts.pageCids[sortName], subplebbit.posts);
 
-const repliesSortObjects = [...postSortObjects, { type: "old", scoreFunction: oldScore }];
+    subCommentPages[sortName] = posts;
+
+    testListOfSortedComments(posts, sortName);
+    return posts;
+};
+
+const testRepliesSort = async (parentComments, replySortName) => {
+    for (const comment of parentComments) {
+        if (comment.replyCount === 0) {
+            expect(comment.replies.pageCids).to.be.undefined;
+            expect(comment.replies.pages).to.deep.equal({});
+            continue;
+        }
+
+        expect(Object.keys(comment.replies.pageCids)).to.deep.equal(Object.keys(REPLIES_SORT_TYPES));
+        expect(comment.replies.pages.topAll.comments.length).to.equal(comment.replyCount);
+        const commentPages = await loadAllPages(comment.replies.pageCids[replySortName], subplebbit.posts);
+        expect(commentPages.length).to.equal(comment.replyCount);
+        testListOfSortedComments(commentPages, replySortName);
+        await testRepliesSort(commentPages, replySortName);
+    }
+};
 
 describe("Test pages sorting", async () => {
+    let plebbit;
     before(async () => {
         plebbit = await mockPlebbit();
+        await publishRandomPost(subplebbitAddress, plebbit); // After publishing this post the subplebbit should have all pages
         subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-        posts = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
     });
 
     describe("subplebbit.posts", async () => {
         it(`Hot page is pre-loaded`, async () => expect(Object.keys(subplebbit.posts.pages)).to.deep.equal(["hot"]));
-        postSortObjects.map((sort) => it(`${sort.type} pages are sorted correctly`, async () => await testSorting(sort, false)));
+        it(`All pageCids exists`, () => {
+            expect(Object.keys(subplebbit.posts.pageCids).sort()).to.deep.equal(Object.keys(POSTS_SORT_TYPES).sort());
+        });
+        Object.keys(POSTS_SORT_TYPES).map((sortName) =>
+            it(`${sortName} pages are sorted correctly`, async () => await testPostsSort(sortName))
+        );
+        it(`posts are the same within all pages`, async () => {
+            // We need to separate pages by timeframe
+
+            const pagesByTimeframe = lodash.groupBy(Object.entries(POSTS_SORT_TYPES), ([_, sort]) => sort.timeframe);
+
+            for (const pagesGrouped of Object.values(pagesByTimeframe)) {
+                const pages = pagesGrouped.map(([sortName, _]) => subCommentPages[sortName]);
+                expect(pages.length).to.be.greaterThanOrEqual(2);
+                expect(pages.map((page) => page.length).every((val, i, arr) => val === arr[0])).to.be.true; // All pages are expected to have the same length
+
+                for (const comment of pages[0]) {
+                    const otherPageComments = pages.map((page) => page.find((c) => c.cid === comment.cid));
+                    expect(otherPageComments.length).to.equal(pages.length)
+                    for (const otherPageComment of otherPageComments) expect(comment).to.deep.equal(otherPageComment);
+                }
+            }
+        });
     });
 
     describe("comment.replies", async () => {
-        repliesSortObjects.map((sort) =>
-            it(`${sort.type} pages under a comment are sorted correctly`, async () => await testSorting(sort, true))
+        let posts;
+        before(async () => {
+            posts = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
+        });
+        Object.keys(REPLIES_SORT_TYPES).map((sortName) =>
+            it(`${sortName} pages under a comment are sorted correctly`, async () => await testRepliesSort(posts, sortName))
         );
     });
 });

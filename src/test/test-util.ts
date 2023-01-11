@@ -9,6 +9,7 @@ import { Subplebbit } from "../subplebbit";
 import { CommentType, CreateCommentOptions, PostType, SignerType } from "../types";
 import isIPFS from "is-ipfs";
 import Publication from "../publication";
+import waitUntil from "async-wait-until";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -318,42 +319,33 @@ export async function mockPlebbit(dataPath?: string) {
 }
 
 async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
-    const loadedSub = await plebbit.getSubplebbit(comment.subplebbitAddress);
-    //@ts-ignore
-    loadedSub._updateIntervalMs = comment._updateIntervalMs = 300;
-    await loadedSub.update();
-    await comment.publish();
-
-    await new Promise((resolve) =>
-        comment.once("challengeverification", (verificationMsg) => {
-            if (!verificationMsg.challengeSuccess) throw Error(`Failed to publish comment due to (${verificationMsg.reason})`);
-            else resolve(1);
-        })
-    );
-
     await comment.update();
 
-    if (comment.depth === 0)
-        await new Promise((resolve) =>
-            loadedSub.on("update", () => loadedSub.posts.pages?.hot?.comments?.some((post) => post.cid === comment.cid) && resolve(1))
+    if (comment.depth === 0) {
+        const loadedSub = await plebbit.getSubplebbit(comment.subplebbitAddress);
+        //@ts-ignore
+        loadedSub._updateIntervalMs = comment._updateIntervalMs = 200;
+        await loadedSub.update();
+
+        await waitUntil(
+            async () => {
+                const newComments = await loadAllPages(loadedSub.posts.pageCids.new, loadedSub.posts);
+                return newComments.some((commentInPage) => commentInPage.cid === comment.cid);
+            },
+            { timeout: 100000 }
         );
-    else {
+        await loadedSub.stop();
+    } else {
         const parentComment = await plebbit.getComment(comment.parentCid);
         //@ts-ignore
-        parentComment._updateIntervalMs = 300;
-        await Promise.all([
-            parentComment.update(),
-            new Promise((resolve) =>
-                parentComment.on(
-                    "update",
-                    () => parentComment.replies.pages.topAll?.comments?.some((tComment) => tComment.cid === comment.cid) && resolve(1)
-                )
-            )
-        ]);
+        parentComment._updateIntervalMs = 200;
+        await parentComment.update();
+
+        await waitUntil(() => parentComment.replies.pages.topAll?.comments?.some((tComment) => tComment.cid === comment.cid), {
+            timeout: 20000
+        });
         parentComment.stop();
     }
-
-    loadedSub.stop() && comment.stop();
 }
 
 export async function publishRandomReply(parentComment: Comment, plebbit: Plebbit, commentProps: Partial<CommentType>): Promise<Comment> {
@@ -361,6 +353,7 @@ export async function publishRandomReply(parentComment: Comment, plebbit: Plebbi
         content: `Content ${Date.now() + Math.random()}`,
         ...commentProps
     });
+    await publishWithExpectedResult(reply, true);
     await _waitTillCommentIsOnline(reply, plebbit);
     return reply;
 }
@@ -370,6 +363,7 @@ export async function publishRandomPost(subplebbitAddress: string, plebbit: Pleb
         content: `Content ${Date.now() + Math.random()}`,
         ...postProps
     });
+    await publishWithExpectedResult(post, true);
     await _waitTillCommentIsOnline(post, plebbit);
     return post;
 }
