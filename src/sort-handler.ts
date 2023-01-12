@@ -221,12 +221,9 @@ export class SortHandler {
             this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", pageOptions, trx)
         ]);
         const res = await Promise.all(
-            sorts
-                .map(
-                    (sort, i) =>
-                        sort.length > 0 && this.sortComments(sort, Object.keys(REPLIES_SORT_TYPES)[i] as ReplySortName, pageOptions)
-                )
-                .filter(Boolean)
+            sorts.map(
+                (sort, i) => sort.length > 0 && this.sortComments(sort, Object.keys(REPLIES_SORT_TYPES)[i] as ReplySortName, pageOptions)
+            )
         );
 
         return this._generationResToPages(res);

@@ -376,8 +376,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         ]);
 
         this.posts = new Pages({
-            pages: lodash.pick(subplebbitPosts?.pages, "hot") ,
-            pageCids: subplebbitPosts?.pageCids ,
+            pages: subplebbitPosts ? lodash.pick(subplebbitPosts.pages, "hot") : {},
+            pageCids: subplebbitPosts ? subplebbitPosts.pageCids : {},
             subplebbit: subplebbitPosts?.subplebbit
         });
 
@@ -644,14 +644,14 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPost(trx))?.cid);
                 await this._insertAuthorIfNotInDb(postOrCommentOrVote.author.toJSONForDb(), trx);
 
-                await this.dbHandler.commitTransaction(challengeRequestId);
                 postOrCommentOrVote.setDepth(0);
                 const file = await this.plebbit.ipfsClient.add(encode(postOrCommentOrVote.toJSONIpfs()));
                 postOrCommentOrVote.setPostCid(file.path);
                 postOrCommentOrVote.setCid(file.path);
                 postOrCommentOrVote.original = lodash.pick(postOrCommentOrVote.toJSON(), ["author", "content", "flair"]);
 
-                await this.dbHandler.insertComment(postOrCommentOrVote.toJSONForDb(challengeRequestId));
+                await this.dbHandler.insertComment(postOrCommentOrVote.toJSONForDb(challengeRequestId), trx);
+                await this.dbHandler.commitTransaction(challengeRequestId);
 
                 postOrCommentOrVote.ipnsKeyName = postOrCommentOrVote.original = undefined; // so that ipnsKeyName and original would not be included in ChallengeVerification
                 log(`(${challengeRequestId}): `, `New post with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
@@ -668,7 +668,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 ]);
 
                 await this._insertAuthorIfNotInDb(postOrCommentOrVote.author.toJSONForDb(), trx);
-                await this.dbHandler.commitTransaction(challengeRequestId);
 
                 postOrCommentOrVote.setPreviousCid(commentsUnderParent[0]?.cid);
                 postOrCommentOrVote.setDepth(parent.depth + 1);
@@ -677,7 +676,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 postOrCommentOrVote.setCid(file.path);
                 postOrCommentOrVote.original = lodash.pick(postOrCommentOrVote.toJSON(), ["author", "content", "flair"]);
 
-                await this.dbHandler.insertComment(postOrCommentOrVote.toJSONForDb(challengeRequestId));
+                await this.dbHandler.insertComment(postOrCommentOrVote.toJSONForDb(challengeRequestId), trx);
+                await this.dbHandler.commitTransaction(challengeRequestId);
 
                 postOrCommentOrVote.ipnsKeyName = postOrCommentOrVote.original = undefined; // so that ipnsKeyName would not be included in ChallengeVerification
                 log(`(${challengeRequestId}): `, `New comment with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
