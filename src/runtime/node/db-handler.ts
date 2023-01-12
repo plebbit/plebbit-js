@@ -55,6 +55,7 @@ const defaultPageOption: PageOptions = {
     excludeRemovedComments: false,
     ensurePinnedCommentsAreOnTop: false,
     excludeCommentsWithDifferentSubAddress: true,
+    excludeCommentsWithNoUpdate: false,
     pageSize: 50
 };
 
@@ -481,6 +482,7 @@ export class DbHandler {
         if (options.excludeCommentsWithDifferentSubAddress) query = query.where({ subplebbitAddress: this._subplebbit.address });
         if (options.excludeRemovedComments) query = query.whereNot("removed", 1);
         if (options.excludeDeletedComments) query = query.andWhereRaw("`deleted` is not 1");
+        if (options.excludeCommentsWithNoUpdate) query = query.whereNotNull("updatedAt");
 
         return query;
     }

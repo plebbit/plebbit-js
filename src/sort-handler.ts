@@ -37,6 +37,7 @@ export type PageOptions = {
     excludeRemovedComments: boolean;
     excludeDeletedComments: boolean;
     excludeCommentsWithDifferentSubAddress: boolean;
+    excludeCommentsWithNoUpdate: boolean;
     ensurePinnedCommentsAreOnTop: boolean;
     pageSize: number;
 };
@@ -84,8 +85,7 @@ export class SortHandler {
     async sortComments(comments: CommentType[], sortName: PostSortName | ReplySortName, options: PageOptions): Promise<PageGenerationRes> {
         let commentsSorted: CommentType[];
         const sortProps: SortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
-        if (sortProps.hasOwnProperty("score") && typeof sortProps.score !== "function")
-            throw Error(`SortProps[${sortName}] is not defined`);
+        if (typeof sortProps.score !== "function") throw Error(`SortProps[${sortName}] is not defined`);
 
         if (sortProps.dbSorted) commentsSorted = comments; // already sorted
         else
@@ -167,7 +167,7 @@ export class SortHandler {
     }
 
     private _generationResToPages(res: PageGenerationRes[]): Pages | undefined {
-        res = res.filter((res) => Boolean(res));
+        res = res.filter((res) => Boolean(res)); // Take out undefined values
         if (res.length === 0) return undefined;
         const mergedObject: PageGenerationRes = Object.assign({}, ...res);
         const pages = new Pages({
@@ -209,6 +209,7 @@ export class SortHandler {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: false,
             excludeRemovedComments: false,
+            excludeCommentsWithNoUpdate: true,
             pageSize: 50
         };
         // Promises have to be in the same order as REPLIES_SORT_TYPES => [topAll, new, controversialAll, old]
@@ -220,7 +221,12 @@ export class SortHandler {
             this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", pageOptions, trx)
         ]);
         const res = await Promise.all(
-            sorts.map((sort, i) => this.sortComments(sort, Object.keys(REPLIES_SORT_TYPES)[i] as ReplySortName, pageOptions))
+            sorts
+                .map(
+                    (sort, i) =>
+                        sort.length > 0 && this.sortComments(sort, Object.keys(REPLIES_SORT_TYPES)[i] as ReplySortName, pageOptions)
+                )
+                .filter(Boolean)
         );
 
         return this._generationResToPages(res);
@@ -254,6 +260,7 @@ export class SortHandler {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: true,
             excludeRemovedComments: true,
+            excludeCommentsWithNoUpdate: true,
             pageSize: 50
         };
         const subplebbitPostCount = await this.subplebbit.dbHandler!.queryCountOfPosts(pageOptions, trx);

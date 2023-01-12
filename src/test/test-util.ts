@@ -319,8 +319,8 @@ export async function mockPlebbit(dataPath?: string) {
 }
 
 async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
-    await comment.update();
-
+    //@ts-ignore
+    comment._updateIntervalMs = 200;
     if (comment.depth === 0) {
         const loadedSub = await plebbit.getSubplebbit(comment.subplebbitAddress);
         //@ts-ignore
@@ -329,6 +329,7 @@ async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
 
         await waitUntil(
             async () => {
+                if (!loadedSub.posts.pageCids?.new) return false;
                 const newComments = await loadAllPages(loadedSub.posts.pageCids.new, loadedSub.posts);
                 return newComments.some((commentInPage) => commentInPage.cid === comment.cid);
             },
@@ -342,7 +343,8 @@ async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
         await parentComment.update();
 
         await waitUntil(() => parentComment.replies.pages.topAll?.comments?.some((tComment) => tComment.cid === comment.cid), {
-            timeout: 20000
+            intervalBetweenAttempts: 100,
+            timeout: 200000
         });
         parentComment.stop();
     }
