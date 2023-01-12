@@ -5,10 +5,12 @@ const {
     generateMockComment,
     generateMockVote,
     publishRandomReply,
-    publishWithExpectedResult
+    publishWithExpectedResult,
+    loadAllPages
 } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
+const { default: waitUntil } = require("async-wait-until");
 
 const subplebbitAddress = signers[0].address;
 const updateInterval = 300;
@@ -19,9 +21,12 @@ const roles = [
 ];
 
 describe(`Locking posts`, async () => {
-    let plebbit, postToBeLocked, replyUnderPostToBeLocked;
+    let plebbit, postToBeLocked, replyUnderPostToBeLocked, sub;
     before(async () => {
         plebbit = await mockPlebbit();
+        sub = await plebbit.getSubplebbit(subplebbitAddress);
+        sub._updateIntervalMs = updateInterval;
+        await sub.update();
         postToBeLocked = await publishRandomPost(subplebbitAddress, plebbit);
 
         await postToBeLocked.update();
@@ -29,6 +34,7 @@ describe(`Locking posts`, async () => {
     });
     after(async () => {
         await postToBeLocked.stop();
+        await sub.stop();
     });
     it(`Author can't lock their own post`, async () => {
         const lockedEdit = await plebbit.createCommentEdit({
@@ -48,10 +54,6 @@ describe(`Locking posts`, async () => {
         });
         await publishWithExpectedResult(lockedEdit, false, messages.ERR_UNAUTHORIZED_COMMENT_EDIT);
     });
-
-    it(`Author can't publish a post with locked=true`);
-
-    it(`Author can't publish a comment with locked=true`);
 
     it(`Mod Can't lock a reply`, async () => {
         // This is prior to locking the post
@@ -81,34 +83,33 @@ describe(`Locking posts`, async () => {
         expect(postToBeLocked.moderatorReason).to.equal("To lock a post");
     });
     it(`subplebbit.posts includes locked post with locked=true`, async () => {
-        const sub = await plebbit.getSubplebbit(postToBeLocked.subplebbitAddress);
-        let lockedPostInPage = undefined;
-        const isLockedInPage = async () => {
-            const newPage = await sub.posts.getPage(sub.posts.pageCids.new);
-            lockedPostInPage = newPage.comments.find((comment) => comment.cid === postToBeLocked.cid);
-            return lockedPostInPage.locked === true;
-        };
-        if (!(await isLockedInPage())) {
-            sub._updateIntervalMs = updateInterval;
-            await sub.update();
-            await new Promise((resolve) => sub.on("update", async () => (await isLockedInPage()) && resolve()));
-            await sub.stop();
+        await waitUntil(
+            async () => (await loadAllPages(sub.posts.pageCids.new, sub.posts)).some((c) => c.cid === postToBeLocked.cid && c.locked),
+            { timeout: 200000 }
+        );
+
+        for (const pageCid of Object.values(sub.posts.pageCids)) {
+            const lockedPostInPage = (await loadAllPages(pageCid, sub.posts)).find((c) => c.cid === postToBeLocked.cid);
+            expect(lockedPostInPage.locked).to.be.true;
+            expect(lockedPostInPage.moderatorReason).to.equal("To lock a post");
         }
-        expect(lockedPostInPage.locked).to.be.true;
-        expect(lockedPostInPage.moderatorReason).to.equal("To lock a post");
     });
     it(`Can't publish reply or vote on a locked post`, async () => {
         const [reply, vote] = [await generateMockComment(postToBeLocked, plebbit), await generateMockVote(postToBeLocked, 1, plebbit)];
 
         await Promise.all([reply, vote].map((pub) => publishWithExpectedResult(pub, false, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED)));
     });
-    it(`Can't publish a reply or vote under a reply of a locked post`, async () => {
-        const [reply, vote] = [
-            await generateMockComment(replyUnderPostToBeLocked, plebbit),
-            await generateMockVote(replyUnderPostToBeLocked, 1, plebbit)
-        ];
-        await Promise.all([reply, vote].map((pub) => publishWithExpectedResult(pub, false, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED)));
+
+    it(`Can't vote on a reply of a locked post`, async () => {
+        const vote = await generateMockVote(replyUnderPostToBeLocked, 1, plebbit);
+        await publishWithExpectedResult(vote, false, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
     });
+
+    it(`Can't reply on a reply of a locked post`, async () => {
+        const reply = await generateMockComment(replyUnderPostToBeLocked, plebbit);
+        await publishWithExpectedResult(reply, false, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
+    });
+
     it(`Mod can unlock a post`, async () => {
         const unlockEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToBeLocked.subplebbitAddress,
