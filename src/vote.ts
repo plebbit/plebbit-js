@@ -1,5 +1,5 @@
 import Publication from "./publication";
-import { PublicationTypeName, VoteForDbType, VoteType } from "./types";
+import { PublicationType, PublicationTypeName, VoteForDbType, VoteType } from "./types";
 import { Plebbit } from "./plebbit";
 import isIPFS from "is-ipfs";
 import { verifyVote } from "./signer";
@@ -15,12 +15,15 @@ class Vote extends Publication implements VoteType {
         this.vote = props.vote; // Either 1, 0, -1 (upvote, cancel vote, downvote)
     }
 
-    toJSON(): VoteType {
+    toJSONSkeleton(): VoteType {
         return {
-            ...super.toJSON(),
+            ...super.toJSONSkeleton(),
             commentCid: this.commentCid,
             vote: this.vote
         };
+    }
+    toJSON() {
+        return this.toJSONSkeleton();
     }
 
     getType(): PublicationTypeName {

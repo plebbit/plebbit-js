@@ -188,7 +188,7 @@ class Publication extends EventEmitter implements PublicationType {
 
         this._validateSubFields();
 
-        const encryptedPublication = await encrypt(JSON.stringify(this), this.subplebbit.encryption.publicKey);
+        const encryptedPublication = await encrypt(JSON.stringify(this.toJSONSkeleton()), this.subplebbit.encryption.publicKey);
 
         const toSignMsg: Omit<ChallengeRequestMessageType, "signature"> = {
             type: "CHALLENGEREQUEST",

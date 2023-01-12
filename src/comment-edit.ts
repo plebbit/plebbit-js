@@ -77,9 +77,9 @@ export class CommentEdit extends Publication implements CommentEditType {
         this.commentAuthor = props.commentAuthor;
     }
 
-    toJSON(): CommentEditType {
+    toJSONSkeleton(): CommentEditType {
         return {
-            ...super.toJSON(),
+            ...super.toJSONSkeleton(),
             commentCid: this.commentCid,
             content: this.content,
             reason: this.reason,
@@ -92,6 +92,10 @@ export class CommentEdit extends Publication implements CommentEditType {
             moderatorReason: this.moderatorReason,
             commentAuthor: this.commentAuthor
         };
+    }
+
+    toJSON() {
+        return this.toJSONSkeleton();
     }
 
     toJSONForDb(challengeRequestId: string): CommentEditForDbType {
