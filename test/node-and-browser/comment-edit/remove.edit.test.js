@@ -137,6 +137,7 @@ describe(`Removing post`, async () => {
             const postInPage = pageComments.find((comment) => comment.cid === postToRemove.cid);
             expect(postInPage).to.exist;
             expect(postInPage.removed).to.equal(false);
+            expect(postInPage.moderatorReason).to.equal("To unremove a post");
         }
     });
 });

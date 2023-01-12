@@ -97,7 +97,7 @@ describe(`subplebbit.lastPostCid`, async () => {
     it(`subplebbit.lastPostCid reflects latest post published`, async () => {
         expect(sub.lastPostCid).to.be.undefined;
         const post = await publishRandomPost(sub.address, plebbit);
-        await waitUntil(() => sub.lastPostCid === post.cid, { timeout: 200000 });
+        await waitUntil(() => typeof sub.lastPostCid === "string", { timeout: 200000 });
         expect(sub.lastPostCid).to.equal(post.cid);
     });
 });

@@ -92,7 +92,7 @@ const testListOfSortedComments = (sortedComments, sortName) => {
             expect(sortedComments[j + 1].timestamp).to.be.greaterThanOrEqual(sortStart, errMsg);
             expect(sortedComments[j + 1].timestamp).to.be.lessThanOrEqual(subplebbit.updatedAt, errMsg);
         }
-        if (sortedComments[j].pinned) continue; // Ignore pinned posts as they don't follow regular sorting
+        if (sortedComments[j].pinned || sortedComments[j + 1].pinned) continue; // Ignore pinned posts as they don't follow regular sorting
 
         const sort = { ...POSTS_SORT_TYPES, ...REPLIES_SORT_TYPES }[sortName];
         const scoreA = sort.score(sortedComments[j]);
@@ -129,15 +129,21 @@ const testRepliesSort = async (parentComments, replySortName) => {
 };
 
 describe("Test pages sorting", async () => {
-    let plebbit;
+    let plebbit, newPost;
     before(async () => {
         plebbit = await mockPlebbit();
-        await publishRandomPost(subplebbitAddress, plebbit); // After publishing this post the subplebbit should have all pages
+        newPost = await publishRandomPost(subplebbitAddress, plebbit); // After publishing this post the subplebbit should have all pages
         subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
     });
 
     describe("subplebbit.posts", async () => {
-        it(`Hot page is pre-loaded`, async () => expect(Object.keys(subplebbit.posts.pages)).to.deep.equal(["hot"]));
+        it(`Newly published post appears in all subplebbit.posts.pageCids`, async () => {
+            for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
+                const pageComments = await loadAllPages(pageCid, subplebbit.posts);
+                expect(pageComments.some((c) => c.cid === newPost.cid)).to.be.true;
+            }
+        });
+        it(`Hot page is pre-loaded`, () => expect(Object.keys(subplebbit.posts.pages)).to.deep.equal(["hot"]));
         it(`All pageCids exists`, () => {
             expect(Object.keys(subplebbit.posts.pageCids).sort()).to.deep.equal(Object.keys(POSTS_SORT_TYPES).sort());
         });
@@ -156,7 +162,7 @@ describe("Test pages sorting", async () => {
 
                 for (const comment of pages[0]) {
                     const otherPageComments = pages.map((page) => page.find((c) => c.cid === comment.cid));
-                    expect(otherPageComments.length).to.equal(pages.length)
+                    expect(otherPageComments.length).to.equal(pages.length);
                     for (const otherPageComment of otherPageComments) expect(comment).to.deep.equal(otherPageComment);
                 }
             }
