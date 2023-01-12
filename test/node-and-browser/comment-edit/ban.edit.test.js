@@ -51,8 +51,7 @@ describe(`Banning authors`, async () => {
     });
 
     it(`A new CommentUpdate with comment.author.banExpiresAt is published`, async () => {
-        if (typeof commentToBeBanned.author.banExpiresAt !== "number")
-            await new Promise((resolve) => commentToBeBanned.once("update", resolve));
+        await waitUntil(() => typeof commentToBeBanned.author.banExpiresAt === "number", { timeout: 200000 });
         expect(commentToBeBanned.author.banExpiresAt).to.equals(authorBanExpiresAt);
     });
 
