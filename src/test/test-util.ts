@@ -375,7 +375,7 @@ export async function publishWithExpectedResult(publication: Publication, expect
     await new Promise((resolve, reject) =>
         publication.once("challengeverification", (verificationMsg) => {
             if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
-                const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${verificationMsg.challengeSuccess})`;
+                const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${verificationMsg.challengeSuccess}). Reason (${verificationMsg.reason})`;
                 console.error(msg);
                 reject(msg);
             } else if (expectedReason && expectedReason !== verificationMsg.reason) {
