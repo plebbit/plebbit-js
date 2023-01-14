@@ -1,8 +1,9 @@
 const signers = require("../../fixtures/signers");
-const { mockPlebbit, generateMockPost, publishRandomPost, publishWithExpectedResult } = require("../../../dist/node/test/test-util");
+const { mockPlebbit, generateMockPost, publishRandomPost, publishWithExpectedResult, generateMockComment } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
 const { timestamp } = require("../../../dist/node/util");
+const { default: waitUntil } = require("async-wait-until");
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -24,15 +25,6 @@ describe(`Banning authors`, async () => {
     after(async () => {
         await commentToBeBanned.stop();
     });
-
-    it(`Author can't publish a Post with author.banExpirestAt defined`);
-
-    it(`Author can't publish a Comment with author.banExpirestAt defined`);
-
-    it(`Author can't publish a Vote with author.banExpirestAt defined`);
-
-    it(`Author can't publish a CommentEdit with author.banExpirestAt defined`);
-
 
     it(`Mod can ban an author for a comment`, async () => {
         const banCommentEdit = await plebbit.createCommentEdit({

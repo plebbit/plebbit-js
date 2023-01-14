@@ -11,6 +11,7 @@ import { Plebbit } from "./plebbit";
 
 import {
     AuthorDbType,
+    AuthorType,
     ChallengeAnswerMessageType,
     ChallengeMessageType,
     ChallengeRequestMessageType,
@@ -419,6 +420,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     private async handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string) {
         const log = Logger("plebbit-js:subplebbit:handleCommentEdit");
 
+        const validRes = await verifyCommentEdit(commentEdit, this.plebbit, false);
+
+        if (!validRes.valid) {
+            log(`(${challengeRequestId}): `, validRes.reason);
+            return validRes.reason;
+        }
+
         const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
         const editorAddress = await getPlebbitAddressFromPublicKeyPem(commentEdit.signature.publicKey);
         const modRole = this.roles && this.roles[commentEdit.author.address];
@@ -500,6 +508,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address);
 
+        const validRes = await verifyVote(newVote, this.plebbit, false);
+        if (!validRes.valid) {
+            log(`(${challengeRequestId}): `, validRes.reason);
+            return validRes.reason;
+        }
+
         if (lastVote && newVote.signature.publicKey !== lastVote.signature.publicKey) {
             const msg = `Author (${newVote.author.address}) attempted to change vote on (${newVote.commentCid}) without having correct credentials`;
             log(`(${challengeRequestId}): `, msg);
@@ -522,6 +536,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         delete this._challengeToSolution[challengeRequestId];
         delete this._challengeToPublication[challengeRequestId];
 
+        if (publication.signer) {
+            log(`(${challengeRequestId}): `, messages.ERR_FORBIDDEN_SIGNER_FIELD);
+            return messages.ERR_FORBIDDEN_SIGNER_FIELD;
+        }
+
         const postOrCommentOrVote: Vote | CommentEdit | Post | Comment = publication.hasOwnProperty("vote")
             ? await this.plebbit.createVote(<VoteType>publication)
             : publication["commentCid"]
@@ -543,6 +562,17 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const msg = `Rejecting ${postOrCommentOrVote.constructor.name} because it doesn't have author.address`;
             log(`(${challengeRequestId}): `, msg);
             return msg;
+        }
+
+        const forbiddenAuthorFields: (keyof AuthorType)[] = ["subplebbit", "flair", "banExpiresAt", "previousCommentCid"];
+
+        if (
+            Object.keys(removeKeysWithUndefinedValues(publication.author)).some((key: keyof AuthorType) =>
+                forbiddenAuthorFields.includes(key)
+            )
+        ) {
+            log(`(${challengeRequestId}): `, messages.ERR_FORBIDDEN_AUTHOR_FIELD);
+            return messages.ERR_FORBIDDEN_AUTHOR_FIELD;
         }
 
         if (!(postOrCommentOrVote instanceof Post)) {
@@ -597,20 +627,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             }
         }
 
-        const signatureValidity =
-            postOrCommentOrVote instanceof Comment
-                ? await verifyComment(postOrCommentOrVote, this.plebbit, false)
-                : postOrCommentOrVote instanceof Vote
-                ? await verifyVote(postOrCommentOrVote, this.plebbit, false)
-                : await verifyCommentEdit(postOrCommentOrVote, this.plebbit, false);
-
-        if (!signatureValidity.valid) {
-            const msg = `Author (${postOrCommentOrVote.author.address}) ${postOrCommentOrVote.getType()}'s signature is invalid due to '${
-                signatureValidity.reason
-            }'`;
-            log(`(${challengeRequestId}): `, msg);
-            return <string>signatureValidity.reason;
-        }
         if (postOrCommentOrVote instanceof Vote) {
             const res = await this.handleVote(postOrCommentOrVote, challengeRequestId);
             if (res) return res;
@@ -618,6 +634,44 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const res = await this.handleCommentEdit(postOrCommentOrVote, challengeRequestId);
             if (res) return res;
         } else if (postOrCommentOrVote instanceof Comment) {
+            const forbiddenCommentFields: (keyof CommentType | "deleted")[] = [
+                "cid",
+                "signer",
+                "ipnsKeyName",
+                "previousCid",
+                "ipnsName",
+                "depth",
+                "postCid",
+                "original",
+                "upvoteCount",
+                "downvoteCount",
+                "replyCount",
+                "updatedAt",
+                "replies",
+                "authorEdit",
+                "deleted",
+                "pinned",
+                "locked",
+                "removed",
+                "moderatorReason"
+            ];
+
+            if (
+                Object.keys(removeKeysWithUndefinedValues(publication)).some((key: keyof CommentType) =>
+                    forbiddenCommentFields.includes(key)
+                )
+            ) {
+                log(`(${challengeRequestId}): `, messages.ERR_FORBIDDEN_COMMENT_FIELD);
+                return messages.ERR_FORBIDDEN_COMMENT_FIELD;
+            }
+
+            const validRes = await verifyComment(postOrCommentOrVote, this.plebbit, false);
+
+            if (!validRes.valid) {
+                log(`(${challengeRequestId}): `, validRes.reason);
+                return validRes.reason;
+            }
+
             // Comment and Post need to add file to ipfs
             const ipnsKeyName = sha256(encode(postOrCommentOrVote.toJSONSkeleton()));
 
@@ -987,7 +1041,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             }
             return newIpns;
         }
-        log.trace(`Comment (${dbComment.cid}) is up-to-date and does not need syncing`);
     }
 
     private async _listenToIncomingRequests() {
@@ -1005,7 +1058,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const log = Logger("plebbit-js:subplebbit:sync");
 
         await this._listenToIncomingRequests();
-        log.trace("Starting to sync IPNS with DB");
         try {
             const dbComments = await this.dbHandler.queryComments();
             await Promise.all(

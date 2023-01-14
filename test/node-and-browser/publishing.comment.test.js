@@ -1,11 +1,12 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { generateMockPost, generateMockComment, publishRandomReply } = require("../../dist/node/test/test-util");
+const { generateMockPost, generateMockComment, publishRandomReply, publishWithExpectedResult } = require("../../dist/node/test/test-util");
 const lodash = require("lodash");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 const { default: waitUntil } = require("async-wait-until");
+const messages = require("../../dist/node/errors");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -193,6 +194,73 @@ describe("publishing", async () => {
             expect(parentLatestCommentCid).to.equal(reply.cid);
             mockComments.push(reply);
             await parentComment.stop();
+        })
+    );
+});
+
+// TODO include tests for replies later. Not needed as of now
+describe(`Posts with forbidden fields are rejected during challenge exchange`, async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
+    const forbiddenFieldsWithValue = [
+        { cid: "Qm12345" },
+        { signer: signers[1] },
+        { ipnsKeyName: "adwad2" },
+        { previousCid: "Qm12345" },
+        { ipnsName: "Qm12345" },
+        { depth: 0 },
+        { postCid: "Qm12345" },
+        { original: { Test: " hello" } },
+        { upvoteCount: 1 },
+        { downvoteCount: 1 },
+        { replyCount: 1 },
+        { updatedAt: 1234567 },
+        { replies: { test: "testl" } },
+        { authorEdit: { test: "werw" } },
+        { deleted: true },
+        { pinned: true },
+        { locked: true },
+        { removed: true },
+        { moderatorReason: "Test forbidden" }
+    ];
+    forbiddenFieldsWithValue.map((forbiddenType) =>
+        it(`comment.${Object.keys(forbiddenType)[0]} is rejected by sub`, async () => {
+            const post = await generateMockPost(subplebbitAddress, plebbit, undefined, undefined);
+            const postSkeletonJsonPrior = post.toJSONSkeleton();
+            const postJsonPrior = post.toJSON();
+            post.toJSONSkeleton = () => ({ ...postSkeletonJsonPrior, ...forbiddenType });
+            post.toJSON = () => postJsonPrior;
+            await publishWithExpectedResult(
+                post,
+                false,
+                Object.keys(forbiddenType)[0] === "signer" ? messages.ERR_FORBIDDEN_SIGNER_FIELD : messages.ERR_FORBIDDEN_COMMENT_FIELD
+            );
+        })
+    );
+});
+
+describe("Posts with forbidden author fields are rejected", async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
+    const forbiddenFieldsWithValue = [
+        { subplebbit: { lastCommentCid: "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs", postScore: 0, replyScore: 0 } },
+        { flair: { text: "12345" } },
+        { banExpiresAt: 0 },
+        { previousCommentCid: "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs" }
+    ];
+
+    forbiddenFieldsWithValue.map((forbiddenType) =>
+        it(`comment.author.${Object.keys(forbiddenType)[0]} is rejected by sub`, async () => {
+            const post = await generateMockPost(subplebbitAddress, plebbit, undefined, undefined);
+            const postSkeletonJsonPrior = post.toJSONSkeleton();
+            const postJsonPrior = post.toJSON();
+            post.toJSONSkeleton = () => ({ ...postSkeletonJsonPrior, author: { ...postSkeletonJsonPrior.author, ...forbiddenType } });
+            post.toJSON = () => postJsonPrior;
+            await publishWithExpectedResult(post, false, messages.ERR_FORBIDDEN_AUTHOR_FIELD);
         })
     );
 });
