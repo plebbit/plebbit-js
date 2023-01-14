@@ -5,7 +5,7 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const { messages } = require("../../dist/node/errors");
-const { mockPlebbit } = require("../../dist/node/test/test-util");
+const { mockPlebbit, publishWithExpectedResult } = require("../../dist/node/test/test-util");
 
 const mockComments = [];
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
@@ -15,31 +15,24 @@ describe("Comments with Authors as domains", async () => {
     before(async () => {
         plebbit = await mockPlebbit();
     });
-    it(`post.author.address resolves correctly for author plebbit.eth `, async () => {
-        return new Promise(async (resolve) => {
-            // I've mocked plebbit.resolver.resolveAuthorAddressIfNeeded to return signers[6] address for plebbit.eth
-            const mockPost = await plebbit.createComment({
-                author: { displayName: `Mock Author - ${Date.now()}`, address: "plebbit.eth" },
-                signer: signers[6],
-                content: `Mock post - ${Date.now()}`,
-                title: "Mock post title",
-                subplebbitAddress: signers[0].address
-            });
-
-            await mockPost.publish();
-            expect(mockPost.author.address).to.equal("plebbit.eth");
-            expect(await plebbit.resolver.resolveAuthorAddressIfNeeded(mockPost.author.address)).to.equal(signers[6].address);
-
-            mockPost.once("challengeverification", async (challengeVerificationMessage, _) => {
-                expect(mockPost.author.address).to.equal("plebbit.eth");
-                expect(await plebbit.resolver.resolveAuthorAddressIfNeeded(mockPost.author.address)).to.equal(signers[6].address);
-                expect(mockPost.ipnsKeyName).to.be.undefined;
-                expect(challengeVerificationMessage.challengeSuccess).to.be.true;
-                mockComments.push(mockPost);
-
-                resolve();
-            });
+    it(`Sub accepts posts with author.address as a domain that resolves to comment signer `, async () => {
+        // I've mocked plebbit.resolver.resolveAuthorAddressIfNeeded to return signers[6] address for plebbit.eth
+        const mockPost = await plebbit.createComment({
+            author: { displayName: `Mock Author - ${Date.now()}`, address: "plebbit.eth" },
+            signer: signers[6],
+            content: `Mock post - ${Date.now()}`,
+            title: "Mock post title",
+            subplebbitAddress: signers[0].address
         });
+        expect(await plebbit.resolver.resolveAuthorAddressIfNeeded(mockPost.author.address)).to.equal(signers[6].address);
+
+        expect(mockPost.author.address).to.equal("plebbit.eth");
+
+        await publishWithExpectedResult(mockPost, true);
+
+        expect(mockPost.author.address).to.equal("plebbit.eth");
+        expect(mockPost.ipnsKeyName).to.be.undefined;
+        mockComments.push(mockPost);
     });
 
     it(`Subplebbit rejects a comment if plebbit-author-address points to a different address than signer`, async () => {
@@ -56,16 +49,10 @@ describe("Comments with Authors as domains", async () => {
             subplebbitAddress: signers[0].address
         });
 
-        await mockPost.publish();
         expect(mockPost.author.address).to.equal("testgibbreish.eth");
 
-        await new Promise((resolve) => {
-            mockPost.once("challengeverification", async (challengeVerificationMessage, updatedComment) => {
-                expect(challengeVerificationMessage.challengeSuccess).to.be.false;
-                expect(challengeVerificationMessage.reason).to.equal(messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE);
-                resolve();
-            });
-        });
+        await publishWithExpectedResult(mockPost, false, messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE);
+        expect(mockPost.author.address).to.equal("testgibbreish.eth");
     });
 
     it(`getComment corrects author.address to derived address in case plebbit-author-address points to another address`, async () => {
@@ -96,17 +83,8 @@ describe(`Vote with authors as domains`, async () => {
             vote: -1,
             subplebbitAddress: subplebbit.address
         });
-
-        await vote.publish();
         expect(vote.author.address).to.equal("testgibbreish.eth");
-
-        await new Promise((resolve) => {
-            vote.once("challengeverification", async (challengeVerificationMessage, _) => {
-                expect(challengeVerificationMessage.challengeSuccess).to.be.false;
-                expect(challengeVerificationMessage.reason).to.equal(messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE);
-
-                resolve();
-            });
-        });
+        await publishWithExpectedResult(vote, false, messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE);
+        expect(vote.author.address).to.equal("testgibbreish.eth");
     });
 });
