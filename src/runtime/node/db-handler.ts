@@ -659,6 +659,11 @@ export class DbHandler {
         return (await this._createCommentsFromRows(commentObj))[0];
     }
 
+    async queryPinnedComments(parentCid: string | undefined, trx?: Transaction): Promise<CommentType[] | PostType[]> {
+        parentCid = parentCid || null;
+        return this._createCommentsFromRows(await this._baseCommentQuery(trx).where({ parentCid, pinned: true }));
+    }
+
     async queryLatestPost(trx?: Transaction): Promise<PostType | undefined> {
         const commentObj = await this._baseCommentQuery(trx).whereNotNull("title").orderBy("id", "desc").first();
         // @ts-ignore
