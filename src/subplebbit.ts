@@ -676,11 +676,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const ipnsKeyName = sha256(encode(postOrCommentOrVote.toJSONSkeleton()));
 
             if (await this.dbHandler.querySigner(ipnsKeyName)) {
-                const msg = `Failed to insert ${
-                    postOrCommentOrVote.constructor.name
-                } due to previous ${postOrCommentOrVote.getType()} having same ipns key name (duplicate?)`;
-                log(`(${challengeRequestId}): `, msg);
-                return msg;
+                log(`(${challengeRequestId}): `, messages.ERR_DUPLICATE_COMMENT);
+                return messages.ERR_DUPLICATE_COMMENT;
             }
 
             const ipfsSigner = new Signer({
