@@ -240,7 +240,7 @@ var Publication = /** @class */ (function (_super) {
                     case 1:
                         _a.subplebbit = _f.sent();
                         this._validateSubFields();
-                        return [4 /*yield*/, (0, signer_1.encrypt)(JSON.stringify(this), this.subplebbit.encryption.publicKey)];
+                        return [4 /*yield*/, (0, signer_1.encrypt)(JSON.stringify(this.toJSONSkeleton()), this.subplebbit.encryption.publicKey)];
                     case 2:
                         encryptedPublication = _f.sent();
                         toSignMsg = {

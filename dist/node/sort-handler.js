@@ -59,7 +59,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SortHandler = exports.SORTED_POSTS_PAGE_SIZE = exports.REPLIES_SORT_TYPES = exports.POSTS_SORT_TYPES = void 0;
+exports.SortHandler = exports.REPLIES_SORT_TYPES = exports.POSTS_SORT_TYPES = void 0;
 var util_1 = require("./util");
 var pages_1 = require("./pages");
 var assert_1 = __importDefault(require("assert"));
@@ -73,80 +73,120 @@ exports.POSTS_SORT_TYPES = {
                 args[_i] = arguments[_i];
             }
             return util_1.hotScore.apply(void 0, args);
-        } },
-    new: {},
-    topHour: { timeframe: "HOUR" },
-    topDay: { timeframe: "DAY" },
-    topWeek: { timeframe: "WEEK" },
-    topMonth: { timeframe: "MONTH" },
-    topYear: { timeframe: "YEAR" },
-    topAll: { timeframe: "ALL" },
-    controversialHour: { score: function () {
+        }, dbSorted: false },
+    new: { score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return util_1.newScore.apply(void 0, args);
+        }, dbSorted: true },
+    topHour: { timeframe: "HOUR", score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return util_1.topScore.apply(void 0, args);
+        }, dbSorted: true },
+    topDay: { timeframe: "DAY", score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return util_1.topScore.apply(void 0, args);
+        }, dbSorted: true },
+    topWeek: { timeframe: "WEEK", score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return util_1.topScore.apply(void 0, args);
+        }, dbSorted: true },
+    topMonth: { timeframe: "MONTH", score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return util_1.topScore.apply(void 0, args);
+        }, dbSorted: true },
+    topYear: { timeframe: "YEAR", score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return util_1.topScore.apply(void 0, args);
+        }, dbSorted: true },
+    topAll: { timeframe: "ALL", score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return util_1.topScore.apply(void 0, args);
+        }, dbSorted: true },
+    controversialHour: { timeframe: "HOUR", score: function () {
             var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
                 args[_i] = arguments[_i];
             }
             return util_1.controversialScore.apply(void 0, args);
-        }, timeframe: "HOUR" },
+        }, dbSorted: false },
     controversialDay: { timeframe: "DAY", score: function () {
             var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
                 args[_i] = arguments[_i];
             }
             return util_1.controversialScore.apply(void 0, args);
-        } },
+        }, dbSorted: false },
     controversialWeek: { timeframe: "WEEK", score: function () {
             var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
                 args[_i] = arguments[_i];
             }
             return util_1.controversialScore.apply(void 0, args);
-        } },
+        }, dbSorted: false },
     controversialMonth: { timeframe: "MONTH", score: function () {
             var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
                 args[_i] = arguments[_i];
             }
             return util_1.controversialScore.apply(void 0, args);
-        } },
+        }, dbSorted: false },
     controversialYear: { timeframe: "YEAR", score: function () {
             var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
                 args[_i] = arguments[_i];
             }
             return util_1.controversialScore.apply(void 0, args);
-        } },
+        }, dbSorted: false },
     controversialAll: { timeframe: "ALL", score: function () {
             var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
                 args[_i] = arguments[_i];
             }
             return util_1.controversialScore.apply(void 0, args);
-        } }
+        }, dbSorted: false }
 };
-exports.REPLIES_SORT_TYPES = {
-    topAll: { timeframe: "ALL" },
-    new: {},
-    controversialAll: { timeframe: "ALL", score: function () {
+exports.REPLIES_SORT_TYPES = __assign(__assign({}, lodash_1.default.pick(exports.POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"])), { old: {
+        score: function () {
             var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
                 args[_i] = arguments[_i];
             }
-            return util_1.controversialScore.apply(void 0, args);
-        } },
-    old: {}
-};
-exports.SORTED_POSTS_PAGE_SIZE = 50;
+            return util_1.oldScore.apply(void 0, args);
+        },
+        dbSorted: true
+    } });
 var SortHandler = /** @class */ (function () {
     function SortHandler(subplebbit) {
         this.subplebbit = subplebbit;
     }
-    SortHandler.prototype.chunksToListOfPage = function (chunks) {
+    SortHandler.prototype.commentChunksToPages = function (chunks, sortName) {
         return __awaiter(this, void 0, void 0, function () {
             var listOfPage, cids, chunksWithReplies, i, pageComments, page, _a, _b;
+            var _c;
             var _this = this;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
                         (0, assert_1.default)(chunks.length > 0);
                         listOfPage = new Array(chunks.length);
@@ -175,9 +215,9 @@ var SortHandler = /** @class */ (function () {
                                 });
                             }); }))];
                     case 1:
-                        chunksWithReplies = _c.sent();
+                        chunksWithReplies = _d.sent();
                         i = chunksWithReplies.length - 1;
-                        _c.label = 2;
+                        _d.label = 2;
                     case 2:
                         if (!(i >= 0)) return [3 /*break*/, 5];
                         pageComments = chunksWithReplies[i].map(function (c) { return c.toJSONPages(); });
@@ -189,32 +229,30 @@ var SortHandler = /** @class */ (function () {
                         _b = i;
                         return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(page))];
                     case 3:
-                        _a[_b] = (_c.sent()).path;
+                        _a[_b] = (_d.sent()).path;
                         listOfPage[i] = page;
-                        _c.label = 4;
+                        _d.label = 4;
                     case 4:
                         i--;
                         return [3 /*break*/, 2];
-                    case 5: return [2 /*return*/, [listOfPage, cids]];
+                    case 5: return [2 /*return*/, (_c = {}, _c[sortName] = { pages: listOfPage, cids: cids }, _c)];
                 }
             });
         });
     };
     // Resolves to sortedComments
-    SortHandler.prototype.sortComments = function (comments, sortName, limit) {
-        if (limit === void 0) { limit = exports.SORTED_POSTS_PAGE_SIZE; }
+    SortHandler.prototype.sortComments = function (comments, sortName, options) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var commentsSorted, sortProps, commentsChunks, _a, listOfPage, cids, expectedNumOfPages;
-            var _b;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var commentsSorted, sortProps, pinnedComments, commentsChunks, res, listOfPage, expectedNumOfPages;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         sortProps = exports.POSTS_SORT_TYPES[sortName] || exports.REPLIES_SORT_TYPES[sortName];
-                        if (sortProps.hasOwnProperty("score") && typeof sortProps.score !== "function")
+                        if (typeof sortProps.score !== "function")
                             throw Error("SortProps[".concat(sortName, "] is not defined"));
-                        if (!sortProps.score)
-                            commentsSorted = comments;
-                        // If sort type has no score function, that means it already has been sorted by DB
+                        if (sortProps.dbSorted)
+                            commentsSorted = comments; // already sorted
                         else
                             commentsSorted = comments
                                 .map(function (comment) { return ({
@@ -223,133 +261,160 @@ var SortHandler = /** @class */ (function () {
                             }); })
                                 .sort(function (postA, postB) { return postB.score - postA.score; })
                                 .map(function (comment) { return comment.comment; });
-                        commentsChunks = lodash_1.default.chunk(commentsSorted, limit);
-                        return [4 /*yield*/, this.chunksToListOfPage(commentsChunks)];
+                        if (!options.ensurePinnedCommentsAreOnTop) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.subplebbit.dbHandler.queryPinnedComments((_a = comments[0]) === null || _a === void 0 ? void 0 : _a.parentCid)];
                     case 1:
-                        _a = _c.sent(), listOfPage = _a[0], cids = _a[1];
-                        expectedNumOfPages = Math.ceil(comments.length / limit);
+                        pinnedComments = (_b.sent()).sort(function (commentA, commentB) { return sortProps.score(commentB) - sortProps.score(commentA); });
+                        commentsSorted = pinnedComments.concat(commentsSorted.filter(function (comment) { return !comment.pinned; }));
+                        _b.label = 2;
+                    case 2:
+                        if (commentsSorted.length === 0)
+                            return [2 /*return*/, undefined];
+                        commentsChunks = lodash_1.default.chunk(commentsSorted, options.pageSize);
+                        return [4 /*yield*/, this.commentChunksToPages(commentsChunks, sortName)];
+                    case 3:
+                        res = _b.sent();
+                        listOfPage = Object.values(res)[0].pages;
+                        expectedNumOfPages = Math.ceil(commentsSorted.length / options.pageSize);
                         assert_1.default.equal(listOfPage.length, expectedNumOfPages, "Should generate ".concat(expectedNumOfPages, " pages for sort ").concat(sortName, " while it generated ").concat(listOfPage.length));
-                        return [2 /*return*/, [(_b = {}, _b[sortName] = listOfPage[0], _b), cids[0]]];
+                        return [2 /*return*/, res];
                 }
             });
         });
     };
-    SortHandler.prototype.sortCommentsByHot = function (parentCid, trx) {
+    SortHandler.prototype.sortCommentsByHot = function (parentCid, options, trx) {
         return __awaiter(this, void 0, void 0, function () {
             var comments;
-            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsUnderComment(parentCid, trx)];
+                    case 0: return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsUnderComment(parentCid, options, trx)];
                     case 1:
-                        comments = (_a.sent()).filter(function (comment) { var _a; return comment.subplebbitAddress === _this.subplebbit.address && !comment.removed && !((_a = comment === null || comment === void 0 ? void 0 : comment.authorEdit) === null || _a === void 0 ? void 0 : _a.deleted); });
-                        if (comments.length === 0)
-                            return [2 /*return*/, [undefined, undefined]];
-                        return [2 /*return*/, this.sortComments(comments, "hot")];
+                        comments = _a.sent();
+                        return [2 /*return*/, this.sortComments(comments, "hot", options)];
                 }
             });
         });
     };
-    SortHandler.prototype.sortCommentsByTop = function (parentCid, sortName, trx) {
+    SortHandler.prototype.sortCommentsByTop = function (parentCid, sortName, options, trx) {
         return __awaiter(this, void 0, void 0, function () {
             var sortProps, comments;
-            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         sortProps = exports.POSTS_SORT_TYPES[sortName] || exports.REPLIES_SORT_TYPES[sortName];
                         (0, assert_1.default)(sortProps.timeframe, "Need timeframe to sort top");
-                        return [4 /*yield*/, this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(parentCid, (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[sortProps.timeframe], Number.MAX_SAFE_INTEGER, trx)];
+                        return [4 /*yield*/, this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(parentCid, (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[sortProps.timeframe], Number.MAX_SAFE_INTEGER, options, trx)];
                     case 1:
-                        comments = (_a.sent()).filter(function (comment) { var _a; return comment.subplebbitAddress === _this.subplebbit.address && !comment.removed && !((_a = comment === null || comment === void 0 ? void 0 : comment.authorEdit) === null || _a === void 0 ? void 0 : _a.deleted); });
-                        if (comments.length === 0)
-                            return [2 /*return*/, [undefined, undefined]];
-                        return [2 /*return*/, this.sortComments(comments, sortName)];
+                        comments = _a.sent();
+                        return [2 /*return*/, this.sortComments(comments, sortName, options)];
                 }
             });
         });
     };
-    SortHandler.prototype.sortCommentsByControversial = function (parentCid, sortName, trx) {
+    SortHandler.prototype.sortCommentsByControversial = function (parentCid, sortName, options, trx) {
         return __awaiter(this, void 0, void 0, function () {
             var sortProps, comments;
-            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         sortProps = exports.POSTS_SORT_TYPES[sortName] || exports.REPLIES_SORT_TYPES[sortName];
                         (0, assert_1.default)(sortProps.timeframe, "Need timeframe to sort controversial");
-                        return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsBetweenTimestampRange(parentCid, (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[sortProps.timeframe], Number.MAX_SAFE_INTEGER, trx)];
+                        return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsBetweenTimestampRange(parentCid, (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[sortProps.timeframe], Number.MAX_SAFE_INTEGER, options, trx)];
                     case 1:
-                        comments = (_a.sent()).filter(function (comment) { var _a; return comment.subplebbitAddress === _this.subplebbit.address && !comment.removed && !((_a = comment === null || comment === void 0 ? void 0 : comment.authorEdit) === null || _a === void 0 ? void 0 : _a.deleted); });
-                        if (comments.length === 0)
-                            return [2 /*return*/, [undefined, undefined]];
-                        return [2 /*return*/, this.sortComments(comments, sortName)];
+                        comments = _a.sent();
+                        return [2 /*return*/, this.sortComments(comments, sortName, options)];
                 }
             });
         });
     };
-    SortHandler.prototype.sortCommentsByNew = function (parentCid, trx) {
+    SortHandler.prototype.sortCommentsByNew = function (parentCid, options, trx) {
         return __awaiter(this, void 0, void 0, function () {
             var comments;
-            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, "desc", trx)];
+                    case 0: return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(parentCid, "desc", options, trx)];
                     case 1:
-                        comments = (_a.sent()).filter(function (comment) { var _a; return comment.subplebbitAddress === _this.subplebbit.address && !comment.removed && !((_a = comment === null || comment === void 0 ? void 0 : comment.authorEdit) === null || _a === void 0 ? void 0 : _a.deleted); });
-                        if (comments.length === 0)
-                            return [2 /*return*/, [undefined, undefined]];
-                        return [2 /*return*/, this.sortComments(comments, "new")];
+                        comments = _a.sent();
+                        return [2 /*return*/, this.sortComments(comments, "new", options)];
                 }
             });
         });
     };
-    SortHandler.prototype._getPostsPromises = function (trx) {
-        var _this = this;
-        // Sorting posts on a subplebbit level
-        var sortPromises = [this.sortCommentsByHot(undefined, trx), this.sortCommentsByNew(undefined, trx)];
-        Object.keys(exports.POSTS_SORT_TYPES)
-            .filter(function (postSort) { return postSort !== "hot" && postSort !== "new"; })
-            .forEach(function (postSortName) {
-            if (postSortName.includes("controversial"))
-                sortPromises.push(_this.sortCommentsByControversial.bind(_this)(undefined, postSortName, trx));
-            else if (postSortName.includes("top"))
-                sortPromises.push(_this.sortCommentsByTop.bind(_this)(undefined, postSortName, trx));
+    SortHandler.prototype._generationResToPages = function (res) {
+        res = res.filter(function (res) { return Boolean(res); }); // Take out undefined values
+        if (res.length === 0)
+            return undefined;
+        var mergedObject = Object.assign.apply(Object, __spreadArray([{}], res, false));
+        var pages = new pages_1.Pages({
+            pages: Object.assign.apply(Object, __spreadArray([{}], Object.entries(mergedObject).map(function (_a) {
+                var _b;
+                var sortName = _a[0], pages = _a[1];
+                return (_b = {}, _b[sortName] = pages.pages[0], _b);
+            }), false)),
+            pageCids: Object.assign.apply(Object, __spreadArray([{}], Object.entries(mergedObject).map(function (_a) {
+                var _b;
+                var sortName = _a[0], pages = _a[1];
+                return (_b = {}, _b[sortName] = pages.cids[0], _b);
+            }), false)),
+            subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
         });
-        return sortPromises;
+        return pages;
     };
-    SortHandler.prototype._getRepliesPromises = function (comment, trx) {
-        var _this = this;
-        return Object.keys(exports.REPLIES_SORT_TYPES).map(function (sortName) { return __awaiter(_this, void 0, void 0, function () {
-            var comments;
+    SortHandler.prototype._generateSubplebbitPosts = function (trx, pageOptions) {
+        return __awaiter(this, void 0, void 0, function () {
+            var sortPromises, sorts;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        comments = [];
-                        if (!(sortName === "topAll")) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(comment.cid, 0, Number.MAX_SAFE_INTEGER, trx)];
+                        sortPromises = [
+                            this.sortCommentsByHot(undefined, pageOptions, trx),
+                            this.sortCommentsByNew(undefined, pageOptions, trx)
+                        ];
+                        sortPromises.push.apply(sortPromises, Object.keys(exports.POSTS_SORT_TYPES)
+                            .filter(function (key) { return key.startsWith("controversial"); })
+                            .map(function (sortName) { return _this.sortCommentsByControversial.bind(_this)(undefined, sortName, pageOptions, trx); }));
+                        sortPromises.push.apply(sortPromises, Object.keys(exports.POSTS_SORT_TYPES)
+                            .filter(function (key) { return key.startsWith("top"); })
+                            .map(function (sortName) { return _this.sortCommentsByTop.bind(_this)(undefined, sortName, pageOptions, trx); }));
+                        return [4 /*yield*/, Promise.all(sortPromises)];
                     case 1:
-                        comments = _a.sent();
-                        return [3 /*break*/, 6];
-                    case 2:
-                        if (!(sortName === "old")) return [3 /*break*/, 4];
-                        return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", trx)];
-                    case 3:
-                        comments = _a.sent();
-                        return [3 /*break*/, 6];
-                    case 4: return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, trx)];
-                    case 5:
-                        comments = _a.sent();
-                        _a.label = 6;
-                    case 6:
-                        comments = comments.filter(function (comment) { return comment.subplebbitAddress === _this.subplebbit.address; });
-                        if (comments.length === 0)
-                            return [2 /*return*/, [undefined, undefined]];
-                        return [2 /*return*/, this.sortComments(comments, sortName)];
+                        sorts = _a.sent();
+                        return [2 /*return*/, this._generationResToPages(sorts)];
                 }
             });
-        }); });
+        });
+    };
+    SortHandler.prototype._generateCommentReplies = function (comment, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            var pageOptions, sorts, res;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        pageOptions = {
+                            ensurePinnedCommentsAreOnTop: true,
+                            excludeCommentsWithDifferentSubAddress: true,
+                            excludeDeletedComments: false,
+                            excludeRemovedComments: false,
+                            excludeCommentsWithNoUpdate: true,
+                            pageSize: 50
+                        };
+                        return [4 /*yield*/, Promise.all([
+                                this.subplebbit.dbHandler.queryTopCommentsBetweenTimestampRange(comment.cid, 0, Number.MAX_SAFE_INTEGER, pageOptions, trx),
+                                this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "desc", pageOptions, trx),
+                                this.subplebbit.dbHandler.queryCommentsUnderComment(comment.cid, pageOptions, trx),
+                                this.subplebbit.dbHandler.queryCommentsSortedByTimestamp(comment.cid, "asc", pageOptions, trx)
+                            ])];
+                    case 1:
+                        sorts = _a.sent();
+                        return [4 /*yield*/, Promise.all(sorts.map(function (sort, i) { return sort.length > 0 && _this.sortComments(sort, Object.keys(exports.REPLIES_SORT_TYPES)[i], pageOptions); }))];
+                    case 2:
+                        res = _a.sent();
+                        return [2 /*return*/, this._generationResToPages(res)];
+                }
+            });
+        });
     };
     SortHandler.prototype.cacheCommentsPages = function (trx) {
         return __awaiter(this, void 0, void 0, function () {
@@ -381,36 +446,27 @@ var SortHandler = /** @class */ (function () {
     };
     SortHandler.prototype.generateRepliesPages = function (comment, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var cachedReplies, res, _a, pagesRaw, pageCids, _i, res_1, _b, page, pageCid, pages;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var cacheKey, cachedReplies, pages;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
                         if (comment.replyCount === 0)
                             return [2 /*return*/, undefined];
-                        return [4 /*yield*/, this.subplebbit.dbHandler.keyvGet(comment.cid)];
+                        cacheKey = constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.PREFIX_COMMENT_REPLIES_].concat(comment.cid);
+                        return [4 /*yield*/, this.subplebbit.dbHandler.keyvGet(cacheKey)];
                     case 1:
-                        cachedReplies = _c.sent();
+                        cachedReplies = _a.sent();
                         if (cachedReplies)
                             return [2 /*return*/, new pages_1.Pages(__assign(__assign({}, cachedReplies), { subplebbit: this.subplebbit }))];
-                        return [4 /*yield*/, Promise.all(this._getRepliesPromises(comment, trx))];
+                        return [4 /*yield*/, this._generateCommentReplies(comment, trx)];
                     case 2:
-                        res = _c.sent();
-                        _a = [{}, {}], pagesRaw = _a[0], pageCids = _a[1];
-                        for (_i = 0, res_1 = res; _i < res_1.length; _i++) {
-                            _b = res_1[_i], page = _b[0], pageCid = _b[1];
-                            pagesRaw = __assign(__assign({}, pagesRaw), page);
-                            if (page)
-                                pageCids[Object.keys(page)[0]] = pageCid;
-                        }
-                        pages = new pages_1.Pages({
-                            pages: pagesRaw,
-                            pageCids: pageCids,
-                            subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
-                        });
-                        return [4 /*yield*/, this.subplebbit.dbHandler.keyvSet(comment.cid, pages.toJSON())];
+                        pages = _a.sent();
+                        if (!pages) return [3 /*break*/, 4];
+                        return [4 /*yield*/, this.subplebbit.dbHandler.keyvSet(cacheKey, pages.toJSON())];
                     case 3:
-                        _c.sent();
-                        return [2 /*return*/, pages];
+                        _a.sent();
+                        _a.label = 4;
+                    case 4: return [2 /*return*/, pages];
                 }
             });
         });
@@ -418,42 +474,40 @@ var SortHandler = /** @class */ (function () {
     SortHandler.prototype.generateSubplebbitPosts = function (trx) {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
-            var subplebbitPostCount, cachedPosts, res, _c, pagesRaw, pageCids, _i, res_2, _d, page, pageCid, pages;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
-                    case 0: return [4 /*yield*/, this.subplebbit.dbHandler.queryCountOfPosts(this.subplebbit.address, trx)];
+            var pageOptions, subplebbitPostCount, cacheKey, cachedPosts, pages;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        pageOptions = {
+                            ensurePinnedCommentsAreOnTop: true,
+                            excludeCommentsWithDifferentSubAddress: true,
+                            excludeDeletedComments: true,
+                            excludeRemovedComments: true,
+                            excludeCommentsWithNoUpdate: true,
+                            pageSize: 50
+                        };
+                        return [4 /*yield*/, this.subplebbit.dbHandler.queryCountOfPosts(pageOptions, trx)];
                     case 1:
-                        subplebbitPostCount = _e.sent();
+                        subplebbitPostCount = _c.sent();
                         if (subplebbitPostCount === 0)
-                            return [2 /*return*/, new pages_1.Pages({
-                                    pages: {},
-                                    pageCids: {},
-                                    subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
-                                })];
-                        return [4 /*yield*/, ((_a = this.subplebbit.dbHandler) === null || _a === void 0 ? void 0 : _a.keyvGet(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.POSTS_SUBPLEBBIT]))];
+                            return [2 /*return*/, undefined];
+                        cacheKey = constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.POSTS_SUBPLEBBIT];
+                        return [4 /*yield*/, ((_a = this.subplebbit.dbHandler) === null || _a === void 0 ? void 0 : _a.keyvGet(cacheKey))];
                     case 2:
-                        cachedPosts = _e.sent();
+                        cachedPosts = _c.sent();
                         if (cachedPosts)
                             return [2 /*return*/, new pages_1.Pages(__assign(__assign({}, cachedPosts), { subplebbit: this.subplebbit }))];
-                        return [4 /*yield*/, Promise.all(this._getPostsPromises(trx))];
+                        return [4 /*yield*/, this._generateSubplebbitPosts(trx, pageOptions)];
                     case 3:
-                        res = _e.sent();
-                        _c = [{}, {}], pagesRaw = _c[0], pageCids = _c[1];
-                        for (_i = 0, res_2 = res; _i < res_2.length; _i++) {
-                            _d = res_2[_i], page = _d[0], pageCid = _d[1];
-                            pagesRaw = __assign(__assign({}, pagesRaw), page);
-                            if (page)
-                                pageCids[Object.keys(page)[0]] = pageCid;
-                        }
-                        pages = new pages_1.Pages({
-                            pages: pagesRaw,
-                            pageCids: pageCids,
-                            subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
-                        });
-                        return [4 /*yield*/, ((_b = this.subplebbit.dbHandler) === null || _b === void 0 ? void 0 : _b.keyvSet(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.POSTS_SUBPLEBBIT], pages.toJSON()))];
+                        pages = _c.sent();
+                        if (!pages && subplebbitPostCount > 0)
+                            throw Error("Pages are empty even though subplebbit(".concat(this.subplebbit.address, ") has ").concat(subplebbitPostCount, " posts"));
+                        if (!pages)
+                            return [2 /*return*/, undefined];
+                        return [4 /*yield*/, ((_b = this.subplebbit.dbHandler) === null || _b === void 0 ? void 0 : _b.keyvSet(cacheKey, pages.toJSON()))];
                     case 4:
-                        _e.sent();
-                        return [2 /*return*/, pages];
+                        _c.sent();
+                        return [2 /*return*/];
                 }
             });
         });
@@ -461,18 +515,19 @@ var SortHandler = /** @class */ (function () {
     SortHandler.prototype.deleteCommentPageCache = function (dbComment) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log, cachesToDelete, _b;
+            var log, cacheKey, cachesToDelete, _b;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:sort-handler:deleteCommentPageCache");
+                        cacheKey = function (cid) { return constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.PREFIX_COMMENT_REPLIES_].concat(cid); };
                         (0, assert_1.default)(this.subplebbit.dbHandler && dbComment.cid);
                         _b = [[
-                                dbComment.cid
+                                cacheKey(dbComment.cid)
                             ]];
                         return [4 /*yield*/, this.subplebbit.dbHandler.queryParentsOfComment(dbComment, undefined)];
                     case 1:
-                        cachesToDelete = __spreadArray.apply(void 0, [__spreadArray.apply(void 0, _b.concat([(_c.sent()).map(function (comment) { return comment.cid; }), true])), [
+                        cachesToDelete = __spreadArray.apply(void 0, [__spreadArray.apply(void 0, _b.concat([(_c.sent()).map(function (comment) { return cacheKey(comment.cid); }), true])), [
                                 constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.POSTS_SUBPLEBBIT]
                             ], false]);
                         log.trace("Caches to delete: ".concat(cachesToDelete));

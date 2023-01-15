@@ -279,8 +279,9 @@ export declare type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "AL
 export declare type PostSortName = "hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll";
 export declare type ReplySortName = "topAll" | "new" | "old" | "controversialAll";
 export declare type SortProps = {
-    score?: (comment: CommentType) => number;
+    score: (comment: CommentType) => number;
     timeframe?: Timeframe;
+    dbSorted: boolean;
 };
 export declare type PostSort = Record<PostSortName, SortProps>;
 export declare type ReplySort = Record<ReplySortName, SortProps>;

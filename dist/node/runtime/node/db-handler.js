@@ -10,6 +10,29 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -77,6 +100,7 @@ var comment_edit_1 = require("../../comment-edit");
 var constants_1 = require("../../constants");
 var util_3 = require("../../signer/util");
 var signer_1 = require("../../signer");
+var lockfile = __importStar(require("proper-lockfile"));
 var TABLES = Object.freeze({
     COMMENTS: "comments",
     VOTES: "votes",
@@ -85,6 +109,14 @@ var TABLES = Object.freeze({
     SIGNERS: "signers",
     EDITS: "edits"
 });
+var defaultPageOption = {
+    excludeDeletedComments: false,
+    excludeRemovedComments: false,
+    ensurePinnedCommentsAreOnTop: false,
+    excludeCommentsWithDifferentSubAddress: true,
+    excludeCommentsWithNoUpdate: false,
+    pageSize: 50
+};
 var DbHandler = /** @class */ (function () {
     function DbHandler(subplebbit) {
         this._subplebbit = subplebbit;
@@ -769,8 +801,9 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype._baseCommentQuery = function (trx) {
+    DbHandler.prototype._baseCommentQuery = function (trx, options) {
         var _a, _b;
+        if (options === void 0) { options = defaultPageOption; }
         var upvoteQuery = this._baseTransaction(trx)(TABLES.VOTES)
             .count("".concat(TABLES.VOTES, ".vote"))
             .where((_a = {},
@@ -792,7 +825,18 @@ var DbHandler = /** @class */ (function () {
             "comments2.parentCid": this._knex.raw("".concat(TABLES.COMMENTS, ".cid"))
         })
             .as("replyCount");
-        return this._baseTransaction(trx)(TABLES.COMMENTS).select("".concat(TABLES.COMMENTS, ".*"), upvoteQuery, downvoteQuery, replyCountQuery);
+        var query = this._baseTransaction(trx)(TABLES.COMMENTS)
+            .select("".concat(TABLES.COMMENTS, ".*"), upvoteQuery, downvoteQuery, replyCountQuery)
+            .jsonExtract("authorEdit", "$.deleted", "deleted", true);
+        if (options.excludeCommentsWithDifferentSubAddress)
+            query = query.where({ subplebbitAddress: this._subplebbit.address });
+        if (options.excludeRemovedComments)
+            query = query.whereNot("removed", 1);
+        if (options.excludeDeletedComments)
+            query = query.andWhereRaw("`deleted` is not 1");
+        if (options.excludeCommentsWithNoUpdate)
+            query = query.whereNotNull("updatedAt");
+        return query;
     };
     DbHandler.prototype._parseJsonFields = function (obj) {
         var _a, _b;
@@ -865,42 +909,44 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.queryCommentsSortedByTimestamp = function (parentCid, order, trx) {
+    DbHandler.prototype.queryCommentsSortedByTimestamp = function (parentCid, order, options, trx) {
         if (order === void 0) { order = "desc"; }
         return __awaiter(this, void 0, void 0, function () {
-            var commentObj;
+            var comments;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         parentCid = parentCid || null;
-                        return [4 /*yield*/, this._baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", order)];
+                        return [4 /*yield*/, this._baseCommentQuery(trx, options).where({ parentCid: parentCid }).orderBy("timestamp", order)];
                     case 1:
-                        commentObj = _a.sent();
-                        return [2 /*return*/, this._createCommentsFromRows(commentObj)];
+                        comments = _a.sent();
+                        return [2 /*return*/, this._createCommentsFromRows(comments)];
                 }
             });
         });
     };
-    DbHandler.prototype.queryCommentsBetweenTimestampRange = function (parentCid, timestamp1, timestamp2, trx) {
+    DbHandler.prototype.queryCommentsBetweenTimestampRange = function (parentCid, timestamp1, timestamp2, options, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var rawCommentObjs;
+            var finalQuery, rawCommentObjs;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         parentCid = parentCid || null;
                         if (timestamp1 === Number.NEGATIVE_INFINITY)
                             timestamp1 = 0;
-                        return [4 /*yield*/, this._baseCommentQuery(trx)
-                                .where({ parentCid: parentCid })
-                                .whereBetween("timestamp", [timestamp1, timestamp2])];
+                        finalQuery = this._baseCommentQuery(trx, options)
+                            .where({ parentCid: parentCid })
+                            .whereBetween("timestamp", [timestamp1, timestamp2]);
+                        return [4 /*yield*/, finalQuery];
                     case 1:
                         rawCommentObjs = _a.sent();
+                        (0, assert_1.default)(!rawCommentObjs.some(function (comment) { return comment.timestamp < timestamp1 || comment.timestamp > timestamp2; }));
                         return [2 /*return*/, this._createCommentsFromRows(rawCommentObjs)];
                 }
             });
         });
     };
-    DbHandler.prototype.queryTopCommentsBetweenTimestampRange = function (parentCid, timestamp1, timestamp2, trx) {
+    DbHandler.prototype.queryTopCommentsBetweenTimestampRange = function (parentCid, timestamp1, timestamp2, options, trx) {
         return __awaiter(this, void 0, void 0, function () {
             var topScoreQuery, rawCommentsObjs;
             var _a, _b;
@@ -916,7 +962,7 @@ var DbHandler = /** @class */ (function () {
                             _a["".concat(TABLES.COMMENTS, ".cid")] = this._knex.raw("".concat(TABLES.VOTES, ".commentCid")),
                             _a))
                             .as("topScore");
-                        return [4 /*yield*/, this._baseCommentQuery(trx)
+                        return [4 /*yield*/, this._baseCommentQuery(trx, options)
                                 .select(topScoreQuery)
                                 .groupBy("".concat(TABLES.COMMENTS, ".cid"))
                                 .orderBy("topScore", "desc")
@@ -929,14 +975,15 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.queryCommentsUnderComment = function (parentCid, trx) {
+    DbHandler.prototype.queryCommentsUnderComment = function (parentCid, options, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var commentsObjs;
+            var queryOptions, commentsObjs;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        queryOptions = __assign(__assign({}, defaultPageOption), options);
                         parentCid = parentCid || null;
-                        return [4 /*yield*/, this._baseCommentQuery(trx).where({ parentCid: parentCid }).orderBy("timestamp", "desc")];
+                        return [4 /*yield*/, this._baseCommentQuery(trx, queryOptions).where({ parentCid: parentCid }).orderBy("timestamp", "desc")];
                     case 1:
                         commentsObjs = _a.sent();
                         return [2 /*return*/, this._createCommentsFromRows(commentsObjs)];
@@ -1051,6 +1098,20 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
+    DbHandler.prototype.queryPinnedComments = function (parentCid, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        parentCid = parentCid || null;
+                        _a = this._createCommentsFromRows;
+                        return [4 /*yield*/, this._baseCommentQuery(trx).where({ parentCid: parentCid, pinned: true })];
+                    case 1: return [2 /*return*/, _a.apply(this, [_b.sent()])];
+                }
+            });
+        });
+    };
     DbHandler.prototype.queryLatestPost = function (trx) {
         return __awaiter(this, void 0, void 0, function () {
             var commentObj, post;
@@ -1118,12 +1179,12 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.queryCountOfPosts = function (subplebbitAddress, trx) {
+    DbHandler.prototype.queryCountOfPosts = function (pageOptions, trx) {
         return __awaiter(this, void 0, void 0, function () {
             var obj;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).count().where({ depth: 0, subplebbitAddress: subplebbitAddress }).first()];
+                    case 0: return [4 /*yield*/, this._baseCommentQuery(trx, pageOptions).count().where({ depth: 0 }).first()];
                     case 1:
                         obj = _a.sent();
                         if (!obj)
@@ -1177,6 +1238,8 @@ var DbHandler = /** @class */ (function () {
                         log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:changeDbFilename");
                         oldPathString = this._dbConfig.connection.filename;
                         assert_1.default.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
+                        this._currentTrxs = {};
+                        this._subplebbit = newSubplebbit;
                         if (oldPathString === ":memory:") {
                             log.trace("No need to change file name of db since it's in memory");
                             return [2 /*return*/];
@@ -1185,8 +1248,6 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, fs_1.default.promises.mkdir(path_1.default.dirname(newPath), { recursive: true })];
                     case 1:
                         _a.sent();
-                        this._currentTrxs = {};
-                        this._subplebbit = newSubplebbit;
                         return [4 /*yield*/, fs_1.default.promises.cp(oldPathString, newPath)];
                     case 2:
                         _a.sent();
@@ -1206,21 +1267,36 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype.lockSubCreation = function (subAddress) {
         if (subAddress === void 0) { subAddress = this._subplebbit.address; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, lockfilePath;
+            var log, lockfilePath, subDbPath, e_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         if (subAddress === this._subplebbit.address && this.isDbInMemory())
                             return [2 /*return*/];
                         log = (0, plebbit_logger_1.default)("plebbit-js:lock:creation");
-                        if (this.isSubCreationLocked(subAddress))
-                            (0, util_1.throwWithErrorCode)("ERR_SUB_CREATION_LOCKED", "subAddress=".concat(subAddress));
                         lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".create.lock"));
-                        return [4 /*yield*/, fs_1.default.promises.writeFile(lockfilePath, "")];
+                        subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+                        if (!!fs_1.default.existsSync(subDbPath)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, fs_1.default.promises.writeFile(subDbPath, "")];
                     case 1:
+                        _a.sent(); // Write a dummy file to lock. Will be replaced by actual db later
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 4, , 5]);
+                        return [4 /*yield*/, lockfile.lock(subDbPath, {
+                                lockfilePath: lockfilePath,
+                                onCompromised: function () { }
+                            })];
+                    case 3:
                         _a.sent();
                         log("Locked the creation of subplebbit (".concat(subAddress, ") successfully"));
-                        return [2 /*return*/];
+                        return [3 /*break*/, 5];
+                    case 4:
+                        e_1 = _a.sent();
+                        if (e_1.message === "Lock file is already being held")
+                            (0, util_1.throwWithErrorCode)("ERR_SUB_CREATION_LOCKED", "subAddress=".concat(subAddress));
+                        return [3 /*break*/, 5];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
@@ -1228,21 +1304,32 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype.lockSubStart = function (subAddress) {
         if (subAddress === void 0) { subAddress = this._subplebbit.address; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, lockfilePath;
+            var log, lockfilePath, subDbPath, e_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         if (subAddress === this._subplebbit.address && this.isDbInMemory())
                             return [2 /*return*/];
                         log = (0, plebbit_logger_1.default)("plebbit-js:lock:start");
-                        if (this.isSubStartLocked(subAddress))
-                            (0, util_1.throwWithErrorCode)("ERR_SUB_ALREADY_STARTED", "subAddress=".concat(subAddress));
                         lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".start.lock"));
-                        return [4 /*yield*/, fs_1.default.promises.writeFile(lockfilePath, "")];
+                        subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+                        _a.label = 1;
                     case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, lockfile.lock(subDbPath, {
+                                lockfilePath: lockfilePath,
+                                onCompromised: function () { }
+                            })];
+                    case 2:
                         _a.sent();
                         log("Locked the start of subplebbit (".concat(subAddress, ") successfully"));
-                        return [2 /*return*/];
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_2 = _a.sent();
+                        if (e_2.message === "Lock file is already being held")
+                            (0, util_1.throwWithErrorCode)("ERR_SUB_ALREADY_STARTED", "subAddress=".concat(subAddress));
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/];
                 }
             });
         });
@@ -1250,17 +1337,16 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype.unlockSubCreation = function (subAddress) {
         if (subAddress === void 0) { subAddress = this._subplebbit.address; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, lockfilePath;
+            var log, lockfilePath, subDbPath;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         if (subAddress === this._subplebbit.address && this.isDbInMemory())
                             return [2 /*return*/];
                         log = (0, plebbit_logger_1.default)("plebbit-js:lock:creation");
-                        if (!this.isSubCreationLocked(subAddress))
-                            throw "Sub creation is already unlocked";
                         lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".create.lock"));
-                        return [4 /*yield*/, fs_1.default.promises.rm(lockfilePath)];
+                        subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+                        return [4 /*yield*/, lockfile.unlock(subDbPath, { lockfilePath: lockfilePath })];
                     case 1:
                         _a.sent();
                         log("Unlocked creation of sub (".concat(subAddress, ")"));
@@ -1272,19 +1358,31 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype.unlockSubStart = function (subAddress) {
         if (subAddress === void 0) { subAddress = this._subplebbit.address; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, lockfilePath;
+            var log, lockfilePath, subDbPath, e_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         if (subAddress === this._subplebbit.address && this.isDbInMemory())
                             return [2 /*return*/];
                         log = (0, plebbit_logger_1.default)("plebbit-js:lock:start");
-                        if (!this.isSubStartLocked(subAddress))
-                            throw "Sub start is already unlocked";
                         lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".start.lock"));
-                        return [4 /*yield*/, fs_1.default.promises.rm(lockfilePath)];
+                        subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+                        _a.label = 1;
                     case 1:
+                        _a.trys.push([1, 3, , 6]);
+                        return [4 /*yield*/, lockfile.unlock(subDbPath, { lockfilePath: lockfilePath })];
+                    case 2:
                         _a.sent();
+                        return [3 /*break*/, 6];
+                    case 3:
+                        e_3 = _a.sent();
+                        if (!(e_3.message === "Lock is not acquired/owned by you")) return [3 /*break*/, 5];
+                        return [4 /*yield*/, fs_1.default.promises.rmdir(lockfilePath)];
+                    case 4:
+                        _a.sent(); // Forcefully delete the lock
+                        _a.label = 5;
+                    case 5: return [3 /*break*/, 6];
+                    case 6:
                         log("Unlocked start of sub (".concat(subAddress, ")"));
                         return [2 /*return*/];
                 }
@@ -1293,13 +1391,30 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.isSubCreationLocked = function (subAddress) {
         if (subAddress === void 0) { subAddress = this._subplebbit.address; }
-        var lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".create.lock"));
-        return fs_1.default.existsSync(lockfilePath);
+        return __awaiter(this, void 0, void 0, function () {
+            var lockfilePath, subDbPath;
+            return __generator(this, function (_a) {
+                lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".create.lock"));
+                subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+                return [2 /*return*/, lockfile.check(subDbPath, { lockfilePath: lockfilePath })];
+            });
+        });
     };
     DbHandler.prototype.isSubStartLocked = function (subAddress) {
         if (subAddress === void 0) { subAddress = this._subplebbit.address; }
-        var lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".start.lock"));
-        return fs_1.default.existsSync(lockfilePath);
+        return __awaiter(this, void 0, void 0, function () {
+            var lockfilePath, subDbPath;
+            return __generator(this, function (_a) {
+                lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".start.lock"));
+                subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+                return [2 /*return*/, lockfile.check(subDbPath, { lockfilePath: lockfilePath })];
+            });
+        });
+    };
+    DbHandler.prototype.subDbExists = function (subAddress) {
+        if (subAddress === void 0) { subAddress = this._subplebbit.address; }
+        var dbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        return fs_1.default.existsSync(dbPath);
     };
     // Will most likely move to another file specialized in DB migration
     DbHandler.prototype._migrateFromDbV2IfNeeded = function () {

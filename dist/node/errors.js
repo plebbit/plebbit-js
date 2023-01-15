@@ -53,4 +53,7 @@ var messages;
     messages["ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED"] = "The post of this publication has been deleted";
     messages["ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED"] = "The post of this publication has been removed";
     messages["ERR_SUB_PUBLICATION_POST_IS_LOCKED"] = "The post of this publication has been locked";
+    messages["ERR_FORBIDDEN_AUTHOR_FIELD"] = "The author field includes a forbidden field";
+    messages["ERR_FORBIDDEN_COMMENT_FIELD"] = "The comment/post contains a forbidden field";
+    messages["ERR_FORBIDDEN_SIGNER_FIELD"] = "The publication includes a signer field which is forbidden";
 })(messages = exports.messages || (exports.messages = {}));

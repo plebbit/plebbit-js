@@ -63,6 +63,7 @@ exports.publishWithExpectedResult = exports.publishRandomPost = exports.publishR
 var util_1 = require("../util");
 var index_1 = __importDefault(require("../index"));
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
+var async_wait_until_1 = __importDefault(require("async-wait-until"));
 function generateRandomTimestamp(parentTimestamp) {
     var _a = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, (0, util_1.timestamp)()], lowerLimit = _a[0], upperLimit = _a[1];
     var randomTimestamp = -1;
@@ -173,7 +174,6 @@ exports.generateMockVote = generateMockVote;
 function loadAllPages(pageCid, pagesInstance) {
     return __awaiter(this, void 0, void 0, function () {
         var sortedCommentsPage, sortedComments;
-        var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -191,12 +191,7 @@ function loadAllPages(pageCid, pagesInstance) {
                     sortedCommentsPage = _a.sent();
                     sortedComments = sortedComments.concat(sortedCommentsPage.comments);
                     return [3 /*break*/, 2];
-                case 4: return [4 /*yield*/, Promise.all(sortedComments.map(function (commentProps) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
-                        return [2 /*return*/, pagesInstance.subplebbit.plebbit.createComment(commentProps)];
-                    }); }); }))];
-                case 5:
-                    sortedComments = _a.sent();
-                    return [2 /*return*/, sortedComments];
+                case 4: return [2 /*return*/, sortedComments];
             }
         });
     });
@@ -588,58 +583,60 @@ function mockPlebbit(dataPath) {
 exports.mockPlebbit = mockPlebbit;
 function _waitTillCommentIsOnline(comment, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
-        var loadedSub, parentComment_1;
+        var loadedSub_1, parentComment_1;
+        var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, plebbit.getSubplebbit(comment.subplebbitAddress)];
-                case 1:
-                    loadedSub = _a.sent();
+                case 0:
                     //@ts-ignore
-                    loadedSub._updateIntervalMs = comment._updateIntervalMs = 300;
-                    return [4 /*yield*/, loadedSub.update()];
+                    comment._updateIntervalMs = 200;
+                    if (!(comment.depth === 0)) return [3 /*break*/, 5];
+                    return [4 /*yield*/, plebbit.getSubplebbit(comment.subplebbitAddress)];
+                case 1:
+                    loadedSub_1 = _a.sent();
+                    //@ts-ignore
+                    loadedSub_1._updateIntervalMs = comment._updateIntervalMs = 200;
+                    return [4 /*yield*/, loadedSub_1.update()];
                 case 2:
                     _a.sent();
-                    return [4 /*yield*/, comment.publish()];
+                    return [4 /*yield*/, (0, async_wait_until_1.default)(function () { return __awaiter(_this, void 0, void 0, function () {
+                            var newComments;
+                            var _a;
+                            return __generator(this, function (_b) {
+                                switch (_b.label) {
+                                    case 0:
+                                        if (!((_a = loadedSub_1.posts.pageCids) === null || _a === void 0 ? void 0 : _a.new))
+                                            return [2 /*return*/, false];
+                                        return [4 /*yield*/, loadAllPages(loadedSub_1.posts.pageCids.new, loadedSub_1.posts)];
+                                    case 1:
+                                        newComments = _b.sent();
+                                        return [2 /*return*/, newComments.some(function (commentInPage) { return commentInPage.cid === comment.cid; })];
+                                }
+                            });
+                        }); }, { timeout: 100000 })];
                 case 3:
                     _a.sent();
-                    return [4 /*yield*/, new Promise(function (resolve) {
-                            return comment.once("challengeverification", function (verificationMsg) {
-                                if (!verificationMsg.challengeSuccess)
-                                    throw Error("Failed to publish comment due to (".concat(verificationMsg.reason, ")"));
-                                else
-                                    resolve(1);
-                            });
-                        })];
+                    return [4 /*yield*/, loadedSub_1.stop()];
                 case 4:
                     _a.sent();
-                    return [4 /*yield*/, comment.update()];
-                case 5:
-                    _a.sent();
-                    if (!(comment.depth === 0)) return [3 /*break*/, 7];
-                    return [4 /*yield*/, new Promise(function (resolve) {
-                            return loadedSub.on("update", function () { var _a, _b, _c; return ((_c = (_b = (_a = loadedSub.posts.pages) === null || _a === void 0 ? void 0 : _a.hot) === null || _b === void 0 ? void 0 : _b.comments) === null || _c === void 0 ? void 0 : _c.some(function (post) { return post.cid === comment.cid; })) && resolve(1); });
-                        })];
+                    return [3 /*break*/, 9];
+                case 5: return [4 /*yield*/, plebbit.getComment(comment.parentCid)];
                 case 6:
-                    _a.sent();
-                    return [3 /*break*/, 10];
-                case 7: return [4 /*yield*/, plebbit.getComment(comment.parentCid)];
-                case 8:
                     parentComment_1 = _a.sent();
                     //@ts-ignore
-                    parentComment_1._updateIntervalMs = 300;
-                    return [4 /*yield*/, Promise.all([
-                            parentComment_1.update(),
-                            new Promise(function (resolve) {
-                                return parentComment_1.on("update", function () { var _a, _b; return ((_b = (_a = parentComment_1.replies.pages.topAll) === null || _a === void 0 ? void 0 : _a.comments) === null || _b === void 0 ? void 0 : _b.some(function (tComment) { return tComment.cid === comment.cid; })) && resolve(1); });
-                            })
-                        ])];
-                case 9:
+                    parentComment_1._updateIntervalMs = 200;
+                    return [4 /*yield*/, parentComment_1.update()];
+                case 7:
+                    _a.sent();
+                    return [4 /*yield*/, (0, async_wait_until_1.default)(function () { var _a, _b; return (_b = (_a = parentComment_1.replies.pages.topAll) === null || _a === void 0 ? void 0 : _a.comments) === null || _b === void 0 ? void 0 : _b.some(function (tComment) { return tComment.cid === comment.cid; }); }, {
+                            intervalBetweenAttempts: 100,
+                            timeout: 200000
+                        })];
+                case 8:
                     _a.sent();
                     parentComment_1.stop();
-                    _a.label = 10;
-                case 10:
-                    loadedSub.stop() && comment.stop();
-                    return [2 /*return*/];
+                    _a.label = 9;
+                case 9: return [2 /*return*/];
             }
         });
     });
@@ -652,8 +649,11 @@ function publishRandomReply(parentComment, plebbit, commentProps) {
                 case 0: return [4 /*yield*/, generateMockComment(parentComment, plebbit, commentProps === null || commentProps === void 0 ? void 0 : commentProps.signer, false, __assign({ content: "Content ".concat(Date.now() + Math.random()) }, commentProps))];
                 case 1:
                     reply = _a.sent();
-                    return [4 /*yield*/, _waitTillCommentIsOnline(reply, plebbit)];
+                    return [4 /*yield*/, publishWithExpectedResult(reply, true)];
                 case 2:
+                    _a.sent();
+                    return [4 /*yield*/, _waitTillCommentIsOnline(reply, plebbit)];
+                case 3:
                     _a.sent();
                     return [2 /*return*/, reply];
             }
@@ -669,8 +669,11 @@ function publishRandomPost(subplebbitAddress, plebbit, postProps) {
                 case 0: return [4 /*yield*/, generateMockPost(subplebbitAddress, plebbit, postProps === null || postProps === void 0 ? void 0 : postProps.signer, false, __assign({ content: "Content ".concat(Date.now() + Math.random()) }, postProps))];
                 case 1:
                     post = _a.sent();
-                    return [4 /*yield*/, _waitTillCommentIsOnline(post, plebbit)];
+                    return [4 /*yield*/, publishWithExpectedResult(post, true)];
                 case 2:
+                    _a.sent();
+                    return [4 /*yield*/, _waitTillCommentIsOnline(post, plebbit)];
+                case 3:
                     _a.sent();
                     return [2 /*return*/, post];
             }
@@ -688,7 +691,7 @@ function publishWithExpectedResult(publication, expectedChallengeSuccess, expect
                     return [4 /*yield*/, new Promise(function (resolve, reject) {
                             return publication.once("challengeverification", function (verificationMsg) {
                                 if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
-                                    var msg = "Expected challengeSuccess to be (".concat(expectedChallengeSuccess, ") and got (").concat(verificationMsg.challengeSuccess, ")");
+                                    var msg = "Expected challengeSuccess to be (".concat(expectedChallengeSuccess, ") and got (").concat(verificationMsg.challengeSuccess, "). Reason (").concat(verificationMsg.reason, ")");
                                     console.error(msg);
                                     reject(msg);
                                 }

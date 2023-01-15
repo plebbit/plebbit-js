@@ -117,7 +117,7 @@ var nativeFunctions = {
         });
     },
     listSubplebbits: function (dataPath) { return __awaiter(void 0, void 0, void 0, function () {
-        var subplebbitsPath, dbHandler, addresses;
+        var subplebbitsPath, dbHandler, files, filterResults, filtered_results;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -129,20 +129,31 @@ var nativeFunctions = {
                     _a.sent();
                     return [4 /*yield*/, promises_1.default.readdir(subplebbitsPath, { withFileTypes: true })];
                 case 2:
-                    addresses = (_a.sent())
+                    files = (_a.sent())
                         .filter(function (file) { return file.isFile(); }) // Filter directories out
                         .filter(function (file) { return !/-journal$/.test(file.name); }) // Filter SQLite3 journal files out
-                        .filter(function (file) { return !/create.lock$/.test(file.name); }) // Filter out create lock files
-                        .filter(function (file) { return !/start.lock$/.test(file.name); }) // Filter out start lock files
-                        .filter(function (file) { return __awaiter(void 0, void 0, void 0, function () { var _a; return __generator(this, function (_b) {
-                        switch (_b.label) {
-                            case 0: return [4 /*yield*/, fileType.fromFile(path_1.default.join(subplebbitsPath, file.name))];
-                            case 1: return [2 /*return*/, ((_a = (_b.sent())) === null || _a === void 0 ? void 0 : _a.mime) === "application/x-sqlite3"];
-                        }
-                    }); }); }) // Filter out non sqlite files
-                        .filter(function (file) { return !dbHandler.isSubCreationLocked(file.name); }) // Filter out subs that are under creation
                         .map(function (file) { return file.name; });
-                    return [2 /*return*/, addresses];
+                    return [4 /*yield*/, Promise.all(files.map(function (address) { return __awaiter(void 0, void 0, void 0, function () {
+                            var typeOfFile, _a;
+                            return __generator(this, function (_b) {
+                                switch (_b.label) {
+                                    case 0: return [4 /*yield*/, fileType.fromFile(path_1.default.join(subplebbitsPath, address))];
+                                    case 1:
+                                        typeOfFile = _b.sent();
+                                        _a = (typeOfFile === null || typeOfFile === void 0 ? void 0 : typeOfFile.mime) === "application/x-sqlite3";
+                                        if (!_a) return [3 /*break*/, 3];
+                                        return [4 /*yield*/, dbHandler.isSubCreationLocked(address)];
+                                    case 2:
+                                        _a = !(_b.sent());
+                                        _b.label = 3;
+                                    case 3: return [2 /*return*/, _a];
+                                }
+                            });
+                        }); }))];
+                case 3:
+                    filterResults = _a.sent();
+                    filtered_results = files.filter(function (_, i) { return filterResults[i]; });
+                    return [2 /*return*/, filtered_results];
             }
         });
     }); },

@@ -77,8 +77,11 @@ var Vote = /** @class */ (function (_super) {
         _this.vote = props.vote; // Either 1, 0, -1 (upvote, cancel vote, downvote)
         return _this;
     }
+    Vote.prototype.toJSONSkeleton = function () {
+        return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { commentCid: this.commentCid, vote: this.vote });
+    };
     Vote.prototype.toJSON = function () {
-        return __assign(__assign({}, _super.prototype.toJSON.call(this)), { commentCid: this.commentCid, vote: this.vote });
+        return this.toJSONSkeleton();
     };
     Vote.prototype.getType = function () {
         return "vote";

@@ -264,14 +264,14 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.createSubplebbit = function (options) {
         if (options === void 0) { options = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, canRunSub, newSub, remoteSub, subHasBeenCreatedBefore, _a, signer;
+            var log, canRunSub, localSub, remoteSub, dbHandler, isSubLocal, _a, signer;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
                         canRunSub = this._canRunSub();
-                        newSub = function () { return __awaiter(_this, void 0, void 0, function () {
+                        localSub = function () { return __awaiter(_this, void 0, void 0, function () {
                             var subplebbit;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
@@ -294,48 +294,48 @@ var Plebbit = /** @class */ (function (_super) {
                                 return [2 /*return*/, new subplebbit_1.Subplebbit(options, this)];
                             });
                         }); };
-                        if (!(options.address && !options.signer)) return [3 /*break*/, 4];
-                        if (!!canRunSub) return [3 /*break*/, 1];
-                        return [2 /*return*/, remoteSub()];
-                    case 1: return [4 /*yield*/, this.listSubplebbits()];
-                    case 2:
-                        subHasBeenCreatedBefore = (_b.sent()).includes(options.address);
-                        if (subHasBeenCreatedBefore)
-                            return [2 /*return*/, newSub()];
-                        else
+                        if (!(options.address && !options.signer)) return [3 /*break*/, 1];
+                        if (!canRunSub)
                             return [2 /*return*/, remoteSub()];
-                        _b.label = 3;
-                    case 3: return [3 /*break*/, 11];
-                    case 4:
-                        if (!(!options.address && !options.signer)) return [3 /*break*/, 8];
-                        if (!!canRunSub) return [3 /*break*/, 5];
+                        else {
+                            dbHandler = util_1.nativeFunctions.createDbHandler({ address: options.address, plebbit: this });
+                            isSubLocal = dbHandler.subDbExists();
+                            if (isSubLocal)
+                                return [2 /*return*/, localSub()];
+                            else
+                                return [2 /*return*/, remoteSub()];
+                        }
+                        return [3 /*break*/, 8];
+                    case 1:
+                        if (!(!options.address && !options.signer)) return [3 /*break*/, 5];
+                        if (!!canRunSub) return [3 /*break*/, 2];
                         throw Error("missing nativeFunctions required to create a subplebbit");
-                    case 5:
+                    case 2:
                         _a = options;
                         return [4 /*yield*/, this.createSigner()];
-                    case 6:
+                    case 3:
                         _a.signer = _b.sent();
                         options.address = options.signer.address;
                         log("Did not provide CreateSubplebbitOptions.signer, generated random signer with address (".concat(options.address, ")"));
-                        return [2 /*return*/, newSub()];
-                    case 7: return [3 /*break*/, 11];
-                    case 8:
-                        if (!(!options.address && options.signer)) return [3 /*break*/, 10];
+                        return [2 /*return*/, localSub()];
+                    case 4: return [3 /*break*/, 8];
+                    case 5:
+                        if (!(!options.address && options.signer)) return [3 /*break*/, 7];
                         if (!canRunSub)
                             throw Error("missing nativeFunctions required to create a subplebbit");
                         return [4 /*yield*/, this.createSigner(options.signer)];
-                    case 9:
+                    case 6:
                         signer = _b.sent();
                         options.address = signer.address;
                         options.signer = signer;
-                        return [2 /*return*/, newSub()];
-                    case 10:
+                        return [2 /*return*/, localSub()];
+                    case 7:
                         if (!canRunSub)
                             return [2 /*return*/, remoteSub()];
                         else
-                            return [2 /*return*/, newSub()];
-                        _b.label = 11;
-                    case 11: return [2 /*return*/];
+                            return [2 /*return*/, localSub()];
+                        _b.label = 8;
+                    case 8: return [2 /*return*/];
                 }
             });
         });

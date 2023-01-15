@@ -43,5 +43,8 @@ export declare enum messages {
     ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
     ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED = "The post of this publication has been deleted",
     ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED = "The post of this publication has been removed",
-    ERR_SUB_PUBLICATION_POST_IS_LOCKED = "The post of this publication has been locked"
+    ERR_SUB_PUBLICATION_POST_IS_LOCKED = "The post of this publication has been locked",
+    ERR_FORBIDDEN_AUTHOR_FIELD = "The author field includes a forbidden field",
+    ERR_FORBIDDEN_COMMENT_FIELD = "The comment/post contains a forbidden field",
+    ERR_FORBIDDEN_SIGNER_FIELD = "The publication includes a signer field which is forbidden"
 }

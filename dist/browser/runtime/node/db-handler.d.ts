@@ -1,6 +1,7 @@
 import { Knex } from "knex";
 import Transaction = Knex.Transaction;
 import { AuthorDbType, AuthorType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditForDbType, CommentEditType, CommentForDbType, CommentType, DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, PostType, SignerType, SubplebbitAuthor, SubplebbitMetrics, VoteForDbType, VoteType } from "../../types";
+import { PageOptions } from "../../sort-handler";
 export declare class DbHandler {
     private _knex;
     private _subplebbit;
@@ -50,21 +51,22 @@ export declare class DbHandler {
     private _createCommentsFromRows;
     private _createEditsFromRows;
     private _createVotesFromRows;
-    queryCommentsSortedByTimestamp(parentCid: string | undefined | null, order?: string, trx?: Transaction): Promise<CommentType[] | PostType[]>;
-    queryCommentsBetweenTimestampRange(parentCid: string | undefined | null, timestamp1: number, timestamp2: number, trx?: Transaction): Promise<CommentType[] | PostType[]>;
-    queryTopCommentsBetweenTimestampRange(parentCid: string | undefined | null, timestamp1: number, timestamp2: number, trx?: Transaction): Promise<CommentType[] | PostType[]>;
-    queryCommentsUnderComment(parentCid: string | undefined | null, trx?: Transaction): Promise<CommentType[] | PostType[]>;
+    queryCommentsSortedByTimestamp(parentCid: string | undefined | null, order: string, options: PageOptions, trx?: Transaction): Promise<CommentType[] | PostType[]>;
+    queryCommentsBetweenTimestampRange(parentCid: string | undefined | null, timestamp1: number, timestamp2: number, options: PageOptions, trx?: Transaction): Promise<CommentType[] | PostType[]>;
+    queryTopCommentsBetweenTimestampRange(parentCid: string | undefined | null, timestamp1: number, timestamp2: number, options: PageOptions, trx?: Transaction): Promise<CommentType[] | PostType[]>;
+    queryCommentsUnderComment(parentCid: string | undefined | null, options: Partial<PageOptions>, trx?: Transaction): Promise<CommentType[] | PostType[]>;
     queryParentsOfComment(comment: CommentType, trx?: Transaction): Promise<CommentType[]>;
     queryComments(trx?: Transaction): Promise<CommentType[] | PostType[]>;
     querySubplebbitMetrics(trx?: Transaction): Promise<SubplebbitMetrics>;
     queryComment(cid: string, trx?: Transaction): Promise<CommentType | PostType | undefined>;
+    queryPinnedComments(parentCid: string | undefined, trx?: Transaction): Promise<CommentType[] | PostType[]>;
     queryLatestPost(trx?: Transaction): Promise<PostType | undefined>;
     insertSigner(signer: Pick<SignerType, "type" | "privateKey" | "ipnsKeyName">, trx?: Transaction): Promise<void>;
     querySigner(ipnsKeyName: string, trx?: Transaction): Promise<(Pick<SignerType, "type" | "privateKey"> & {
         ipnsKeyName: string;
     }) | undefined>;
     queryCommentsGroupByDepth(trx?: Knex.Transaction): Promise<CommentType[][]>;
-    queryCountOfPosts(subplebbitAddress: string, trx?: Knex.Transaction): Promise<number>;
+    queryCountOfPosts(pageOptions: PageOptions, trx?: Knex.Transaction): Promise<number>;
     queryCommentsOfAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<CommentType[]>;
     querySubplebbitAuthorFields(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor>;
     changeDbFilename(newDbFileName: string, newSubplebbit: DbHandler["_subplebbit"]): Promise<void>;
@@ -72,7 +74,8 @@ export declare class DbHandler {
     lockSubStart(subAddress?: string): Promise<void>;
     unlockSubCreation(subAddress?: string): Promise<void>;
     unlockSubStart(subAddress?: string): Promise<void>;
-    isSubCreationLocked(subAddress?: string): boolean;
-    isSubStartLocked(subAddress?: string): boolean;
+    isSubCreationLocked(subAddress?: string): Promise<boolean>;
+    isSubStartLocked(subAddress?: string): Promise<boolean>;
+    subDbExists(subAddress?: string): boolean;
     private _migrateFromDbV2IfNeeded;
 }
