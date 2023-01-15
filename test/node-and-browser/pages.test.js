@@ -82,7 +82,7 @@ const testListOfSortedComments = (sortedComments, sortName) => {
     for (let j = 0; j < sortedComments.length - 1; j++) {
         // Check if timestamp is within [timestamp() - timeframe, subplebbit.updatedAt]
         testCommentFields(sortedComments[j]);
-        if (currentTimeframe) {
+        if (currentTimeframe && !sortedComments[j].pinned) {
             const syncIntervalSeconds = 5 * 60;
 
             const sortStart = subplebbit.updatedAt - TIMEFRAMES_TO_SECONDS[currentTimeframe] - syncIntervalSeconds; // Should probably add extra buffer here
