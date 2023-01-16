@@ -467,16 +467,9 @@ export class DbHandler {
                 [`${TABLES.VOTES}.vote`]: -1
             })
             .as("downvoteCount");
-        const replyCountQuery = this._baseTransaction(trx)
-            .from(`${TABLES.COMMENTS} AS comments2`)
-            .count("")
-            .where({
-                "comments2.parentCid": this._knex.raw(`${TABLES.COMMENTS}.cid`)
-            })
-            .as("replyCount");
 
         let query = this._baseTransaction(trx)(TABLES.COMMENTS)
-            .select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery, replyCountQuery)
+            .select(`${TABLES.COMMENTS}.*`, upvoteQuery, downvoteQuery)
             .jsonExtract("authorEdit", "$.deleted", "deleted", true);
 
         if (options.excludeCommentsWithDifferentSubAddress) query = query.where({ subplebbitAddress: this._subplebbit.address });
@@ -501,12 +494,26 @@ export class DbHandler {
         return <any>newObj;
     }
 
-    private async _createCommentsFromRows(commentsRows: CommentType[] | CommentType): Promise<CommentType[] | PostType[]> {
+    private async _queryReplyCount(commentCid: string, trx?: Transaction): Promise<number> {
+        const children = await this.queryCommentsUnderComment(commentCid, {}, trx);
+
+        return (
+            children.length + lodash.sum(await Promise.all(children.map((comment: CommentType) => this._queryReplyCount(comment.cid, trx))))
+        );
+    }
+
+    private async _createCommentsFromRows(
+        commentsRows: CommentType[] | CommentType,
+        trx?: Transaction
+    ): Promise<CommentType[] | PostType[]> {
         if (!commentsRows || (Array.isArray(commentsRows) && commentsRows?.length === 0)) return [];
         if (!Array.isArray(commentsRows)) commentsRows = [commentsRows];
         return Promise.all(
             commentsRows.map(async (props) => {
-                const replacedProps: CommentType | PostType = this._parseJsonFields(replaceXWithY(props, null, undefined)); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
+                const replyCount = await this._queryReplyCount(props.cid, trx);
+                const replacedProps: CommentType | PostType = this._parseJsonFields(
+                    replaceXWithY({ ...props, replyCount }, null, undefined)
+                ); // Replace null with undefined to save storage (undefined is not included in JSON.stringify)
 
                 assert(
                     typeof replacedProps.replyCount === "number" &&
@@ -544,7 +551,7 @@ export class DbHandler {
         parentCid = parentCid || null;
 
         const comments = await this._baseCommentQuery(trx, options).where({ parentCid: parentCid }).orderBy("timestamp", order);
-        return this._createCommentsFromRows(comments);
+        return this._createCommentsFromRows(comments, trx);
     }
 
     async queryCommentsBetweenTimestampRange(
@@ -557,14 +564,13 @@ export class DbHandler {
         parentCid = parentCid || null;
 
         if (timestamp1 === Number.NEGATIVE_INFINITY) timestamp1 = 0;
-        const finalQuery = this._baseCommentQuery(trx, options)
+        const rawCommentObjs = await this._baseCommentQuery(trx, options)
             .where({ parentCid: parentCid })
             .whereBetween("timestamp", [timestamp1, timestamp2]);
-        const rawCommentObjs = await finalQuery;
 
         assert(!rawCommentObjs.some((comment) => comment.timestamp < timestamp1 || comment.timestamp > timestamp2));
 
-        return this._createCommentsFromRows(rawCommentObjs);
+        return this._createCommentsFromRows(rawCommentObjs, trx);
     }
 
     async queryTopCommentsBetweenTimestampRange(
@@ -589,7 +595,7 @@ export class DbHandler {
             .whereBetween(`${TABLES.COMMENTS}.timestamp`, [timestamp1, timestamp2])
             .where({ [`${TABLES.COMMENTS}.parentCid`]: parentCid });
 
-        return this._createCommentsFromRows(rawCommentsObjs);
+        return this._createCommentsFromRows(rawCommentsObjs, trx);
     }
 
     async queryCommentsUnderComment(
@@ -601,7 +607,7 @@ export class DbHandler {
         parentCid = parentCid || null;
 
         const commentsObjs = await this._baseCommentQuery(trx, queryOptions).where({ parentCid: parentCid }).orderBy("timestamp", "desc");
-        return this._createCommentsFromRows(commentsObjs);
+        return this._createCommentsFromRows(commentsObjs, trx);
     }
 
     async queryParentsOfComment(comment: CommentType, trx?: Transaction): Promise<CommentType[]> {
@@ -617,7 +623,7 @@ export class DbHandler {
     }
 
     async queryComments(trx?: Transaction): Promise<CommentType[] | PostType[]> {
-        return await this._createCommentsFromRows(await this._baseCommentQuery(trx).orderBy("id", "desc"));
+        return this._createCommentsFromRows(await this._baseCommentQuery(trx).orderBy("id", "desc"), trx);
     }
 
     async querySubplebbitMetrics(trx?: Transaction): Promise<SubplebbitMetrics> {
@@ -656,18 +662,18 @@ export class DbHandler {
     async queryComment(cid: string, trx?: Transaction): Promise<CommentType | PostType | undefined> {
         assert(typeof cid === "string" && cid.length > 0, `Can't query a comment with null cid (${cid})`);
         const commentObj = await this._baseCommentQuery(trx).where("cid", cid).first();
-        return (await this._createCommentsFromRows(commentObj))[0];
+        return (await this._createCommentsFromRows(commentObj, trx))[0];
     }
 
     async queryPinnedComments(parentCid: string | undefined, trx?: Transaction): Promise<CommentType[] | PostType[]> {
         parentCid = parentCid || null;
-        return this._createCommentsFromRows(await this._baseCommentQuery(trx).where({ parentCid, pinned: true }));
+        return this._createCommentsFromRows(await this._baseCommentQuery(trx).where({ parentCid, pinned: true }), trx);
     }
 
     async queryLatestPost(trx?: Transaction): Promise<PostType | undefined> {
         const commentObj = await this._baseCommentQuery(trx).whereNotNull("title").orderBy("id", "desc").first();
         // @ts-ignore
-        const post: PostType = (await this._createCommentsFromRows(commentObj))[0];
+        const post: PostType = (await this._createCommentsFromRows(commentObj, trx))[0];
         if (!post) return undefined;
 
         return post;
@@ -692,7 +698,7 @@ export class DbHandler {
         const comments: CommentType[][] = await Promise.all(
             depths.map(async (depth) => {
                 const commentsWithDepth = await this._baseCommentQuery(trx).where({ depth: depth });
-                return this._createCommentsFromRows(commentsWithDepth);
+                return this._createCommentsFromRows(commentsWithDepth, trx);
             })
         );
         return comments;
@@ -705,7 +711,7 @@ export class DbHandler {
     }
 
     async queryCommentsOfAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<CommentType[]> {
-        return this._createCommentsFromRows(await this._baseCommentQuery(trx).where({ authorAddress }));
+        return this._createCommentsFromRows(await this._baseCommentQuery(trx).where({ authorAddress }), trx);
     }
 
     async querySubplebbitAuthorFields(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor> {

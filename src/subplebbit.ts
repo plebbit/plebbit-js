@@ -1013,7 +1013,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
 
         const updateTriggerKey = CACHE_KEYS[CACHE_KEYS.PREFIX_TRIGGER_COMMENT_UPDATE_].concat(dbComment.cid);
-        const updateTriggered = await this.dbHandler.keyvGet(updateTriggerKey);
+        const updateTriggered: boolean | undefined = await this.dbHandler.keyvGet(updateTriggerKey);
         if (
             !commentIpns ||
             updateTriggered ||
