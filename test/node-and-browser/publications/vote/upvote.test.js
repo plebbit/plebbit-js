@@ -1,9 +1,9 @@
-const Plebbit = require("../../dist/node");
+const Plebbit = require("../../../../dist/node");
 const { expect } = require("chai");
-const signers = require("../fixtures/signers");
-const { generateMockVote, publishRandomPost, publishRandomReply, publishWithExpectedResult } = require("../../dist/node/test/test-util");
-const { timestamp } = require("../../dist/node/util");
-const { mockPlebbit } = require("../../dist/node/test/test-util");
+const signers = require("../../../fixtures/signers");
+const { generateMockVote, publishRandomPost, publishRandomReply, publishWithExpectedResult } = require("../../../../dist/node/test/test-util");
+const { timestamp } = require("../../../../dist/node/util");
+const { mockPlebbit } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 const { default: waitUntil } = require("async-wait-until");
 

@@ -1,4 +1,4 @@
-import { TIMEFRAMES_TO_SECONDS, timestamp } from "../util";
+import { encode, TIMEFRAMES_TO_SECONDS, timestamp } from "../util";
 import { Comment } from "../comment";
 import Post from "../post";
 import { Plebbit } from "../plebbit";
@@ -6,7 +6,7 @@ import PlebbitIndex from "../index";
 import Vote from "../vote";
 import { Pages } from "../pages";
 import { Subplebbit } from "../subplebbit";
-import { CommentType, CreateCommentOptions, PostType, SignerType } from "../types";
+import { CommentType, CreateCommentOptions, PostType, SignerType, VoteType } from "../types";
 import isIPFS from "is-ipfs";
 import Publication from "../publication";
 import waitUntil from "async-wait-until";
@@ -370,6 +370,18 @@ export async function publishRandomPost(subplebbitAddress: string, plebbit: Pleb
     return post;
 }
 
+export async function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbit: Plebbit, voteProps?: Partial<VoteType>) {
+    const comment = await plebbit.getComment(commentCid);
+    const voteObj = await plebbit.createVote({
+        commentCid,
+        vote,
+        subplebbitAddress: comment.subplebbitAddress,
+        signer: voteProps?.signer || (await plebbit.createSigner()),
+        ...voteProps
+    });
+    await publishWithExpectedResult(voteObj, true);
+}
+
 export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
     await publication.publish();
     await new Promise((resolve, reject) =>
@@ -385,4 +397,41 @@ export async function publishWithExpectedResult(publication: Publication, expect
             } else resolve(1);
         })
     );
+}
+
+export async function findCommentInPage(commentCid: string, pageCid: string, pages: Pages) {
+    const commentPages = await loadAllPages(pageCid, pages);
+    return commentPages.find((c) => c.cid === commentCid);
+}
+
+export async function waitTillCommentIsInParentPages(
+    comment: Comment,
+    plebbit: Plebbit,
+    propsToCheckFor: Partial<CommentType>,
+    checkInAllPages = false
+) {
+    const parent =
+        comment.depth === 0 ? await plebbit.getSubplebbit(comment.subplebbitAddress) : await plebbit.getComment(comment.parentCid);
+    //@ts-ignore
+    parent._updateIntervalMs = 200;
+    await parent.update();
+    const pageCid = () => (parent instanceof Comment ? parent.replies?.pageCids?.topAll : parent.posts?.pageCids?.new);
+    let commentInPage: CommentType;
+    await waitUntil(async () => Boolean(pageCid() && (commentInPage = await findCommentInPage(comment.cid, pageCid(), comment.replies))), {
+        timeout: 200000
+    });
+
+    await parent.stop();
+
+    const pageCids = parent instanceof Comment ? parent.replies.pageCids : parent.posts.pageCids;
+
+    if (checkInAllPages)
+        for (const pageCid of Object.values(pageCids)) {
+            const commentInPage = await findCommentInPage(comment.cid, pageCid, comment.replies);
+            for (const [key, value] of Object.entries(propsToCheckFor))
+                if (encode(commentInPage[key]) !== encode(value)) throw Error(`commentInPage[${key}] is incorrect`);
+        }
+    else
+        for (const [key, value] of Object.entries(propsToCheckFor))
+            if (encode(commentInPage[key]) !== encode(value)) throw Error(`commentInPage[${key}] is incorrect`);
 }

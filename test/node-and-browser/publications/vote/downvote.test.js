@@ -1,13 +1,13 @@
-const Plebbit = require("../../dist/node");
-const signers = require("../fixtures/signers");
+const Plebbit = require("../../../../dist/node");
+const signers = require("../../../fixtures/signers");
 const {
     generateMockVote,
     publishRandomPost,
     publishRandomReply,
     publishWithExpectedResult,
     mockPlebbit
-} = require("../../dist/node/test/test-util");
-const { messages } = require("../../dist/node/errors");
+} = require("../../../../dist/node/test/test-util");
+const { messages } = require("../../../../dist/node/errors");
 const lodash = require("lodash");
 
 const chai = require("chai");
