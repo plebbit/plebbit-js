@@ -1,14 +1,11 @@
-const Plebbit = require("../../../../dist/node");
 const signers = require("../../../fixtures/signers");
 const {
     generateMockPost,
     generateMockComment,
-    publishWithExpectedResult,
     mockPlebbit,
     publishRandomPost,
     publishRandomReply
 } = require("../../../../dist/node/test/test-util");
-const { messages } = require("../../../../dist/node/errors");
 const lodash = require("lodash");
 
 const chai = require("chai");
@@ -69,7 +66,7 @@ describe(`comment.update`, async () => {
     it(`comment.update() is working as expected after calling comment.stop()`);
 });
 
-describe.only(`comment.replyCount`, async () => {
+describe(`comment.replyCount`, async () => {
     let plebbit, post, reply;
     before(async () => {
         plebbit = await mockPlebbit();

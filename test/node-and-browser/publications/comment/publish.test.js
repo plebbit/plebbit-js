@@ -7,20 +7,16 @@ const {
     waitTillCommentIsInParentPages,
     publishRandomPost,
     mockPlebbit,
-    generateMockVote,
-    publishVote,
-    findCommentInPage
+    publishVote
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { default: waitUntil } = require("async-wait-until");
-const messages = require("../../../../dist/node/errors");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
-const updateInterval = 300;
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
@@ -148,7 +144,7 @@ describe(`author.subplebbit`, async () => {
     });
 });
 
-describe.only(`Publishing replies`, async () => {
+describe(`Publishing replies`, async () => {
     let post, plebbit;
 
     const parents = [];

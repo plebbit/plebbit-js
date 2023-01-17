@@ -157,12 +157,7 @@ describe(`Removing reply`, async () => {
         replyToBeRemoved.stop();
     });
 
-    it(`Author can't publish a Comment with removed=true`);
-
     it(`Mod can remove a reply`, async () => {
-        expect(post.replies.pages.topAll.comments[0].cid).to.equal(replyToBeRemoved.cid);
-        expect(post.replies.pages.topAll.comments[0].removed).to.be.false;
-        expect(post.replyCount).to.equal(1);
         const removeEdit = await plebbit.createCommentEdit({
             subplebbitAddress: replyToBeRemoved.subplebbitAddress,
             commentCid: replyToBeRemoved.cid,

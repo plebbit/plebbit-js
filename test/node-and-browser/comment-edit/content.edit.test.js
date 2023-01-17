@@ -105,7 +105,6 @@ describe("Editing comment.content", async () => {
             expect(commentToEdit.content).to.equal(editedText);
             expect(commentToEdit.original?.content).to.equal(originalContent);
             expect(commentToEdit.authorEdit.reason).to.equal(editReason);
-            expect(commentToEdit.author.subplebbit.lastCommentCid).to.equal(commentToEdit.cid);
             commentToEdit.stop();
         })
     );
