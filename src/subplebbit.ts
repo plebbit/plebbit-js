@@ -147,8 +147,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.signer = mergedProps.signer;
         this.encryption = mergedProps.encryption;
         this.posts = new Pages({
-            pages: mergedProps?.posts?.pages,
-            pageCids: mergedProps?.posts?.pageCids,
+            pages: mergedProps?.posts?.pages || {},
+            pageCids: mergedProps?.posts?.pageCids || {},
             subplebbit: this
         });
 
@@ -540,6 +540,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             log(`(${challengeRequestId}): `, messages.ERR_FORBIDDEN_SIGNER_FIELD);
             return messages.ERR_FORBIDDEN_SIGNER_FIELD;
         }
+
+        log.trace(`Will attempt to store publication if valid, `, publication);
 
         const postOrCommentOrVote: Vote | CommentEdit | Post | Comment = publication.hasOwnProperty("vote")
             ? await this.plebbit.createVote(<VoteType>publication)
