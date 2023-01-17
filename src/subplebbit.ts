@@ -144,7 +144,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.metricsCid = mergedProps.metricsCid;
         this.createdAt = mergedProps.createdAt;
         this.updatedAt = mergedProps.updatedAt;
-        this.signer = mergedProps.signer;
         this.encryption = mergedProps.encryption;
         this.posts = new Pages({
             pages: mergedProps?.posts?.pages || {},
@@ -158,6 +157,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.rules = mergedProps.rules;
         this.flairs = mergedProps.flairs;
         this.signature = mergedProps.signature;
+        if (!this.signer && mergedProps.signer) this.signer = new Signer(mergedProps.signer);
     }
 
     private async _initSignerProps() {
@@ -201,7 +201,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     toJSONInternal() {
         return {
             ...this.toJSON(),
-            signer: this.signer
+            signer: this.signer ? lodash.pick(this.signer, ["privateKey", "type", "address"]) : undefined
         };
     }
 
@@ -245,7 +245,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const internalStateKey = CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT];
 
         if (await this.dbHandler.keyvHas(internalStateKey)) {
-            log(`Merging internal subplebbit state from DB and current state`);
+            log(`Merging internal subplebbit state from DB and createSubplebbitOptions`);
             const cachedSubplebbit: SubplebbitType = await this.dbHandler.keyvGet(internalStateKey);
             this.initSubplebbit({ ...cachedSubplebbit, ...removeKeysWithUndefinedValues(this.toJSONInternal()) }); // Init subplebbit fields from DB
         }
