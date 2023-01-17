@@ -245,7 +245,6 @@ export class SortHandler {
     }
 
     async generateRepliesPages(comment: Comment | CommentType, trx?): Promise<Pages | undefined> {
-        if (comment.replyCount === 0) return undefined;
         const cacheKey = CACHE_KEYS[CACHE_KEYS.PREFIX_COMMENT_REPLIES_].concat(comment.cid);
         const cachedReplies: PageType | undefined = await this.subplebbit.dbHandler!.keyvGet(cacheKey);
         if (cachedReplies) return new Pages({ ...cachedReplies, subplebbit: this.subplebbit });
