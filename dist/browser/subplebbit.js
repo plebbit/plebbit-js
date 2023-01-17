@@ -143,8 +143,8 @@ var Subplebbit = /** @class */ (function (_super) {
         this.signer = mergedProps.signer;
         this.encryption = mergedProps.encryption;
         this.posts = new pages_1.Pages({
-            pages: (_a = mergedProps === null || mergedProps === void 0 ? void 0 : mergedProps.posts) === null || _a === void 0 ? void 0 : _a.pages,
-            pageCids: (_b = mergedProps === null || mergedProps === void 0 ? void 0 : mergedProps.posts) === null || _b === void 0 ? void 0 : _b.pageCids,
+            pages: ((_a = mergedProps === null || mergedProps === void 0 ? void 0 : mergedProps.posts) === null || _a === void 0 ? void 0 : _a.pages) || {},
+            pageCids: ((_b = mergedProps === null || mergedProps === void 0 ? void 0 : mergedProps.posts) === null || _b === void 0 ? void 0 : _b.pageCids) || {},
             subplebbit: this
         });
         this.roles = mergedProps.roles;
@@ -730,7 +730,7 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.storePublicationIfValid = function (publication, challengeRequestId) {
         var _a, _b, _c, _d, _e;
         return __awaiter(this, void 0, void 0, function () {
-            var log, postOrCommentOrVote, _f, _g, author, msg, forbiddenAuthorFields, parentCid, parent_1, post, res, res, forbiddenCommentFields_1, validRes, ipnsKeyName, msg, ipfsSigner, _h, _j, _k, _l, _m, _o, trx, _p, _q, file, trx, _r, commentsUnderParent, parent_2, file;
+            var log, postOrCommentOrVote, _f, _g, author, msg, forbiddenAuthorFields, parentCid, parent_1, post, res, res, forbiddenCommentFields_1, validRes, ipnsKeyName, ipfsSigner, _h, _j, _k, _l, _m, _o, trx, _p, _q, file, trx, _r, commentsUnderParent, parent_2, file;
             return __generator(this, function (_s) {
                 switch (_s.label) {
                     case 0:
@@ -741,6 +741,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_FORBIDDEN_SIGNER_FIELD);
                             return [2 /*return*/, errors_1.messages.ERR_FORBIDDEN_SIGNER_FIELD];
                         }
+                        log.trace("Will attempt to store publication if valid, ", publication);
                         if (!publication.hasOwnProperty("vote")) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.plebbit.createVote(publication)];
                     case 1:
@@ -887,9 +888,8 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.dbHandler.querySigner(ipnsKeyName)];
                     case 19:
                         if (_s.sent()) {
-                            msg = "Failed to insert ".concat(postOrCommentOrVote.constructor.name, " due to previous ").concat(postOrCommentOrVote.getType(), " having same ipns key name (duplicate?)");
-                            log("(".concat(challengeRequestId, "): "), msg);
-                            return [2 /*return*/, msg];
+                            log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_DUPLICATE_COMMENT);
+                            return [2 /*return*/, errors_1.messages.ERR_DUPLICATE_COMMENT];
                         }
                         _h = signer_1.Signer.bind;
                         _j = [{}];

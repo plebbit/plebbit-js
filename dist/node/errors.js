@@ -56,4 +56,5 @@ var messages;
     messages["ERR_FORBIDDEN_AUTHOR_FIELD"] = "The author field includes a forbidden field";
     messages["ERR_FORBIDDEN_COMMENT_FIELD"] = "The comment/post contains a forbidden field";
     messages["ERR_FORBIDDEN_SIGNER_FIELD"] = "The publication includes a signer field which is forbidden";
+    messages["ERR_DUPLICATE_COMMENT"] = "Comment is duplicated";
 })(messages = exports.messages || (exports.messages = {}));

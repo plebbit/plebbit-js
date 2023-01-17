@@ -450,8 +450,6 @@ var SortHandler = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (comment.replyCount === 0)
-                            return [2 /*return*/, undefined];
                         cacheKey = constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.PREFIX_COMMENT_REPLIES_].concat(comment.cid);
                         return [4 /*yield*/, this.subplebbit.dbHandler.keyvGet(cacheKey)];
                     case 1:
