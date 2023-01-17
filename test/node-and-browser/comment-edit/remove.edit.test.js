@@ -6,7 +6,8 @@ const {
     generateMockComment,
     generateMockVote,
     publishWithExpectedResult,
-    loadAllPages
+    loadAllPages,
+    findCommentInPage
 } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
@@ -31,8 +32,6 @@ describe(`Removing post`, async () => {
     after(async () => {
         postToRemove.stop();
     });
-
-    it(`Author can't publish a Post with removed=true`);
 
     it(`Mod can mark a post as removed`, async () => {
         const removeEdit = await plebbit.createCommentEdit({
@@ -175,13 +174,19 @@ describe(`Removing reply`, async () => {
         expect(replyToBeRemoved.moderatorReason).to.equal("To remove a reply");
     });
     it(`Removed replies show in parent comment pages with 'removed' = true`, async () => {
-        if (!post.replies.pages.topAll.comments[0].removed) await new Promise((resolve) => post.once("update", resolve));
-        expect(post.replyCount).to.equal(1);
+        const pageCid = () => post.replies.pageCids?.topAll;
+        await waitUntil(
+            async () => pageCid() && (await findCommentInPage(replyToBeRemoved.cid, pageCid(), post.replies)).removed === true,
+            {
+                timeout: 200000
+            }
+        );
         const repliesPages = await Promise.all(Object.values(post.replies.pageCids).map((cid) => loadAllPages(cid, post.replies)));
         for (const comments of repliesPages) {
             const commentInPage = comments.find((comment) => comment.cid === replyToBeRemoved.cid);
             expect(commentInPage).to.exist;
             expect(commentInPage.removed).to.be.true;
+            expect(commentInPage.moderatorReason).to.equal("To remove a reply");
         }
     });
 

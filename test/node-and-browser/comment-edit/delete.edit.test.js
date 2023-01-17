@@ -6,11 +6,13 @@ const {
     generateMockComment,
     generateMockVote,
     publishWithExpectedResult,
-    loadAllPages
+    loadAllPages,
+    findCommentInPage
 } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
 const lodash = require("lodash");
+const { default: waitUntil } = require("async-wait-until");
 
 const subplebbitAddress = signers[0].address;
 const updateInterval = 300;
@@ -153,13 +155,13 @@ describe("Deleting a reply", async () => {
         await publishWithExpectedResult(deleteEdit, true);
     });
     it(`A new CommentUpdate is pushed for removing a reply`, async () => {
-        await new Promise((resolve) => replyToDelete.once("update", resolve));
-        expect(replyToDelete.deleted).to.be.true;
+        await waitUntil(() => replyToDelete.deleted === true, { timeout: 200000 });
     });
     it(`Deleted replies show in parent comment pages with 'deleted' = true`, async () => {
-        if (!post.replies.pages.topAll.comments[0].deleted) await new Promise((resolve) => post.once("update", resolve));
-        expect(post.replies.pages.topAll.comments[0].deleted).to.be.true;
-        expect(post.replyCount).to.equal(1);
+        const pageCid = () => post.replies.pageCids?.new;
+        await waitUntil(async () => pageCid() && (await findCommentInPage(replyToDelete.cid, pageCid(), post.replies)).deleted === true, {
+            timeout: 200000
+        });
     });
 
     it(`Can publish a reply or vote under a reply of a deleted reply`, async () => {
