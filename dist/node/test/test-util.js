@@ -59,8 +59,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.publishWithExpectedResult = exports.publishRandomPost = exports.publishRandomReply = exports.mockPlebbit = exports.startSubplebbits = exports.getAllCommentsUnderSubplebbit = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
+exports.waitTillCommentIsInParentPages = exports.findCommentInPage = exports.publishWithExpectedResult = exports.publishVote = exports.publishRandomPost = exports.publishRandomReply = exports.mockPlebbit = exports.startSubplebbits = exports.getAllCommentsUnderSubplebbit = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
 var util_1 = require("../util");
+var comment_1 = require("../comment");
 var index_1 = __importDefault(require("../index"));
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var async_wait_until_1 = __importDefault(require("async-wait-until"));
@@ -681,6 +682,35 @@ function publishRandomPost(subplebbitAddress, plebbit, postProps) {
     });
 }
 exports.publishRandomPost = publishRandomPost;
+function publishVote(commentCid, vote, plebbit, voteProps) {
+    return __awaiter(this, void 0, void 0, function () {
+        var comment, voteObj, _a, _b, _c;
+        var _d;
+        return __generator(this, function (_e) {
+            switch (_e.label) {
+                case 0: return [4 /*yield*/, plebbit.getComment(commentCid)];
+                case 1:
+                    comment = _e.sent();
+                    _b = (_a = plebbit).createVote;
+                    _d = { commentCid: commentCid, vote: vote, subplebbitAddress: comment.subplebbitAddress };
+                    _c = (voteProps === null || voteProps === void 0 ? void 0 : voteProps.signer);
+                    if (_c) return [3 /*break*/, 3];
+                    return [4 /*yield*/, plebbit.createSigner()];
+                case 2:
+                    _c = (_e.sent());
+                    _e.label = 3;
+                case 3: return [4 /*yield*/, _b.apply(_a, [__assign.apply(void 0, [(_d.signer = _c, _d), voteProps])])];
+                case 4:
+                    voteObj = _e.sent();
+                    return [4 /*yield*/, publishWithExpectedResult(voteObj, true)];
+                case 5:
+                    _e.sent();
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.publishVote = publishVote;
 function publishWithExpectedResult(publication, expectedChallengeSuccess, expectedReason) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
@@ -712,3 +742,95 @@ function publishWithExpectedResult(publication, expectedChallengeSuccess, expect
     });
 }
 exports.publishWithExpectedResult = publishWithExpectedResult;
+function findCommentInPage(commentCid, pageCid, pages) {
+    return __awaiter(this, void 0, void 0, function () {
+        var commentPages;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, loadAllPages(pageCid, pages)];
+                case 1:
+                    commentPages = _a.sent();
+                    return [2 /*return*/, commentPages.find(function (c) { return c.cid === commentCid; })];
+            }
+        });
+    });
+}
+exports.findCommentInPage = findCommentInPage;
+function waitTillCommentIsInParentPages(comment, plebbit, propsToCheckFor, checkInAllPages) {
+    if (checkInAllPages === void 0) { checkInAllPages = false; }
+    return __awaiter(this, void 0, void 0, function () {
+        var parent, _a, pageCid, commentInPage, pageCids, _i, _b, pageCid_1, commentInPage_1, _c, _d, _e, key, value, _f, _g, _h, key, value;
+        var _this = this;
+        return __generator(this, function (_j) {
+            switch (_j.label) {
+                case 0:
+                    if (!(comment.depth === 0)) return [3 /*break*/, 2];
+                    return [4 /*yield*/, plebbit.getSubplebbit(comment.subplebbitAddress)];
+                case 1:
+                    _a = _j.sent();
+                    return [3 /*break*/, 4];
+                case 2: return [4 /*yield*/, plebbit.getComment(comment.parentCid)];
+                case 3:
+                    _a = _j.sent();
+                    _j.label = 4;
+                case 4:
+                    parent = _a;
+                    //@ts-ignore
+                    parent._updateIntervalMs = 200;
+                    return [4 /*yield*/, parent.update()];
+                case 5:
+                    _j.sent();
+                    pageCid = function () { var _a, _b, _c, _d; return (parent instanceof comment_1.Comment ? (_b = (_a = parent.replies) === null || _a === void 0 ? void 0 : _a.pageCids) === null || _b === void 0 ? void 0 : _b.topAll : (_d = (_c = parent.posts) === null || _c === void 0 ? void 0 : _c.pageCids) === null || _d === void 0 ? void 0 : _d.new); };
+                    return [4 /*yield*/, (0, async_wait_until_1.default)(function () { return __awaiter(_this, void 0, void 0, function () { var _a, _b; return __generator(this, function (_c) {
+                            switch (_c.label) {
+                                case 0:
+                                    _a = Boolean;
+                                    _b = pageCid();
+                                    if (!_b) return [3 /*break*/, 2];
+                                    return [4 /*yield*/, findCommentInPage(comment.cid, pageCid(), comment.replies)];
+                                case 1:
+                                    _b = (commentInPage = _c.sent());
+                                    _c.label = 2;
+                                case 2: return [2 /*return*/, _a.apply(void 0, [_b])];
+                            }
+                        }); }); }, {
+                            timeout: 200000
+                        })];
+                case 6:
+                    _j.sent();
+                    return [4 /*yield*/, parent.stop()];
+                case 7:
+                    _j.sent();
+                    pageCids = parent instanceof comment_1.Comment ? parent.replies.pageCids : parent.posts.pageCids;
+                    if (!checkInAllPages) return [3 /*break*/, 12];
+                    _i = 0, _b = Object.values(pageCids);
+                    _j.label = 8;
+                case 8:
+                    if (!(_i < _b.length)) return [3 /*break*/, 11];
+                    pageCid_1 = _b[_i];
+                    return [4 /*yield*/, findCommentInPage(comment.cid, pageCid_1, comment.replies)];
+                case 9:
+                    commentInPage_1 = _j.sent();
+                    for (_c = 0, _d = Object.entries(propsToCheckFor); _c < _d.length; _c++) {
+                        _e = _d[_c], key = _e[0], value = _e[1];
+                        if ((0, util_1.encode)(commentInPage_1[key]) !== (0, util_1.encode)(value))
+                            throw Error("commentInPage[".concat(key, "] is incorrect"));
+                    }
+                    _j.label = 10;
+                case 10:
+                    _i++;
+                    return [3 /*break*/, 8];
+                case 11: return [3 /*break*/, 13];
+                case 12:
+                    for (_f = 0, _g = Object.entries(propsToCheckFor); _f < _g.length; _f++) {
+                        _h = _g[_f], key = _h[0], value = _h[1];
+                        if ((0, util_1.encode)(commentInPage[key]) !== (0, util_1.encode)(value))
+                            throw Error("commentInPage[".concat(key, "] is incorrect"));
+                    }
+                    _j.label = 13;
+                case 13: return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.waitTillCommentIsInParentPages = waitTillCommentIsInParentPages;

@@ -48,6 +48,7 @@ export declare class DbHandler {
     getLastVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<VoteType | undefined>;
     private _baseCommentQuery;
     private _parseJsonFields;
+    private _queryReplyCount;
     private _createCommentsFromRows;
     private _createEditsFromRows;
     private _createVotesFromRows;

@@ -4,7 +4,7 @@ import { Plebbit } from "../plebbit";
 import Vote from "../vote";
 import { Pages } from "../pages";
 import { Subplebbit } from "../subplebbit";
-import { CommentType, CreateCommentOptions, PostType, SignerType } from "../types";
+import { CommentType, CreateCommentOptions, PostType, SignerType, VoteType } from "../types";
 import Publication from "../publication";
 export declare function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, signer?: SignerType, randomTimestamp?: boolean, postProps?: Partial<CreateCommentOptions | PostType>): Promise<Comment | Post>;
 export declare function generateMockComment(parentPostOrComment: Post | Comment, plebbit: Plebbit, signer?: SignerType, randomTimestamp?: boolean, commentProps?: Partial<CreateCommentOptions | CommentType>): Promise<Comment>;
@@ -21,4 +21,7 @@ export declare function startSubplebbits(props: {
 export declare function mockPlebbit(dataPath?: string): Promise<Plebbit>;
 export declare function publishRandomReply(parentComment: Comment, plebbit: Plebbit, commentProps: Partial<CommentType>): Promise<Comment>;
 export declare function publishRandomPost(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<PostType>): Promise<Comment | Post>;
+export declare function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbit: Plebbit, voteProps?: Partial<VoteType>): Promise<void>;
 export declare function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string): Promise<void>;
+export declare function findCommentInPage(commentCid: string, pageCid: string, pages: Pages): Promise<CommentType>;
+export declare function waitTillCommentIsInParentPages(comment: Comment, plebbit: Plebbit, propsToCheckFor: Partial<CommentType>, checkInAllPages?: boolean): Promise<void>;

@@ -818,15 +818,8 @@ var DbHandler = /** @class */ (function () {
             _b["".concat(TABLES.VOTES, ".vote")] = -1,
             _b))
             .as("downvoteCount");
-        var replyCountQuery = this._baseTransaction(trx)
-            .from("".concat(TABLES.COMMENTS, " AS comments2"))
-            .count("")
-            .where({
-            "comments2.parentCid": this._knex.raw("".concat(TABLES.COMMENTS, ".cid"))
-        })
-            .as("replyCount");
         var query = this._baseTransaction(trx)(TABLES.COMMENTS)
-            .select("".concat(TABLES.COMMENTS, ".*"), upvoteQuery, downvoteQuery, replyCountQuery)
+            .select("".concat(TABLES.COMMENTS, ".*"), upvoteQuery, downvoteQuery)
             .jsonExtract("authorEdit", "$.deleted", "deleted", true);
         if (options.excludeCommentsWithDifferentSubAddress)
             query = query.where({ subplebbitAddress: this._subplebbit.address });
@@ -855,7 +848,24 @@ var DbHandler = /** @class */ (function () {
         }
         return newObj;
     };
-    DbHandler.prototype._createCommentsFromRows = function (commentsRows) {
+    DbHandler.prototype._queryReplyCount = function (commentCid, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            var children, _a, _b, _c;
+            var _this = this;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0: return [4 /*yield*/, this.queryCommentsUnderComment(commentCid, { excludeDeletedComments: true, excludeRemovedComments: true }, trx)];
+                    case 1:
+                        children = _d.sent();
+                        _a = children.length;
+                        _c = (_b = lodash_1.default).sum;
+                        return [4 /*yield*/, Promise.all(children.map(function (comment) { return _this._queryReplyCount(comment.cid, trx); }))];
+                    case 2: return [2 /*return*/, (_a + _c.apply(_b, [_d.sent()]))];
+                }
+            });
+        });
+    };
+    DbHandler.prototype._createCommentsFromRows = function (commentsRows, trx) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_a) {
@@ -864,13 +874,18 @@ var DbHandler = /** @class */ (function () {
                 if (!Array.isArray(commentsRows))
                     commentsRows = [commentsRows];
                 return [2 /*return*/, Promise.all(commentsRows.map(function (props) { return __awaiter(_this, void 0, void 0, function () {
-                        var replacedProps;
+                        var replyCount, replacedProps;
                         return __generator(this, function (_a) {
-                            replacedProps = this._parseJsonFields((0, util_1.replaceXWithY)(props, null, undefined));
-                            (0, assert_1.default)(typeof replacedProps.replyCount === "number" &&
-                                typeof replacedProps.upvoteCount === "number" &&
-                                typeof replacedProps.downvoteCount === "number");
-                            return [2 /*return*/, replacedProps];
+                            switch (_a.label) {
+                                case 0: return [4 /*yield*/, this._queryReplyCount(props.cid, trx)];
+                                case 1:
+                                    replyCount = _a.sent();
+                                    replacedProps = this._parseJsonFields((0, util_1.replaceXWithY)(__assign(__assign({}, props), { replyCount: replyCount }), null, undefined));
+                                    (0, assert_1.default)(typeof replacedProps.replyCount === "number" &&
+                                        typeof replacedProps.upvoteCount === "number" &&
+                                        typeof replacedProps.downvoteCount === "number");
+                                    return [2 /*return*/, replacedProps];
+                            }
                         });
                     }); }))];
             });
@@ -920,28 +935,27 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, this._baseCommentQuery(trx, options).where({ parentCid: parentCid }).orderBy("timestamp", order)];
                     case 1:
                         comments = _a.sent();
-                        return [2 /*return*/, this._createCommentsFromRows(comments)];
+                        return [2 /*return*/, this._createCommentsFromRows(comments, trx)];
                 }
             });
         });
     };
     DbHandler.prototype.queryCommentsBetweenTimestampRange = function (parentCid, timestamp1, timestamp2, options, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var finalQuery, rawCommentObjs;
+            var rawCommentObjs;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         parentCid = parentCid || null;
                         if (timestamp1 === Number.NEGATIVE_INFINITY)
                             timestamp1 = 0;
-                        finalQuery = this._baseCommentQuery(trx, options)
-                            .where({ parentCid: parentCid })
-                            .whereBetween("timestamp", [timestamp1, timestamp2]);
-                        return [4 /*yield*/, finalQuery];
+                        return [4 /*yield*/, this._baseCommentQuery(trx, options)
+                                .where({ parentCid: parentCid })
+                                .whereBetween("timestamp", [timestamp1, timestamp2])];
                     case 1:
                         rawCommentObjs = _a.sent();
                         (0, assert_1.default)(!rawCommentObjs.some(function (comment) { return comment.timestamp < timestamp1 || comment.timestamp > timestamp2; }));
-                        return [2 /*return*/, this._createCommentsFromRows(rawCommentObjs)];
+                        return [2 /*return*/, this._createCommentsFromRows(rawCommentObjs, trx)];
                 }
             });
         });
@@ -970,7 +984,7 @@ var DbHandler = /** @class */ (function () {
                                 .where((_b = {}, _b["".concat(TABLES.COMMENTS, ".parentCid")] = parentCid, _b))];
                     case 1:
                         rawCommentsObjs = _c.sent();
-                        return [2 /*return*/, this._createCommentsFromRows(rawCommentsObjs)];
+                        return [2 /*return*/, this._createCommentsFromRows(rawCommentsObjs, trx)];
                 }
             });
         });
@@ -986,7 +1000,7 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, this._baseCommentQuery(trx, queryOptions).where({ parentCid: parentCid }).orderBy("timestamp", "desc")];
                     case 1:
                         commentsObjs = _a.sent();
-                        return [2 /*return*/, this._createCommentsFromRows(commentsObjs)];
+                        return [2 /*return*/, this._createCommentsFromRows(commentsObjs, trx)];
                 }
             });
         });
@@ -1024,8 +1038,7 @@ var DbHandler = /** @class */ (function () {
                     case 0:
                         _a = this._createCommentsFromRows;
                         return [4 /*yield*/, this._baseCommentQuery(trx).orderBy("id", "desc")];
-                    case 1: return [4 /*yield*/, _a.apply(this, [_b.sent()])];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 1: return [2 /*return*/, _a.apply(this, [_b.sent(), trx])];
                 }
             });
         });
@@ -1092,7 +1105,7 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, this._baseCommentQuery(trx).where("cid", cid).first()];
                     case 1:
                         commentObj = _a.sent();
-                        return [4 /*yield*/, this._createCommentsFromRows(commentObj)];
+                        return [4 /*yield*/, this._createCommentsFromRows(commentObj, trx)];
                     case 2: return [2 /*return*/, (_a.sent())[0]];
                 }
             });
@@ -1107,7 +1120,7 @@ var DbHandler = /** @class */ (function () {
                         parentCid = parentCid || null;
                         _a = this._createCommentsFromRows;
                         return [4 /*yield*/, this._baseCommentQuery(trx).where({ parentCid: parentCid, pinned: true })];
-                    case 1: return [2 /*return*/, _a.apply(this, [_b.sent()])];
+                    case 1: return [2 /*return*/, _a.apply(this, [_b.sent(), trx])];
                 }
             });
         });
@@ -1120,7 +1133,7 @@ var DbHandler = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this._baseCommentQuery(trx).whereNotNull("title").orderBy("id", "desc").first()];
                     case 1:
                         commentObj = _a.sent();
-                        return [4 /*yield*/, this._createCommentsFromRows(commentObj)];
+                        return [4 /*yield*/, this._createCommentsFromRows(commentObj, trx)];
                     case 2:
                         post = (_a.sent())[0];
                         if (!post)
@@ -1168,7 +1181,7 @@ var DbHandler = /** @class */ (function () {
                                         case 0: return [4 /*yield*/, this._baseCommentQuery(trx).where({ depth: depth })];
                                         case 1:
                                             commentsWithDepth = _a.sent();
-                                            return [2 /*return*/, this._createCommentsFromRows(commentsWithDepth)];
+                                            return [2 /*return*/, this._createCommentsFromRows(commentsWithDepth, trx)];
                                     }
                                 });
                             }); }))];
@@ -1202,7 +1215,7 @@ var DbHandler = /** @class */ (function () {
                     case 0:
                         _a = this._createCommentsFromRows;
                         return [4 /*yield*/, this._baseCommentQuery(trx).where({ authorAddress: authorAddress })];
-                    case 1: return [2 /*return*/, _a.apply(this, [_b.sent()])];
+                    case 1: return [2 /*return*/, _a.apply(this, [_b.sent(), trx])];
                 }
             });
         });
