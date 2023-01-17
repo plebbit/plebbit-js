@@ -82,8 +82,7 @@ module.exports = function (config) {
         // fix various timeout errors
         browserNoActivityTimeout: mochaConfig.timeout,
         captureTimeout: mochaConfig.timeout,
-        browserDisconnectTimeout: mochaConfig.timeout,
-        browserDisconnectTolerance: 10
+        browserDisconnectTimeout: mochaConfig.timeout
     });
 };
 
