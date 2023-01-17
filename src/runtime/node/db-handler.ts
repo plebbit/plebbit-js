@@ -495,7 +495,11 @@ export class DbHandler {
     }
 
     private async _queryReplyCount(commentCid: string, trx?: Transaction): Promise<number> {
-        const children = await this.queryCommentsUnderComment(commentCid, {}, trx);
+        const children = await this.queryCommentsUnderComment(
+            commentCid,
+            { excludeDeletedComments: true, excludeRemovedComments: true },
+            trx
+        );
 
         return (
             children.length + lodash.sum(await Promise.all(children.map((comment: CommentType) => this._queryReplyCount(comment.cid, trx))))
