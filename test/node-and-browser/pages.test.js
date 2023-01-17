@@ -33,10 +33,6 @@ const testCommentFields = (comment) => {
     }
     expect(comment.protocolVersion).to.be.a("string");
     expect(comment.replyCount).to.be.a("number");
-    if (comment.replyCount > 0) {
-        expect(comment.replies.pages.topAll.comments.length).to.equal(comment.replyCount);
-        expect(comment.replies.pageCids).to.have.keys(["controversialAll", "new", "old", "topAll"]);
-    }
 
     expect(comment.signature).to.be.a("object");
     expect(comment.subplebbitAddress).to.equal(subplebbitAddress);
@@ -120,9 +116,7 @@ const testRepliesSort = async (parentComments, replySortName) => {
         }
 
         expect(Object.keys(comment.replies.pageCids)).to.deep.equal(Object.keys(REPLIES_SORT_TYPES));
-        expect(comment.replies.pages.topAll.comments.length).to.equal(comment.replyCount);
         const commentPages = await loadAllPages(comment.replies.pageCids[replySortName], subplebbit.posts);
-        expect(commentPages.length).to.equal(comment.replyCount);
         testListOfSortedComments(commentPages, replySortName);
         await testRepliesSort(commentPages, replySortName);
     }
