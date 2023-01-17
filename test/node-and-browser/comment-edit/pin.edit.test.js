@@ -179,9 +179,9 @@ describe(`Pinning posts`, async () => {
         await publishWithExpectedResult(pinEdit, true);
     });
     it(`A new CommentUpdate is published with pinned=false`, async () => {
-        await waitUntil(() => secondPostToPin.pinned === false, { timeout: 200000 });
-        expect(secondPostToPin.pinned).to.be.false;
-        expect(secondPostToPin.moderatorReason).to.equal("To unpin the second post");
+        await waitUntil(() => secondPostToPin.pinned === false && secondPostToPin.moderatorReason === "To unpin the second post", {
+            timeout: 200000
+        });
     });
     it(`Unpinned posts is sorted like regular posts`, async () => {
         await waitUntil(

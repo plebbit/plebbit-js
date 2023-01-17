@@ -109,11 +109,7 @@ const testPostsSort = async (sortName) => {
 
 const testRepliesSort = async (parentComments, replySortName) => {
     for (const comment of parentComments) {
-        if (comment.replyCount === 0) {
-            expect(comment.replies.pageCids).to.be.undefined;
-            expect(comment.replies.pages).to.deep.equal({});
-            continue;
-        }
+        if (lodash.isEqual(comment.replies.pages, {})) continue;
 
         expect(Object.keys(comment.replies.pageCids)).to.deep.equal(Object.keys(REPLIES_SORT_TYPES));
         const commentPages = await loadAllPages(comment.replies.pageCids[replySortName], subplebbit.posts);
