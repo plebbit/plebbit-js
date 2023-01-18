@@ -111,6 +111,8 @@ async function _sign(
     log: Logger
 ): Promise<Signature> {
     if (typeof signer.publicKey !== "string") throw Error("signer.publicKey needs to be defined before signing");
+    if (typeof signer.type !== "string") throw Error("signer.type needs to be defined before signing");
+
     const fieldsToSign = {
         ...lodash.fromPairs(signedPropertyNames.map((name: string) => [name, undefined])), // Create an object with all of signedPropertyNames present
         ...lodash.pick(removeKeysWithUndefinedValues(publication), signedPropertyNames)

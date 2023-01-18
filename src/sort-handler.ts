@@ -180,7 +180,7 @@ export class SortHandler {
         const pages = new Pages({
             pages: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages.pages[0] }))),
             pageCids: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages.cids[0] }))),
-            subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
+            subplebbit: lodash.pick(this.subplebbit, ["address", "plebbit"])
         });
         return pages;
     }
@@ -247,7 +247,7 @@ export class SortHandler {
     async generateRepliesPages(comment: Comment | CommentType, trx?): Promise<Pages | undefined> {
         const cacheKey = CACHE_KEYS[CACHE_KEYS.PREFIX_COMMENT_REPLIES_].concat(comment.cid);
         const cachedReplies: PageType | undefined = await this.subplebbit.dbHandler!.keyvGet(cacheKey);
-        if (cachedReplies) return new Pages({ ...cachedReplies, subplebbit: this.subplebbit });
+        if (cachedReplies) return new Pages({ ...cachedReplies, subplebbit: lodash.pick(this.subplebbit, ["address", "plebbit"]) });
 
         const pages = await this._generateCommentReplies(comment, trx);
         // TODO assert here
@@ -272,7 +272,7 @@ export class SortHandler {
         const cacheKey = CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT];
 
         const cachedPosts: Pages | undefined = await this.subplebbit.dbHandler?.keyvGet(cacheKey);
-        if (cachedPosts) return new Pages({ ...cachedPosts, subplebbit: this.subplebbit });
+        if (cachedPosts) return new Pages({ ...cachedPosts, subplebbit: lodash.pick(this.subplebbit, ["address", "plebbit"]) });
 
         const pages = await this._generateSubplebbitPosts(trx, pageOptions);
         if (!pages && subplebbitPostCount > 0)

@@ -1,5 +1,4 @@
 import { CID, IPFSHTTPClient, Options } from "ipfs-http-client";
-import { Knex } from "knex";
 import { Pages } from "./pages";
 import { DbHandler } from "./runtime/node/db-handler";
 import fetch from "node-fetch";

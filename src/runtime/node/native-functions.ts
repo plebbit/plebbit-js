@@ -138,9 +138,8 @@ const nativeFunctions: NativeFunctions = {
         if (typeof ipnsKeyName !== "string") throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
         if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
             throw Error("ipfsKey needs to be defined before importing key into IPFS node");
-        const ipfsKeyFile = Buffer.from(ipfsKey);
 
-        data.append("file", ipfsKeyFile);
+        data.append("file", Buffer.from(ipfsKey));
         const nodeUrl =
             typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
         if (!nodeUrl) throw Error("Can't figure out ipfs node URL");

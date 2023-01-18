@@ -148,7 +148,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.posts = new Pages({
             pages: mergedProps?.posts?.pages || {},
             pageCids: mergedProps?.posts?.pageCids || {},
-            subplebbit: this
+            subplebbit: lodash.pick(this, ["address", "plebbit"])
         });
 
         this.roles = mergedProps.roles;
