@@ -1,5 +1,4 @@
 const { mockPlebbit, publishRandomPost } = require("../../../dist/node/test/test-util");
-const { encode } = require("../../../dist/node/util");
 const path = require("path");
 const fs = require("fs");
 const { default: waitUntil } = require("async-wait-until");
@@ -37,26 +36,7 @@ describe("subplebbit", async () => {
         await createdSubplebbit.stop();
     });
 
-    it("Two local sub instances can receive each other updates with subplebbit.update", async () => {
-        const subOne = await plebbit.createSubplebbit({});
-        subOne._syncIntervalMs = syncInterval;
-        await subOne.start();
-        await new Promise((resolve) => subOne.once("update", resolve));
-        // subOne is published now
-        const subTwo = await plebbit.createSubplebbit({ address: subOne.address });
-        subTwo._updateIntervalMs = syncInterval;
-        await subTwo.update();
-        const newTitle = "Test new Title" + Date.now();
-        await subOne.edit({ title: newTitle });
-        expect(subOne.title).to.equal(newTitle);
-        await waitUntil(() => subTwo.title === newTitle);
-        expect(subTwo.title).to.equal(newTitle);
-        expect(subOne.title).to.equal(newTitle);
-        expect(encode(subTwo.toJSON())).to.equal(encode(subOne.toJSON()));
-        subOne.stop();
-        subTwo.stop();
-        subTwo.removeAllListeners();
-    });
+    
 
     it(`Two local sub instances can receive each other confidential updates`);
 
