@@ -286,8 +286,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 this.emit("error", editError);
             });
             log.trace(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
-            if (this._sync) await this.dbHandler.unlockSubStart();
-            this.initSubplebbit(newSubplebbitOptions);
+            this.initSubplebbit(lodash.pick(newSubplebbitOptions, "address"));
+            await this._updateDbInternalState(lodash.pick(newSubplebbitOptions, "address"));
             await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                 address: this.address,
                 plebbit: {
@@ -297,13 +297,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.dbHandler.keyvDelete(CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]); // To trigger a new subplebbit.posts
             this.sortHandler = new SortHandler({ address: this.address, plebbit: this.plebbit, dbHandler: this.dbHandler });
             this.posts = undefined;
-            if (this._sync) await this.dbHandler.lockSubStart();
         }
 
-        this.initSubplebbit(newSubplebbitOptions);
+        this.initSubplebbit(lodash.omit(newSubplebbitOptions, "address"));
 
         log(`Subplebbit (${this.address}) props (${Object.keys(newSubplebbitOptions)}) has been edited`);
-        await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternal());
+        await this._updateDbInternalState(lodash.omit(newSubplebbitOptions, "address"));
 
         return this;
     }
@@ -401,6 +400,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             if (!signatureValidation.valid)
                 throw Error(`Newly generated subplebbit JSON has an invalid signature due to reason (${signatureValidation.reason})`);
             this.signature = newSignature;
+
+            await this._updateDbInternalState(lodash.pick(this.toJSON(), ["posts", "lastPostCid", "metricsCid", "updatedAt", "signature"]));
 
             const file = await this.plebbit.ipfsClient.add(encode(this.toJSON()));
             await this.plebbit.ipfsClient.name.publish(file.path, {
@@ -1053,22 +1054,46 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
+    private async _mergeDbInternalStateWithCurrentState() {
+        const log = Logger("plebbit-js:subplebbit:sync");
+        const internalState: SubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
+        if (internalState.address !== this.address) {
+            log(`Internal state from DB has a different address, will publish new IPNS records to new address (${internalState.address})`);
+            await this.dbHandler.unlockSubStart(this.address);
+            await this.dbHandler.lockSubStart(internalState.address);
+            this.address = internalState.address;
+            this.dbHandler = undefined;
+            await this.initDbHandlerIfNeeded();
+            await this.dbHandler.initDbIfNeeded();
+            }
+        this.initSubplebbit(internalState);
+    }
+
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:subplebbit:sync");
 
+        await this._mergeDbInternalStateWithCurrentState();
         await this._listenToIncomingRequests();
+
+        if (!this.dbHandler) return;
+
         try {
-            const dbComments = await this.dbHandler.queryComments();
+            const dbComments = await this.dbHandler!.queryComments();
             await Promise.all(
                 dbComments.map(async (commentProps: CommentType) => this.syncComment(await this.plebbit.createComment(commentProps)))
             );
             await this.sortHandler.cacheCommentsPages();
             await this.updateSubplebbitIpns();
-
-            if (this.dbHandler) await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternal());
         } catch (e) {
             log.error(`Failed to sync due to error,`, e);
         }
+    }
+
+    private async _updateDbInternalState(props: Partial<SubplebbitType>) {
+        await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], {
+            ...(await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT])),
+            ...props
+        });
     }
 
     private async _syncLoop(syncIntervalMs: number) {
@@ -1103,10 +1128,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (typeof this.pubsubTopic !== "string") {
             this.pubsubTopic = lodash.clone(this.address);
             log(`Defaulted subplebbit (${this.address}) pubsub topic to ${this.pubsubTopic} since sub owner hasn't provided any`);
+            await this._updateDbInternalState(lodash.pick(this, "pubsubTopic"));
         }
         if (typeof this.createdAt !== "number") {
             this.createdAt = timestamp();
             log(`Subplebbit (${this.address}) createdAt has been set to ${this.createdAt}`);
+            await this._updateDbInternalState(lodash.pick(this, "createdAt"));
         }
 
         this.syncIpnsWithDb()
