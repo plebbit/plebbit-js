@@ -27,7 +27,7 @@ describe(`subplebbit.edit`, async () => {
         await new Promise((resolve) => subplebbit.once("update", resolve));
         await publishRandomPost(subplebbit.address, plebbit);
     });
-    after(async () => subplebbit.stop());
+    after(async () => await subplebbit.stop());
 
     [{ title: `Test subplebbit title edit ${Date.now()}` }, { description: `Test subplebbit description edit ${Date.now()}` }].map(
         (editArgs) =>
@@ -185,7 +185,6 @@ describe(`Concurrency with subplebbit.edit`, async () => {
         await editedSub.edit({ address: ethAddress });
         expect(editedSub.address).to.equal(ethAddress);
 
-        // await new Promise((resolve) => startedSub.once("update", resolve));
         await waitUntil(() => startedSub.address === ethAddress, { timeout: 200000 });
         expect(startedSub.address).to.equal(ethAddress);
 

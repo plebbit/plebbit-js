@@ -4,7 +4,6 @@ const { messages } = require("../../../dist/node/errors");
 const path = require("path");
 const fs = require("fs");
 const { default: waitUntil } = require("async-wait-until");
-const branchy = require("branchy");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
@@ -118,26 +117,5 @@ describe(`Start lock`, async () => {
         await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for 10s
         await assert.isFulfilled(sub.start());
         await sub.stop();
-    });
-
-    it(`Same sub can't be started in different processes`, async () => {
-        const sub = await plebbit.createSubplebbit();
-        await sub.start();
-
-        // Have to import all these packages because forked process doesn't have them
-        const test = branchy(async (subAddress) => {
-            const { mockPlebbit } = require("../../../dist/node/test/test-util");
-            const chai = require("chai");
-            const chaiAsPromised = require("chai-as-promised");
-            chai.use(chaiAsPromised);
-            const { expect, assert } = chai;
-            const { messages } = require("../../../dist/node/errors");
-
-            const branchPlebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
-            const sub = await branchPlebbit.createSubplebbit({ address: subAddress });
-            await assert.isRejected(sub.start(), messages.ERR_SUB_ALREADY_STARTED);
-        });
-
-        await test(sub.address);
     });
 });

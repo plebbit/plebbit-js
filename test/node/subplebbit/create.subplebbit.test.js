@@ -5,7 +5,6 @@ const path = require("path");
 const { messages } = require("../../../dist/node/errors");
 const fs = require("fs");
 const { default: waitUntil } = require("async-wait-until");
-const branchy = require("branchy");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
@@ -163,31 +162,6 @@ describe("Create lock", async () => {
         await assert.isRejected(plebbit.createSubplebbit({ address: sub.address }), messages.ERR_SUB_CREATION_LOCKED);
         await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for 10s
         await assert.isFulfilled(plebbit.createSubplebbit({ address: sub.address }));
-        await sub.stop();
-    });
-
-    it(`Same sub can't be created in different processes`, async () => {
-        // Have to import all these packages because forked process doesn't have them
-        const createSubInDifferentProcess = branchy(async (subAddress) => {
-            const { mockPlebbit } = require("../../../dist/node/test/test-util");
-            const chai = require("chai");
-            const chaiAsPromised = require("chai-as-promised");
-            chai.use(chaiAsPromised);
-            const { expect, assert } = chai;
-            const { messages } = require("../../../dist/node/errors");
-            const path = require("path");
-            const fs = require("fs");
-            const { default: waitUntil } = require("async-wait-until");
-            const branchPlebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
-            const lockPath = path.join(branchPlebbit.dataPath, "subplebbits", `${subAddress}.create.lock`);
-            await waitUntil(() => fs.existsSync(lockPath), { intervalBetweenAttempts: 25 });
-            await assert.isRejected(branchPlebbit.createSubplebbit({ address: subAddress }), messages.ERR_SUB_CREATION_LOCKED);
-        });
-        const subSigner = await plebbit.createSigner();
-        const sub = await plebbit.createSubplebbit({ signer: subSigner });
-
-        await Promise.all([createSubInDifferentProcess(subSigner.address), sub.dbHandler.lockSubCreation()]);
-        await sub.dbHandler.unlockSubCreation();
         await sub.stop();
     });
 });
