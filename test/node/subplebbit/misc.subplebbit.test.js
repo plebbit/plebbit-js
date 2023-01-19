@@ -12,7 +12,7 @@ const syncInterval = 300;
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-describe("subplebbit", async () => {
+describe("plebbit.listSubplebbits", async () => {
     let plebbit, subSigner;
     before(async () => {
         plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
@@ -35,28 +35,32 @@ describe("subplebbit", async () => {
         expect(createdSubplebbit.title).to.equal(title);
         await createdSubplebbit.stop();
     });
+});
 
-    
-
-    it(`Two local sub instances can receive each other confidential updates`);
+describe(`subplebbit.delete`, async () => {
+    let plebbit, sub;
+    before(async () => {
+        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        sub = await plebbit.createSubplebbit();
+    });
 
     it(`Deleted sub is not listed in listSubplebbits`, async () => {
         const subs = await plebbit.listSubplebbits();
-        expect(subs).to.include(subSigner.address);
-        const subRecreated = await plebbit.createSubplebbit({ address: subSigner.address });
+        expect(subs).to.include(sub.address);
+        const subRecreated = await plebbit.createSubplebbit({ address: sub.address });
         await subRecreated.delete();
         const subsAfterDeletion = await plebbit.listSubplebbits();
-        expect(subsAfterDeletion).to.not.include(subSigner.address);
+        expect(subsAfterDeletion).to.not.include(sub.address);
     });
 
     it(`Deleted sub ipfs keys are not listed in ipfs node`, async () => {
         const ipfsKeys = await plebbit.ipfsClient.key.list();
-        const subKeyExists = ipfsKeys.some((key) => key.name === subSigner.ipnsKeyName);
+        const subKeyExists = ipfsKeys.some((key) => key.name === sub.ipnsKeyName);
         expect(subKeyExists).to.be.false;
     });
 
     it(`Deleted sub db is moved to datapath/subplebbits/deleted`, async () => {
-        const expectedPath = path.join(plebbit.dataPath, "subplebbits", "deleted", subSigner.address);
+        const expectedPath = path.join(plebbit.dataPath, "subplebbits", "deleted", sub.address);
         expect(fs.existsSync(expectedPath)).to.be.true;
     });
 });
