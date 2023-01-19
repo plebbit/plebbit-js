@@ -771,11 +771,10 @@ export class DbHandler {
         const log = Logger("plebbit-js:lock:creation");
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.create.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-        if (!fs.existsSync(subDbPath)) await fs.promises.writeFile(subDbPath, ""); // Write a dummy file to lock. Will be replaced by actual db later
         try {
             await lockfile.lock(subDbPath, {
                 lockfilePath,
-                onCompromised: () => {}
+                realpath: false
             });
             log(`Locked the creation of subplebbit (${subAddress}) successfully`);
         } catch (e) {
@@ -799,6 +798,7 @@ export class DbHandler {
             log(`Locked the start of subplebbit (${subAddress}) successfully`);
         } catch (e) {
             if (e.message === "Lock file is already being held") throwWithErrorCode("ERR_SUB_ALREADY_STARTED", `subAddress=${subAddress}`);
+            else throw e;
         }
     }
 
@@ -826,6 +826,7 @@ export class DbHandler {
             await lockfile.unlock(subDbPath, { lockfilePath });
         } catch (e) {
             if (e.message === "Lock is not acquired/owned by you") await fs.promises.rmdir(lockfilePath); // Forcefully delete the lock
+            else throw e;
         }
         log(`Unlocked start of sub (${subAddress})`);
     }
