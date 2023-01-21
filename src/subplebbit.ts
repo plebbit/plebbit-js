@@ -310,6 +310,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     private async updateOnce() {
         const log = Logger("plebbit-js:subplebbit:update");
 
+        if (this.dbHandler) {
+            // Local sub
+            const subState: SubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
+
+            if (encode(this.toJSONInternal()) !== encode(subState)) {
+                log(`Remote Subplebbit received a new update. Will emit an update event`);
+                this.initSubplebbit(subState);
+                this.emit("update", this);
+            }
+        } else {
         if (this.plebbit.resolver.isDomain(this.address))
             try {
                 await this.assertDomainResolvesCorrectly(this.address);
@@ -340,11 +350,20 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.emit("update", this);
         }
     }
+    }
 
     async update() {
         if (this._updateInterval || this._sync) return; // No need to do anything if subplebbit is already updating
-        this.updateOnce();
-        this._updateInterval = setInterval(this.updateOnce.bind(this), this._updateIntervalMs);
+
+        const updateLoop = async () => {
+            if (this._updateInterval) {
+                await this.updateOnce();
+                setTimeout(updateLoop, this._updateIntervalMs);
+            }
+        };
+        this.updateOnce().then(() => {
+            this._updateInterval = setTimeout(updateLoop.bind(this), this._updateIntervalMs);
+        });
     }
 
     async stop() {
