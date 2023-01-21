@@ -137,9 +137,9 @@ describe("Create lock", async () => {
 
     it(`createSubplebbit will throw if user attempted to create a new sub concurrently`, async () => {
         const subSigner = await plebbit.createSigner();
-
         await assert.isRejected(
-            Promise.all([plebbit.createSubplebbit({ signer: subSigner }), plebbit.createSubplebbit({ signer: subSigner })])
+            Promise.all([plebbit.createSubplebbit({ signer: subSigner }), plebbit.createSubplebbit({ signer: subSigner })]),
+            messages.ERR_SUB_CREATION_LOCKED
         );
     });
 
@@ -147,7 +147,8 @@ describe("Create lock", async () => {
         const sub = await plebbit.createSubplebbit(); // Sub is created and has no lock
 
         await assert.isRejected(
-            Promise.all([plebbit.createSubplebbit({ address: sub.address }), plebbit.createSubplebbit({ address: sub.address })])
+            Promise.all([plebbit.createSubplebbit({ address: sub.address }), plebbit.createSubplebbit({ address: sub.address })]),
+            messages.ERR_SUB_CREATION_LOCKED
         );
         await sub.stop();
     });
