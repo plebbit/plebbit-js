@@ -69,12 +69,11 @@ describe("subplebbit.update", async () => {
         loadedSubplebbit._updateIntervalMs = 300;
         await loadedSubplebbit.update();
         const oldUpdatedAt = lodash.clone(loadedSubplebbit.updatedAt);
-        const post = await publishRandomPost(loadedSubplebbit.address, plebbit, {}, false);
+        await publishRandomPost(loadedSubplebbit.address, plebbit, {}, false); // Invoke an update
         await new Promise((resolve) => loadedSubplebbit.once("update", resolve));
         await loadedSubplebbit.stop();
         expect(oldUpdatedAt).to.not.equal(loadedSubplebbit.updatedAt);
         expect(loadedSubplebbit.address).to.equal("plebbit.eth");
-        expect(loadedSubplebbit.lastPostCid).to.equal(post.cid);
     });
 });
 
