@@ -245,8 +245,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         if (await this.dbHandler.keyvHas(internalStateKey)) {
             log(`Merging internal subplebbit state from DB and createSubplebbitOptions`);
-            const cachedSubplebbit: SubplebbitType = await this.dbHandler.keyvGet(internalStateKey);
-            this.initSubplebbit({ ...cachedSubplebbit, ...removeKeysWithUndefinedValues(this.toJSONInternal()) }); // Init subplebbit fields from DB
+            await this._mergeInstanceStateWithDbState(removeKeysWithUndefinedValues(this.toJSONInternal()));
         }
 
         if (!this.signer) throw Error(`subplebbit.signer needs to be defined before proceeding`);
@@ -254,7 +253,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         if (
             !(await this.dbHandler.keyvHas(internalStateKey)) ||
-            encode(this.toJSONInternal()) !== encode(await this.dbHandler?.keyvGet(internalStateKey))
+            encode(this.toJSONInternal()) !== encode(await this._getDbInternalState())
         ) {
             log(`Updating the internal state of subplebbit in DB with createSubplebbitOptions`);
             await this._updateDbInternalState(this.toJSONInternal());
@@ -1069,9 +1068,15 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    private async _mergeInstanceStateWithDbState(overrideProps: Partial<SubplebbitType>) {
+    private async _getDbInternalState() {
+        await this.dbHandler.lockSubState();
         const internalState: SubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
-        this.initSubplebbit({ ...lodash.omit(internalState, "address"), ...overrideProps });
+        await this.dbHandler.unlockSubState();
+        return internalState;
+    }
+
+    private async _mergeInstanceStateWithDbState(overrideProps: Partial<SubplebbitType>) {
+        this.initSubplebbit({ ...lodash.omit(await this._getDbInternalState(), "address"), ...overrideProps });
     }
 
     private async _switchDbIfNeeded() {
@@ -1102,8 +1107,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         await this._switchDbIfNeeded();
         await this._listenToIncomingRequests();
-
-        if (!this.dbHandler) return;
 
         try {
             const dbComments = await this.dbHandler!.queryComments();
