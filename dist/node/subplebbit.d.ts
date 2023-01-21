@@ -51,7 +51,7 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     setProvideCaptchaCallback(newCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[ChallengeType[], string | undefined]>): void;
     setValidateCaptchaAnswerCallback(newCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>): void;
     toJSONInternal(): {
-        signer: Signer;
+        signer: Pick<Signer, "type" | "address" | "privateKey">;
         signature: SignatureType;
         encryption: SubplebbitEncryption;
         address: string;
@@ -96,7 +96,11 @@ export declare class Subplebbit extends EventEmitter implements SubplebbitType {
     private _publishCommentIpns;
     private syncComment;
     private _listenToIncomingRequests;
+    private _getDbInternalState;
+    private _mergeInstanceStateWithDbState;
+    private _switchDbIfNeeded;
     private syncIpnsWithDb;
+    private _updateDbInternalState;
     private _syncLoop;
     start(): Promise<void>;
     delete(): Promise<void>;

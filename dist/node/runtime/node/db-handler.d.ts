@@ -71,12 +71,15 @@ export declare class DbHandler {
     queryCommentsOfAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<CommentType[]>;
     querySubplebbitAuthorFields(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor>;
     changeDbFilename(newDbFileName: string, newSubplebbit: DbHandler["_subplebbit"]): Promise<void>;
-    lockSubCreation(subAddress?: string): Promise<void>;
     lockSubStart(subAddress?: string): Promise<void>;
-    unlockSubCreation(subAddress?: string): Promise<void>;
     unlockSubStart(subAddress?: string): Promise<void>;
-    isSubCreationLocked(subAddress?: string): Promise<boolean>;
     isSubStartLocked(subAddress?: string): Promise<boolean>;
+    lockSubCreation(subAddress?: string): Promise<void>;
+    unlockSubCreation(subAddress?: string): Promise<void>;
+    isSubCreationLocked(subAddress?: string): Promise<boolean>;
+    lockSubState(subAddress?: string): Promise<void>;
+    unlockSubState(subAddress?: string): Promise<void>;
     subDbExists(subAddress?: string): boolean;
+    subAddress(): string;
     private _migrateFromDbV2IfNeeded;
 }

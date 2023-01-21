@@ -183,6 +183,10 @@ function _sign(signedPropertyNames, publication, signer, log) {
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
+                    if (typeof signer.publicKey !== "string")
+                        throw Error("signer.publicKey needs to be defined before signing");
+                    if (typeof signer.type !== "string")
+                        throw Error("signer.type needs to be defined before signing");
                     fieldsToSign = __assign(__assign({}, lodash_1.default.fromPairs(signedPropertyNames.map(function (name) { return [name, undefined]; }))), lodash_1.default.pick((0, util_2.removeKeysWithUndefinedValues)(publication), signedPropertyNames));
                     log.trace("fields to sign: ", fieldsToSign);
                     publicationEncoded = cborg.encode(fieldsToSign);

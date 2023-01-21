@@ -1261,7 +1261,7 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, fs_1.default.promises.mkdir(path_1.default.dirname(newPath), { recursive: true })];
                     case 1:
                         _a.sent();
-                        return [4 /*yield*/, fs_1.default.promises.cp(oldPathString, newPath)];
+                        return [4 /*yield*/, fs_1.default.promises.rename(oldPathString, newPath)];
                     case 2:
                         _a.sent();
                         this._dbConfig = __assign(__assign({}, this._dbConfig), { connection: __assign(__assign({}, this._dbConfig.connection), { filename: newPath }) });
@@ -1276,48 +1276,11 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    // Locking functionality. Will most likely move to another file later
-    DbHandler.prototype.lockSubCreation = function (subAddress) {
-        if (subAddress === void 0) { subAddress = this._subplebbit.address; }
-        return __awaiter(this, void 0, void 0, function () {
-            var log, lockfilePath, subDbPath, e_1;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (subAddress === this._subplebbit.address && this.isDbInMemory())
-                            return [2 /*return*/];
-                        log = (0, plebbit_logger_1.default)("plebbit-js:lock:creation");
-                        lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".create.lock"));
-                        subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-                        if (!!fs_1.default.existsSync(subDbPath)) return [3 /*break*/, 2];
-                        return [4 /*yield*/, fs_1.default.promises.writeFile(subDbPath, "")];
-                    case 1:
-                        _a.sent(); // Write a dummy file to lock. Will be replaced by actual db later
-                        _a.label = 2;
-                    case 2:
-                        _a.trys.push([2, 4, , 5]);
-                        return [4 /*yield*/, lockfile.lock(subDbPath, {
-                                lockfilePath: lockfilePath,
-                                onCompromised: function () { }
-                            })];
-                    case 3:
-                        _a.sent();
-                        log("Locked the creation of subplebbit (".concat(subAddress, ") successfully"));
-                        return [3 /*break*/, 5];
-                    case 4:
-                        e_1 = _a.sent();
-                        if (e_1.message === "Lock file is already being held")
-                            (0, util_1.throwWithErrorCode)("ERR_SUB_CREATION_LOCKED", "subAddress=".concat(subAddress));
-                        return [3 /*break*/, 5];
-                    case 5: return [2 /*return*/];
-                }
-            });
-        });
-    };
+    // Start lock
     DbHandler.prototype.lockSubStart = function (subAddress) {
         if (subAddress === void 0) { subAddress = this._subplebbit.address; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, lockfilePath, subDbPath, e_2;
+            var log, lockfilePath, subDbPath, e_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1331,6 +1294,7 @@ var DbHandler = /** @class */ (function () {
                         _a.trys.push([1, 3, , 4]);
                         return [4 /*yield*/, lockfile.lock(subDbPath, {
                                 lockfilePath: lockfilePath,
+                                realpath: false,
                                 onCompromised: function () { }
                             })];
                     case 2:
@@ -1338,9 +1302,113 @@ var DbHandler = /** @class */ (function () {
                         log("Locked the start of subplebbit (".concat(subAddress, ") successfully"));
                         return [3 /*break*/, 4];
                     case 3:
-                        e_2 = _a.sent();
-                        if (e_2.message === "Lock file is already being held")
+                        e_1 = _a.sent();
+                        if (e_1.message === "Lock file is already being held")
                             (0, util_1.throwWithErrorCode)("ERR_SUB_ALREADY_STARTED", "subAddress=".concat(subAddress));
+                        else {
+                            log("Error while trying to lock start of sub (".concat(subAddress, "): ").concat(e_1));
+                            throw e_1;
+                        }
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.unlockSubStart = function (subAddress) {
+        if (subAddress === void 0) { subAddress = this._subplebbit.address; }
+        return __awaiter(this, void 0, void 0, function () {
+            var log, lockfilePath, subDbPath, e_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (subAddress === this._subplebbit.address && this.isDbInMemory())
+                            return [2 /*return*/];
+                        return [4 /*yield*/, this.isSubStartLocked(subAddress)];
+                    case 1:
+                        if (!(_a.sent()))
+                            return [2 /*return*/];
+                        log = (0, plebbit_logger_1.default)("plebbit-js:lock:start");
+                        lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".start.lock"));
+                        subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 4, , 12]);
+                        return [4 /*yield*/, lockfile.unlock(subDbPath, { lockfilePath: lockfilePath })];
+                    case 3:
+                        _a.sent();
+                        log("Unlocked start of sub (".concat(subAddress, ")"));
+                        return [3 /*break*/, 12];
+                    case 4:
+                        e_2 = _a.sent();
+                        if (!(e_2.code === "ENOENT")) return [3 /*break*/, 7];
+                        if (!fs_1.default.existsSync(lockfilePath)) return [3 /*break*/, 6];
+                        return [4 /*yield*/, fs_1.default.promises.rmdir(lockfilePath)];
+                    case 5:
+                        _a.sent();
+                        _a.label = 6;
+                    case 6: return [3 /*break*/, 11];
+                    case 7:
+                        if (!(e_2.message === "Lock is not acquired/owned by you")) return [3 /*break*/, 10];
+                        if (!fs_1.default.existsSync(lockfilePath)) return [3 /*break*/, 9];
+                        return [4 /*yield*/, fs_1.default.promises.rmdir(lockfilePath)];
+                    case 8:
+                        _a.sent(); // Forcefully delete the lock
+                        _a.label = 9;
+                    case 9: return [3 /*break*/, 11];
+                    case 10:
+                        log("Error while trying to unlock start of sub (".concat(subAddress, "): ").concat(e_2));
+                        throw e_2;
+                    case 11: return [3 /*break*/, 12];
+                    case 12: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.isSubStartLocked = function (subAddress) {
+        if (subAddress === void 0) { subAddress = this._subplebbit.address; }
+        return __awaiter(this, void 0, void 0, function () {
+            var lockfilePath, subDbPath;
+            return __generator(this, function (_a) {
+                lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".start.lock"));
+                subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+                return [2 /*return*/, lockfile.check(subDbPath, { lockfilePath: lockfilePath, realpath: false })];
+            });
+        });
+    };
+    // Creation lock
+    DbHandler.prototype.lockSubCreation = function (subAddress) {
+        if (subAddress === void 0) { subAddress = this._subplebbit.address; }
+        return __awaiter(this, void 0, void 0, function () {
+            var log, lockfilePath, subDbPath, e_3;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (subAddress === this._subplebbit.address && this.isDbInMemory())
+                            return [2 /*return*/];
+                        log = (0, plebbit_logger_1.default)("plebbit-js:lock:creation");
+                        lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".create.lock"));
+                        subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, lockfile.lock(subDbPath, {
+                                lockfilePath: lockfilePath,
+                                realpath: false,
+                                onCompromised: function () { }
+                            })];
+                    case 2:
+                        _a.sent();
+                        log("Locked the creation of subplebbit (".concat(subAddress, ") successfully"));
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_3 = _a.sent();
+                        if (e_3.message === "Lock file is already being held")
+                            (0, util_1.throwWithErrorCode)("ERR_SUB_CREATION_LOCKED", "subAddress=".concat(subAddress));
+                        else {
+                            log("Error while trying to lock creation of sub (".concat(subAddress, "): ").concat(e_3));
+                            throw e_3;
+                        }
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/];
                 }
@@ -1350,54 +1418,45 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype.unlockSubCreation = function (subAddress) {
         if (subAddress === void 0) { subAddress = this._subplebbit.address; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, lockfilePath, subDbPath;
+            var log, lockfilePath, subDbPath, e_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         if (subAddress === this._subplebbit.address && this.isDbInMemory())
                             return [2 /*return*/];
-                        log = (0, plebbit_logger_1.default)("plebbit-js:lock:creation");
+                        log = (0, plebbit_logger_1.default)("plebbit-js:lock:unlockSubCreation");
                         lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".create.lock"));
-                        subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-                        return [4 /*yield*/, lockfile.unlock(subDbPath, { lockfilePath: lockfilePath })];
-                    case 1:
-                        _a.sent();
-                        log("Unlocked creation of sub (".concat(subAddress, ")"));
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    DbHandler.prototype.unlockSubStart = function (subAddress) {
-        if (subAddress === void 0) { subAddress = this._subplebbit.address; }
-        return __awaiter(this, void 0, void 0, function () {
-            var log, lockfilePath, subDbPath, e_3;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (subAddress === this._subplebbit.address && this.isDbInMemory())
-                            return [2 /*return*/];
-                        log = (0, plebbit_logger_1.default)("plebbit-js:lock:start");
-                        lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".start.lock"));
                         subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
                         _a.label = 1;
                     case 1:
-                        _a.trys.push([1, 3, , 6]);
-                        return [4 /*yield*/, lockfile.unlock(subDbPath, { lockfilePath: lockfilePath })];
+                        _a.trys.push([1, 3, , 11]);
+                        return [4 /*yield*/, lockfile.unlock(subDbPath, { lockfilePath: lockfilePath, realpath: false })];
                     case 2:
                         _a.sent();
-                        return [3 /*break*/, 6];
+                        log("Unlocked creation of sub (".concat(subAddress, ")"));
+                        return [3 /*break*/, 11];
                     case 3:
-                        e_3 = _a.sent();
-                        if (!(e_3.message === "Lock is not acquired/owned by you")) return [3 /*break*/, 5];
+                        e_4 = _a.sent();
+                        if (!(e_4.code === "ENOENT")) return [3 /*break*/, 6];
+                        if (!fs_1.default.existsSync(lockfilePath)) return [3 /*break*/, 5];
                         return [4 /*yield*/, fs_1.default.promises.rmdir(lockfilePath)];
                     case 4:
-                        _a.sent(); // Forcefully delete the lock
+                        _a.sent();
                         _a.label = 5;
-                    case 5: return [3 /*break*/, 6];
+                    case 5: return [3 /*break*/, 10];
                     case 6:
-                        log("Unlocked start of sub (".concat(subAddress, ")"));
-                        return [2 /*return*/];
+                        if (!(e_4.message === "Lock is not acquired/owned by you")) return [3 /*break*/, 9];
+                        if (!fs_1.default.existsSync(lockfilePath)) return [3 /*break*/, 8];
+                        return [4 /*yield*/, fs_1.default.promises.rmdir(lockfilePath)];
+                    case 7:
+                        _a.sent(); // Forcefully delete the lock
+                        _a.label = 8;
+                    case 8: return [3 /*break*/, 10];
+                    case 9:
+                        log("Error while trying to unlock creation of sub (".concat(subAddress, "): ").concat(e_4));
+                        throw e_4;
+                    case 10: return [3 /*break*/, 11];
+                    case 11: return [2 /*return*/];
                 }
             });
         });
@@ -1409,25 +1468,75 @@ var DbHandler = /** @class */ (function () {
             return __generator(this, function (_a) {
                 lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".create.lock"));
                 subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-                return [2 /*return*/, lockfile.check(subDbPath, { lockfilePath: lockfilePath })];
+                return [2 /*return*/, lockfile.check(subDbPath, { lockfilePath: lockfilePath, realpath: false })];
             });
         });
     };
-    DbHandler.prototype.isSubStartLocked = function (subAddress) {
+    // Subplebbit state lock
+    DbHandler.prototype.lockSubState = function (subAddress) {
         if (subAddress === void 0) { subAddress = this._subplebbit.address; }
         return __awaiter(this, void 0, void 0, function () {
-            var lockfilePath, subDbPath;
+            var log, lockfilePath, subDbPath, e_5;
             return __generator(this, function (_a) {
-                lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".start.lock"));
-                subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-                return [2 /*return*/, lockfile.check(subDbPath, { lockfilePath: lockfilePath })];
+                switch (_a.label) {
+                    case 0:
+                        if (subAddress === this._subplebbit.address && this.isDbInMemory())
+                            return [2 /*return*/];
+                        log = (0, plebbit_logger_1.default)("plebbit-js:lock:lockSubState");
+                        lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".state.lock"));
+                        subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, lockfile.lock(subDbPath, {
+                                lockfilePath: lockfilePath,
+                                realpath: false,
+                                retries: 3,
+                                onCompromised: function () { }
+                            })];
+                    case 2:
+                        _a.sent();
+                        log("Locked the state of subplebbit (".concat(subAddress, ") successfully"));
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_5 = _a.sent();
+                        if (e_5.message === "Lock file is already being held")
+                            (0, util_1.throwWithErrorCode)("ERR_SUB_STATE_LOCKED", "subAddress=".concat(subAddress));
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/];
+                }
             });
         });
     };
+    DbHandler.prototype.unlockSubState = function (subAddress) {
+        if (subAddress === void 0) { subAddress = this._subplebbit.address; }
+        return __awaiter(this, void 0, void 0, function () {
+            var log, lockfilePath, subDbPath;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (subAddress === this._subplebbit.address && this.isDbInMemory())
+                            return [2 /*return*/];
+                        log = (0, plebbit_logger_1.default)("plebbit-js:lock:unlockSubState");
+                        lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".state.lock"));
+                        subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+                        return [4 /*yield*/, lockfile.unlock(subDbPath, { lockfilePath: lockfilePath })];
+                    case 1:
+                        _a.sent();
+                        log("Unlocked state of sub (".concat(subAddress, ")"));
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    // Misc functions
     DbHandler.prototype.subDbExists = function (subAddress) {
         if (subAddress === void 0) { subAddress = this._subplebbit.address; }
         var dbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
         return fs_1.default.existsSync(dbPath);
+    };
+    DbHandler.prototype.subAddress = function () {
+        return this._subplebbit.address;
     };
     // Will most likely move to another file specialized in DB migration
     DbHandler.prototype._migrateFromDbV2IfNeeded = function () {

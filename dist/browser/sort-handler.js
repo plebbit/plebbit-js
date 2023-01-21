@@ -356,7 +356,7 @@ var SortHandler = /** @class */ (function () {
                 var sortName = _a[0], pages = _a[1];
                 return (_b = {}, _b[sortName] = pages.cids[0], _b);
             }), false)),
-            subplebbit: { address: this.subplebbit.address, plebbit: this.subplebbit.plebbit }
+            subplebbit: lodash_1.default.pick(this.subplebbit, ["address", "plebbit"])
         });
         return pages;
     };
@@ -455,7 +455,7 @@ var SortHandler = /** @class */ (function () {
                     case 1:
                         cachedReplies = _a.sent();
                         if (cachedReplies)
-                            return [2 /*return*/, new pages_1.Pages(__assign(__assign({}, cachedReplies), { subplebbit: this.subplebbit }))];
+                            return [2 /*return*/, new pages_1.Pages(__assign(__assign({}, cachedReplies), { subplebbit: lodash_1.default.pick(this.subplebbit, ["address", "plebbit"]) }))];
                         return [4 /*yield*/, this._generateCommentReplies(comment, trx)];
                     case 2:
                         pages = _a.sent();
@@ -494,7 +494,7 @@ var SortHandler = /** @class */ (function () {
                     case 2:
                         cachedPosts = _c.sent();
                         if (cachedPosts)
-                            return [2 /*return*/, new pages_1.Pages(__assign(__assign({}, cachedPosts), { subplebbit: this.subplebbit }))];
+                            return [2 /*return*/, new pages_1.Pages(__assign(__assign({}, cachedPosts), { subplebbit: lodash_1.default.pick(this.subplebbit, ["address", "plebbit"]) }))];
                         return [4 /*yield*/, this._generateSubplebbitPosts(trx, pageOptions)];
                     case 3:
                         pages = _c.sent();

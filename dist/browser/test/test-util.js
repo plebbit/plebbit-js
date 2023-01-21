@@ -59,12 +59,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.waitTillCommentIsInParentPages = exports.findCommentInPage = exports.publishWithExpectedResult = exports.publishVote = exports.publishRandomPost = exports.publishRandomReply = exports.mockPlebbit = exports.startSubplebbits = exports.getAllCommentsUnderSubplebbit = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
+exports.createMockSub = exports.waitTillCommentIsInParentPages = exports.findCommentInPage = exports.publishWithExpectedResult = exports.publishVote = exports.publishRandomPost = exports.publishRandomReply = exports.mockPlebbit = exports.startSubplebbits = exports.getAllCommentsUnderSubplebbit = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
 var util_1 = require("../util");
 var comment_1 = require("../comment");
 var index_1 = __importDefault(require("../index"));
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var async_wait_until_1 = __importDefault(require("async-wait-until"));
+var assert_1 = __importDefault(require("assert"));
 function generateRandomTimestamp(parentTimestamp) {
     var _a = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, (0, util_1.timestamp)()], lowerLimit = _a[0], upperLimit = _a[1];
     var randomTimestamp = -1;
@@ -97,6 +98,8 @@ function generateMockPost(subplebbitAddress, plebbit, signer, randomTimestamp, p
                     return [4 /*yield*/, plebbit.createComment(__assign({ author: { displayName: "Mock Author - ".concat(postStartTestTime) }, title: "Mock Post - ".concat(postStartTestTime), content: "Mock content - ".concat(postStartTestTime), signer: signer, timestamp: postTimestamp, subplebbitAddress: subplebbitAddress }, postProps))];
                 case 3:
                     post = _b.sent();
+                    //@ts-ignore
+                    post._updateIntervalMs = 200;
                     if (post.constructor.name !== "Post")
                         throw Error("createComment should return Post if title is provided");
                     post.once("challenge", function (challengeMsg) { return post.publishChallengeAnswers([]); });
@@ -129,6 +132,8 @@ function generateMockComment(parentPostOrComment, plebbit, signer, randomTimesta
                     return [4 /*yield*/, plebbit.createComment(__assign({ author: { displayName: "Mock Author - ".concat(commentTime) }, signer: signer, content: "Mock comment - ".concat(commentTime), parentCid: parentPostOrComment.cid, subplebbitAddress: parentPostOrComment.subplebbitAddress, timestamp: commentTimestamp }, commentProps))];
                 case 3:
                     comment = _b.sent();
+                    //@ts-ignore
+                    comment._updateIntervalMs = 200;
                     comment.once("challenge", function (challengeMsg) { return comment.publishChallengeAnswers([]); });
                     return [2 /*return*/, comment];
             }
@@ -366,6 +371,7 @@ function _startEnsSubplebbit(signers, syncInterval, dataPath) {
                     return [4 /*yield*/, subplebbit.edit({ address: "plebbit.eth" })];
                 case 5:
                     _a.sent();
+                    assert_1.default.equal(subplebbit.address, "plebbit.eth");
                     return [2 /*return*/];
             }
         });
@@ -589,8 +595,6 @@ function _waitTillCommentIsOnline(comment, plebbit) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    //@ts-ignore
-                    comment._updateIntervalMs = 200;
                     if (!(comment.depth === 0)) return [3 /*break*/, 5];
                     return [4 /*yield*/, plebbit.getSubplebbit(comment.subplebbitAddress)];
                 case 1:
@@ -642,7 +646,8 @@ function _waitTillCommentIsOnline(comment, plebbit) {
         });
     });
 }
-function publishRandomReply(parentComment, plebbit, commentProps) {
+function publishRandomReply(parentComment, plebbit, commentProps, waitTillCommentIsOnline) {
+    if (waitTillCommentIsOnline === void 0) { waitTillCommentIsOnline = true; }
     return __awaiter(this, void 0, void 0, function () {
         var reply;
         return __generator(this, function (_a) {
@@ -653,16 +658,19 @@ function publishRandomReply(parentComment, plebbit, commentProps) {
                     return [4 /*yield*/, publishWithExpectedResult(reply, true)];
                 case 2:
                     _a.sent();
+                    if (!waitTillCommentIsOnline) return [3 /*break*/, 4];
                     return [4 /*yield*/, _waitTillCommentIsOnline(reply, plebbit)];
                 case 3:
                     _a.sent();
-                    return [2 /*return*/, reply];
+                    _a.label = 4;
+                case 4: return [2 /*return*/, reply];
             }
         });
     });
 }
 exports.publishRandomReply = publishRandomReply;
-function publishRandomPost(subplebbitAddress, plebbit, postProps) {
+function publishRandomPost(subplebbitAddress, plebbit, postProps, waitTillCommentIsOnline) {
+    if (waitTillCommentIsOnline === void 0) { waitTillCommentIsOnline = true; }
     return __awaiter(this, void 0, void 0, function () {
         var post;
         return __generator(this, function (_a) {
@@ -673,10 +681,12 @@ function publishRandomPost(subplebbitAddress, plebbit, postProps) {
                     return [4 /*yield*/, publishWithExpectedResult(post, true)];
                 case 2:
                     _a.sent();
+                    if (!waitTillCommentIsOnline) return [3 /*break*/, 4];
                     return [4 /*yield*/, _waitTillCommentIsOnline(post, plebbit)];
                 case 3:
                     _a.sent();
-                    return [2 /*return*/, post];
+                    _a.label = 4;
+                case 4: return [2 /*return*/, post];
             }
         });
     });
@@ -834,3 +844,24 @@ function waitTillCommentIsInParentPages(comment, plebbit, propsToCheckFor, check
     });
 }
 exports.waitTillCommentIsInParentPages = waitTillCommentIsInParentPages;
+function createMockSub(props, plebbit, syncInterval) {
+    if (syncInterval === void 0) { syncInterval = 300; }
+    return __awaiter(this, void 0, void 0, function () {
+        var sub;
+        var _this = this;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, plebbit.createSubplebbit(props)];
+                case 1:
+                    sub = _a.sent();
+                    //@ts-ignore
+                    sub._syncIntervalMs = sub._updateIntervalMs = syncInterval;
+                    sub.setProvideCaptchaCallback(function () { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                        return [2 /*return*/, [[], "Challenge skipped"]];
+                    }); }); });
+                    return [2 /*return*/, sub];
+            }
+        });
+    });
+}
+exports.createMockSub = createMockSub;

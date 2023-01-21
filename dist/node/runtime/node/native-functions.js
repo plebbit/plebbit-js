@@ -301,7 +301,7 @@ var nativeFunctions = {
         };
     },
     importSignerIntoIpfsNode: function (ipnsKeyName, ipfsKey, plebbit) { return __awaiter(void 0, void 0, void 0, function () {
-        var data, ipfsKeyFile, nodeUrl, url, res, resJson;
+        var data, nodeUrl, url, res, resJson;
         var _a;
         return __generator(this, function (_b) {
             switch (_b.label) {
@@ -311,8 +311,7 @@ var nativeFunctions = {
                         throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
                     if (!ipfsKey || ((_a = ipfsKey.constructor) === null || _a === void 0 ? void 0 : _a.name) !== "Uint8Array" || ipfsKey.byteLength <= 0)
                         throw Error("ipfsKey needs to be defined before importing key into IPFS node");
-                    ipfsKeyFile = Buffer.from(ipfsKey);
-                    data.append("file", ipfsKeyFile);
+                    data.append("file", Buffer.from(ipfsKey));
                     nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
                     if (!nodeUrl)
                         throw Error("Can't figure out ipfs node URL");
