@@ -902,15 +902,15 @@ export class DbHandler {
         log(`Unlocked state of sub (${subAddress})`);
     }
 
-    async isSubStartLocked(subAddress = this._subplebbit.address) {
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-        return lockfile.check(subDbPath, { lockfilePath });
-    }
+    // Misc functions
 
     subDbExists(subAddress = this._subplebbit.address) {
         const dbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
         return fs.existsSync(dbPath);
+    }
+
+    subAddress() {
+        return this._subplebbit.address;
     }
 
     // Will most likely move to another file specialized in DB migration

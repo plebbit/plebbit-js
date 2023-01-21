@@ -63,7 +63,6 @@ import {
     verifyChallengeRequest,
     verifyComment,
     verifyCommentEdit,
-    verifyPage,
     verifySubplebbit,
     verifyVote
 } from "./signer/signatures";
@@ -257,8 +256,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             !(await this.dbHandler.keyvHas(internalStateKey)) ||
             encode(this.toJSONInternal()) !== encode(await this.dbHandler?.keyvGet(internalStateKey))
         ) {
-            log(`Updating the internal state of subplebbit in DB`);
-            await this.dbHandler.keyvSet(internalStateKey, this.toJSONInternal());
+            log(`Updating the internal state of subplebbit in DB with createSubplebbitOptions`);
+            await this._updateDbInternalState(this.toJSONInternal());
         }
 
         await this.dbHandler.unlockSubCreation();
@@ -285,24 +284,22 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 log.error(editError);
                 this.emit("error", editError);
             });
-            log.trace(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
-            this.initSubplebbit(lodash.pick(newSubplebbitOptions, "address"));
+            log(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
             await this._updateDbInternalState(lodash.pick(newSubplebbitOptions, "address"));
+            await this.dbHandler.keyvDelete(CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]); // To trigger a new subplebbit.posts
             await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
-                address: this.address,
+                address: newSubplebbitOptions.address,
                 plebbit: {
                     dataPath: this.plebbit.dataPath
                 }
             });
-            await this.dbHandler.keyvDelete(CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]); // To trigger a new subplebbit.posts
-            this.sortHandler = new SortHandler({ address: this.address, plebbit: this.plebbit, dbHandler: this.dbHandler });
-            this.posts = undefined;
+            await this._switchDbIfNeeded();
         }
 
+        await this._updateDbInternalState(lodash.omit(newSubplebbitOptions, "address"));
         this.initSubplebbit(lodash.omit(newSubplebbitOptions, "address"));
 
         log(`Subplebbit (${this.address}) props (${Object.keys(newSubplebbitOptions)}) has been edited`);
-        await this._updateDbInternalState(lodash.omit(newSubplebbitOptions, "address"));
 
         return this;
     }
@@ -320,36 +317,36 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 this.emit("update", this);
             }
         } else {
-        if (this.plebbit.resolver.isDomain(this.address))
+            if (this.plebbit.resolver.isDomain(this.address))
+                try {
+                    await this.assertDomainResolvesCorrectly(this.address);
+                } catch (e) {
+                    const updateError = errcode(e, e.code, { details: `subplebbit.update: ${e.details}` });
+                    log.error(updateError);
+                    this.emit("error", updateError);
+                    return;
+                }
+
+            const ipnsAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
+            let subplebbitIpns: SubplebbitType;
+
             try {
-                await this.assertDomainResolvesCorrectly(this.address);
+                subplebbitIpns = await loadIpnsAsJson(ipnsAddress, this.plebbit);
             } catch (e) {
-                const updateError = errcode(e, e.code, { details: `subplebbit.update: ${e.details}` });
-                log.error(updateError);
-                this.emit("error", updateError);
+                log.error(`Failed to load subplebbit IPNS, error:`, e);
+                this.emit("error", e);
                 return;
             }
-
-        const ipnsAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
-        let subplebbitIpns: SubplebbitType;
-
-        try {
-            subplebbitIpns = await loadIpnsAsJson(ipnsAddress, this.plebbit);
-        } catch (e) {
-            log.error(`Failed to load subplebbit IPNS, error:`, e);
-            this.emit("error", e);
-            return;
+            const updateValidity = await verifySubplebbit(subplebbitIpns, this.plebbit);
+            if (!updateValidity.valid) {
+                log.error(`Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
+                this.emit("error", `Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
+            } else if (encode(this.toJSON()) !== encode(subplebbitIpns)) {
+                this.initSubplebbit(subplebbitIpns);
+                log(`Remote Subplebbit received a new update. Will emit an update event`);
+                this.emit("update", this);
+            }
         }
-        const updateValidity = await verifySubplebbit(subplebbitIpns, this.plebbit);
-        if (!updateValidity.valid) {
-            log.error(`Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
-            this.emit("error", `Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
-        } else if (encode(this.toJSON()) !== encode(subplebbitIpns)) {
-            this.initSubplebbit(subplebbitIpns);
-            log(`Remote Subplebbit received a new update. Will emit an update event`);
-            this.emit("update", this);
-        }
-    }
     }
 
     async update() {
@@ -409,6 +406,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         const lastPublishTooOld = this.updatedAt < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
 
+        await this._mergeInstanceStateWithDbState(lodash.pick(this.toJSON(), ["posts", "lastPostCid", "metricsCid"]));
+
         if (!currentIpns || encode(currentIpns) !== encode(this.toJSON()) || lastPublishTooOld) {
             this.updatedAt = timestamp();
             const newSignature = await signSubplebbit(this.toJSON(), this.signer);
@@ -417,7 +416,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 throw Error(`Newly generated subplebbit JSON has an invalid signature due to reason (${signatureValidation.reason})`);
             this.signature = newSignature;
 
-            await this._updateDbInternalState(lodash.pick(this.toJSON(), ["posts", "lastPostCid", "metricsCid", "updatedAt", "signature"]));
+            await this._updateDbInternalState(lodash.pick(this, ["posts", "lastPostCid", "metricsCid", "updatedAt", "signature"]));
 
             const file = await this.plebbit.ipfsClient.add(encode(this.toJSON()));
             await this.plebbit.ipfsClient.name.publish(file.path, {
@@ -1070,25 +1069,37 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    private async _mergeDbInternalStateWithCurrentState() {
-        const log = Logger("plebbit-js:subplebbit:sync");
+    private async _mergeInstanceStateWithDbState(overrideProps: Partial<SubplebbitType>) {
         const internalState: SubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
-        if (internalState.address !== this.address) {
-            log(`Internal state from DB has a different address, will publish new IPNS records to new address (${internalState.address})`);
-            await this.dbHandler.unlockSubStart(this.address);
-            await this.dbHandler.lockSubStart(internalState.address);
-            this.address = internalState.address;
-            this.dbHandler = undefined;
+        this.initSubplebbit({ ...lodash.omit(internalState, "address"), ...overrideProps });
+    }
+
+    private async _switchDbIfNeeded() {
+        const log = Logger("plebbit-js:subplebbit:sync");
+
+        // Will check if address has been changed, and if so connect to the new db with the new address
+        const internalState: SubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
+        const potentialNewAddresses = lodash.uniq([internalState.address, this.dbHandler.subAddress(), this.address]);
+
+        if (potentialNewAddresses.length > 1 && !this.dbHandler.isDbInMemory()) {
+            const wasSubRunning = (await Promise.all(potentialNewAddresses.map(this.dbHandler.isSubStartLocked))).some(Boolean);
+            const newAddresses = potentialNewAddresses.filter((address) => this.dbHandler.subDbExists(address));
+            if (newAddresses.length > 1) throw Error(`There are multiple dbs of the same sub`);
+            const newAddress = newAddresses[0];
+            log(`Updating to a new address (${newAddress}) `);
+            await Promise.all(potentialNewAddresses.map(this.dbHandler.unlockSubStart));
+            if (wasSubRunning) await this.dbHandler.lockSubStart(newAddress);
+            this.address = newAddress;
+            this.dbHandler = this.sortHandler = undefined;
             await this.initDbHandlerIfNeeded();
             await this.dbHandler.initDbIfNeeded();
-            }
-        this.initSubplebbit(internalState);
+        }
     }
 
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:subplebbit:sync");
 
-        await this._mergeDbInternalStateWithCurrentState();
+        await this._switchDbIfNeeded();
         await this._listenToIncomingRequests();
 
         if (!this.dbHandler) return;
@@ -1106,10 +1117,14 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     private async _updateDbInternalState(props: Partial<SubplebbitType>) {
+        if (Object.keys(props).length === 0) return;
+        await this.dbHandler.lockSubState();
+        const internalStateBefore: SubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
         await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], {
-            ...(await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT])),
+            ...internalStateBefore,
             ...props
         });
+        await this.dbHandler.unlockSubState();
     }
 
     private async _syncLoop(syncIntervalMs: number) {
