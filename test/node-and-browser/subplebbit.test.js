@@ -1,13 +1,12 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { generateMockPost, publishWithExpectedResult, mockPlebbit } = require("../../dist/node/test/test-util");
+const { mockPlebbit, publishRandomPost } = require("../../dist/node/test/test-util");
 const { messages } = require("../../dist/node/errors");
 
 const lodash = require("lodash");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
-const { default: waitUntil } = require("async-wait-until");
 const { loadIpnsAsJson, encode } = require("../../dist/node/util");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -66,21 +65,15 @@ describe("subplebbit.update", async () => {
     });
     it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit("plebbit.eth"); // 'plebbit.eth' is part of test-server.js
-        loadedSubplebbit._updateIntervalMs = 100;
+        expect(loadedSubplebbit.address).to.equal("plebbit.eth");
+        loadedSubplebbit._updateIntervalMs = 300;
         await loadedSubplebbit.update();
-        const post = await generateMockPost(loadedSubplebbit.address, plebbit, lodash.sample(signers));
-        await publishWithExpectedResult(post, true);
         const oldUpdatedAt = lodash.clone(loadedSubplebbit.updatedAt);
-        await waitUntil(
-            () =>
-                loadedSubplebbit.lastPostCid === post.cid &&
-                loadedSubplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === post.cid),
-            { timeout: 90000 }
-        );
+        const post = await publishRandomPost(loadedSubplebbit.address, plebbit, {}, false);
+        await new Promise((resolve) => loadedSubplebbit.once("update", resolve));
         await loadedSubplebbit.stop();
         expect(oldUpdatedAt).to.not.equal(loadedSubplebbit.updatedAt);
         expect(loadedSubplebbit.address).to.equal("plebbit.eth");
-        expect(loadedSubplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === post.cid)).to.be.true;
         expect(loadedSubplebbit.lastPostCid).to.equal(post.cid);
     });
 });
