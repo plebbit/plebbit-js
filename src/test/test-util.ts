@@ -44,6 +44,9 @@ export async function generateMockPost(
         subplebbitAddress,
         ...postProps
     });
+    //@ts-ignore
+    post._updateIntervalMs = 200;
+
     if (post.constructor.name !== "Post") throw Error("createComment should return Post if title is provided");
     post.once("challenge", (challengeMsg) => post.publishChallengeAnswers([]));
 
@@ -71,6 +74,9 @@ export async function generateMockComment(
         timestamp: commentTimestamp,
         ...commentProps
     });
+    //@ts-ignore
+    comment._updateIntervalMs = 200;
+
     comment.once("challenge", (challengeMsg) => comment.publishChallengeAnswers([]));
 
     return comment;
@@ -321,8 +327,6 @@ export async function mockPlebbit(dataPath?: string) {
 }
 
 async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
-    //@ts-ignore
-    comment._updateIntervalMs = 200;
     if (comment.depth === 0) {
         const loadedSub = await plebbit.getSubplebbit(comment.subplebbitAddress);
         //@ts-ignore
@@ -352,13 +356,18 @@ async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
     }
 }
 
-export async function publishRandomReply(parentComment: Comment, plebbit: Plebbit, commentProps: Partial<CommentType>): Promise<Comment> {
+export async function publishRandomReply(
+    parentComment: Comment,
+    plebbit: Plebbit,
+    commentProps: Partial<CommentType>,
+    waitTillCommentIsOnline = true
+): Promise<Comment> {
     const reply = await generateMockComment(parentComment, plebbit, commentProps?.signer, false, {
         content: `Content ${Date.now() + Math.random()}`,
         ...commentProps
     });
     await publishWithExpectedResult(reply, true);
-    await _waitTillCommentIsOnline(reply, plebbit);
+    if (waitTillCommentIsOnline) await _waitTillCommentIsOnline(reply, plebbit);
     return reply;
 }
 

@@ -26,10 +26,10 @@ describe(`Test Downvote`, async () => {
     before(async () => {
         plebbit = await mockPlebbit();
         signer = await plebbit.createSigner();
-        postToVote = await publishRandomPost(subplebbitAddress, plebbit, { signer });
-        replyToVote = await publishRandomReply(postToVote, plebbit, { signer });
-
-        await Promise.all([postToVote.update(), replyToVote.update(), new Promise((resolve) => postToVote.once("update", resolve))]);
+        postToVote = await publishRandomPost(subplebbitAddress, plebbit, { signer }, false);
+        replyToVote = await publishRandomReply(postToVote, plebbit, { signer }, false);
+        await Promise.all([postToVote.update(), replyToVote.update()]);
+        await waitUntil(() => typeof postToVote.updatedAt === "number" && typeof replyToVote.updatedAt === "number", {});
     });
     after(async () => {
         await postToVote.stop();

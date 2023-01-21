@@ -1,7 +1,12 @@
 const Plebbit = require("../../../../dist/node");
 const { expect } = require("chai");
 const signers = require("../../../fixtures/signers");
-const { generateMockVote, publishRandomPost, publishRandomReply, publishWithExpectedResult } = require("../../../../dist/node/test/test-util");
+const {
+    generateMockVote,
+    publishRandomPost,
+    publishRandomReply,
+    publishWithExpectedResult
+} = require("../../../../dist/node/test/test-util");
 const { timestamp } = require("../../../../dist/node/util");
 const { mockPlebbit } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
@@ -19,9 +24,10 @@ describe("Test upvote", async () => {
     before(async () => {
         plebbit = await mockPlebbit();
         signer = await plebbit.createSigner();
-        postToVote = await publishRandomPost(subplebbitAddress, plebbit, { signer });
-        replyToVote = await publishRandomReply(postToVote, plebbit, { signer });
+        postToVote = await publishRandomPost(subplebbitAddress, plebbit, { signer }, false);
+        replyToVote = await publishRandomReply(postToVote, plebbit, { signer }, false);
         await Promise.all([postToVote.update(), replyToVote.update()]);
+        await waitUntil(() => typeof postToVote.updatedAt === "number" && typeof replyToVote.updatedAt === "number", {});
     });
 
     after(async () => {
