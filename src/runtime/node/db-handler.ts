@@ -776,12 +776,16 @@ export class DbHandler {
         try {
             await lockfile.lock(subDbPath, {
                 lockfilePath,
+                realpath: false,
                 onCompromised: () => {}
             });
             log(`Locked the start of subplebbit (${subAddress}) successfully`);
         } catch (e) {
             if (e.message === "Lock file is already being held") throwWithErrorCode("ERR_SUB_ALREADY_STARTED", `subAddress=${subAddress}`);
-            else throw e;
+            else {
+                log(`Error while trying to lock start of sub (${subAddress}): ${e}`);
+                throw e;
+            }
         }
     }
 
@@ -793,9 +797,6 @@ export class DbHandler {
 
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-
-        // await lockfile.unlock(subDbPath, { lockfilePath, realpath: false });
-        // log(`Unlocked start of sub (${subAddress})`);
 
         try {
             await lockfile.unlock(subDbPath, { lockfilePath });

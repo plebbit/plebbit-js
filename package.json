@@ -43,6 +43,7 @@
         "@types/proper-lockfile": "4.1.2",
         "@types/uuid": "8.3.4",
         "assert": "2.0.0",
+        "async-wait-until": "2.0.12",
         "buffer": "6.0.3",
         "captcha-canvas": "3.2.1",
         "err-code": "3.0.1",
@@ -59,13 +60,12 @@
         "libp2p-crypto": "0.21.2",
         "lodash-es": "4.17.21",
         "peer-id": "0.16.0",
-        "proper-lockfile": "4.1.2",
+        "proper-lockfile": "github:Rinse12/node-proper-lockfile",
         "safe-stable-stringify": "2.4.1",
         "skia-canvas": "1.0.0",
         "sqlite3": "5.1.2",
         "tinycache": "1.1.2",
-        "uuid": "9.0.0",
-        "async-wait-until": "2.0.12"
+        "uuid": "9.0.0"
     },
     "devDependencies": {
         "@babel/core": "7.20.2",
