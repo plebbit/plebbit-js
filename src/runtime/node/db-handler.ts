@@ -764,24 +764,7 @@ export class DbHandler {
         log(`Changed db path from (${oldPathString}) to (${newPath})`);
     }
 
-    // Locking functionality. Will most likely move to another file later
-    async lockSubCreation(subAddress = this._subplebbit.address) {
-        if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
-
-        const log = Logger("plebbit-js:lock:creation");
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.create.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-        try {
-            await lockfile.lock(subDbPath, {
-                lockfilePath,
-                realpath: false
-            });
-            log(`Locked the creation of subplebbit (${subAddress}) successfully`);
-        } catch (e) {
-            if (e.message === "Lock file is already being held") throwWithErrorCode("ERR_SUB_CREATION_LOCKED", `subAddress=${subAddress}`);
-        }
-    }
-
+    // Start lock
     async lockSubStart(subAddress = this._subplebbit.address) {
         if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
 
@@ -802,40 +785,121 @@ export class DbHandler {
         }
     }
 
-    async unlockSubCreation(subAddress = this._subplebbit.address) {
-        if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
-
-        const log = Logger("plebbit-js:lock:creation");
-
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.create.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-        await lockfile.unlock(subDbPath, { lockfilePath });
-
-        log(`Unlocked creation of sub (${subAddress})`);
-    }
-
     async unlockSubStart(subAddress = this._subplebbit.address) {
         if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
+        if (!(await this.isSubStartLocked(subAddress))) return;
 
         const log = Logger("plebbit-js:lock:start");
 
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
 
+        // await lockfile.unlock(subDbPath, { lockfilePath, realpath: false });
+        // log(`Unlocked start of sub (${subAddress})`);
+
         try {
             await lockfile.unlock(subDbPath, { lockfilePath });
+            log(`Unlocked start of sub (${subAddress})`);
         } catch (e) {
-            if (e.message === "Lock is not acquired/owned by you") await fs.promises.rmdir(lockfilePath); // Forcefully delete the lock
-            else throw e;
+            if (e.code === "ENOENT") {
+                if (fs.existsSync(lockfilePath)) await fs.promises.rmdir(lockfilePath);
+            } else if (e.message === "Lock is not acquired/owned by you") {
+                if (fs.existsSync(lockfilePath)) await fs.promises.rmdir(lockfilePath); // Forcefully delete the lock
+            } else {
+                log(`Error while trying to unlock start of sub (${subAddress}): ${e}`);
+                throw e;
+            }
         }
-        log(`Unlocked start of sub (${subAddress})`);
+    }
+
+    async isSubStartLocked(subAddress = this._subplebbit.address) {
+        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
+        const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        return lockfile.check(subDbPath, { lockfilePath, realpath: false });
+    }
+
+    // Creation lock
+
+    async lockSubCreation(subAddress = this._subplebbit.address) {
+        if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
+
+        const log = Logger("plebbit-js:lock:creation");
+        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.create.lock`);
+        const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        try {
+            await lockfile.lock(subDbPath, {
+                lockfilePath,
+                realpath: false,
+                onCompromised: () => {}
+            });
+            log(`Locked the creation of subplebbit (${subAddress}) successfully`);
+        } catch (e) {
+            if (e.message === "Lock file is already being held") throwWithErrorCode("ERR_SUB_CREATION_LOCKED", `subAddress=${subAddress}`);
+            else {
+                log(`Error while trying to lock creation of sub (${subAddress}): ${e}`);
+                throw e;
+            }
+        }
+    }
+
+    async unlockSubCreation(subAddress = this._subplebbit.address) {
+        if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
+        const log = Logger("plebbit-js:lock:unlockSubCreation");
+
+        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.create.lock`);
+        const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        try {
+            await lockfile.unlock(subDbPath, { lockfilePath, realpath: false });
+            log(`Unlocked creation of sub (${subAddress})`);
+        } catch (e) {
+            if (e.code === "ENOENT") {
+                if (fs.existsSync(lockfilePath)) await fs.promises.rmdir(lockfilePath);
+            } else if (e.message === "Lock is not acquired/owned by you") {
+                if (fs.existsSync(lockfilePath)) await fs.promises.rmdir(lockfilePath); // Forcefully delete the lock
+            } else {
+                log(`Error while trying to unlock creation of sub (${subAddress}): ${e}`);
+                throw e;
+            }
+        }
     }
 
     async isSubCreationLocked(subAddress = this._subplebbit.address) {
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.create.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
 
-        return lockfile.check(subDbPath, { lockfilePath });
+        return lockfile.check(subDbPath, { lockfilePath, realpath: false });
+    }
+
+    // Subplebbit state lock
+
+    async lockSubState(subAddress = this._subplebbit.address) {
+        if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
+
+        const log = Logger("plebbit-js:lock:lockSubState");
+        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
+        const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        try {
+            await lockfile.lock(subDbPath, {
+                lockfilePath,
+                realpath: false,
+                retries: 3
+            });
+            log(`Locked the state of subplebbit (${subAddress}) successfully`);
+        } catch (e) {
+            if (e.message === "Lock file is already being held") throwWithErrorCode("ERR_SUB_STATE_LOCKED", `subAddress=${subAddress}`);
+        }
+    }
+
+    async unlockSubState(subAddress = this._subplebbit.address) {
+        if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
+
+        const log = Logger("plebbit-js:lock:unlockSubState");
+
+        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
+        const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        await lockfile.unlock(subDbPath, { lockfilePath });
+
+        log(`Unlocked state of sub (${subAddress})`);
     }
 
     async isSubStartLocked(subAddress = this._subplebbit.address) {
