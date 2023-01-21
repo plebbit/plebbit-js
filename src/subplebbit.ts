@@ -1081,7 +1081,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const internalState: SubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
         const potentialNewAddresses = lodash.uniq([internalState.address, this.dbHandler.subAddress(), this.address]);
 
-        if (potentialNewAddresses.length > 1 && !this.dbHandler.isDbInMemory()) {
+        if (this.dbHandler.isDbInMemory()) this.address = this.dbHandler.subAddress();
+        else if (potentialNewAddresses.length > 1) {
             const wasSubRunning = (await Promise.all(potentialNewAddresses.map(this.dbHandler.isSubStartLocked))).some(Boolean);
             const newAddresses = potentialNewAddresses.filter((address) => this.dbHandler.subDbExists(address));
             if (newAddresses.length > 1) throw Error(`There are multiple dbs of the same sub`);
