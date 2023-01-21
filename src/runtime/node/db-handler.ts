@@ -750,7 +750,7 @@ export class DbHandler {
 
         await fs.promises.mkdir(path.dirname(newPath), { recursive: true });
 
-        await fs.promises.cp(oldPathString, newPath);
+        await fs.promises.rename(oldPathString, newPath);
         this._dbConfig = {
             ...this._dbConfig,
             connection: {
