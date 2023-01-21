@@ -27,7 +27,7 @@ describe("Test upvote", async () => {
         postToVote = await publishRandomPost(subplebbitAddress, plebbit, { signer }, false);
         replyToVote = await publishRandomReply(postToVote, plebbit, { signer }, false);
         await Promise.all([postToVote.update(), replyToVote.update()]);
-        await waitUntil(() => typeof postToVote.updatedAt === "number" && typeof replyToVote.updatedAt === "number", {});
+        await waitUntil(() => typeof postToVote.updatedAt === "number" && typeof replyToVote.updatedAt === "number", { timeout: 200000 });
     });
 
     after(async () => {
