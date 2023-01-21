@@ -1,5 +1,5 @@
 const Plebbit = require("../../../dist/node");
-const { publishRandomPost, mockPlebbit } = require("../../../dist/node/test/test-util");
+const { publishRandomPost, mockPlebbit, createMockSub } = require("../../../dist/node/test/test-util");
 const { messages } = require("../../../dist/node/errors");
 const path = require("path");
 const fs = require("fs");
@@ -9,7 +9,6 @@ const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-const syncInterval = 300;
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
@@ -17,9 +16,7 @@ describe(`subplebbit.start`, async () => {
     let plebbit, subplebbit;
     before(async () => {
         plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
-        subplebbit = await plebbit.createSubplebbit();
-        subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
-        subplebbit._syncIntervalMs = syncInterval;
+        subplebbit = await createMockSub({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
     });

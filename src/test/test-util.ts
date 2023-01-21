@@ -6,10 +6,11 @@ import PlebbitIndex from "../index";
 import Vote from "../vote";
 import { Pages } from "../pages";
 import { Subplebbit } from "../subplebbit";
-import { CommentType, CreateCommentOptions, PostType, SignerType, VoteType } from "../types";
+import { CommentType, CreateCommentOptions, CreateSubplebbitOptions, PostType, SignerType, VoteType } from "../types";
 import isIPFS from "is-ipfs";
 import Publication from "../publication";
 import waitUntil from "async-wait-until";
+import assert from "assert";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -190,6 +191,7 @@ async function _startEnsSubplebbit(signers: SignerType[], syncInterval: number, 
     subplebbit._syncIntervalMs = syncInterval;
     await subplebbit.start();
     await subplebbit.edit({ address: "plebbit.eth" });
+    assert.equal(subplebbit.address, "plebbit.eth");
 }
 
 async function _publishComments(parentComments: Comment[], subplebbit: Subplebbit, numOfCommentsToPublish: number, signers: SignerType[]) {
@@ -360,13 +362,18 @@ export async function publishRandomReply(parentComment: Comment, plebbit: Plebbi
     return reply;
 }
 
-export async function publishRandomPost(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<PostType>) {
+export async function publishRandomPost(
+    subplebbitAddress: string,
+    plebbit: Plebbit,
+    postProps?: Partial<PostType>,
+    waitTillCommentIsOnline = true
+) {
     const post = await generateMockPost(subplebbitAddress, plebbit, postProps?.signer, false, {
         content: `Content ${Date.now() + Math.random()}`,
         ...postProps
     });
     await publishWithExpectedResult(post, true);
-    await _waitTillCommentIsOnline(post, plebbit);
+    if (waitTillCommentIsOnline) await _waitTillCommentIsOnline(post, plebbit);
     return post;
 }
 
@@ -434,4 +441,12 @@ export async function waitTillCommentIsInParentPages(
     else
         for (const [key, value] of Object.entries(propsToCheckFor))
             if (encode(commentInPage[key]) !== encode(value)) throw Error(`commentInPage[${key}] is incorrect`);
+}
+
+export async function createMockSub(props: CreateSubplebbitOptions, plebbit: Plebbit, syncInterval = 300) {
+    const sub = await plebbit.createSubplebbit(props);
+    //@ts-ignore
+    sub._syncIntervalMs = sub._updateIntervalMs = syncInterval;
+    sub.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
+    return sub;
 }
