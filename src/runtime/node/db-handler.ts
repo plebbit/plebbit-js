@@ -882,7 +882,8 @@ export class DbHandler {
             await lockfile.lock(subDbPath, {
                 lockfilePath,
                 realpath: false,
-                retries: 3
+                retries: 3,
+                onCompromised: () => {}
             });
             log(`Locked the state of subplebbit (${subAddress}) successfully`);
         } catch (e) {
