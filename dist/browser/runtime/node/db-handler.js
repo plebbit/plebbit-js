@@ -1496,7 +1496,7 @@ var DbHandler = /** @class */ (function () {
                             })];
                     case 2:
                         _a.sent();
-                        log("Locked the state of subplebbit (".concat(subAddress, ") successfully"));
+                        log.trace("Locked the state of subplebbit (".concat(subAddress, ") successfully"));
                         return [3 /*break*/, 4];
                     case 3:
                         e_5 = _a.sent();
@@ -1523,7 +1523,7 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, lockfile.unlock(subDbPath, { lockfilePath: lockfilePath })];
                     case 1:
                         _a.sent();
-                        log("Unlocked state of sub (".concat(subAddress, ")"));
+                        log.trace("Unlocked state of sub (".concat(subAddress, ")"));
                         return [2 /*return*/];
                 }
             });
