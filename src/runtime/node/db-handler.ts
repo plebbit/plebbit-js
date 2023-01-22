@@ -886,7 +886,7 @@ export class DbHandler {
                 retries: 3,
                 onCompromised: () => {}
             });
-            log(`Locked the state of subplebbit (${subAddress}) successfully`);
+            log.trace(`Locked the state of subplebbit (${subAddress}) successfully`);
         } catch (e) {
             if (e.message === "Lock file is already being held") throwWithErrorCode("ERR_SUB_STATE_LOCKED", `subAddress=${subAddress}`);
         }
@@ -901,7 +901,7 @@ export class DbHandler {
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
         await lockfile.unlock(subDbPath, { lockfilePath });
 
-        log(`Unlocked state of sub (${subAddress})`);
+        log.trace(`Unlocked state of sub (${subAddress})`);
     }
 
     // Misc functions
