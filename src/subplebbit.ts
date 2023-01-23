@@ -556,7 +556,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             return messages.ERR_FORBIDDEN_SIGNER_FIELD;
         }
 
-        log.trace(`Will attempt to store publication if valid, `, publication);
+        log.trace(`(${challengeRequestId}): `, `Will attempt to store publication if valid, `, publication);
 
         const postOrCommentOrVote: Vote | CommentEdit | Post | Comment = publication.hasOwnProperty("vote")
             ? await this.plebbit.createVote(<VoteType>publication)

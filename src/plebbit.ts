@@ -33,6 +33,8 @@ import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
 import lodash from "lodash";
 import { signComment, signCommentEdit, signVote } from "./signer/signatures";
+import { Options } from "ipfs-http-client";
+import { Buffer } from "buffer";
 
 export class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
@@ -40,24 +42,29 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     resolver: Resolver;
     _memCache: TinyCache;
     ipfsGatewayUrl: string;
-    ipfsHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0] | string;
-    pubsubHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0] | string;
+    ipfsHttpClientOptions?: Options;
+    pubsubHttpClientOptions: Options;
     dataPath?: string;
     blockchainProviders?: { [chainTicker: string]: BlockchainProvider };
     resolveAuthorAddresses?: boolean;
 
     constructor(options: PlebbitOptions = {}) {
         super();
-        this.ipfsHttpClientOptions = options.ipfsHttpClientOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        this.ipfsClient = this.ipfsHttpClientOptions
-            ? nativeFunctions.createIpfsClient(<Parameters<NativeFunctions["createIpfsClient"]>[0]>this.ipfsHttpClientOptions)
-            : undefined;
-        this.pubsubHttpClientOptions = options.pubsubHttpClientOptions || { url: "https://pubsubprovider.xyz/api/v0" };
+        this.ipfsHttpClientOptions =
+            typeof options.ipfsHttpClientOptions === "string"
+                ? this._parseUrlToOption(options.ipfsHttpClientOptions)
+                : options.ipfsHttpClientOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
+        this.ipfsClient = this.ipfsHttpClientOptions ? nativeFunctions.createIpfsClient(this.ipfsHttpClientOptions) : undefined;
+
+        this.pubsubHttpClientOptions =
+            typeof options.pubsubHttpClientOptions === "string"
+                ? this._parseUrlToOption(options.pubsubHttpClientOptions)
+                : options.pubsubHttpClientOptions || { url: "https://pubsubprovider.xyz/api/v0" };
         this.pubsubIpfsClient = options.pubsubHttpClientOptions
-            ? nativeFunctions.createIpfsClient(<Parameters<NativeFunctions["createIpfsClient"]>[0]>options.pubsubHttpClientOptions)
+            ? nativeFunctions.createIpfsClient(this.pubsubHttpClientOptions)
             : this.ipfsClient
             ? this.ipfsClient
-            : nativeFunctions.createIpfsClient(<Parameters<NativeFunctions["createIpfsClient"]>[0]>this.pubsubHttpClientOptions);
+            : nativeFunctions.createIpfsClient(this.pubsubHttpClientOptions);
         this.blockchainProviders = options.blockchainProviders || {
             avax: {
                 url: "https://api.avax.network/ext/bc/C/rpc",
@@ -75,6 +82,12 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             blockchainProviders: this.blockchainProviders
         });
         this.dataPath = options.dataPath || getDefaultDataPath();
+    }
+
+    private _parseUrlToOption(urlString: string): { url: string; headers: { authorization?: string } } {
+        const url = new URL(urlString);
+        const authorization = url.username && url.password && "Basic " + Buffer.from(`${url.username}:${url.password}`).toString("base64");
+        return { url: authorization ? url.origin + url.pathname : urlString, headers: { authorization } };
     }
 
     async _init(options: PlebbitOptions) {
