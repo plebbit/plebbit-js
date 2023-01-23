@@ -68,7 +68,7 @@ export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { len
     let fileContent: string | undefined;
     if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
-        const [resText, res] = await fetchWithLimit(url, { cache: "force-cache" });
+        const [resText, res] = await fetchWithLimit(url, { headers: plebbit.ipfsHttpClientOptions?.headers, cache: "force-cache" });
         if (res.status === 200) fileContent = resText;
         else throw Error(`Failed to load IPFS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
     } else {
@@ -103,7 +103,11 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
     if (typeof ipns !== "string") throwWithErrorCode("ERR_IPNS_IS_INVALID", `loadIpnsAsJson: ipns (${ipns}) is undefined`);
     if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
-        const [resText, res] = await fetchWithLimit(url, { cache: "no-store", size: DOWNLOAD_LIMIT_BYTES });
+        const [resText, res] = await fetchWithLimit(url, {
+            headers: plebbit.ipfsHttpClientOptions?.headers,
+            cache: "no-store",
+            size: DOWNLOAD_LIMIT_BYTES
+        });
         if (res.status === 200) return JSON.parse(resText);
         else throw Error(`Failed to load IPNS via url (${url}). Status code ${res.status} and status text ${res.statusText}`);
     } else {

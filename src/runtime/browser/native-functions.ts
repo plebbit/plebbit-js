@@ -6,7 +6,6 @@ import all from "it-all";
 import last from "it-last";
 import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
-import { Plebbit } from "../../plebbit";
 
 const nativeFunctions: NativeFunctions = {
     createImageCaptcha: async (...args): Promise<{ image: string; text: string }> => {
@@ -22,8 +21,8 @@ const nativeFunctions: NativeFunctions = {
 
     //@ts-ignore
     fetch: (...args) => window.fetch(...args),
-    createIpfsClient: (ipfsHttpClientOptions: string | Options): IpfsHttpClientPublicAPI => {
-        const ipfsClient = create(<Options>ipfsHttpClientOptions);
+    createIpfsClient: (ipfsHttpClientOptions: Options): IpfsHttpClientPublicAPI => {
+        const ipfsClient = create(ipfsHttpClientOptions);
 
         const cat = async (...args: Parameters<IpfsHttpClientPublicAPI["cat"]>): Promise<string | undefined> => {
             const rawData = await all(ipfsClient.cat(...args));

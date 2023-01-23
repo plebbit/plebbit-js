@@ -73,24 +73,20 @@ const nativeFunctions: NativeFunctions = {
 
         return resObj;
     },
-    createIpfsClient: (ipfsHttpClientOptions: Options | string): IpfsHttpClientPublicAPI => {
+    createIpfsClient: (ipfsHttpClientOptions: Options): IpfsHttpClientPublicAPI => {
         const isHttpsAgent =
-            typeof ipfsHttpClientOptions === "string"
-                ? ipfsHttpClientOptions.startsWith("https")
-                : (typeof ipfsHttpClientOptions.url === "string" && ipfsHttpClientOptions.url.startsWith("https")) ||
-                  ipfsHttpClientOptions?.protocol === "https" ||
-                  (ipfsHttpClientOptions.url instanceof URL && ipfsHttpClientOptions?.url?.protocol === "https:") ||
-                  (ipfsHttpClientOptions.url instanceof Multiaddr && ipfsHttpClientOptions.url.protoNames().includes("https"));
+            (typeof ipfsHttpClientOptions.url === "string" && ipfsHttpClientOptions.url.startsWith("https")) ||
+            ipfsHttpClientOptions?.protocol === "https" ||
+            (ipfsHttpClientOptions.url instanceof URL && ipfsHttpClientOptions?.url?.protocol === "https:") ||
+            (ipfsHttpClientOptions.url instanceof Multiaddr && ipfsHttpClientOptions.url.protoNames().includes("https"));
         const Agent = isHttpsAgent ? HttpsAgent : HttpAgent;
 
-        const ipfsClient = create(
-            typeof ipfsHttpClientOptions === "string"
-                ? { url: ipfsHttpClientOptions, agent: new Agent({ keepAlive: true, maxSockets: Infinity }) }
-                : {
-                      ...ipfsHttpClientOptions,
-                      agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity })
-                  }
-        );
+        const ipfsClient = create({
+            ...ipfsHttpClientOptions,
+            agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity })
+        });
+
+        
 
         const cat = async (...args: Parameters<IpfsHttpClientPublicAPI["cat"]>): Promise<string | undefined> => {
             const rawData = await all(ipfsClient.cat(...args));
@@ -140,13 +136,14 @@ const nativeFunctions: NativeFunctions = {
             throw Error("ipfsKey needs to be defined before importing key into IPFS node");
 
         data.append("file", Buffer.from(ipfsKey));
-        const nodeUrl =
-            typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
-        if (!nodeUrl) throw Error("Can't figure out ipfs node URL");
+        const nodeUrl = plebbit.ipfsHttpClientOptions.url;
+        if (!nodeUrl)
+            throw Error(`Can't figure out ipfs node URL from ipfsHttpClientOptions (${JSON.stringify(plebbit.ipfsHttpClientOptions)}`);
         const url = `${nodeUrl}/key/import?arg=${ipnsKeyName}&ipns-base=b58mh`;
         const res = await nativeFunctions.fetch(url, {
             method: "POST",
-            body: data
+            body: data,
+            headers: <Record<string, string>>plebbit.ipfsHttpClientOptions.headers
         });
         if (res.status !== 200) throw Error(`failed ipfs import key: '${url}' '${res.status}' '${res.statusText}'`);
         const resJson: { Id: string; Name: string } = await res.json();
