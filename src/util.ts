@@ -32,7 +32,7 @@ async function fetchWithLimit(url: string, options?): Promise<[resText: string, 
                 "ERR_OVER_DOWNLOAD_LIMIT",
                 `fetch: url (${url}) points to a file larger than download limit (${DOWNLOAD_LIMIT_BYTES}) bytes`
             );
-        else throwWithErrorCode("ERR_FAILED_TO_FETCH_GENERIC", `url: ${url}`);
+        else throw Error(`Failed to fetch url (${url}) with options (${JSON.stringify(options)}) due to error (${e})`);
         // If error is not related to size limit, then throw it again
     }
 
