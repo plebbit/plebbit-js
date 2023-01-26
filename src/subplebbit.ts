@@ -100,6 +100,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     // private
 
     private _challengeToSolution: Record<string, string[]>;
+    private _challengeToPublicKey: Record<string, string>;
     private _challengeToPublication: Record<string, DecryptedChallengeRequestMessageType["publication"]>;
     private provideCaptchaCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[ChallengeType[], string | undefined]>;
     private validateCaptchaAnswerCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>;
@@ -116,6 +117,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.initSubplebbit(props);
         this._challengeToSolution = {}; // Map challenge ID to its solution
         this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
+        this._challengeToPublicKey = {}; // Map out challenge request id to their signers
+
         this._sync = false;
 
         // these functions might get separated from their `this` when used
@@ -550,6 +553,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         delete this._challengeToSolution[challengeRequestId];
         delete this._challengeToPublication[challengeRequestId];
+        delete this._challengeToPublicKey[challengeRequestId];
 
         if (publication.signer) {
             log(`(${challengeRequestId}): `, messages.ERR_FORBIDDEN_SIGNER_FIELD);
@@ -764,9 +768,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 await decrypt(request.encryptedPublication.encrypted, request.encryptedPublication.encryptedKey, this.signer.privateKey)
             )
         };
+        this._challengeToPublication[request.challengeRequestId] = decryptedRequest.publication;
+        this._challengeToPublicKey[request.challengeRequestId] = decryptedRequest.signature.publicKey;
         this.emit("challengerequest", decryptedRequest);
         const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(decryptedRequest);
-        this._challengeToPublication[request.challengeRequestId] = decryptedRequest.publication;
         log(`Received a request to a challenge (${request.challengeRequestId})`);
         if (providedChallenges.length === 0) {
             // Subplebbit owner has chosen to skip challenging this user or post
@@ -776,7 +781,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const publicationOrReason = await this.storePublicationIfValid(decryptedRequest.publication, request.challengeRequestId);
             const encryptedPublication =
                 typeof publicationOrReason !== "string"
-                    ? await encrypt(encode(publicationOrReason.toJSON()), publicationOrReason.signature.publicKey)
+                    ? await encrypt(encode(publicationOrReason.toJSON()), request.signature.publicKey)
                     : undefined;
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
@@ -811,7 +816,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 protocolVersion: env.PROTOCOL_VERSION,
                 userAgent: env.USER_AGENT,
                 challengeRequestId: request.challengeRequestId,
-                encryptedChallenges: await encrypt(encode(providedChallenges), decryptedRequest.publication.signature.publicKey)
+                encryptedChallenges: await encrypt(encode(providedChallenges), request.signature.publicKey)
             };
 
             const challengeMessage = new ChallengeMessage({
@@ -862,7 +867,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const publicationOrReason = await this.storePublicationIfValid(storedPublication, challengeAnswer.challengeRequestId); // could contain "publication" or "reason"
             const encryptedPublication =
                 typeof publicationOrReason !== "string"
-                    ? await encrypt(encode(publicationOrReason.toJSON()), publicationOrReason.signature.publicKey)
+                    ? await encrypt(encode(publicationOrReason.toJSON()), challengeAnswer.signature.publicKey)
                     : undefined;
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
@@ -956,12 +961,17 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         try {
             msgParsed = <ChallengeRequestMessageType | ChallengeAnswerMessageType>JSON.parse(uint8ArrayToString(pubsubMsg.data));
 
+            // log(`Received msg via pubsub`, msgParsed);
+            // log(`this._challengeToPublication`, Object.keys(this._challengeToPublication));
+            // log(`this._challengeToPublicKey`, Object.keys(this._challengeToPublicKey));
+
             if (msgParsed.type === "CHALLENGEREQUEST") {
                 await this._verifyPubsubMsgSignature(msgParsed);
                 await this.handleChallengeRequest(new ChallengeRequestMessage(msgParsed));
             } else if (msgParsed.type === "CHALLENGEANSWER" && this._challengeToPublication[msgParsed.challengeRequestId]) {
                 // Only reply to peers who started a challenge request earlier
                 await this._verifyPubsubMsgSignature(msgParsed);
+                if (msgParsed.signature.publicKey !== this._challengeToPublicKey[msgParsed.challengeRequestId]) return;
                 await this.handleChallengeAnswer(new ChallengeAnswerMessage(msgParsed));
             }
         } catch (e) {
