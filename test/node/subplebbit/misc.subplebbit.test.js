@@ -1,7 +1,8 @@
-const { mockPlebbit, publishRandomPost } = require("../../../dist/node/test/test-util");
+const { mockPlebbit, publishRandomPost, createMockSub } = require("../../../dist/node/test/test-util");
 const path = require("path");
 const fs = require("fs");
 const { default: waitUntil } = require("async-wait-until");
+const Plebbit = require("../../../dist/node");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
@@ -83,5 +84,51 @@ describe(`subplebbit.lastPostCid`, async () => {
         const post = await publishRandomPost(sub.address, plebbit);
         await waitUntil(() => typeof sub.lastPostCid === "string", { timeout: 200000 });
         expect(sub.lastPostCid).to.equal(post.cid);
+    });
+});
+
+describe(`Create a sub with basic auth urls`, async () => {
+    it(`Can create a sub with encoded authorization `, async () => {
+        const headers = {
+            authorization: "Basic " + Buffer.from("username" + ":" + "password").toString("base64")
+        };
+        const ipfsHttpClientOptions = {
+            url: "http://localhost:15001/api/v0",
+            headers
+        };
+        const pubsubHttpClientOptions = {
+            url: "http://localhost:15002/api/v0",
+            headers
+        };
+
+        const plebbitOptions = {
+            ipfsHttpClientOptions,
+            pubsubHttpClientOptions,
+            dataPath: globalThis["window"]?.plebbitDataPath
+        };
+
+        const plebbit = await Plebbit(plebbitOptions);
+        const sub = await createMockSub({}, plebbit);
+        await sub.start();
+        await new Promise((resolve) => sub.once("update", resolve));
+        await publishRandomPost(sub.address, plebbit);
+        await sub.stop();
+    });
+
+    it(`Can publish a post with user@password for both ipfs and pubsub http client`, async () => {
+        const ipfsHttpClientOptions = `http://user:password@localhost:15001/api/v0`;
+        const pubsubHttpClientOptions = `http://user:password@localhost:15002/api/v0`;
+        const plebbitOptions = {
+            ipfsHttpClientOptions,
+            pubsubHttpClientOptions,
+            dataPath: globalThis["window"]?.plebbitDataPath
+        };
+
+        const plebbit = await Plebbit(plebbitOptions);
+        const sub = await createMockSub({}, plebbit);
+        await sub.start();
+        await new Promise((resolve) => sub.once("update", resolve));
+        await publishRandomPost(sub.address, plebbit);
+        await sub.stop();
     });
 });
