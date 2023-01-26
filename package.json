@@ -82,7 +82,7 @@
         "concurrently": "7.5.0",
         "dotenv": "16.0.3",
         "electron": "19.0.1",
-        "go-ipfs": "0.16.0",
+        "go-ipfs": "0.18.0",
         "karma": "6.4.1",
         "karma-chai": "0.1.0",
         "karma-chrome-launcher": "3.1.1",
