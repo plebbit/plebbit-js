@@ -5,7 +5,8 @@ const { loadIpfsFileAsJson, loadIpnsAsJson, encode } = require("../../dist/node/
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { messages } = require("../../dist/node/errors");
-const { mockPlebbit } = require("../../dist/node/test/test-util");
+const { mockPlebbit, publishRandomPost } = require("../../dist/node/test/test-util");
+const { Buffer } = require("buffer");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -27,6 +28,8 @@ describe("plebbit (node and browser)", async () => {
         it("has default plebbit options", async () => {
             expect(plebbit.ipfsGatewayUrl).to.equal("https://cloudflare-ipfs.com");
             expect(plebbit.pubsubHttpClientOptions.url).to.equal("https://pubsubprovider.xyz/api/v0");
+            expect(plebbit.pubsubHttpClientOptions.headers?.authorization).to.be.undefined;
+
             // no dataPath in browser
             if (typeof window === "undefined") {
                 expect(plebbit.dataPath).to.match(/\.plebbit$/);
@@ -140,8 +143,6 @@ describe("plebbit (node and browser)", async () => {
         });
     });
 
-    
-
     describe("plebbit.fetchCid", async () => {
         const plebbit = await mockPlebbit();
         const gatewayPlebbit = await Plebbit({
@@ -170,3 +171,64 @@ describe("plebbit (node and browser)", async () => {
         });
     });
 });
+
+// Skip for firefox since we can't disable CORS on Firefox
+if (!navigator?.userAgent?.includes("Firefox"))
+    describe("Authentication in ipfsHttpClientOptions and PubsubHttpClientOptions", async () => {
+        it(`Authorization credentials are generated correctly`, async () => {
+            const plebbit = await Plebbit({
+                ipfsHttpClientOptions: "http://user:password@localhost:15001/api/v0",
+                pubsubHttpClientOptions: "http://user:password@localhost:15002/api/v0"
+            });
+            const expectedCred = "Basic dXNlcjpwYXNzd29yZA==";
+            expect(plebbit.ipfsHttpClientOptions.url).to.equal("http://localhost:15001/api/v0");
+            expect(plebbit.pubsubHttpClientOptions.url).to.equal("http://localhost:15002/api/v0");
+
+            expect(plebbit.ipfsHttpClientOptions.headers.authorization).to.equal(expectedCred);
+            expect(plebbit.pubsubHttpClientOptions.headers.authorization).to.equal(expectedCred);
+        });
+
+        it(`Can publish a post with encoded authorization for both ipfs and pubsub http client`, async () => {
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+            const headers = {
+                authorization: "Basic " + Buffer.from("username" + ":" + "password").toString("base64")
+            };
+            const ipfsHttpClientOptions = {
+                url: "http://localhost:15001/api/v0",
+                headers
+            };
+            const pubsubHttpClientOptions = {
+                url: "http://localhost:15002/api/v0",
+                headers
+            };
+
+            const plebbitOptions = {
+                ipfsHttpClientOptions,
+                pubsubHttpClientOptions,
+                dataPath: globalThis["window"]?.plebbitDataPath
+            };
+
+            const plebbit = await Plebbit(plebbitOptions);
+            expect(plebbit.ipfsGatewayUrl).to.equal("http://127.0.0.1:18080");
+            plebbit.resolver = (await mockPlebbit()).resolver;
+
+            await publishRandomPost(subplebbitAddress, plebbit);
+        });
+
+        it(`Can publish a post with user@password for both ipfs and pubsub http client`, async () => {
+            debugger;
+            const ipfsHttpClientOptions = `http://user:password@localhost:15001/api/v0`;
+            const pubsubHttpClientOptions = `http://user:password@localhost:15002/api/v0`;
+            const plebbitOptions = {
+                ipfsHttpClientOptions,
+                pubsubHttpClientOptions,
+                dataPath: globalThis["window"]?.plebbitDataPath
+            };
+
+            const plebbit = await Plebbit(plebbitOptions);
+            expect(plebbit.ipfsGatewayUrl).to.equal("http://127.0.0.1:18080");
+            plebbit.resolver = (await mockPlebbit()).resolver;
+
+            await publishRandomPost(subplebbitAddress, plebbit);
+        });
+    });
