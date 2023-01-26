@@ -9,20 +9,22 @@ import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
 import EventEmitter from "events";
+import { Options } from "ipfs-http-client";
 export declare class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
     pubsubIpfsClient: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">;
     resolver: Resolver;
     _memCache: TinyCache;
     ipfsGatewayUrl: string;
-    ipfsHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0] | string;
-    pubsubHttpClientOptions?: Parameters<NativeFunctions["createIpfsClient"]>[0] | string;
+    ipfsHttpClientOptions?: Options;
+    pubsubHttpClientOptions: Options;
     dataPath?: string;
     blockchainProviders?: {
         [chainTicker: string]: BlockchainProvider;
     };
     resolveAuthorAddresses?: boolean;
     constructor(options?: PlebbitOptions);
+    private _parseUrlToOption;
     _init(options: PlebbitOptions): Promise<void>;
     getSubplebbit(subplebbitAddress: string): Promise<Subplebbit>;
     getComment(cid: string): Promise<Comment | Post>;

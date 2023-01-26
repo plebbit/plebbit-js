@@ -88,7 +88,7 @@ function fetchWithLimit(url, options) {
                     if (e_1.message.includes("over limit"))
                         throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", "fetch: url (".concat(url, ") points to a file larger than download limit (").concat(DOWNLOAD_LIMIT_BYTES, ") bytes"));
                     else
-                        throwWithErrorCode("ERR_FAILED_TO_FETCH_GENERIC", "url: ".concat(url));
+                        throw Error("Failed to fetch url (".concat(url, ") with options (").concat(JSON.stringify(options), ") due to error (").concat(e_1, ")"));
                     return [3 /*break*/, 5];
                 case 5:
                     if (!(((_b = res === null || res === void 0 ? void 0 : res.body) === null || _b === void 0 ? void 0 : _b.getReader) !== undefined)) return [3 /*break*/, 9];
@@ -118,11 +118,12 @@ function fetchWithLimit(url, options) {
     });
 }
 function fetchCid(cid, plebbit, catOptions) {
+    var _a;
     if (catOptions === void 0) { catOptions = { length: DOWNLOAD_LIMIT_BYTES }; }
     return __awaiter(this, void 0, void 0, function () {
-        var fileContent, url, _a, resText, res, error, e_2, generatedCid;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var fileContent, url, _b, resText, res, error, e_2, generatedCid;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
                     if (!is_ipfs_1.default.cid(cid) && is_ipfs_1.default.path(cid))
                         cid = cid.split("/")[2];
@@ -130,9 +131,9 @@ function fetchCid(cid, plebbit, catOptions) {
                         throwWithErrorCode("ERR_CID_IS_INVALID", "fetchCid: (".concat(cid, ") is invalid as a CID"));
                     if (!!plebbit.ipfsClient) return [3 /*break*/, 2];
                     url = "".concat(plebbit.ipfsGatewayUrl, "/ipfs/").concat(cid);
-                    return [4 /*yield*/, fetchWithLimit(url, { cache: "force-cache" })];
+                    return [4 /*yield*/, fetchWithLimit(url, { headers: (_a = plebbit.ipfsHttpClientOptions) === null || _a === void 0 ? void 0 : _a.headers, cache: "force-cache" })];
                 case 1:
-                    _a = _b.sent(), resText = _a[0], res = _a[1];
+                    _b = _c.sent(), resText = _b[0], res = _b[1];
                     if (res.status === 200)
                         fileContent = resText;
                     else
@@ -140,24 +141,24 @@ function fetchCid(cid, plebbit, catOptions) {
                     return [3 /*break*/, 7];
                 case 2:
                     error = void 0;
-                    _b.label = 3;
+                    _c.label = 3;
                 case 3:
-                    _b.trys.push([3, 5, , 6]);
+                    _c.trys.push([3, 5, , 6]);
                     return [4 /*yield*/, plebbit.ipfsClient.cat(cid, catOptions)];
                 case 4:
-                    fileContent = _b.sent(); // Limit is 1mb files
+                    fileContent = _c.sent(); // Limit is 1mb files
                     return [3 /*break*/, 6];
                 case 5:
-                    e_2 = _b.sent();
+                    e_2 = _c.sent();
                     error = e_2;
                     return [3 /*break*/, 6];
                 case 6:
                     if (typeof fileContent !== "string")
                         throw Error("Was not able to load file with CID (".concat(cid, ") due to error: ").concat(error));
-                    _b.label = 7;
+                    _c.label = 7;
                 case 7: return [4 /*yield*/, ipfs_only_hash_1.default.of(fileContent)];
                 case 8:
-                    generatedCid = _b.sent();
+                    generatedCid = _c.sent();
                     if (fileContent.length === DOWNLOAD_LIMIT_BYTES && generatedCid !== cid)
                         throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", "fetchCid: CID (".concat(cid, ") points to a file larger than download limit ").concat(DOWNLOAD_LIMIT_BYTES));
                     if (generatedCid !== cid)
@@ -183,18 +184,23 @@ function loadIpfsFileAsJson(cid, plebbit) {
 }
 exports.loadIpfsFileAsJson = loadIpfsFileAsJson;
 function loadIpnsAsJson(ipns, plebbit) {
+    var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var url, _a, resText, res, cid, error, e_3;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var url, _b, resText, res, cid, error, e_3;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
                     if (typeof ipns !== "string")
                         throwWithErrorCode("ERR_IPNS_IS_INVALID", "loadIpnsAsJson: ipns (".concat(ipns, ") is undefined"));
                     if (!!plebbit.ipfsClient) return [3 /*break*/, 2];
                     url = "".concat(plebbit.ipfsGatewayUrl, "/ipns/").concat(ipns);
-                    return [4 /*yield*/, fetchWithLimit(url, { cache: "no-store", size: DOWNLOAD_LIMIT_BYTES })];
+                    return [4 /*yield*/, fetchWithLimit(url, {
+                            headers: (_a = plebbit.ipfsHttpClientOptions) === null || _a === void 0 ? void 0 : _a.headers,
+                            cache: "no-store",
+                            size: DOWNLOAD_LIMIT_BYTES
+                        })];
                 case 1:
-                    _a = _b.sent(), resText = _a[0], res = _a[1];
+                    _b = _c.sent(), resText = _b[0], res = _b[1];
                     if (res.status === 200)
                         return [2 /*return*/, JSON.parse(resText)];
                     else
@@ -202,15 +208,15 @@ function loadIpnsAsJson(ipns, plebbit) {
                     return [3 /*break*/, 7];
                 case 2:
                     cid = void 0, error = void 0;
-                    _b.label = 3;
+                    _c.label = 3;
                 case 3:
-                    _b.trys.push([3, 5, , 6]);
+                    _c.trys.push([3, 5, , 6]);
                     return [4 /*yield*/, plebbit.ipfsClient.name.resolve(ipns)];
                 case 4:
-                    cid = _b.sent();
+                    cid = _c.sent();
                     return [3 /*break*/, 6];
                 case 5:
-                    e_3 = _b.sent();
+                    e_3 = _c.sent();
                     error = e_3;
                     return [3 /*break*/, 6];
                 case 6:
