@@ -83,18 +83,23 @@ var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var version_1 = __importDefault(require("./version"));
 var lodash_1 = __importDefault(require("lodash"));
 var signatures_1 = require("./signer/signatures");
+var buffer_1 = require("buffer");
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
     function Plebbit(options) {
         if (options === void 0) { options = {}; }
         var _this = _super.call(this) || this;
-        _this.ipfsHttpClientOptions = options.ipfsHttpClientOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        _this.ipfsClient = _this.ipfsHttpClientOptions
-            ? util_1.nativeFunctions.createIpfsClient(_this.ipfsHttpClientOptions)
-            : undefined;
-        _this.pubsubHttpClientOptions = options.pubsubHttpClientOptions || { url: "https://pubsubprovider.xyz/api/v0" };
+        _this.ipfsHttpClientOptions =
+            typeof options.ipfsHttpClientOptions === "string"
+                ? _this._parseUrlToOption(options.ipfsHttpClientOptions)
+                : options.ipfsHttpClientOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
+        _this.ipfsClient = _this.ipfsHttpClientOptions ? util_1.nativeFunctions.createIpfsClient(_this.ipfsHttpClientOptions) : undefined;
+        _this.pubsubHttpClientOptions =
+            typeof options.pubsubHttpClientOptions === "string"
+                ? _this._parseUrlToOption(options.pubsubHttpClientOptions)
+                : options.pubsubHttpClientOptions || { url: "https://pubsubprovider.xyz/api/v0" };
         _this.pubsubIpfsClient = options.pubsubHttpClientOptions
-            ? util_1.nativeFunctions.createIpfsClient(options.pubsubHttpClientOptions)
+            ? util_1.nativeFunctions.createIpfsClient(_this.pubsubHttpClientOptions)
             : _this.ipfsClient
                 ? _this.ipfsClient
                 : util_1.nativeFunctions.createIpfsClient(_this.pubsubHttpClientOptions);
@@ -117,6 +122,11 @@ var Plebbit = /** @class */ (function (_super) {
         _this.dataPath = options.dataPath || (0, util_1.getDefaultDataPath)();
         return _this;
     }
+    Plebbit.prototype._parseUrlToOption = function (urlString) {
+        var url = new URL(urlString);
+        var authorization = url.username && url.password ? "Basic " + buffer_1.Buffer.from("".concat(url.username, ":").concat(url.password)).toString("base64") : undefined;
+        return __assign({ url: authorization ? url.origin + url.pathname : urlString }, (authorization ? { headers: { authorization: authorization, origin: "http://localhost" } } : undefined));
+    };
     Plebbit.prototype._init = function (options) {
         return __awaiter(this, void 0, void 0, function () {
             var log, gatewayFromNode, splits, e_1;

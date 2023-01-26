@@ -189,16 +189,12 @@ var nativeFunctions = {
     },
     createIpfsClient: function (ipfsHttpClientOptions) {
         var _a;
-        var isHttpsAgent = typeof ipfsHttpClientOptions === "string"
-            ? ipfsHttpClientOptions.startsWith("https")
-            : (typeof ipfsHttpClientOptions.url === "string" && ipfsHttpClientOptions.url.startsWith("https")) ||
-                (ipfsHttpClientOptions === null || ipfsHttpClientOptions === void 0 ? void 0 : ipfsHttpClientOptions.protocol) === "https" ||
-                (ipfsHttpClientOptions.url instanceof URL && ((_a = ipfsHttpClientOptions === null || ipfsHttpClientOptions === void 0 ? void 0 : ipfsHttpClientOptions.url) === null || _a === void 0 ? void 0 : _a.protocol) === "https:") ||
-                (ipfsHttpClientOptions.url instanceof multiaddr_1.Multiaddr && ipfsHttpClientOptions.url.protoNames().includes("https"));
+        var isHttpsAgent = (typeof ipfsHttpClientOptions.url === "string" && ipfsHttpClientOptions.url.startsWith("https")) ||
+            (ipfsHttpClientOptions === null || ipfsHttpClientOptions === void 0 ? void 0 : ipfsHttpClientOptions.protocol) === "https" ||
+            (ipfsHttpClientOptions.url instanceof URL && ((_a = ipfsHttpClientOptions === null || ipfsHttpClientOptions === void 0 ? void 0 : ipfsHttpClientOptions.url) === null || _a === void 0 ? void 0 : _a.protocol) === "https:") ||
+            (ipfsHttpClientOptions.url instanceof multiaddr_1.Multiaddr && ipfsHttpClientOptions.url.protoNames().includes("https"));
         var Agent = isHttpsAgent ? https_1.Agent : http_1.Agent;
-        var ipfsClient = (0, ipfs_http_client_1.create)(typeof ipfsHttpClientOptions === "string"
-            ? { url: ipfsHttpClientOptions, agent: new Agent({ keepAlive: true, maxSockets: Infinity }) }
-            : __assign(__assign({}, ipfsHttpClientOptions), { agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity }) }));
+        var ipfsClient = (0, ipfs_http_client_1.create)(__assign(__assign({}, ipfsHttpClientOptions), { agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity }) }));
         var cat = function () {
             var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
@@ -312,13 +308,14 @@ var nativeFunctions = {
                     if (!ipfsKey || ((_a = ipfsKey.constructor) === null || _a === void 0 ? void 0 : _a.name) !== "Uint8Array" || ipfsKey.byteLength <= 0)
                         throw Error("ipfsKey needs to be defined before importing key into IPFS node");
                     data.append("file", Buffer.from(ipfsKey));
-                    nodeUrl = typeof plebbit.ipfsHttpClientOptions === "string" ? plebbit.ipfsHttpClientOptions : plebbit.ipfsHttpClientOptions.url;
+                    nodeUrl = plebbit.ipfsHttpClientOptions.url;
                     if (!nodeUrl)
-                        throw Error("Can't figure out ipfs node URL");
+                        throw Error("Can't figure out ipfs node URL from ipfsHttpClientOptions (".concat(JSON.stringify(plebbit.ipfsHttpClientOptions)));
                     url = "".concat(nodeUrl, "/key/import?arg=").concat(ipnsKeyName, "&ipns-base=b58mh");
                     return [4 /*yield*/, nativeFunctions.fetch(url, {
                             method: "POST",
-                            body: data
+                            body: data,
+                            headers: plebbit.ipfsHttpClientOptions.headers
                         })];
                 case 1:
                     res = _b.sent();

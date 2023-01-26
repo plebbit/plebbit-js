@@ -367,7 +367,7 @@ export declare type NativeFunctions = {
     listSubplebbits: (dataPath: string) => Promise<string[]>;
     createDbHandler: (subplebbit: DbHandler["_subplebbit"]) => DbHandlerPublicAPI;
     fetch: typeof fetch;
-    createIpfsClient: (options: Options | string) => IpfsHttpClientPublicAPI;
+    createIpfsClient: (options: Options) => IpfsHttpClientPublicAPI;
     createImageCaptcha: (...p: Parameters<typeof createCaptcha>) => Promise<{
         image: string;
         text: string;

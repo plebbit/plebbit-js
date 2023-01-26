@@ -765,7 +765,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_FORBIDDEN_SIGNER_FIELD);
                             return [2 /*return*/, errors_1.messages.ERR_FORBIDDEN_SIGNER_FIELD];
                         }
-                        log.trace("Will attempt to store publication if valid, ", publication);
+                        log.trace("(".concat(challengeRequestId, "): "), "Will attempt to store publication if valid, ", publication);
                         if (!publication.hasOwnProperty("vote")) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.plebbit.createVote(publication)];
                     case 1:
