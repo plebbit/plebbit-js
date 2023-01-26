@@ -173,7 +173,7 @@ describe("plebbit (node and browser)", async () => {
 });
 
 // Skip for firefox since we can't disable CORS on Firefox
-if (!navigator?.userAgent?.includes("Firefox"))
+if (!globalThis["navigator"]?.userAgent?.includes("Firefox"))
     describe("Authentication in ipfsHttpClientOptions and PubsubHttpClientOptions", async () => {
         it(`Authorization credentials are generated correctly`, async () => {
             const plebbit = await Plebbit({
