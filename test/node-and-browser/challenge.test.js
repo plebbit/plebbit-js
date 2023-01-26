@@ -17,19 +17,19 @@ describe("math-cli", async () => {
         plebbit = await mockPlebbit();
     });
     it("can post after answering correctly", async function () {
-            const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[0]);
-            mockPost.removeAllListeners();
-            mockPost.once("challenge", (challengeMessage) => {
-                mockPost.publishChallengeAnswers(["2"]);
-            });
+        const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[0]);
+        mockPost.removeAllListeners();
+        mockPost.once("challenge", (challengeMessage) => {
+            mockPost.publishChallengeAnswers(["2"]);
+        });
         await publishWithExpectedResult(mockPost, true);
     });
     it("Throws an error when user fails to solve mathcli captcha", async function () {
-            const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[0]);
-            mockPost.removeAllListeners();
-            mockPost.once("challenge", (challengeMessage) => {
-                mockPost.publishChallengeAnswers(["3"]);
-            });
+        const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[0]);
+        mockPost.removeAllListeners();
+        mockPost.once("challenge", (challengeMessage) => {
+            mockPost.publishChallengeAnswers(["3"]);
+        });
         await publishWithExpectedResult(mockPost, false);
     });
 });
@@ -40,33 +40,60 @@ describe("image captcha", async () => {
         plebbit = await mockPlebbit();
     });
     it("can post after answering correctly", async function () {
-            const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit, signers[0]);
-            mockPost.removeAllListeners();
+        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit, signers[0]);
+        mockPost.removeAllListeners();
 
-            mockPost.once("challenge", async (challengeMsg) => {
-                expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
-                await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
-            });
+        mockPost.once("challenge", async (challengeMsg) => {
+            expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
+            await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
+        });
 
         await publishWithExpectedResult(mockPost, true);
-            });
+    });
 
     it("Throws an error if unable to solve image captcha", async function () {
         const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit, signers[0]);
         await publishWithExpectedResult(mockPost, false);
-        });
-    });
-
-    it("Throws an error if unable to solve image captcha", async function () {
-        return new Promise(async (resolve, reject) => {
-            const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit, signers[0]);
-            await mockPost.publish();
-            mockPost.once("challengeverification", async (challengeVerificationMessage, newComment) => {
-                expect(challengeVerificationMessage.challengeSuccess).to.be.false;
-                resolve();
-            });
-        });
     });
 });
 
-it(`Sub responds to a challengeanswer with unrelated requestId`);
+describe(`Validation of pubsub messages`, async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
+    it(`Sub ignores a challengeanswer with unregistered requestId`, async () => {
+        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+        mockPost.removeAllListeners();
+
+        mockPost.once("challenge", async (challengeMsg) => {
+            const oldId = lodash.clone(mockPost._challengeRequest.challengeRequestId);
+            mockPost._challengeRequest.challengeRequestId = "1234-1234";
+            await mockPost.publishChallengeAnswers([]);
+            expect(mockPost._challengeAnswer.challengeRequestId).to.equal("1234-1234");
+            mockPost._challengeRequest.challengeRequestId = oldId;
+        });
+
+        mockPost.once("challengeverification", (verificationMsg) => expect.fail("Should not receive a response"));
+
+        await mockPost.publish();
+
+        await new Promise((resolve) => setTimeout(resolve, 10000));
+    });
+
+    it(`Sub ignores a challengeanswer with a different signer than challengerequest`, async () => {
+        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+        mockPost.removeAllListeners();
+
+        mockPost.once("challenge", async (challengeMsg) => {
+            mockPost.pubsubMessageSigner = await plebbit.createSigner();
+            await mockPost.publishChallengeAnswers([]);
+        });
+
+        mockPost.once("challengeverification", (verificationMsg) => expect.fail("Should not receive a response"));
+
+        await mockPost.publish();
+
+        await new Promise((resolve) => setTimeout(resolve, 10000));
+    });
+});
