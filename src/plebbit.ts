@@ -84,10 +84,14 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         this.dataPath = options.dataPath || getDefaultDataPath();
     }
 
-    private _parseUrlToOption(urlString: string): { url: string; headers: { authorization?: string } } {
+    private _parseUrlToOption(urlString: string): { url: string; headers: Options["headers"] } {
         const url = new URL(urlString);
-        const authorization = url.username && url.password && "Basic " + Buffer.from(`${url.username}:${url.password}`).toString("base64");
-        return { url: authorization ? url.origin + url.pathname : urlString, headers: { authorization } };
+        const authorization =
+            url.username && url.password ? "Basic " + Buffer.from(`${url.username}:${url.password}`).toString("base64") : undefined;
+        return {
+            url: authorization ? url.origin + url.pathname : urlString,
+            ...(authorization ? { headers: { authorization, origin: "http://localhost" } } : undefined)
+        };
     }
 
     async _init(options: PlebbitOptions) {
