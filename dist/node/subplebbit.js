@@ -108,6 +108,7 @@ var Subplebbit = /** @class */ (function (_super) {
         _this.initSubplebbit(props);
         _this._challengeToSolution = {}; // Map challenge ID to its solution
         _this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
+        _this._challengeToPublicKey = {}; // Map out challenge request id to their signers
         _this._sync = false;
         // these functions might get separated from their `this` when used
         _this.start = _this.start.bind(_this);
@@ -761,6 +762,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:handleChallengeExchange:storePublicationIfValid");
                         delete this._challengeToSolution[challengeRequestId];
                         delete this._challengeToPublication[challengeRequestId];
+                        delete this._challengeToPublicKey[challengeRequestId];
                         if (publication.signer) {
                             log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_FORBIDDEN_SIGNER_FIELD);
                             return [2 /*return*/, errors_1.messages.ERR_FORBIDDEN_SIGNER_FIELD];
@@ -1009,11 +1011,12 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signer_1.decrypt)(request.encryptedPublication.encrypted, request.encryptedPublication.encryptedKey, this.signer.privateKey)];
                     case 1:
                         decryptedRequest = __assign.apply(void 0, _a.concat([(_k.publication = _c.apply(_b, [_p.sent()]), _k)]));
+                        this._challengeToPublication[request.challengeRequestId] = decryptedRequest.publication;
+                        this._challengeToPublicKey[request.challengeRequestId] = decryptedRequest.signature.publicKey;
                         this.emit("challengerequest", decryptedRequest);
                         return [4 /*yield*/, this.provideCaptchaCallback(decryptedRequest)];
                     case 2:
                         _d = _p.sent(), providedChallenges = _d[0], reasonForSkippingCaptcha = _d[1];
-                        this._challengeToPublication[request.challengeRequestId] = decryptedRequest.publication;
                         log("Received a request to a challenge (".concat(request.challengeRequestId, ")"));
                         if (!(providedChallenges.length === 0)) return [3 /*break*/, 10];
                         // Subplebbit owner has chosen to skip challenging this user or post
@@ -1025,7 +1028,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 4:
                         publicationOrReason = _p.sent();
                         if (!(typeof publicationOrReason !== "string")) return [3 /*break*/, 6];
-                        return [4 /*yield*/, (0, signer_1.encrypt)((0, util_1.encode)(publicationOrReason.toJSON()), publicationOrReason.signature.publicKey)];
+                        return [4 /*yield*/, (0, signer_1.encrypt)((0, util_1.encode)(publicationOrReason.toJSON()), request.signature.publicKey)];
                     case 5:
                         _e = _p.sent();
                         return [3 /*break*/, 7];
@@ -1067,7 +1070,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             userAgent: version_1.default.USER_AGENT,
                             challengeRequestId: request.challengeRequestId
                         };
-                        return [4 /*yield*/, (0, signer_1.encrypt)((0, util_1.encode)(providedChallenges), decryptedRequest.publication.signature.publicKey)];
+                        return [4 /*yield*/, (0, signer_1.encrypt)((0, util_1.encode)(providedChallenges), request.signature.publicKey)];
                     case 11:
                         toSignChallenge = (_m.encryptedChallenges = _p.sent(),
                             _m);
@@ -1119,7 +1122,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 4:
                         publicationOrReason = _m.sent();
                         if (!(typeof publicationOrReason !== "string")) return [3 /*break*/, 6];
-                        return [4 /*yield*/, (0, signer_1.encrypt)((0, util_1.encode)(publicationOrReason.toJSON()), publicationOrReason.signature.publicKey)];
+                        return [4 /*yield*/, (0, signer_1.encrypt)((0, util_1.encode)(publicationOrReason.toJSON()), challengeAnswer.signature.publicKey)];
                     case 5:
                         _e = _m.sent();
                         return [3 /*break*/, 7];
@@ -1258,6 +1261,8 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 5:
                         // Only reply to peers who started a challenge request earlier
                         _a.sent();
+                        if (msgParsed.signature.publicKey !== this._challengeToPublicKey[msgParsed.challengeRequestId])
+                            return [2 /*return*/];
                         return [4 /*yield*/, this.handleChallengeAnswer(new challenge_1.ChallengeAnswerMessage(msgParsed))];
                     case 6:
                         _a.sent();

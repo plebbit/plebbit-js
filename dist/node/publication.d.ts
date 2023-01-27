@@ -14,7 +14,9 @@ declare class Publication extends EventEmitter implements PublicationType {
     protocolVersion: ProtocolVersion;
     protected plebbit: Plebbit;
     protected subplebbit?: Subplebbit;
-    private challenge;
+    protected pubsubMessageSigner: Signer;
+    private _challengeAnswer;
+    private _challengeRequest;
     constructor(props: PublicationType, plebbit: Plebbit);
     _initProps(props: PublicationType): void;
     getType(): PublicationTypeName;
