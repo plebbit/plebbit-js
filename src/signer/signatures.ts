@@ -7,7 +7,6 @@ import * as cborg from "cborg";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import * as ed from '@noble/ed25519'
-import assert from 'assert'
 
 import PeerId from "peer-id";
 import { removeKeysWithUndefinedValues, throwWithErrorCode } from "../util";
@@ -78,25 +77,11 @@ export class Signature implements SignatureType {
 
 const isProbablyBuffer = (arg) => arg && typeof arg !== "string" && typeof arg !== "number";
 
-// export const signBufferRsa = async (bufferToSign, privateKeyPem, privateKeyPemPassword = "") => {
-//     if (!isProbablyBuffer(bufferToSign)) throw Error(`signBufferRsa invalid bufferToSign '${bufferToSign}' not buffer`);
-//     const keyPair = await getKeyPairFromPrivateKeyPem(privateKeyPem, privateKeyPemPassword);
-//     // do not use libp2p keyPair.sign to sign strings, it doesn't encode properly in the browser
-//     return await keyPair.sign(bufferToSign);
-// };
-
-// export const verifyBufferRsa = async (bufferToSign, bufferSignature, publicKeyPem) => {
-//     if (!isProbablyBuffer(bufferToSign)) throw Error(`verifyBufferRsa invalid bufferSignature '${bufferToSign}' not buffer`);
-//     if (!isProbablyBuffer(bufferSignature)) throw Error(`verifyBufferRsa invalid bufferSignature '${bufferSignature}' not buffer`);
-//     const peerId = await getPeerIdFromPublicKey(publicKeyPem);
-//     return await peerId.pubKey.verify(bufferToSign, bufferSignature);
-// };
-
 export const signBufferEd25519 = async (bufferToSign, privateKeyBase64) => {
   if (!isProbablyBuffer(bufferToSign)) throw Error(`signBufferEd25519 invalid bufferToSign '${bufferToSign}' not buffer`)
-  assert(privateKeyBase64 && typeof privateKeyBase64 === 'string', `signBufferEd25519 privateKeyBase64 not a string`)
+  if (!privateKeyBase64 || typeof privateKeyBase64 !== 'string') throw Error(`signBufferEd25519 privateKeyBase64 not a string`)
   const privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, 'base64')
-  assert.equal(privateKeyBuffer.length, 32, `verifyBufferEd25519 publicKeyBase64 ed25519 public key length not 32 bytes (${privateKeyBuffer.length} bytes)`)
+  if (privateKeyBuffer.length !== 32) throw Error(`verifyBufferEd25519 publicKeyBase64 ed25519 public key length not 32 bytes (${privateKeyBuffer.length} bytes)`)
   // do not use to sign strings, it doesn't encode properly in the browser
   const signature = await ed.sign(bufferToSign, privateKeyBuffer)
   return signature
@@ -105,9 +90,9 @@ export const signBufferEd25519 = async (bufferToSign, privateKeyBase64) => {
 export const verifyBufferEd25519 = async (bufferToSign, bufferSignature, publicKeyBase64) => {
   if (!isProbablyBuffer(bufferToSign)) throw Error(`verifyBufferEd25519 invalid bufferSignature '${bufferToSign}' not buffer`)
   if (!isProbablyBuffer(bufferSignature)) throw Error(`verifyBufferEd25519 invalid bufferSignature '${bufferSignature}' not buffer`)
-  assert(publicKeyBase64 && typeof publicKeyBase64 === 'string', `verifyBufferEd25519 publicKeyBase64 '${publicKeyBase64}' not a string`)  
+  if (!publicKeyBase64 || typeof publicKeyBase64 !== 'string') throw Error(`verifyBufferEd25519 publicKeyBase64 '${publicKeyBase64}' not a string`)  
   const publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, 'base64')
-  assert.equal(publicKeyBuffer.length, 32, `verifyBufferEd25519 publicKeyBase64 '${publicKeyBase64}' ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`)
+  if (publicKeyBuffer.length !== 32) throw Error(`verifyBufferEd25519 publicKeyBase64 '${publicKeyBase64}' ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`)
   const isValid = await ed.verify(bufferSignature, bufferToSign, publicKeyBuffer)
   return isValid
 }

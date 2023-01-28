@@ -27,50 +27,6 @@ describe.only("encryption", () => {
         authorSigner = await plebbit.createSigner({ privateKey: authorSignerFixture.privateKey, type: "rsa" });
     });
 
-    // describe("encrypt and decrypt aes-gcm key buffer with rsa", () => {
-    //     // key must be 16 bytes
-    //     const key = uint8ArrayFromString("1111111111111111");
-    //     let encryptedKey;
-
-    //     before(async () => {
-    //         encryptedKey = await encryptBufferRsa(key, authorSignerFixture.publicKey);
-    //     });
-
-    //     it("encrypted key is string of correct length", () => {
-    //         expect(encryptedKey).to.be.a("string");
-    //         expect(encryptedKey).to.be.of.length(342);
-    //     });
-
-    //     it("encrypted key can be decrypted", async () => {
-    //         const decryptedKey = await decryptBufferRsa(encryptedKey, authorSignerFixture.privateKey);
-    //         expect(toString(key)).to.equal(toString(decryptedKey));
-    //     });
-    // });
-
-    // describe("generate, encrypt and decrypt aes-gcm key buffer with rsa", () => {
-    //     let key, encryptedKey;
-
-    //     before(async () => {
-    //         key = await generateKeyAesgcm();
-    //         encryptedKey = await encryptBufferRsa(key, authorSignerFixture.publicKey);
-    //     });
-
-    //     it("generated key is Uint8Array of correct length", () => {
-    //         expect(key).to.be.instanceof(Uint8Array);
-    //         expect(key).to.be.of.length(16);
-    //     });
-
-    //     it("encrypted key is string of correct length", () => {
-    //         expect(encryptedKey).to.be.a("string");
-    //         expect(encryptedKey).to.be.of.length(342);
-    //     });
-
-    //     it("encrypted key can be decrypted", async () => {
-    //         const decryptedKey = await decryptBufferRsa(encryptedKey, authorSignerFixture.privateKey);
-    //         expect(toString(key)).to.equal(toString(decryptedKey));
-    //     });
-    // });
-
     describe("encrypt and decrypt string with aes-gcm", async () => {
         describe("generated key", () => {
             let key, ciphertext, iv, tag;
@@ -161,7 +117,7 @@ describe.only("encryption", () => {
                     expect(ciphertext.constructor.name).to.equal("Uint8Array");
                     expect(ciphertext.length).to.not.equal(0)
 
-                    // base 64 aes-gcm 128 encrypted "🤡" with key "1111111111111111" and iv "111111111111"
+                    // aes-gcm 128 encrypted "🤡" with key "1111111111111111" and iv "111111111111"
                     // should always return this value
                     expect(uint8ArrayToString(ciphertext, 'base64')).to.equal("rdMFbg");
                 });
