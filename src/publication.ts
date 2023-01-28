@@ -91,10 +91,17 @@ class Publication extends EventEmitter implements PublicationType {
                 `Received encrypted challenges.  Will decrypt and emit them on "challenge" event. User shoud publish solution by calling publishChallengeAnswers`
             );
             const decryptedChallenges: ChallengeType[] = JSON.parse(
+                // await decrypt(
+                //     msgParsed.encryptedChallenges.encrypted,
+                //     msgParsed.encryptedChallenges.encryptedKey,
+                //     this.pubsubMessageSigner.privateKey
+                // )
+                // ESTEBAN EDITED
                 await decrypt(
-                    msgParsed.encryptedChallenges.encrypted,
-                    msgParsed.encryptedChallenges.encryptedKey,
-                    this.pubsubMessageSigner.privateKey
+                    msgParsed.encryptedChallenges,
+                    this.pubsubMessageSigner.privateKey,
+                    this.subplebbit.encryption.publicKey
+
                 )
             );
             const decryptedChallenge: DecryptedChallengeMessageType = { ...msgParsed, challenges: decryptedChallenges };
@@ -113,10 +120,17 @@ class Publication extends EventEmitter implements PublicationType {
                     `Challenge (${msgParsed.challengeRequestId}) has passed. Will update publication props from ChallengeVerificationMessage.publication`
                 );
                 decryptedPublication = JSON.parse(
+                    // await decrypt(
+                    //     msgParsed.encryptedPublication.encrypted,
+                    //     msgParsed.encryptedPublication.encryptedKey,
+                    //     this.pubsubMessageSigner.privateKey
+                    // )
+                    // ESTEBAN EDITED
                     await decrypt(
-                        msgParsed.encryptedPublication.encrypted,
-                        msgParsed.encryptedPublication.encryptedKey,
-                        this.pubsubMessageSigner.privateKey
+                        msgParsed.encryptedPublication,
+                        this.pubsubMessageSigner.privateKey,
+                        this.subplebbit.encryption.publicKey
+
                     )
                 );
                 assert(decryptedPublication);
@@ -138,7 +152,9 @@ class Publication extends EventEmitter implements PublicationType {
         if (!Array.isArray(challengeAnswers)) challengeAnswers = [challengeAnswers];
 
         // Encrypt challenges here
-        const encryptedChallengeAnswers = await encrypt(JSON.stringify(challengeAnswers), this.subplebbit.encryption.publicKey);
+        // const encryptedChallengeAnswers = await encrypt(JSON.stringify(challengeAnswers), this.subplebbit.encryption.publicKey);
+        // ESTEBAN EDITED
+        const encryptedChallengeAnswers = await encrypt(JSON.stringify(challengeAnswers), this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey);
 
         const toSignAnswer: Omit<ChallengeAnswerMessageType, "signature"> = {
             type: "CHALLENGEANSWER",
@@ -196,7 +212,9 @@ class Publication extends EventEmitter implements PublicationType {
 
         this.pubsubMessageSigner = await this.plebbit.createSigner();
 
-        const encryptedPublication = await encrypt(JSON.stringify(this.toJSONSkeleton()), this.subplebbit.encryption.publicKey);
+        // const encryptedPublication = await encrypt(JSON.stringify(this.toJSONSkeleton()), this.subplebbit.encryption.publicKey);
+        // ESTEBAN EDITED
+        const encryptedPublication = await encrypt(JSON.stringify(this.toJSONSkeleton()), this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey);
 
         const toSignMsg: Omit<ChallengeRequestMessageType, "signature"> = {
             type: "CHALLENGEREQUEST",

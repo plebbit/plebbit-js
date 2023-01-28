@@ -35,7 +35,7 @@ import sumBy from "lodash/sumBy";
 import lodash from "lodash";
 import { MOD_EDIT_FIELDS } from "../../comment-edit";
 import { CACHE_KEYS } from "../../constants";
-import { getPlebbitAddressFromPrivateKeyPem, getPlebbitAddressFromPublicKeyPem } from "../../signer/util";
+import { getPlebbitAddressFromPrivateKey, getPlebbitAddressFromPublicKey } from "../../signer/util";
 import { Signer } from "../../signer";
 
 import * as lockfile from "proper-lockfile";
@@ -922,9 +922,9 @@ export class DbHandler {
         const subCache: SubplebbitType | undefined = await this.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
         if (obsoleteCache && !subCache) {
             // We're migrating from DB version 2 to 4+
-            const signerAddress = await getPlebbitAddressFromPublicKeyPem(obsoleteCache.encryption.publicKey);
+            const signerAddress = await getPlebbitAddressFromPublicKey(obsoleteCache.encryption.publicKey);
             const signer = await this.querySigner(signerAddress); // Need to include signer explicitly since in db version 2 we didn't include signer in cache
-            obsoleteCache.signer = new Signer({ ...signer, address: await getPlebbitAddressFromPrivateKeyPem(signer.privateKey) });
+            obsoleteCache.signer = new Signer({ ...signer, address: await getPlebbitAddressFromPrivateKey(signer.privateKey) });
             // We changed the name of internal subplebbit cache, need to explicitly copy old cache to new key here
             await this.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], obsoleteCache);
         }

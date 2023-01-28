@@ -40,9 +40,10 @@ export interface SignerType {
 }
 export type Encrypted = {
     // examples available at https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
-    encrypted: string; // base64 encrypted string with AES CBC 128 // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_block_chaining_(CBC)
-    encryptedKey: string; // base64 encrypted key for the AES CBC 128 encrypted content, encrypted using subplebbit.encryption settings, always generate a new key with AES CBC or it's insecure
-    type: "aes-cbc";
+    ciphertext: string
+    iv: string
+    tag: string
+    type: "ed25519-aes-gcm"
 };
 export type SubplebbitEncryption = {
     type: "aes-cbc"; // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md

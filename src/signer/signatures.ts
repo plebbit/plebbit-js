@@ -1,12 +1,14 @@
 import {
-    getKeyPairFromPrivateKeyPem,
-    getPeerIdFromPublicKeyPem,
-    getPlebbitAddressFromPrivateKeyPem,
-    getPlebbitAddressFromPublicKeyPem
+    getPeerIdFromPublicKey,
+    getPlebbitAddressFromPrivateKey,
+    getPlebbitAddressFromPublicKey
 } from "./util";
 import * as cborg from "cborg";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
+import * as ed from '@noble/ed25519'
+import assert from 'assert'
+
 import PeerId from "peer-id";
 import { removeKeysWithUndefinedValues, throwWithErrorCode } from "../util";
 import { Plebbit } from "../plebbit";
@@ -76,23 +78,43 @@ export class Signature implements SignatureType {
 
 const isProbablyBuffer = (arg) => arg && typeof arg !== "string" && typeof arg !== "number";
 
-export const signBufferRsa = async (bufferToSign, privateKeyPem, privateKeyPemPassword = "") => {
-    if (!isProbablyBuffer(bufferToSign)) throw Error(`signBufferRsa invalid bufferToSign '${bufferToSign}' not buffer`);
-    const keyPair = await getKeyPairFromPrivateKeyPem(privateKeyPem, privateKeyPemPassword);
-    // do not use libp2p keyPair.sign to sign strings, it doesn't encode properly in the browser
-    return await keyPair.sign(bufferToSign);
-};
+// export const signBufferRsa = async (bufferToSign, privateKeyPem, privateKeyPemPassword = "") => {
+//     if (!isProbablyBuffer(bufferToSign)) throw Error(`signBufferRsa invalid bufferToSign '${bufferToSign}' not buffer`);
+//     const keyPair = await getKeyPairFromPrivateKeyPem(privateKeyPem, privateKeyPemPassword);
+//     // do not use libp2p keyPair.sign to sign strings, it doesn't encode properly in the browser
+//     return await keyPair.sign(bufferToSign);
+// };
 
-export const verifyBufferRsa = async (bufferToSign, bufferSignature, publicKeyPem) => {
-    if (!isProbablyBuffer(bufferToSign)) throw Error(`verifyBufferRsa invalid bufferSignature '${bufferToSign}' not buffer`);
-    if (!isProbablyBuffer(bufferSignature)) throw Error(`verifyBufferRsa invalid bufferSignature '${bufferSignature}' not buffer`);
-    const peerId = await getPeerIdFromPublicKeyPem(publicKeyPem);
-    return await peerId.pubKey.verify(bufferToSign, bufferSignature);
-};
+// export const verifyBufferRsa = async (bufferToSign, bufferSignature, publicKeyPem) => {
+//     if (!isProbablyBuffer(bufferToSign)) throw Error(`verifyBufferRsa invalid bufferSignature '${bufferToSign}' not buffer`);
+//     if (!isProbablyBuffer(bufferSignature)) throw Error(`verifyBufferRsa invalid bufferSignature '${bufferSignature}' not buffer`);
+//     const peerId = await getPeerIdFromPublicKey(publicKeyPem);
+//     return await peerId.pubKey.verify(bufferToSign, bufferSignature);
+// };
+
+export const signBufferEd25519 = async (bufferToSign, privateKeyBase64) => {
+  if (!isProbablyBuffer(bufferToSign)) throw Error(`signBufferEd25519 invalid bufferToSign '${bufferToSign}' not buffer`)
+  assert(privateKeyBase64 && typeof privateKeyBase64 === 'string', `signBufferEd25519 privateKeyBase64 not a string`)
+  const privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, 'base64')
+  assert.equal(privateKeyBuffer.length, 32, `verifyBufferEd25519 publicKeyBase64 ed25519 public key length not 32 bytes (${privateKeyBuffer.length} bytes)`)
+  // do not use to sign strings, it doesn't encode properly in the browser
+  const signature = await ed.sign(bufferToSign, privateKeyBuffer)
+  return signature
+}
+
+export const verifyBufferEd25519 = async (bufferToSign, bufferSignature, publicKeyBase64) => {
+  if (!isProbablyBuffer(bufferToSign)) throw Error(`verifyBufferEd25519 invalid bufferSignature '${bufferToSign}' not buffer`)
+  if (!isProbablyBuffer(bufferSignature)) throw Error(`verifyBufferEd25519 invalid bufferSignature '${bufferSignature}' not buffer`)
+  assert(publicKeyBase64 && typeof publicKeyBase64 === 'string', `verifyBufferEd25519 publicKeyBase64 '${publicKeyBase64}' not a string`)  
+  const publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, 'base64')
+  assert.equal(publicKeyBuffer.length, 32, `verifyBufferEd25519 publicKeyBase64 '${publicKeyBase64}' ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`)
+  const isValid = await ed.verify(bufferSignature, bufferToSign, publicKeyBuffer)
+  return isValid
+}
 
 async function _validateAuthorIpns(author: CreateCommentOptions["author"], signer: SignerType, plebbit: Plebbit) {
     if (isIPFS.cid(author.address)) {
-        const derivedAddress = await getPlebbitAddressFromPrivateKeyPem(signer.privateKey);
+        const derivedAddress = await getPlebbitAddressFromPrivateKey(signer.privateKey);
         if (derivedAddress !== author.address)
             throwWithErrorCode(
                 "ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER",
@@ -119,7 +141,7 @@ async function _sign(
     };
     log.trace(`fields to sign: `, fieldsToSign);
     const publicationEncoded = cborg.encode(fieldsToSign); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
-    const signatureData = uint8ArrayToString(await signBufferRsa(publicationEncoded, signer.privateKey), "base64");
+    const signatureData = uint8ArrayToString(await signBufferEd25519(publicationEncoded, signer.privateKey), "base64");
     log.trace(`fields have been signed, signature:`, signatureData);
     return new Signature({
         signature: signatureData,
@@ -225,7 +247,7 @@ const _verifyAuthor = async (
     if (plebbit.resolver.isDomain(publicationJson.author.address)) {
         if (!plebbit.resolveAuthorAddresses) return { valid: true }; // Skip domain validation if plebbit.resolveAuthorAddresses=false
         const resolvedAuthorAddress = await plebbit.resolver.resolveAuthorAddressIfNeeded(publicationJson.author.address);
-        const derivedAddress = await getPlebbitAddressFromPublicKeyPem(publicationJson.signature.publicKey);
+        const derivedAddress = await getPlebbitAddressFromPublicKey(publicationJson.signature.publicKey);
         if (resolvedAuthorAddress !== derivedAddress) {
             // Means plebbit-author-address text record is resolving to another address (outdated?)
             // Will always use address derived from publication.signature.publicKey as truth
@@ -236,7 +258,7 @@ const _verifyAuthor = async (
         }
     } else if (isIPFS.cid(publicationJson.author.address)) {
         const authorPeerId = PeerId.createFromB58String(publicationJson.author.address);
-        const signaturePeerId = await getPeerIdFromPublicKeyPem(publicationJson.signature.publicKey);
+        const signaturePeerId = await getPeerIdFromPublicKey(publicationJson.signature.publicKey);
         if (!signaturePeerId.equals(authorPeerId)) return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
     } else return { valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS };
     // Author
@@ -250,7 +272,7 @@ const _verifyPublicationSignature = async (publicationToBeVerified: PublicationT
     };
     const commentEncoded = cborg.encode(commentWithFieldsToSign);
 
-    const signatureIsValid = await verifyBufferRsa(
+    const signatureIsValid = await verifyBufferEd25519(
         commentEncoded,
         uint8ArrayFromString(publicationToBeVerified.signature.signature, "base64"),
         publicationToBeVerified.signature.publicKey
@@ -355,7 +377,7 @@ export async function verifySubplebbit(subplebbit: SubplebbitType, plebbit: Pleb
     const resolvedSubAddress = await plebbit.resolver.resolveSubplebbitAddressIfNeeded(subplebbitJson.address);
 
     const subPeerId = PeerId.createFromB58String(resolvedSubAddress);
-    const signaturePeerId = await getPeerIdFromPublicKeyPem(subplebbitJson.signature.publicKey);
+    const signaturePeerId = await getPeerIdFromPublicKey(subplebbitJson.signature.publicKey);
     if (!subPeerId.equals(signaturePeerId)) return { valid: false, reason: messages.ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY };
     return { valid: true };
 }

@@ -41,10 +41,10 @@ import { Comment } from "./comment";
 import Vote from "./vote";
 import Post from "./post";
 import {
-    getIpfsKeyFromPrivateKeyPem,
-    getPlebbitAddressFromPrivateKeyPem,
-    getPlebbitAddressFromPublicKeyPem,
-    getPublicKeyPemFromPrivateKeyPem
+    getIpfsKeyFromPrivateKey,
+    getPlebbitAddressFromPrivateKey,
+    getPlebbitAddressFromPublicKey,
+    getPublicKeyFromPrivateKey
 } from "./signer/util";
 import { v4 as uuidv4 } from "uuid";
 import { AUTHOR_EDIT_FIELDS, CommentEdit, MOD_EDIT_FIELDS } from "./comment-edit";
@@ -164,10 +164,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     private async _initSignerProps() {
         if (!this.signer?.ipfsKey?.byteLength || this.signer?.ipfsKey?.byteLength <= 0)
-            this.signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKeyPem(this.signer.privateKey));
+            this.signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(this.signer.privateKey));
         if (!this.signer.ipnsKeyName) this.signer.ipnsKeyName = this.signer.address;
-        if (!this.signer.publicKey) this.signer.publicKey = await getPublicKeyPemFromPrivateKeyPem(this.signer.privateKey);
-        if (!this.signer.address) this.signer.address = await getPlebbitAddressFromPrivateKeyPem(this.signer.privateKey);
+        if (!this.signer.publicKey) this.signer.publicKey = await getPublicKeyFromPrivateKey(this.signer.privateKey);
+        if (!this.signer.address) this.signer.address = await getPlebbitAddressFromPrivateKey(this.signer.privateKey);
 
         this.encryption = {
             type: "aes-cbc",
@@ -268,7 +268,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     private async assertDomainResolvesCorrectly(domain: string) {
         if (this.plebbit.resolver.isDomain(domain)) {
             const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(domain);
-            const derivedAddress = await getPlebbitAddressFromPublicKeyPem(this.encryption.publicKey);
+            const derivedAddress = await getPlebbitAddressFromPublicKey(this.encryption.publicKey);
             if (resolvedAddress !== derivedAddress)
                 throwWithErrorCode(
                     "ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS",
@@ -446,7 +446,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
 
         const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
-        const editorAddress = await getPlebbitAddressFromPublicKeyPem(commentEdit.signature.publicKey);
+        const editorAddress = await getPlebbitAddressFromPublicKey(commentEdit.signature.publicKey);
         const modRole = this.roles && this.roles[commentEdit.author.address];
         if (commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey) {
             // CommentEdit is signed by original author
@@ -705,7 +705,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 ...(await this.plebbit.createSigner()),
                 ipnsKeyName
             });
-            ipfsSigner.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKeyPem(ipfsSigner.privateKey));
+            ipfsSigner.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(ipfsSigner.privateKey));
             await this.dbHandler.insertSigner(lodash.pick(ipfsSigner, ["ipnsKeyName", "privateKey", "type"]), undefined);
             postOrCommentOrVote.setCommentIpnsKey(
                 await nativeFunctions.importSignerIntoIpfsNode(ipfsSigner.ipnsKeyName, ipfsSigner.ipfsKey, this.plebbit)
@@ -765,7 +765,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const decryptedRequest: DecryptedChallengeRequestMessageType = {
             ...request,
             publication: JSON.parse(
-                await decrypt(request.encryptedPublication.encrypted, request.encryptedPublication.encryptedKey, this.signer.privateKey)
+                // await decrypt(request.encryptedPublication.encrypted, request.encryptedPublication.encryptedKey, this.signer.privateKey)
+                // ESTEBAN EDIT
+                await decrypt(request.encryptedPublication, this.signer.privateKey, request.signature.publicKey)
             )
         };
         this._challengeToPublication[request.challengeRequestId] = decryptedRequest.publication;
@@ -781,7 +783,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const publicationOrReason = await this.storePublicationIfValid(decryptedRequest.publication, request.challengeRequestId);
             const encryptedPublication =
                 typeof publicationOrReason !== "string"
-                    ? await encrypt(encode(publicationOrReason.toJSON()), request.signature.publicKey)
+                    // ? await encrypt(encode(publicationOrReason.toJSON()), request.signature.publicKey)
+                    // ESTEBAN EDIT
+                    ? await encrypt(encode(publicationOrReason.toJSON()), this.signer.privateKey, request.signature.publicKey)
                     : undefined;
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
@@ -816,7 +820,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 protocolVersion: env.PROTOCOL_VERSION,
                 userAgent: env.USER_AGENT,
                 challengeRequestId: request.challengeRequestId,
-                encryptedChallenges: await encrypt(encode(providedChallenges), request.signature.publicKey)
+                // encryptedChallenges: await encrypt(encode(providedChallenges), request.signature.publicKey)
+                // ESTEBAN EDIT
+                encryptedChallenges: await encrypt(encode(providedChallenges), this.signer.privateKey, request.signature.publicKey)
+
             };
 
             const challengeMessage = new ChallengeMessage({
@@ -841,10 +848,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const log = Logger("plebbit-js:subplebbit:handleChallengeAnswer");
 
         const decryptedAnswers: string[] = JSON.parse(
+            // await decrypt(
+            //     challengeAnswer.encryptedChallengeAnswers.encrypted,
+            //     challengeAnswer.encryptedChallengeAnswers.encryptedKey,
+            //     this.signer?.privateKey
+            // )
+            // ESTEBAN EDIT
             await decrypt(
-                challengeAnswer.encryptedChallengeAnswers.encrypted,
-                challengeAnswer.encryptedChallengeAnswers.encryptedKey,
-                this.signer?.privateKey
+                challengeAnswer.encryptedChallengeAnswers,
+                this.signer?.privateKey,
+                challengeAnswer.signature.publicKey
             )
         );
 
@@ -867,7 +880,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const publicationOrReason = await this.storePublicationIfValid(storedPublication, challengeAnswer.challengeRequestId); // could contain "publication" or "reason"
             const encryptedPublication =
                 typeof publicationOrReason !== "string"
-                    ? await encrypt(encode(publicationOrReason.toJSON()), challengeAnswer.signature.publicKey)
+                    // ? await encrypt(encode(publicationOrReason.toJSON()), challengeAnswer.signature.publicKey)
+                    // ESTEBAN EDIT
+                    ? await encrypt(encode(publicationOrReason.toJSON()), this.signer.privateKey, challengeAnswer.signature.publicKey)
                     : undefined;
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
@@ -1017,7 +1032,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (!signerRaw) throw Error(`Comment ${dbComment.cid} IPNS signer is not stored in DB`);
         await this._importSignerIntoIpfsIfNeeded(
             signerRaw.ipnsKeyName,
-            new Uint8Array(await getIpfsKeyFromPrivateKeyPem(signerRaw.privateKey))
+            new Uint8Array(await getIpfsKeyFromPrivateKey(signerRaw.privateKey))
         );
         const file = await this.plebbit.ipfsClient.add(encode({ ...dbComment.toJSONCommentUpdate(), signature: options.signature }));
         await this.plebbit.ipfsClient.name.publish(file.path, {

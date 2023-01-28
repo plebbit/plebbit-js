@@ -26,7 +26,7 @@ import { createSigner, Signer, verifyComment, verifySubplebbit } from "./signer"
 import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
-import { getPlebbitAddressFromPrivateKeyPem } from "./signer/util";
+import { getPlebbitAddressFromPrivateKey } from "./signer/util";
 import EventEmitter from "events";
 import isIPFS from "is-ipfs";
 import Logger from "@plebbit/plebbit-logger";
@@ -150,7 +150,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             log.trace(`User hasn't provided a timestamp, defaulting to (${clonedOptions.timestamp})`);
         }
         if (!(<SignerType>clonedOptions.signer).address)
-            (<SignerType>clonedOptions.signer).address = await getPlebbitAddressFromPrivateKeyPem(clonedOptions.signer.privateKey);
+            (<SignerType>clonedOptions.signer).address = await getPlebbitAddressFromPrivateKey(clonedOptions.signer.privateKey);
 
         if (!clonedOptions?.author?.address) {
             clonedOptions.author = { ...clonedOptions.author, address: (<SignerType>clonedOptions.signer).address };

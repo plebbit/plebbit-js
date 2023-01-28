@@ -1,7 +1,7 @@
 import { CreateSignerOptions, SignerType } from "../types";
-import { generatePrivateKeyPem, getPublicKeyPemFromPrivateKeyPem, getPlebbitAddressFromPrivateKeyPem } from "./util";
+import { generatePrivateKey, getPublicKeyFromPrivateKey, getPlebbitAddressFromPrivateKey } from "./util";
 export { Signature, verifyComment, verifySubplebbit, verifyVote } from "./signatures";
-export { encrypt, decrypt } from "./encryption";
+export { encryptEd25519AesGcm as encrypt, decryptEd25519AesGcm as decrypt } from "./encryption";
 
 export class Signer implements SignerType {
     type: "rsa";
@@ -32,14 +32,14 @@ export const createSigner = async (createSignerOptions: CreateSignerOptions = {}
     if (privateKey) {
         if (signerType !== "rsa") throw Error("invalid signer createSignerOptions.type, not 'rsa'");
     } else {
-        privateKey = await generatePrivateKeyPem();
+        privateKey = await generatePrivateKey();
         signerType = "rsa";
     }
     if (typeof signerType !== "string") throw Error("createSignerOptions does not include type");
 
     const [publicKey, address] = await Promise.all([
-        getPublicKeyPemFromPrivateKeyPem(privateKey),
-        getPlebbitAddressFromPrivateKeyPem(privateKey)
+        getPublicKeyFromPrivateKey(privateKey),
+        getPlebbitAddressFromPrivateKey(privateKey)
     ]);
 
     return new Signer({
