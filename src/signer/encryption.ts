@@ -14,7 +14,7 @@ const uint8ArrayToNodeForgeBuffer = (uint8Array) => {
   return forgeBuffer
 }
 
-// NOTE: never pass the last param 'iv', only for used for testing, it must always be random
+// NOTE: never pass the last param 'iv', only used for testing, it must always be random
 export const encryptStringAesGcm = async (plaintext, key, iv?) => {
   if (!plaintext || typeof plaintext !== 'string') throw Error(`encryptStringAesGcm plaintext '${plaintext}' not a string`)
   if (!isProbablyBuffer(key)) throw Error(`encryptStringAesGcm invalid key '${key}' not buffer`)
