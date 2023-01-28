@@ -117,4 +117,4 @@ test-karma-webpack
 # test ipfs node
 .test-ipfs*
 
-./karma-electron-preload.js
+karma-electron-preload.js
