@@ -13,7 +13,7 @@ const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-describe.only("signer (node and browser)", async () => {
+describe("signer (node and browser)", async () => {
     let plebbit, authorSigner, randomSigner;
     before(async () => {
         plebbit = await mockPlebbit();

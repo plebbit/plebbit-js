@@ -19,7 +19,7 @@ const ed = require('@noble/ed25519')
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-describe.only("encryption", () => {
+describe("encryption", () => {
     let plebbit, authorSigner;
 
     before(async function () {
