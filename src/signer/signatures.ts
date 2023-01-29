@@ -1,17 +1,12 @@
-import {
-    getPeerIdFromPublicKey,
-    getPlebbitAddressFromPrivateKey,
-    getPlebbitAddressFromPublicKey
-} from "./util";
+import { getPeerIdFromPublicKey, getPlebbitAddressFromPrivateKey, getPlebbitAddressFromPublicKey } from "./util";
 import * as cborg from "cborg";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
-import * as ed from '@noble/ed25519'
+import * as ed from "@noble/ed25519";
 
 import PeerId from "peer-id";
 import { removeKeysWithUndefinedValues, throwWithErrorCode } from "../util";
 import { Plebbit } from "../plebbit";
-import isIPFS from "is-ipfs";
 
 import {
     AuthorCommentEdit,
@@ -78,24 +73,29 @@ export class Signature implements SignatureType {
 const isProbablyBuffer = (arg) => arg && typeof arg !== "string" && typeof arg !== "number";
 
 export const signBufferEd25519 = async (bufferToSign, privateKeyBase64) => {
-  if (!isProbablyBuffer(bufferToSign)) throw Error(`signBufferEd25519 invalid bufferToSign '${bufferToSign}' not buffer`)
-  if (!privateKeyBase64 || typeof privateKeyBase64 !== 'string') throw Error(`signBufferEd25519 privateKeyBase64 not a string`)
-  const privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, 'base64')
-  if (privateKeyBuffer.length !== 32) throw Error(`verifyBufferEd25519 publicKeyBase64 ed25519 public key length not 32 bytes (${privateKeyBuffer.length} bytes)`)
-  // do not use to sign strings, it doesn't encode properly in the browser
-  const signature = await ed.sign(bufferToSign, privateKeyBuffer)
-  return signature
-}
+    if (!isProbablyBuffer(bufferToSign)) throw Error(`signBufferEd25519 invalid bufferToSign '${bufferToSign}' not buffer`);
+    if (!privateKeyBase64 || typeof privateKeyBase64 !== "string") throw Error(`signBufferEd25519 privateKeyBase64 not a string`);
+    const privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, "base64");
+    if (privateKeyBuffer.length !== 32)
+        throw Error(`verifyBufferEd25519 publicKeyBase64 ed25519 public key length not 32 bytes (${privateKeyBuffer.length} bytes)`);
+    // do not use to sign strings, it doesn't encode properly in the browser
+    const signature = await ed.sign(bufferToSign, privateKeyBuffer);
+    return signature;
+};
 
-export const verifyBufferEd25519 = async (bufferToSign, bufferSignature, publicKeyBase64) => {
-  if (!isProbablyBuffer(bufferToSign)) throw Error(`verifyBufferEd25519 invalid bufferSignature '${bufferToSign}' not buffer`)
-  if (!isProbablyBuffer(bufferSignature)) throw Error(`verifyBufferEd25519 invalid bufferSignature '${bufferSignature}' not buffer`)
-  if (!publicKeyBase64 || typeof publicKeyBase64 !== 'string') throw Error(`verifyBufferEd25519 publicKeyBase64 '${publicKeyBase64}' not a string`)  
-  const publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, 'base64')
-  if (publicKeyBuffer.length !== 32) throw Error(`verifyBufferEd25519 publicKeyBase64 '${publicKeyBase64}' ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`)
-  const isValid = await ed.verify(bufferSignature, bufferToSign, publicKeyBuffer)
-  return isValid
-}
+export const verifyBufferEd25519 = async (bufferToSign, bufferSignature, publicKeyBase64: string) => {
+    if (!isProbablyBuffer(bufferToSign)) throw Error(`verifyBufferEd25519 invalid bufferSignature '${bufferToSign}' not buffer`);
+    if (!isProbablyBuffer(bufferSignature)) throw Error(`verifyBufferEd25519 invalid bufferSignature '${bufferSignature}' not buffer`);
+    if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
+        throw Error(`verifyBufferEd25519 publicKeyBase64 '${publicKeyBase64}' not a string`);
+    const publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, "base64");
+    if (publicKeyBuffer.length !== 32)
+        throw Error(
+            `verifyBufferEd25519 publicKeyBase64 '${publicKeyBase64}' ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`
+        );
+    const isValid = await ed.verify(bufferSignature, bufferToSign, publicKeyBuffer);
+    return isValid;
+};
 
 async function _validateAuthorIpns(author: CreateCommentOptions["author"], signer: SignerType, plebbit: Plebbit) {
     if (plebbit.resolver.isDomain(author.address)) {
@@ -227,7 +227,7 @@ const _verifyAuthor = async (
 ): Promise<ValidationResult & { newAddress?: string }> => {
     const log = Logger("plebbit-js:signatures:verifyAuthor");
 
-    if (!publicationJson.author?.address) return { valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS };
+    if (!publicationJson.author?.address) return { valid: false, reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED };
 
     if (plebbit.resolver.isDomain(publicationJson.author.address)) {
         if (!plebbit.resolveAuthorAddresses) return { valid: true }; // Skip domain validation if plebbit.resolveAuthorAddresses=false
