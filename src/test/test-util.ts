@@ -313,7 +313,7 @@ export async function mockPlebbit(dataPath?: string) {
     });
 
     plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-        if (authorAddress === "plebbit.eth") return "QmayyhaKccEKfLS8jHbvPAUHP6fuHMSV7rpm97bFz1W44h"; // signers[6].address
+        if (authorAddress === "plebbit.eth") return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // signers[6].address
         else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
         return authorAddress;
     };
@@ -423,7 +423,7 @@ export async function findCommentInPage(commentCid: string, pageCid: string, pag
 export async function waitTillCommentIsInParentPages(
     comment: Comment,
     plebbit: Plebbit,
-    propsToCheckFor: Partial<CommentType>,
+    propsToCheckFor: Partial<CommentType> = {},
     checkInAllPages = false
 ) {
     const parent =
