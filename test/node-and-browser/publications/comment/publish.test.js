@@ -7,7 +7,8 @@ const {
     waitTillCommentIsInParentPages,
     publishRandomPost,
     mockPlebbit,
-    publishVote
+    publishVote,
+    findCommentInPage
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 const chai = require("chai");
@@ -61,6 +62,17 @@ describe("publishing posts", async () => {
         await publishWithExpectedResult(post, true);
         expect(post.spoiler).to.be.true;
         await waitTillCommentIsInParentPages(post, plebbit, { spoiler: true });
+    });
+
+    it(`publish a post with author.wallets`, async () => {
+        const wallets = { btc: { address: "0xdeadbeef" }, eth: { address: "rinse12.eth" } };
+        const post = await generateMockPost(subplebbitAddress, plebbit, undefined, false, { author: { wallets } });
+        expect(post.author.wallets).to.deep.equal(wallets);
+        await publishWithExpectedResult(post, true);
+        await waitTillCommentIsInParentPages(post, plebbit);
+        const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
+        const postInPage = await findCommentInPage(post.cid, sub.posts.pageCids.new, sub.posts);
+        expect(postInPage.author.wallets).to.deep.equal(wallets);
     });
 });
 
