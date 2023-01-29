@@ -115,7 +115,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
-        if (!this.resolver.isDomain(subplebbitAddress) && !isIPFS.cid(subplebbitAddress))
+        if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
             throwWithErrorCode(
                 "ERR_INVALID_SUBPLEBBIT_ADDRESS",
                 `getSubplebbit: subplebbitAddress (${subplebbitAddress}) can't be used to get a subplebbit`

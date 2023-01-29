@@ -98,17 +98,17 @@ export const verifyBufferEd25519 = async (bufferToSign, bufferSignature, publicK
 }
 
 async function _validateAuthorIpns(author: CreateCommentOptions["author"], signer: SignerType, plebbit: Plebbit) {
-    if (isIPFS.cid(author.address)) {
+    if (plebbit.resolver.isDomain(author.address)) {
+        // As of now do nothing to verify authors with domain as addresses
+        // This may change in the future
+    } else {
         const derivedAddress = await getPlebbitAddressFromPrivateKey(signer.privateKey);
         if (derivedAddress !== author.address)
             throwWithErrorCode(
                 "ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER",
                 `author.address=${author.address}, signer.address=${derivedAddress}`
             );
-    } else if (plebbit.resolver.isDomain(author.address)) {
-        // As of now do nothing to verify authors with domain as addresses
-        // This may change in the future
-    } else throwWithErrorCode("ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS", `author.address = '${author.address}'`);
+    }
 }
 
 async function _sign(
@@ -241,11 +241,11 @@ const _verifyAuthor = async (
             );
             return { valid: true, newAddress: derivedAddress };
         }
-    } else if (isIPFS.cid(publicationJson.author.address)) {
+    } else {
         const authorPeerId = PeerId.createFromB58String(publicationJson.author.address);
         const signaturePeerId = await getPeerIdFromPublicKey(publicationJson.signature.publicKey);
         if (!signaturePeerId.equals(authorPeerId)) return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
-    } else return { valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS };
+    }
     // Author
     return { valid: true };
 };
