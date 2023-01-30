@@ -1,4 +1,4 @@
-import { loadIpnsAsJson, removeKeysWithUndefinedValues, throwWithErrorCode } from "./util";
+import { loadIpnsAsJson, removeKeysWithUndefinedValues, removeNullAndUndefinedValues, throwWithErrorCode } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
 import {
@@ -284,14 +284,18 @@ export class Comment extends Publication implements CommentType {
         this._updateInterval = clearInterval(this._updateInterval);
     }
 
-    async publish(): Promise<void> {
-        const signatureValidity = await verifyComment(this.toJSON(), this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
+    private async _validateSignature() {
+        const commentObj = JSON.parse(JSON.stringify(this.toJSONSkeleton())); // Stringify so it resembles messages from pubsub and IPNS
+        const signatureValidity = await verifyComment(commentObj, this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid)
             throwWithErrorCode(
                 "ERR_SIGNATURE_IS_INVALID",
                 `comment.publish: Failed to publish due to invalid signature. Reason=${signatureValidity.reason}`
             );
+    }
 
+    async publish(): Promise<void> {
+        await this._validateSignature();
         return super.publish();
     }
 }
