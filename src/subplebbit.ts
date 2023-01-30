@@ -694,7 +694,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 return messages.ERR_FORBIDDEN_COMMENT_FIELD;
             }
 
-            const validRes = await verifyComment(postOrCommentOrVote, this.plebbit, false);
+            const validRes = await verifyComment(publication, this.plebbit, false);
 
             if (!validRes.valid) {
                 log(`(${challengeRequestId}): `, validRes.reason);
