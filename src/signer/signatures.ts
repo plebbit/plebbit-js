@@ -250,7 +250,7 @@ const getBufferToSign = (signedPropertyNames: SignedPropertyNames, objectToSign:
 
     const bufferToSign = cborg.encode(propsToSign);
     return bufferToSign;
-    };
+};
 
 const _verifyPublicationSignature = async (publicationToBeVerified: PublicationToVerify): Promise<boolean> => {
     const signatureIsValid = await verifyBufferEd25519(
@@ -343,21 +343,18 @@ export async function verifyComment(
 }
 
 export async function verifySubplebbit(subplebbit: SubplebbitType, plebbit: Plebbit): Promise<ValidationResult> {
-    const subplebbitJson: SubplebbitType = removeKeysWithUndefinedValues(subplebbit);
+    for (const page of Object.values(subplebbit.posts.pages)) {
+        const pageValidity = await verifyPage(lodash.cloneDeep(page), plebbit, subplebbit.address);
+        if (!pageValidity.valid) return { valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID };
+    }
 
-    if (subplebbit.posts.pages)
-        for (const page of Object.values(subplebbitJson.posts.pages)) {
-            const pageValidity = await verifyPage(lodash.cloneDeep(page), plebbit, subplebbit.address);
-            if (!pageValidity.valid) return { valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID };
-        }
-
-    const signatureValidity = await _verifyPublicationSignature(subplebbitJson);
+    const signatureValidity = await _verifyPublicationSignature(subplebbit);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
 
-    const resolvedSubAddress = await plebbit.resolver.resolveSubplebbitAddressIfNeeded(subplebbitJson.address);
+    const resolvedSubAddress = await plebbit.resolver.resolveSubplebbitAddressIfNeeded(subplebbit.address);
 
     const subPeerId = PeerId.createFromB58String(resolvedSubAddress);
-    const signaturePeerId = await getPeerIdFromPublicKey(subplebbitJson.signature.publicKey);
+    const signaturePeerId = await getPeerIdFromPublicKey(subplebbit.signature.publicKey);
     if (!subPeerId.equals(signaturePeerId)) return { valid: false, reason: messages.ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY };
     return { valid: true };
 }
