@@ -180,11 +180,11 @@ export class Comment extends Publication implements CommentType {
             )
                 throw Error(`upvoteCount, downvoteCount, replyCount, and updatedAt need to be properly defined as numbers`);
         }
-        const author: CommentUpdate["author"] = {
+        const author: CommentUpdate["author"] = removeNullAndUndefinedValues({
             banExpiresAt: this.author.banExpiresAt,
             flair: this.flair,
             subplebbit: this.author.subplebbit
-        };
+        });
         return {
             upvoteCount: this.upvoteCount,
             downvoteCount: this.downvoteCount,
