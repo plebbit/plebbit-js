@@ -772,11 +772,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         const decryptedRequest: DecryptedChallengeRequestMessageType = {
             ...request,
-            publication: JSON.parse(
-                // await decrypt(request.encryptedPublication.encrypted, request.encryptedPublication.encryptedKey, this.signer.privateKey)
-                // ESTEBAN EDIT
-                await decrypt(request.encryptedPublication, this.signer.privateKey, request.signature.publicKey)
-            )
+            publication: JSON.parse(await decrypt(request.encryptedPublication, this.signer.privateKey, request.signature.publicKey))
         };
         this._challengeToPublication[request.challengeRequestId] = decryptedRequest.publication;
         this._challengeToPublicKey[request.challengeRequestId] = decryptedRequest.signature.publicKey;
@@ -791,8 +787,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const publicationOrReason = await this.storePublicationIfValid(decryptedRequest.publication, request.challengeRequestId);
             const encryptedPublication =
                 typeof publicationOrReason !== "string"
-                    // ? await encrypt(encode(publicationOrReason.toJSON()), request.signature.publicKey)
-                    // ESTEBAN EDIT
                     ? await encrypt(encode(publicationOrReason.toJSON()), this.signer.privateKey, request.signature.publicKey)
                     : undefined;
 
@@ -828,10 +822,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 protocolVersion: env.PROTOCOL_VERSION,
                 userAgent: env.USER_AGENT,
                 challengeRequestId: request.challengeRequestId,
-                // encryptedChallenges: await encrypt(encode(providedChallenges), request.signature.publicKey)
-                // ESTEBAN EDIT
                 encryptedChallenges: await encrypt(encode(providedChallenges), this.signer.privateKey, request.signature.publicKey)
-
             };
 
             const challengeMessage = new ChallengeMessage({
@@ -856,17 +847,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const log = Logger("plebbit-js:subplebbit:handleChallengeAnswer");
 
         const decryptedAnswers: string[] = JSON.parse(
-            // await decrypt(
-            //     challengeAnswer.encryptedChallengeAnswers.encrypted,
-            //     challengeAnswer.encryptedChallengeAnswers.encryptedKey,
-            //     this.signer?.privateKey
-            // )
-            // ESTEBAN EDIT
-            await decrypt(
-                challengeAnswer.encryptedChallengeAnswers,
-                this.signer?.privateKey,
-                challengeAnswer.signature.publicKey
-            )
+            await decrypt(challengeAnswer.encryptedChallengeAnswers, this.signer?.privateKey, challengeAnswer.signature.publicKey)
         );
 
         const decryptedChallengeAnswer: DecryptedChallengeAnswerMessageType = { ...challengeAnswer, challengeAnswers: decryptedAnswers };
@@ -888,8 +869,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const publicationOrReason = await this.storePublicationIfValid(storedPublication, challengeAnswer.challengeRequestId); // could contain "publication" or "reason"
             const encryptedPublication =
                 typeof publicationOrReason !== "string"
-                    // ? await encrypt(encode(publicationOrReason.toJSON()), challengeAnswer.signature.publicKey)
-                    // ESTEBAN EDIT
                     ? await encrypt(encode(publicationOrReason.toJSON()), this.signer.privateKey, challengeAnswer.signature.publicKey)
                     : undefined;
 
