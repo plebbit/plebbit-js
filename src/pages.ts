@@ -30,7 +30,7 @@ export class Pages implements PagesType {
 
     toJSON(): PagesType {
         return {
-            pages: this.pages,
+            pages: JSON.parse(JSON.stringify(this.pages)),
             pageCids: this.pageCids
         };
     }

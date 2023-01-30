@@ -188,6 +188,11 @@ export function oldScore(comment: CommentType) {
     return -comment.timestamp;
 }
 
+export function removeNullAndUndefinedValues<T extends Object>(obj: T): T {
+    return <T>lodash.omitBy(obj, lodash.isNil);
+}
+
+// TODO rename
 export function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T> {
     const newObj = JSON.parse(JSON.stringify(object));
     for (const prop in newObj)
