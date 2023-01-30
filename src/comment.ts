@@ -231,7 +231,7 @@ export class Comment extends Publication implements CommentType {
 
     setReplies(replies?: Pages | PagesType) {
         this.replies = new Pages({
-            pages: { topAll: replies?.pages?.topAll },
+            pages: replies?.pages?.topAll ? { topAll: replies?.pages?.topAll } : {},
             pageCids: replies?.pageCids || {},
             subplebbit: { plebbit: this.plebbit, address: this.subplebbitAddress }
         });
