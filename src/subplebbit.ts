@@ -63,10 +63,12 @@ import {
     verifyChallengeRequest,
     verifyComment,
     verifyCommentEdit,
+    verifyCommentUpdate,
     verifySubplebbit,
     verifyVote
 } from "./signer/signatures";
 import { CACHE_KEYS } from "./constants";
+import assert from "assert";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
@@ -1029,6 +1031,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         });
     }
 
+    private async _validateCommentUpdate(update: CommentUpdate, authorPublicKey: string) {
+        const simUpdate = JSON.parse(JSON.stringify(update)); // We need to stringify the update, so it will have the same shape as if it were sent by pubsub or IPNS
+        const signatureValidity = await verifyCommentUpdate(simUpdate, this.encryption.publicKey, authorPublicKey);
+        assert(signatureValidity.valid, `Comment Update signature is invalid. Reason (${signatureValidity.reason})`);
+    }
+
     private async syncComment(dbComment: Comment) {
         const log = Logger("plebbit-js:subplebbit:sync:syncComment");
 
@@ -1056,10 +1064,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this.dbHandler.updateComment(lodash.pick(dbComment.toJSONForDb(undefined), ["updatedAt", "cid"])); // Need to insert comment in DB before generating pages so props updated above would be included in pages
             await this.dbHandler.updateAuthorInCommentsTable(lodash.pick(dbComment.author, ["address", "subplebbit"]));
             dbComment.setReplies(await this.sortHandler.generateRepliesPages(dbComment, undefined));
-            const newIpns = await this._publishCommentIpns(dbComment, {
+            const newIpns = {
                 ...dbComment.toJSONCommentUpdate(),
                 signature: await signCommentUpdate(dbComment.toJSONCommentUpdate(), this.signer)
-            });
+            };
+            await this._validateCommentUpdate(newIpns, dbComment.signature.publicKey);
+            await this._publishCommentIpns(dbComment, newIpns);
             await this.dbHandler.keyvDelete(updateTriggerKey);
             if (dbComment.parentCid) {
                 const triggerParentUpdateKey = CACHE_KEYS[CACHE_KEYS.PREFIX_TRIGGER_COMMENT_UPDATE_].concat(dbComment.parentCid);
