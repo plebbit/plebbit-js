@@ -135,7 +135,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         const commentJson: CommentIpfsType = await loadIpfsFileAsJson(cid, this);
         const signatureValidity = await verifyComment(commentJson, this, true);
         if (!signatureValidity.valid)
-            throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", `getComment: Failed verification reason: ${signatureValidity.reason}`);
+            throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", `getComment (${cid}): Failed verification reason: ${signatureValidity.reason}`);
 
         const title = commentJson.title;
         return typeof title === "string"
