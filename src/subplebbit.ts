@@ -377,6 +377,15 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
+    private async _validateLocalSignature(newSignature: SignatureType) {
+        const ipnsRecord = JSON.parse(JSON.stringify({ ...this.toJSON(), signature: newSignature })); // stringify it so it would be of the same content as IPNS or pubsub
+        const signatureValidation = await verifySubplebbit(ipnsRecord, this.plebbit);
+        assert.equal(
+            signatureValidation.valid,
+            true,
+            `Failed to validate subplebbit (${this.address}) local signature due to reason (${signatureValidation.reason})`
+        );
+    }
     private async updateSubplebbitIpns() {
         const log = Logger("plebbit-js:subplebbit:sync");
 
@@ -413,9 +422,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (!currentIpns || encode(currentIpns) !== encode(this.toJSON()) || lastPublishTooOld) {
             this.updatedAt = timestamp();
             const newSignature = await signSubplebbit(this.toJSON(), this.signer);
-            const signatureValidation = await verifySubplebbit({ ...this.toJSON(), signature: newSignature }, this.plebbit);
-            if (!signatureValidation.valid)
-                throw Error(`Newly generated subplebbit JSON has an invalid signature due to reason (${signatureValidation.reason})`);
+            await this._validateLocalSignature(newSignature);
             this.signature = newSignature;
 
             await this._updateDbInternalState(lodash.pick(this, ["posts", "lastPostCid", "metricsCid", "updatedAt", "signature"]));
