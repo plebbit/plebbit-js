@@ -205,10 +205,9 @@ async function _publishComments(parentComments: Comment[], subplebbit: Subplebbi
     if (parentComments.length === 0)
         await Promise.all(
             new Array(numOfCommentsToPublish).fill(null).map(async () => {
-                const post = await subplebbit._addPublicationToDb(
-                    await generateMockPost(subplebbit.address, subplebbit.plebbit, signers[0], true)
-                );
-                if (post) comments.push(<Post>post); // There are cases where posts fail to get published
+                const post = await generateMockPost(subplebbit.address, subplebbit.plebbit, signers[0], true);
+                await publishWithExpectedResult(post, true);
+                comments.push(post);
             })
         );
     else
@@ -217,10 +216,9 @@ async function _publishComments(parentComments: Comment[], subplebbit: Subplebbi
                 async (parentComment) =>
                     await Promise.all(
                         new Array(numOfCommentsToPublish).fill(null).map(async () => {
-                            const comment = await subplebbit._addPublicationToDb(
-                                await generateMockComment(parentComment, subplebbit.plebbit, signers[0], true)
-                            );
-                            if (comment) comments.push(<Comment>comment);
+                            const comment = await generateMockComment(parentComment, subplebbit.plebbit, signers[0], true);
+                            await publishWithExpectedResult(comment, true);
+                            comments.push(<Comment>comment);
                         })
                     )
             )
@@ -234,14 +232,14 @@ async function _publishVotes(comments: Comment[], subplebbit: Subplebbit, votesP
         comments.map(async (comment) => {
             return await Promise.all(
                 new Array(votesPerCommentToPublish).fill(null).map(async (_, i) => {
-                    let vote: Vote = await generateMockVote(
+                    const vote: Vote = await generateMockVote(
                         comment,
                         Math.random() > 0.5 ? 1 : -1,
                         subplebbit.plebbit,
                         signers[i % signers.length]
                     );
-                    vote = <Vote>await subplebbit._addPublicationToDb(vote);
-                    if (vote) votes.push(vote);
+                    await publishWithExpectedResult(vote, true);
+                    votes.push(vote);
                 })
             );
         })
@@ -267,6 +265,7 @@ async function _populateSubplebbit(
             [props.signers[3].address]: { role: "moderator" }
         }
     });
+    await new Promise((resolve) => subplebbit.once("update", resolve));
     const posts = await _publishComments([], subplebbit, props.numOfCommentsToPublish, props.signers); // If no comment[] is provided, we publish posts
     console.log(`Have successfully published ${posts.length} posts`);
     const [replies] = await Promise.all([

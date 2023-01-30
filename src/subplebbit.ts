@@ -1227,18 +1227,4 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 await this.plebbit.ipfsClient.key.rm(this.signer.ipnsKeyName);
             } catch {}
     }
-
-    async _addPublicationToDb(publication: CommentEdit | Vote | Comment | Post) {
-        const log = Logger("plebbit-js:subplebbit:_addPublicationToDb");
-        log(`Adding ${publication.getType()} to DB with author,`, removeKeysWithUndefinedValues(publication.author));
-        const decryptedRequestType: Omit<ChallengeRequestMessageType, "encryptedPublication" | "signature"> = {
-            type: "CHALLENGEREQUEST",
-            challengeRequestId: uuidv4(),
-            protocolVersion: env.PROTOCOL_VERSION,
-            userAgent: env.USER_AGENT
-        };
-
-        await this.dbHandler.upsertChallenge(decryptedRequestType);
-        return await this.storePublicationIfValid(publication.toJSON(), decryptedRequestType.challengeRequestId);
-    }
 }
