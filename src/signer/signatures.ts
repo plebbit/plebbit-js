@@ -5,7 +5,7 @@ import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import * as ed from "@noble/ed25519";
 
 import PeerId from "peer-id";
-import { removeKeysWithUndefinedValues, throwWithErrorCode } from "../util";
+import { removeNullAndUndefinedValues, throwWithErrorCode } from "../util";
 import { Plebbit } from "../plebbit";
 
 import {
@@ -41,6 +41,7 @@ import {
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
 import { messages } from "../errors";
+import assert from "assert";
 
 interface ValidationResult {
     valid: boolean;
@@ -119,14 +120,9 @@ async function _sign(
 ): Promise<Signature> {
     assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
 
-    const fieldsToSign = {
-        ...lodash.fromPairs(signedPropertyNames.map((name: string) => [name, undefined])), // Create an object with all of signedPropertyNames present
-        ...lodash.pick(removeKeysWithUndefinedValues(publication), signedPropertyNames)
-    };
-    log.trace(`fields to sign: `, fieldsToSign);
-    const publicationEncoded = cborg.encode(fieldsToSign); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    const cleanedObj = removeNullAndUndefinedValues(publication); // Will remove undefined and null values
+    const publicationEncoded = getBufferToSign(signedPropertyNames, cleanedObj); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
     const signatureData = uint8ArrayToString(await signBufferEd25519(publicationEncoded, signer.privateKey), "base64");
-    log.trace(`fields have been signed, signature:`, signatureData);
     return new Signature({
         signature: signatureData,
         publicKey: signer.publicKey,
@@ -249,15 +245,16 @@ const _verifyAuthor = async (
     return { valid: true };
 };
 
-const _verifyPublicationSignature = async (publicationToBeVerified: PublicationToVerify): Promise<boolean> => {
-    const commentWithFieldsToSign = {
-        ...lodash.fromPairs(publicationToBeVerified.signature.signedPropertyNames.map((name: string) => [name, undefined])), // Create an object with all of signedPropertyNames present
-        ...lodash.pick(publicationToBeVerified, publicationToBeVerified.signature.signedPropertyNames)
-    };
-    const commentEncoded = cborg.encode(commentWithFieldsToSign);
+const getBufferToSign = (signedPropertyNames: SignedPropertyNames, objectToSign: any) => {
+    const propsToSign = lodash.pick(objectToSign, signedPropertyNames);
 
+    const bufferToSign = cborg.encode(propsToSign);
+    return bufferToSign;
+    };
+
+const _verifyPublicationSignature = async (publicationToBeVerified: PublicationToVerify): Promise<boolean> => {
     const signatureIsValid = await verifyBufferEd25519(
-        commentEncoded,
+        getBufferToSign(publicationToBeVerified.signature.signedPropertyNames, publicationToBeVerified),
         uint8ArrayFromString(publicationToBeVerified.signature.signature, "base64"),
         publicationToBeVerified.signature.publicKey
     );
@@ -288,8 +285,7 @@ const _verifyPublicationWithAuthor = async (
 };
 
 export async function verifyVote(vote: VoteType, plebbit: Plebbit, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult> {
-    const voteJson: VoteType = removeKeysWithUndefinedValues(vote);
-    const res = await _verifyPublicationWithAuthor(voteJson, plebbit, overrideAuthorAddressIfInvalid);
+    const res = await _verifyPublicationWithAuthor(vote, plebbit, overrideAuthorAddressIfInvalid);
     if (!res.valid) return res;
     return { valid: true };
 }
@@ -299,8 +295,7 @@ export async function verifyCommentEdit(
     plebbit: Plebbit,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
-    const editJson: CommentEditType = removeKeysWithUndefinedValues(edit);
-    const res = await _verifyPublicationWithAuthor(editJson, plebbit, overrideAuthorAddressIfInvalid);
+    const res = await _verifyPublicationWithAuthor(edit, plebbit, overrideAuthorAddressIfInvalid);
     if (!res.valid) return res;
     return { valid: true };
 }
@@ -367,9 +362,7 @@ export async function verifySubplebbit(subplebbit: SubplebbitType, plebbit: Pleb
 }
 
 async function _getValidationResult(publication: PublicationToVerify) {
-    //@ts-ignore
-    const publicationJson: PublicationToVerify = removeKeysWithUndefinedValues(publication);
-    const signatureValidity = await _verifyPublicationSignature(publicationJson);
+    const signatureValidity = await _verifyPublicationSignature(publication);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
     return { valid: true };
 }
