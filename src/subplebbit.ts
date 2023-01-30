@@ -528,22 +528,23 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    private async handleVote(newVote: Vote, challengeRequestId: string) {
+    private async handleVote(newVoteProps: VoteType, challengeRequestId: string) {
         const log = Logger("plebbit-js:subplebbit:handleVote");
 
-        const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address);
+        const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVoteProps.commentCid, newVoteProps.author.address);
 
-        const validRes = await verifyVote(newVote, this.plebbit, false);
+        const validRes = await verifyVote(newVoteProps, this.plebbit, false);
         if (!validRes.valid) {
             log(`(${challengeRequestId}): `, validRes.reason);
             return validRes.reason;
         }
 
-        if (lastVote && newVote.signature.publicKey !== lastVote.signature.publicKey) {
-            const msg = `Author (${newVote.author.address}) attempted to change vote on (${newVote.commentCid}) without having correct credentials`;
+        if (lastVote && newVoteProps.signature.publicKey !== lastVote.signature.publicKey) {
+            const msg = `Author (${newVoteProps.author.address}) attempted to change vote on (${newVoteProps.commentCid}) without having correct credentials`;
             log(`(${challengeRequestId}): `, msg);
             return msg;
         } else {
+            const newVote = await this.plebbit.createVote(newVoteProps);
             const trx = await this.dbHandler.createTransaction(challengeRequestId);
             await this._insertAuthorIfNotInDb(newVote.author.toJSONForDb(), trx);
             await this.dbHandler.upsertVote(newVote.toJSONForDb(challengeRequestId), trx);
@@ -656,7 +657,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
 
         if (postOrCommentOrVote instanceof Vote) {
-            const res = await this.handleVote(postOrCommentOrVote, challengeRequestId);
+            const res = await this.handleVote(<VoteType>publication, challengeRequestId);
             if (res) return res;
         } else if (postOrCommentOrVote instanceof CommentEdit) {
             const res = await this.handleCommentEdit(postOrCommentOrVote, challengeRequestId);
