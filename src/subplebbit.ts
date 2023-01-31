@@ -565,7 +565,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         delete this._challengeToPublication[challengeRequestId];
         delete this._challengeToPublicKey[challengeRequestId];
 
-        if (publication.signer) {
+        if (publication["signer"]) {
             log(`(${challengeRequestId}): `, messages.ERR_FORBIDDEN_SIGNER_FIELD);
             return messages.ERR_FORBIDDEN_SIGNER_FIELD;
         }
