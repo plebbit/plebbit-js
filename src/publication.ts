@@ -61,11 +61,11 @@ class Publication extends EventEmitter implements PublicationType {
     }
 
     toJSON(): PublicationType {
-        return { ...this.toJSONSkeleton() };
+        return { ...this.toJSONPubsubMessagePublication() };
     }
 
     // TODO make this private/protected
-    toJSONSkeleton(): PublicationType {
+    toJSONPubsubMessagePublication(): PublicationType {
         return {
             subplebbitAddress: this.subplebbitAddress,
             timestamp: this.timestamp,
@@ -192,7 +192,7 @@ class Publication extends EventEmitter implements PublicationType {
         this.pubsubMessageSigner = await this.plebbit.createSigner();
 
         const encryptedPublication = await encrypt(
-            JSON.stringify(this.toJSONSkeleton()),
+            JSON.stringify(this.toJSONPubsubMessagePublication()),
             this.pubsubMessageSigner.privateKey,
             this.subplebbit.encryption.publicKey
         );

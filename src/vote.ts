@@ -1,5 +1,5 @@
 import Publication from "./publication";
-import { PublicationType, PublicationTypeName, VoteForDbType, VoteType } from "./types";
+import { PublicationTypeName, VoteForDbType, VotePubsubMessage, VoteType } from "./types";
 import { Plebbit } from "./plebbit";
 import isIPFS from "is-ipfs";
 import { verifyVote } from "./signer";
@@ -15,15 +15,15 @@ class Vote extends Publication implements VoteType {
         this.vote = props.vote; // Either 1, 0, -1 (upvote, cancel vote, downvote)
     }
 
-    toJSONSkeleton(): VoteType {
+    toJSONPubsubMessagePublication(): VotePubsubMessage {
         return {
-            ...super.toJSONSkeleton(),
+            ...super.toJSONPubsubMessagePublication(),
             commentCid: this.commentCid,
             vote: this.vote
         };
     }
     toJSON() {
-        return this.toJSONSkeleton();
+        return this.toJSONPubsubMessagePublication();
     }
 
     getType(): PublicationTypeName {
@@ -41,7 +41,7 @@ class Vote extends Publication implements VoteType {
     }
 
     private async _validateSignature() {
-        const voteObj = JSON.parse(JSON.stringify(this.toJSONSkeleton())); // Stringified here to simulate a message sent through IPNS/PUBSUB
+        const voteObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringified here to simulate a message sent through IPNS/PUBSUB
         const signatureValidity = await verifyVote(voteObj, this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid)
             throwWithErrorCode(

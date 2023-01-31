@@ -1,5 +1,5 @@
 import { Comment } from "./comment";
-import { PostType } from "./types";
+import { PostPubsubMessage, PostType } from "./types";
 import { Plebbit } from "./plebbit";
 import { throwWithErrorCode } from "./util";
 
@@ -23,13 +23,12 @@ class Post extends Comment implements PostType {
     }
 
     toJSON(): PostType {
-        return { ...super.toJSON(), ...this.toJSONSkeleton(), depth: this.depth };
+        return { ...super.toJSON(), ...this.toJSONPubsubMessagePublication(), depth: this.depth, thumbnailUrl: this.thumbnailUrl };
     }
 
-    toJSONSkeleton() {
+    toJSONPubsubMessagePublication(): PostPubsubMessage {
         return {
-            ...super.toJSONSkeleton(),
-            thumbnailUrl: this.thumbnailUrl,
+            ...super.toJSONPubsubMessagePublication(),
             title: this.title,
             parentCid: undefined,
             link: this.link

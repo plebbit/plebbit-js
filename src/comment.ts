@@ -5,6 +5,7 @@ import {
     AuthorCommentEdit,
     CommentForDbType,
     CommentIpfsType,
+    CommentPubsubMessage,
     CommentType,
     CommentUpdate,
     Flair,
@@ -145,9 +146,9 @@ export class Comment extends Publication implements CommentType {
         };
     }
 
-    toJSONSkeleton() {
+    toJSONPubsubMessagePublication(): CommentPubsubMessage {
         return {
-            ...super.toJSONSkeleton(),
+            ...super.toJSONPubsubMessagePublication(),
             content: this.content,
             parentCid: this.parentCid,
             flair: this.flair,
@@ -285,7 +286,7 @@ export class Comment extends Publication implements CommentType {
     }
 
     private async _validateSignature() {
-        const commentObj = JSON.parse(JSON.stringify(this.toJSONSkeleton())); // Stringify so it resembles messages from pubsub and IPNS
+        const commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringify so it resembles messages from pubsub and IPNS
         const signatureValidity = await verifyComment(commentObj, this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid)
             throwWithErrorCode(

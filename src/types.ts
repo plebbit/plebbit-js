@@ -167,7 +167,7 @@ export interface ChallengeRequestMessageType extends PubsubMessage {
 }
 
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType {
-    publication: VoteType | CommentEditType | CommentType | PostType;
+    publication: VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage | PostPubsubMessage;
 }
 
 export interface ChallengeMessageType extends PubsubMessage {
@@ -388,14 +388,23 @@ export type SignatureTypes =
     | "challengeanswermessage"
     | "challengeverificationmessage";
 
-export type CommentSignedPropertyNames = (keyof Pick<
-    CreateCommentOptions,
-    "subplebbitAddress" | "author" | "timestamp" | "content" | "title" | "link" | "parentCid"
->)[];
-export type CommentEditSignedPropertyNames = (keyof Omit<CreateCommentEditOptions, "signer" | "signature" | "protocolVersion">)[];
+export type CommentSignedPropertyNamesUnion = "subplebbitAddress" | "author" | "timestamp" | "content" | "title" | "link" | "parentCid";
+export type CommentEditSignedPropertyNamesUnion = keyof Omit<CreateCommentEditOptions, "signer" | "signature" | "protocolVersion">;
+export type VoteSignedPropertyNamesUnion = keyof Omit<CreateVoteOptions, "signer" | "protocolVersion">;
+
+export type CommentSignedPropertyNames = (keyof Pick<CreateCommentOptions, CommentSignedPropertyNamesUnion>)[];
+export type CommentEditSignedPropertyNames = CommentEditSignedPropertyNamesUnion[];
+
+export interface CommentPubsubMessage
+    extends Pick<CommentType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {}
+export interface PostPubsubMessage
+    extends Pick<PostType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {}
+export interface VotePubsubMessage extends Pick<VoteType, VoteSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
+export interface CommentEditPubsubMessage
+    extends Pick<CommentEditType, CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
 
 export type CommentUpdatedSignedPropertyNames = (keyof Omit<CommentUpdate, "signature" | "protocolVersion">)[];
-export type VoteSignedPropertyNames = (keyof Omit<CreateVoteOptions, "signer" | "protocolVersion">)[];
+export type VoteSignedPropertyNames = VoteSignedPropertyNamesUnion[];
 export type SubplebbitSignedPropertyNames = (keyof Omit<SubplebbitType, "signer" | "signature" | "protocolVersion">)[];
 export type ChallengeRequestMessageSignedPropertyNames = (keyof Omit<
     ChallengeRequestMessageType,
@@ -493,7 +502,7 @@ export type AuthorDbType = Pick<AuthorType, "address" | "banExpiresAt" | "flair"
 export type PublicationToVerify =
     | CommentEditType
     | VoteType
-    | CommentType
+    | CommentPubsubMessage
     | PostType
     | CommentUpdate
     | SubplebbitType

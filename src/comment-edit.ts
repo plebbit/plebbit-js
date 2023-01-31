@@ -6,6 +6,7 @@ import {
     AuthorCommentEdit,
     CommentAuthorEditOptions,
     CommentEditForDbType,
+    CommentEditPubsubMessage,
     CommentEditType,
     Flair,
     ModeratorCommentEdit,
@@ -77,9 +78,9 @@ export class CommentEdit extends Publication implements CommentEditType {
         this.commentAuthor = props.commentAuthor;
     }
 
-    toJSONSkeleton(): CommentEditType {
+    toJSONPubsubMessagePublication(): CommentEditPubsubMessage {
         return {
-            ...super.toJSONSkeleton(),
+            ...super.toJSONPubsubMessagePublication(),
             commentCid: this.commentCid,
             content: this.content,
             reason: this.reason,
@@ -95,7 +96,7 @@ export class CommentEdit extends Publication implements CommentEditType {
     }
 
     toJSON() {
-        return this.toJSONSkeleton();
+        return this.toJSONPubsubMessagePublication();
     }
 
     toJSONForDb(challengeRequestId: string): CommentEditForDbType {
@@ -115,7 +116,7 @@ export class CommentEdit extends Publication implements CommentEditType {
         // TODO if publishing with content,reason, deleted, verify that publisher is original author
         if (!isIPFS.cid(this.commentCid))
             throwWithErrorCode("ERR_CID_IS_INVALID", `commentEdit.publish: commentCid (${this.commentCid}) is invalid as a CID`);
-        const signatureValidity = await verifyCommentEdit(this.toJSON(), this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
+        const signatureValidity = await verifyCommentEdit(this.toJSONPubsubMessagePublication(), this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid)
             throwWithErrorCode(
                 "ERR_SIGNATURE_IS_INVALID",

@@ -217,7 +217,7 @@ export async function signChallengeVerification(
 
 // Verify functions
 const _verifyAuthor = async (
-    publicationJson: CommentEditType | VoteType | CommentType,
+    publicationJson: CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage,
     plebbit: Plebbit
 ): Promise<ValidationResult & { newAddress?: string }> => {
     const log = Logger("plebbit-js:signatures:verifyAuthor");
@@ -291,7 +291,7 @@ export async function verifyVote(vote: VoteType, plebbit: Plebbit, overrideAutho
 }
 
 export async function verifyCommentEdit(
-    edit: CommentEditType,
+    edit: CommentEditPubsubMessage,
     plebbit: Plebbit,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
