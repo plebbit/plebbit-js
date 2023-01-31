@@ -8,6 +8,7 @@ import {
     CommentPubsubMessage,
     CommentType,
     CommentUpdate,
+    CommentWithCommentUpdate,
     Flair,
     PagesType,
     ProtocolVersion,
@@ -18,6 +19,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "./plebbit";
 import lodash from "lodash";
 import { verifyComment, verifyCommentUpdate } from "./signer/signatures";
+import assert from "assert";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
@@ -110,7 +112,7 @@ export class Comment extends Publication implements CommentType {
 
     toJSON(): CommentType {
         return {
-            ...this.toJSONSkeleton(),
+            ...this.toJSONPubsubMessagePublication(),
             ...(typeof this.updatedAt === "number" ? this.toJSONCommentUpdate() : undefined),
             cid: this.cid,
             original: this.original,
@@ -124,12 +126,30 @@ export class Comment extends Publication implements CommentType {
         };
     }
 
-    toJSONPages(): CommentType & { deleted?: CommentType["authorEdit"]["deleted"] } {
+    toJSONPages(): CommentWithCommentUpdate & { deleted?: CommentType["authorEdit"]["deleted"] } {
+        assert(
+            this.cid &&
+                this.original &&
+                typeof this.depth === "number" &&
+                this.ipnsName &&
+                this.subplebbitAddress &&
+                this.postCid &&
+                this.signature &&
+                typeof this.timestamp === "number"
+        );
         return {
-            ...lodash.omit(this.toJSON(), ["ipnsKeyName"]),
-            ...this.toJSONCommentUpdate(true),
+            ...lodash.omit(this.toJSONIpfs(), ["ipnsKeyName"]),
+            ...this.toJSONCommentUpdate(),
             author: this.author.toJSON(),
-            deleted: this.deleted
+            deleted: this.deleted,
+            cid: this.cid,
+            original: this.original,
+            depth: this.depth,
+            ipnsName: this.ipnsName,
+            postCid: this.postCid,
+            signature: this.signature,
+            subplebbitAddress: this.subplebbitAddress,
+            timestamp: this.timestamp
         };
     }
 
@@ -137,7 +157,7 @@ export class Comment extends Publication implements CommentType {
         if (typeof this.ipnsName !== "string") throw Error("comment.ipnsName should be defined before calling toJSONIpfs");
         if (typeof this.depth !== "number") throw Error("comment.depth should be defined before calling toJSONIpfs");
         return {
-            ...this.toJSONSkeleton(),
+            ...this.toJSONPubsubMessagePublication(),
             previousCid: this.previousCid,
             ipnsName: this.ipnsName,
             postCid: this.postCid,

@@ -22,13 +22,13 @@ export type CreateSignerOptions = {
 };
 
 export interface PageType {
-    comments: CommentType[];
+    comments: CommentWithCommentUpdate[];
     nextCid?: string;
 }
 
 export interface PagesType {
-    pages?: Partial<Record<PostSortName | ReplySortName, PageType>>;
-    pageCids?: Partial<Record<PostSortName | ReplySortName, string>>;
+    pages: Partial<Record<PostSortName | ReplySortName, PageType>>;
+    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
 }
 export interface SignerType {
     type: "rsa";
@@ -321,9 +321,9 @@ export type PostSortName =
     | "controversialAll";
 export type ReplySortName = "topAll" | "new" | "old" | "controversialAll";
 
-export type SortProps = { score: (comment: CommentType) => number; timeframe?: Timeframe; dbSorted: boolean };
+export type SortProps = { score: (comment: CommentWithCommentUpdate) => number; timeframe?: Timeframe; dbSorted: boolean };
 
-export type PostSort = Record<PostSortName, SortProps>; // If score is undefined means it's sorted from db, no need to sort in code
+export type PostSort = Record<PostSortName, SortProps>;
 
 export type ReplySort = Record<ReplySortName, SortProps>;
 
@@ -359,6 +359,13 @@ export interface CommentType extends Partial<CommentUpdate>, Omit<CreateCommentO
     thumbnailUrl?: string;
     cid?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
     ipnsName?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
+}
+
+export interface CommentWithCommentUpdate
+    extends Omit<CommentType, "replyCount" | "downvoteCount" | "upvoteCount" | "replies" | "updatedAt" | "original" | "cid" | "postCid">,
+        Required<Pick<CommentType, "original" | "cid" | "postCid">>,
+        CommentUpdate {
+    author: AuthorType;
 }
 
 export interface CommentIpfsType

@@ -1,5 +1,5 @@
 import { Plebbit } from "./plebbit";
-import { CommentType, OnlyDefinedProperties, Timeframe } from "./types";
+import { CommentPubsubMessage, CommentWithCommentUpdate, OnlyDefinedProperties, Timeframe } from "./types";
 import { nativeFunctions } from "./runtime/node/util";
 import isIPFS from "is-ipfs";
 import { messages } from "./errors";
@@ -7,6 +7,7 @@ import errcode from "err-code";
 import Hash from "ipfs-only-hash";
 import lodash from "lodash";
 import { stringify as determinsticStringify } from "safe-stable-stringify";
+import assert from "assert";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -141,11 +142,9 @@ export function replaceXWithY(obj: Object, x: any, y: any): any {
     return newObj;
 }
 
-export function hotScore(comment: CommentType) {
-    if (typeof comment.downvoteCount !== "number" || typeof comment.upvoteCount !== "number")
-        throw Error(
-            `Comment.downvoteCount (${comment.downvoteCount}) and comment.upvoteCount (${comment.upvoteCount}) need to be defined before calculating hotScore`
-        );
+export function hotScore(comment: CommentWithCommentUpdate) {
+    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
+
     const score = comment.upvoteCount - comment.downvoteCount;
     const order = Math.log10(Math.max(score, 1));
     const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
@@ -153,11 +152,9 @@ export function hotScore(comment: CommentType) {
     return lodash.round(sign * order + seconds / 45000, 7);
 }
 
-export function controversialScore(comment: CommentType) {
-    if (typeof comment.downvoteCount !== "number" || typeof comment.upvoteCount !== "number")
-        throw Error(
-            `Comment.downvoteCount (${comment.downvoteCount}) and comment.upvoteCount (${comment.upvoteCount}) need to be defined before calculating controversialScore`
-        );
+export function controversialScore(comment: CommentWithCommentUpdate) {
+    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
+
     if (comment.downvoteCount <= 0 || comment.upvoteCount <= 0) return 0;
     const magnitude = comment.upvoteCount + comment.downvoteCount;
     const balance =
@@ -167,24 +164,20 @@ export function controversialScore(comment: CommentType) {
     return Math.pow(magnitude, balance);
 }
 
-export function topScore(comment: CommentType) {
-    if (typeof comment.downvoteCount !== "number" || typeof comment.upvoteCount !== "number")
-        throw Error(
-            `Comment.downvoteCount (${comment.downvoteCount}) and comment.upvoteCount (${comment.upvoteCount}) need to be defined before calculating topScore`
-        );
+export function topScore(comment: CommentWithCommentUpdate) {
+    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
 
     return comment.upvoteCount - comment.downvoteCount;
 }
 
-export function newScore(comment: CommentType) {
-    if (typeof comment.timestamp !== "number")
-        throw Error(`Comment.timestamp (${comment.timestamp}) needs to defined to calculate newScore`);
+export function newScore(comment: CommentPubsubMessage) {
+    assert(typeof comment.timestamp === "number");
     return comment.timestamp;
 }
 
-export function oldScore(comment: CommentType) {
-    if (typeof comment.timestamp !== "number")
-        throw Error(`Comment.timestamp (${comment.timestamp}) needs to defined to calculate oldScore`);
+export function oldScore(comment: CommentPubsubMessage) {
+    assert(typeof comment.timestamp === "number");
+
     return -comment.timestamp;
 }
 

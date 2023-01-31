@@ -1,13 +1,13 @@
 import { loadIpfsFileAsJson, throwWithErrorCode } from "./util";
 import { Subplebbit } from "./subplebbit";
 
-import { CommentType, PagesType, PageType, PostSortName, ReplySortName } from "./types";
+import { CommentWithCommentUpdate, PagesType, PageType, PostSortName, ReplySortName } from "./types";
 import isIPFS from "is-ipfs";
 import { verifyPage } from "./signer/signatures";
 
 export class Pages implements PagesType {
-    pages?: Partial<Record<PostSortName | ReplySortName, PageType>>;
-    pageCids?: Partial<Record<PostSortName | ReplySortName, string>>;
+    pages: Partial<Record<PostSortName | ReplySortName, PageType>>;
+    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
     subplebbit: Pick<Subplebbit, "address" | "plebbit">;
     constructor(props: PagesType & { subplebbit: Pages["subplebbit"] }) {
         this.pages = props.pages;
@@ -37,7 +37,7 @@ export class Pages implements PagesType {
 }
 
 export class Page implements PageType {
-    comments: CommentType[];
+    comments: CommentWithCommentUpdate[];
     nextCid?: string;
 
     constructor(props: PageType) {

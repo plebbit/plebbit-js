@@ -396,7 +396,7 @@ export async function verifyChallengeVerification(verification: ChallengeVerific
 }
 
 export async function verifyPage(page: PageType, plebbit: Plebbit, subplebbitAddress: string): Promise<ValidationResult> {
-    const verifyCommentInPage = async (comment: CommentType, parentComment?: CommentType) => {
+    const verifyCommentInPage = async (comment: CommentWithCommentUpdate, parentComment?: CommentWithCommentUpdate) => {
         if (comment.subplebbitAddress !== subplebbitAddress)
             throwWithErrorCode(
                 "ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB",
