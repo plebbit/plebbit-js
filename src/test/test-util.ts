@@ -117,17 +117,6 @@ export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promi
     return sortedComments;
 }
 
-export async function getAllCommentsUnderSubplebbit(subplebbit: Subplebbit): Promise<Comment[]> {
-    const getChildrenComments = async (comment: Comment): Promise<Comment[]> => {
-        return [
-            await subplebbit.plebbit.createComment(comment),
-            ...(await Promise.all(comment.replies?.pages?.topAll?.comments?.map(getChildrenComments) || [])).flat()
-        ];
-    };
-
-    return (await Promise.all(subplebbit.posts?.pages.hot?.comments.map(getChildrenComments) || [])).flat();
-}
-
 async function _mockPlebbit(signers: SignerType[], dataPath: string) {
     const plebbit = await PlebbitIndex({
         ipfsHttpClientOptions: "http://localhost:15001/api/v0",
