@@ -171,16 +171,14 @@ export class Comment extends Publication implements CommentType {
         });
     }
 
-    toJSONCommentUpdate(skipValidation = false): Omit<CommentUpdate, "signature"> {
-        if (!skipValidation) {
-            if (
-                typeof this.upvoteCount !== "number" ||
-                typeof this.downvoteCount !== "number" ||
-                typeof this.replyCount !== "number" ||
-                typeof this.updatedAt !== "number"
-            )
-                throw Error(`upvoteCount, downvoteCount, replyCount, and updatedAt need to be properly defined as numbers`);
-        }
+    toJSONCommentUpdate(): Omit<CommentUpdate, "signature"> {
+        if (
+            typeof this.upvoteCount !== "number" ||
+            typeof this.downvoteCount !== "number" ||
+            typeof this.replyCount !== "number" ||
+            typeof this.updatedAt !== "number"
+        )
+            throw Error(`upvoteCount, downvoteCount, replyCount, and updatedAt need to be properly defined as numbers`);
         const author: CommentUpdate["author"] = removeNullAndUndefinedValues({
             banExpiresAt: this.author.banExpiresAt,
             flair: this.flair,
