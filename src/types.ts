@@ -40,10 +40,10 @@ export interface SignerType {
 }
 export type Encrypted = {
     // examples available at https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
-    ciphertext: string
-    iv: string
-    tag: string
-    type: "ed25519-aes-gcm"
+    ciphertext: string;
+    iv: string;
+    tag: string;
+    type: "ed25519-aes-gcm";
 };
 export type SubplebbitEncryption = {
     type: "aes-cbc"; // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md

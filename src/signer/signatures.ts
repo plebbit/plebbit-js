@@ -18,12 +18,17 @@ import {
     ChallengeRequestMessageType,
     ChallengeVerificationMessageSignedPropertyNames,
     ChallengeVerificationMessageType,
+    CommentEditPubsubMessage,
     CommentEditSignedPropertyNames,
     CommentEditType,
+    CommentIpfsType,
+    CommentPubsubMessage,
     CommentSignedPropertyNames,
+    CommentSignedPropertyNamesUnion,
     CommentType,
     CommentUpdate,
     CommentUpdatedSignedPropertyNames,
+    CommentWithCommentUpdate,
     CreateCommentEditOptions,
     CreateCommentOptions,
     CreateVoteOptions,
@@ -35,6 +40,7 @@ import {
     SignerType,
     SubplebbitSignedPropertyNames,
     SubplebbitType,
+    VotePubsubMessage,
     VoteSignedPropertyNames,
     VoteType
 } from "../types";
@@ -262,7 +268,7 @@ const _verifyPublicationSignature = async (publicationToBeVerified: PublicationT
 };
 
 const _verifyPublicationWithAuthor = async (
-    publicationJson: VoteType | CommentType | CommentEditType,
+    publicationJson: VotePubsubMessage | CommentPubsubMessage | CommentEditPubsubMessage,
     plebbit: Plebbit,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult & { newAddress?: string }> => {
@@ -284,7 +290,11 @@ const _verifyPublicationWithAuthor = async (
     return { valid: true };
 };
 
-export async function verifyVote(vote: VoteType, plebbit: Plebbit, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult> {
+export async function verifyVote(
+    vote: VotePubsubMessage,
+    plebbit: Plebbit,
+    overrideAuthorAddressIfInvalid: boolean
+): Promise<ValidationResult> {
     const res = await _verifyPublicationWithAuthor(vote, plebbit, overrideAuthorAddressIfInvalid);
     if (!res.valid) return res;
     return { valid: true };
@@ -301,45 +311,59 @@ export async function verifyCommentEdit(
 }
 
 export async function verifyComment(
-    comment: CommentType,
+    comment: CommentPubsubMessage | CommentIpfsType,
     plebbit: Plebbit,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
+    assert(!comment["updatedAt"], "This function should be used for comments with no CommentUpdate. Use verifyCommentWithUpdate instead");
+
+    const validation = await _verifyPublicationWithAuthor(comment, plebbit, overrideAuthorAddressIfInvalid);
+    if (!validation.valid) return validation;
+    if (validation.newAddress) comment.author.address = validation.newAddress;
+
+    return { valid: true };
+}
+
+export async function verifyCommentWithCommentUpdate(
+    comment: CommentWithCommentUpdate,
+    plebbit: Plebbit,
+    overrideAuthorAddressIfInvalid: boolean
+) {
+    // Comments within pages are merged with CommentUpdate automatically, so we have to untangle them so we can verify original comment and update separately
     if (comment.authorEdit) {
         // Means comment has been edited, verify comment.authorEdit.signature
 
         if (comment.authorEdit.signature.publicKey !== comment.signature.publicKey)
             return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
 
-        const authorEditValidation = await _verifyPublicationWithAuthor(
-            <AuthorCommentEdit>comment.authorEdit,
-            plebbit,
-            overrideAuthorAddressIfInvalid
-        );
-        if (!authorEditValidation.valid) return authorEditValidation;
         if (comment.authorEdit.content && comment.content !== comment.authorEdit.content)
             return { valid: false, reason: messages.ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT };
+
+        const authorEditValidation = await _verifyPublicationWithAuthor(comment.authorEdit, plebbit, overrideAuthorAddressIfInvalid);
+        if (!authorEditValidation.valid) return authorEditValidation;
 
         if (overrideAuthorAddressIfInvalid && authorEditValidation.newAddress)
             comment.authorEdit.author.address = authorEditValidation.newAddress;
     }
 
+    // Validate comment.replies
+    const pagesValidity = await Promise.all(
+        Object.values(comment.replies.pages).map((page) => verifyPage(page, plebbit, comment.subplebbitAddress))
+    );
+    const invalidPageValidity = pagesValidity.find((validity) => !validity.valid);
+    if (invalidPageValidity) return invalidPageValidity;
+
     // This is the original comment that was published by the author. No CommentUpdate fields should be included here
     // The signature created by the user via createComment should be valid, since `authorComment` is an object that separates author comment from CommentUpdate
     // We're calling removeNullAndUndefinedValues to omit content and other fields that may be undefined
-    //@ts-expect-error
-    const authorComment: CommentType = removeNullAndUndefinedValues({
-        ...lodash.pick(comment, [...comment.signature.signedPropertyNames, "signature"]),
-        content: comment.authorEdit?.content ? comment?.original?.content : comment.content,
+    const authorComment: CommentPubsubMessage = {
+        ...lodash.pick(comment, [...(<CommentSignedPropertyNames>comment.signature.signedPropertyNames), "signature", "protocolVersion"]),
         author: lodash.omit(comment.author, ["banExpiresAt", "flair", "subplebbit"])
-    });
+    };
     if (comment.original?.author?.flair) authorComment.author.flair = comment.original?.author?.flair;
+    if (comment.authorEdit?.content) authorComment.content = comment?.original?.content;
 
-    const authorCommentValidation = await _verifyPublicationWithAuthor(authorComment, plebbit, overrideAuthorAddressIfInvalid);
-    if (!authorCommentValidation.valid) return authorCommentValidation;
-    if (authorCommentValidation.newAddress) comment.author.address = authorCommentValidation.newAddress;
-
-    return { valid: true };
+    return verifyComment(authorComment, plebbit, overrideAuthorAddressIfInvalid);
 }
 
 export async function verifySubplebbit(subplebbit: SubplebbitType, plebbit: Plebbit): Promise<ValidationResult> {
@@ -408,9 +432,9 @@ export async function verifyPage(page: PageType, plebbit: Plebbit, subplebbitAdd
                 `verifyPage: Failed to verify page due to comment (${comment.cid}) having an unexpected parent cid (${comment.parentCid}), the expected parent cid (${parentComment.cid})`
             );
 
-        const commentSignatureValidity = await verifyComment(comment, plebbit, true);
+        const commentSignatureValidity = await verifyCommentWithCommentUpdate(comment, plebbit, true);
         if (!commentSignatureValidity.valid) {
-            //@ts-ignore
+            //@ts-expect-error
             const code: keyof typeof messages = Object.entries(messages).filter(
                 ([_, error]) => error === commentSignatureValidity.reason
             )[0][0];
@@ -420,8 +444,9 @@ export async function verifyPage(page: PageType, plebbit: Plebbit, subplebbitAdd
             );
         }
 
+        // We're iterating recurisvely through all comments in a page, by verifying comments in each depth
         await Promise.all(
-            Object.values(comment?.replies?.pages).map(
+            Object.values(comment.replies.pages).map(
                 async (page) =>
                     await Promise.all(page.comments.map(async (preloadedComment) => verifyCommentInPage(preloadedComment, comment)))
             )
