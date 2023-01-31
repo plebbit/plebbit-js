@@ -704,7 +704,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             }
 
             // Comment and Post need to add file to ipfs
-            const ipnsKeyName = sha256(encode(postOrCommentOrVote.toJSONSkeleton()));
+            const ipnsKeyName = sha256(encode(publication));
 
             if (await this.dbHandler.querySigner(ipnsKeyName)) {
                 log(`(${challengeRequestId}): `, messages.ERR_DUPLICATE_COMMENT);
