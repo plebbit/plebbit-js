@@ -96,10 +96,11 @@ describe(`Posts with forbidden fields are rejected during challenge exchange`, a
     forbiddenFieldsWithValue.map((forbiddenType) =>
         it(`comment.${Object.keys(forbiddenType)[0]} is rejected by sub`, async () => {
             const post = await generateMockPost(subplebbitAddress, plebbit, undefined, undefined);
-            const postSkeletonJsonPrior = post.toJSONSkeleton();
+            const postPubsubJsonPrior = post.toJSONPubsubMessagePublication();
             const postJsonPrior = post.toJSON();
-            post.toJSONSkeleton = () => ({ ...postSkeletonJsonPrior, ...forbiddenType });
+            post.toJSONPubsubMessagePublication = () => ({ ...postPubsubJsonPrior, ...forbiddenType });
             post.toJSON = () => postJsonPrior;
+            post._validateSignature = async () => {}; // Disable signature validation before publishing
             await publishWithExpectedResult(
                 post,
                 false,
@@ -124,10 +125,14 @@ describe("Posts with forbidden author fields are rejected", async () => {
     forbiddenFieldsWithValue.map((forbiddenType) =>
         it(`comment.author.${Object.keys(forbiddenType)[0]} is rejected by sub`, async () => {
             const post = await generateMockPost(subplebbitAddress, plebbit, undefined, undefined);
-            const postSkeletonJsonPrior = post.toJSONSkeleton();
+            const postPubsubJsonPrior = post.toJSONPubsubMessagePublication();
             const postJsonPrior = post.toJSON();
-            post.toJSONSkeleton = () => ({ ...postSkeletonJsonPrior, author: { ...postSkeletonJsonPrior.author, ...forbiddenType } });
+            post.toJSONPubsubMessagePublication = () => ({
+                ...postPubsubJsonPrior,
+                author: { ...postPubsubJsonPrior.author, ...forbiddenType }
+            });
             post.toJSON = () => postJsonPrior;
+            post._validateSignature = async () => {}; // Disable signature validation before publishing
             await publishWithExpectedResult(post, false, messages.ERR_FORBIDDEN_AUTHOR_FIELD);
         })
     );

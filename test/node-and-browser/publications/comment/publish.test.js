@@ -177,7 +177,7 @@ describe(`Publishing replies`, async () => {
             await waitTillCommentIsInParentPages(
                 reply,
                 plebbit,
-                { ...lodash.omit(reply.toJSONSkeleton(), ["author", "spoiler"]), depth },
+                { ...lodash.omit(reply.toJSONPubsubMessagePublication(), ["author", "spoiler"]), depth },
                 true
             );
 
