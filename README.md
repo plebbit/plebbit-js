@@ -73,6 +73,7 @@ AuthorCommentEdit extends AuthorCommentEditOptions, Publication {}
 ModeratorCommentEdit extends ModeratorCommentEditOptions, Publication {}
 CommentEdit extends AuthorCommentEdit, ModeratorCommentEdit {}
 CommentUpdate /* (IPNS record Comment.ipnsName) */ {
+  cid: string // cid of the comment, need it in signature to prevent attack
   authorEdit?: AuthorCommentEdit // most recent edit by comment author, authorEdit.content, authorEdit.deleted, authorEdit.flair overwrite Comment instance props. Validate authorEdit.signature
   upvoteCount: number
   downvoteCount: number
