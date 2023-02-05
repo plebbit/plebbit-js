@@ -79,7 +79,7 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   downvoteCount: number
   replies?: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
   replyCount: number
-  flair?: Flair // arbitrary colored string to describe the comment, added by mods, override comment.flair and comment.edit.flair (which are added by author)
+  flair?: Flair // arbitrary colored string to describe the comment, added by mods, override comment.flair (which are added by author)
   spoiler?: boolean
   pinned?: boolean
   locked?: boolean
