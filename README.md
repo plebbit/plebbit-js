@@ -55,7 +55,7 @@ ModeratorCommentEditOptions {
   pinned?: boolean
   locked?: boolean
   removed?: boolean
-  moderatorReason?: string
+  reason?: string
   commentAuthor?: {
     flair: Flair
     banExpiresAt?: number
@@ -74,17 +74,17 @@ ModeratorCommentEdit extends ModeratorCommentEditOptions, Publication {}
 CommentEdit extends AuthorCommentEdit, ModeratorCommentEdit {}
 CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   cid: string // cid of the comment, need it in signature to prevent attack
-  authorEdit?: AuthorCommentEdit // most recent edit by comment author, authorEdit.content, authorEdit.deleted, authorEdit.flair overwrite Comment instance props. Validate authorEdit.signature
+  edit?: AuthorCommentEdit // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
   upvoteCount: number
   downvoteCount: number
   replies?: Pages // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
   replyCount: number
-  flair?: Flair // arbitrary colored strings added by the author or mods to describe the author or comment
+  flair?: Flair // arbitrary colored string to describe the comment, added by mods, override comment.flair and comment.edit.flair (which are added by author)
   spoiler?: boolean
   pinned?: boolean
   locked?: boolean
   removed?: boolean // mod deleted a comment
-  moderatorReason?: string // reason the mod took a mod action
+  reason?: string // reason the mod took a mod action
   updatedAt: number // timestamp in seconds the IPNS record was updated
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
   signature: Signature // signature of the CommentUpdate by the sub owner to protect against malicious gateway
@@ -370,7 +370,7 @@ Encrypted {
   - `(only available after challengeverification event)`
   - `comment.cid`
   - `(only available after first update event)`
-  - `comment.authorEdit`
+  - `comment.edit`
   - `comment.original`
   - `comment.upvoteCount`
   - `comment.downvoteCount`
@@ -379,7 +379,7 @@ Encrypted {
   - `comment.deleted`
   - `comment.removed`
   - `comment.locked`
-  - `comment.moderatorReason`
+  - `comment.reason`
   - `comment.replies`
   - `comment.replyCount`
 - [Comment Events](#comment-events)
@@ -821,14 +821,13 @@ An object which may have the following keys:
 | author | `Author` | Author of the `CommentEdit` publication, either original author or moderator. Not used to edit the `comment.author` property, only to authenticate the `CommentEdit` publication |
 | signer | `Signer` | Signer of the edit, either original author or mod |
 | content | `string` or `undefined` | (Only author) Edited content of the comment |
-| reason | `string` or `undefined` | (Only author) Reason of the edit |
 | deleted | `boolean` or `undefined` | (Only author) Edited deleted status of the comment |
 | flair | `Flair` or `undefined` | (Author or mod) Edited flair of the comment |
 | spoiler | `boolean` or `undefined` | (Author or mod) Edited spoiler of the comment |
+| reason | `string` or `undefined` | (Author or mod) Reason of the edit |
 | pinned | `boolean` or `undefined` | (Only mod) Edited pinned status of the comment |
 | locked | `boolean` or `undefined` | (Only mod) Edited locked status of the comment |
 | removed | `boolean` or `undefined` | (Only mod) Edited removed status of the comment |
-| moderatorReason | `string` or `undefined` | (Only mod) Reason for mod action |
 | commentAuthor | `CommentAuthorEditOptions` or `undefined` | (Only mod) Edited author property of the comment |
 
 ##### CommentAuthorEditOptions
