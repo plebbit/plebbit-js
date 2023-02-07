@@ -205,7 +205,7 @@ Pages {
   pageCids: {[key: PostsSortType | RepliesSortType | ModSortType]: pageCid} // e.g. subplebbit.posts.pageCids.topAll = 'Qm...'
 }
 Page /* (IPFS file) */ {
-  nextCid: string // get next page (sorted by the same sort type)
+  nextCid?: string // get next page (sorted by the same sort type)
   comments: Comment[] // Comments should include Comment + CommentUpdate data
 }
 PostsSortType: 'hot' | 'new' | 'active' | 'topHour' | 'topDay' | 'topWeek' | 'topMonth' | 'topYear' | 'topAll' | 'controversialHour' | 'controversialDay' | 'controversialWeek' | 'controversialMonth' | 'controversialYear' | 'controversialAll'
