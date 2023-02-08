@@ -53,12 +53,13 @@ export async function generateMockPost(
     return post;
 }
 
+// TODO rework this
 export async function generateMockComment(
     parentPostOrComment: Post | Comment,
     plebbit: Plebbit,
-    signer?: SignerType,
+    signer?: CreateCommentOptions["signer"],
     randomTimestamp = false,
-    commentProps: Partial<CreateCommentOptions | CommentType> = {}
+    commentProps: Partial<CreateCommentOptions> = {}
 ): Promise<Comment> {
     if (!["Comment", "Post"].includes(parentPostOrComment.constructor.name))
         throw Error("Need to have parentComment defined to generate mock comment");
@@ -106,10 +107,10 @@ export async function generateMockVote(
     return voteObj;
 }
 
-export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promise<CommentType[]> {
+export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promise<Comment[]> {
     if (!isIPFS.cid(pageCid)) throw Error(`loadAllPages: pageCid (${pageCid}) is not a valid CID`);
     let sortedCommentsPage = await pagesInstance.getPage(pageCid);
-    let sortedComments: CommentType[] = sortedCommentsPage.comments;
+    let sortedComments: Comment[] = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {
         sortedCommentsPage = await pagesInstance.getPage(sortedCommentsPage.nextCid);
         sortedComments = sortedComments.concat(sortedCommentsPage.comments);
@@ -347,7 +348,7 @@ async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
 export async function publishRandomReply(
     parentComment: Comment,
     plebbit: Plebbit,
-    commentProps: Partial<CommentType>,
+    commentProps: Partial<CreateCommentOptions>,
     waitTillCommentIsOnline = true
 ): Promise<Comment> {
     const reply = await generateMockComment(parentComment, plebbit, commentProps?.signer, false, {
@@ -411,7 +412,7 @@ export async function findCommentInPage(commentCid: string, pageCid: string, pag
 export async function waitTillCommentIsInParentPages(
     comment: Comment,
     plebbit: Plebbit,
-    propsToCheckFor: Partial<CommentType> = {},
+    propsToCheckFor: Partial<CreateCommentOptions> = {},
     checkInAllPages = false
 ) {
     const parent =
@@ -420,7 +421,7 @@ export async function waitTillCommentIsInParentPages(
     parent._updateIntervalMs = 200;
     await parent.update();
     const pageCid = () => (parent instanceof Comment ? parent.replies?.pageCids?.topAll : parent.posts?.pageCids?.new);
-    let commentInPage: CommentType;
+    let commentInPage: Comment;
     await waitUntil(async () => Boolean(pageCid() && (commentInPage = await findCommentInPage(comment.cid, pageCid(), comment.replies))), {
         timeout: 200000
     });

@@ -1,5 +1,5 @@
 import Publication from "./publication";
-import { PublicationTypeName, VoteForDbType, VotePubsubMessage, VoteType } from "./types";
+import { PublicationTypeName, VotePubsubMessage, VotesTableRow, VoteType } from "./types";
 import { Plebbit } from "./plebbit";
 import isIPFS from "is-ipfs";
 import { verifyVote } from "./signer";
@@ -30,13 +30,11 @@ class Vote extends Publication implements VoteType {
         return "vote";
     }
 
-    toJSONForDb(challengeRequestId: string): VoteForDbType {
+    toJSONForDb(challengeRequestId: string): VotesTableRow {
         return {
             ...this.toJSON(),
-            author: JSON.stringify(this.author),
             authorAddress: this.author.address,
-            challengeRequestId: challengeRequestId,
-            signature: JSON.stringify(this.signature)
+            challengeRequestId: challengeRequestId
         };
     }
 

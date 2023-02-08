@@ -1,4 +1,5 @@
-import { CreateSignerOptions, SignerType } from "../types";
+import assert from "assert";
+import { CreateSignerOptions, SignersTableRow, SignerType } from "../types";
 import { generatePrivateKey, getPublicKeyFromPrivateKey, getPlebbitAddressFromPrivateKey } from "./util";
 export { Signature, verifyComment, verifySubplebbit, verifyVote } from "./signatures";
 export { encryptEd25519AesGcm as encrypt, decryptEd25519AesGcm as decrypt } from "./encryption";
@@ -25,6 +26,11 @@ export class Signer implements SignerType {
                 ? new Uint8Array(props.ipfsKey)
                 : undefined;
     }
+
+    toJSONSignersTableRow(): SignersTableRow {
+        assert(this.type && this.privateKey && this.ipnsKeyName);
+        return { type: this.type, privateKey: this.privateKey, ipnsKeyName: this.ipnsKeyName };
+    }
 }
 
 export const createSigner = async (createSignerOptions: CreateSignerOptions = {}) => {
@@ -37,10 +43,7 @@ export const createSigner = async (createSignerOptions: CreateSignerOptions = {}
     }
     if (typeof signerType !== "string") throw Error("createSignerOptions does not include type");
 
-    const [publicKey, address] = await Promise.all([
-        getPublicKeyFromPrivateKey(privateKey),
-        getPlebbitAddressFromPrivateKey(privateKey)
-    ]);
+    const [publicKey, address] = await Promise.all([getPublicKeyFromPrivateKey(privateKey), getPlebbitAddressFromPrivateKey(privateKey)]);
 
     return new Signer({
         type: signerType,

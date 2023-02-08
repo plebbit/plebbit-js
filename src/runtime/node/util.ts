@@ -25,7 +25,13 @@ export const getDefaultSubplebbitDbConfig = async (
         client: "sqlite3",
         connection: { filename },
         useNullAsDefault: true,
-        acquireConnectionTimeout: 120000
+        acquireConnectionTimeout: 120000,
+        postProcessResponse: (result, queryContext) => {
+            // TODO: add special case for raw results
+            // (depends on dialect)
+            debugger;
+            return result;
+        }
     };
 };
 

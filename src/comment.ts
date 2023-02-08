@@ -1,16 +1,19 @@
-import { loadIpnsAsJson, removeKeysWithUndefinedValues, removeNullAndUndefinedValues, throwWithErrorCode } from "./util";
+import { loadIpnsAsJson, parsePagesIfIpfs, removeKeysWithUndefinedValues, removeNullAndUndefinedValues, throwWithErrorCode } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
 import {
     AuthorCommentEdit,
-    CommentForDbType,
     CommentIpfsType,
+    CommentIpfsWithCid,
     CommentPubsubMessage,
+    CommentsTableRowInsert,
     CommentType,
     CommentUpdate,
     CommentWithCommentUpdate,
     Flair,
+    PageIpfs,
     PagesType,
+    PagesTypeIpfs,
     ProtocolVersion,
     PublicationTypeName
 } from "./types";
@@ -46,14 +49,14 @@ export class Comment extends Publication implements CommentType {
     replyCount?: number;
     updatedAt?: number;
     replies: Pages;
-    authorEdit?: AuthorCommentEdit;
+    edit?: AuthorCommentEdit;
     flair?: Flair;
-    deleted?: CommentType["authorEdit"]["deleted"];
+    deleted?: CommentType["edit"]["deleted"];
     spoiler?: boolean;
     pinned?: boolean;
     locked?: boolean;
     removed?: boolean;
-    moderatorReason?: string;
+    reason?: string;
 
     // private
     private _updateInterval?: any;
@@ -62,6 +65,11 @@ export class Comment extends Publication implements CommentType {
     constructor(props: CommentType, plebbit: Plebbit) {
         super(props, plebbit);
         this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
+
+        // these functions might get separated from their `this` when used
+        this.publish = this.publish.bind(this);
+        this.update = this.update.bind(this);
+        this.stop = this.stop.bind(this);
     }
 
     _initProps(props: CommentType) {
@@ -77,33 +85,31 @@ export class Comment extends Publication implements CommentType {
         this.content = props.content;
         this.original = props.original;
         this.setPreviousCid(props.previousCid);
-        // CommentUpdate props
-        this._initCommentUpdate(<CommentUpdate>props);
-        // these functions might get separated from their `this` when used
-        this.publish = this.publish.bind(this);
-        this.update = this.update.bind(this);
-        this.stop = this.stop.bind(this);
     }
 
-    _initCommentUpdate(props: CommentUpdate) {
+    async _initCommentUpdate(props: CommentUpdate) {
+        if (!this.original) this.original = lodash.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content"]);
+
         this.upvoteCount = props.upvoteCount;
         this.downvoteCount = props.downvoteCount;
         this.replyCount = props.replyCount;
         this.updatedAt = props.updatedAt;
-        this.setReplies(props.replies);
-        this.deleted = props.authorEdit?.deleted;
+        this.deleted = props.edit?.deleted;
         this.pinned = props.pinned;
         this.locked = props.locked;
         this.removed = props.removed;
-        this.moderatorReason = props.moderatorReason;
-        this.authorEdit = props.authorEdit;
-        this.spoiler = props.authorEdit?.spoiler ?? props.spoiler;
+        this.reason = props.reason;
+        this.edit = props.edit;
         this.protocolVersion = props.protocolVersion;
-        if (props.author?.banExpiresAt) this.author.banExpiresAt = props.author.banExpiresAt;
-        if (props.author?.flair) this.author.flair = props.author.flair;
-        if (props.author?.subplebbit) this.author.subplebbit = props.author.subplebbit;
-        if (props.authorEdit?.content) this.content = props.authorEdit.content;
-        // TODO set merged comment flair here
+
+        // Merge props from original comment and CommentUpdate
+        this.spoiler = props.edit?.spoiler ?? props.spoiler;
+        this.author.subplebbit = props.author.subplebbit;
+        if (props.edit?.content) this.content = props.edit.content;
+        this.flair = props.flair || props.edit?.flair || this.flair;
+        this.author.flair = props.author?.subplebbit?.flair || props.edit?.author?.flair || this.author?.flair;
+
+        await this.setReplies(props.replies);
     }
 
     getType(): PublicationTypeName {
@@ -113,10 +119,10 @@ export class Comment extends Publication implements CommentType {
     toJSON(): CommentType {
         return {
             ...this.toJSONPubsubMessagePublication(),
-            ...(typeof this.updatedAt === "number" ? this.toJSONCommentUpdate() : undefined),
+            ...(typeof this.updatedAt === "number" ? this._toJSONCommentUpdate() : undefined),
             cid: this.cid,
             original: this.original,
-            author: this.author.toJSON(),
+            author: this.author.toJSONIpfsWithCommentUpdate(),
             previousCid: this.previousCid,
             ipnsName: this.ipnsName,
             postCid: this.postCid,
@@ -126,30 +132,15 @@ export class Comment extends Publication implements CommentType {
         };
     }
 
-    toJSONPages(): CommentWithCommentUpdate & { deleted?: CommentType["authorEdit"]["deleted"] } {
-        assert(
-            this.cid &&
-                this.original &&
-                typeof this.depth === "number" &&
-                this.ipnsName &&
-                this.subplebbitAddress &&
-                this.postCid &&
-                this.signature &&
-                typeof this.timestamp === "number"
-        );
+    toJSONPagesIpfs(commentUpdate: CommentUpdate): { comment: CommentIpfsWithCid; commentUpdate: CommentUpdate } {
+        assert(this.cid && this.postCid);
         return {
-            ...lodash.omit(this.toJSONIpfs(), ["ipnsKeyName"]),
-            ...this.toJSONCommentUpdate(),
-            author: this.author.toJSON(),
-            deleted: this.deleted,
-            cid: this.cid,
-            original: this.original,
-            depth: this.depth,
-            ipnsName: this.ipnsName,
-            postCid: this.postCid,
-            signature: this.signature,
-            subplebbitAddress: this.subplebbitAddress,
-            timestamp: this.timestamp
+            comment: {
+                ...this.toJSONIpfs(),
+                cid: this.cid,
+                postCid: this.postCid
+            },
+            commentUpdate
         };
     }
 
@@ -177,48 +168,43 @@ export class Comment extends Publication implements CommentType {
         };
     }
 
-    toJSONForDb(challengeRequestId?: string): CommentForDbType {
-        if (typeof this.ipnsKeyName !== "string") throw Error("comment.ipnsKeyName needs to be defined before inserting comment in DB");
-        return removeKeysWithUndefinedValues({
-            ...lodash.omit(this.toJSON(), ["replyCount", "upvoteCount", "downvoteCount", "replies"]),
-            author: JSON.stringify(this.author),
-            authorEdit: JSON.stringify(this.authorEdit),
-            original: JSON.stringify(this.original),
+    toJSONCommentsTableRowInsert(challengeRequestId: string): CommentsTableRowInsert {
+        assert(this.ipnsKeyName && this.cid && this.postCid);
+        return {
+            ...this.toJSONIpfs(),
+            postCid: this.postCid,
+            cid: this.cid,
             authorAddress: this.author.address,
             challengeRequestId: challengeRequestId,
-            ipnsKeyName: this.ipnsKeyName,
-            signature: JSON.stringify(this.signature)
-        });
+            ipnsKeyName: this.ipnsKeyName
+        };
     }
 
-    toJSONCommentUpdate(): Omit<CommentUpdate, "signature"> {
-        if (
-            typeof this.upvoteCount !== "number" ||
-            typeof this.downvoteCount !== "number" ||
-            typeof this.replyCount !== "number" ||
-            typeof this.updatedAt !== "number"
-        )
-            throw Error(`upvoteCount, downvoteCount, replyCount, and updatedAt need to be properly defined as numbers`);
-        const author: CommentUpdate["author"] = removeNullAndUndefinedValues({
-            banExpiresAt: this.author.banExpiresAt,
-            flair: this.flair,
-            subplebbit: this.author.subplebbit
-        });
+    private _toJSONCommentUpdate() {
+        assert(
+            typeof this.cid === "string" &&
+                typeof this.upvoteCount === "number" &&
+                typeof this.downvoteCount === "number" &&
+                typeof this.replyCount === "number" &&
+                typeof this.updatedAt === "number"
+        );
+
         return {
+            cid: this.cid,
             upvoteCount: this.upvoteCount,
             downvoteCount: this.downvoteCount,
             replyCount: this.replyCount,
-            authorEdit: this.authorEdit,
+            edit: this.edit,
             replies: this.replies.toJSON(),
             flair: this.flair, // Not sure this fits here
             spoiler: this.spoiler,
             pinned: this.pinned,
             locked: this.locked,
             removed: this.removed,
-            moderatorReason: this.moderatorReason,
+            reason: this.reason,
             updatedAt: this.updatedAt,
             protocolVersion: this.protocolVersion,
-            author
+            author: { subplebbit: this.author.subplebbit }
         };
     }
 
@@ -248,11 +234,14 @@ export class Comment extends Publication implements CommentType {
         this.updatedAt = newUpdatedAt;
     }
 
-    setReplies(replies?: Pages | PagesType) {
+    async setReplies(replies?: Pages | PagesType | PagesTypeIpfs) {
+        assert(this.subplebbit);
+        const parsedPages = await parsePagesIfIpfs(replies, this.plebbit);
         this.replies = new Pages({
-            pages: replies?.pages?.topAll ? { topAll: replies?.pages?.topAll } : {},
-            pageCids: replies?.pageCids || {},
-            subplebbit: { plebbit: this.plebbit, address: this.subplebbitAddress }
+            pages: parsedPages?.pages?.topAll ? { topAll: parsedPages?.pages?.topAll } : {},
+            pageCids: parsedPages?.pageCids || {},
+            subplebbit: lodash.pick(this.subplebbit, ["encryption", "plebbit", "address"]),
+            parentCid: this.parentCid
         });
     }
 
@@ -266,19 +255,13 @@ export class Comment extends Publication implements CommentType {
             return;
         }
         // Make a copy of fields that may be changed with a CommentUpdate
-        if (!this.original) this.original = lodash.pick(this.toJSON(), ["author", "flair", "content"]);
 
-        if (
-            res &&
-            (!this.updatedAt ||
-                !lodash.isEqual(
-                    removeKeysWithUndefinedValues(lodash.omit(this.toJSONCommentUpdate(), ["signature"])),
-                    lodash.omit(res, ["signature"])
-                ))
-        ) {
+        if (res && this.updatedAt !== res.updatedAt) {
             if (!this.subplebbit) this.subplebbit = await this.plebbit.getSubplebbit(this.subplebbitAddress);
             log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
-            const signatureValidity = await verifyCommentUpdate(res, this.subplebbit.encryption.publicKey, this.signature.publicKey);
+            //@ts-expect-error
+            const commentInstance: Pick<CommentWithCommentUpdate, "cid" | "signature"> = lodash.pick(this, ["cid", "signature"]);
+            const signatureValidity = await verifyCommentUpdate(res, this.subplebbit, commentInstance, this.plebbit);
             if (!signatureValidity.valid) {
                 log.error(`Comment (${this.cid}) IPNS (${this.ipnsName}) signature is invalid due to '${signatureValidity.reason}'`);
                 return;

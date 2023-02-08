@@ -5,8 +5,8 @@ import { verifyCommentEdit } from "./signer/signatures";
 import {
     AuthorCommentEdit,
     CommentAuthorEditOptions,
-    CommentEditForDbType,
     CommentEditPubsubMessage,
+    CommentEditsTableRow,
     CommentEditType,
     Flair,
     ModeratorCommentEdit,
@@ -32,7 +32,7 @@ export const MOD_EDIT_FIELDS: (keyof ModeratorCommentEdit)[] = [
     "pinned",
     "locked",
     "removed",
-    "moderatorReason",
+    "reason",
     "commentAuthor"
 ];
 
@@ -56,7 +56,6 @@ export class CommentEdit extends Publication implements CommentEditType {
     pinned?: boolean;
     locked?: boolean;
     removed?: boolean;
-    moderatorReason?: string;
     commentAuthor?: CommentAuthorEditOptions;
 
     constructor(props: CommentEditType, plebbit: Plebbit) {
@@ -74,7 +73,6 @@ export class CommentEdit extends Publication implements CommentEditType {
         this.pinned = props.pinned;
         this.locked = props.locked;
         this.removed = props.removed;
-        this.moderatorReason = props.moderatorReason;
         this.commentAuthor = props.commentAuthor;
     }
 
@@ -90,7 +88,6 @@ export class CommentEdit extends Publication implements CommentEditType {
             pinned: this.pinned,
             locked: this.locked,
             removed: this.removed,
-            moderatorReason: this.moderatorReason,
             commentAuthor: this.commentAuthor
         };
     }
@@ -99,13 +96,13 @@ export class CommentEdit extends Publication implements CommentEditType {
         return this.toJSONPubsubMessagePublication();
     }
 
-    toJSONForDb(challengeRequestId: string): CommentEditForDbType {
-        return removeKeysWithUndefinedValues({
+    toJSONForDb(challengeRequestId: string): CommentEditsTableRow {
+        return {
             ...this.toJSON(),
-            author: JSON.stringify(this.author),
+            author: this.author.toJSONIpfs(),
             authorAddress: this.author.address,
             challengeRequestId: challengeRequestId
-        });
+        };
     }
 
     getType(): PublicationTypeName {

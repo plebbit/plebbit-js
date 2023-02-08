@@ -3,6 +3,5 @@ export enum CACHE_KEYS {
     INTERNAL_SUBPLEBBIT,
     POSTS_SUBPLEBBIT,
     // Prefixes have to start with PREFIX and end with _
-    PREFIX_TRIGGER_COMMENT_UPDATE_,
     PREFIX_COMMENT_REPLIES_
 }

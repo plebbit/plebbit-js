@@ -70,7 +70,7 @@ class Publication extends EventEmitter implements PublicationType {
             subplebbitAddress: this.subplebbitAddress,
             timestamp: this.timestamp,
             signature: this.signature instanceof Signature ? this.signature.toJSON() : this.signature,
-            author: this.author.toJSON(),
+            author: this.author.toJSONIpfs(),
             protocolVersion: this.protocolVersion
         };
     }

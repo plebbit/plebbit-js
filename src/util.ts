@@ -1,5 +1,16 @@
 import { Plebbit } from "./plebbit";
-import { CommentPubsubMessage, CommentWithCommentUpdate, OnlyDefinedProperties, Timeframe } from "./types";
+import {
+    CommentPubsubMessage,
+    CommentWithCommentUpdate,
+    OnlyDefinedProperties,
+    PageIpfs,
+    PagesType,
+    PagesTypeIpfs,
+    PageType,
+    Timeframe,
+    PostSortName,
+    ReplySortName
+} from "./types";
 import { nativeFunctions } from "./runtime/node/util";
 import isIPFS from "is-ipfs";
 import { messages } from "./errors";
@@ -8,6 +19,7 @@ import Hash from "ipfs-only-hash";
 import lodash from "lodash";
 import { stringify as determinsticStringify } from "safe-stable-stringify";
 import assert from "assert";
+import { Comment } from "./comment";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -142,7 +154,7 @@ export function replaceXWithY(obj: Object, x: any, y: any): any {
     return newObj;
 }
 
-export function hotScore(comment: CommentWithCommentUpdate) {
+export function hotScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
     assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
 
     const score = comment.upvoteCount - comment.downvoteCount;
@@ -152,7 +164,7 @@ export function hotScore(comment: CommentWithCommentUpdate) {
     return lodash.round(sign * order + seconds / 45000, 7);
 }
 
-export function controversialScore(comment: CommentWithCommentUpdate) {
+export function controversialScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
     assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
 
     if (comment.downvoteCount <= 0 || comment.upvoteCount <= 0) return 0;
@@ -164,18 +176,18 @@ export function controversialScore(comment: CommentWithCommentUpdate) {
     return Math.pow(magnitude, balance);
 }
 
-export function topScore(comment: CommentWithCommentUpdate) {
+export function topScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
     assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
 
     return comment.upvoteCount - comment.downvoteCount;
 }
 
-export function newScore(comment: CommentPubsubMessage) {
+export function newScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
     assert(typeof comment.timestamp === "number");
     return comment.timestamp;
 }
 
-export function oldScore(comment: CommentPubsubMessage) {
+export function oldScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
     assert(typeof comment.timestamp === "number");
 
     return -comment.timestamp;
@@ -205,4 +217,29 @@ export function throwWithErrorCode(code: keyof typeof messages, details?: string
     throw errcode(Error(messages[code]), messages[messages[code]], {
         details
     });
+}
+
+export async function parsePageIpfs(pageIpfs: PageIpfs, plebbit: Plebbit): Promise<PageType> {
+    const finalComments = await Promise.all(pageIpfs.comments.map((commentObj) => plebbit.createComment(commentObj.comment)));
+    pageIpfs.comments.forEach((obj, i) => finalComments[i]._initCommentUpdate(obj.commentUpdate));
+
+    return { comments: finalComments, nextCid: pageIpfs.nextCid };
+}
+
+export async function parsePagesIfIpfs(pagesRaw: PagesType | PagesTypeIpfs, plebbit: Plebbit): Promise<PagesType> {
+    let isIpfs: boolean = false;
+    const pages: PageType[] | PageIpfs[] = Object.values(pagesRaw.pages);
+
+    for (const page of pages) {
+        if (page.comments["commentUpdate"]) {
+            isIpfs = true;
+            break;
+        }
+    }
+    if (isIpfs) {
+        pagesRaw = pagesRaw as PagesTypeIpfs;
+        const parsedPages = await Promise.all(Object.keys(pagesRaw).map((key) => parsePageIpfs(pagesRaw.pages[key], plebbit)));
+        const pagesType: PagesType["pages"] = Object.fromEntries(Object.keys(pagesRaw.pages).map((key, i) => [key, parsedPages[i]]));
+        return { pages: pagesType, pageCids: pagesRaw.pageCids };
+    } else return <PagesType>pagesRaw;
 }

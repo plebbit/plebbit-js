@@ -25,19 +25,20 @@ import {
     CommentPubsubMessage,
     CommentSignedPropertyNames,
     CommentSignedPropertyNamesUnion,
-    CommentType,
     CommentUpdate,
     CommentUpdatedSignedPropertyNames,
     CommentWithCommentUpdate,
     CreateCommentEditOptions,
     CreateCommentOptions,
     CreateVoteOptions,
+    PageIpfs,
     PageType,
     PublicationsToSign,
     PublicationToVerify,
     SignatureType,
     SignedPropertyNames,
     SignerType,
+    SubplebbitIpfsType,
     SubplebbitSignedPropertyNames,
     SubplebbitType,
     VotePubsubMessage,
@@ -48,6 +49,7 @@ import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
 import { messages } from "../errors";
 import assert from "assert";
+import { Comment } from "../comment";
 
 interface ValidationResult {
     valid: boolean;
@@ -158,7 +160,7 @@ export async function signCommentEdit(edit: CreateCommentEditOptions, signer: Si
     const log = Logger("plebbit-js:signatures:signCommentEdit");
     await _validateAuthorIpns(edit.author, signer, plebbit);
     //prettier-ignore
-    const signedPropertyNames: CommentEditSignedPropertyNames = ["author","timestamp","subplebbitAddress","content","commentCid","deleted","spoiler","pinned","locked","removed","moderatorReason","flair","reason","commentAuthor"];
+    const signedPropertyNames: CommentEditSignedPropertyNames = ["author","timestamp","subplebbitAddress","content","commentCid","deleted","spoiler","pinned","locked","removed","reason","flair","reason","commentAuthor"];
     return _sign(signedPropertyNames, edit, signer, log);
 }
 
@@ -166,11 +168,11 @@ export async function signCommentUpdate(update: Omit<CommentUpdate, "signature">
     const log = Logger("plebbit-js:signatures:signCommentUpdate");
     // Not sure, should we validate update.authorEdit here?
     //prettier-ignore
-    const signedPropertyNames: CommentUpdatedSignedPropertyNames = ["author","spoiler","pinned","locked","removed","moderatorReason","flair","upvoteCount","downvoteCount","replies","updatedAt","replyCount","authorEdit"];
+    const signedPropertyNames: CommentUpdatedSignedPropertyNames = ["author","spoiler","pinned","locked","removed","reason","flair","upvoteCount","downvoteCount","replies","updatedAt","replyCount","edit"];
     return _sign(signedPropertyNames, update, signer, log);
 }
 
-export async function signSubplebbit(subplebbit: Omit<SubplebbitType, "signature">, signer: SignerType): Promise<Signature> {
+export async function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signature">, signer: SignerType): Promise<Signature> {
     const log = Logger("plebbit-js:signatures:signSubplebbit");
     //prettier-ignore
     const signedPropertyNames: SubplebbitSignedPropertyNames = ["title","description","roles","pubsubTopic","lastPostCid","posts","challengeTypes","metricsCid","createdAt","updatedAt","features","suggested","rules","address","flairs","encryption"];
@@ -324,51 +326,9 @@ export async function verifyComment(
     return { valid: true };
 }
 
-export async function verifyCommentWithCommentUpdate(
-    comment: CommentWithCommentUpdate,
-    plebbit: Plebbit,
-    overrideAuthorAddressIfInvalid: boolean
-) {
-    // Comments within pages are merged with CommentUpdate automatically, so we have to untangle them so we can verify original comment and update separately
-    if (comment.authorEdit) {
-        // Means comment has been edited, verify comment.authorEdit.signature
-
-        if (comment.authorEdit.signature.publicKey !== comment.signature.publicKey)
-            return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
-
-        if (comment.authorEdit.content && comment.content !== comment.authorEdit.content)
-            return { valid: false, reason: messages.ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT };
-
-        const authorEditValidation = await _verifyPublicationWithAuthor(comment.authorEdit, plebbit, overrideAuthorAddressIfInvalid);
-        if (!authorEditValidation.valid) return authorEditValidation;
-
-        if (overrideAuthorAddressIfInvalid && authorEditValidation.newAddress)
-            comment.authorEdit.author.address = authorEditValidation.newAddress;
-    }
-
-    // Validate comment.replies
-    const pagesValidity = await Promise.all(
-        Object.values(comment.replies.pages).map((page) => verifyPage(page, plebbit, comment.subplebbitAddress))
-    );
-    const invalidPageValidity = pagesValidity.find((validity) => !validity.valid);
-    if (invalidPageValidity) return invalidPageValidity;
-
-    // This is the original comment that was published by the author. No CommentUpdate fields should be included here
-    // The signature created by the user via createComment should be valid, since `authorComment` is an object that separates author comment from CommentUpdate
-    // We're calling removeNullAndUndefinedValues to omit content and other fields that may be undefined
-    const authorComment: CommentPubsubMessage = {
-        ...lodash.pick(comment, [...(<CommentSignedPropertyNames>comment.signature.signedPropertyNames), "signature", "protocolVersion"]),
-        author: lodash.omit(comment.author, ["banExpiresAt", "flair", "subplebbit"])
-    };
-    if (comment.original?.author?.flair) authorComment.author.flair = comment.original?.author?.flair;
-    if (comment.authorEdit?.content) authorComment.content = comment?.original?.content;
-
-    return verifyComment(authorComment, plebbit, overrideAuthorAddressIfInvalid);
-}
-
-export async function verifySubplebbit(subplebbit: SubplebbitType, plebbit: Plebbit): Promise<ValidationResult> {
+export async function verifySubplebbit(subplebbit: SubplebbitIpfsType, plebbit: Plebbit): Promise<ValidationResult> {
     for (const page of Object.values(subplebbit.posts.pages)) {
-        const pageValidity = await verifyPage(lodash.cloneDeep(page), plebbit, subplebbit.address);
+        const pageValidity = await verifyPage(lodash.cloneDeep(page), plebbit, subplebbit, undefined);
         if (!pageValidity.valid) return { valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID };
     }
 
@@ -391,14 +351,22 @@ async function _getValidationResult(publication: PublicationToVerify) {
 
 export async function verifyCommentUpdate(
     update: CommentUpdate,
-    subplebbitPublicKey: string,
-    authorPublicKey: string
+    subplebbit: Pick<SubplebbitType, "address" | "encryption">,
+    comment: Pick<CommentWithCommentUpdate, "signature" | "cid">,
+    plebbit: Plebbit
 ): Promise<ValidationResult> {
-    if (update.authorEdit && update.authorEdit.signature.publicKey !== authorPublicKey)
+    if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
         return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
 
-    if (update.signature.publicKey !== subplebbitPublicKey)
+    if (update.signature.publicKey !== subplebbit.encryption.publicKey)
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT };
+
+    // Validate comment.replies
+    const pagesValidity = await Promise.all(
+        Object.values(update.replies.pages).map((page) => verifyPage(page, plebbit, subplebbit, comment.cid))
+    );
+    const invalidPageValidity = pagesValidity.find((validity) => !validity.valid);
+    if (invalidPageValidity) return invalidPageValidity;
 
     return _getValidationResult(update);
 }
@@ -419,44 +387,33 @@ export async function verifyChallengeVerification(verification: ChallengeVerific
     return _getValidationResult(verification);
 }
 
-export async function verifyPage(page: PageType, plebbit: Plebbit, subplebbitAddress: string): Promise<ValidationResult> {
-    const verifyCommentInPage = async (comment: CommentWithCommentUpdate, parentComment?: CommentWithCommentUpdate) => {
-        if (comment.subplebbitAddress !== subplebbitAddress)
+export async function verifyPage(
+    page: PageIpfs,
+    plebbit: Plebbit,
+    subplebbit: Pick<SubplebbitType, "address" | "encryption">,
+    parentCommentCid: string | undefined
+): Promise<ValidationResult> {
+    for (const pageComment of page.comments) {
+        if (pageComment.comment.subplebbitAddress !== subplebbit.address)
             throwWithErrorCode(
                 "ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB",
-                `verifyPage: Failed to verify page due to comment (${comment.cid}) having a subplebbit address (${comment.subplebbitAddress}) that is different than the address of the subplebbit that generate this page (${subplebbitAddress})`
+                `verifyPage: Failed to verify page due to comment (${pageComment.comment.cid}) having a subplebbit address (${pageComment.comment.subplebbitAddress}) that is different than the address of the subplebbit that generate this page (${subplebbit.address})`
             );
-        if (parentComment && parentComment.cid !== comment.parentCid)
+        if (parentCommentCid !== pageComment.comment.parentCid)
             throwWithErrorCode(
                 "ERR_PARENT_CID_NOT_AS_EXPECTED",
-                `verifyPage: Failed to verify page due to comment (${comment.cid}) having an unexpected parent cid (${comment.parentCid}), the expected parent cid (${parentComment.cid})`
+                `verifyPage: Failed to verify page due to comment (${pageComment.comment.cid}) having an unexpected parent cid (${pageComment.comment.parentCid}), the expected parent cid (${parentCommentCid})`
             );
 
-        const commentSignatureValidity = await verifyCommentWithCommentUpdate(comment, plebbit, true);
-        if (!commentSignatureValidity.valid) {
-            //@ts-expect-error
-            const code: keyof typeof messages = Object.entries(messages).filter(
-                ([_, error]) => error === commentSignatureValidity.reason
-            )[0][0];
-            throwWithErrorCode(
-                code,
-                `verifyPage: Failed to verify page due to comment ${comment.cid} with invalid signature due to '${commentSignatureValidity.reason}'`
-            );
-        }
-
-        // We're iterating recurisvely through all comments in a page, by verifying comments in each depth
-        await Promise.all(
-            Object.values(comment.replies.pages).map(
-                async (page) =>
-                    await Promise.all(page.comments.map(async (preloadedComment) => verifyCommentInPage(preloadedComment, comment)))
-            )
+        const commentSignatureValidity = await verifyComment(pageComment.comment, plebbit, true);
+        if (!commentSignatureValidity.valid) return commentSignatureValidity;
+        const commentUpdateSignatureValidity = await verifyCommentUpdate(
+            pageComment.commentUpdate,
+            subplebbit,
+            pageComment.comment,
+            plebbit
         );
-    };
-
-    try {
-        await Promise.all(page.comments.map((comment) => verifyCommentInPage(comment, undefined)));
-        return { valid: true };
-    } catch (e) {
-        return { valid: false, reason: e.message };
+        if (!commentUpdateSignatureValidity.valid) return commentUpdateSignatureValidity;
     }
+    return { valid: true };
 }
