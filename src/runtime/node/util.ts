@@ -11,13 +11,26 @@ export const mkdir = fs.mkdir;
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
+const _parseJsonFields = (obj: any) => {
+    if (!(obj instanceof Object)) return obj;
+    const newObj = { ...obj };
+    const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed"];
+    for (const field in newObj) {
+        if (booleanFields.includes(field) && typeof newObj[field] === "number") newObj[field] = Boolean(newObj[field]);
+        if (typeof newObj[field] === "string")
+            try {
+                newObj[field] = typeof JSON.parse(newObj[field]) === "object" ? JSON.parse(newObj[field]) : newObj[field];
+            } catch {}
+        if (newObj[field]?.constructor?.name === "Object") newObj[field] = _parseJsonFields(newObj[field]);
+    }
+    return <any>newObj;
+};
 export const getDefaultSubplebbitDbConfig = async (
     subplebbit: Pick<Subplebbit, "address"> & { plebbit: Pick<Plebbit, "dataPath"> }
 ): Promise<Knex.Config<any>> => {
     assert(typeof subplebbit.plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get default subplebbit db config");
     const dbPath = path.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
-    const dir = path.dirname(dbPath);
-    await mkdir(dir, { recursive: true });
+    await mkdir(path.dirname(dbPath), { recursive: true });
 
     const filename = process.env["DB_MEMORY"] === "1" ? ":memory:" : dbPath;
 
@@ -29,8 +42,7 @@ export const getDefaultSubplebbitDbConfig = async (
         postProcessResponse: (result, queryContext) => {
             // TODO: add special case for raw results
             // (depends on dialect)
-            debugger;
-            return result;
+            return _parseJsonFields(result);
         }
     };
 };

@@ -9,7 +9,6 @@ import { removeNullAndUndefinedValues, throwWithErrorCode } from "../util";
 import { Plebbit } from "../plebbit";
 
 import {
-    AuthorCommentEdit,
     ChallengeAnswerMessageSignedPropertyNames,
     ChallengeAnswerMessageType,
     ChallengeMessageSignedPropertyNames,
@@ -20,11 +19,9 @@ import {
     ChallengeVerificationMessageType,
     CommentEditPubsubMessage,
     CommentEditSignedPropertyNames,
-    CommentEditType,
     CommentIpfsType,
     CommentPubsubMessage,
     CommentSignedPropertyNames,
-    CommentSignedPropertyNamesUnion,
     CommentUpdate,
     CommentUpdatedSignedPropertyNames,
     CommentWithCommentUpdate,
@@ -32,7 +29,6 @@ import {
     CreateCommentOptions,
     CreateVoteOptions,
     PageIpfs,
-    PageType,
     PublicationsToSign,
     PublicationToVerify,
     SignatureType,
@@ -42,8 +38,7 @@ import {
     SubplebbitSignedPropertyNames,
     SubplebbitType,
     VotePubsubMessage,
-    VoteSignedPropertyNames,
-    VoteType
+    VoteSignedPropertyNames
 } from "../types";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
@@ -327,10 +322,11 @@ export async function verifyComment(
 }
 
 export async function verifySubplebbit(subplebbit: SubplebbitIpfsType, plebbit: Plebbit): Promise<ValidationResult> {
-    for (const page of Object.values(subplebbit.posts.pages)) {
-        const pageValidity = await verifyPage(lodash.cloneDeep(page), plebbit, subplebbit, undefined);
-        if (!pageValidity.valid) return { valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID };
-    }
+    if (subplebbit.posts?.pages)
+        for (const page of Object.values(subplebbit.posts.pages)) {
+            const pageValidity = await verifyPage(lodash.cloneDeep(page), plebbit, subplebbit, undefined);
+            if (!pageValidity.valid) return { valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID };
+        }
 
     const signatureValidity = await _verifyPublicationSignature(subplebbit);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };

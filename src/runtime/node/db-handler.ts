@@ -292,7 +292,7 @@ export class DbHandler {
 
     private async _createCommentEditsTable(tableName: string) {
         await this._knex.schema.createTable(tableName, (table) => {
-            table.text("commentCid").notNullable().references("cid").primary().inTable(TABLES.COMMENTS);
+            table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable();
             table.json("author").notNullable();
             table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
@@ -312,6 +312,8 @@ export class DbHandler {
             table.boolean("removed").nullable();
             table.text("moderatorReason").nullable();
             table.json("commentAuthor").nullable();
+
+            table.primary(["id", "commentCid"]);
         });
     }
 
@@ -430,28 +432,15 @@ export class DbHandler {
 
     private _basePageQuery(options: PageOptions, trx?: Transaction) {
         let query = this._baseTransaction(trx)(TABLES.COMMENTS)
-            .jsonExtract("authorEdit", "$.deleted", "deleted", true)
+            .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
+            .jsonExtract(`${TABLES.COMMENT_UPDATES}.authorEdit`, "$.deleted", "deleted", true)
             .where({ parentCid: options.parentCid || null });
 
         if (options.excludeCommentsWithDifferentSubAddress) query = query.where({ subplebbitAddress: this._subplebbit.address });
-        if (options.excludeRemovedComments) query = query.whereNot("removed", 1);
+        if (options.excludeRemovedComments) query = query.whereNot(`${TABLES.COMMENT_UPDATES}.removed`, 1);
         if (options.excludeDeletedComments) query = query.andWhereRaw("`deleted` is not 1");
 
         return query;
-    }
-
-    private _parseJsonFields(obj: Object) {
-        const newObj = { ...obj };
-        const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed"];
-        for (const field in newObj) {
-            if (booleanFields.includes(field) && typeof newObj[field] === "number") newObj[field] = Boolean(newObj[field]);
-            if (typeof newObj[field] === "string")
-                try {
-                    newObj[field] = typeof JSON.parse(newObj[field]) === "object" ? JSON.parse(newObj[field]) : newObj[field];
-                } catch {}
-            if (newObj[field]?.constructor?.name === "Object") newObj[field] = this._parseJsonFields(newObj[field]);
-        }
-        return <any>newObj;
     }
 
     private async _queryReplyCount(commentCid: string, trx?: Transaction): Promise<number> {
@@ -473,9 +462,8 @@ export class DbHandler {
     }
 
     async queryCommentsForPages(options: PageOptions, trx?: Transaction) {
-        const comments = await this._basePageQuery(options, trx)
-            .select("cid")
-            .where({ parentCid: options.parentCid || null });
+        const comments = await this._basePageQuery(options, trx);
+        debugger;
         return Promise.all(comments.map((comment) => this._queryCommentWithRemoteCommentUpdate(comment.cid, trx)));
     }
 
@@ -498,16 +486,18 @@ export class DbHandler {
         return parents;
     }
 
-    async queryCommentsToBeUpdated(opts: { minimumUpdatedAt: number; ipnsKeyNames: string[] }, trx?: Transaction): Promise<string[]> {
+    async queryCommentsToBeUpdated(
+        opts: { minimumUpdatedAt: number; ipnsKeyNames: string[] },
+        trx?: Transaction
+    ): Promise<Pick<CommentsTableRow, "cid">[]> {
         // Add comments with no CommentUpdate
-        const cids: string[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
-            .select(`${TABLES.COMMENTS}.cid`)
-            .leftJoin(TABLES.COMMENTS, `${TABLES.COMMENT_UPDATES}.commentCid`, `${TABLES.COMMENTS}.cid`)
+        const cids: Pick<CommentsTableRow, "cid">[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
+            // .select("cid")
+            .leftJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .where(`${TABLES.COMMENT_UPDATES}.updatedAt`, "<", opts.minimumUpdatedAt)
             .orWhereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
-            .orWhere({ updateTrigger: true })
+            .orWhere("updateTrigger", true)
             .orWhereNotIn("ipnsKeyName", opts.ipnsKeyNames);
-        debugger;
         return cids;
     }
 

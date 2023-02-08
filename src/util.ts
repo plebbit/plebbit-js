@@ -226,7 +226,8 @@ export async function parsePageIpfs(pageIpfs: PageIpfs, plebbit: Plebbit): Promi
     return { comments: finalComments, nextCid: pageIpfs.nextCid };
 }
 
-export async function parsePagesIfIpfs(pagesRaw: PagesType | PagesTypeIpfs, plebbit: Plebbit): Promise<PagesType> {
+export async function parsePagesIfIpfs(pagesRaw: PagesType | PagesTypeIpfs, plebbit: Plebbit): Promise<PagesType | undefined> {
+    if (!pagesRaw) return undefined;
     let isIpfs: boolean = false;
     const pages: PageType[] | PageIpfs[] = Object.values(pagesRaw.pages);
 
