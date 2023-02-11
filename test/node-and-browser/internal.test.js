@@ -1,5 +1,5 @@
 const Plebbit = require("../../dist/node");
-const { loadIpfsFileAsJson, loadIpnsAsJson } = require("../../dist/node/util");
+const { loadIpfsFileAsJson, loadIpnsAsJson, parseJsonStrings } = require("../../dist/node/util");
 const chai = require("chai");
 const fetch = require("node-fetch");
 const chaiAsPromised = require("chai-as-promised");
@@ -79,5 +79,27 @@ describe("Test util functions", async () => {
 
             await assert.isRejected(loadIpnsAsJson(ipns, gatewayPlebbit), messages.ERR_OVER_DOWNLOAD_LIMIT);
         });
+    });
+});
+
+describe.only(`Test parsing of database queries`, async () => {
+    it(`Can parse regular json object with a field that's json string`, async () => {
+        const rawObj = {
+            author: '{"address":"12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR","displayName":"Mock Author - 1676110849.7439198"}'
+        };
+        const parsed = parseJsonStrings(rawObj);
+        expect(parsed).to.be.a("object");
+        expect(parsed.author).to.be.a("object");
+        expect(parsed.author.address).to.equal("12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR");
+        expect(parsed.author.displayName).to.equal("Mock Author - 1676110849.7439198");
+    });
+
+    it(`Can parse regular json object with a boolean field (hardcoded)`, async () => {
+        const rawObj = {
+            removed: 1
+        };
+        const parsed = parseJsonStrings(rawObj);
+        expect(parsed).to.be.a("object");
+        expect(parsed.removed).to.equal(true);
     });
 });

@@ -1,16 +1,5 @@
 import { Plebbit } from "./plebbit";
-import {
-    CommentPubsubMessage,
-    CommentWithCommentUpdate,
-    OnlyDefinedProperties,
-    PageIpfs,
-    PagesType,
-    PagesTypeIpfs,
-    PageType,
-    Timeframe,
-    PostSortName,
-    ReplySortName
-} from "./types";
+import { CommentWithCommentUpdate, OnlyDefinedProperties, PageIpfs, PagesType, PagesTypeIpfs, PageType, Timeframe } from "./types";
 import { nativeFunctions } from "./runtime/node/util";
 import isIPFS from "is-ipfs";
 import { messages } from "./errors";
@@ -19,7 +8,6 @@ import Hash from "ipfs-only-hash";
 import lodash from "lodash";
 import { stringify as determinsticStringify } from "safe-stable-stringify";
 import assert from "assert";
-import { Comment } from "./comment";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -244,3 +232,21 @@ export async function parsePagesIfIpfs(pagesRaw: PagesType | PagesTypeIpfs, pleb
         return { pages: pagesType, pageCids: pagesRaw.pageCids };
     } else return <PagesType>pagesRaw;
 }
+
+const isJsonString = (jsonString: any) => {
+    return typeof jsonString === "string" && /"((?:[^"\\\/\b\f\n\r\t]|\\u\d{4})*)"/gm.test(jsonString);
+};
+
+export const parseJsonStrings = (obj: any) => {
+    if (Array.isArray(obj)) return obj.map((o) => parseJsonStrings(o));
+    if (!isJsonString(obj) && typeof obj !== "object") return obj;
+
+    const newObj = isJsonString(obj) ? JSON.parse(obj) : lodash.cloneDeep(obj);
+    const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed"];
+    for (const [key, value] of Object.entries(newObj)) {
+        if (booleanFields.includes(key) && typeof value === "number") newObj[key] = Boolean(value);
+        else if (isJsonString(value)) newObj[key] = JSON.parse(<any>value);
+        if (newObj[key]?.constructor?.name === "Object") newObj[key] = parseJsonStrings(newObj[key]);
+    }
+    return <any>newObj;
+};

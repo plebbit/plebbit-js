@@ -6,25 +6,12 @@ import { Subplebbit } from "../../subplebbit";
 import assert from "assert";
 import { Knex } from "knex";
 import { Plebbit } from "../../plebbit";
+import { parseJsonStrings } from "../../util";
 
 export const mkdir = fs.mkdir;
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
-const _parseJsonFields = (obj: any) => {
-    if (!(obj instanceof Object)) return obj;
-    const newObj = { ...obj };
-    const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed"];
-    for (const field in newObj) {
-        if (booleanFields.includes(field) && typeof newObj[field] === "number") newObj[field] = Boolean(newObj[field]);
-        if (typeof newObj[field] === "string")
-            try {
-                newObj[field] = typeof JSON.parse(newObj[field]) === "object" ? JSON.parse(newObj[field]) : newObj[field];
-            } catch {}
-        if (newObj[field]?.constructor?.name === "Object") newObj[field] = _parseJsonFields(newObj[field]);
-    }
-    return <any>newObj;
-};
 export const getDefaultSubplebbitDbConfig = async (
     subplebbit: Pick<Subplebbit, "address"> & { plebbit: Pick<Plebbit, "dataPath"> }
 ): Promise<Knex.Config<any>> => {
@@ -42,7 +29,7 @@ export const getDefaultSubplebbitDbConfig = async (
         postProcessResponse: (result, queryContext) => {
             // TODO: add special case for raw results
             // (depends on dialect)
-            return _parseJsonFields(result);
+            return parseJsonStrings(result);
         }
     };
 };
