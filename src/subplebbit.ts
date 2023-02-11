@@ -584,8 +584,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
         if (postOrCommentOrVote?.author?.address) {
             // Check if author is banned
-            const authorBanExpiry = await this.dbHandler.queryAuthorBanExpiry(postOrCommentOrVote.author.address);
-            if (typeof authorBanExpiry === "number" && authorBanExpiry > timestamp()) {
+            const authorModEdits = await this.dbHandler.queryAuthorModEdits(postOrCommentOrVote.author.address);
+            if (typeof authorModEdits.banExpiresAt === "number" && authorModEdits.banExpiresAt > timestamp()) {
                 log(`(${challengeRequestId}): `, messages.ERR_AUTHOR_IS_BANNED);
                 return messages.ERR_AUTHOR_IS_BANNED;
             }
