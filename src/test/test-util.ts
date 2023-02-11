@@ -206,6 +206,7 @@ async function _publishComments(parentComments: Comment[], subplebbit: Subplebbi
                 async (parentComment) =>
                     await Promise.all(
                         new Array(numOfCommentsToPublish).fill(null).map(async () => {
+                            assert(typeof parentComment?.cid === "string");
                             const comment = await generateMockComment(parentComment, subplebbit.plebbit, signers[0], true);
                             await publishWithExpectedResult(comment, true);
                             comments.push(<Comment>comment);

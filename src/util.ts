@@ -238,12 +238,15 @@ const isJsonString = (jsonString: any) => {
 };
 
 export const parseJsonStrings = (obj: any) => {
+    if (obj === "[object Object]") throw Error(`Object shouldn't be [object Object]`);
     if (Array.isArray(obj)) return obj.map((o) => parseJsonStrings(o));
     if (!isJsonString(obj) && typeof obj !== "object") return obj;
 
     const newObj = isJsonString(obj) ? JSON.parse(obj) : lodash.cloneDeep(obj);
     const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed"];
     for (const [key, value] of Object.entries(newObj)) {
+        if (value === "[object Object]") throw Error(`key (${key}) shouldn't be [object Object]`);
+
         if (booleanFields.includes(key) && typeof value === "number") newObj[key] = Boolean(value);
         else if (isJsonString(value)) newObj[key] = JSON.parse(<any>value);
         if (newObj[key]?.constructor?.name === "Object") newObj[key] = parseJsonStrings(newObj[key]);
