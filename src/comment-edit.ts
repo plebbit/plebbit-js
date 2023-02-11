@@ -1,4 +1,3 @@
-import assert from "assert";
 import { Plebbit } from "./plebbit";
 import Publication from "./publication";
 import { verifyCommentEdit } from "./signer/signatures";
@@ -13,7 +12,7 @@ import {
     PublicationType,
     PublicationTypeName
 } from "./types";
-import { removeKeysWithUndefinedValues, throwWithErrorCode } from "./util";
+import { throwWithErrorCode } from "./util";
 import isIPFS from "is-ipfs";
 
 const PUBLICATION_FIELDS: (keyof Required<PublicationType>)[] = [
@@ -92,8 +91,16 @@ export class CommentEdit extends Publication implements CommentEditType {
         };
     }
 
+    toJSONIpfs() {
+        return this.toJSONPubsubMessagePublication();
+    }
+
     toJSON() {
         return this.toJSONPubsubMessagePublication();
+    }
+
+    toJSONAfterChallengeVerification() {
+        return this.toJSON();
     }
 
     toJSONForDb(challengeRequestId: string): CommentEditsTableRow {

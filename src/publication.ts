@@ -64,7 +64,17 @@ class Publication extends EventEmitter implements PublicationType {
         return { ...this.toJSONPubsubMessagePublication() };
     }
 
-    // TODO make this private/protected
+    // The publication with extra fields supplemented by the subplebbit after ChallengeVerification
+    toJSONAfterChallengeVerification() {
+        return this.toJSON();
+    }
+
+    // When publication is added as a file to IPFS
+    toJSONIpfs(){
+        return this.toJSONPubsubMessagePublication();
+    }
+
+    // This is the publication that user publishes over pubsub
     toJSONPubsubMessagePublication(): PublicationType {
         return {
             subplebbitAddress: this.subplebbitAddress,

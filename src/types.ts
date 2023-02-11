@@ -426,6 +426,11 @@ export interface PostType extends Omit<CommentType, "parentCid" | "depth"> {
     thumbnailUrl?: string; // fetched by subplebbit owner, not author, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
 }
 
+export interface PostIpfsWithCid
+    extends Omit<CommentIpfsType, "cid" | "postCid" | "depth" | "parentCid" | "title" | "link" | "thumbnailUrl">,
+        Pick<CommentWithCommentUpdate, "cid" | "postCid">,
+        Pick<PostType, "depth" | "parentCid" | "title" | "link" | "thumbnailUrl"> {}
+
 export interface CommentEditType extends PublicationType, Omit<CreateCommentEditOptions, "signer"> {
     author: CommentIpfsType["author"];
     signer?: SignerType;

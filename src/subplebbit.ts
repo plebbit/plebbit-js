@@ -777,7 +777,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const publicationOrReason = await this.storePublicationIfValid(decryptedRequest.publication, request.challengeRequestId);
             const encryptedPublication =
                 typeof publicationOrReason !== "string"
-                    ? await encrypt(encode(publicationOrReason.toJSON()), this.signer.privateKey, request.signature.publicKey)
+                    ? await encrypt(
+                          encode(publicationOrReason.toJSONAfterChallengeVerification()),
+                          this.signer.privateKey,
+                          request.signature.publicKey
+                      )
                     : undefined;
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
@@ -854,7 +858,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const publicationOrReason = await this.storePublicationIfValid(storedPublication, challengeAnswer.challengeRequestId); // could contain "publication" or "reason"
             const encryptedPublication =
                 typeof publicationOrReason !== "string"
-                    ? await encrypt(encode(publicationOrReason.toJSON()), this.signer.privateKey, challengeAnswer.signature.publicKey)
+                    ? await encrypt(
+                          encode(publicationOrReason.toJSONAfterChallengeVerification()),
+                          this.signer.privateKey,
+                          challengeAnswer.signature.publicKey
+                      )
                     : undefined;
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
@@ -947,10 +955,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         let msgParsed: ChallengeRequestMessageType | ChallengeAnswerMessageType | undefined;
         try {
             msgParsed = <ChallengeRequestMessageType | ChallengeAnswerMessageType>JSON.parse(uint8ArrayToString(pubsubMsg.data));
-
-            // log(`Received msg via pubsub`, msgParsed);
-            // log(`this._challengeToPublication`, Object.keys(this._challengeToPublication));
-            // log(`this._challengeToPublicKey`, Object.keys(this._challengeToPublicKey));
 
             if (msgParsed.type === "CHALLENGEREQUEST") {
                 await this._verifyPubsubMsgSignature(msgParsed);

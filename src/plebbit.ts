@@ -16,6 +16,7 @@ import {
     SignerType,
     SubplebbitIpfsType,
     SubplebbitType,
+    VotePubsubMessage,
     VoteType
 } from "./types";
 import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util";
@@ -243,9 +244,9 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         else return localSub();
     }
 
-    async createVote(options: CreateVoteOptions | VoteType): Promise<Vote> {
+    async createVote(options: CreateVoteOptions | VoteType | VotePubsubMessage): Promise<Vote> {
         const log = Logger("plebbit-js:plebbit:createVote");
-        if (!options.signer) return new Vote(<VoteType>options, this);
+        if (!options["signer"]) return new Vote(<VoteType>options, this);
         //@ts-ignore
         const finalOptions: VoteType = <VoteType>await this._initMissingFields(options, log);
         finalOptions.signature = await signVote(<CreateVoteOptions>finalOptions, finalOptions.signer, this);

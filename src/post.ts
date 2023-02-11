@@ -1,7 +1,8 @@
 import { Comment } from "./comment";
-import { PostPubsubMessage, PostType } from "./types";
+import { PostIpfsWithCid, PostPubsubMessage, PostType } from "./types";
 import { Plebbit } from "./plebbit";
 import { throwWithErrorCode } from "./util";
+import assert from "assert";
 
 class Post extends Comment implements PostType {
     thumbnailUrl?: string;
@@ -33,6 +34,14 @@ class Post extends Comment implements PostType {
             parentCid: undefined,
             link: this.link
         };
+    }
+
+    toJSONAfterChallengeVerification(): PostIpfsWithCid {
+        assert.equal(this.depth, 0);
+        assert.equal(this.parentCid, undefined);
+        assert(typeof this.title === "string");
+
+        return { ...super.toJSONAfterChallengeVerification(), depth: this.depth, parentCid: this.parentCid, title: this.title };
     }
 
     async publish(): Promise<void> {

@@ -168,6 +168,11 @@ export class Comment extends Publication implements CommentType {
         };
     }
 
+    toJSONAfterChallengeVerification(): CommentIpfsWithCid {
+        assert(this.cid && this.postCid);
+        return { ...this.toJSONIpfs(), postCid: this.postCid, cid: this.cid };
+    }
+
     toJSONCommentsTableRowInsert(challengeRequestId: string): CommentsTableRowInsert {
         assert(this.ipnsKeyName && this.cid && this.postCid);
         return {
