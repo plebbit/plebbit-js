@@ -31,7 +31,7 @@ class Author implements AuthorTypeWithCommentUpdate {
             flair: this.flair
         };
     }
-    toJSONIpfsWithCommentUpdate() {
+    toJSONIpfsWithCommentUpdate(): AuthorTypeWithCommentUpdate {
         assert(this.subplebbit);
         return { ...this.toJSONIpfs(), subplebbit: this.subplebbit };
     }
