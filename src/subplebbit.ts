@@ -18,8 +18,10 @@ import {
     ChallengeVerificationMessageType,
     CommentEditType,
     CommentPubsubMessage,
+    CommentsTableRow,
     CommentType,
     CommentUpdate,
+    CommentUpdatesRow,
     CommentWithCommentUpdate,
     DbHandlerPublicAPI,
     DecryptedChallengeAnswerMessageType,
@@ -39,6 +41,7 @@ import {
     SubplebbitRole,
     SubplebbitSuggested,
     SubplebbitType,
+    VotePubsubMessage,
     VoteType
 } from "./types";
 import { Comment } from "./comment";
@@ -573,7 +576,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         // TODO get rid of postOrCommentOrVote here
         const postOrCommentOrVote: Vote | CommentEdit | Post | Comment = publication.hasOwnProperty("vote")
-            ? await this.plebbit.createVote(<VoteType>publication)
+            ? await this.plebbit.createVote(<VotePubsubMessage>publication)
             : publication["commentCid"]
             ? await this.plebbit.createCommentEdit(<CommentEditType>publication)
             : await this.plebbit.createComment(<CommentPubsubMessage>publication);
