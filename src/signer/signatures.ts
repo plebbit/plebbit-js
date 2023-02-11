@@ -333,12 +333,15 @@ export async function verifyCommentUpdate(
     if (update.signature.publicKey !== subplebbit.encryption.publicKey)
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT };
 
-    // Validate comment.replies
-    const pagesValidity = await Promise.all(
-        Object.values(update.replies.pages).map((page) => verifyPage(page, plebbit, subplebbit, comment.cid))
-    );
-    const invalidPageValidity = pagesValidity.find((validity) => !validity.valid);
-    if (invalidPageValidity) return invalidPageValidity;
+    if (update.replies) {
+        // Validate update.replies
+
+        const pagesValidity = await Promise.all(
+            Object.values(update.replies.pages).map((page) => verifyPage(page, plebbit, subplebbit, comment.cid))
+        );
+        const invalidPageValidity = pagesValidity.find((validity) => !validity.valid);
+        if (invalidPageValidity) return invalidPageValidity;
+    }
 
     return _getValidationResult(update);
 }
