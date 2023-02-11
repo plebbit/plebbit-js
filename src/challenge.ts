@@ -13,14 +13,13 @@ import {
     SignatureType
 } from "./types";
 import lodash from "lodash";
-import { Signature } from "./signer";
 
 export class ChallengeRequestMessage implements ChallengeRequestMessageType {
     encryptedPublication: Encrypted;
     type: "CHALLENGEREQUEST";
     challengeRequestId: string;
     acceptedChallengeTypes?: string[];
-    signature: SignatureType | Signature;
+    signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
     constructor(props: Omit<ChallengeRequestMessageType, "type">) {
@@ -39,7 +38,7 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
             challengeRequestId: this.challengeRequestId,
             acceptedChallengeTypes: this.acceptedChallengeTypes,
             encryptedPublication: this.encryptedPublication,
-            signature: this.signature instanceof Signature ? this.signature.toJSON() : this.signature,
+            signature: this.signature,
             userAgent: this.userAgent,
             protocolVersion: this.protocolVersion
         };
@@ -72,7 +71,7 @@ export class ChallengeMessage implements ChallengeMessageType {
             encryptedChallenges: this.encryptedChallenges,
             type: this.type,
             challengeRequestId: this.challengeRequestId,
-            signature: this.signature instanceof Signature ? this.signature.toJSON() : this.signature,
+            signature: this.signature,
             userAgent: this.userAgent,
             protocolVersion: this.protocolVersion
         };
@@ -107,7 +106,7 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
             challengeRequestId: this.challengeRequestId,
             challengeAnswerId: this.challengeAnswerId,
             encryptedChallengeAnswers: this.encryptedChallengeAnswers,
-            signature: this.signature instanceof Signature ? this.signature.toJSON() : this.signature,
+            signature: this.signature,
             protocolVersion: this.protocolVersion,
             userAgent: this.userAgent
         };
@@ -126,7 +125,7 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
     challengeErrors?: (string | undefined)[];
     reason?: string;
     encryptedPublication?: Encrypted;
-    signature: SignatureType | Signature;
+    signature: SignatureType;
     protocolVersion: "1.0.0";
     userAgent: string;
 
@@ -152,7 +151,7 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
             challengeErrors: this.challengeErrors,
             reason: this.reason,
             encryptedPublication: this.encryptedPublication,
-            signature: this.signature instanceof Signature ? this.signature.toJSON() : this.signature,
+            signature: this.signature,
             protocolVersion: this.protocolVersion,
             userAgent: this.userAgent
         };

@@ -5,7 +5,7 @@ import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import EventEmitter from "events";
 import Author from "./author";
 import assert from "assert";
-import { decrypt, encrypt, Signature, Signer } from "./signer";
+import { decrypt, encrypt, Signer } from "./signer";
 import {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
@@ -15,7 +15,8 @@ import {
     DecryptedChallengeMessageType,
     ProtocolVersion,
     PublicationType,
-    PublicationTypeName
+    PublicationTypeName,
+    SignatureType
 } from "./types";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
@@ -27,7 +28,7 @@ import { throwWithErrorCode } from "./util";
 class Publication extends EventEmitter implements PublicationType {
     subplebbitAddress: string;
     timestamp: number;
-    signature: Signature;
+    signature: SignatureType;
     signer: Signer;
     author: Author;
     protocolVersion: ProtocolVersion;
@@ -50,7 +51,7 @@ class Publication extends EventEmitter implements PublicationType {
         this.subplebbitAddress = props.subplebbitAddress;
         this.timestamp = props.timestamp;
         this.signer = this.signer || props["signer"];
-        this.signature = new Signature(props.signature);
+        this.signature = props.signature;
         if (props.author) this.author = new Author(props.author);
         this.protocolVersion = props.protocolVersion;
     }
@@ -70,7 +71,7 @@ class Publication extends EventEmitter implements PublicationType {
     }
 
     // When publication is added as a file to IPFS
-    toJSONIpfs(){
+    toJSONIpfs() {
         return this.toJSONPubsubMessagePublication();
     }
 
@@ -79,7 +80,7 @@ class Publication extends EventEmitter implements PublicationType {
         return {
             subplebbitAddress: this.subplebbitAddress,
             timestamp: this.timestamp,
-            signature: this.signature instanceof Signature ? this.signature.toJSON() : this.signature,
+            signature: this.signature,
             author: this.author.toJSONIpfs(),
             protocolVersion: this.protocolVersion
         };
