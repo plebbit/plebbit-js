@@ -1,6 +1,4 @@
-import { PUBSUB_MESSAGE_TYPES } from "../../challenge";
-import Author from "../../author";
-import { removeKeysWithUndefinedValues, replaceXWithY, throwWithErrorCode, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
+import { throwWithErrorCode, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
 import knex, { Knex } from "knex";
 import { Subplebbit } from "../../subplebbit";
 import path from "path";
@@ -16,13 +14,11 @@ import {
     ChallengeVerificationsTableRow,
     CommentEditsTableRow,
     CommentEditType,
-    CommentIpfsType,
     CommentsTableRow,
     CommentsTableRowInsert,
     CommentUpdate,
     CommentUpdatesRow,
     CommentWithCommentUpdate,
-    PageIpfs,
     SignersTableRow,
     SubplebbitAuthor,
     SubplebbitMetrics,
@@ -156,7 +152,7 @@ export class DbHandler {
             table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);
-            table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
+            table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
 
             table.text("subplebbitAddress").notNullable();
             table.text("content").nullable();
@@ -166,6 +162,8 @@ export class DbHandler {
             table.text("ipnsKeyName").notNullable().unique().references("ipnsKeyName").inTable(TABLES.SIGNERS);
             table.text("title").nullable();
             table.integer("depth").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+
+            table.json("flair").nullable();
 
             table.boolean("spoiler");
 
@@ -180,7 +178,7 @@ export class DbHandler {
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("cid").notNullable().primary().unique().references("cid").inTable(TABLES.COMMENTS);
 
-            table.json("authorEdit").nullable();
+            table.json("edit").nullable();
             table.integer("upvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
             table.integer("downvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
 
@@ -192,7 +190,7 @@ export class DbHandler {
             table.boolean("pinned");
             table.boolean("locked");
             table.boolean("removed");
-            table.text("moderatorReason");
+            table.text("reason");
             table.timestamp("updatedAt").notNullable().checkPositive();
             table.text("protocolVersion").notNullable();
             table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
@@ -205,12 +203,12 @@ export class DbHandler {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable();
             table.json("author").notNullable();
-            table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
+            table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
 
             table.timestamp("timestamp").checkPositive().notNullable();
             table.text("subplebbitAddress").notNullable();
             table.integer("vote").checkBetween([-1, 1]).notNullable();
-            table.text("signature").notNullable().unique();
+            table.json("signature").notNullable().unique();
             table.text("protocolVersion").notNullable();
 
             table.primary(["commentCid", "authorAddress"]); // An author can't have multiple votes on a comment
@@ -222,7 +220,7 @@ export class DbHandler {
             table.uuid("challengeRequestId").notNullable().primary().unique();
             table.text("userAgent").notNullable();
             table.text("protocolVersion").notNullable();
-            table.text("signature").notNullable().unique();
+            table.json("signature").notNullable().unique();
             table.json("acceptedChallengeTypes").nullable(); // string[]
         });
     }
@@ -238,7 +236,7 @@ export class DbHandler {
                 .inTable(TABLES.CHALLENGE_REQUESTS);
             table.text("userAgent").notNullable();
             table.text("protocolVersion").notNullable();
-            table.text("signature").notNullable().unique();
+            table.json("signature").notNullable().unique();
 
             // Might store the challenge here in the future. For now we're not because it would take too much storage
             table.json("challengeTypes").notNullable(); // string[]
@@ -258,7 +256,7 @@ export class DbHandler {
             table.text("userAgent").notNullable();
             table.text("protocolVersion").notNullable();
             table.json("challengeAnswers").notNullable(); // Decrypted
-            table.text("signature").notNullable().unique();
+            table.json("signature").notNullable().unique();
         });
     }
 
@@ -271,11 +269,11 @@ export class DbHandler {
                 .unique()
                 .references("challengeRequestId")
                 .inTable(TABLES.CHALLENGE_REQUESTS);
-            table.uuid("challengeAnswerId").notNullable().unique().references("challengeAnswerId").inTable(TABLES.CHALLENGE_ANSWERS);
+            table.uuid("challengeAnswerId").nullable().references("challengeAnswerId").inTable(TABLES.CHALLENGE_ANSWERS);
             table.boolean("challengeSuccess").notNullable();
             table.json("challengeErrors").nullable(); // string[]
             table.text("reason").nullable();
-            table.text("signature").notNullable().unique();
+            table.json("signature").notNullable().unique();
 
             table.text("userAgent").notNullable();
             table.text("protocolVersion").notNullable();
@@ -295,8 +293,8 @@ export class DbHandler {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable();
             table.json("author").notNullable();
-            table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGES);
-            table.text("signature").notNullable().unique();
+            table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
+            table.json("signature").notNullable().unique();
             table.text("protocolVersion").notNullable();
             table.increments("id"); // Used for sorts
 
@@ -433,7 +431,7 @@ export class DbHandler {
     private _basePageQuery(options: PageOptions, trx?: Transaction) {
         let query = this._baseTransaction(trx)(TABLES.COMMENTS)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
-            .jsonExtract(`${TABLES.COMMENT_UPDATES}.authorEdit`, "$.deleted", "deleted", true)
+            .jsonExtract(`${TABLES.COMMENT_UPDATES}.edit`, "$.deleted", "deleted", true)
             .where({ parentCid: options.parentCid || null });
 
         if (options.excludeCommentsWithDifferentSubAddress) query = query.where({ subplebbitAddress: this._subplebbit.address });
@@ -463,7 +461,6 @@ export class DbHandler {
 
     async queryCommentsForPages(options: PageOptions, trx?: Transaction) {
         const comments = await this._basePageQuery(options, trx);
-        debugger;
         return Promise.all(comments.map((comment) => this._queryCommentWithRemoteCommentUpdate(comment.cid, trx)));
     }
 
@@ -489,16 +486,18 @@ export class DbHandler {
     async queryCommentsToBeUpdated(
         opts: { minimumUpdatedAt: number; ipnsKeyNames: string[] },
         trx?: Transaction
-    ): Promise<Pick<CommentsTableRow, "cid">[]> {
+    ): Promise<CommentsTableRow[]> {
         // Add comments with no CommentUpdate
-        const cids: Pick<CommentsTableRow, "cid">[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
-            // .select("cid")
+
+        const comments: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
+            .select(`${TABLES.COMMENTS}.*`)
             .leftJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .where(`${TABLES.COMMENT_UPDATES}.updatedAt`, "<", opts.minimumUpdatedAt)
             .orWhereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
             .orWhere("updateTrigger", true)
             .orWhereNotIn("ipnsKeyName", opts.ipnsKeyNames);
-        return cids;
+
+        return comments;
     }
 
     // TODO rewrite this
@@ -540,7 +539,8 @@ export class DbHandler {
     }
 
     async queryComment(cid: string, trx?: Transaction): Promise<CommentsTableRow | undefined> {
-        return this._baseTransaction(trx).where("cid", cid).first();
+        const comment = await this._baseTransaction(trx)(TABLES.COMMENTS).where("cid", cid).first();
+        return comment;
     }
 
     private async _queryCommentUpvote(cid: string, trx?: Transaction): Promise<number> {
@@ -586,13 +586,14 @@ export class DbHandler {
         return authorEdit;
     }
 
-    private async _queryLatestModeratorReason(cid: string, trx?: Transaction): Promise<Pick<CommentUpdate, "reason">> {
-        const authorAddress = await this._baseTransaction(trx)(TABLES.COMMENTS).select("authorAddress").where("cid", cid).first();
-
+    private async _queryLatestModeratorReason(
+        comment: Pick<CommentsTableRow, "cid" | "author">,
+        trx?: Transaction
+    ): Promise<Pick<CommentUpdate, "reason">> {
         const moderatorReason: Pick<CommentEditType, "reason"> | undefined = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
             .select("reason")
-            .where("commentCid", cid)
-            .whereNot("authorAddress", authorAddress["authorAddress"])
+            .where("commentCid", comment.cid)
+            .whereNot("authorAddress", comment.author.address)
             .whereNotNull("reason")
             .orderBy("timestamp", "desc")
             .first();
@@ -613,7 +614,6 @@ export class DbHandler {
                 )
             ))
         );
-        debugger;
         return res;
     }
 
@@ -624,7 +624,6 @@ export class DbHandler {
             .whereNotNull("deleted")
             .orderBy("timestamp", "desc")
             .first();
-        debugger;
         return deleted;
     }
 
@@ -641,44 +640,31 @@ export class DbHandler {
         return latestFlair;
     }
 
-    async queryCommentWithCommentUpdate(
-        cid: string,
+    async queryCalculatedCommentUpdate(
+        comment: Pick<CommentsTableRow, "cid" | "author">,
         trx?: Transaction
-    ): Promise<{
-        comment: CommentsTableRow;
-        commentUpdate: Omit<CommentUpdate, "signature" | "updatedAt" | "replies" | "protocolVersion">;
-    }> {
-        const commentIpfs = await this.queryComment(cid, trx);
-        const authorSubplebbit = await this.querySubplebbitAuthor(commentIpfs.author.address, trx);
-        const authorEdit = await this._queryAuthorEdit(cid, commentIpfs.author.address, trx);
-        const commentUpdateCounts = await this._queryCommentCounts(commentIpfs.cid, trx);
-        const moderatorReason = await this._queryLatestModeratorReason(cid, trx);
-        const commentFlags = await this.queryCommentFlags(cid, trx);
-
-        // Flair
-        const commentModFlair = await this._queryModCommentFlair(cid, trx);
+    ): Promise<Omit<CommentUpdate, "signature" | "updatedAt" | "replies" | "protocolVersion">> {
+        const [authorSubplebbit, authorEdit, commentUpdateCounts, moderatorReason, commentFlags, commentModFlair] = await Promise.all([
+            this.querySubplebbitAuthor(comment.author.address, trx),
+            this._queryAuthorEdit(comment.cid, comment.author.address, trx),
+            this._queryCommentCounts(comment.cid, trx),
+            this._queryLatestModeratorReason(comment, trx),
+            this.queryCommentFlags(comment.cid, trx),
+            this._queryModCommentFlair(comment.cid, trx)
+        ]);
 
         const commentUpdateFlair = commentModFlair.flair || authorEdit.flair;
 
         return {
-            comment: commentIpfs,
-            commentUpdate: {
-                cid: commentIpfs.cid,
-                edit: authorEdit,
-                ...commentUpdateCounts,
-                flair: commentUpdateFlair,
-                ...commentFlags,
-                ...moderatorReason,
+            cid: comment.cid,
+            edit: authorEdit,
+            ...commentUpdateCounts,
+            flair: commentUpdateFlair,
+            ...commentFlags,
+            ...moderatorReason,
 
-                author: { subplebbit: authorSubplebbit }
-            }
+            author: { subplebbit: authorSubplebbit }
         };
-    }
-
-    async queryCommentsWithCommentUpdate(cids: string | string[], trx?: Transaction) {
-        if (!Array.isArray(cids)) cids = [cids];
-
-        return Promise.all(cids.map((cid) => this.queryCommentWithCommentUpdate(cid, trx)));
     }
 
     async queryLatestPostCid(trx?: Transaction): Promise<Pick<CommentWithCommentUpdate, "cid"> | undefined> {
@@ -712,30 +698,17 @@ export class DbHandler {
         return Number(obj["count(*)"]);
     }
 
-    async queryAuthorBanExpiry(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor["banExpiresAt"]> {
-        const authorComments = await this._baseTransaction(trx)("comments").select("cid").where("authorAddress", authorAddress);
-        const banExpiresAt: number | undefined = await this._baseTransaction(trx)("commentEdits")
-            .jsonExtract("commentAuthor", "$.banExpiresAt", "banExpiresAt", true)
-            .select("banExpiresAt")
+    async queryAuthorModEdits(authorAddress: string, trx?: Knex.Transaction): Promise<Pick<SubplebbitAuthor, "banExpiresAt" | "flair">> {
+        const authorComments = await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where("authorAddress", authorAddress);
+        if (!Array.isArray(authorComments)) return {};
+        const commentAuthorEdits: Pick<CommentEditsTableRow, "commentAuthor">[] = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+            .select("commentAuthor")
             .whereIn("commentCid", authorComments)
-            .whereNotNull("banExpiresAt")
-            .orderBy("timestamp", "desc")
-            .first();
-        debugger;
-        return banExpiresAt;
-    }
+            .orderBy("timestamp", "desc");
+        const banAuthor = commentAuthorEdits.find((edit) => typeof edit.commentAuthor?.banExpiresAt === "number");
+        const authorFlairByMod = commentAuthorEdits.find((edit) => edit.commentAuthor?.flair);
 
-    async queryAuthorFlairByMod(authorAddress: string, trx?: Knex.Transaction): Promise<Pick<SubplebbitAuthor, "flair">> {
-        const authorComments = await this._baseTransaction(trx)("comments").select("cid").where("authorAddress", authorAddress);
-        const modFlair: Pick<SubplebbitAuthor, "flair"> = await this._baseTransaction(trx)("commentEdits")
-            .jsonExtract("commentAuthor", "$.flair", "flair", true)
-            .select("flair")
-            .whereIn("commentCid", authorComments)
-            .whereNotNull("flair")
-            .orderBy("timestamp", "desc")
-            .first();
-        debugger;
-        return modFlair;
+        return { banExpiresAt: banAuthor?.commentAuthor?.banExpiresAt, flair: authorFlairByMod?.commentAuthor?.flair };
     }
 
     async querySubplebbitAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor> {
@@ -762,16 +735,21 @@ export class DbHandler {
         if (typeof lastCommentCid !== "string") throw Error("lastCommentCid should be always defined");
 
         const firstCommentTimestamp: number = (
-            await this._baseTransaction(trx)("comments").select("timestamp").orderBy("timestamp", "asc").first()
+            await this._baseTransaction(trx)(TABLES.COMMENTS).select("timestamp").orderBy("timestamp", "asc").first()
         )["timestamp"];
         if (typeof firstCommentTimestamp !== "string") throw Error("lastCommentCid should be always defined");
 
-        const banExpiresAt = await this.queryAuthorBanExpiry(authorAddress, trx);
+        const modAuthorEdits = await this.queryAuthorModEdits(authorAddress, trx);
 
-        const authorModFlair = await this.queryAuthorFlairByMod(authorAddress, trx);
         debugger;
         // TODO add flair here
-        return { postScore, replyScore, lastCommentCid, banExpiresAt, ...authorModFlair, firstCommentTimestamp };
+        return {
+            postScore,
+            replyScore,
+            lastCommentCid,
+            ...modAuthorEdits,
+            firstCommentTimestamp
+        };
     }
 
     async changeDbFilename(newDbFileName: string, newSubplebbit: DbHandler["_subplebbit"]) {
