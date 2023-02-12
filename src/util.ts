@@ -194,13 +194,6 @@ export function removeKeysWithUndefinedValues<T extends Object>(object: T): Only
     return newObj;
 }
 
-export function encode(obj: Object): string {
-    // May change in future
-    // We're encoding in cborg and decoding to make sure all JSON objects can be stringified and parsed determinstically
-    // Meaning the order of the fields will always be the same
-    return determinsticStringify(obj);
-}
-
 export function throwWithErrorCode(code: keyof typeof messages, details?: string) {
     throw errcode(Error(messages[code]), messages[messages[code]], {
         details

@@ -1,4 +1,4 @@
-import { encode, TIMEFRAMES_TO_SECONDS, timestamp } from "../util";
+import { TIMEFRAMES_TO_SECONDS, timestamp } from "../util";
 import { Comment } from "../comment";
 import Post from "../post";
 import { Plebbit } from "../plebbit";
@@ -6,11 +6,12 @@ import PlebbitIndex from "../index";
 import Vote from "../vote";
 import { Pages } from "../pages";
 import { Subplebbit } from "../subplebbit";
-import { CommentType, CreateCommentOptions, CreateSubplebbitOptions, PostType, SignerType, VoteType } from "../types";
+import { CreateCommentOptions, CreateSubplebbitOptions, PostType, SignerType, VoteType } from "../types";
 import isIPFS from "is-ipfs";
 import Publication from "../publication";
 import waitUntil from "async-wait-until";
 import assert from "assert";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -435,11 +436,13 @@ export async function waitTillCommentIsInParentPages(
         for (const pageCid of Object.values(pageCids)) {
             const commentInPage = await findCommentInPage(comment.cid, pageCid, comment.replies);
             for (const [key, value] of Object.entries(propsToCheckFor))
-                if (encode(commentInPage[key]) !== encode(value)) throw Error(`commentInPage[${key}] is incorrect`);
+                if (deterministicStringify(commentInPage[key]) !== deterministicStringify(value))
+                    throw Error(`commentInPage[${key}] is incorrect`);
         }
     else
         for (const [key, value] of Object.entries(propsToCheckFor))
-            if (encode(commentInPage[key]) !== encode(value)) throw Error(`commentInPage[${key}] is incorrect`);
+            if (deterministicStringify(commentInPage[key]) !== deterministicStringify(value))
+                throw Error(`commentInPage[${key}] is incorrect`);
 }
 
 export async function createMockSub(props: CreateSubplebbitOptions, plebbit: Plebbit, syncInterval = 300) {

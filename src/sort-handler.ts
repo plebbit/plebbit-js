@@ -1,15 +1,11 @@
 import { controversialScore, hotScore, newScore, oldScore, TIMEFRAMES_TO_SECONDS, timestamp, topScore } from "./util";
-import { Page, Pages } from "./pages";
 import { Subplebbit } from "./subplebbit";
 import assert from "assert";
-import { Comment } from "./comment";
 import {
-    CommentIpfsType,
     CommentsTableRow,
     CommentUpdatesRow,
     CommentWithCommentUpdate,
     PageIpfs,
-    PagesType,
     PagesTypeIpfs,
     PostSort,
     PostSortName,
@@ -54,7 +50,7 @@ export type PageOptions = {
 type PageGenerationRes = Record<Partial<PostSortName | ReplySortName>, { pages: PageIpfs[]; cids: string[] }>;
 
 export class SortHandler {
-    subplebbit: Pick<Subplebbit, "dbHandler" | "plebbit" | "address">;
+    subplebbit: Pick<Subplebbit, "dbHandler" | "plebbit" | "address" | "encryption">;
 
     constructor(subplebbit: SortHandler["subplebbit"]) {
         this.subplebbit = subplebbit;
@@ -73,6 +69,8 @@ export class SortHandler {
                 return await Promise.all(
                     chunk.map(async (commentProps) => {
                         const comment = await this.subplebbit.plebbit.createComment(commentProps.comment);
+                        //@ts-expect-error
+                        comment.subplebbit = this.subplebbit;
                         const repliesPages = await this.generateRepliesPages(commentProps.comment, undefined);
                         comment.setReplies(repliesPages);
                         return comment.toJSONPagesIpfs(commentProps.commentUpdate);
