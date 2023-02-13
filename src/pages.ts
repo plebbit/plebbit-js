@@ -33,7 +33,7 @@ export class Pages implements PagesType {
 
     toJSON(): PagesType {
         return {
-            pages: JSON.parse(JSON.stringify(this.pages)),
+            pages: this.pages,
             pageCids: this.pageCids
         };
     }
@@ -46,5 +46,9 @@ export class Page implements PageType {
     constructor(props: PageType) {
         this.comments = props.comments;
         this.nextCid = props.nextCid;
+    }
+
+    toJSON(): PageType {
+        return { comments: this.comments, nextCid: this.nextCid };
     }
 }
