@@ -117,6 +117,7 @@ Nft {
   chainTicker: string // ticker of the chain, like eth, avax, sol, etc in lowercase
   address: string // address of the NFT contract
   id: string // tokenId or index of the specific NFT used, must be string type, not number
+  timestamp: number // in seconds, needed to mitigate multiple users using the same signature
   signature: Signature // proof that author.address owns the nft
   // how to resolve and verify NFT signatures https://github.com/plebbit/plebbit-js/blob/master/docs/nft.md
 }
@@ -226,7 +227,7 @@ SubplebbitMetrics {
   allPostCount: number
 }
 ChallengeType {
-  type: 'image' | 'text' | 'video' | 'audio' | 'html'
+  type: 'image/png' | 'text/plain' | 'chain/<chainTicker>'
   //...other properties for more complex types later, e.g. an array of whitelisted addresses, a token address, etc,
 }
 Multisub /* (IPNS record Multisub.address) */ {
@@ -260,6 +261,7 @@ PlebbitDefaults { // fetched once when app first load, a dictionary of default s
 ```js
 PubsubMessage: {
   type: 'CHALLENGEREQUEST' | 'CHALLENGE' | 'CHALLENGEANSWER' | 'CHALLENGEVERIFICATION'
+  timestamp: number // in seconds, needed because publication.timestamp is encrypted
   signature: Signature
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
   userAgent: `/plebbit-js:${require('./package.json').version}/` // client name and version using this standard https://en.bitcoin.it/wiki/BIP_0014#Proposal
