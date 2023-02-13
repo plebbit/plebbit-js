@@ -5,7 +5,7 @@ import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import * as ed from "@noble/ed25519";
 
 import PeerId from "peer-id";
-import { removeNullAndUndefinedValues, throwWithErrorCode } from "../util";
+import { removeNullAndUndefinedValuesRecursively, throwWithErrorCode } from "../util";
 import { Plebbit } from "../plebbit";
 
 import {
@@ -99,8 +99,7 @@ async function _sign(
 ): Promise<SignatureType> {
     assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
 
-    const cleanedObj = removeNullAndUndefinedValues(publication); // Will remove undefined and null values
-    const publicationEncoded = getBufferToSign(signedPropertyNames, cleanedObj); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    const publicationEncoded = getBufferToSign(signedPropertyNames, publication); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
     const signatureData = uint8ArrayToString(await signBufferEd25519(publicationEncoded, signer.privateKey), "base64");
     return {
         signature: signatureData,
@@ -225,7 +224,7 @@ const _verifyAuthor = async (
 };
 
 const getBufferToSign = (signedPropertyNames: SignedPropertyNames, objectToSign: any) => {
-    const propsToSign = lodash.pick(objectToSign, signedPropertyNames);
+    const propsToSign = removeNullAndUndefinedValuesRecursively(lodash.pick(objectToSign, signedPropertyNames));
 
     const bufferToSign = cborg.encode(propsToSign);
     return bufferToSign;
