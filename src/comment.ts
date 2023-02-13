@@ -1,4 +1,4 @@
-import { loadIpnsAsJson, parsePagesIfIpfs, removeKeysWithUndefinedValues, removeNullAndUndefinedValues, throwWithErrorCode } from "./util";
+import { loadIpnsAsJson, parsePagesIfIpfs, throwWithErrorCode } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
 import {
@@ -11,7 +11,6 @@ import {
     CommentUpdate,
     CommentWithCommentUpdate,
     Flair,
-    PageIpfs,
     PagesType,
     PagesTypeIpfs,
     ProtocolVersion,
@@ -137,10 +136,11 @@ export class Comment extends Publication implements CommentType {
         return {
             comment: {
                 ...this.toJSONIpfs(),
+                author: this.author.toJSONIpfs(),
                 cid: this.cid,
                 postCid: this.postCid
             },
-            commentUpdate
+            commentUpdate: commentUpdate
         };
     }
 

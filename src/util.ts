@@ -185,6 +185,14 @@ export function removeNullAndUndefinedValues<T extends Object>(obj: T): T {
     return <T>lodash.omitBy(obj, lodash.isNil);
 }
 
+export function removeNullAndUndefinedValuesRecursively<T extends Object>(obj: T): T {
+    const cleanedObj = removeNullAndUndefinedValues(obj);
+    for (const [key, value] of Object.entries(cleanedObj))
+        if (typeof value === "object") cleanedObj[key] = removeNullAndUndefinedValuesRecursively(value);
+
+    return cleanedObj;
+}
+
 // TODO rename
 export function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T> {
     const newObj = JSON.parse(JSON.stringify(object));
@@ -230,19 +238,20 @@ const isJsonString = (jsonString: any) => {
     return typeof jsonString === "string" && /"((?:[^"\\\/\b\f\n\r\t]|\\u\d{4})*)"/gm.test(jsonString);
 };
 
+// Only for DB
 export const parseJsonStrings = (obj: any) => {
     if (obj === "[object Object]") throw Error(`Object shouldn't be [object Object]`);
     if (Array.isArray(obj)) return obj.map((o) => parseJsonStrings(o));
     if (!isJsonString(obj) && typeof obj !== "object") return obj;
 
-    const newObj = isJsonString(obj) ? JSON.parse(obj) : lodash.cloneDeep(obj);
+    const newObj = removeNullAndUndefinedValues(isJsonString(obj) ? JSON.parse(obj) : lodash.cloneDeep(obj));
     const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed"];
     for (const [key, value] of Object.entries(newObj)) {
         if (value === "[object Object]") throw Error(`key (${key}) shouldn't be [object Object]`);
 
         if (booleanFields.includes(key) && typeof value === "number") newObj[key] = Boolean(value);
-        else if (isJsonString(value)) newObj[key] = JSON.parse(<any>value);
-        if (newObj[key]?.constructor?.name === "Object") newObj[key] = parseJsonStrings(newObj[key]);
+        else if (isJsonString(value)) newObj[key] = removeNullAndUndefinedValues(JSON.parse(<any>value));
+        if (newObj[key]?.constructor?.name === "Object") newObj[key] = removeNullAndUndefinedValues(parseJsonStrings(newObj[key]));
     }
     return <any>newObj;
 };

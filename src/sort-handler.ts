@@ -1,4 +1,13 @@
-import { controversialScore, hotScore, newScore, oldScore, TIMEFRAMES_TO_SECONDS, timestamp, topScore } from "./util";
+import {
+    controversialScore,
+    hotScore,
+    newScore,
+    oldScore,
+    removeNullAndUndefinedValuesRecursively,
+    TIMEFRAMES_TO_SECONDS,
+    timestamp,
+    topScore
+} from "./util";
 import { Subplebbit } from "./subplebbit";
 import assert from "assert";
 import {
@@ -69,17 +78,14 @@ export class SortHandler {
                 return await Promise.all(
                     chunk.map(async (commentProps) => {
                         const comment = await this.subplebbit.plebbit.createComment(commentProps.comment);
-                        //@ts-expect-error
-                        comment.subplebbit = this.subplebbit;
-                        const repliesPages = await this.generateRepliesPages(commentProps.comment, undefined);
-                        comment.setReplies(repliesPages);
-                        return comment.toJSONPagesIpfs(commentProps.commentUpdate);
+                        const replies = await this.generateRepliesPages(commentProps.comment, undefined);
+                        return comment.toJSONPagesIpfs({ ...commentProps.commentUpdate, replies });
                     })
                 );
             })
         );
         for (let i = chunksWithReplies.length - 1; i >= 0; i--) {
-            const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunksWithReplies[i] };
+            const pageIpfs: PageIpfs = removeNullAndUndefinedValuesRecursively({ nextCid: cids[i + 1], comments: chunksWithReplies[i] });
             cids[i] = (await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(pageIpfs))).path;
             listOfPage[i] = pageIpfs;
         }
