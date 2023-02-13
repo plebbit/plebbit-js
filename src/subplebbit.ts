@@ -1050,20 +1050,21 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         await Promise.all(parents.map((parent) => this.dbHandler.setCommentUpdateTrigger(parent.cid, trigger)));
     }
 
-    private async _updateComment(commentCid: string): Promise<void> {
+    private async _updateComment(comment: CommentsTableRow): Promise<void> {
         const log = Logger("plebbit-js:subplebbit:sync:syncComment");
 
         // If we're here that means we're gonna calculate the new update and publish it
-        log.trace(`Attempting to update Comment (${commentCid})`);
+        log.trace(`Attempting to update Comment (${comment.cid})`);
         // This comment will have the local new CommentUpdate, which we will publish over IPNS
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
-        const commentWithUpdateRaw = await this.dbHandler!.queryCommentWithCommentUpdate(commentCid);
+        const calculatedCommentUpdate = await this.dbHandler.queryCalculatedCommentUpdate(comment);
 
-        await this.sortHandler.deleteCommentPageCache(commentWithUpdateRaw.comment);
+        await this.sortHandler.deleteCommentPageCache(comment);
 
+        // Stringify to remove undefined
         const commentUpdatePriorToSigning: Omit<CommentUpdate, "signature"> = {
-            ...commentWithUpdateRaw.commentUpdate,
-            replies: await this.sortHandler.generateRepliesPages(commentWithUpdateRaw.comment, undefined),
+            ...calculatedCommentUpdate,
+            replies: await this.sortHandler.generateRepliesPages(comment, undefined),
             updatedAt: timestamp(),
             protocolVersion: version.PROTOCOL_VERSION
         };
@@ -1071,16 +1072,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             ...commentUpdatePriorToSigning,
             signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
         };
-        await this._validateCommentUpdate(newIpns, commentWithUpdateRaw.comment);
-        await this.dbHandler.upsertCommentUpdate(newIpns); // Need to insert comment in DB before generating pages so props updated above would be included in pages
+        await this._validateCommentUpdate(newIpns, comment); // Should be removed once signature are working properly
+        await this.dbHandler.upsertCommentUpdate(lodash.omit(newIpns, "replies")); // Need to insert comment in DB before generating pages so props updated above would be included in pages
 
-        await this.dbHandler.setCommentUpdateTrigger(commentWithUpdateRaw.comment.cid, false);
+        await this.dbHandler.setCommentUpdateTrigger(comment.cid, false);
 
-        await this._triggerParentsUpdate(commentWithUpdateRaw.comment.parentCid, commentWithUpdateRaw.comment.depth, true);
+        if (comment.parentCid) await this._triggerParentsUpdate(comment.parentCid, comment.depth, true);
 
         this.subplebbitUpdateTrigger = true;
 
-        this._publishCommentIpns({ cid: commentWithUpdateRaw.comment.cid, ipnsKeyName: commentWithUpdateRaw.comment.ipnsKeyName }, newIpns);
+        this._publishCommentIpns(comment, newIpns);
     }
 
     private async _listenToIncomingRequests() {
@@ -1128,7 +1129,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    private async _getCommentCidsThatNeedToBeUpdated(): Promise<string[]> {
+    private async _getCommentsThatNeedToBeUpdated() {
         // Criteria:
         // 1 - IPNS about to expire (every 72h) OR
         // 2 - an update trigger is on OR
@@ -1137,9 +1138,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         const minimumUpdatedAt = timestamp() - 71 * 60 * 60; // Make sure a comment gets updated every 71 hours at least
 
-        const cids = await this.dbHandler!.queryCommentsToBeUpdated({ minimumUpdatedAt, ipnsKeyNames: this.ipfsNodeIpnsKeyNames });
-
-        return Object.values(cids).map((cidObj) => cidObj.cid);
+        return this.dbHandler!.queryCommentsToBeUpdated({ minimumUpdatedAt, ipnsKeyNames: this.ipfsNodeIpnsKeyNames });
     }
 
     private async syncIpnsWithDb() {
@@ -1149,8 +1148,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.ipfsNodeIpnsKeyNames = (await this.plebbit.ipfsClient.key.list()).map((key) => key.name);
             await this._switchDbIfNeeded();
             await this._listenToIncomingRequests();
-            const commentCidsToUpdate = await this._getCommentCidsThatNeedToBeUpdated();
-            await Promise.all(commentCidsToUpdate.map(this._updateComment));
+            const commentsToUpdate = await this._getCommentsThatNeedToBeUpdated();
+            await Promise.all(commentsToUpdate.map(this._updateComment.bind(this)));
             await this.sortHandler.cacheCommentsPages();
             await this.updateSubplebbitIpns();
         } catch (e) {
