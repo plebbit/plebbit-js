@@ -459,9 +459,26 @@ export class DbHandler {
         return { comment, commentUpdate };
     }
 
-    async queryCommentsForPages(options: PageOptions, trx?: Transaction) {
-        const comments = await this._basePageQuery(options, trx);
-        return Promise.all(comments.map((comment) => this._queryCommentWithRemoteCommentUpdate(comment.cid, trx)));
+    async queryCommentsForPages(
+        options: PageOptions,
+        trx?: Transaction
+    ): Promise<{ comment: CommentsTableRow; commentUpdate: CommentUpdatesRow }[]> {
+        //prettier-ignore
+        const commentUpdateColumns: (keyof CommentUpdatesRow)[] = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "signature", "spoiler", "updatedAt", "upvoteCount"];
+        const aliasSelect = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
+
+        const commentsRaw: CommentsTableRow[] = await this._basePageQuery(options, trx).select([`${TABLES.COMMENTS}.*`, ...aliasSelect]);
+
+        //@ts-expect-error
+        const comments: { comment: CommentsTableRow; commentUpdate: CommentUpdatesRow }[] = commentsRaw.map((commentRaw) => ({
+            comment: lodash.pickBy(commentRaw, (value, key) => !key.startsWith("commentUpdate_")),
+            commentUpdate: lodash.mapKeys(
+                lodash.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")),
+                (value, key) => key.replace("commentUpdate_", "")
+            )
+        }));
+
+        return comments;
     }
 
     async queryCommentsOfAuthor(authorAddress: string, trx?: Transaction) {
@@ -544,11 +561,17 @@ export class DbHandler {
     }
 
     private async _queryCommentUpvote(cid: string, trx?: Transaction): Promise<number> {
-        return (await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid, vote: 1 }).count())["count(*)"];
+        const upvotes: number = <number>(
+            (await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid, vote: 1 }).count())[0]["count(*)"]
+        );
+        return upvotes;
     }
 
     private async _queryCommentDownvote(cid: string, trx?: Transaction): Promise<number> {
-        return (await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid, vote: -1 }).count())["count(*)"];
+        const downvotes: number = <number>(
+            (await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid, vote: -1 }).count())[0]["count(*)"]
+        );
+        return downvotes;
     }
 
     private async _queryCommentCounts(
@@ -560,7 +583,6 @@ export class DbHandler {
             this._queryCommentUpvote(cid, trx),
             this._queryCommentDownvote(cid, trx)
         ]);
-        debugger;
         return { replyCount, upvoteCount, downvoteCount };
     }
 
@@ -627,16 +649,17 @@ export class DbHandler {
         return deleted;
     }
 
-    private async _queryModCommentFlair(cid: string, trx?: Transaction): Promise<Pick<CommentEditType, "flair">> {
-        const authorAddress = await this._baseTransaction(trx)(TABLES.COMMENTS).select("authorAddress").where("cid", cid).first();
-        const latestFlair: Pick<CommentEditType, "flair"> = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+    private async _queryModCommentFlair(
+        comment: Pick<CommentsTableRow, "cid" | "author">,
+        trx?: Transaction
+    ): Promise<Pick<CommentEditType, "flair"> | undefined> {
+        const latestFlair: Pick<CommentEditType, "flair"> | undefined = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
             .select("flair")
-            .where("commentCid", cid)
+            .where("commentCid", comment.cid)
             .whereNotNull("flair")
-            .whereNot("authorAddress", authorAddress["authorAddress"])
+            .whereNot("authorAddress", comment.author.address)
             .orderBy("timestamp", "desc")
             .first();
-        debugger;
         return latestFlair;
     }
 
@@ -650,10 +673,10 @@ export class DbHandler {
             this._queryCommentCounts(comment.cid, trx),
             this._queryLatestModeratorReason(comment, trx),
             this.queryCommentFlags(comment.cid, trx),
-            this._queryModCommentFlair(comment.cid, trx)
+            this._queryModCommentFlair(comment, trx)
         ]);
 
-        const commentUpdateFlair = commentModFlair.flair || authorEdit.flair;
+        const commentUpdateFlair = commentModFlair?.flair || authorEdit?.flair;
 
         return {
             cid: comment.cid,
@@ -705,14 +728,15 @@ export class DbHandler {
             .select("commentAuthor")
             .whereIn("commentCid", authorComments)
             .orderBy("timestamp", "desc");
-        const banAuthor = commentAuthorEdits.find((edit) => typeof edit.commentAuthor?.banExpiresAt === "number");
-        const authorFlairByMod = commentAuthorEdits.find((edit) => edit.commentAuthor?.flair);
+        const banAuthor = commentAuthorEdits.find((edit) => typeof edit.commentAuthor?.banExpiresAt === "number")?.commentAuthor;
+        const authorFlairByMod = commentAuthorEdits.find((edit) => edit.commentAuthor?.flair)?.commentAuthor;
 
-        return { banExpiresAt: banAuthor?.commentAuthor?.banExpiresAt, flair: authorFlairByMod?.commentAuthor?.flair };
+        return { ...banAuthor, ...authorFlairByMod };
     }
 
     async querySubplebbitAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor> {
         const authorCommentCids = await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where("authorAddress", authorAddress);
+        assert(authorCommentCids.length > 0);
         const authorComments: (CommentsTableRow & Pick<CommentUpdate, "upvoteCount" | "downvoteCount">)[] = [];
         for (const cidObj of authorCommentCids) {
             authorComments.push({
@@ -729,19 +753,12 @@ export class DbHandler {
         const replyScore: number =
             sumBy(authorReplies, (reply) => reply.upvoteCount) - sumBy(authorReplies, (reply) => reply.downvoteCount);
 
-        const lastCommentCid: string = (
-            await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where({ authorAddress }).orderBy("id", "desc").first()
-        )["cid"];
-        if (typeof lastCommentCid !== "string") throw Error("lastCommentCid should be always defined");
+        const lastCommentCid = lodash.maxBy(authorComments, (comment) => comment.id).cid;
 
-        const firstCommentTimestamp: number = (
-            await this._baseTransaction(trx)(TABLES.COMMENTS).select("timestamp").orderBy("timestamp", "asc").first()
-        )["timestamp"];
-        if (typeof firstCommentTimestamp !== "string") throw Error("lastCommentCid should be always defined");
+        const firstCommentTimestamp = lodash.minBy(authorComments, (comment) => comment.id).timestamp;
 
         const modAuthorEdits = await this.queryAuthorModEdits(authorAddress, trx);
 
-        debugger;
         // TODO add flair here
         return {
             postScore,
