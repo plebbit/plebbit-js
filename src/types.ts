@@ -564,7 +564,7 @@ export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "u
 
 // CommentUpdate
 
-export interface CommentUpdatesRow extends CommentUpdate, Pick<CommentWithCommentUpdate, "cid"> {}
+export interface CommentUpdatesRow extends Omit<CommentUpdate, "replies"> {}
 
 export interface VotesTableRow extends VoteType {
     authorAddress: AuthorIpfsType["address"];
