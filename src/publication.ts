@@ -23,7 +23,7 @@ import env from "./version";
 import { Plebbit } from "./plebbit";
 import { Subplebbit } from "./subplebbit";
 import { signChallengeAnswer, signChallengeRequest, verifyChallengeMessage, verifyChallengeVerification } from "./signer/signatures";
-import { throwWithErrorCode } from "./util";
+import { throwWithErrorCode, timestamp } from "./util";
 
 class Publication extends EventEmitter implements PublicationType {
     subplebbitAddress: string;
@@ -152,7 +152,8 @@ class Publication extends EventEmitter implements PublicationType {
             challengeAnswerId: uuidv4(),
             encryptedChallengeAnswers: encryptedChallengeAnswers,
             userAgent: env.USER_AGENT,
-            protocolVersion: env.PROTOCOL_VERSION
+            protocolVersion: env.PROTOCOL_VERSION,
+            timestamp: timestamp()
         };
         this._challengeAnswer = new ChallengeAnswerMessage({
             ...toSignAnswer,
@@ -214,7 +215,8 @@ class Publication extends EventEmitter implements PublicationType {
             challengeRequestId: uuidv4(),
             acceptedChallengeTypes: options.acceptedChallengeTypes,
             userAgent: env.USER_AGENT,
-            protocolVersion: env.PROTOCOL_VERSION
+            protocolVersion: env.PROTOCOL_VERSION,
+            timestamp: timestamp()
         };
 
         this._challengeRequest = new ChallengeRequestMessage({

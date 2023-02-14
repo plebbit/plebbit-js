@@ -175,6 +175,7 @@ interface PubsubMessage {
     signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
+    timestamp: number;
 }
 
 export interface ChallengeType {

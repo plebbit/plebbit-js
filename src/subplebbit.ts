@@ -54,7 +54,6 @@ import {
     getPlebbitAddressFromPublicKey,
     getPublicKeyFromPrivateKey
 } from "./signer/util";
-import { v4 as uuidv4 } from "uuid";
 import { AUTHOR_EDIT_FIELDS, CommentEdit, MOD_EDIT_FIELDS } from "./comment-edit";
 import errcode from "err-code";
 import { messages } from "./errors";
@@ -797,7 +796,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 encryptedPublication: encryptedPublication,
                 challengeErrors: undefined,
                 userAgent: env.USER_AGENT,
-                protocolVersion: env.PROTOCOL_VERSION
+                protocolVersion: env.PROTOCOL_VERSION,
+                timestamp: timestamp()
             };
             const challengeVerification = new ChallengeVerificationMessage({
                 ...toSignMsg,
@@ -827,7 +827,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     deterministicStringify(providedChallenges),
                     this.signer.privateKey,
                     request.signature.publicKey
-                )
+                ),
+                timestamp: timestamp()
             };
 
             const challengeMessage = new ChallengeMessage({
@@ -888,7 +889,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 encryptedPublication: encryptedPublication,
                 challengeErrors: challengeErrors,
                 userAgent: env.USER_AGENT,
-                protocolVersion: env.PROTOCOL_VERSION
+                protocolVersion: env.PROTOCOL_VERSION,
+                timestamp: timestamp()
             };
             const challengeVerification = new ChallengeVerificationMessage({
                 ...toSignMsg,
@@ -951,7 +953,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 challengeSuccess: false,
                 reason: validation.reason,
                 userAgent: env.USER_AGENT,
-                protocolVersion: env.PROTOCOL_VERSION
+                protocolVersion: env.PROTOCOL_VERSION,
+                timestamp: timestamp()
             };
 
             const challengeVerification = new ChallengeVerificationMessage({

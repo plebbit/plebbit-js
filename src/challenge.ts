@@ -22,6 +22,7 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
     signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
+    timestamp: number;
     constructor(props: Omit<ChallengeRequestMessageType, "type">) {
         this.type = "CHALLENGEREQUEST";
         this.challengeRequestId = props.challengeRequestId;
@@ -30,6 +31,7 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
+        this.timestamp = props.timestamp;
     }
 
     toJSON(): ChallengeRequestMessageType {
@@ -40,7 +42,8 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
             encryptedPublication: this.encryptedPublication,
             signature: this.signature,
             userAgent: this.userAgent,
-            protocolVersion: this.protocolVersion
+            protocolVersion: this.protocolVersion,
+            timestamp: this.timestamp
         };
     }
 
@@ -56,6 +59,7 @@ export class ChallengeMessage implements ChallengeMessageType {
     signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
+    timestamp: number;
 
     constructor(props: Omit<ChallengeMessageType, "type">) {
         this.type = "CHALLENGE";
@@ -64,6 +68,7 @@ export class ChallengeMessage implements ChallengeMessageType {
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
+        this.timestamp = props.timestamp;
     }
 
     toJSON(): ChallengeMessageType {
@@ -73,7 +78,8 @@ export class ChallengeMessage implements ChallengeMessageType {
             challengeRequestId: this.challengeRequestId,
             signature: this.signature,
             userAgent: this.userAgent,
-            protocolVersion: this.protocolVersion
+            protocolVersion: this.protocolVersion,
+            timestamp: this.timestamp
         };
     }
 
@@ -90,6 +96,7 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
     signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
+    timestamp: number;
     constructor(props: Omit<ChallengeAnswerMessageType, "type">) {
         this.type = "CHALLENGEANSWER";
         this.challengeAnswerId = props.challengeAnswerId;
@@ -98,6 +105,7 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
+        this.timestamp = props.timestamp;
     }
 
     toJSON(): ChallengeAnswerMessageType {
@@ -108,7 +116,8 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
             encryptedChallengeAnswers: this.encryptedChallengeAnswers,
             signature: this.signature,
             protocolVersion: this.protocolVersion,
-            userAgent: this.userAgent
+            userAgent: this.userAgent,
+            timestamp: this.timestamp
         };
     }
 
@@ -128,6 +137,7 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
     signature: SignatureType;
     protocolVersion: "1.0.0";
     userAgent: string;
+    timestamp: number;
 
     constructor(props: Omit<ChallengeVerificationMessageType, "type">) {
         this.type = "CHALLENGEVERIFICATION";
@@ -140,6 +150,7 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
+        this.timestamp = props.timestamp;
     }
 
     toJSON(): ChallengeVerificationMessageType {
@@ -153,7 +164,8 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
             encryptedPublication: this.encryptedPublication,
             signature: this.signature,
             protocolVersion: this.protocolVersion,
-            userAgent: this.userAgent
+            userAgent: this.userAgent,
+            timestamp: this.timestamp
         };
     }
 

@@ -156,7 +156,7 @@ export async function signChallengeRequest(
 ): Promise<SignatureType> {
     const log = Logger("plebbit-js:signatures:signChallengeRequest");
     //prettier-ignore
-    const signedPropertyNames: ChallengeRequestMessageSignedPropertyNames = ["type", "challengeRequestId", "encryptedPublication", "acceptedChallengeTypes"];
+    const signedPropertyNames: ChallengeRequestMessageSignedPropertyNames = ["type", "challengeRequestId", "encryptedPublication", "acceptedChallengeTypes", "timestamp"];
 
     return _sign(signedPropertyNames, request, signer, log);
 }
