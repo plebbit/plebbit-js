@@ -84,10 +84,6 @@ export class DbHandler {
 
     async keyvGet(key: string, options?: { raw?: false }) {
         const res = await this._keyv.get(key, options);
-        if (JSON.stringify(res) === "{}") {
-            await this.keyvDelete(key);
-            return undefined;
-        }
         return res;
     }
 
