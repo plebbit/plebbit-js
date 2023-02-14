@@ -231,8 +231,9 @@ const getBufferToSign = (signedPropertyNames: SignedPropertyNames, objectToSign:
 };
 
 const _verifyPublicationSignature = async (publicationToBeVerified: PublicationToVerify): Promise<boolean> => {
+    const propsToValidate = lodash.pick(publicationToBeVerified, publicationToBeVerified.signature.signedPropertyNames);
     const signatureIsValid = await verifyBufferEd25519(
-        getBufferToSign(publicationToBeVerified.signature.signedPropertyNames, publicationToBeVerified),
+        cborg.encode(propsToValidate),
         uint8ArrayFromString(publicationToBeVerified.signature.signature, "base64"),
         publicationToBeVerified.signature.publicKey
     );
