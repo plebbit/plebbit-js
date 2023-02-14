@@ -111,6 +111,8 @@ SubplebbitAuthor {
 }
 Wallet {
   address: string
+  timestamp: number // allows partial blocking multiple authors using the same wallet
+  signature: Signature // type 'eip191' {domainSeparator:"plebbit-author-wallet",authorAddress:"${authorAddress}","{timestamp:${wallet.timestamp}"}
   // ...will add more stuff later, like signer or send/sign or balance
 }
 Nft {
@@ -124,12 +126,12 @@ Nft {
 Signature {
   signature: string // data in base64
   publicKey: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
-  type: 'rsa' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
+  type: 'ed25519' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
   signedPropertyNames: string[] // the fields that were signed as part of the signature e.g. ['title', 'content', 'author', etc.] client should require that certain fields be signed or reject the publication, e.g. 'content', 'author', 'timestamp' are essential
 }
 Signer {
   privateKey?: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
-  type: 'rsa' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm https://eips.ethereum.org/EIPS/eip-191
+  type: 'ed25519' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm https://eips.ethereum.org/EIPS/eip-191
   publicKey?: string // PEM format, optional, not needed for signing
   address: string // public key hash, not needed for signing
   ipfsKey?: IpfsKey // a Key object used for importing into IpfsHttpClient https://docs.ipfs.io/reference/cli/#ipfs-key-import
