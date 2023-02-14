@@ -165,7 +165,7 @@ export type Nft = {
     address: string; // address of the NFT contract
     id: string; // tokenId or index of the specific NFT used, must be string type, not number
     timestamp: number; // in seconds, needed to mitigate multiple users using the same signature
-    signature: string; // proof that author.address owns the nft
+    signature: SignatureType; // proof that author.address owns the nft
     // how to resolve and verify NFT signatures https://github.com/plebbit/plebbit-js/blob/master/docs/nft.md
 };
 export type SubplebbitRole = { role: "owner" | "admin" | "moderator" };
