@@ -188,7 +188,7 @@ export function removeNullAndUndefinedValues<T extends Object>(obj: T): T {
 export function removeNullAndUndefinedValuesRecursively<T extends Object>(obj: T): T {
     const cleanedObj = removeNullAndUndefinedValues(obj);
     for (const [key, value] of Object.entries(cleanedObj))
-        if (typeof value === "object") cleanedObj[key] = removeNullAndUndefinedValuesRecursively(value);
+        if (lodash.isPlainObject(value)) cleanedObj[key] = removeNullAndUndefinedValuesRecursively(value);
 
     return cleanedObj;
 }
