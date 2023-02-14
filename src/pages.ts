@@ -9,25 +9,23 @@ import { verifyPage } from "./signer/signatures";
 export class Pages implements PagesType {
     pages: Partial<Record<PostSortName | ReplySortName, PageType>>;
     pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
-    subplebbit: Pick<Subplebbit, "address" | "plebbit" | "encryption">;
-    parentCid: CommentIpfsType["parentCid"];
-    constructor(props: PagesType & { subplebbit: Pages["subplebbit"]; parentCid: CommentIpfsType["parentCid"] }) {
+    private _subplebbit: Pick<Subplebbit, "address" | "plebbit" | "encryption">;
+    private _parentCid: CommentIpfsType["parentCid"];
+    constructor(props: PagesType & { subplebbit: Pages["_subplebbit"]; parentCid: CommentIpfsType["parentCid"] }) {
         this.pages = props.pages;
         this.pageCids = props.pageCids;
-        this.subplebbit = props.subplebbit;
-        this.parentCid = props.parentCid;
+        this._subplebbit = props.subplebbit;
+        this._parentCid = props.parentCid;
     }
 
     async getPage(pageCid: string): Promise<Page> {
         if (!isIPFS.cid(pageCid)) throwWithErrorCode("ERR_CID_IS_INVALID", `getPage: cid (${pageCid}) is invalid as a CID`);
 
-        if (typeof this.subplebbit.address !== "string") throw Error("Address of subplebbit is needed to load pages");
-
-        const pageIpfs: PageIpfs = await loadIpfsFileAsJson(pageCid, this.subplebbit.plebbit);
-        const signatureValidity = await verifyPage(pageIpfs, this.subplebbit.plebbit, this.subplebbit, this.parentCid);
+        const pageIpfs: PageIpfs = await loadIpfsFileAsJson(pageCid, this._subplebbit.plebbit);
+        const signatureValidity = await verifyPage(pageIpfs, this._subplebbit.plebbit, this._subplebbit, this._parentCid);
         if (!signatureValidity.valid) throw Error(signatureValidity.reason);
 
-        const parsedPage = await parsePageIpfs(pageIpfs, this.subplebbit.plebbit);
+        const parsedPage = await parsePageIpfs(pageIpfs, this._subplebbit.plebbit);
         return new Page(parsedPage);
     }
 

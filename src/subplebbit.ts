@@ -118,8 +118,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     private _syncInterval?: any;
     private _syncIntervalMs: number; // How often should a sub publish a new IPNS
     private _sync: boolean;
-    private ipfsNodeIpnsKeyNames: string[];
-    private subplebbitUpdateTrigger: boolean;
+    private _ipfsNodeIpnsKeyNames: string[];
+    private _subplebbitUpdateTrigger: boolean;
 
     constructor(plebbit: Plebbit) {
         super();
@@ -162,7 +162,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.rules = mergedProps.rules;
         this.flairs = mergedProps.flairs;
         this.signature = mergedProps.signature;
-        this.subplebbitUpdateTrigger = mergedProps.subplebbitUpdateTrigger;
+        this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
         if (!this.signer && mergedProps.signer) this.signer = new Signer(mergedProps.signer);
 
         await this._setPosts(mergedProps.posts);
@@ -220,7 +220,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         return {
             ...this.toJSON(),
             signer: this.signer ? lodash.pick(this.signer, ["privateKey", "type", "address"]) : undefined,
-            subplebbitUpdateTrigger: this.subplebbitUpdateTrigger
+            _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
         };
     }
 
@@ -249,9 +249,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     private async _importSignerIntoIpfsIfNeeded(signer: Required<Pick<SignerType, "ipnsKeyName" | "privateKey">>) {
         assert(signer.ipnsKeyName);
-        if (!this.ipfsNodeIpnsKeyNames) this.ipfsNodeIpnsKeyNames = (await this.plebbit.ipfsClient.key.list()).map((key) => key.name);
+        if (!this._ipfsNodeIpnsKeyNames) this._ipfsNodeIpnsKeyNames = (await this.plebbit.ipfsClient.key.list()).map((key) => key.name);
 
-        const keyExistsInNode = this.ipfsNodeIpnsKeyNames.some((key) => key === signer.ipnsKeyName);
+        const keyExistsInNode = this._ipfsNodeIpnsKeyNames.some((key) => key === signer.ipnsKeyName);
         if (!keyExistsInNode) {
             const ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(signer.privateKey));
             await nativeFunctions.importSignerIntoIpfsNode(signer.ipnsKeyName, ipfsKey, this.plebbit);
@@ -426,7 +426,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         const lastPublishTooOld = this.updatedAt < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
 
-        if (this.subplebbitUpdateTrigger || lastPublishTooOld) {
+        if (this._subplebbitUpdateTrigger || lastPublishTooOld) {
             const updatedAt = timestamp();
             const newIpns: Omit<SubplebbitIpfsType, "signature"> = {
                 ...lodash.omit(this.toJSON(), "signature"),
@@ -438,7 +438,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const signature = await signSubplebbit(newIpns, this.signer);
             await this._validateLocalSignature(signature, newIpns);
             await this.initSubplebbit({ ...newIpns, signature });
-            this.subplebbitUpdateTrigger = false;
+            this._subplebbitUpdateTrigger = false;
 
             await this._updateDbInternalState(
                 lodash.pick(this.toJSONInternal(), [
@@ -447,7 +447,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     "metricsCid",
                     "updatedAt",
                     "signature",
-                    "subplebbitUpdateTrigger"
+                    "_subplebbitUpdateTrigger"
                 ])
             );
 
@@ -1073,7 +1073,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         if (comment.parentCid) await this._triggerParentsUpdate(comment.parentCid, comment.depth, true);
 
-        this.subplebbitUpdateTrigger = true;
+        this._subplebbitUpdateTrigger = true;
 
         this._publishCommentIpns(comment, newIpns);
     }
@@ -1132,14 +1132,14 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         const minimumUpdatedAt = timestamp() - 71 * 60 * 60; // Make sure a comment gets updated every 71 hours at least
 
-        return this.dbHandler!.queryCommentsToBeUpdated({ minimumUpdatedAt, ipnsKeyNames: this.ipfsNodeIpnsKeyNames });
+        return this.dbHandler!.queryCommentsToBeUpdated({ minimumUpdatedAt, ipnsKeyNames: this._ipfsNodeIpnsKeyNames });
     }
 
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:subplebbit:sync");
 
         try {
-            this.ipfsNodeIpnsKeyNames = (await this.plebbit.ipfsClient.key.list()).map((key) => key.name);
+            this._ipfsNodeIpnsKeyNames = (await this.plebbit.ipfsClient.key.list()).map((key) => key.name);
             await this._switchDbIfNeeded();
             await this._listenToIncomingRequests();
             const commentsToUpdate = await this._getCommentsThatNeedToBeUpdated();
@@ -1202,7 +1202,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             log(`Subplebbit (${this.address}) createdAt has been set to ${this.createdAt}`);
             await this._updateDbInternalState(lodash.pick(this, "createdAt"));
         }
-        this.subplebbitUpdateTrigger = true;
+        this._subplebbitUpdateTrigger = true;
 
         this.syncIpnsWithDb()
             .then(() => this._syncLoop(this._syncIntervalMs))
