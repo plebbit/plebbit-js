@@ -111,15 +111,15 @@ SubplebbitAuthor {
 }
 Wallet {
   address: string
-  timestamp: number // allows partial blocking multiple authors using the same wallet
+  timestamp: number // in seconds, allows partial blocking multiple authors using the same wallet
   signature: Signature // type 'eip191' {domainSeparator:"plebbit-author-wallet",authorAddress:"${authorAddress}","{timestamp:${wallet.timestamp}"}
   // ...will add more stuff later, like signer or send/sign or balance
 }
 Nft {
   chainTicker: string // ticker of the chain, like eth, avax, sol, etc in lowercase
+  timestamp: number // in seconds, needed to mitigate multiple users using the same signature
   address: string // address of the NFT contract
   id: string // tokenId or index of the specific NFT used, must be string type, not number
-  timestamp: number // in seconds, needed to mitigate multiple users using the same signature
   signature: Signature // proof that author.address owns the nft
   // how to resolve and verify NFT signatures https://github.com/plebbit/plebbit-js/blob/master/docs/nft.md
 }
