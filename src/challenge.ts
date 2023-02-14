@@ -8,11 +8,10 @@ import {
     ChallengeVerificationMessageType,
     ChallengeVerificationsTableRow,
     DecryptedChallengeAnswerMessageType,
-    Encrypted,
     ProtocolVersion,
-    SignatureType
 } from "./types";
 import lodash from "lodash";
+import { Encrypted, SignatureType } from "./signer/constants";
 
 export class ChallengeRequestMessage implements ChallengeRequestMessageType {
     encryptedPublication: Encrypted;

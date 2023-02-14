@@ -6,12 +6,13 @@ import PlebbitIndex from "../index";
 import Vote from "../vote";
 import { Pages } from "../pages";
 import { Subplebbit } from "../subplebbit";
-import { CreateCommentOptions, CreateSubplebbitOptions, PostType, SignerType, VoteType } from "../types";
+import { CreateCommentOptions, CreateSubplebbitOptions, PostType, VoteType } from "../types";
 import isIPFS from "is-ipfs";
 import Publication from "../publication";
 import waitUntil from "async-wait-until";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
+import { SignerType } from "../signer/constants";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -148,7 +149,7 @@ async function _startMathCliSubplebbit(signers: SignerType[], syncInterval: numb
     subplebbit.setProvideCaptchaCallback(async (challengeRequestMessage) => {
         // Expected return is:
         // Challenge[], reason for skipping captcha (if it's skipped by nullifying Challenge[])
-        return [[{ challenge: "1+1=?", type: "text" }], undefined];
+        return [[{ challenge: "1+1=?", type: "text/plain" }], undefined];
     });
 
     subplebbit.setValidateCaptchaAnswerCallback(async (challengeAnswerMessage) => {

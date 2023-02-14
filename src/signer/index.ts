@@ -1,5 +1,6 @@
 import assert from "assert";
-import { CreateSignerOptions, SignersTableRow, SignerType } from "../types";
+import { SignersTableRow } from "../types";
+import { CreateSignerOptions, SignerType } from "./constants";
 import { generatePrivateKey, getPublicKeyFromPrivateKey, getPlebbitAddressFromPrivateKey } from "./util";
 export { verifyComment, verifySubplebbit, verifyVote } from "./signatures";
 export { encryptEd25519AesGcm as encrypt, decryptEd25519AesGcm as decrypt } from "./encryption";

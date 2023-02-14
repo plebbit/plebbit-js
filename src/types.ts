@@ -6,6 +6,14 @@ import { createCaptcha } from "captcha-canvas";
 import { Plebbit } from "./plebbit";
 import { Knex } from "knex";
 import { Comment } from "./comment";
+import {
+    CommentEditSignedPropertyNamesUnion,
+    CommentSignedPropertyNamesUnion,
+    Encrypted,
+    SignatureType,
+    SignerType,
+    VoteSignedPropertyNamesUnion
+} from "./signer/constants";
 
 export type ProtocolVersion = "1.0.0";
 
@@ -18,10 +26,6 @@ export interface PlebbitOptions {
     blockchainProviders?: { [chainTicker: string]: BlockchainProvider };
     resolveAuthorAddresses?: boolean;
 }
-export type CreateSignerOptions = {
-    privateKey?: string; // If undefined, generate a random private key
-    type?: "ed25519";
-};
 
 export interface PageType {
     comments: Comment[];
@@ -41,21 +45,7 @@ export interface PagesTypeIpfs {
     pages: Partial<Record<PostSortName | ReplySortName, PageIpfs>>;
     pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
 }
-export interface SignerType {
-    type: "ed25519";
-    privateKey: string;
-    publicKey?: string;
-    address: string;
-    ipfsKey?: Uint8Array;
-    ipnsKeyName?: string;
-}
-export type Encrypted = {
-    // examples available at https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
-    ciphertext: string;
-    iv: string;
-    tag: string;
-    type: "ed25519-aes-gcm";
-};
+
 export type SubplebbitEncryption = {
     type: "aes-cbc"; // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
     publicKey: string; // PEM format https://en.wikipedia.org/wiki/PKCS_8
@@ -108,13 +98,6 @@ export type Wallet = {
     address: string;
     // ...will add more stuff later, like signer or send/sign or balance
 };
-
-export interface SignatureType {
-    signature: string;
-    publicKey: string;
-    type: "ed25519";
-    signedPropertyNames: SignedPropertyNames;
-}
 
 export interface PublicationType extends Required<CreatePublicationOptions> {
     author: AuthorIpfsType;
@@ -180,7 +163,7 @@ interface PubsubMessage {
 
 export interface ChallengeType {
     challenge: string;
-    type: "image" | "text" | "video" | "audio" | "html";
+    type: "image/png" | "text/plain" | "chain/<chainTicker>";
 }
 
 export interface ChallengeRequestMessageType extends PubsubMessage {
@@ -310,7 +293,7 @@ export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts"> {
 export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     createdAt?: number;
     updatedAt?: number;
-    signer?: Pick<SignerType, "privateKey" | "type"> | SignerType;
+    signer?: Pick<SignerType, "privateKey" | "type">;
     encryption?: SubplebbitEncryption;
     signature?: SignatureType; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
 }
@@ -446,20 +429,6 @@ export interface CommentEditType extends PublicationType, Omit<CreateCommentEdit
 
 export type PublicationTypeName = "comment" | "vote" | "commentedit" | "commentupdate" | "subplebbit";
 
-export type SignatureTypes =
-    | PublicationTypeName
-    | "challengerequestmessage"
-    | "challengemessage"
-    | "challengeanswermessage"
-    | "challengeverificationmessage";
-
-export type CommentSignedPropertyNamesUnion = "subplebbitAddress" | "author" | "timestamp" | "content" | "title" | "link" | "parentCid";
-export type CommentEditSignedPropertyNamesUnion = keyof Omit<CreateCommentEditOptions, "signer" | "signature" | "protocolVersion">;
-export type VoteSignedPropertyNamesUnion = keyof Omit<CreateVoteOptions, "signer" | "protocolVersion">;
-
-export type CommentSignedPropertyNames = (keyof Pick<CreateCommentOptions, CommentSignedPropertyNamesUnion>)[];
-export type CommentEditSignedPropertyNames = CommentEditSignedPropertyNamesUnion[];
-
 export interface CommentPubsubMessage
     extends Pick<CommentType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {}
 export interface PostPubsubMessage
@@ -467,37 +436,6 @@ export interface PostPubsubMessage
 export interface VotePubsubMessage extends Pick<VoteType, VoteSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
 export interface CommentEditPubsubMessage
     extends Pick<CommentEditType, CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
-
-export type CommentUpdatedSignedPropertyNames = (keyof Omit<CommentUpdate, "signature" | "protocolVersion">)[];
-export type VoteSignedPropertyNames = VoteSignedPropertyNamesUnion[];
-export type SubplebbitSignedPropertyNames = (keyof Omit<SubplebbitType, "signer" | "signature" | "protocolVersion">)[];
-export type ChallengeRequestMessageSignedPropertyNames = (keyof Omit<
-    ChallengeRequestMessageType,
-    "signature" | "protocolVersion" | "userAgent"
->)[];
-export type ChallengeMessageSignedPropertyNames = (keyof Omit<ChallengeMessageType, "signature" | "protocolVersion" | "userAgent">)[];
-export type ChallengeAnswerMessageSignedPropertyNames = (keyof Omit<
-    ChallengeAnswerMessageType,
-    "signature" | "protocolVersion" | "userAgent"
->)[];
-export type ChallengeVerificationMessageSignedPropertyNames = (keyof Omit<
-    ChallengeVerificationMessageType,
-    "signature" | "protocolVersion" | "userAgent"
->)[];
-// MultisubSignedPropertyNames: // TODO
-
-// the fields that were signed as part of the signature, client should require that certain fields be signed or reject the publication
-export type SignedPropertyNames =
-    | CommentSignedPropertyNames
-    | CommentEditSignedPropertyNames
-    | VoteSignedPropertyNames
-    | SubplebbitSignedPropertyNames
-    | CommentUpdatedSignedPropertyNames
-    | ChallengeRequestMessageSignedPropertyNames
-    | ChallengeMessageSignedPropertyNames
-    | ChallengeAnswerMessageSignedPropertyNames
-    | ChallengeVerificationMessageSignedPropertyNames;
-// | MultisubSignedPropertyNames;
 
 type FunctionPropertyOf<T> = {
     [P in keyof T]: T[P] extends Function ? P : never;
@@ -535,29 +473,6 @@ export type OnlyDefinedProperties<T> = Pick<
         [Prop in keyof T]: T[Prop] extends undefined ? never : Prop;
     }[keyof T]
 >;
-
-// Signatures
-export type PublicationToVerify =
-    | CommentEditPubsubMessage
-    | VotePubsubMessage
-    | CommentPubsubMessage
-    | CommentUpdate
-    | SubplebbitIpfsType
-    | ChallengeRequestMessageType
-    | ChallengeMessageType
-    | ChallengeAnswerMessageType
-    | ChallengeVerificationMessageType;
-
-export type PublicationsToSign =
-    | CreateCommentEditOptions
-    | CreateVoteOptions
-    | CreateCommentOptions
-    | Omit<CommentUpdate, "signature">
-    | Omit<SubplebbitIpfsType, "signature">
-    | Omit<ChallengeAnswerMessageType, "signature">
-    | Omit<ChallengeRequestMessageType, "signature">
-    | Omit<ChallengeVerificationMessageType, "signature">
-    | Omit<ChallengeMessageType, "signature">;
 
 // Define database tables and fields here
 

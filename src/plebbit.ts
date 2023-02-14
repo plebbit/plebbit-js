@@ -7,13 +7,11 @@ import {
     CreateCommentEditOptions,
     CreateCommentOptions,
     CreatePublicationOptions,
-    CreateSignerOptions,
     CreateSubplebbitOptions,
     CreateVoteOptions,
     NativeFunctions,
     PlebbitOptions,
     PostType,
-    SignerType,
     SubplebbitIpfsType,
     SubplebbitType,
     VotePubsubMessage,
@@ -38,6 +36,7 @@ import lodash from "lodash";
 import { signComment, signCommentEdit, signVote } from "./signer/signatures";
 import { Options } from "ipfs-http-client";
 import { Buffer } from "buffer";
+import { CreateSignerOptions, SignerType } from "./signer/constants";
 
 export class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;

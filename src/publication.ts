@@ -15,8 +15,7 @@ import {
     DecryptedChallengeMessageType,
     ProtocolVersion,
     PublicationType,
-    PublicationTypeName,
-    SignatureType
+    PublicationTypeName
 } from "./types";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
@@ -24,6 +23,7 @@ import { Plebbit } from "./plebbit";
 import { Subplebbit } from "./subplebbit";
 import { signChallengeAnswer, signChallengeRequest, verifyChallengeMessage, verifyChallengeVerification } from "./signer/signatures";
 import { throwWithErrorCode, timestamp } from "./util";
+import { SignatureType } from "./signer/constants";
 
 class Publication extends EventEmitter implements PublicationType {
     subplebbitAddress: string;

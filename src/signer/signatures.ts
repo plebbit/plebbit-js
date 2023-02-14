@@ -9,41 +9,42 @@ import { removeNullAndUndefinedValuesRecursively, throwWithErrorCode } from "../
 import { Plebbit } from "../plebbit";
 
 import {
-    ChallengeAnswerMessageSignedPropertyNames,
     ChallengeAnswerMessageType,
-    ChallengeMessageSignedPropertyNames,
     ChallengeMessageType,
-    ChallengeRequestMessageSignedPropertyNames,
     ChallengeRequestMessageType,
-    ChallengeVerificationMessageSignedPropertyNames,
     ChallengeVerificationMessageType,
     CommentEditPubsubMessage,
-    CommentEditSignedPropertyNames,
     CommentIpfsType,
     CommentPubsubMessage,
-    CommentSignedPropertyNames,
     CommentUpdate,
-    CommentUpdatedSignedPropertyNames,
     CommentWithCommentUpdate,
     CreateCommentEditOptions,
     CreateCommentOptions,
     CreateVoteOptions,
     PageIpfs,
-    PublicationsToSign,
-    PublicationToVerify,
-    SignatureType,
-    SignedPropertyNames,
-    SignerType,
     SubplebbitIpfsType,
-    SubplebbitSignedPropertyNames,
     SubplebbitType,
-    VotePubsubMessage,
-    VoteSignedPropertyNames
+    VotePubsubMessage
 } from "../types";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
 import { messages } from "../errors";
 import assert from "assert";
+import {
+    ChallengeAnswerMessageSignedPropertyNames,
+    ChallengeMessageSignedPropertyNames,
+    ChallengeRequestMessageSignedPropertyNames,
+    ChallengeVerificationMessageSignedPropertyNames,
+    CommentEditSignedPropertyNames,
+    CommentSignedPropertyNames,
+    CommentUpdateSignedPropertyNames,
+    PublicationsToSign,
+    PublicationToVerify,
+    SignatureType,
+    SignerType,
+    SubplebbitSignedPropertyNames,
+    VoteSignedPropertyNames
+} from "./constants";
 
 interface ValidationResult {
     valid: boolean;
@@ -92,14 +93,14 @@ async function _validateAuthorIpns(author: CreateCommentOptions["author"], signe
 }
 
 async function _sign(
-    signedPropertyNames: SignedPropertyNames,
+    signedPropertyNames: string[],
     publication: PublicationsToSign,
     signer: SignerType,
     log: Logger
 ): Promise<SignatureType> {
     assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
 
-    const publicationEncoded = getBufferToSign(signedPropertyNames, publication); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    const publicationEncoded = bufferCleanedObject(signedPropertyNames, publication); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
     const signatureData = uint8ArrayToString(await signBufferEd25519(publicationEncoded, signer.privateKey), "base64");
     return {
         signature: signatureData,
@@ -112,42 +113,30 @@ async function _sign(
 export async function signComment(comment: CreateCommentOptions, signer: SignerType, plebbit: Plebbit): Promise<SignatureType> {
     const log = Logger("plebbit-js:signatures:signComment");
     await _validateAuthorIpns(comment.author, signer, plebbit);
-
-    //prettier-ignore
-    const signedPropertyNames: CommentSignedPropertyNames = ["subplebbitAddress","author","timestamp","content","title","link","parentCid"];
-    return _sign(signedPropertyNames, comment, signer, log);
+    return _sign(CommentSignedPropertyNames, comment, signer, log);
 }
 
 export async function signVote(vote: CreateVoteOptions, signer: SignerType, plebbit: Plebbit): Promise<SignatureType> {
     const log = Logger("plebbit-js:signatures:signVote");
     await _validateAuthorIpns(vote.author, signer, plebbit);
-
-    const signedPropertyNames: VoteSignedPropertyNames = ["subplebbitAddress", "author", "timestamp", "vote", "commentCid"];
-    return _sign(signedPropertyNames, vote, signer, log);
+    return _sign(VoteSignedPropertyNames, vote, signer, log);
 }
 
 export async function signCommentEdit(edit: CreateCommentEditOptions, signer: SignerType, plebbit: Plebbit): Promise<SignatureType> {
     const log = Logger("plebbit-js:signatures:signCommentEdit");
     await _validateAuthorIpns(edit.author, signer, plebbit);
-    //prettier-ignore
-    const signedPropertyNames: CommentEditSignedPropertyNames = ["author","timestamp","subplebbitAddress","content","commentCid","deleted","spoiler","pinned","locked","removed","reason","flair","reason","commentAuthor"];
-    return _sign(signedPropertyNames, edit, signer, log);
+    return _sign(CommentEditSignedPropertyNames, edit, signer, log);
 }
 
 export async function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType): Promise<SignatureType> {
     const log = Logger("plebbit-js:signatures:signCommentUpdate");
     // Not sure, should we validate update.authorEdit here?
-    //prettier-ignore
-    const signedPropertyNames: CommentUpdatedSignedPropertyNames = ["author","spoiler","pinned","locked","removed","reason","flair","upvoteCount","downvoteCount","replies","updatedAt","replyCount","edit"];
-    return _sign(signedPropertyNames, update, signer, log);
+    return _sign(CommentUpdateSignedPropertyNames, update, signer, log);
 }
 
 export async function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signature">, signer: SignerType): Promise<SignatureType> {
     const log = Logger("plebbit-js:signatures:signSubplebbit");
-    //prettier-ignore
-    const signedPropertyNames: SubplebbitSignedPropertyNames = ["title","description","roles","pubsubTopic","lastPostCid","posts","challengeTypes","metricsCid","createdAt","updatedAt","features","suggested","rules","address","flairs","encryption"];
-
-    return _sign(signedPropertyNames, subplebbit, signer, log);
+    return _sign(SubplebbitSignedPropertyNames, subplebbit, signer, log);
 }
 
 export async function signChallengeRequest(
@@ -155,10 +144,7 @@ export async function signChallengeRequest(
     signer: SignerType
 ): Promise<SignatureType> {
     const log = Logger("plebbit-js:signatures:signChallengeRequest");
-    //prettier-ignore
-    const signedPropertyNames: ChallengeRequestMessageSignedPropertyNames = ["type", "challengeRequestId", "encryptedPublication", "acceptedChallengeTypes", "timestamp"];
-
-    return _sign(signedPropertyNames, request, signer, log);
+    return _sign(ChallengeRequestMessageSignedPropertyNames, request, signer, log);
 }
 
 export async function signChallengeMessage(
@@ -166,9 +152,7 @@ export async function signChallengeMessage(
     signer: SignerType
 ): Promise<SignatureType> {
     const log = Logger("plebbit-js:signatures:signChallengeMessage");
-    const signedPropertyNames: ChallengeMessageSignedPropertyNames = ["type", "challengeRequestId", "encryptedChallenges"];
-
-    return _sign(signedPropertyNames, challengeMessage, signer, log);
+    return _sign(ChallengeMessageSignedPropertyNames, challengeMessage, signer, log);
 }
 
 export async function signChallengeAnswer(
@@ -176,10 +160,7 @@ export async function signChallengeAnswer(
     signer: SignerType
 ): Promise<SignatureType> {
     const log = Logger("plebbit-js:signatures:signChallengeAnswer");
-    //prettier-ignore
-    const signedPropertyNames: ChallengeAnswerMessageSignedPropertyNames = ["type", "challengeRequestId", "challengeAnswerId", "encryptedChallengeAnswers"];
-
-    return _sign(signedPropertyNames, challengeAnswer, signer, log);
+    return _sign(ChallengeAnswerMessageSignedPropertyNames, challengeAnswer, signer, log);
 }
 
 export async function signChallengeVerification(
@@ -187,10 +168,7 @@ export async function signChallengeVerification(
     signer: SignerType
 ): Promise<SignatureType> {
     const log = Logger("plebbit-js:signatures:signChallengeVerification");
-    //prettier-ignore
-    const signedPropertyNames: ChallengeVerificationMessageSignedPropertyNames = ["reason","type","challengeRequestId","encryptedPublication","challengeAnswerId","challengeSuccess","challengeErrors"];
-
-    return _sign(signedPropertyNames, challengeVerification, signer, log);
+    return _sign(ChallengeVerificationMessageSignedPropertyNames, challengeVerification, signer, log);
 }
 
 // Verify functions
@@ -223,13 +201,15 @@ const _verifyAuthor = async (
     return { valid: true };
 };
 
-const getBufferToSign = (signedPropertyNames: SignedPropertyNames, objectToSign: any) => {
+// DO NOT MODIFY THIS FUNCTION, OTHERWISE YOU RISK BREAKING BACKWARD COMPATIBILITY
+const bufferCleanedObject = (signedPropertyNames: string[], objectToSign: PublicationsToSign) => {
     const propsToSign = removeNullAndUndefinedValuesRecursively(lodash.pick(objectToSign, signedPropertyNames));
 
     const bufferToSign = cborg.encode(propsToSign);
     return bufferToSign;
 };
 
+// DO NOT MODIFY THIS FUNCTION, OTHERWISE YOU RISK BREAKING BACKWARD COMPATIBILITY
 const _verifyPublicationSignature = async (publicationToBeVerified: PublicationToVerify): Promise<boolean> => {
     const propsToSign = {};
     for (const propertyName of publicationToBeVerified.signature.signedPropertyNames)

@@ -1,4 +1,4 @@
-import { IpfsHttpClientPublicAPI, NativeFunctions, SignerType } from "../../types";
+import { IpfsHttpClientPublicAPI, NativeFunctions } from "../../types";
 
 import { CID, create, Options } from "ipfs-http-client";
 

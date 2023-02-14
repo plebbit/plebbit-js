@@ -22,7 +22,6 @@ import {
     CommentsTableRow,
     CommentType,
     CommentUpdate,
-    CommentUpdatesRow,
     CommentWithCommentUpdate,
     DbHandlerPublicAPI,
     DecryptedChallengeAnswerMessageType,
@@ -32,8 +31,6 @@ import {
     PagesType,
     PagesTypeIpfs,
     ProtocolVersion,
-    SignatureType,
-    SignerType,
     SubplebbitEditOptions,
     SubplebbitEncryption,
     SubplebbitFeatures,
@@ -77,6 +74,7 @@ import {
 import { CACHE_KEYS } from "./constants";
 import assert from "assert";
 import version from "./version";
+import { SignatureType, SignerType } from "./signer/constants";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
@@ -922,7 +920,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 challengeSuccess: challengeSuccess,
                 challengeErrors: challengeErrors,
                 userAgent: env.USER_AGENT,
-                protocolVersion: env.PROTOCOL_VERSION
+                protocolVersion: env.PROTOCOL_VERSION,
+                timestamp: timestamp()
             };
 
             const challengeVerification = new ChallengeVerificationMessage({
@@ -1004,15 +1003,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         // captcha, reason for skipping captcha (if it's skipped by nullifying captcha)
         const { image, text } = await nativeFunctions.createImageCaptcha(300, 100);
         this._challengeToSolution[request.challengeRequestId] = [text];
-        return [
-            [
-                {
-                    challenge: image,
-                    type: "image"
-                }
-            ],
-            undefined
-        ];
+        return [[{ challenge: image, type: "image/png" }], undefined];
     }
 
     private async defaultValidateCaptcha(answerMessage: DecryptedChallengeAnswerMessageType): Promise<[boolean, string[] | undefined]> {
