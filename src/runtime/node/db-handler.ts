@@ -222,6 +222,7 @@ export class DbHandler {
             table.text("protocolVersion").notNullable();
             table.json("signature").notNullable().unique();
             table.json("acceptedChallengeTypes").nullable(); // string[]
+            table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
         });
     }
 
@@ -240,6 +241,7 @@ export class DbHandler {
 
             // Might store the challenge here in the future. For now we're not because it would take too much storage
             table.json("challengeTypes").notNullable(); // string[]
+            table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
         });
     }
 
@@ -257,6 +259,7 @@ export class DbHandler {
             table.text("protocolVersion").notNullable();
             table.json("challengeAnswers").notNullable(); // Decrypted
             table.json("signature").notNullable().unique();
+            table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
         });
     }
 
@@ -277,6 +280,7 @@ export class DbHandler {
 
             table.text("userAgent").notNullable();
             table.text("protocolVersion").notNullable();
+            table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
         });
     }
 
@@ -284,7 +288,7 @@ export class DbHandler {
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("ipnsKeyName").notNullable().unique().primary();
             table.text("privateKey").notNullable().unique();
-            table.text("type").notNullable(); // RSA or any other type
+            table.text("type").notNullable(); // ed25519 or any other type
         });
     }
 
