@@ -71,9 +71,10 @@ const createNftSignature = async (nft, authorAddress, ethersJsSigner) => {
   // the property names must be in this order for the signature to match
   // insert props one at a time otherwise babel/webpack will reorder
   messageToSign.domainSeparator = 'plebbit-author-avatar'
+  messageToSign.authorAddress = authorAddress
+  messageToSign.timestamp =  nft.timestamp
   messageToSign.tokenAddress =  nft.address
   messageToSign.tokenId = String(nft.id) // must be a type string, not number
-  messageToSign.authorAddress = authorAddress
   // use plain JSON so the user can read what he's signing
   messageToSign = JSON.stringify(messageToSign)
 
@@ -91,9 +92,10 @@ const verifyNftSignature = async (nft, authorAddress) => {
   // the property names must be in this order for the signature to match
   // insert props one at a time otherwise babel/webpack will reorder
   messageThatShouldBeSigned.domainSeparator = 'plebbit-author-avatar'
+  messageThatShouldBeSigned.authorAddress = authorAddress
+  messageThatShouldBeSigned.timestamp = nft.timestamp
   messageThatShouldBeSigned.tokenAddress =  nft.address
   messageThatShouldBeSigned.tokenId = String(nft.id) // must be a type string, not number
-  messageThatShouldBeSigned.authorAddress = authorAddress
   messageThatShouldBeSigned = JSON.stringify(messageThatShouldBeSigned)
 
   const signatureAddress = ethers.utils.verifyMessage(messageThatShouldBeSigned, nft.signature)
@@ -105,11 +107,13 @@ const verifyNftSignature = async (nft, authorAddress) => {
 const avatarNft = {
   chainTicker: 'eth',
   address: '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d', // the contract address of the nft
+  timestamp: Math.round(Date.now() / 1000),
   id: 100 // the nft number 100 in the colletion
 }
 const avatarNft2 = {
   chainTicker: 'matic',
   address: '0xf6d8e606c862143556b342149a7fe0558c220375', // the contract address of the nft
+  timestamp: Math.round(Date.now() / 1000),
   id: 100 // the nft number 100 in the colletion
 }
 const author = {
