@@ -5,7 +5,7 @@ export { verifyComment, verifySubplebbit, verifyVote } from "./signatures";
 export { encryptEd25519AesGcm as encrypt, decryptEd25519AesGcm as decrypt } from "./encryption";
 
 export class Signer implements SignerType {
-    type: "rsa";
+    type: "ed25519";
     privateKey: string;
     publicKey?: string;
     address: string;
@@ -36,10 +36,10 @@ export class Signer implements SignerType {
 export const createSigner = async (createSignerOptions: CreateSignerOptions = {}) => {
     let { privateKey, type: signerType } = createSignerOptions;
     if (privateKey) {
-        if (signerType !== "rsa") throw Error("invalid signer createSignerOptions.type, not 'rsa'");
+        if (signerType !== "ed25519") throw Error("invalid signer createSignerOptions.type, not 'ed25519'");
     } else {
         privateKey = await generatePrivateKey();
-        signerType = "rsa";
+        signerType = "ed25519";
     }
     if (typeof signerType !== "string") throw Error("createSignerOptions does not include type");
 

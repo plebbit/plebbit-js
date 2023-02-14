@@ -20,7 +20,7 @@ export interface PlebbitOptions {
 }
 export type CreateSignerOptions = {
     privateKey?: string; // If undefined, generate a random private key
-    type?: "rsa";
+    type?: "ed25519";
 };
 
 export interface PageType {
@@ -42,7 +42,7 @@ export interface PagesTypeIpfs {
     pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
 }
 export interface SignerType {
-    type: "rsa";
+    type: "ed25519";
     privateKey: string;
     publicKey?: string;
     address: string;
@@ -112,7 +112,7 @@ export type Wallet = {
 export interface SignatureType {
     signature: string;
     publicKey: string;
-    type: "rsa";
+    type: "ed25519";
     signedPropertyNames: SignedPropertyNames;
 }
 
@@ -160,7 +160,14 @@ export interface CreateCommentEditOptions extends AuthorCommentEdit, ModeratorCo
 //* "Edit" publications
 //*********************
 
-export type Nft = { chainTicker: string; id: string; address: string; signature: string };
+export type Nft = {
+    chainTicker: string; // ticker of the chain, like eth, avax, sol, etc in lowercase
+    address: string; // address of the NFT contract
+    id: string; // tokenId or index of the specific NFT used, must be string type, not number
+    timestamp: number; // in seconds, needed to mitigate multiple users using the same signature
+    signature: string; // proof that author.address owns the nft
+    // how to resolve and verify NFT signatures https://github.com/plebbit/plebbit-js/blob/master/docs/nft.md
+};
 export type SubplebbitRole = { role: "owner" | "admin" | "moderator" };
 
 interface PubsubMessage {
