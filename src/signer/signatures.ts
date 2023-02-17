@@ -318,6 +318,8 @@ export async function verifyCommentUpdate(
     if (update.signature.publicKey !== subplebbit.encryption.publicKey)
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT };
 
+    if (update.cid !== comment.cid) return { valid: false, reason: messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT };
+
     if (update.replies) {
         // Validate update.replies
 

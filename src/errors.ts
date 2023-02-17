@@ -37,6 +37,7 @@ export enum messages {
     ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT = "Comment update is not signed by the subplebbit",
     ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR = "Author edit is not signed by original author of comment",
     ERR_SUBPLEBBIT_POSTS_INVALID = "subplebbit.posts signature is invalid",
+    ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT = "CommentUpdate.cid is different than comment.cid",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
