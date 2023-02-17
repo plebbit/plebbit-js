@@ -248,12 +248,12 @@ export class Comment extends Publication implements CommentType {
             this.replies = undefined;
             return;
         }
-        assert(this.subplebbit);
+        assert(this.subplebbit && this.cid);
         this.replies = new Pages({
             pages: parsedPages?.pages?.topAll ? { topAll: parsedPages?.pages?.topAll } : {},
             pageCids: parsedPages?.pageCids || {},
             subplebbit: lodash.pick(this.subplebbit, ["encryption", "plebbit", "address"]),
-            parentCid: this.parentCid
+            parentCid: this.cid
         });
     }
 
