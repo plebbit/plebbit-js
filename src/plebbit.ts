@@ -159,10 +159,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     private async _createCommentInstance(options: CreateCommentOptions | CommentType | CommentIpfsType | CommentPubsubMessage) {
-        const comment = typeof options.title === "string" ? new Post(<PostType>options, this) : new Comment(<CommentType>options, this);
-        //@ts-expect-error
-        if (options["updatedAt"]) await comment._initCommentUpdate(<CommentUpdate>options);
-        return comment;
+        return typeof options.title === "string" ? new Post(<PostType>options, this) : new Comment(<CommentType>options, this);
     }
 
     async createComment(options: CreateCommentOptions | CommentType | CommentIpfsType | CommentPubsubMessage): Promise<Comment | Post> {
