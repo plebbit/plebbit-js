@@ -79,7 +79,10 @@ export class SortHandler {
                     chunk.map(async (commentProps) => {
                         const comment = await this.subplebbit.plebbit.createComment(commentProps.comment);
                         const replies = await this.generateRepliesPages(commentProps.comment, undefined);
-                        return comment.toJSONPagesIpfs({ ...commentProps.commentUpdate, replies });
+                        return comment.toJSONPagesIpfs({
+                            ...commentProps.commentUpdate,
+                            replies: replies ? { pageCids: replies.pageCids, pages: lodash.pick(replies.pages, "topAll") } : undefined
+                        });
                     })
                 );
             })
