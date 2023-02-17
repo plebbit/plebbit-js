@@ -47,7 +47,7 @@ export class Comment extends Publication implements CommentType {
     downvoteCount?: number;
     replyCount?: number;
     updatedAt?: number;
-    replies: Pages;
+    replies?: Pages;
     edit?: AuthorCommentEdit;
     flair?: Flair;
     deleted?: CommentType["edit"]["deleted"];
@@ -108,7 +108,7 @@ export class Comment extends Publication implements CommentType {
         this.flair = props.flair || props.edit?.flair || this.flair;
         this.author.flair = props.author?.subplebbit?.flair || props.edit?.author?.flair || this.author?.flair;
 
-        await this.setReplies(props.replies);
+        if (props.replies) await this.setReplies(props.replies);
     }
 
     getType(): PublicationTypeName {
@@ -200,7 +200,7 @@ export class Comment extends Publication implements CommentType {
             downvoteCount: this.downvoteCount,
             replyCount: this.replyCount,
             edit: this.edit,
-            replies: this.replies.toJSON(),
+            replies: this.replies?.toJSON(),
             flair: this.flair, // Not sure this fits here
             spoiler: this.spoiler,
             pinned: this.pinned,
@@ -240,8 +240,12 @@ export class Comment extends Publication implements CommentType {
     }
 
     async setReplies(replies?: Pages | PagesType | PagesTypeIpfs) {
+        const parsedPages = await parsePagesIfIpfs(replies, this.subplebbit);
+        if (!parsedPages) {
+            this.replies = undefined;
+            return;
+        }
         assert(this.subplebbit);
-        const parsedPages = await parsePagesIfIpfs(replies, this.plebbit);
         this.replies = new Pages({
             pages: parsedPages?.pages?.topAll ? { topAll: parsedPages?.pages?.topAll } : {},
             pageCids: parsedPages?.pageCids || {},

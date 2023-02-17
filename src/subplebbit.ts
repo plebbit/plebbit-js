@@ -85,7 +85,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     description?: string;
     roles?: { [authorAddress: string]: SubplebbitRole };
     lastPostCid?: string;
-    posts: Pages;
+    posts?: Pages;
     pubsubTopic: string;
     challengeTypes?: ChallengeType[];
     metrics?: SubplebbitMetrics;
@@ -169,7 +169,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     }
 
     async _setPosts(newPosts: PagesType | PagesTypeIpfs) {
-        const parsedPages = await parsePagesIfIpfs(newPosts, this.plebbit);
+        const parsedPages = await parsePagesIfIpfs(newPosts, this);
+        if (!parsedPages) {
+            this.posts = undefined;
+            return;
+        }
         this.posts = new Pages({
             pages: parsedPages?.pages || {},
             pageCids: parsedPages?.pageCids || {},
@@ -1058,7 +1062,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         // Stringify to remove undefined
         const commentUpdatePriorToSigning: Omit<CommentUpdate, "signature"> = {
             ...calculatedCommentUpdate,
-            replies: await this.sortHandler.generateRepliesPages(comment, undefined),
+            replies: generatedPages ? { pageCids: generatedPages.pageCids, pages: lodash.pick(generatedPages.pages, "topAll") } : undefined,
             updatedAt: timestamp(),
             protocolVersion: version.PROTOCOL_VERSION
         };

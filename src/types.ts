@@ -283,11 +283,11 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
     pubsubTopic: string;
     metricsCid?: string;
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
-    posts: PagesType;
+    posts?: PagesType;
 }
 
 export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts"> {
-    posts: PagesTypeIpfs;
+    posts?: PagesTypeIpfs;
 }
 
 export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
@@ -369,7 +369,7 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     timestamp: number;
     protocolVersion: ProtocolVersion;
     signature: SignatureType;
-    replies: PagesType;
+    replies?: PagesType;
     postCid?: string;
     previousCid?: string; // each post is a linked list
     ipnsKeyName?: string;

@@ -338,7 +338,7 @@ async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
         parentComment._updateIntervalMs = 200;
         await parentComment.update();
 
-        await waitUntil(() => parentComment.replies.pages.topAll?.comments?.some((tComment) => tComment.cid === comment.cid), {
+        await waitUntil(() => parentComment.replies?.pages.topAll?.comments?.some((tComment) => tComment.cid === comment.cid), {
             intervalBetweenAttempts: 100,
             timeout: 200000
         });
@@ -423,9 +423,20 @@ export async function waitTillCommentIsInParentPages(
     await parent.update();
     const pageCid = () => (parent instanceof Comment ? parent.replies?.pageCids?.topAll : parent.posts?.pageCids?.new);
     let commentInPage: Comment;
-    await waitUntil(async () => Boolean(pageCid() && (commentInPage = await findCommentInPage(comment.cid, pageCid(), comment.replies))), {
-        timeout: 200000
-    });
+    await waitUntil(
+        async () =>
+            Boolean(
+                pageCid() &&
+                    (commentInPage = await findCommentInPage(
+                        comment.cid,
+                        pageCid(),
+                        parent instanceof Subplebbit ? parent.posts : parent.replies
+                    ))
+            ),
+        {
+            timeout: 200000
+        }
+    );
 
     await parent.stop();
 
