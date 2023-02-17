@@ -163,8 +163,14 @@ export class SortHandler {
 
     private async _generateSubplebbitPosts(trx, pageOptions: PageOptions): Promise<PagesTypeIpfs | undefined> {
         // Sorting posts on a subplebbit level
+        const log = Logger("plebbit-js:sort-handler:generateSubplebbitPosts");
 
         const rawPosts = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions, trx);
+
+        if (rawPosts.length === 0) {
+            log(`Subplebbit (${this.subplebbit.address}) has no posts to generate Pages`);
+            return undefined;
+        }
 
         const sortResults = await Promise.all(
             Object.keys(POSTS_SORT_TYPES).map((sortName: PostSortName) => this.sortComments(rawPosts, sortName, pageOptions))
@@ -200,9 +206,14 @@ export class SortHandler {
     }
 
     async generateRepliesPages(comment: Pick<CommentWithCommentUpdate, "cid">, trx?): Promise<PagesTypeIpfs | undefined> {
+        const log = Logger("plebbit-js:sort-handler:generateRepliesPages");
+
         const cacheKey = CACHE_KEYS[CACHE_KEYS.PREFIX_COMMENT_REPLIES_].concat(comment.cid);
         const cachedReplies: PagesTypeIpfs | undefined = await this.subplebbit.dbHandler!.keyvGet(cacheKey);
-        if (cachedReplies) return cachedReplies;
+        if (cachedReplies) {
+            log.trace(`Comment (${comment.cid}) pages are cached, returning them`);
+            return cachedReplies;
+        }
 
         const pages = await this._generateCommentReplies(comment, trx);
         // TODO assert here
@@ -220,17 +231,12 @@ export class SortHandler {
             parentCid: null,
             pageSize: 50
         };
-        const subplebbitPostCount = await this.subplebbit.dbHandler!.queryCountOfPosts(pageOptions, trx);
-        if (subplebbitPostCount === 0) return undefined;
-
         const cacheKey = CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT];
 
         const cachedPosts: PagesTypeIpfs | undefined = await this.subplebbit.dbHandler?.keyvGet(cacheKey);
         if (cachedPosts) return cachedPosts;
 
         const pages = await this._generateSubplebbitPosts(trx, pageOptions);
-        if (!pages && subplebbitPostCount > 0)
-            throw Error(`Pages are empty even though subplebbit(${this.subplebbit.address}) has ${subplebbitPostCount} posts`);
         if (!pages) return undefined;
 
         await this.subplebbit.dbHandler?.keyvSet(cacheKey, pages);
