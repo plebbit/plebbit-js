@@ -326,8 +326,8 @@ async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
         await waitUntil(
             async () => {
                 if (!loadedSub?.posts?.pageCids?.new) return false;
-                const newComments = await loadAllPages(loadedSub.posts.pageCids.new, loadedSub.posts);
-                return newComments.some((commentInPage) => commentInPage.cid === comment.cid);
+                const commentInPage = findCommentInPage(comment.cid, loadedSub.posts.pageCids.new, loadedSub.posts);
+                return Boolean(commentInPage);
             },
             { timeout: 100000 }
         );
@@ -424,9 +424,16 @@ export async function waitTillCommentIsInParentPages(
     const pageCid = () => (parent instanceof Comment ? parent.replies?.pageCids?.topAll : parent.posts?.pageCids?.new);
     const pagesInstance = () => (parent instanceof Subplebbit ? parent.posts : parent.replies);
     let commentInPage: Comment;
-    await waitUntil(async () => Boolean(pageCid() && (commentInPage = await findCommentInPage(comment.cid, pageCid(), pagesInstance()))), {
-        timeout: 200000
-    });
+    await waitUntil(
+        async () => {
+            const repliesPageCid = pageCid();
+            if (repliesPageCid) commentInPage = await findCommentInPage(comment.cid, repliesPageCid, pagesInstance());
+            return Boolean(commentInPage);
+        },
+        {
+            timeout: 200000
+        }
+    );
 
     await parent.stop();
 
