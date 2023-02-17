@@ -83,6 +83,9 @@ export class Comment extends Publication implements CommentType {
         this.thumbnailUrl = props.thumbnailUrl;
         this.content = props.content;
         this.original = props.original;
+        this.spoiler = props.spoiler;
+        this.protocolVersion = props.protocolVersion;
+        this.flair = props.flair;
         this.setPreviousCid(props.previousCid);
     }
 
@@ -102,7 +105,7 @@ export class Comment extends Publication implements CommentType {
         this.protocolVersion = props.protocolVersion;
 
         // Merge props from original comment and CommentUpdate
-        this.spoiler = props.edit?.spoiler ?? props.spoiler;
+        this.spoiler = props.edit?.spoiler ?? this.spoiler;
         this.author.subplebbit = props.author.subplebbit;
         if (props.edit?.content) this.content = props.edit.content;
         this.flair = props.flair || props.edit?.flair || this.flair;
