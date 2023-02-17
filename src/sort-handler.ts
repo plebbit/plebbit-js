@@ -238,7 +238,7 @@ export class SortHandler {
         return pages;
     }
 
-    async deleteCommentPageCache(dbComment: Pick<CommentWithCommentUpdate, "cid" | "parentCid" | "depth">) {
+    async deleteCommentAndParentsPageCache(dbComment: Pick<CommentWithCommentUpdate, "cid">, trx?: any) {
         const log = Logger("plebbit-js:sort-handler:deleteCommentPageCache");
 
         const cacheKey = (cid: string) => CACHE_KEYS[CACHE_KEYS.PREFIX_COMMENT_REPLIES_].concat(cid);
@@ -246,7 +246,7 @@ export class SortHandler {
         assert(this.subplebbit.dbHandler && dbComment.cid);
         const cachesToDelete: string[] = [
             cacheKey(dbComment.cid),
-            ...(await this.subplebbit.dbHandler.queryParentsOfComment(dbComment, undefined)).map((comment) => cacheKey(comment.cid)),
+            ...(await this.subplebbit.dbHandler.queryParents(dbComment, trx)).map((comment) => cacheKey(comment.cid)),
             CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]
         ];
         log.trace(`Caches to delete: ${cachesToDelete}`);

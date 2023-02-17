@@ -492,18 +492,15 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENTS).where("authorAddress", authorAddress);
     }
 
-    async queryParentsOfComment(
-        comment: Pick<CommentWithCommentUpdate, "depth" | "parentCid">,
-        trx?: Transaction
-    ): Promise<CommentsTableRow[]> {
+    async queryParents(comment: Pick<CommentsTableRow, "cid">, trx?: Transaction): Promise<CommentsTableRow[]> {
         const parents: CommentsTableRow[] = [];
-        let curParentCid = comment.parentCid;
+        const rootComment = await this.queryComment(comment.cid, trx);
+        let curParentCid = rootComment.parentCid;
         while (curParentCid) {
             const parent = await this.queryComment(curParentCid, trx);
             if (parent) parents.push(parent);
             curParentCid = parent?.parentCid;
         }
-        assert.equal(comment.depth, parents.length, "Depth should equal to parents length");
         return parents;
     }
 
