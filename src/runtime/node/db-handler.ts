@@ -432,7 +432,7 @@ export class DbHandler {
         let query = this._baseTransaction(trx)(TABLES.COMMENTS)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .jsonExtract(`${TABLES.COMMENT_UPDATES}.edit`, "$.deleted", "deleted", true)
-            .where({ parentCid: options.parentCid || null });
+            .where({ parentCid: options.parentCid });
 
         if (options.excludeCommentsWithDifferentSubAddress) query = query.where({ subplebbitAddress: this._subplebbit.address });
         if (options.excludeRemovedComments) query = query.whereNot(`${TABLES.COMMENT_UPDATES}.removed`, 1);
@@ -441,10 +441,17 @@ export class DbHandler {
         return query;
     }
 
-    private async _queryReplyCount(commentCid: string, trx?: Transaction): Promise<number> {
-        const children = await this.queryCommentsUnderComment(commentCid, trx);
+    async queryReplyCount(commentCid: string, trx?: Transaction): Promise<number> {
+        const options: PageOptions = {
+            excludeCommentsWithDifferentSubAddress: true,
+            excludeDeletedComments: true,
+            excludeRemovedComments: true,
+            parentCid: commentCid,
+            pageSize: 50
+        };
+        const children = await this.queryCommentsForPages(options, trx);
 
-        return children.length + lodash.sum(await Promise.all(children.map((comment) => this._queryReplyCount(comment.cid, trx))));
+        return children.length + lodash.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.comment.cid, trx))));
     }
 
     async _queryCommentWithRemoteCommentUpdate(
@@ -551,8 +558,8 @@ export class DbHandler {
         return combinedMetrics;
     }
 
-    async queryCommentsUnderComment(parentCid: string | undefined | null, trx?: Transaction): Promise<CommentsTableRow[]> {
-        return this._baseTransaction(trx)(TABLES.COMMENTS).where({ parentCid: parentCid || null });
+    async queryCommentsUnderComment(parentCid: string | null, trx?: Transaction): Promise<CommentsTableRow[]> {
+        return this._baseTransaction(trx)(TABLES.COMMENTS).where({ parentCid: parentCid });
     }
 
     async queryComment(cid: string, trx?: Transaction): Promise<CommentsTableRow | undefined> {
@@ -579,7 +586,7 @@ export class DbHandler {
         trx?: Transaction
     ): Promise<Pick<CommentWithCommentUpdate, "replyCount" | "upvoteCount" | "downvoteCount">> {
         const [replyCount, upvoteCount, downvoteCount] = await Promise.all([
-            this._queryReplyCount(cid, trx),
+            this.queryReplyCount(cid, trx),
             this._queryCommentUpvote(cid, trx),
             this._queryCommentDownvote(cid, trx)
         ]);

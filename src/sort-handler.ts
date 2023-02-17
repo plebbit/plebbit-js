@@ -52,7 +52,7 @@ export type PageOptions = {
     excludeRemovedComments: boolean;
     excludeDeletedComments: boolean;
     excludeCommentsWithDifferentSubAddress: boolean;
-    parentCid?: string;
+    parentCid: string | null;
     pageSize: number;
 };
 
@@ -214,7 +214,7 @@ export class SortHandler {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: true,
             excludeRemovedComments: true,
-            parentCid: undefined,
+            parentCid: null,
             pageSize: 50
         };
         const subplebbitPostCount = await this.subplebbit.dbHandler!.queryCountOfPosts(pageOptions, trx);
