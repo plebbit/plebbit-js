@@ -185,10 +185,12 @@ export function removeNullAndUndefinedValues<T extends Object>(obj: T): T {
     return <T>lodash.omitBy(obj, lodash.isNil);
 }
 
-export function removeNullAndUndefinedValuesRecursively<T extends Object>(obj: T): T {
+export function removeNullAndUndefinedValuesRecursively<T>(obj: T): T {
+    if (Array.isArray(obj)) return <T>obj.map(removeNullAndUndefinedValuesRecursively);
+    if (!lodash.isPlainObject(obj)) return obj;
     const cleanedObj = removeNullAndUndefinedValues(obj);
     for (const [key, value] of Object.entries(cleanedObj))
-        if (lodash.isPlainObject(value)) cleanedObj[key] = removeNullAndUndefinedValuesRecursively(value);
+        if (lodash.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeNullAndUndefinedValuesRecursively(value);
 
     return cleanedObj;
 }
