@@ -139,7 +139,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         if (!signatureValidity.valid)
             throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", `getComment (${cid}): Failed verification reason: ${signatureValidity.reason}`);
 
-        return this.createComment(commentJson);
+        return this.createComment({ ...commentJson, cid });
     }
 
     private async _initMissingFields(pubOptions: CreatePublicationOptions & { signer: CreateCommentOptions["signer"] }, log: Logger) {
