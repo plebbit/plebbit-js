@@ -435,7 +435,7 @@ export class DbHandler {
             .where({ parentCid: options.parentCid });
 
         if (options.excludeCommentsWithDifferentSubAddress) query = query.where({ subplebbitAddress: this._subplebbit.address });
-        if (options.excludeRemovedComments) query = query.whereNot(`${TABLES.COMMENT_UPDATES}.removed`, 1);
+        if (options.excludeRemovedComments) query = query.andWhereRaw(`${TABLES.COMMENT_UPDATES}.removed is not 1`);
         if (options.excludeDeletedComments) query = query.andWhereRaw("`deleted` is not 1");
 
         return query;
