@@ -207,7 +207,7 @@ async function _publishComments(parentComments: Comment[], subplebbit: Subplebbi
                     await Promise.all(
                         new Array(numOfCommentsToPublish).fill(null).map(async () => {
                             assert(typeof parentComment?.cid === "string");
-                            const comment = await generateMockComment(parentComment, subplebbit.plebbit, true, {signer: signers[0]});
+                            const comment = await generateMockComment(parentComment, subplebbit.plebbit, true, { signer: signers[0] });
                             await publishWithExpectedResult(comment, true);
                             comments.push(<Comment>comment);
                         })
@@ -325,7 +325,7 @@ async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
 
         await waitUntil(
             async () => {
-                if (!loadedSub.posts.pageCids?.new) return false;
+                if (!loadedSub?.posts?.pageCids?.new) return false;
                 const newComments = await loadAllPages(loadedSub.posts.pageCids.new, loadedSub.posts);
                 return newComments.some((commentInPage) => commentInPage.cid === comment.cid);
             },
@@ -338,7 +338,7 @@ async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
         parentComment._updateIntervalMs = 200;
         await parentComment.update();
 
-        await waitUntil(() => parentComment.replies?.pages.topAll?.comments?.some((tComment) => tComment.cid === comment.cid), {
+        await waitUntil(() => parentComment.replies?.pages?.topAll?.comments?.some((tComment) => tComment.cid === comment.cid), {
             intervalBetweenAttempts: 100,
             timeout: 200000
         });
@@ -422,21 +422,11 @@ export async function waitTillCommentIsInParentPages(
     parent._updateIntervalMs = 200;
     await parent.update();
     const pageCid = () => (parent instanceof Comment ? parent.replies?.pageCids?.topAll : parent.posts?.pageCids?.new);
+    const pagesInstance = () => (parent instanceof Subplebbit ? parent.posts : parent.replies);
     let commentInPage: Comment;
-    await waitUntil(
-        async () =>
-            Boolean(
-                pageCid() &&
-                    (commentInPage = await findCommentInPage(
-                        comment.cid,
-                        pageCid(),
-                        parent instanceof Subplebbit ? parent.posts : parent.replies
-                    ))
-            ),
-        {
-            timeout: 200000
-        }
-    );
+    await waitUntil(async () => Boolean(pageCid() && (commentInPage = await findCommentInPage(comment.cid, pageCid(), pagesInstance()))), {
+        timeout: 200000
+    });
 
     await parent.stop();
 
@@ -444,7 +434,7 @@ export async function waitTillCommentIsInParentPages(
 
     if (checkInAllPages)
         for (const pageCid of Object.values(pageCids)) {
-            const commentInPage = await findCommentInPage(comment.cid, pageCid, comment.replies);
+            const commentInPage = await findCommentInPage(comment.cid, pageCid, pagesInstance());
             for (const [key, value] of Object.entries(propsToCheckFor))
                 if (deterministicStringify(commentInPage[key]) !== deterministicStringify(value))
                     throw Error(`commentInPage[${key}] is incorrect`);
