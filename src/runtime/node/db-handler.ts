@@ -454,7 +454,7 @@ export class DbHandler {
         return children.length + lodash.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.comment.cid, trx))));
     }
 
-    async _queryCommentWithRemoteCommentUpdate(
+    async queryCommentWithRemoteCommentUpdate(
         cid: string,
         trx?: Transaction
     ): Promise<{ comment: CommentsTableRow; commentUpdate: CommentUpdatesRow }> {
@@ -679,14 +679,11 @@ export class DbHandler {
             this.queryCommentFlags(comment.cid, trx),
             this._queryModCommentFlair(comment, trx)
         ]);
-
-        const commentUpdateFlair = commentModFlair?.flair || authorEdit?.flair;
-
         return {
             cid: comment.cid,
             edit: authorEdit,
             ...commentUpdateCounts,
-            flair: commentUpdateFlair,
+            flair: commentModFlair?.flair || authorEdit?.flair,
             ...commentFlags,
             ...moderatorReason,
 
@@ -717,12 +714,6 @@ export class DbHandler {
             })
         );
         return comments;
-    }
-
-    async queryCountOfPosts(pageOptions: PageOptions, trx?: Knex.Transaction): Promise<number> {
-        const obj = await this._basePageQuery(pageOptions, trx).count().where({ depth: 0 }).first();
-        if (!obj) return 0;
-        return Number(obj["count(*)"]);
     }
 
     async queryAuthorModEdits(authorAddress: string, trx?: Knex.Transaction): Promise<Pick<SubplebbitAuthor, "banExpiresAt" | "flair">> {
