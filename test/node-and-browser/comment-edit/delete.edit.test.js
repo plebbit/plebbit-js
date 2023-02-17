@@ -83,17 +83,17 @@ describe("Deleting a post", async () => {
     });
 
     it(`Can't publish vote on deleted post`, async () => {
-        const voteUnderDeletedPost = await generateMockVote(postToDelete, 1, plebbit, lodash.sample(signers));
+        const voteUnderDeletedPost = await generateMockVote(postToDelete, 1, plebbit, { signer: lodash.sample(signers) });
         await publishWithExpectedResult(voteUnderDeletedPost, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
     });
 
     it(`Can't publish reply under deleted post`, async () => {
-        const replyUnderDeletedPost = await generateMockComment(postToDelete, plebbit, lodash.sample(signers));
+        const replyUnderDeletedPost = await generateMockComment(postToDelete, plebbit, false, { signer: lodash.sample(signers) });
         await publishWithExpectedResult(replyUnderDeletedPost, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
     });
 
     it(`Can't publish a reply under a reply of a deleted post`, async () => {
-        const reply = await generateMockComment(postReply, plebbit, lodash.sample(signers));
+        const reply = await generateMockComment(postReply, plebbit, false, { signer: lodash.sample(signers) });
         await publishWithExpectedResult(reply, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
     });
 

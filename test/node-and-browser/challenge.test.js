@@ -17,7 +17,7 @@ describe("math-cli", async () => {
         plebbit = await mockPlebbit();
     });
     it("can post after answering correctly", async function () {
-        const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[0]);
+        const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[0] });
         mockPost.removeAllListeners();
         mockPost.once("challenge", (challengeMessage) => {
             mockPost.publishChallengeAnswers(["2"]);
@@ -25,7 +25,7 @@ describe("math-cli", async () => {
         await publishWithExpectedResult(mockPost, true);
     });
     it("Throws an error when user fails to solve mathcli captcha", async function () {
-        const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[0]);
+        const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[0] });
         mockPost.removeAllListeners();
         mockPost.once("challenge", (challengeMessage) => {
             mockPost.publishChallengeAnswers(["3"]);
@@ -40,7 +40,7 @@ describe("image captcha", async () => {
         plebbit = await mockPlebbit();
     });
     it("can post after answering correctly", async function () {
-        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit, signers[0]);
+        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit, false, { signer: signers[0] });
         mockPost.removeAllListeners();
 
         mockPost.once("challenge", async (challengeMsg) => {
@@ -52,7 +52,7 @@ describe("image captcha", async () => {
     });
 
     it("Throws an error if unable to solve image captcha", async function () {
-        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit, signers[0]);
+        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit, false, { signer: signers[0] });
         await publishWithExpectedResult(mockPost, false);
     });
 });

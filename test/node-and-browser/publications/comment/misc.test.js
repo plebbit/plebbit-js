@@ -49,14 +49,15 @@ describe("createComment", async () => {
         const comment = await generateMockComment(
             await plebbit.createComment((await plebbit.getSubplebbit(subplebbitAddress)).posts.pages.hot.comments[0]),
             plebbit,
-            lodash.sample(signers)
+            false,
+            { signer: lodash.sample(signers) }
         );
         const commentFromStringifiedComment = await plebbit.createComment(JSON.parse(JSON.stringify(comment)));
         expect(JSON.stringify(comment)).to.equal(JSON.stringify(commentFromStringifiedComment));
     });
 
     it(`(post: Post) === plebbit.createComment(JSON.parse(JSON.stringify(post)))`, async () => {
-        const post = await generateMockPost(subplebbitAddress, plebbit, lodash.sample(signers));
+        const post = await generateMockPost(subplebbitAddress, plebbit, false, { signer: lodash.sample(signers) });
         const postFromStringifiedPost = await plebbit.createComment(JSON.parse(JSON.stringify(post)));
         expect(JSON.stringify(post)).to.equal(JSON.stringify(postFromStringifiedPost));
     });
@@ -90,3 +91,5 @@ describe(`comment.replyCount`, async () => {
         await waitUntil(() => post.replyCount === 2 && reply.replyCount === 1, { timeout: 200000 });
     });
 });
+
+describe("CommentUpdate.author.subplebbit.firstCommentTimestamp");

@@ -12,7 +12,6 @@ const lodash = require("lodash");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
-const { default: waitUntil } = require("async-wait-until");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -26,7 +25,7 @@ describe(`Client side verification`, async () => {
         plebbit = await mockPlebbit();
     });
     it(".publish() throws if publication has invalid signature", async () => {
-        const mockComment = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
+        const mockComment = await generateMockPost(subplebbitAddress, plebbit, false, { signer: signers[0] });
         mockComment.timestamp += 1; // Corrupts signature
         await assert.isRejected(mockComment.publish(), messages.ERR_SIGNATURE_IS_INVALID);
     });
@@ -56,7 +55,7 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         const parentPost = await plebbit.getComment(subplebbit.lastPostCid);
         expect(parentPost.timestamp).to.be.a("number");
-        const reply = await generateMockComment(parentPost, plebbit, signers[0], false, { timestamp: parentPost.timestamp - 1 });
+        const reply = await generateMockComment(parentPost, plebbit, false, { signer: signers[0], timestamp: parentPost.timestamp - 1 });
         expect(reply.timestamp).to.be.lessThan(parentPost.timestamp);
         await publishWithExpectedResult(reply, false, messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT);
     });
@@ -95,7 +94,7 @@ describe(`Posts with forbidden fields are rejected during challenge exchange`, a
     ];
     forbiddenFieldsWithValue.map((forbiddenType) =>
         it(`comment.${Object.keys(forbiddenType)[0]} is rejected by sub`, async () => {
-            const post = await generateMockPost(subplebbitAddress, plebbit, undefined, undefined);
+            const post = await generateMockPost(subplebbitAddress, plebbit, false);
             const postPubsubJsonPrior = post.toJSONPubsubMessagePublication();
             const postJsonPrior = post.toJSON();
             post.toJSONPubsubMessagePublication = () => ({ ...postPubsubJsonPrior, ...forbiddenType });
@@ -115,6 +114,7 @@ describe("Posts with forbidden author fields are rejected", async () => {
     before(async () => {
         plebbit = await mockPlebbit();
     });
+    // TODO redo this
     const forbiddenFieldsWithValue = [
         { subplebbit: { lastCommentCid: "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs", postScore: 0, replyScore: 0 } },
         { flair: { text: "12345" } },
@@ -124,7 +124,7 @@ describe("Posts with forbidden author fields are rejected", async () => {
 
     forbiddenFieldsWithValue.map((forbiddenType) =>
         it(`comment.author.${Object.keys(forbiddenType)[0]} is rejected by sub`, async () => {
-            const post = await generateMockPost(subplebbitAddress, plebbit, undefined, undefined);
+            const post = await generateMockPost(subplebbitAddress, plebbit);
             const postPubsubJsonPrior = post.toJSONPubsubMessagePublication();
             const postJsonPrior = post.toJSON();
             post.toJSONPubsubMessagePublication = () => ({

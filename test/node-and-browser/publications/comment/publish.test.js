@@ -34,7 +34,7 @@ describe("publishing posts", async () => {
 
     it(`Can Publish a post with only link`, async () => {
         const link = "https://demo.plebbit.eth.limo";
-        const post = await generateMockPost(subplebbitAddress, plebbit, undefined, false, { signer: lodash.sample(signers), link });
+        const post = await generateMockPost(subplebbitAddress, plebbit, false, { signer: lodash.sample(signers), link });
         expect(post.link).to.equal(link);
         await publishWithExpectedResult(post, true);
         await waitTillCommentIsInParentPages(post, plebbit, { link });
@@ -55,7 +55,7 @@ describe("publishing posts", async () => {
     });
 
     it(`Publish a post with spoiler`, async () => {
-        const post = await generateMockPost(subplebbitAddress, plebbit, lodash.sample(signers), undefined, { spoiler: true });
+        const post = await generateMockPost(subplebbitAddress, plebbit, false, { spoiler: true, signer: lodash.sample(signers) });
 
         expect(post.spoiler).to.be.true;
 
@@ -66,7 +66,7 @@ describe("publishing posts", async () => {
 
     it(`publish a post with author.wallets`, async () => {
         const wallets = { btc: { address: "0xdeadbeef" }, eth: { address: "rinse12.eth" } };
-        const post = await generateMockPost(subplebbitAddress, plebbit, undefined, false, { author: { wallets } });
+        const post = await generateMockPost(subplebbitAddress, plebbit, false, { author: { wallets } });
         expect(post.author.wallets).to.deep.equal(wallets);
         await publishWithExpectedResult(post, true);
         await waitTillCommentIsInParentPages(post, plebbit);

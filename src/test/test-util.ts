@@ -30,13 +30,12 @@ function generateRandomTimestamp(parentTimestamp?: number): number {
 export async function generateMockPost(
     subplebbitAddress: string,
     plebbit: Plebbit,
-    signer?: SignerType,
     randomTimestamp = false,
     postProps: Partial<CreateCommentOptions | PostType> = {}
 ) {
     const postTimestamp = (randomTimestamp && generateRandomTimestamp()) || timestamp();
     const postStartTestTime = Date.now() / 1000 + Math.random();
-    signer = signer || (await plebbit.createSigner());
+    const signer = postProps?.signer || (await plebbit.createSigner());
     const post = await plebbit.createComment({
         author: { displayName: `Mock Author - ${postStartTestTime}` },
         title: `Mock Post - ${postStartTestTime}`,
@@ -59,7 +58,6 @@ export async function generateMockPost(
 export async function generateMockComment(
     parentPostOrComment: Post | Comment,
     plebbit: Plebbit,
-    signer?: CreateCommentOptions["signer"],
     randomTimestamp = false,
     commentProps: Partial<CreateCommentOptions> = {}
 ): Promise<Comment> {
@@ -67,7 +65,7 @@ export async function generateMockComment(
         throw Error("Need to have parentComment defined to generate mock comment");
     const commentTimestamp = (randomTimestamp && generateRandomTimestamp(parentPostOrComment.timestamp)) || timestamp();
     const commentTime = Date.now() / 1000 + Math.random();
-    signer = signer || (await plebbit.createSigner());
+    const signer = commentProps?.signer || (await plebbit.createSigner());
     const comment: Comment = await plebbit.createComment({
         author: { displayName: `Mock Author - ${commentTime}` },
         signer: signer,
@@ -197,7 +195,7 @@ async function _publishComments(parentComments: Comment[], subplebbit: Subplebbi
     if (parentComments.length === 0)
         await Promise.all(
             new Array(numOfCommentsToPublish).fill(null).map(async () => {
-                const post = await generateMockPost(subplebbit.address, subplebbit.plebbit, signers[0], true);
+                const post = await generateMockPost(subplebbit.address, subplebbit.plebbit, true, { signer: signers[0] });
                 await publishWithExpectedResult(post, true);
                 comments.push(post);
             })
@@ -209,7 +207,7 @@ async function _publishComments(parentComments: Comment[], subplebbit: Subplebbi
                     await Promise.all(
                         new Array(numOfCommentsToPublish).fill(null).map(async () => {
                             assert(typeof parentComment?.cid === "string");
-                            const comment = await generateMockComment(parentComment, subplebbit.plebbit, signers[0], true);
+                            const comment = await generateMockComment(parentComment, subplebbit.plebbit, true, {signer: signers[0]});
                             await publishWithExpectedResult(comment, true);
                             comments.push(<Comment>comment);
                         })
@@ -354,7 +352,7 @@ export async function publishRandomReply(
     commentProps: Partial<CreateCommentOptions>,
     waitTillCommentIsOnline = true
 ): Promise<Comment> {
-    const reply = await generateMockComment(parentComment, plebbit, commentProps?.signer, false, {
+    const reply = await generateMockComment(parentComment, plebbit, false, {
         content: `Content ${Date.now() + Math.random()}`,
         ...commentProps
     });
@@ -369,7 +367,7 @@ export async function publishRandomPost(
     postProps?: Partial<PostType>,
     waitTillCommentIsOnline = true
 ) {
-    const post = await generateMockPost(subplebbitAddress, plebbit, postProps?.signer, false, {
+    const post = await generateMockPost(subplebbitAddress, plebbit, false, {
         content: `Content ${Date.now() + Math.random()}`,
         ...postProps
     });
