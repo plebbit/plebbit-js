@@ -93,7 +93,7 @@ async function _validateAuthorIpns(author: CreateCommentOptions["author"], signe
 }
 
 async function _sign(
-    signedPropertyNames: string[],
+    signedPropertyNames: readonly string[],
     publication: PublicationsToSign,
     signer: SignerType,
     log: Logger
@@ -202,7 +202,7 @@ const _verifyAuthor = async (
 };
 
 // DO NOT MODIFY THIS FUNCTION, OTHERWISE YOU RISK BREAKING BACKWARD COMPATIBILITY
-const bufferCleanedObject = (signedPropertyNames: string[], objectToSign: PublicationsToSign) => {
+const bufferCleanedObject = (signedPropertyNames: readonly string[], objectToSign: PublicationsToSign) => {
     const propsToSign = removeNullAndUndefinedValuesRecursively(lodash.pick(objectToSign, signedPropertyNames));
 
     const bufferToSign = cborg.encode(propsToSign);

@@ -48,7 +48,7 @@ export interface SignatureType {
     signature: string;
     publicKey: string;
     type: "ed25519";
-    signedPropertyNames: string[];
+    signedPropertyNames: readonly string[];
 }
 
 export type SignatureTypes =
@@ -61,7 +61,7 @@ export type SignatureTypes =
 // ---------------------------
 // SignedPropertyNames
 
-export const CommentSignedPropertyNames: (keyof CreateCommentOptions)[] = [
+export const CommentSignedPropertyNames: readonly (keyof CreateCommentOptions)[] = [
     "subplebbitAddress",
     "author",
     "timestamp",
@@ -69,9 +69,9 @@ export const CommentSignedPropertyNames: (keyof CreateCommentOptions)[] = [
     "title",
     "link",
     "parentCid"
-];
+] as const;
 
-export const CommentEditSignedPropertyNames: (keyof CreateCommentEditOptions)[] = [
+export const CommentEditSignedPropertyNames: readonly (keyof CreateCommentEditOptions)[] = [
     "author",
     "timestamp",
     "subplebbitAddress",
@@ -86,11 +86,17 @@ export const CommentEditSignedPropertyNames: (keyof CreateCommentEditOptions)[] 
     "flair",
     "reason",
     "commentAuthor"
-];
+] as const;
 
-export const VoteSignedPropertyNames: (keyof CreateVoteOptions)[] = ["subplebbitAddress", "author", "timestamp", "vote", "commentCid"];
+export const VoteSignedPropertyNames: readonly (keyof CreateVoteOptions)[] = [
+    "subplebbitAddress",
+    "author",
+    "timestamp",
+    "vote",
+    "commentCid"
+] as const;
 
-export const CommentUpdateSignedPropertyNames: (keyof CommentUpdate)[] = [
+export const CommentUpdateSignedPropertyNames: readonly (keyof CommentUpdate)[] = [
     "author",
     "spoiler",
     "pinned",
@@ -105,9 +111,9 @@ export const CommentUpdateSignedPropertyNames: (keyof CommentUpdate)[] = [
     "replyCount",
     "edit",
     "cid"
-];
+] as const;
 
-export const SubplebbitSignedPropertyNames: (keyof SubplebbitIpfsType)[] = [
+export const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[] = [
     "title",
     "description",
     "roles",
@@ -124,29 +130,29 @@ export const SubplebbitSignedPropertyNames: (keyof SubplebbitIpfsType)[] = [
     "address",
     "flairs",
     "encryption"
-];
+] as const;
 
-export const ChallengeRequestMessageSignedPropertyNames: (keyof ChallengeRequestMessage)[] = [
+export const ChallengeRequestMessageSignedPropertyNames: readonly (keyof ChallengeRequestMessage)[] = [
     "type",
     "challengeRequestId",
     "encryptedPublication",
     "acceptedChallengeTypes",
     "timestamp"
-];
-export const ChallengeMessageSignedPropertyNames: (keyof ChallengeMessageType)[] = [
+] as const;
+export const ChallengeMessageSignedPropertyNames: readonly (keyof ChallengeMessageType)[] = [
     "type",
     "challengeRequestId",
     "encryptedChallenges",
     "timestamp"
-];
-export const ChallengeAnswerMessageSignedPropertyNames: (keyof ChallengeAnswerMessage)[] = [
+] as const;
+export const ChallengeAnswerMessageSignedPropertyNames: readonly (keyof ChallengeAnswerMessage)[] = [
     "type",
     "challengeRequestId",
     "challengeAnswerId",
     "encryptedChallengeAnswers",
     "timestamp"
-];
-export const ChallengeVerificationMessageSignedPropertyNames: (keyof ChallengeVerificationMessageType)[] = [
+] as const;
+export const ChallengeVerificationMessageSignedPropertyNames: readonly (keyof ChallengeVerificationMessageType)[] = [
     "reason",
     "type",
     "challengeRequestId",
@@ -155,7 +161,7 @@ export const ChallengeVerificationMessageSignedPropertyNames: (keyof ChallengeVe
     "challengeSuccess",
     "challengeErrors",
     "timestamp"
-];
+] as const;
 
 // ---------------------------
 // SignedPropertyNames union (different representation)
