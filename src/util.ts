@@ -6,8 +6,8 @@ import { messages } from "./errors";
 import errcode from "err-code";
 import Hash from "ipfs-only-hash";
 import lodash from "lodash";
-import { stringify as determinsticStringify } from "safe-stable-stringify";
 import assert from "assert";
+import { Pages } from "./pages";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -143,7 +143,7 @@ export function replaceXWithY(obj: Object, x: any, y: any): any {
 }
 
 export function hotScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
-    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
+    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number" && typeof comment.timestamp === "number");
 
     const score = comment.upvoteCount - comment.downvoteCount;
     const order = Math.log10(Math.max(score, 1));
@@ -210,27 +210,27 @@ export function throwWithErrorCode(code: keyof typeof messages, details?: string
     });
 }
 
-export async function parsePageIpfs(pageIpfs: PageIpfs, plebbit: Plebbit): Promise<PageType> {
-    const finalComments = await Promise.all(pageIpfs.comments.map((commentObj) => plebbit.createComment(commentObj.comment)));
-    pageIpfs.comments.forEach((obj, i) => finalComments[i]._initCommentUpdate(obj.commentUpdate));
+export async function parsePageIpfs(pageIpfs: PageIpfs, subplebbit: Pages["_subplebbit"]): Promise<PageType> {
+    const finalComments = await Promise.all(pageIpfs.comments.map((commentObj) => subplebbit.plebbit.createComment(commentObj.comment)));
+    for (let i = 0; i < finalComments.length; i++) {
+        //@ts-expect-error
+        finalComments[i].subplebbit = subplebbit;
+        await finalComments[i]._initCommentUpdate(pageIpfs.comments[i].commentUpdate);
+    }
 
     return { comments: finalComments, nextCid: pageIpfs.nextCid };
 }
 
-export async function parsePagesIfIpfs(pagesRaw: PagesType | PagesTypeIpfs, plebbit: Plebbit): Promise<PagesType | undefined> {
+export async function parsePagesIfIpfs(
+    pagesRaw: PagesType | PagesTypeIpfs,
+    subplebbit: Pages["_subplebbit"]
+): Promise<PagesType | undefined> {
     if (!pagesRaw) return undefined;
-    let isIpfs: boolean = false;
-    const pages: PageType[] | PageIpfs[] = Object.values(pagesRaw.pages);
+    const isIpfs = Boolean(Object.values(pagesRaw.pages)[0]?.comments[0]["commentUpdate"]);
 
-    for (const page of pages) {
-        if (page.comments["commentUpdate"]) {
-            isIpfs = true;
-            break;
-        }
-    }
     if (isIpfs) {
         pagesRaw = pagesRaw as PagesTypeIpfs;
-        const parsedPages = await Promise.all(Object.keys(pagesRaw).map((key) => parsePageIpfs(pagesRaw.pages[key], plebbit)));
+        const parsedPages = await Promise.all(Object.keys(pagesRaw.pages).map((key) => parsePageIpfs(pagesRaw.pages[key], subplebbit)));
         const pagesType: PagesType["pages"] = Object.fromEntries(Object.keys(pagesRaw.pages).map((key, i) => [key, parsedPages[i]]));
         return { pages: pagesType, pageCids: pagesRaw.pageCids };
     } else return <PagesType>pagesRaw;
