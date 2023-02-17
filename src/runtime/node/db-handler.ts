@@ -391,8 +391,8 @@ export class DbHandler {
         await this._baseTransaction(trx)(TABLES.COMMENTS).insert(comment);
     }
 
-    async setCommentUpdateTrigger(commentCid: string, updateTrigger: boolean, trx?: Transaction) {
-        await this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid: commentCid }).update({ updateTrigger });
+    async setCommentUpdateTrigger(cids: string[], updateTrigger: boolean, trx?: Transaction) {
+        await this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("cid", cids).update({ updateTrigger });
     }
 
     async upsertCommentUpdate(update: CommentUpdatesRow, trx?: Transaction) {
