@@ -348,7 +348,7 @@ export interface CommentUpdate {
     downvoteCount: number;
     replyCount: number;
     edit?: AuthorCommentEdit; // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
-    replies: PagesTypeIpfs; // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
+    replies?: PagesTypeIpfs; // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
     flair?: Flair; // arbitrary colored string to describe the comment, added by mods, override comment.flair and comment.edit.flair (which are added by author)
     spoiler?: boolean;
     pinned?: boolean;
@@ -487,7 +487,7 @@ export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "u
 
 // CommentUpdate
 
-export interface CommentUpdatesRow extends Omit<CommentUpdate, "replies"> {}
+export interface CommentUpdatesRow extends CommentUpdate {}
 
 export interface VotesTableRow extends VoteType {
     authorAddress: AuthorIpfsType["address"];

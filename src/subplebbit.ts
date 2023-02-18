@@ -314,7 +314,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
             log(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
             await this._updateDbInternalState(lodash.pick(newSubplebbitOptions, "address"));
-            await this.dbHandler.keyvDelete(CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]); // To trigger a new subplebbit.posts
             await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                 address: newSubplebbitOptions.address,
                 plebbit: {
@@ -427,7 +426,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         const [metrics, subplebbitPosts] = await Promise.all([
             this.dbHandler.querySubplebbitMetrics(undefined),
-            this.sortHandler.generateSubplebbitPosts(undefined)
+            this.sortHandler.generateSubplebbitPosts()
         ]);
 
         const metricsCid = (await this.plebbit.ipfsClient.add(deterministicStringify(metrics))).path;
@@ -1071,6 +1070,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.dbHandler.queryCalculatedCommentUpdate(comment),
             this.sortHandler.generateRepliesPages(comment, undefined)
         ]);
+        if (generatedPages) assert(calculatedCommentUpdate.replyCount > 0);
+        if (calculatedCommentUpdate.replyCount > 0) assert(generatedPages);
+
 
         const commentUpdatePriorToSigning: Omit<CommentUpdate, "signature"> = {
             ...calculatedCommentUpdate,
@@ -1083,7 +1085,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
         };
         await this._validateCommentUpdate(newIpns, comment); // Should be removed once signature are working properly
-        await this.dbHandler.upsertCommentUpdate(lodash.omit(newIpns, "replies")); // Need to insert comment in DB before generating pages so props updated above would be included in pages
+        await this.dbHandler.upsertCommentUpdate(newIpns); // Need to insert comment in DB before generating pages so props updated above would be included in pages
 
         await this.dbHandler.setCommentUpdateTrigger([comment.cid], false);
 

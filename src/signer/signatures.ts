@@ -322,7 +322,6 @@ export async function verifyCommentUpdate(
 
     if (update.replies) {
         // Validate update.replies
-
         const pagesValidity = await Promise.all(
             Object.values(update.replies.pages).map((page) => verifyPage(page, plebbit, subplebbit, comment.cid))
         );

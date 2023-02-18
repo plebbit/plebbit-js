@@ -1,7 +1,4 @@
 export enum CACHE_KEYS {
     SUBPLEBBIT_IPNS,
-    INTERNAL_SUBPLEBBIT,
-    POSTS_SUBPLEBBIT,
-    // Prefixes have to start with PREFIX and end with _
-    PREFIX_COMMENT_REPLIES_
+    INTERNAL_SUBPLEBBIT
 }

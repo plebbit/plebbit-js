@@ -266,7 +266,6 @@ export class Comment extends Publication implements CommentType {
             log.error(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error: `, e);
             return;
         }
-        // Make a copy of fields that may be changed with a CommentUpdate
 
         if (res && this.updatedAt !== res.updatedAt) {
             if (!this.subplebbit) this.subplebbit = await this.plebbit.getSubplebbit(this.subplebbitAddress);

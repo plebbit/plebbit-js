@@ -78,11 +78,9 @@ export class SortHandler {
                 return await Promise.all(
                     chunk.map(async (commentProps) => {
                         const comment = await this.subplebbit.plebbit.createComment(commentProps.comment);
-                        const replies = await this.generateRepliesPages(commentProps.comment, undefined);
-                        return comment.toJSONPagesIpfs({
-                            ...commentProps.commentUpdate,
-                            replies: replies ? { pageCids: replies.pageCids, pages: lodash.pick(replies.pages, "topAll") } : undefined
-                        });
+                        if (commentProps.commentUpdate.replies) assert(commentProps.commentUpdate.replyCount > 0);
+                        if (commentProps.commentUpdate.replyCount > 0) assert(commentProps.commentUpdate.replies);
+                        return comment.toJSONPagesIpfs(commentProps.commentUpdate);
                     })
                 );
             })
@@ -102,6 +100,7 @@ export class SortHandler {
         sortName: PostSortName | ReplySortName,
         options: PageOptions
     ): Promise<PageGenerationRes | undefined> {
+        if (comments.length === 0) return undefined;
         const sortProps: SortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
         if (typeof sortProps.score !== "function") throw Error(`SortProps[${sortName}] is not defined`);
 
@@ -124,12 +123,11 @@ export class SortHandler {
 
         const pinnedComments = comments.filter((obj) => obj.commentUpdate.pinned === true).sort(scoreSort);
 
-        let unpinnedComments = comments;
+        let unpinnedComments = comments.filter((obj) => !obj.commentUpdate.pinned).sort(scoreSort);
         if (sortProps.timeframe) {
-            const timestampLower = timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe];
+            const timestampLower: number = timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe];
             unpinnedComments = unpinnedComments.filter((obj) => obj.comment.timestamp >= timestampLower);
         }
-        unpinnedComments = unpinnedComments.filter((obj) => !obj.commentUpdate.pinned).sort(scoreSort);
 
         const commentsSorted = pinnedComments.concat(unpinnedComments);
 
@@ -161,11 +159,11 @@ export class SortHandler {
         };
     }
 
-    private async _generateSubplebbitPosts(trx, pageOptions: PageOptions): Promise<PagesTypeIpfs | undefined> {
+    private async _generateSubplebbitPosts(pageOptions: PageOptions): Promise<PagesTypeIpfs | undefined> {
         // Sorting posts on a subplebbit level
         const log = Logger("plebbit-js:sort-handler:generateSubplebbitPosts");
 
-        const rawPosts = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions, trx);
+        const rawPosts = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
 
         if (rawPosts.length === 0) {
             log(`Subplebbit (${this.subplebbit.address}) has no posts to generate Pages`);
@@ -179,7 +177,7 @@ export class SortHandler {
         return this._generationResToPages(sortResults);
     }
 
-    private async _generateCommentReplies(comment: Pick<CommentWithCommentUpdate, "cid">, trx?): Promise<PagesTypeIpfs | undefined> {
+    private async _generateCommentReplies(comment: Pick<CommentWithCommentUpdate, "cid">): Promise<PagesTypeIpfs | undefined> {
         const pageOptions: PageOptions = {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: false,
@@ -188,7 +186,7 @@ export class SortHandler {
             pageSize: 50
         };
 
-        const comments = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions, trx);
+        const comments = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
 
         const sortResults = await Promise.all(
             Object.keys(REPLIES_SORT_TYPES).map((sortName: ReplySortName) => this.sortComments(comments, sortName, pageOptions))
@@ -197,33 +195,16 @@ export class SortHandler {
         return this._generationResToPages(sortResults);
     }
 
-    async cacheCommentsPages(trx?) {
-        const commentLevels = await this.subplebbit.dbHandler.queryCommentsGroupByDepth(trx);
-        for (let i = commentLevels.length - 1; i >= 0; i--)
-            await Promise.all(commentLevels[i].map((comment) => this.generateRepliesPages(comment, trx)));
-
-        await this.generateSubplebbitPosts(trx);
-    }
-
-    async generateRepliesPages(comment: Pick<CommentWithCommentUpdate, "cid">, trx?): Promise<PagesTypeIpfs | undefined> {
+    async generateRepliesPages(comment: Pick<CommentWithCommentUpdate, "cid">): Promise<PagesTypeIpfs | undefined> {
         const log = Logger("plebbit-js:sort-handler:generateRepliesPages");
 
-        const cacheKey = CACHE_KEYS[CACHE_KEYS.PREFIX_COMMENT_REPLIES_].concat(comment.cid);
-        const cachedReplies: PagesTypeIpfs | undefined = await this.subplebbit.dbHandler!.keyvGet(cacheKey);
-        if (cachedReplies) {
-            log.trace(`Comment (${comment.cid}) pages are cached, returning them`);
-            return cachedReplies;
-        }
-
-        const pages = await this._generateCommentReplies(comment, trx);
+        const pages = await this._generateCommentReplies(comment);
         // TODO assert here
-
-        if (pages) await this.subplebbit.dbHandler!.keyvSet(cacheKey, pages);
 
         return pages;
     }
 
-    async generateSubplebbitPosts(trx?): Promise<PagesTypeIpfs | undefined> {
+    async generateSubplebbitPosts(): Promise<PagesTypeIpfs | undefined> {
         const pageOptions: PageOptions = {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: true,
@@ -231,31 +212,7 @@ export class SortHandler {
             parentCid: null,
             pageSize: 50
         };
-        const cacheKey = CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT];
 
-        const cachedPosts: PagesTypeIpfs | undefined = await this.subplebbit.dbHandler?.keyvGet(cacheKey);
-        if (cachedPosts) return cachedPosts;
-
-        const pages = await this._generateSubplebbitPosts(trx, pageOptions);
-        if (!pages) return undefined;
-
-        await this.subplebbit.dbHandler?.keyvSet(cacheKey, pages);
-
-        return pages;
-    }
-
-    async deleteCommentAndParentsPageCache(dbComment: Pick<CommentWithCommentUpdate, "cid">, trx?: any) {
-        const log = Logger("plebbit-js:sort-handler:deleteCommentPageCache");
-
-        const cacheKey = (cid: string) => CACHE_KEYS[CACHE_KEYS.PREFIX_COMMENT_REPLIES_].concat(cid);
-
-        assert(this.subplebbit.dbHandler && dbComment.cid);
-        const cachesToDelete: string[] = [
-            cacheKey(dbComment.cid),
-            ...(await this.subplebbit.dbHandler.queryParents(dbComment, trx)).map((comment) => cacheKey(comment.cid)),
-            CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]
-        ];
-        log.trace(`Caches to delete: ${cachesToDelete}`);
-        await this.subplebbit.dbHandler?.keyvDelete(cachesToDelete);
+        return await this._generateSubplebbitPosts(pageOptions);
     }
 }

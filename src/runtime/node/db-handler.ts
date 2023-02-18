@@ -191,6 +191,7 @@ export class DbHandler {
             table.text("protocolVersion").notNullable();
             table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
             table.json("author").nullable();
+            table.json("replies").nullable();
         });
     }
 
@@ -471,7 +472,7 @@ export class DbHandler {
         trx?: Transaction
     ): Promise<{ comment: CommentsTableRow; commentUpdate: CommentUpdatesRow }[]> {
         //prettier-ignore
-        const commentUpdateColumns: (keyof CommentUpdatesRow)[] = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "signature", "spoiler", "updatedAt", "upvoteCount"];
+        const commentUpdateColumns: (keyof CommentUpdatesRow)[] = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "signature", "spoiler", "updatedAt", "upvoteCount", "replies"];
         const aliasSelect = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
 
         const commentsRaw: CommentsTableRow[] = await this._basePageQuery(options, trx).select([`${TABLES.COMMENTS}.*`, ...aliasSelect]);
@@ -709,9 +710,7 @@ export class DbHandler {
 
         const depths = new Array(maxDepth + 1).fill(null).map((value, i) => i);
         const comments = await Promise.all(
-            depths.map(async (depth) => {
-                return await this._baseTransaction(trx)(TABLES.COMMENTS).where({ depth: depth }).select("cid");
-            })
+            depths.map(async (depth) => this._baseTransaction(trx)(TABLES.COMMENTS).where({ depth: depth }).select("cid"))
         );
         return comments;
     }
