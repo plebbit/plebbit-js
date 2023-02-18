@@ -433,7 +433,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         await this._mergeInstanceStateWithDbState({});
 
-        const updatedAt = timestamp();
+        const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
         const newIpns: Omit<SubplebbitIpfsType, "signature"> = {
             ...lodash.omit(this.toJSON(), "signature"),
             lastPostCid: latestPost?.cid,
@@ -1062,22 +1062,23 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         // If we're here that means we're gonna calculate the new update and publish it
         log(`Attempting to update Comment (${comment.cid})`);
-        await this.sortHandler.deleteCommentAndParentsPageCache(comment);
 
         // This comment will have the local new CommentUpdate, which we will publish over IPNS
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
-        const [calculatedCommentUpdate, generatedPages] = await Promise.all([
+        const [calculatedCommentUpdate, storedCommentUpdate, generatedPages] = await Promise.all([
             this.dbHandler.queryCalculatedCommentUpdate(comment),
-            this.sortHandler.generateRepliesPages(comment, undefined)
+            this.dbHandler.queryStoredCommentUpdate(comment),
+            this.sortHandler.generateRepliesPages(comment)
         ]);
         if (generatedPages) assert(calculatedCommentUpdate.replyCount > 0);
         if (calculatedCommentUpdate.replyCount > 0) assert(generatedPages);
 
+        const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
 
         const commentUpdatePriorToSigning: Omit<CommentUpdate, "signature"> = {
             ...calculatedCommentUpdate,
             replies: generatedPages ? { pageCids: generatedPages.pageCids, pages: lodash.pick(generatedPages.pages, "topAll") } : undefined,
-            updatedAt: timestamp(),
+            updatedAt: newUpdatedAt,
             protocolVersion: version.PROTOCOL_VERSION
         };
         const newIpns: CommentUpdate = {

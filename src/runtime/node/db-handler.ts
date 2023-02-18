@@ -489,6 +489,10 @@ export class DbHandler {
         return comments;
     }
 
+    async queryStoredCommentUpdate(comment: Pick<CommentsTableRow, "cid">, trx?: any): Promise<CommentUpdatesRow | undefined> {
+        return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where("cid", comment.cid).first();
+    }
+
     async queryCommentsOfAuthor(authorAddress: string, trx?: Transaction) {
         return this._baseTransaction(trx)(TABLES.COMMENTS).where("authorAddress", authorAddress);
     }
