@@ -5,7 +5,7 @@ import {
     AuthorCommentEdit,
     CommentAuthorEditOptions,
     CommentEditPubsubMessage,
-    CommentEditsTableRow,
+    CommentEditsTableRowInsert,
     CommentEditType,
     Flair,
     ModeratorCommentEdit,
@@ -103,7 +103,7 @@ export class CommentEdit extends Publication implements CommentEditType {
         return this.toJSON();
     }
 
-    toJSONForDb(challengeRequestId: string): CommentEditsTableRow {
+    toJSONForDb(challengeRequestId: string): CommentEditsTableRowInsert {
         return {
             ...this.toJSON(),
             author: this.author.toJSONIpfs(),

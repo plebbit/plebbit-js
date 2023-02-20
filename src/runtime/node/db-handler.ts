@@ -8,21 +8,25 @@ import Keyv from "keyv";
 import Transaction = Knex.Transaction;
 import {
     AuthorCommentEdit,
-    ChallengeAnswersTableRow,
-    ChallengeRequestsTableRow,
-    ChallengesTableRow,
-    ChallengeVerificationsTableRow,
+    ChallengeAnswersTableRowInsert,
+    ChallengeRequestsTableRowInsert,
+    ChallengesTableRowInsert,
+    ChallengeVerificationsTableRowInsert,
     CommentEditsTableRow,
+    CommentEditsTableRowInsert,
     CommentEditType,
     CommentsTableRow,
     CommentsTableRowInsert,
     CommentUpdate,
     CommentUpdatesRow,
+    CommentUpdatesTableRowInsert,
     CommentWithCommentUpdate,
     SignersTableRow,
+    SingersTableRowInsert,
     SubplebbitAuthor,
     SubplebbitMetrics,
-    VotesTableRow
+    VotesTableRow,
+    VotesTableRowInsert
 } from "../../types";
 import Logger from "@plebbit/plebbit-logger";
 import { getDefaultSubplebbitDbConfig } from "./util";
@@ -166,7 +170,7 @@ export class DbHandler {
             table.text("protocolVersion").notNullable();
 
             table.increments("id"); // Used for sorts
-            table.boolean("updateTrigger").defaultTo(true); // Used to trigger new CommentUpdaate
+            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
         });
     }
 
@@ -192,6 +196,7 @@ export class DbHandler {
             table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
             table.json("author").nullable();
             table.json("replies").nullable();
+            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
         });
     }
 
@@ -207,6 +212,7 @@ export class DbHandler {
             table.integer("vote").checkBetween([-1, 1]).notNullable();
             table.json("signature").notNullable().unique();
             table.text("protocolVersion").notNullable();
+            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
 
             table.primary(["commentCid", "authorAddress"]); // An author can't have multiple votes on a comment
         });
@@ -220,6 +226,7 @@ export class DbHandler {
             table.json("signature").notNullable().unique();
             table.json("acceptedChallengeTypes").nullable(); // string[]
             table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
         });
     }
 
@@ -235,6 +242,7 @@ export class DbHandler {
             table.text("userAgent").notNullable();
             table.text("protocolVersion").notNullable();
             table.json("signature").notNullable().unique();
+            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
 
             // Might store the challenge here in the future. For now we're not because it would take too much storage
             table.json("challengeTypes").notNullable(); // string[]
@@ -257,6 +265,7 @@ export class DbHandler {
             table.json("challengeAnswers").notNullable(); // Decrypted
             table.json("signature").notNullable().unique();
             table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
         });
     }
 
@@ -278,6 +287,7 @@ export class DbHandler {
             table.text("userAgent").notNullable();
             table.text("protocolVersion").notNullable();
             table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
         });
     }
 
@@ -286,6 +296,7 @@ export class DbHandler {
             table.text("ipnsKeyName").notNullable().unique().primary();
             table.text("privateKey").notNullable().unique();
             table.text("type").notNullable(); // ed25519 or any other type
+            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
         });
     }
 
@@ -312,6 +323,7 @@ export class DbHandler {
             table.text("moderatorReason").nullable();
             table.json("commentAuthor").nullable();
 
+            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
             table.primary(["id", "commentCid"]);
         });
     }
@@ -384,7 +396,7 @@ export class DbHandler {
         log(`copied table ${srcTable} to table ${dstTable}`);
     }
 
-    async upsertVote(vote: VotesTableRow, trx?: Transaction) {
+    async upsertVote(vote: VotesTableRowInsert, trx?: Transaction) {
         await this._baseTransaction(trx)(TABLES.VOTES).insert(vote).onConflict(["commentCid", "authorAddress"]).merge();
     }
 
@@ -392,31 +404,27 @@ export class DbHandler {
         await this._baseTransaction(trx)(TABLES.COMMENTS).insert(comment);
     }
 
-    async setCommentUpdateTrigger(cids: string[], updateTrigger: boolean, trx?: Transaction) {
-        await this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("cid", cids).update({ updateTrigger });
-    }
-
-    async upsertCommentUpdate(update: CommentUpdatesRow, trx?: Transaction) {
+    async upsertCommentUpdate(update: CommentUpdatesTableRowInsert, trx?: Transaction) {
         await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).insert(update).onConflict(["cid"]).merge();
     }
 
-    async insertEdit(edit: CommentEditsTableRow, trx?: Transaction) {
+    async insertEdit(edit: CommentEditsTableRowInsert, trx?: Transaction) {
         await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).insert(edit);
     }
 
-    async insertChallengeRequest(request: ChallengeRequestsTableRow, trx?: Transaction) {
+    async insertChallengeRequest(request: ChallengeRequestsTableRowInsert, trx?: Transaction) {
         await this._baseTransaction(trx)(TABLES.CHALLENGE_REQUESTS).insert(request);
     }
 
-    async insertChallenge(challenge: ChallengesTableRow, trx?: Transaction) {
+    async insertChallenge(challenge: ChallengesTableRowInsert, trx?: Transaction) {
         await this._baseTransaction(trx)(TABLES.CHALLENGES).insert(challenge);
     }
 
-    async insertChallengeAnswer(answer: ChallengeAnswersTableRow, trx?: Transaction) {
+    async insertChallengeAnswer(answer: ChallengeAnswersTableRowInsert, trx?: Transaction) {
         await this._baseTransaction(trx)(TABLES.CHALLENGE_ANSWERS).insert(answer);
     }
 
-    async insertChallengeVerification(verification: ChallengeVerificationsTableRow, trx?: Transaction) {
+    async insertChallengeVerification(verification: ChallengeVerificationsTableRowInsert, trx?: Transaction) {
         await this._baseTransaction(trx)(TABLES.CHALLENGE_VERIFICATIONS).insert(verification);
     }
 
@@ -565,8 +573,7 @@ export class DbHandler {
     }
 
     async queryComment(cid: string, trx?: Transaction): Promise<CommentsTableRow | undefined> {
-        const comment = await this._baseTransaction(trx)(TABLES.COMMENTS).where("cid", cid).first();
-        return comment;
+        return this._baseTransaction(trx)(TABLES.COMMENTS).where("cid", cid).first();
     }
 
     private async _queryCommentUpvote(cid: string, trx?: Transaction): Promise<number> {
@@ -700,8 +707,8 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where({ depth: 0 }).orderBy("id", "desc").first();
     }
 
-    async insertSigner(signer: SignersTableRow, trx?: Transaction) {
-        await this._baseTransaction(trx)(TABLES.SIGNERS).insert(signer);
+    async insertSigner(signer: SingersTableRowInsert, trx?: Transaction) {
+        return this._baseTransaction(trx)(TABLES.SIGNERS).insert(signer);
     }
 
     async querySigner(ipnsKeyName: string, trx?: Transaction): Promise<SignersTableRow | undefined> {

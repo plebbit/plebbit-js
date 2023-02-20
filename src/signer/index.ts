@@ -1,5 +1,5 @@
 import assert from "assert";
-import { SignersTableRow } from "../types";
+import { SingersTableRowInsert } from "../types";
 import { CreateSignerOptions, SignerType } from "./constants";
 import { generatePrivateKey, getPublicKeyFromPrivateKey, getPlebbitAddressFromPrivateKey } from "./util";
 export { verifyComment, verifySubplebbit, verifyVote } from "./signatures";
@@ -28,7 +28,7 @@ export class Signer implements SignerType {
                 : undefined;
     }
 
-    toJSONSignersTableRow(): SignersTableRow {
+    toJSONSignersTableRow(): SingersTableRowInsert {
         assert(this.type && this.privateKey && this.ipnsKeyName);
         return { type: this.type, privateKey: this.privateKey, ipnsKeyName: this.ipnsKeyName };
     }

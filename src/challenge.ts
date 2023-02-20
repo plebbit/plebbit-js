@@ -1,14 +1,15 @@
 import {
     ChallengeAnswerMessageType,
-    ChallengeAnswersTableRow,
+    ChallengeAnswersTableRowInsert,
     ChallengeMessageType,
     ChallengeRequestMessageType,
-    ChallengeRequestsTableRow,
+    ChallengeRequestsTableRowInsert,
     ChallengesTableRow,
+    ChallengesTableRowInsert,
     ChallengeVerificationMessageType,
-    ChallengeVerificationsTableRow,
+    ChallengeVerificationsTableRowInsert,
     DecryptedChallengeAnswerMessageType,
-    ProtocolVersion,
+    ProtocolVersion
 } from "./types";
 import lodash from "lodash";
 import { Encrypted, SignatureType } from "./signer/constants";
@@ -46,8 +47,8 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
         };
     }
 
-    toJSONForDb(): ChallengeRequestsTableRow {
-        return lodash.omit(this.toJSON(), ["type", "encryptedPublication"]);
+    toJSONForDb(): ChallengeRequestsTableRowInsert {
+        return { ...lodash.omit(this.toJSON(), ["type", "encryptedPublication"]) };
     }
 }
 
@@ -82,7 +83,7 @@ export class ChallengeMessage implements ChallengeMessageType {
         };
     }
 
-    toJSONForDb(challengeTypes: ChallengesTableRow["challengeTypes"]): ChallengesTableRow {
+    toJSONForDb(challengeTypes: ChallengesTableRow["challengeTypes"]): ChallengesTableRowInsert {
         return { ...lodash.omit(this.toJSON(), ["type", "encryptedChallenges"]), challengeTypes };
     }
 }
@@ -120,7 +121,7 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
         };
     }
 
-    toJSONForDb(challengeAnswers: DecryptedChallengeAnswerMessageType["challengeAnswers"]): ChallengeAnswersTableRow {
+    toJSONForDb(challengeAnswers: DecryptedChallengeAnswerMessageType["challengeAnswers"]): ChallengeAnswersTableRowInsert {
         return { ...lodash.omit(this.toJSON(), ["type", "encryptedChallengeAnswers"]), challengeAnswers };
     }
 }
@@ -168,7 +169,7 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
         };
     }
 
-    toJSONForDb(): ChallengeVerificationsTableRow {
-        return lodash.omit(this.toJSON(), ["type", "encryptedPublication"]);
+    toJSONForDb(): ChallengeVerificationsTableRowInsert {
+        return { ...lodash.omit(this.toJSON(), ["type", "encryptedPublication"]) };
     }
 }

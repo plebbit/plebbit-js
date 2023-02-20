@@ -480,51 +480,91 @@ export interface CommentsTableRow extends CommentIpfsWithCid, Required<Pick<Comm
     authorAddress: AuthorIpfsType["address"];
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     id: number;
-    updateTrigger: boolean;
+    insertedAt: number;
 }
 
-export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "updateTrigger"> {}
+export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "insertedAt"> {}
 
-// CommentUpdate
+// CommentUpdates table
 
-export interface CommentUpdatesRow extends CommentUpdate {}
+export interface CommentUpdatesRow extends CommentUpdate {
+    insertedAt: number;
+}
+
+export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "insertedAt"> {}
+
+// Votes table
 
 export interface VotesTableRow extends VoteType {
     authorAddress: AuthorIpfsType["address"];
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
+    insertedAt: number;
 }
 
-// Challenges
+export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {}
 
-export interface ChallengeRequestsTableRow extends Omit<ChallengeRequestMessageType, "type" | "encryptedPublication"> {}
+// Challenge Request table
 
+export interface ChallengeRequestsTableRow extends Omit<ChallengeRequestMessageType, "type" | "encryptedPublication"> {
+    insertedAt: number;
+}
+
+export interface ChallengeRequestsTableRowInsert extends Omit<ChallengeRequestsTableRow, "insertedAt"> {}
+
+// Challenges table
 export interface ChallengesTableRow extends Omit<ChallengeMessageType, "type" | "encryptedChallenges"> {
     challengeTypes: ChallengeType["type"][];
+    insertedAt: number;
 }
 
-export interface ChallengeAnswersTableRow extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encryptedChallengeAnswers"> {}
+export interface ChallengesTableRowInsert extends Omit<ChallengesTableRow, "insertedAt"> {}
 
-export interface ChallengeVerificationsTableRow extends Omit<ChallengeVerificationMessageType, "type" | "encryptedPublication"> {}
+// Challenge answers table
 
-export interface SignersTableRow extends Required<Pick<SignerType, "privateKey" | "ipnsKeyName" | "type">> {}
+export interface ChallengeAnswersTableRow extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encryptedChallengeAnswers"> {
+    insertedAt: number;
+}
 
-// Edit
+export interface ChallengeAnswersTableRowInsert extends Omit<ChallengeAnswersTableRow, "insertedAt"> {}
+
+// Challenge verifications table
+export interface ChallengeVerificationsTableRow extends Omit<ChallengeVerificationMessageType, "type" | "encryptedPublication"> {
+    insertedAt: number;
+}
+
+export interface ChallengeVerificationsTableRowInsert extends Omit<ChallengeVerificationsTableRow, "insertedAt"> {}
+
+// Signers table
+export interface SignersTableRow extends Required<Pick<SignerType, "privateKey" | "ipnsKeyName" | "type">> {
+    insertedAt: number;
+}
+
+export interface SingersTableRowInsert extends Omit<SignersTableRow, "insertedAt"> {}
+
+// Comment edits table
 
 export interface CommentEditsTableRow extends CommentEditType {
     authorAddress: AuthorIpfsType["address"];
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
+    insertedAt: number;
 }
 
+export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt"> {}
 declare module "knex/types/tables" {
     interface Tables {
-        comments: Knex.CompositeTableType<CommentsTableRow, CommentsTableRowInsert, Pick<CommentsTableRow, "updateTrigger">, null>;
-        commentUpdates: Knex.CompositeTableType<CommentUpdatesRow>;
-        votes: Knex.CompositeTableType<VotesTableRow, VotesTableRow>; // Could be more accurate here. Not very important though
-        challengeRequests: Knex.CompositeTableType<ChallengeRequestsTableRow, ChallengeRequestsTableRow, null, null>;
-        challenges: Knex.CompositeTableType<ChallengesTableRow, ChallengesTableRow, null, null>;
-        challengeAnswers: Knex.CompositeTableType<ChallengeAnswersTableRow, ChallengeAnswersTableRow, null, null>;
-        challengeVerifications: Knex.CompositeTableType<ChallengeVerificationsTableRow, ChallengeVerificationsTableRow, null, null>;
-        signers: Knex.CompositeTableType<SignersTableRow, SignersTableRow, null, null>;
-        commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRow, null, null>;
+        comments: Knex.CompositeTableType<CommentsTableRow, CommentsTableRowInsert, null, null>;
+        commentUpdates: Knex.CompositeTableType<
+            CommentUpdatesRow,
+            CommentUpdatesTableRowInsert,
+            Omit<CommentUpdatesTableRowInsert, "cid">,
+            Omit<CommentUpdatesTableRowInsert, "cid">
+        >;
+        votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert, VotesTableRowInsert, VotesTableRowInsert>;
+        challengeRequests: Knex.CompositeTableType<ChallengeRequestsTableRow, ChallengeRequestsTableRowInsert, null, null>;
+        challenges: Knex.CompositeTableType<ChallengesTableRow, ChallengesTableRowInsert, null, null>;
+        challengeAnswers: Knex.CompositeTableType<ChallengeAnswersTableRow, ChallengeAnswersTableRowInsert, null, null>;
+        challengeVerifications: Knex.CompositeTableType<ChallengeVerificationsTableRow, ChallengeVerificationsTableRowInsert, null, null>;
+        signers: Knex.CompositeTableType<SignersTableRow, SingersTableRowInsert, null, null>;
+        commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRowInsert, null, null>;
     }
 }
