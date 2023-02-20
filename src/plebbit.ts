@@ -129,7 +129,10 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         if (!signatureValidity.valid)
             throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", `getSubplebbit: Failed verification reason: ${signatureValidity.reason}`);
 
-        return this.createSubplebbit(subplebbitJson);
+        const subplebbit = new Subplebbit(this);
+        await subplebbit.initSubplebbit(subplebbitJson);
+
+        return subplebbit;
     }
 
     async getComment(cid: string): Promise<Comment | Post> {
