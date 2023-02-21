@@ -371,8 +371,10 @@ export class DbHandler {
             })
         );
 
-        await this._knex.raw("PRAGMA foreign_keys = ON");
-        await this._knex.raw(`PRAGMA user_version = ${env.DB_VERSION}`);
+        if (needToMigrate) {
+            await this._knex.raw("PRAGMA foreign_keys = ON");
+            await this._knex.raw(`PRAGMA user_version = ${env.DB_VERSION}`);
+        }
         dbVersion = await this.getDbVersion();
         assert.equal(dbVersion, env.DB_VERSION);
         this._createdTables = true;
