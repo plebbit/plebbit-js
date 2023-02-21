@@ -51,13 +51,13 @@ const testCommentFields = (comment) => {
     if (!comment.link) expect(comment.original.content).to.be.a("string");
     // TODO verify flair here when implemented
 
-    if (comment.authorEdit) {
+    if (comment.edit) {
         expect(comment.author.address).to.equal(comment.author.address);
-        expect(comment.authorEdit.authorAddress).to.be.undefined; // Shouldn't be included (extra from db)
-        expect(comment.authorEdit.challengeRequestId).to.be.undefined;
-        expect(comment.authorEdit.commentCid).to.equal(comment.cid);
-        expect(comment.authorEdit.signature).to.be.a("object");
-        expect(comment.authorEdit.subplebbitAddress).to.equal(comment.subplebbitAddress);
+        expect(comment.edit.authorAddress).to.be.undefined; // Shouldn't be included (extra from db)
+        expect(comment.edit.challengeRequestId).to.be.undefined;
+        expect(comment.edit.commentCid).to.equal(comment.cid);
+        expect(comment.edit.signature).to.be.a("object");
+        expect(comment.edit.subplebbitAddress).to.equal(comment.subplebbitAddress);
         expect(comment.timestamp).to.be.a("number");
     }
 

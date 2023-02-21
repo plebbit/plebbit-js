@@ -71,7 +71,7 @@ describe(`Locking posts`, async () => {
             subplebbitAddress: postToBeLocked.subplebbitAddress,
             commentCid: postToBeLocked.cid,
             locked: true,
-            moderatorReason: "To lock a post",
+            reason: "To lock a post",
             signer: roles[2].signer
         });
         await publishWithExpectedResult(lockedEdit, true);
@@ -80,7 +80,7 @@ describe(`Locking posts`, async () => {
     it(`A new CommentUpdate with locked=true is published`, async () => {
         await new Promise((resolve) => postToBeLocked.once("update", resolve));
         expect(postToBeLocked.locked).to.be.true;
-        expect(postToBeLocked.moderatorReason).to.equal("To lock a post");
+        expect(postToBeLocked.reason).to.equal("To lock a post");
     });
     it(`subplebbit.posts includes locked post with locked=true`, async () => {
         await waitUntil(
@@ -91,7 +91,7 @@ describe(`Locking posts`, async () => {
         for (const pageCid of Object.values(sub.posts.pageCids)) {
             const lockedPostInPage = (await loadAllPages(pageCid, sub.posts)).find((c) => c.cid === postToBeLocked.cid);
             expect(lockedPostInPage.locked).to.be.true;
-            expect(lockedPostInPage.moderatorReason).to.equal("To lock a post");
+            expect(lockedPostInPage.reason).to.equal("To lock a post");
         }
     });
     it(`Can't publish reply or vote on a locked post`, async () => {
@@ -115,7 +115,7 @@ describe(`Locking posts`, async () => {
             subplebbitAddress: postToBeLocked.subplebbitAddress,
             commentCid: postToBeLocked.cid,
             locked: false,
-            moderatorReason: "To unlock a post",
+            reason: "To unlock a post",
             signer: roles[2].signer
         });
         await publishWithExpectedResult(unlockEdit, true);

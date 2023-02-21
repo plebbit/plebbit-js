@@ -45,7 +45,7 @@ describe(`Marking comment as spoiler`, async () => {
     });
     it(`A new CommentUpdate is published with spoiler=true`, async () => {
         await new Promise((resolve) => authorPost.once("update", resolve));
-        expect(authorPost.authorEdit.spoiler).to.be.true;
+        expect(authorPost.edit.spoiler).to.be.true;
         expect(authorPost.spoiler).to.be.true;
     });
     it(`Author can unspoiler their comment`, async () => {
@@ -60,7 +60,7 @@ describe(`Marking comment as spoiler`, async () => {
     it(`A new CommentUpdate is published with spoiler=false`, async () => {
         if (authorPost.spoiler) await new Promise((resolve) => authorPost.on("update", () => !authorPost.spoiler && resolve()));
         authorPost.removeAllListeners("update");
-        expect(authorPost.authorEdit.spoiler).to.be.false;
+        expect(authorPost.edit.spoiler).to.be.false;
         expect(authorPost.spoiler).to.be.false;
     });
     it(`Mod can mark an author comment as spoiler`, async () => {
@@ -88,7 +88,7 @@ describe(`Marking comment as spoiler`, async () => {
     it(`A comment that was published with spoiler=true can be edited to spoiler=false`, async () => {
         const spoilerPost = await publishRandomPost(subplebbitAddress, plebbit, { spoiler: true });
         expect(spoilerPost.spoiler).to.be.true;
-        expect(spoilerPost.authorEdit?.spoiler).to.be.undefined;
+        expect(spoilerPost.edit?.spoiler).to.be.undefined;
         await spoilerPost.update();
 
         const spoilerEdit = await plebbit.createCommentEdit({
@@ -101,6 +101,6 @@ describe(`Marking comment as spoiler`, async () => {
         await waitUntil(() => spoilerPost.spoiler === false, { timeout: 200000 });
         spoilerPost.stop();
         expect(spoilerPost.spoiler).to.be.false;
-        expect(spoilerPost.authorEdit.spoiler).to.be.false;
+        expect(spoilerPost.edit.spoiler).to.be.false;
     });
 });

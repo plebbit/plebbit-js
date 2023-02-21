@@ -155,7 +155,7 @@ describe("verify Comment", async () => {
         expect(verification).to.deep.equal({ valid: true });
     });
 
-    it(`A comment with authorEdit fixture is validated correctly`, async () => {
+    it(`A comment with edit fixture is validated correctly`, async () => {
         const comment = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_with_author_edit.json")));
         const verification = await verifyCommentJsonAlongWithObject(comment, plebbit);
         expect(verification).to.deep.equal({ valid: true });
@@ -167,10 +167,10 @@ describe("verify Comment", async () => {
         expect(verification).to.deep.equal({ valid: true });
     });
 
-    it(`A comment with authorEdit signed by other than original author is invalidated`, async () => {
+    it(`A comment with edit signed by other than original author is invalidated`, async () => {
         const comment = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_with_author_edit.json")));
-        comment.authorEdit.author.address = signers[7].address;
-        comment.authorEdit.signature = await signCommentEdit(comment.authorEdit, signers[7], plebbit);
+        comment.edit.author.address = signers[7].address;
+        comment.edit.signature = await signCommentEdit(comment.edit, signers[7], plebbit);
 
         const verification = await verifyCommentJsonAlongWithObject(comment, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR });
@@ -273,7 +273,7 @@ describe(`commentupdate`, async () => {
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT });
     });
 
-    it(`A commentUpdate with a authorEdit signed by other than original author will be rejected`, async () => {
+    it(`A commentUpdate with an edit signed by other than original author will be rejected`, async () => {
         const update = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_update_with_author_edit.json")));
         expect(
             await verifyCommentUpdate(
@@ -282,8 +282,8 @@ describe(`commentupdate`, async () => {
                 "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv2gh6mwr/rE1b2I/PlRG\nSzJzS++TH8dYCBFg1b54xfjxy/acF7mvkts2ZCOFS9i89HAuUmeUKxzwU5wJMTjh\nx8+NBbLYckhyfrnV4NLqWQhP28tLyEcvK3w96rViWGN7XWJgdA+zRxmvursmoCfo\nGN4NZF8ihb8na7ApI/5NZFpRKfQe6Pd1GtoMsUlLM4H0nC4X+lr2SWsEA/6uVZy9\niFW+zsCrZhsPfeda6/lA4kMOEdYM8RtSdiZNw6EImYc7P6mrd9n52glLhkDYDJoC\niKzoLTDhezI0CM0NvhUtamyuBmkNbYcdXTQ78yCk8k6Ysc/rRPraaJP2dZASu44V\nuQIDAQAB\n-----END PUBLIC KEY-----"
             )
         ).to.deep.equal({ valid: true });
-        update.authorEdit.author.address = signers[7].address;
-        update.authorEdit.signature = await signCommentEdit(update.authorEdit, signers[7], plebbit);
+        update.edit.author.address = signers[7].address;
+        update.edit.signature = await signCommentEdit(update.edit, signers[7], plebbit);
         const verification = await verifyCommentUpdate(update, subplebbit.encryption.publicKey, signers[0].publicKey);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR });
     });

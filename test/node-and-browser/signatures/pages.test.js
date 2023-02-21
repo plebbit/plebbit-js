@@ -67,7 +67,7 @@ describe(`verify pages`, async () => {
         it(`flair (original)`);
         it("content (author has never modified comment.content before))", async () => {
             const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
-            const commentWithNoEditIndex = invalidPage.comments.findIndex((comment) => !comment.authorEdit?.content);
+            const commentWithNoEditIndex = invalidPage.comments.findIndex((comment) => !comment.edit?.content);
             invalidPage.comments[commentWithNoEditIndex].content = "Content modified by sub illegally";
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subAddress);
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
@@ -75,16 +75,16 @@ describe(`verify pages`, async () => {
 
         it(`content (when author has modified comment.content before)`, async () => {
             const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
-            const commentWithEditIndex = invalidPage.comments.findIndex((comment) => comment.authorEdit?.content);
+            const commentWithEditIndex = invalidPage.comments.findIndex((comment) => comment.edit?.content);
             invalidPage.comments[commentWithEditIndex].content = "Content modified by sub illegally";
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subAddress);
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT });
         });
 
-        it(`authorEdit.content`, async () => {
+        it(`edit.content`, async () => {
             const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
-            const commentWithEditIndex = invalidPage.comments.findIndex((comment) => comment.authorEdit?.content);
-            invalidPage.comments[commentWithEditIndex].authorEdit.content = "Content modified by sub illegally";
+            const commentWithEditIndex = invalidPage.comments.findIndex((comment) => comment.edit?.content);
+            invalidPage.comments[commentWithEditIndex].edit.content = "Content modified by sub illegally";
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subAddress);
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });

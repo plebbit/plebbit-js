@@ -52,15 +52,15 @@ describe("Editing comment.content", async () => {
         });
         await publishWithExpectedResult(commentEdit, true);
         await new Promise((resolve) => commentToBeEdited.once("update", resolve));
-        expect(commentToBeEdited.authorEdit.content).to.equal(editedText);
+        expect(commentToBeEdited.edit.content).to.equal(editedText);
         expect(commentToBeEdited.content).to.equal(editedText);
         expect(commentToBeEdited.original?.content).to.equal(originalContent);
-        expect(commentToBeEdited.authorEdit.reason).to.equal(editReason);
+        expect(commentToBeEdited.edit.reason).to.equal(editReason);
         expect(commentToBeEdited.author.subplebbit.postScore).to.equal(0);
         expect(commentToBeEdited.author.subplebbit.replyScore).to.equal(0);
         expect(commentToBeEdited.author.subplebbit.lastCommentCid).to.equal(commentToBeEdited.cid);
-        expect(commentToBeEdited.authorEdit.authorAddress).to.be.undefined;
-        expect(commentToBeEdited.authorEdit.challengeRequestId).to.be.undefined;
+        expect(commentToBeEdited.edit.authorAddress).to.be.undefined;
+        expect(commentToBeEdited.edit.challengeRequestId).to.be.undefined;
     });
 
     it(`Author can modify content again, while preserving comment.originalContent`, async () => {
@@ -76,10 +76,10 @@ describe("Editing comment.content", async () => {
         });
         await publishWithExpectedResult(commentEdit, true);
         await new Promise((resolve) => commentToBeEdited.once("update", resolve));
-        expect(commentToBeEdited.authorEdit.content).to.equal(editedText);
+        expect(commentToBeEdited.edit.content).to.equal(editedText);
         expect(commentToBeEdited.content).to.equal(editedText);
         expect(commentToBeEdited.original?.content).to.equal(originalContent);
-        expect(commentToBeEdited.authorEdit.reason).to.equal(editReason);
+        expect(commentToBeEdited.edit.reason).to.equal(editReason);
         expect(commentToBeEdited.author.subplebbit.postScore).to.equal(0);
         expect(commentToBeEdited.author.subplebbit.replyScore).to.equal(0);
         expect(commentToBeEdited.author.subplebbit.lastCommentCid).to.equal(commentToBeEdited.cid);
@@ -100,11 +100,11 @@ describe("Editing comment.content", async () => {
                 signer: roleTest.signer
             });
             await publishWithExpectedResult(commentEdit, true);
-            await waitUntil(() => commentToEdit.authorEdit?.content === editedText, { timeout: 200000 });
-            expect(commentToEdit.authorEdit.content).to.equal(editedText);
+            await waitUntil(() => commentToEdit.edit?.content === editedText, { timeout: 200000 });
+            expect(commentToEdit.edit.content).to.equal(editedText);
             expect(commentToEdit.content).to.equal(editedText);
             expect(commentToEdit.original?.content).to.equal(originalContent);
-            expect(commentToEdit.authorEdit.reason).to.equal(editReason);
+            expect(commentToEdit.edit.reason).to.equal(editReason);
             commentToEdit.stop();
         })
     );

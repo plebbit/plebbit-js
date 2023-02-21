@@ -37,7 +37,7 @@ describe(`Removing post`, async () => {
         const removeEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToRemove.subplebbitAddress,
             commentCid: postToRemove.cid,
-            moderatorReason: "To remove a post",
+            reason: "To remove a post",
             removed: true,
             signer: roles[2].signer // Mod role
         });
@@ -47,7 +47,7 @@ describe(`Removing post`, async () => {
     it(`A new CommentUpdate is published with removed=true`, async () => {
         await new Promise((resolve) => postToRemove.once("update", resolve));
         expect(postToRemove.removed).to.be.true;
-        expect(postToRemove.moderatorReason).to.equal("To remove a post");
+        expect(postToRemove.reason).to.equal("To remove a post");
     });
     it(`Removed post don't show in subplebbit.posts`, async () => {
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
@@ -96,7 +96,7 @@ describe(`Removing post`, async () => {
         const removeEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToBeRemoved.subplebbitAddress,
             commentCid: postToBeRemoved.cid,
-            moderatorReason: "To remove a post" + Date.now(),
+            reason: "To remove a post" + Date.now(),
             removed: true,
             signer: postToBeRemoved.signer
         });
@@ -107,7 +107,7 @@ describe(`Removing post`, async () => {
         const unremoveEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToRemove.subplebbitAddress,
             commentCid: postToRemove.cid,
-            moderatorReason: "To unremove a post",
+            reason: "To unremove a post",
             removed: false,
             signer: roles[2].signer
         });
@@ -117,7 +117,7 @@ describe(`Removing post`, async () => {
     it(`A new CommentUpdate is published for unremoving a post`, async () => {
         await waitUntil(() => postToRemove.removed === false, { timeout: 200000 });
         expect(postToRemove.removed).to.be.false;
-        expect(postToRemove.moderatorReason).to.equal("To unremove a post");
+        expect(postToRemove.reason).to.equal("To unremove a post");
     });
 
     it(`Unremoved post in included in subplebbit.posts with removed=false`, async () => {
@@ -136,7 +136,7 @@ describe(`Removing post`, async () => {
             const postInPage = pageComments.find((comment) => comment.cid === postToRemove.cid);
             expect(postInPage).to.exist;
             expect(postInPage.removed).to.equal(false);
-            expect(postInPage.moderatorReason).to.equal("To unremove a post");
+            expect(postInPage.reason).to.equal("To unremove a post");
         }
     });
 });
@@ -160,7 +160,7 @@ describe(`Removing reply`, async () => {
         const removeEdit = await plebbit.createCommentEdit({
             subplebbitAddress: replyToBeRemoved.subplebbitAddress,
             commentCid: replyToBeRemoved.cid,
-            moderatorReason: "To remove a reply",
+            reason: "To remove a reply",
             removed: true,
             signer: roles[2].signer // Mod role
         });
@@ -171,7 +171,7 @@ describe(`Removing reply`, async () => {
         await waitUntil(() => replyToBeRemoved.removed === true, { timeout: 200000 });
 
         expect(replyToBeRemoved.removed).to.be.true;
-        expect(replyToBeRemoved.moderatorReason).to.equal("To remove a reply");
+        expect(replyToBeRemoved.reason).to.equal("To remove a reply");
     });
     it(`Removed replies show in parent comment pages with 'removed' = true`, async () => {
         const pageCid = () => post.replies.pageCids?.topAll;
@@ -186,7 +186,7 @@ describe(`Removing reply`, async () => {
             const commentInPage = comments.find((comment) => comment.cid === replyToBeRemoved.cid);
             expect(commentInPage).to.exist;
             expect(commentInPage.removed).to.be.true;
-            expect(commentInPage.moderatorReason).to.equal("To remove a reply");
+            expect(commentInPage.reason).to.equal("To remove a reply");
         }
     });
 
@@ -206,7 +206,7 @@ describe(`Removing reply`, async () => {
         const unremoveEdit = await plebbit.createCommentEdit({
             subplebbitAddress: replyToBeRemoved.subplebbitAddress,
             commentCid: replyToBeRemoved.cid,
-            moderatorReason: "To unremove a reply by author" + Date.now(),
+            reason: "To unremove a reply by author" + Date.now(),
             removed: false,
             signer: replyToBeRemoved.signer
         });
@@ -216,7 +216,7 @@ describe(`Removing reply`, async () => {
         const unremoveEdit = await plebbit.createCommentEdit({
             subplebbitAddress: replyToBeRemoved.subplebbitAddress,
             commentCid: replyToBeRemoved.cid,
-            moderatorReason: "To unremove a reply",
+            reason: "To unremove a reply",
             removed: false,
             signer: roles[2].signer
         });
@@ -226,6 +226,6 @@ describe(`Removing reply`, async () => {
     it(`A new CommentUpdate is published for unremoving a reply`, async () => {
         await waitUntil(() => replyToBeRemoved.removed === false, { timeout: 300000 });
         expect(replyToBeRemoved.removed).to.be.false;
-        expect(replyToBeRemoved.moderatorReason).to.equal("To unremove a reply");
+        expect(replyToBeRemoved.reason).to.equal("To unremove a reply");
     });
 });
