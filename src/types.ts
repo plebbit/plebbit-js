@@ -559,7 +559,7 @@ declare module "knex/types/tables" {
             Omit<CommentUpdatesTableRowInsert, "cid">,
             Omit<CommentUpdatesTableRowInsert, "cid">
         >;
-        votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert, VotesTableRowInsert, VotesTableRowInsert>;
+        votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert, null>;
         challengeRequests: Knex.CompositeTableType<ChallengeRequestsTableRow, ChallengeRequestsTableRowInsert, null, null>;
         challenges: Knex.CompositeTableType<ChallengesTableRow, ChallengesTableRowInsert, null, null>;
         challengeAnswers: Knex.CompositeTableType<ChallengeAnswersTableRow, ChallengeAnswersTableRowInsert, null, null>;

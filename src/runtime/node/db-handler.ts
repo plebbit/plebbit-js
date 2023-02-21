@@ -196,6 +196,7 @@ export class DbHandler {
             table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
             table.json("author").nullable();
             table.json("replies").nullable();
+            // Columns with defaults
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
         });
     }
@@ -396,8 +397,12 @@ export class DbHandler {
         log(`copied table ${srcTable} to table ${dstTable}`);
     }
 
-    async upsertVote(vote: VotesTableRowInsert, trx?: Transaction) {
-        await this._baseTransaction(trx)(TABLES.VOTES).insert(vote).onConflict(["commentCid", "authorAddress"]).merge();
+    async deleteVote(vote: Pick<VotesTableRow, "authorAddress" | "commentCid">, trx?: Transaction) {
+        await this._baseTransaction(trx)(TABLES.VOTES).delete().where(vote);
+    }
+
+    async insertVote(vote: VotesTableRowInsert, trx?: Transaction) {
+        await this._baseTransaction(trx)(TABLES.VOTES).insert(vote);
     }
 
     async insertComment(comment: CommentsTableRowInsert, trx?: Transaction) {
@@ -437,7 +442,7 @@ export class DbHandler {
             .first();
     }
 
-    private _basePageQuery(options: PageOptions, trx?: Transaction) {
+    private _basePageQuery(options: Omit<PageOptions, "pageSize">, trx?: Transaction) {
         let query = this._baseTransaction(trx)(TABLES.COMMENTS)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .jsonExtract(`${TABLES.COMMENT_UPDATES}.edit`, "$.deleted", "deleted", true)
@@ -451,32 +456,19 @@ export class DbHandler {
     }
 
     async queryReplyCount(commentCid: string, trx?: Transaction): Promise<number> {
-        const options: PageOptions = {
+        const options = {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: true,
             excludeRemovedComments: true,
-            parentCid: commentCid,
-            pageSize: 50
+            parentCid: commentCid
         };
         const children = await this.queryCommentsForPages(options, trx);
 
         return children.length + lodash.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.comment.cid, trx))));
     }
 
-    async queryCommentWithRemoteCommentUpdate(
-        cid: string,
-        trx?: Transaction
-    ): Promise<{ comment: CommentsTableRow; commentUpdate: CommentUpdatesRow }> {
-        // When we say remote, we mean a CommentUpdate that has been signed and stored in commentUpdates table
-        // It could be in the middle of being published to ipns
-        const comment = await this._baseTransaction(trx)(TABLES.COMMENTS).where("cid", cid).first();
-        const commentUpdate = await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where("cid", cid).first();
-        assert(commentUpdate);
-        return { comment, commentUpdate };
-    }
-
     async queryCommentsForPages(
-        options: PageOptions,
+        options: Omit<PageOptions, "pageSize">,
         trx?: Transaction
     ): Promise<{ comment: CommentsTableRow; commentUpdate: CommentUpdatesRow }[]> {
         //prettier-ignore
@@ -501,8 +493,9 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where("cid", comment.cid).first();
     }
 
-    async queryCommentsOfAuthor(authorAddress: string, trx?: Transaction) {
-        return this._baseTransaction(trx)(TABLES.COMMENTS).where("authorAddress", authorAddress);
+    async queryCommentsOfAuthor(authorAddresses: string | string[], trx?: Transaction) {
+        if (!Array.isArray(authorAddresses)) authorAddresses = [authorAddresses];
+        return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("authorAddress", authorAddresses);
     }
 
     async queryParents(comment: Pick<CommentsTableRow, "cid">, trx?: Transaction): Promise<CommentsTableRow[]> {
@@ -523,15 +516,43 @@ export class DbHandler {
     ): Promise<CommentsTableRow[]> {
         // Add comments with no CommentUpdate
 
-        const comments: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
+        const criteriaOneTwoThree = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
             .leftJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
-            .where(`${TABLES.COMMENT_UPDATES}.updatedAt`, "<", opts.minimumUpdatedAt)
-            .orWhereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
-            .orWhere("updateTrigger", true)
-            .orWhereNotIn("ipnsKeyName", opts.ipnsKeyNames);
+            .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
+            .orWhere(`${TABLES.COMMENT_UPDATES}.updatedAt`, "<=", opts.minimumUpdatedAt);
 
-        return comments;
+        const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 2");
+        const restQuery = this._baseTransaction(trx)(TABLES.COMMENTS)
+            .select(`${TABLES.COMMENTS}.*`)
+            .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
+            .leftJoin(TABLES.VOTES, `${TABLES.COMMENTS}.cid`, `${TABLES.VOTES}.commentCid`)
+            .leftJoin(TABLES.COMMENT_EDITS, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_EDITS}.commentCid`)
+            .leftJoin({ childrenComments: TABLES.COMMENTS }, `${TABLES.COMMENTS}.cid`, `childrenComments.parentCid`)
+            .max({
+                voteLastInsertedAt: `${TABLES.VOTES}.insertedAt`,
+                editLastInsertedAt: `${TABLES.COMMENT_EDITS}.insertedAt`,
+                childCommentLastInsertedAt: `childrenComments.insertedAt`,
+                lastUpdatedAt: `${TABLES.COMMENT_UPDATES}.updatedAt`
+            })
+            .groupBy(`${TABLES.COMMENTS}.cid`) // 5 seconds buffer below
+            .having(`voteLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
+            .orHaving(`editLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
+            .orHaving(`childCommentLastInsertedAt`, ">=", lastUpdatedAtWithBuffer);
+        const restCriteria: CommentsTableRow[] = await restQuery;
+
+        const comments: CommentsTableRow[] = lodash.uniqBy([...criteriaOneTwoThree, ...restCriteria], (comment) => comment.cid);
+
+        const parents: CommentsTableRow[] = lodash.flattenDeep(
+            await Promise.all(comments.map((comment) => this.queryParents(comment, trx)))
+        );
+        const authorComments: CommentsTableRow[] = await this.queryCommentsOfAuthor(
+            comments.map((comment) => comment.authorAddress),
+            trx
+        );
+        const uniqComments = lodash.uniqBy([...comments, ...parents, ...authorComments], (comment) => comment.cid);
+
+        return uniqComments;
     }
 
     // TODO rewrite this
@@ -715,17 +736,6 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName }).first();
     }
 
-    async queryCommentsGroupByDepth(trx?: Knex.Transaction): Promise<Pick<CommentsTableRow, "cid">[][]> {
-        const maxDepth = (await this._baseTransaction(trx)(TABLES.COMMENTS).max("depth"))[0]["max(`depth`)"];
-        if (typeof maxDepth !== "number") return [[]];
-
-        const depths = new Array(maxDepth + 1).fill(null).map((value, i) => i);
-        const comments = await Promise.all(
-            depths.map(async (depth) => this._baseTransaction(trx)(TABLES.COMMENTS).where({ depth: depth }).select("cid"))
-        );
-        return comments;
-    }
-
     async queryAuthorModEdits(authorAddress: string, trx?: Knex.Transaction): Promise<Pick<SubplebbitAuthor, "banExpiresAt" | "flair">> {
         const authorComments = await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where("authorAddress", authorAddress);
         if (!Array.isArray(authorComments)) return {};
@@ -764,7 +774,6 @@ export class DbHandler {
 
         const modAuthorEdits = await this.queryAuthorModEdits(authorAddress, trx);
 
-        // TODO add flair here
         return {
             postScore,
             replyScore,

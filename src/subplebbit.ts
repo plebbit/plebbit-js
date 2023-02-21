@@ -259,6 +259,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (!keyExistsInNode) {
             const ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(signer.privateKey));
             await nativeFunctions.importSignerIntoIpfsNode(signer.ipnsKeyName, ipfsKey, this.plebbit);
+            this._ipfsNodeIpnsKeyNames.push(signer.ipnsKeyName);
         }
     }
 
@@ -460,12 +461,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         log(`Published a new IPNS record for sub(${this.address})`);
     }
 
-    private async _triggerAllAuthorCommentsUpdate(authorAddress: string, trx?: any) {
-        // Need to trigger comment update for all comments of author to ensure new author props are included
-        const authorCommentsCids = (await this.dbHandler.queryCommentsOfAuthor(authorAddress, trx)).map((comment) => comment.cid);
-        await this.dbHandler.setCommentUpdateTrigger(authorCommentsCids, true, trx);
-    }
-
     private async handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string) {
         const log = Logger("plebbit-js:subplebbit:handleCommentEdit");
 
@@ -492,12 +487,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const trx = await this.dbHandler.createTransaction(challengeRequestId);
 
             await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId), trx);
-            // Update cache and CommentUpdate IPNS trigger
-            await this._triggerAllParentsUpdate(commentEdit.commentCid, true, true, trx);
 
             await this.dbHandler.commitTransaction(challengeRequestId);
             log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEdit.toJSON());
-            this._subplebbitUpdateTrigger = true;
         } else if (modRole) {
             log.trace(
                 `(${challengeRequestId}): `,
@@ -521,10 +513,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
             const trx = await this.dbHandler.createTransaction(challengeRequestId);
             await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId), trx);
-            if (commentEdit.commentAuthor) await this._triggerAllAuthorCommentsUpdate(commentToBeEdited.authorAddress);
-            await this._triggerAllParentsUpdate(commentEdit.commentCid, true, true, trx);
             await this.dbHandler.commitTransaction(challengeRequestId);
-            this._subplebbitUpdateTrigger = true;
         } else {
             // CommentEdit is signed by someone who's not the original author or a mod. Reject it
             // Editor has no subplebbit role like owner, moderator or admin, and their signer is not the signer used in the original comment
@@ -552,16 +541,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         } else {
             const newVote = await this.plebbit.createVote(newVoteProps);
             const trx = await this.dbHandler.createTransaction(challengeRequestId);
-            const commentToBeVoted = await this.dbHandler.queryComment(newVote.commentCid, trx);
-            await this.dbHandler.upsertVote(newVote.toJSONForDb(challengeRequestId), trx);
-            // Trigger update in both page cache and CommentUpdate IPNS
-            await Promise.all([
-                this._triggerAllAuthorCommentsUpdate(commentToBeVoted.authorAddress, trx),
-                this._triggerAllParentsUpdate(newVoteProps.commentCid, true, true, trx)
-            ]);
+            if (lastVote) await this.dbHandler.deleteVote(lastVote, trx);
+            await this.dbHandler.insertVote(newVote.toJSONForDb(challengeRequestId), trx);
             await this.dbHandler.commitTransaction(challengeRequestId);
-            log.trace(`(${challengeRequestId}): `, `Upserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
-            this._subplebbitUpdateTrigger = true;
+            log.trace(`(${challengeRequestId}): `, `inserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
         }
     }
 
@@ -737,11 +720,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 postOrCommentOrVote.setCid(file.path);
 
                 await this.dbHandler.insertComment(postOrCommentOrVote.toJSONCommentsTableRowInsert(challengeRequestId), trx);
-                await this._triggerAllAuthorCommentsUpdate(postOrCommentOrVote.author.address, trx);
                 await this.dbHandler.commitTransaction(challengeRequestId);
 
                 log(`(${challengeRequestId}): `, `New post with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
-                this._subplebbitUpdateTrigger = true;
             } else if (postOrCommentOrVote instanceof Comment) {
                 // Comment
                 const trx = await this.dbHandler.createTransaction(challengeRequestId);
@@ -754,17 +735,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 postOrCommentOrVote.setPostCid(parent.postCid);
                 const file = await this.plebbit.ipfsClient.add(deterministicStringify(postOrCommentOrVote.toJSONIpfs()));
                 postOrCommentOrVote.setCid(file.path);
-
                 await this.dbHandler.insertComment(postOrCommentOrVote.toJSONCommentsTableRowInsert(challengeRequestId), trx);
-                await Promise.all([
-                    this._triggerAllAuthorCommentsUpdate(postOrCommentOrVote.author.address, trx),
-                    this._triggerAllParentsUpdate(postOrCommentOrVote.cid, true, true, trx)
-                ]);
-
                 await this.dbHandler.commitTransaction(challengeRequestId);
 
                 log(`(${challengeRequestId}): `, `New comment with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
-                this._subplebbitUpdateTrigger = true;
             }
         }
 
@@ -822,7 +796,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     uint8ArrayFromString(deterministicStringify(challengeVerification))
                 )
             ]);
-            log(
+            log.trace(
                 `(${request.challengeRequestId}): `,
                 `Published ${challengeVerification.type} over pubsub: `,
                 lodash.omit(toSignMsg, ["encryptedPublication"])
@@ -855,7 +829,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                     uint8ArrayFromString(deterministicStringify(challengeMessage))
                 )
             ]);
-            log(
+            log.trace(
                 `(${request.challengeRequestId}): `,
                 `Published ${challengeMessage.type} over pubsub: `,
                 lodash.omit(toSignChallenge, ["encryptedChallenges"])
@@ -1051,12 +1025,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         assert(signatureValidity.valid, `Comment Update signature is invalid. Reason (${signatureValidity.reason})`);
     }
 
-    private async _triggerAllParentsUpdate(rootCid: string, trigger: boolean, triggerRootUpdate: boolean, trx?: any) {
-        const parentsCids = (await this.dbHandler.queryParents({ cid: rootCid }, trx)).map((parent) => parent.cid);
-        if (triggerRootUpdate) parentsCids.push(rootCid);
-        await this.dbHandler.setCommentUpdateTrigger(parentsCids, trigger, trx);
-    }
-
     private async _updateComment(comment: CommentsTableRow): Promise<void> {
         const log = Logger("plebbit-js:subplebbit:sync:syncComment");
 
@@ -1086,13 +1054,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
         };
         await this._validateCommentUpdate(newIpns, comment); // Should be removed once signature are working properly
-        await this.dbHandler.upsertCommentUpdate(newIpns); // Need to insert comment in DB before generating pages so props updated above would be included in pages
+        await this.dbHandler.upsertCommentUpdate(newIpns);
 
-        await this.dbHandler.setCommentUpdateTrigger([comment.cid], false);
-
-        this._subplebbitUpdateTrigger = true;
-
-        await this._publishCommentIpns(comment, newIpns);
+        this._publishCommentIpns(comment, newIpns);
     }
 
     private async _listenToIncomingRequests() {
@@ -1143,20 +1107,30 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     private async _updateCommentsThatNeedToBeUpdated() {
         // Criteria:
         // 1 - IPNS about to expire (every 72h) OR
-        // 2 - an update trigger is on OR
-        // 3 - Comment has no row in commentUpdates OR
-        // 4 - comment.ipnsKeyName is not part of /key/list of IPFS RPC API
+        // 2 - Comment has no row in commentUpdates OR
+        // 3 - comment.ipnsKeyName is not part of /key/list of IPFS RPC API
+        // 4 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit
+
+        // After retrieving all comments with any of criteria above, also add their parents to the list
+        // Also add all comments of each author to the list
 
         const log = Logger(`plebbit-js:subplebbit:_updateCommentsThatNeedToBeUpdated`);
         const minimumUpdatedAt = timestamp() - 71 * 60 * 60; // Make sure a comment gets updated every 71 hours at least
 
-        const commentsToUpdate = await this.dbHandler!.queryCommentsToBeUpdated({
-            minimumUpdatedAt,
-            ipnsKeyNames: this._ipfsNodeIpnsKeyNames
-        });
+        const trx = await this.dbHandler.createTransaction("_updateCommentsThatNeedToBeUpdated");
+        const commentsToUpdate = await this.dbHandler!.queryCommentsToBeUpdated(
+            {
+                minimumUpdatedAt,
+                ipnsKeyNames: this._ipfsNodeIpnsKeyNames
+            },
+            trx
+        );
+        await this.dbHandler.commitTransaction("_updateCommentsThatNeedToBeUpdated");
         if (commentsToUpdate.length === 0) return;
 
-        log(`Will update ${commentsToUpdate.length} comments in this update loop`);
+        this._subplebbitUpdateTrigger = true;
+
+        log(`Will update ${commentsToUpdate.length} comments in this update loop for subplebbit (${this.address})`);
 
         const commentsGroupedByDepth = lodash.groupBy(commentsToUpdate, "depth");
 
