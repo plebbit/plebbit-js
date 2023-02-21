@@ -247,7 +247,8 @@ export const parseJsonStrings = (obj: any) => {
     if (!isJsonString(obj) && typeof obj !== "object") return obj;
 
     const newObj = removeNullAndUndefinedValues(isJsonString(obj) ? JSON.parse(obj) : lodash.cloneDeep(obj));
-    const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed"];
+    //prettier-ignore
+    const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed", "commentUpdate_deleted", "commentUpdate_spoiler", "commentUpdate_pinned", "commentUpdate_locked", "commentUpdate_removed"];
     for (const [key, value] of Object.entries(newObj)) {
         if (value === "[object Object]") throw Error(`key (${key}) shouldn't be [object Object]`);
 
