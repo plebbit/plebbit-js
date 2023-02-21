@@ -9,6 +9,7 @@ import {
     CommentsTableRowInsert,
     CommentType,
     CommentUpdate,
+    CommentUpdateInCommentType,
     CommentWithCommentUpdate,
     Flair,
     PagesType,
@@ -122,7 +123,7 @@ export class Comment extends Publication implements CommentType {
     toJSON(): CommentType {
         return {
             ...this.toJSONPubsubMessagePublication(),
-            ...(typeof this.updatedAt === "number" ? this._toJSONCommentUpdate() : undefined),
+            ...(typeof this.updatedAt === "number" ? this.toJSONCommentUpdate() : undefined),
             cid: this.cid,
             original: this.original,
             author: this.author.subplebbit ? this.author.toJSONIpfsWithCommentUpdate() : this.author.toJSONIpfs(),
@@ -144,7 +145,7 @@ export class Comment extends Publication implements CommentType {
                 cid: this.cid,
                 postCid: this.postCid
             },
-            commentUpdate: commentUpdate
+            commentUpdate
         };
     }
 
@@ -189,7 +190,7 @@ export class Comment extends Publication implements CommentType {
         };
     }
 
-    private _toJSONCommentUpdate() {
+    toJSONCommentUpdate(): CommentUpdateInCommentType {
         assert(
             typeof this.cid === "string" &&
                 typeof this.upvoteCount === "number" &&
@@ -244,12 +245,12 @@ export class Comment extends Publication implements CommentType {
     }
 
     async setReplies(replies?: Pages | PagesType | PagesTypeIpfs) {
+        assert(this.subplebbit && this.cid);
         const parsedPages = await parsePagesIfIpfs(replies, this.subplebbit);
         if (!parsedPages) {
             this.replies = undefined;
             return;
         }
-        assert(this.subplebbit && this.cid);
         this.replies = new Pages({
             pages: parsedPages?.pages?.topAll ? { topAll: parsedPages?.pages?.topAll } : {},
             pageCids: parsedPages?.pageCids || {},

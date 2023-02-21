@@ -4,6 +4,7 @@ import {
     CommentIpfsType,
     CommentPubsubMessage,
     CommentType,
+    CommentUpdateInCommentType,
     CreateCommentEditOptions,
     CreateCommentOptions,
     CreatePublicationOptions,
@@ -162,7 +163,14 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     private async _createCommentInstance(options: CreateCommentOptions | CommentType | CommentIpfsType | CommentPubsubMessage) {
-        return typeof options.title === "string" ? new Post(<PostType>options, this) : new Comment(<CommentType>options, this);
+        const comment = typeof options.title === "string" ? new Post(<PostType>options, this) : new Comment(<CommentType>options, this);
+        if (typeof options["updatedAt"] === "number") {
+            //@ts-expect-error
+            comment.subplebbit = options["subplebbit"];
+            await comment._initCommentUpdate(<CommentUpdateInCommentType>options);
+        }
+
+        return comment;
     }
 
     async createComment(options: CreateCommentOptions | CommentType | CommentIpfsType | CommentPubsubMessage): Promise<Comment | Post> {
