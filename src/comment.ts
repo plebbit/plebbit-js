@@ -42,7 +42,7 @@ export class Comment extends Publication implements CommentType {
     postCid?: string;
 
     // CommentEdit and CommentUpdate props
-    original?: Pick<Partial<CommentType>, "author" | "content" | "flair">;
+    original?: Pick<Partial<CommentType>, "author" | "content" | "flair" | "protocolVersion">;
     upvoteCount?: number;
     downvoteCount?: number;
     replyCount?: number;
@@ -89,8 +89,9 @@ export class Comment extends Publication implements CommentType {
         this.setPreviousCid(props.previousCid);
     }
 
-    async _initCommentUpdate(props: CommentUpdate) {
-        if (!this.original) this.original = lodash.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content"]);
+    async _initCommentUpdate(props: Omit<CommentUpdate, "signature" | "replies"> & { replies?: PagesType | PagesTypeIpfs }) {
+        if (!this.original)
+            this.original = lodash.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"]);
 
         this.upvoteCount = props.upvoteCount;
         this.downvoteCount = props.downvoteCount;
