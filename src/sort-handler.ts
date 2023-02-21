@@ -24,7 +24,6 @@ import {
 } from "./types";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
-import { CACHE_KEYS } from "./constants";
 
 export const POSTS_SORT_TYPES: PostSort = {
     hot: { score: (...args) => hotScore(...args) },
@@ -213,6 +212,6 @@ export class SortHandler {
             pageSize: 50
         };
 
-        return await this._generateSubplebbitPosts(pageOptions);
+        return this._generateSubplebbitPosts(pageOptions);
     }
 }
