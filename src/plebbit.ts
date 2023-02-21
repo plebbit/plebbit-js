@@ -168,7 +168,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     async createComment(options: CreateCommentOptions | CommentType | CommentIpfsType | CommentPubsubMessage): Promise<Comment | Post> {
         const log = Logger("plebbit-js:plebbit:createComment");
 
-        if (!options["signer"]) return this._createCommentInstance(options);
+        if (!options["signer"] || options["signature"]) return this._createCommentInstance(options);
 
         //@ts-ignore
         const finalOptions = <CommentType>await this._initMissingFields(options, log);
