@@ -264,7 +264,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     async createCommentEdit(options: CreateCommentEditOptions | CommentEditType): Promise<CommentEdit> {
         const log = Logger("plebbit-js:plebbit:createCommentEdit");
 
-        if (!options.signer) return new CommentEdit(<CommentEditType>options, this); // User just wants to instantiate a CommentEdit object, not publish
+        if (!options.signer || options.signature) return new CommentEdit(<CommentEditType>options, this); // User just wants to instantiate a CommentEdit object, not publish
         //@ts-ignore
         const finalOptions: CommentEditType = <CommentEditType>await this._initMissingFields(options, log);
         finalOptions.signature = await signCommentEdit(<CreateCommentEditOptions>finalOptions, finalOptions.signer, this);

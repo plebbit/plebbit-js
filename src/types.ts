@@ -364,6 +364,8 @@ export interface CommentUpdate {
     };
 }
 
+export interface CommentUpdateInCommentType extends Omit<CommentUpdate, "replies" | "signature">, Pick<CommentType, "replies"> {}
+
 export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "replies">>, Omit<CreateCommentOptions, "signer"> {
     author: AuthorTypeWithCommentUpdate;
     timestamp: number;

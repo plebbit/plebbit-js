@@ -17,6 +17,7 @@ import {
     ChallengeRequestMessageType,
     ChallengeType,
     ChallengeVerificationMessageType,
+    CommentEditPubsubMessage,
     CommentEditType,
     CommentPubsubMessage,
     CommentsTableRow,
@@ -461,15 +462,17 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         log(`Published a new IPNS record for sub(${this.address})`);
     }
 
-    private async handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string) {
+    private async handleCommentEdit(commentEditRaw: CommentEditPubsubMessage, challengeRequestId: string) {
         const log = Logger("plebbit-js:subplebbit:handleCommentEdit");
 
-        const validRes = await verifyCommentEdit(commentEdit, this.plebbit, false);
+        const validRes = await verifyCommentEdit(commentEditRaw, this.plebbit, false);
 
         if (!validRes.valid) {
             log(`(${challengeRequestId}): `, validRes.reason);
             return validRes.reason;
         }
+
+        const commentEdit = await this.plebbit.createCommentEdit(commentEditRaw);
 
         const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
         const editorAddress = await getPlebbitAddressFromPublicKey(commentEdit.signature.publicKey);
@@ -485,9 +488,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             }
 
             const trx = await this.dbHandler.createTransaction(challengeRequestId);
-
             await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId), trx);
-
             await this.dbHandler.commitTransaction(challengeRequestId);
             log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEdit.toJSON());
         } else if (modRole) {
@@ -658,7 +659,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             const res = await this.handleVote(<VoteType>publication, challengeRequestId);
             if (res) return res;
         } else if (postOrCommentOrVote instanceof CommentEdit) {
-            const res = await this.handleCommentEdit(postOrCommentOrVote, challengeRequestId);
+            const res = await this.handleCommentEdit(<CommentEditPubsubMessage>publication, challengeRequestId);
             if (res) return res;
         } else if (postOrCommentOrVote instanceof Comment) {
             const forbiddenCommentFields: (keyof CommentType | "deleted")[] = [
