@@ -56,6 +56,18 @@ describe("createComment", async () => {
         expect(JSON.stringify(comment)).to.equal(JSON.stringify(commentFromStringifiedComment));
     });
 
+    it(`(subplebbit.posts.pages.hot.comments[0]) === plebbit.createComment(JSON.parse(JSON.stringify(subplebbit.posts.pages.hot.comments[0]))`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+        const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(subplebbit.posts.pages.hot.comments[0])));
+        expect(JSON.stringify(subplebbit.posts.pages.hot.comments[0])).to.equal(JSON.stringify(commentClone));
+    });
+
+    it(`(subplebbit.posts.pages.hot.comments[0]) === plebbit.createComment(subplebbit.posts.pages.hot.comments[0])`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+        const commentClone = await plebbit.createComment(subplebbit.posts.pages.hot.comments[0]);
+        expect(JSON.stringify(subplebbit.posts.pages.hot.comments[0])).to.equal(JSON.stringify(commentClone));
+    });
+
     it(`(post: Post) === plebbit.createComment(JSON.parse(JSON.stringify(post)))`, async () => {
         const post = await generateMockPost(subplebbitAddress, plebbit, false, { signer: lodash.sample(signers) });
         const postFromStringifiedPost = await plebbit.createComment(JSON.parse(JSON.stringify(post)));
