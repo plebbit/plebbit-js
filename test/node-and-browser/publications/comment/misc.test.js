@@ -79,17 +79,17 @@ describe(`comment.replyCount`, async () => {
 
     after(() => post.stop() && reply.stop());
 
-    it(`replyCount increases with a direct reply`, async () => {
-        reply = await publishRandomReply(post, plebbit);
+    it(`post.replyCount increases with a direct reply`, async () => {
+        reply = await publishRandomReply(post, plebbit, {}, false);
         await reply.update();
         await new Promise((resolve) => reply.once("update", resolve));
         await waitUntil(() => post.replyCount === 1, { timeout: 200000 });
     });
 
-    it(`replyCount increases with a reply of a reply`, async () => {
-        await publishRandomReply(reply, plebbit);
+    it(`post.replyCount increases with a reply of a reply`, async () => {
+        await publishRandomReply(reply, plebbit, {}, false);
         await waitUntil(() => post.replyCount === 2 && reply.replyCount === 1, { timeout: 200000 });
     });
 });
 
-describe("CommentUpdate.author.subplebbit.firstCommentTimestamp");
+describe.skip("CommentUpdate.author.subplebbit.firstCommentTimestamp");
