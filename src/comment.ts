@@ -124,7 +124,7 @@ export class Comment extends Publication implements CommentType {
             ...(typeof this.updatedAt === "number" ? this._toJSONCommentUpdate() : undefined),
             cid: this.cid,
             original: this.original,
-            author: this.author.toJSONIpfsWithCommentUpdate(),
+            author: this.author.subplebbit ? this.author.toJSONIpfsWithCommentUpdate() : this.author.toJSONIpfs(),
             previousCid: this.previousCid,
             ipnsName: this.ipnsName,
             postCid: this.postCid,
