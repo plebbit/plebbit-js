@@ -522,7 +522,7 @@ export class DbHandler {
             .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
             .orWhere(`${TABLES.COMMENT_UPDATES}.updatedAt`, "<=", opts.minimumUpdatedAt);
 
-        const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 2");
+        const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 3");
         const restQuery = this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
@@ -535,7 +535,7 @@ export class DbHandler {
                 childCommentLastInsertedAt: `childrenComments.insertedAt`,
                 lastUpdatedAt: `${TABLES.COMMENT_UPDATES}.updatedAt`
             })
-            .groupBy(`${TABLES.COMMENTS}.cid`) // 5 seconds buffer below
+            .groupBy(`${TABLES.COMMENTS}.cid`)
             .having(`voteLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`editLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`childCommentLastInsertedAt`, ">=", lastUpdatedAtWithBuffer);
