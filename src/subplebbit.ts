@@ -541,7 +541,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         } else {
             const newVote = await this.plebbit.createVote(newVoteProps);
             const trx = await this.dbHandler.createTransaction(challengeRequestId);
-            if (lastVote) await this.dbHandler.deleteVote(lastVote, trx);
+            await this.dbHandler.deleteVote(newVote.author.address, newVote.commentCid, trx);
             await this.dbHandler.insertVote(newVote.toJSONForDb(challengeRequestId), trx);
             await this.dbHandler.commitTransaction(challengeRequestId);
             log.trace(`(${challengeRequestId}): `, `inserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);

@@ -397,8 +397,8 @@ export class DbHandler {
         log(`copied table ${srcTable} to table ${dstTable}`);
     }
 
-    async deleteVote(vote: Pick<VotesTableRow, "authorAddress" | "commentCid">, trx?: Transaction) {
-        await this._baseTransaction(trx)(TABLES.VOTES).delete().where(vote);
+    async deleteVote(authorAddress: VotesTableRow["authorAddress"], commentCid: VotesTableRow["commentCid"], trx?: Transaction) {
+        await this._baseTransaction(trx)(TABLES.VOTES).where("commentCid", commentCid).where("authorAddress", authorAddress).del();
     }
 
     async insertVote(vote: VotesTableRowInsert, trx?: Transaction) {
