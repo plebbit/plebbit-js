@@ -47,8 +47,8 @@ describe(`Pinning posts`, async () => {
         sub._updateIntervalMs = updateInterval;
         await sub.update();
 
-        postToPin = await publishRandomPost(subplebbitAddress, plebbit, { timestamp: 1100 });
-        secondPostToPin = await publishRandomPost(subplebbitAddress, plebbit, { timestamp: 1000 });
+        postToPin = await publishRandomPost(subplebbitAddress, plebbit, { timestamp: 1100 }, false);
+        secondPostToPin = await publishRandomPost(subplebbitAddress, plebbit, { timestamp: 1000 }, false);
 
         await postToPin.update();
         await secondPostToPin.update();
