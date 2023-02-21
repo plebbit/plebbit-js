@@ -669,7 +669,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 "ipnsName",
                 "depth",
                 "postCid",
-                "original",
                 "upvoteCount",
                 "downvoteCount",
                 "replyCount",
