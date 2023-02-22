@@ -45,8 +45,8 @@ describe(`Banning authors`, async () => {
     });
 
     it(`A new CommentUpdate with comment.author.banExpiresAt is published`, async () => {
-        await waitUntil(() => typeof commentToBeBanned.author.banExpiresAt === "number", { timeout: 200000 });
-        expect(commentToBeBanned.author.banExpiresAt).to.equals(authorBanExpiresAt);
+        await waitUntil(() => typeof commentToBeBanned.author.subplebbit?.banExpiresAt === "number", { timeout: 200000 });
+        expect(commentToBeBanned.author.subplebbit.banExpiresAt).to.equals(authorBanExpiresAt);
     });
 
     it(`Regular author can't ban another author`, async () => {
