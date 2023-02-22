@@ -17,7 +17,7 @@ describe(`Banning authors`, async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        commentToBeBanned = await publishRandomPost(subplebbitAddress, plebbit);
+        commentToBeBanned = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await commentToBeBanned.update();
         authorBanExpiresAt = timestamp() + 30; // Ban stays for 30 seconds
     });
