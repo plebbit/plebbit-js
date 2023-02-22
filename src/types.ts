@@ -414,9 +414,6 @@ export interface CommentIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postC
 export interface PostType extends Omit<CommentType, "parentCid" | "depth"> {
     depth: 0;
     parentCid: undefined;
-    title: string;
-    link?: string;
-    thumbnailUrl?: string; // fetched by subplebbit owner, not author, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
 }
 
 export interface PostIpfsWithCid

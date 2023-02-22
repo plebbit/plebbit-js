@@ -14,7 +14,7 @@ describe(`Marking comment as spoiler`, async () => {
     let plebbit, authorPost;
     before(async () => {
         plebbit = await mockPlebbit();
-        authorPost = await publishRandomPost(subplebbitAddress, plebbit);
+        authorPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await authorPost.update();
     });
 
@@ -64,7 +64,7 @@ describe(`Marking comment as spoiler`, async () => {
         expect(authorPost.spoiler).to.be.false;
     });
     it(`Mod can mark an author comment as spoiler`, async () => {
-        const randomPost = await publishRandomPost(subplebbitAddress, plebbit);
+        const randomPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         const spoilerEdit = await plebbit.createCommentEdit({
             subplebbitAddress: randomPost.subplebbitAddress,
             commentCid: randomPost.cid,
@@ -75,7 +75,7 @@ describe(`Marking comment as spoiler`, async () => {
     });
 
     it(`Mod can mark their own comment as spoiler`, async () => {
-        const modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer });
+        const modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer }, false);
         const spoilerEdit = await plebbit.createCommentEdit({
             subplebbitAddress: modPost.subplebbitAddress,
             commentCid: modPost.cid,
@@ -86,7 +86,7 @@ describe(`Marking comment as spoiler`, async () => {
     });
 
     it(`A comment that was published with spoiler=true can be edited to spoiler=false`, async () => {
-        const spoilerPost = await publishRandomPost(subplebbitAddress, plebbit, { spoiler: true });
+        const spoilerPost = await publishRandomPost(subplebbitAddress, plebbit, { spoiler: true }, false);
         expect(spoilerPost.spoiler).to.be.true;
         expect(spoilerPost.edit?.spoiler).to.be.undefined;
         await spoilerPost.update();

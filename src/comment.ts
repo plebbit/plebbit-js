@@ -81,6 +81,7 @@ export class Comment extends Publication implements CommentType {
         this.ipnsKeyName = props.ipnsKeyName;
         this.depth = props.depth;
         this.link = props.link;
+        this.title = props.title;
         this.thumbnailUrl = props.thumbnailUrl;
         this.content = props.content;
         this.original = props.original;
@@ -169,7 +170,8 @@ export class Comment extends Publication implements CommentType {
             parentCid: this.parentCid,
             flair: this.flair,
             spoiler: this.spoiler,
-            link: this.link
+            link: this.link,
+            title: this.title
         };
     }
 

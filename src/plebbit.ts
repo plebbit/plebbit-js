@@ -163,7 +163,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     private async _createCommentInstance(options: CreateCommentOptions | CommentType | CommentIpfsType | CommentPubsubMessage) {
-        const comment = typeof options.title === "string" ? new Post(<PostType>options, this) : new Comment(<CommentType>options, this);
+        const comment = !options.parentCid ? new Post(<PostType>options, this) : new Comment(<CommentType>options, this);
         if (typeof options["updatedAt"] === "number") {
             //@ts-expect-error
             comment.subplebbit = options["subplebbit"];

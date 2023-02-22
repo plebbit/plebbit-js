@@ -578,7 +578,7 @@ export class DbHandler {
                                 const query = this._baseTransaction(trx)(TABLES.COMMENTS)
                                     .count()
                                     .whereBetween("timestamp", [from, to])
-                                    .whereNotNull("title");
+                                    .whereNull("parentCid");
                                 const res = await query;
                                 return { [propertyName]: res[0]["count(*)"] };
                             }
