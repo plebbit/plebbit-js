@@ -46,7 +46,7 @@ describe(`Removing post`, async () => {
     });
 
     it(`A new CommentUpdate is published with removed=true`, async () => {
-        await new Promise((resolve) => postToRemove.once("update", resolve));
+        await waitUntil(() => postToRemove.removed, { timeout: 200000 });
         expect(postToRemove.removed).to.be.true;
         expect(postToRemove.reason).to.equal("To remove a post");
     });
