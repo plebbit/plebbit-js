@@ -27,10 +27,10 @@ describe("Deleting a post", async () => {
     before(async () => {
         plebbit = await mockPlebbit();
         [postToDelete, modPostToDelete] = await Promise.all([
-            publishRandomPost(subplebbitAddress, plebbit),
-            publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer })
+            publishRandomPost(subplebbitAddress, plebbit, {}, false),
+            publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer }, false)
         ]);
-        postReply = await publishRandomReply(postToDelete, plebbit);
+        postReply = await publishRandomReply(postToDelete, plebbit, {}, false);
     });
     it(`Regular author can't mark a post that is not theirs as deleted`, async () => {
         const deleteEdit = await plebbit.createCommentEdit({
@@ -83,7 +83,7 @@ describe("Deleting a post", async () => {
     });
 
     it(`Can't publish vote on deleted post`, async () => {
-        const voteUnderDeletedPost = await generateMockVote(postToDelete, 1, plebbit, { signer: lodash.sample(signers) });
+        const voteUnderDeletedPost = await generateMockVote(postToDelete, 1, plebbit, lodash.sample(signers));
         await publishWithExpectedResult(voteUnderDeletedPost, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
     });
 
@@ -135,9 +135,9 @@ describe("Deleting a reply", async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        post = await publishRandomPost(subplebbitAddress, plebbit);
-        replyToDelete = await publishRandomReply(post, plebbit);
-        replyUnderDeletedReply = await publishRandomReply(replyToDelete, plebbit);
+        post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        replyToDelete = await publishRandomReply(post, plebbit, {}, false);
+        replyUnderDeletedReply = await publishRandomReply(replyToDelete, plebbit, {}, false);
         await Promise.all([replyToDelete.update(), post.update()]);
     });
     after(async () => {
