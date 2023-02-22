@@ -1038,7 +1038,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             this.dbHandler.queryStoredCommentUpdate(comment),
             this.sortHandler.generateRepliesPages(comment)
         ]);
-        if (generatedPages) assert(calculatedCommentUpdate.replyCount > 0);
         if (calculatedCommentUpdate.replyCount > 0) assert(generatedPages);
 
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
