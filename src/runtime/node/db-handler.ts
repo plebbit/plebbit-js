@@ -739,11 +739,17 @@ export class DbHandler {
     }
 
     async queryAuthorModEdits(authorAddress: string, trx?: Knex.Transaction): Promise<Pick<SubplebbitAuthor, "banExpiresAt" | "flair">> {
-        const authorComments = await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where("authorAddress", authorAddress);
-        if (!Array.isArray(authorComments)) return {};
+        const authorComments: Pick<CommentsTableRow, "cid">[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
+            .select("cid")
+            .where("authorAddress", authorAddress);
+        if (!Array.isArray(authorComments) || authorComments.length === 0) return {};
         const commentAuthorEdits: Pick<CommentEditsTableRow, "commentAuthor">[] = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
             .select("commentAuthor")
-            .whereIn("commentCid", authorComments)
+            .whereIn(
+                "commentCid",
+                authorComments.map((c) => c.cid)
+            )
+            .whereNotNull("commentAuthor")
             .orderBy("timestamp", "desc");
         const banAuthor = commentAuthorEdits.find((edit) => typeof edit.commentAuthor?.banExpiresAt === "number")?.commentAuthor;
         const authorFlairByMod = commentAuthorEdits.find((edit) => edit.commentAuthor?.flair)?.commentAuthor;
