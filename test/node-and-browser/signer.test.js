@@ -17,7 +17,7 @@ describe("signer (node and browser)", async () => {
     let plebbit, authorSigner, randomSigner;
     before(async () => {
         plebbit = await mockPlebbit();
-        authorSigner = await plebbit.createSigner({ privateKey: authorSignerFixture.privateKey, type: "rsa" });
+        authorSigner = await plebbit.createSigner({ privateKey: authorSignerFixture.privateKey, type: "ed25519" });
         randomSigner = await plebbit.createSigner();
     });
 
@@ -45,7 +45,8 @@ describe("signer (node and browser)", async () => {
         it("can sign buffers and uint8arrays", () => {
             let uint8arrayString = uint8arraySignature.toString();
             let bufferString = bufferSignature.toString();
-            let expectedSignature = "145,1,1,240,84,73,54,189,181,56,211,49,33,29,69,96,42,76,229,31,153,64,25,84,193,191,86,237,128,166,113,158,104,201,52,143,51,223,220,198,152,31,5,98,158,146,248,126,84,220,27,176,156,108,230,198,109,197,196,165,254,220,230,8";
+            let expectedSignature =
+                "145,1,1,240,84,73,54,189,181,56,211,49,33,29,69,96,42,76,229,31,153,64,25,84,193,191,86,237,128,166,113,158,104,201,52,143,51,223,220,198,152,31,5,98,158,146,248,126,84,220,27,176,156,108,230,198,109,197,196,165,254,220,230,8";
 
             expect(bufferString).to.equal(uint8arrayString);
             expect(uint8arrayString).to.equal(expectedSignature);

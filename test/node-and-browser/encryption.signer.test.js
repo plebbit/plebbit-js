@@ -24,7 +24,7 @@ describe("encryption", () => {
 
     before(async function () {
         plebbit = await mockPlebbit();
-        authorSigner = await plebbit.createSigner({ privateKey: authorSignerFixture.privateKey, type: "rsa" });
+        authorSigner = await plebbit.createSigner({ privateKey: authorSignerFixture.privateKey, type: "ed25519" });
     });
 
     describe("encrypt and decrypt string with aes-gcm", async () => {
