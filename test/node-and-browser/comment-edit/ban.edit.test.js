@@ -50,7 +50,7 @@ describe(`Banning authors`, async () => {
     });
 
     it(`Regular author can't ban another author`, async () => {
-        const tryToBanComment = await publishRandomPost(subplebbitAddress, plebbit);
+        const tryToBanComment = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
 
         const banCommentEdit = await plebbit.createCommentEdit({
             subplebbitAddress: tryToBanComment.subplebbitAddress,

@@ -27,10 +27,10 @@ describe(`Locking posts`, async () => {
         sub = await plebbit.getSubplebbit(subplebbitAddress);
         sub._updateIntervalMs = updateInterval;
         await sub.update();
-        postToBeLocked = await publishRandomPost(subplebbitAddress, plebbit);
+        postToBeLocked = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
 
         await postToBeLocked.update();
-        replyUnderPostToBeLocked = await publishRandomReply(postToBeLocked, plebbit);
+        replyUnderPostToBeLocked = await publishRandomReply(postToBeLocked, plebbit, {}, false);
     });
     after(async () => {
         await postToBeLocked.stop();
@@ -78,7 +78,7 @@ describe(`Locking posts`, async () => {
     });
 
     it(`A new CommentUpdate with locked=true is published`, async () => {
-        await new Promise((resolve) => postToBeLocked.once("update", resolve));
+        await waitUntil(() => postToBeLocked.locked, { timeout: 200000 });
         expect(postToBeLocked.locked).to.be.true;
         expect(postToBeLocked.reason).to.equal("To lock a post");
     });
@@ -94,10 +94,15 @@ describe(`Locking posts`, async () => {
             expect(lockedPostInPage.reason).to.equal("To lock a post");
         }
     });
-    it(`Can't publish reply or vote on a locked post`, async () => {
-        const [reply, vote] = [await generateMockComment(postToBeLocked, plebbit), await generateMockVote(postToBeLocked, 1, plebbit)];
 
-        await Promise.all([reply, vote].map((pub) => publishWithExpectedResult(pub, false, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED)));
+    it(`Can't publish a reply on a locked post`, async () => {
+        const comment = await generateMockComment(postToBeLocked, plebbit, false);
+        await publishWithExpectedResult(comment, false, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
+    });
+
+    it(`Can't vote on a locked post`, async () => {
+        const vote = await generateMockVote(postToBeLocked, 1, plebbit);
+        await publishWithExpectedResult(vote, false, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
     });
 
     it(`Can't vote on a reply of a locked post`, async () => {

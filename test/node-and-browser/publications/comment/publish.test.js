@@ -29,7 +29,7 @@ describe("publishing posts", async () => {
     });
 
     it("Can publish a post", async function () {
-        await publishRandomPost(subplebbitAddress, plebbit);
+        await publishRandomPost(subplebbitAddress, plebbit, {});
     });
 
     it(`Can Publish a post with only link`, async () => {
