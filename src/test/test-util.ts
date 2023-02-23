@@ -350,14 +350,14 @@ export async function publishRandomReply(
     parentComment: Comment,
     plebbit: Plebbit,
     commentProps: Partial<CreateCommentOptions>,
-    waitTillCommentIsOnline = true
+    verifyCommentPropsInParentPages = true
 ): Promise<Comment> {
     const reply = await generateMockComment(parentComment, plebbit, false, {
         content: `Content ${Date.now() + Math.random()}`,
         ...commentProps
     });
     await publishWithExpectedResult(reply, true);
-    if (waitTillCommentIsOnline) await _waitTillCommentIsOnline(reply, plebbit);
+    if (verifyCommentPropsInParentPages) await waitTillCommentIsInParentPages(reply, plebbit);
     return reply;
 }
 
@@ -365,14 +365,14 @@ export async function publishRandomPost(
     subplebbitAddress: string,
     plebbit: Plebbit,
     postProps?: Partial<PostType>,
-    waitTillCommentIsOnline = true
+    verifyCommentPropsInParentPages = true
 ) {
     const post = await generateMockPost(subplebbitAddress, plebbit, false, {
         content: `Content ${Date.now() + Math.random()}`,
         ...postProps
     });
     await publishWithExpectedResult(post, true);
-    if (waitTillCommentIsOnline) await _waitTillCommentIsOnline(post, plebbit);
+    if (verifyCommentPropsInParentPages) await waitTillCommentIsInParentPages(post, plebbit);
     return post;
 }
 
@@ -421,12 +421,11 @@ export async function waitTillCommentIsInParentPages(
     //@ts-ignore
     parent._updateIntervalMs = 200;
     await parent.update();
-    const pageCid = () => (parent instanceof Comment ? parent.replies?.pageCids?.topAll : parent.posts?.pageCids?.new);
     const pagesInstance = () => (parent instanceof Subplebbit ? parent.posts : parent.replies);
     let commentInPage: Comment;
     await waitUntil(
         async () => {
-            const repliesPageCid = pageCid();
+            const repliesPageCid = parent instanceof Comment ? parent.replies?.pageCids?.topAll : parent.posts?.pageCids?.new;
             if (repliesPageCid) commentInPage = await findCommentInPage(comment.cid, repliesPageCid, pagesInstance());
             return Boolean(commentInPage);
         },
