@@ -138,6 +138,10 @@ export class DbHandler {
         );
     }
 
+    async rollbackAllTransactions() {
+        return Promise.all(Object.keys(this._currentTrxs).map((trxId) => this.rollbackTransaction(trxId)));
+    }
+
     private _baseTransaction(trx?: Transaction): Transaction | Knex {
         return trx ? trx : this._knex;
     }

@@ -1051,7 +1051,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         await this._validateCommentUpdate(newIpns, comment); // Should be removed once signature are working properly
         await this.dbHandler.upsertCommentUpdate(newIpns);
 
-        this._publishCommentIpns(comment, newIpns);
+        await this._publishCommentIpns(comment, newIpns);
     }
 
     private async _listenToIncomingRequests() {
