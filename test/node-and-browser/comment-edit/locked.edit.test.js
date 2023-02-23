@@ -125,11 +125,13 @@ describe(`Locking posts`, async () => {
         });
         await publishWithExpectedResult(unlockEdit, true);
     });
-    it(`Unlocked post can receive replies and votes again`, async () => {
-        const [reply, vote] = [
-            await generateMockComment(replyUnderPostToBeLocked, plebbit),
-            await generateMockVote(replyUnderPostToBeLocked, 1, plebbit)
-        ];
-        await Promise.all([reply, vote].map((pub) => publishWithExpectedResult(pub, true)));
+
+    it(`Unlocked post can receive replies`, async () => {
+        const reply = await generateMockComment(replyUnderPostToBeLocked, plebbit);
+        await publishWithExpectedResult(reply, true);
+    });
+    it(`Unlocked post can receive votes `, async () => {
+        const vote = await generateMockVote(replyUnderPostToBeLocked, 1, plebbit);
+        await publishWithExpectedResult(vote, true);
     });
 });
