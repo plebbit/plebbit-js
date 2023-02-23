@@ -276,16 +276,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         if (await this.dbHandler.keyvHas(internalStateKey)) {
             log(`Merging internal subplebbit state from DB and createSubplebbitOptions`);
-            await this._mergeInstanceStateWithDbState(removeKeysWithUndefinedValues(this.toJSONInternal()));
+            await this._mergeInstanceStateWithDbState({});
         }
 
         if (!this.signer) throw Error(`subplebbit.signer needs to be defined before proceeding`);
         await this._initSignerProps();
 
-        if (
-            !(await this.dbHandler.keyvHas(internalStateKey)) ||
-            deterministicStringify(this.toJSONInternal()) !== deterministicStringify(await this._getDbInternalState())
-        ) {
+        if (!(await this.dbHandler.keyvHas(internalStateKey))) {
             log(`Updating the internal state of subplebbit in DB with createSubplebbitOptions`);
             await this._updateDbInternalState(this.toJSONInternal());
         }

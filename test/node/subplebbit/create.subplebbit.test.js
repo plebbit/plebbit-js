@@ -1,10 +1,12 @@
 const Plebbit = require("../../../dist/node");
 const { mockPlebbit } = require("../../../dist/node/test/test-util");
-const { timestamp, encode } = require("../../../dist/node/util");
+const { timestamp } = require("../../../dist/node/util");
 const path = require("path");
 const { messages } = require("../../../dist/node/errors");
 const fs = require("fs");
 const { default: waitUntil } = require("async-wait-until");
+
+const stringify = require("safe-stable-stringify");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
@@ -29,7 +31,7 @@ describe(`plebbit.createSubplebbit`, async () => {
         // Sub has finished its first sync loop, should have address now
         expect(newSubplebbit.address).to.equal(newSubplebbit.signer.address);
         const subplebbitIpns = await plebbit.getSubplebbit(newSubplebbit.address);
-        expect(encode(subplebbitIpns.toJSON())).to.equal(encode(newSubplebbit.toJSON()));
+        expect(stringify(subplebbitIpns.toJSON())).to.equal(stringify(newSubplebbit.toJSON()));
         return newSubplebbit;
     };
 
@@ -76,11 +78,11 @@ describe(`plebbit.createSubplebbit`, async () => {
         const sub = await _createAndValidateSubArsg({ title });
         const createdSub = await plebbit.createSubplebbit({ address: sub.address });
         expect(createdSub.title).to.equal(title);
-        expect(encode(createdSub.toJSON())).to.equal(encode(sub.toJSON()));
+        expect(stringify(createdSub.toJSON())).to.equal(stringify(sub.toJSON()));
         await createdSub.stop();
     });
 
-    it(`createSubplebbit({address, ...extraProps}) creates a sub with extraProps fields over cached fields`, async () => {
+    it(`Recreating a local sub with createSubplebbit({address, ...extraProps}) should not override local sub props`, async () => {
         const newSub = await plebbit.createSubplebbit({
             title: `Test for extra props`,
             description: "Test for description extra props"
@@ -95,14 +97,14 @@ describe(`plebbit.createSubplebbit`, async () => {
             title: "nothing",
             description: "nothing also"
         });
-        expect(createdSubplebbit.title).to.equal("nothing");
-        expect(createdSubplebbit.description).to.equal("nothing also");
+        expect(createdSubplebbit.title).to.equal(newSub.title);
+        expect(createdSubplebbit.description).to.equal(newSub.description);
 
         createdSubplebbit._syncIntervalMs = syncInterval;
         await createdSubplebbit.start();
         await new Promise((resolve) => createdSubplebbit.once("update", resolve));
-        expect(createdSubplebbit.title).to.equal("nothing");
-        expect(createdSubplebbit.description).to.equal("nothing also");
+        expect(createdSubplebbit.title).to.equal(newSub.title);
+        expect(createdSubplebbit.description).to.equal(newSub.description);
         await createdSubplebbit.stop();
     });
 });
