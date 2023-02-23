@@ -23,19 +23,20 @@ describe(`subplebbit.start`, async () => {
     after(async () => subplebbit.stop());
 
     it(`Started Sub can receive publications sequentially`, async () => {
-        await publishRandomPost(subplebbit.address, plebbit);
-        await publishRandomPost(subplebbit.address, plebbit);
-        await publishRandomPost(subplebbit.address, plebbit);
+        await publishRandomPost(subplebbit.address, plebbit, {}, false);
+        await publishRandomPost(subplebbit.address, plebbit, {}, false);
+        await publishRandomPost(subplebbit.address, plebbit, {}, false);
     });
 
-    it(`Started Sub can receive publications parallely`, async () => {
-        await Promise.all(new Array(3).fill(null).map(() => publishRandomPost(subplebbit.address, plebbit)));
+    it(`Started Sub can receive publications parallelly`, async () => {
+        await Promise.all(new Array(3).fill(null).map(() => publishRandomPost(subplebbit.address, plebbit, {}, false)));
     });
 
     it(`Can start a sub after stopping it`, async () => {
         await subplebbit.stop();
         await subplebbit.start();
-        await publishRandomPost(subplebbit.address, plebbit);
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await publishRandomPost(subplebbit.address, plebbit, {}, true);
     });
 
     it(`Sub can receive publications after pubsub topic subscription disconnects`, async () => {
@@ -46,7 +47,7 @@ describe(`subplebbit.start`, async () => {
         await waitUntil(async () => (await subplebbit.plebbit.pubsubIpfsClient.pubsub.ls()).includes(subplebbit.address), {
             timeout: 150000
         });
-        await publishRandomPost(subplebbit.address, plebbit); // Should receive publication since subscription to pubsub topic has been restored
+        await publishRandomPost(subplebbit.address, plebbit, {}, false); // Should receive publication since subscription to pubsub topic has been restored
     });
 });
 
