@@ -167,11 +167,26 @@ describe(`Publishing replies`, async () => {
         parents.push(post);
     });
 
+    after(() => parents.forEach((parent) => parent.stop()));
+
+    it(`Can publish a reply (Comment) with title, content and link defined`, async () => {
+        await publishRandomReply(
+            post,
+            plebbit,
+            {
+                title: `Test title on Comment ${Date.now()}`,
+                content: `Test content on Comment ${Date.now()}`,
+                link: "https//plebbit.com"
+            },
+            true
+        );
+    });
+
     [1, 2, 3].map((depth) =>
         it(`Can publish comment with depth = ${depth}`, async () => {
             const parentComment = parents[depth - 1];
 
-            const reply = await publishRandomReply(parentComment, plebbit, { signer: post.signer });
+            const reply = await publishRandomReply(parentComment, plebbit, { signer: post.signer }, false);
             expect(reply.depth).to.be.equal(depth);
 
             await waitTillCommentIsInParentPages(
