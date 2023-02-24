@@ -221,19 +221,12 @@ export async function parsePageIpfs(pageIpfs: PageIpfs, subplebbit: Pages["_subp
     return { comments: finalComments, nextCid: pageIpfs.nextCid };
 }
 
-export async function parsePagesIfIpfs(
-    pagesRaw: PagesType | PagesTypeIpfs,
-    subplebbit: Pages["_subplebbit"]
-): Promise<PagesType | undefined> {
+export async function parsePagesIpfs(pagesRaw: PagesTypeIpfs, subplebbit: Pages["_subplebbit"]): Promise<PagesType> {
     if (!pagesRaw) return undefined;
-    const isIpfs = Boolean(Object.values(pagesRaw.pages)[0]?.comments[0]["commentUpdate"]);
 
-    if (isIpfs) {
-        pagesRaw = pagesRaw as PagesTypeIpfs;
-        const parsedPages = await Promise.all(Object.keys(pagesRaw.pages).map((key) => parsePageIpfs(pagesRaw.pages[key], subplebbit)));
-        const pagesType: PagesType["pages"] = Object.fromEntries(Object.keys(pagesRaw.pages).map((key, i) => [key, parsedPages[i]]));
-        return { pages: pagesType, pageCids: pagesRaw.pageCids };
-    } else return <PagesType>pagesRaw;
+    const parsedPages = await Promise.all(Object.keys(pagesRaw.pages).map((key) => parsePageIpfs(pagesRaw.pages[key], subplebbit)));
+    const pagesType: PagesType["pages"] = Object.fromEntries(Object.keys(pagesRaw.pages).map((key, i) => [key, parsedPages[i]]));
+    return { pages: pagesType, pageCids: pagesRaw.pageCids };
 }
 
 const isJsonString = (jsonString: any) => {

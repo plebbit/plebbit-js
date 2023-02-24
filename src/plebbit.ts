@@ -4,7 +4,7 @@ import {
     CommentIpfsType,
     CommentPubsubMessage,
     CommentType,
-    CommentUpdateInCommentType,
+    CommentWithCommentUpdateIfExistsType,
     CreateCommentEditOptions,
     CreateCommentOptions,
     CreatePublicationOptions,
@@ -162,24 +162,37 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         return clonedOptions;
     }
 
-    private async _createCommentInstance(options: CreateCommentOptions | CommentType | CommentIpfsType | CommentPubsubMessage) {
-        const comment = !options.parentCid ? new Post(<PostType>options, this) : new Comment(<CommentType>options, this);
-        if (typeof options["updatedAt"] === "number") {
-            //@ts-expect-error
-            comment.subplebbit = options["subplebbit"];
-            await comment._initCommentUpdate(<CommentUpdateInCommentType>options);
+    private async _createCommentInstance(
+        options: CreateCommentOptions | CommentWithCommentUpdateIfExistsType | CommentIpfsType | CommentPubsubMessage,
+        subplebbit?: Subplebbit
+    ) {
+        if (options["comment"]) {
+            options = options as CommentWithCommentUpdateIfExistsType;
+            const comment = options.comment.parentCid ? new Comment(options.comment, this) : new Post(options.comment, this);
+            if (options.commentUpdate) {
+                //@ts-expect-error
+                comment.subplebbit = subplebbit || (await this.getSubplebbit(options.comment.subplebbitAddress));
+                await comment._initCommentUpdate(options.commentUpdate);
+            }
+            return comment;
+        } else {
+            options = options as CreateCommentOptions | CommentIpfsType | CommentPubsubMessage;
+            const comment = options.parentCid ? new Comment(<CommentType>options, this) : new Post(<PostType>options, this);
+            return comment;
         }
-
-        return comment;
     }
 
-    async createComment(options: CreateCommentOptions | CommentType | CommentIpfsType | CommentPubsubMessage): Promise<Comment | Post> {
+    async createComment(
+        options: CreateCommentOptions | CommentWithCommentUpdateIfExistsType | CommentIpfsType | CommentPubsubMessage | Comment
+    ): Promise<Comment | Post> {
         const log = Logger("plebbit-js:plebbit:createComment");
 
-        if (!options["signer"] || options["signature"]) return this._createCommentInstance(options);
+        let finalOptions = options instanceof Comment ? options.toJSON() : options;
+
+        if (!options["signer"] || options["signature"]) return this._createCommentInstance(finalOptions, options["subplebbit"]);
 
         //@ts-ignore
-        const finalOptions = <CommentType>await this._initMissingFields(options, log);
+        finalOptions = <CommentType>await this._initMissingFields(options, log);
 
         finalOptions.signature = await signComment(<CreateCommentOptions>finalOptions, finalOptions.signer, this);
         finalOptions.protocolVersion = env.PROTOCOL_VERSION;
@@ -253,7 +266,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
 
     async createVote(options: CreateVoteOptions | VoteType | VotePubsubMessage): Promise<Vote> {
         const log = Logger("plebbit-js:plebbit:createVote");
-        if (!options["signer"] || options["signature"]) return new Vote(<VoteType>options, this);
+        if (!options["signer"]) return new Vote(<VoteType>options, this);
         //@ts-ignore
         const finalOptions: VoteType = <VoteType>await this._initMissingFields(options, log);
         finalOptions.signature = await signVote(<CreateVoteOptions>finalOptions, finalOptions.signer, this);

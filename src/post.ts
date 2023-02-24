@@ -18,10 +18,6 @@ class Post extends Comment implements PostType {
         this.parentCid = undefined;
     }
 
-    toJSON(): PostType {
-        return { ...super.toJSON(), ...this.toJSONPubsubMessagePublication(), depth: this.depth, thumbnailUrl: this.thumbnailUrl };
-    }
-
     toJSONPubsubMessagePublication(): PostPubsubMessage {
         return {
             ...super.toJSONPubsubMessagePublication(),

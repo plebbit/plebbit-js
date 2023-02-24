@@ -364,14 +364,17 @@ export interface CommentUpdate {
     };
 }
 
-export interface CommentUpdateInCommentType extends Omit<CommentUpdate, "replies" | "signature">, Pick<CommentType, "replies"> {}
+export interface CommentWithCommentUpdateIfExistsType {
+    comment: CommentPubsubMessage & Partial<CommentIpfsWithCid>;
+    commentUpdate?: CommentUpdate;
+}
 
 export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "replies">>, Omit<CreateCommentOptions, "signer"> {
     author: AuthorTypeWithCommentUpdate;
     timestamp: number;
     protocolVersion: ProtocolVersion;
     signature: SignatureType;
-    replies?: PagesType;
+    replies?: Pages;
     postCid?: string;
     previousCid?: string; // each post is a linked list
     ipnsKeyName?: string;

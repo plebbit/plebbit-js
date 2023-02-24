@@ -8,11 +8,11 @@ import { Pages } from "../pages";
 import { Subplebbit } from "../subplebbit";
 import { CreateCommentOptions, CreateSubplebbitOptions, PostType, VoteType } from "../types";
 import isIPFS from "is-ipfs";
-import Publication from "../publication";
 import waitUntil from "async-wait-until";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { SignerType } from "../signer/constants";
+import { CommentEdit } from "../comment-edit";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -388,7 +388,7 @@ export async function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbit:
     await publishWithExpectedResult(voteObj, true);
 }
 
-export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
+export async function publishWithExpectedResult(publication: Comment | Vote | CommentEdit, expectedChallengeSuccess: boolean, expectedReason?: string) {
     await publication.publish();
     await new Promise((resolve, reject) =>
         publication.once("challengeverification", (verificationMsg) => {
