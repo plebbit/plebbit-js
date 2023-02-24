@@ -1,5 +1,5 @@
 const Plebbit = require("../../../dist/node");
-const { mockPlebbit } = require("../../../dist/node/test/test-util");
+const { mockPlebbit, publishRandomPost, publishRandomReply, createMockSub } = require("../../../dist/node/test/test-util");
 const { timestamp } = require("../../../dist/node/util");
 const path = require("path");
 const { messages } = require("../../../dist/node/errors");
@@ -56,6 +56,21 @@ describe(`plebbit.createSubplebbit`, async () => {
         expect(createdSub.title).to.equal(props.title);
         expect(createdSub.signer.address).to.be.a("string");
         await createdSub.stop();
+    });
+
+    it(`Can recreate a subplebbit with replies instance with plebbit.createSubplebbit`, async () => {
+        const props = { title: "Test hello", description: "Hello there" };
+        const sub = await createMockSub(props, plebbit);
+        await sub.start();
+        await new Promise((resolve) => sub.once("update", resolve));
+        const post = await publishRandomPost(sub.address, plebbit, {}, false);
+        await publishRandomReply(post, plebbit, {}, true);
+        await new Promise((resolve) => sub.once("update", resolve));
+        expect(sub.posts).to.be.a("object");
+        const clonedSub = await plebbit.createSubplebbit(sub);
+        expect(clonedSub.posts).to.be.a("object");
+        expect(sub.toJSON()).to.deep.equal(clonedSub.toJSON());
+        await sub.stop();
     });
 
     it(`createSubplebbit on online IPFS node doesn't take more than 10s`, async () => {
