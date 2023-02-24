@@ -309,7 +309,7 @@ export async function mockPlebbit(dataPath?: string) {
     };
 
     plebbit.resolver.resolveSubplebbitAddressIfNeeded = async (subAddress) => {
-        if (subAddress === "plebbit.eth") return "QmZGLpFBpqRJZFFN12jHwBqrX63ZuYnt5Bo1TWGmpD1v4e"; // signers[3].address
+        if (subAddress === "plebbit.eth") return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3].address
         else if (subAddress === "testgibbreish.eth") throw new Error(`Domain (${subAddress}) has no subplebbit-address`);
         return subAddress;
     };
@@ -388,7 +388,11 @@ export async function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbit:
     await publishWithExpectedResult(voteObj, true);
 }
 
-export async function publishWithExpectedResult(publication: Comment | Vote | CommentEdit, expectedChallengeSuccess: boolean, expectedReason?: string) {
+export async function publishWithExpectedResult(
+    publication: Comment | Vote | CommentEdit,
+    expectedChallengeSuccess: boolean,
+    expectedReason?: string
+) {
     await publication.publish();
     await new Promise((resolve, reject) =>
         publication.once("challengeverification", (verificationMsg) => {
