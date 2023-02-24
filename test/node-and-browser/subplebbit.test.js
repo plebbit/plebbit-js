@@ -102,7 +102,10 @@ describe("plebbit.getSubplebbit", async () => {
 
     it("Throws an error when subplebbit address is incorrect", async () => {
         const gibbreishAddress = "0xdeadbeef";
-        await assert.isRejected(plebbit.getSubplebbit(gibbreishAddress), messages.ERR_INVALID_SUBPLEBBIT_ADDRESS);
+        await assert.isRejected(
+            plebbit.getSubplebbit(gibbreishAddress),
+            `ipns (0xdeadbeef) record  fails to resolve due to error HTTPError: could not resolve name: "0xdeadbeef" is missing a DNSLink record (https://docs.ipfs.io/concepts/dnslink/)`
+        );
     });
 
     it("can load subplebbit with ENS domain via plebbit.getSubplebbit", async () => {
