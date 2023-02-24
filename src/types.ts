@@ -283,11 +283,16 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
     pubsubTopic: string;
     metricsCid?: string;
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
-    posts?: PagesType;
+    posts?: Pages;
 }
 
 export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts"> {
     posts?: PagesTypeIpfs;
+}
+
+export interface InternalSubplebbitType extends SubplebbitIpfsType {
+    signer: Pick<SignerType, "address" | "privateKey" | "type">;
+    _subplebbitUpdateTrigger: boolean;
 }
 
 export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
@@ -304,7 +309,6 @@ export interface SubplebbitEditOptions {
     roles?: { [authorAddress: string]: SubplebbitRole };
     rules?: string[];
     lastPostCid?: string;
-    posts?: Pages | Pick<Pages, "pages" | "pageCids">;
     pubsubTopic?: string;
     challengeTypes?: ChallengeType[];
     metrics?: SubplebbitMetrics;

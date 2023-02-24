@@ -4,7 +4,7 @@ import { sha256 } from "js-sha256";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
 import { SortHandler } from "./sort-handler";
-import { loadIpnsAsJson, parsePagesIfIpfs, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
+import { loadIpnsAsJson, parsePagesIpfs, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
 import { decrypt, encrypt, Signer } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
@@ -29,7 +29,7 @@ import {
     DecryptedChallengeRequestMessageType,
     Flair,
     FlairOwner,
-    PagesType,
+    InternalSubplebbitType,
     PagesTypeIpfs,
     ProtocolVersion,
     SubplebbitEditOptions,
@@ -169,18 +169,28 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         await this._setPosts(mergedProps.posts);
     }
 
-    async _setPosts(newPosts: PagesType | PagesTypeIpfs) {
-        const parsedPages = await parsePagesIfIpfs(newPosts, this);
-        if (!parsedPages) {
+    async _setPosts(newPosts: PagesTypeIpfs | Pages) {
+        if (!newPosts) {
             this.posts = undefined;
             return;
         }
-        this.posts = new Pages({
-            pages: parsedPages?.pages || {},
-            pageCids: parsedPages?.pageCids || {},
-            subplebbit: lodash.pick(this, ["address", "plebbit", "encryption"]),
-            parentCid: undefined
-        });
+
+        if (newPosts instanceof Pages) {
+            this.posts = newPosts;
+            return;
+        }
+        const isIpfs = Boolean(Object.values(newPosts.pages)[0]?.comments[0]["commentUpdate"]);
+        if (isIpfs) {
+            newPosts = newPosts as PagesTypeIpfs;
+            const parsedPages = await parsePagesIpfs(newPosts, this);
+            this.posts = new Pages({
+                pages: parsedPages?.pages || {},
+                pageCids: parsedPages?.pageCids || {},
+                subplebbit: lodash.pick(this, ["address", "plebbit", "encryption"]),
+                pagesIpfs: newPosts.pages,
+                parentCid: undefined
+            });
+        } else throw Error(`Fail to parse subplebbit.posts`);
     }
 
     private async _initSignerProps() {
@@ -221,7 +231,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.validateCaptchaAnswerCallback = newCallback;
     }
 
-    toJSONInternal() {
+    toJSONInternal(): InternalSubplebbitType {
         return {
             ...this.toJSON(),
             signer: this.signer ? lodash.pick(this.signer, ["privateKey", "type", "address"]) : undefined,
@@ -229,7 +239,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         };
     }
 
-    toJSON(): SubplebbitType {
+    toJSON(): SubplebbitIpfsType {
         return {
             title: this.title,
             description: this.description,
@@ -1148,7 +1158,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    private async _updateDbInternalState(props: Partial<SubplebbitType>) {
+    private async _updateDbInternalState(props: Partial<InternalSubplebbitType>) {
         if (Object.keys(props).length === 0) return;
         await this.dbHandler.lockSubState();
         const internalStateBefore: SubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
