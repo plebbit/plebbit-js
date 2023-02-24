@@ -1,22 +1,20 @@
 const Plebbit = require("../../dist/node");
 const fixtureSigner = require("../fixtures/signers")[0];
 const signers = require("../fixtures/signers");
-const { loadIpfsFileAsJson, loadIpnsAsJson, encode } = require("../../dist/node/util");
+const { loadIpfsFileAsJson } = require("../../dist/node/util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { messages } = require("../../dist/node/errors");
 const { mockPlebbit, publishRandomPost } = require("../../dist/node/test/test-util");
 const { Buffer } = require("buffer");
+const { default: Author } = require("../../dist/node/author");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-const updateInterval = 300;
 const subplebbitAddress = signers[0].address;
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-const ensSubplebbitSigner = signers[3];
-const ensSubplebbitAddress = "plebbit.eth";
 const subplebbitSigner = signers[0];
 
 describe("plebbit (node and browser)", async () => {
@@ -53,6 +51,7 @@ describe("plebbit (node and browser)", async () => {
 
     describe("plebbit.createSigner", async () => {
         let plebbit, signer;
+        const isBase64 = (testString) => /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}))?$/gm.test(testString);
         before(async () => {
             plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
             signer = await plebbit.createSigner();
@@ -60,19 +59,19 @@ describe("plebbit (node and browser)", async () => {
 
         it("without private key argument", async () => {
             expect(signer).not.to.equal(undefined);
-            expect(signer.privateKey).to.match(/-----BEGIN ENCRYPTED PRIVATE KEY-----/);
-            expect(signer.publicKey).to.match(/-----BEGIN PUBLIC KEY-----/);
-            expect(signer.address).to.match(/^Qm/);
-            expect(signer.type).to.equal("rsa");
+            expect(isBase64(signer.privateKey)).to.be.true;
+            expect(isBase64(signer.publicKey)).to.be.true;
+            expect(signer.address).to.match(/^12D3KooW/);
+            expect(signer.type).to.equal("ed25519");
         });
 
         it("with private key argument", async () => {
-            const signer = await plebbit.createSigner({ privateKey: fixtureSigner.privateKey, type: "rsa" });
+            const signer = await plebbit.createSigner({ privateKey: fixtureSigner.privateKey, type: "ed25519" });
             expect(signer).not.to.equal(undefined);
             expect(signer.privateKey).to.equal(fixtureSigner.privateKey);
             expect(signer.publicKey).to.equal(fixtureSigner.publicKey);
             expect(signer.address).to.equal(fixtureSigner.address);
-            expect(signer.type).to.equal("rsa");
+            expect(signer.type).to.equal("ed25519");
         });
 
         it("generate same signer twice", async () => {
@@ -89,28 +88,17 @@ describe("plebbit (node and browser)", async () => {
         before(async () => {
             plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
         });
-        it("loads post correctly", async () => {
+        it("post props are loaded correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             expect(subplebbit.lastPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
             const expectedPostProps = await loadIpfsFileAsJson(subplebbit.lastPostCid, plebbit);
-            const expectedPost = await plebbit.createComment({
-                cid: subplebbit.lastPostCid,
-                postCid: subplebbit.lastPostCid,
-                ...expectedPostProps
-            });
-            expect(expectedPost.constructor.name).to.equal("Post");
-            expectedPost._updateIntervalMs = updateInterval;
-            await Promise.all([new Promise((resolve) => expectedPost.once("update", resolve)), expectedPost.update()]);
+            expectedPostProps.cid = subplebbit.lastPostCid;
+            expectedPostProps.author = new Author(expectedPostProps.author);
             const loadedPost = await plebbit.getComment(subplebbit.lastPostCid);
-            expect(loadedPost.constructor.name).to.equal("Post");
-            loadedPost._updateIntervalMs = updateInterval;
-            await Promise.all([new Promise((resolve) => loadedPost.once("update", resolve)), loadedPost.update()]);
-            expect(loadedPost.toJSON()).to.deep.equal(expectedPost.toJSON());
-            await expectedPost.stop();
-            await loadedPost.stop();
+            for (const key of Object.keys(expectedPostProps)) expect(expectedPostProps[key]).to.deep.equal(loadedPost[key]);
         });
 
-        it("loads comment correctly", async () => {
+        it("comment props are loaded correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             const comment = subplebbit?.posts?.pages?.hot?.comments.filter((comment) => comment.replyCount > 0)[0]?.replies?.pages?.topAll
                 ?.comments[0];
@@ -127,19 +115,12 @@ describe("plebbit (node and browser)", async () => {
             expect(expectedCommentProps.author).to.be.a("object");
             expect(expectedCommentProps.author.address).to.be.a("string");
             expect(expectedCommentProps.protocolVersion).to.be.a("string");
+            expectedCommentProps.cid = comment.cid;
+            expectedCommentProps.author = new Author(expectedCommentProps.author);
 
-            const expectedComment = await plebbit.createComment({ cid: comment.cid, ...expectedCommentProps });
-            expect(expectedComment.constructor.name).to.equal("Comment");
-            expectedComment._updateIntervalMs = updateInterval;
-            await Promise.all([new Promise((resolve) => expectedComment.once("update", resolve)), expectedComment.update()]);
-            await expectedComment.stop();
             const loadedComment = await plebbit.getComment(comment.cid);
             expect(loadedComment.constructor.name).to.equal("Comment");
-            loadedComment._updateIntervalMs = updateInterval;
-            await Promise.all([new Promise((resolve) => loadedComment.once("update", resolve)), loadedComment.update()]);
-            await loadedComment.stop();
-
-            expect(loadedComment.toJSON()).to.deep.equal(expectedComment.toJSON());
+            for (const key of Object.keys(expectedCommentProps)) expect(expectedCommentProps[key]).to.deep.equal(loadedComment[key]);
         });
     });
 
@@ -212,11 +193,10 @@ if (!globalThis["navigator"]?.userAgent?.includes("Firefox"))
             expect(plebbit.ipfsGatewayUrl).to.equal("http://127.0.0.1:18080");
             plebbit.resolver = (await mockPlebbit()).resolver;
 
-            await publishRandomPost(subplebbitAddress, plebbit);
+            await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         });
 
         it(`Can publish a post with user@password for both ipfs and pubsub http client`, async () => {
-            debugger;
             const ipfsHttpClientOptions = `http://user:password@localhost:15001/api/v0`;
             const pubsubHttpClientOptions = `http://user:password@localhost:15002/api/v0`;
             const plebbitOptions = {
@@ -229,6 +209,6 @@ if (!globalThis["navigator"]?.userAgent?.includes("Firefox"))
             expect(plebbit.ipfsGatewayUrl).to.equal("http://127.0.0.1:18080");
             plebbit.resolver = (await mockPlebbit()).resolver;
 
-            await publishRandomPost(subplebbitAddress, plebbit);
+            await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         });
     });
