@@ -7,9 +7,10 @@ const lodash = require("lodash");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
-const { loadIpnsAsJson, encode } = require("../../dist/node/util");
+const { loadIpnsAsJson } = require("../../dist/node/util");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
+const stringify = require("safe-stable-stringify");
 
 const subplebbitAddress = signers[0].address;
 
@@ -96,7 +97,7 @@ describe("plebbit.getSubplebbit", async () => {
         expect(_subplebbitIpns.posts).to.be.a("object");
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
         // Remove undefined keys from json
-        expect(encode(loadedSubplebbit.toJSON())).to.equals(encode(_subplebbitIpns));
+        expect(stringify(loadedSubplebbit.toJSON())).to.equals(stringify(_subplebbitIpns));
     });
 
     it("Throws an error when subplebbit address is incorrect", async () => {
