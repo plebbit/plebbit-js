@@ -115,7 +115,7 @@ export class Comment extends Publication implements CommentType {
         this.flair = props.flair || props.edit?.flair || this.flair;
         this.author.flair = props.author?.subplebbit?.flair || props.edit?.author?.flair || this.author?.flair;
 
-        if (props.replies) await this.setReplies(props.replies);
+        await this.setReplies(props.replies);
     }
 
     getType(): PublicationTypeName {
@@ -215,6 +215,10 @@ export class Comment extends Publication implements CommentType {
     }
 
     async setReplies(replies: PagesTypeIpfs | Pages) {
+        if (!replies) {
+            this.replies = undefined;
+            return;
+        }
         assert(this.subplebbit && this.cid);
         if (replies instanceof Pages) {
             this.replies = replies;
@@ -226,11 +230,11 @@ export class Comment extends Publication implements CommentType {
             replies = replies as PagesTypeIpfs;
             const parsedPages = await parsePagesIpfs(replies, this.subplebbit);
             this.replies = new Pages({
-                pages: parsedPages?.pages || {},
-                pageCids: parsedPages?.pageCids || {},
+                pages: parsedPages?.pages,
+                pageCids: parsedPages?.pageCids,
                 subplebbit: lodash.pick(this.subplebbit, ["address", "plebbit", "encryption"]),
                 pagesIpfs: replies.pages,
-                parentCid: undefined
+                parentCid: this.cid
             });
         } else throw Error(`Fail to parse comment.replies`);
     }
