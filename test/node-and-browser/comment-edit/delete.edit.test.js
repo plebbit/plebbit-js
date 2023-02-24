@@ -158,7 +158,7 @@ describe("Deleting a reply", async () => {
         await waitUntil(() => replyToDelete.deleted === true, { timeout: 200000 });
     });
     it(`Deleted replies show in parent comment pages with 'deleted' = true`, async () => {
-        const pageCid = () => post.replies.pageCids?.new;
+        const pageCid = () => post.replies?.pageCids?.new;
         await waitUntil(async () => pageCid() && (await findCommentInPage(replyToDelete.cid, pageCid(), post.replies)).deleted === true, {
             timeout: 200000
         });
