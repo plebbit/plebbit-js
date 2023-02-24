@@ -1227,16 +1227,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (!this.plebbit.ipfsClient) throw Error("Ipfs client is not defined");
 
         await nativeFunctions.deleteSubplebbit(this.address, this.plebbit.dataPath);
-        const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
-        try {
-            await this.plebbit.ipfsClient.pin.rm(resolvedAddress);
-        } catch (e) {
-            if (!e.message.includes("not pinned")) throw e;
-        }
-        // block.rm requires CID.parse but it throws an error in Electron. Most likely due to context isolation
-        //@ts-ignore
-        await this.plebbit.ipfsClient.block.rm(resolvedAddress, { force: true });
-
         if (typeof this.signer?.ipnsKeyName === "string")
             // Key may not exist on ipfs node
             try {
