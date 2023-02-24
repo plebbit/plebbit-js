@@ -760,13 +760,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         };
         this._challengeToPublication[request.challengeRequestId] = decryptedRequest.publication;
         this._challengeToPublicKey[request.challengeRequestId] = decryptedRequest.signature.publicKey;
+        await this.dbHandler.insertChallengeRequest(request.toJSONForDb(), undefined);
         this.emit("challengerequest", decryptedRequest);
         const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(decryptedRequest);
         log(`Received a request to a challenge (${request.challengeRequestId})`);
         if (providedChallenges.length === 0) {
             // Subplebbit owner has chosen to skip challenging this user or post
             log.trace(`(${request.challengeRequestId}): No challenge is required`);
-            await this.dbHandler.insertChallengeRequest(request.toJSONForDb(), undefined);
 
             const publicationOrReason = await this.storePublicationIfValid(decryptedRequest.publication, request.challengeRequestId);
             const encryptedPublication =
@@ -852,7 +852,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         );
 
         const decryptedChallengeAnswer: DecryptedChallengeAnswerMessageType = { ...challengeAnswer, challengeAnswers: decryptedAnswers };
-
+        await this.dbHandler.insertChallengeAnswer(challengeAnswer.toJSONForDb(decryptedChallengeAnswer.challengeAnswers), undefined);
         this.emit("challengeanswer", decryptedChallengeAnswer);
 
         const [challengeSuccess, challengeErrors] = await this.validateCaptchaAnswerCallback(decryptedChallengeAnswer);
@@ -860,7 +860,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             log.trace(`(${challengeAnswer.challengeRequestId}): `, `User has been answered correctly`);
             const storedPublication = this._challengeToPublication[challengeAnswer.challengeRequestId];
 
-            await this.dbHandler.insertChallengeAnswer(challengeAnswer.toJSONForDb(decryptedChallengeAnswer.challengeAnswers), undefined);
             const publicationOrReason = await this.storePublicationIfValid(storedPublication, challengeAnswer.challengeRequestId); // could contain "publication" or "reason"
             const encryptedPublication =
                 typeof publicationOrReason !== "string"
