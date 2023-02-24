@@ -73,9 +73,8 @@ describe(`subplebbit.edit`, async () => {
     it(`subplebbit.posts is reset after changing address`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(ethAddress);
         // subplebbit.posts should omit all comments that referenced the old subplebbit address
-        // So in essence it should be empty
-        expect(loadedSubplebbit.posts.pages).to.deep.equal({});
-        expect(loadedSubplebbit.posts.pageCids).to.deep.equal({});
+        // So in essence it be undefined
+        expect(loadedSubplebbit.posts).to.be.undefined;
     });
 
     it(`Started Sub can receive publications on new ENS address`, async () => {
