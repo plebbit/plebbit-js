@@ -14,6 +14,7 @@ const { messages } = require("../../../dist/node/errors");
 const signers = require("../../fixtures/signers");
 const { timestamp } = require("../../../dist/node/util");
 const { mockPlebbit } = require("../../../dist/node/test/test-util");
+const lodash = require("lodash");
 
 const fixtureComment = require("../../fixtures/publications").comment;
 
@@ -247,9 +248,10 @@ describe(`commentupdate`, async () => {
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
     });
     it(`Fixture CommentUpdate can be signed by subplebbit and validated correctly`, async () => {
-        const update = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_update.json")));
+        const update = lodash.cloneDeep(require("../../fixtures/valid_comment_update.json"));
+        const comment = { cid: update.cid, ...require("../../fixtures/valid_comment.json") };
         update.signature = await signCommentUpdate(update, signers[0]); // Same signer as the subplebbit that signed the CommentUpdate
-        const verification = await verifyCommentUpdate(update, subplebbit.encryption.publicKey, signers[0].publicKey);
+        const verification = await verifyCommentUpdate(update, subplebbit, comment, plebbit);
         expect(verification).to.deep.equal({ valid: true });
     });
 
@@ -261,30 +263,27 @@ describe(`commentupdate`, async () => {
     });
 
     it(`CommentUpdate from previous plebbit-js versions can be verified`, async () => {
-        const update = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_update.json")));
-        const verification = await verifyCommentUpdate(update, subplebbit.encryption.publicKey, signers[0].publicKey);
+        const update = lodash.cloneDeep(require("../../fixtures/valid_comment_update.json"));
+        const comment = { cid: update.cid, ...require("../../fixtures/valid_comment.json") };
+        const verification = await verifyCommentUpdate(update, subplebbit, comment, plebbit);
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`verifyCommentUpdate invalidate commentUpdate if it was signed by other than subplebbit key`, async () => {
-        const update = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_update.json")));
+        const update = lodash.cloneDeep(require("../../fixtures/valid_comment_update.json"));
+        const comment = { cid: update.cid, ...require("../../fixtures/valid_comment.json") };
         update.signature = await signCommentUpdate(update, signers[6]); // A different signer than subplebbit
-        const verification = await verifyCommentUpdate(update, subplebbit.encryption.publicKey, signers[0].publicKey);
+        const verification = await verifyCommentUpdate(update, subplebbit, comment, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT });
     });
 
     it(`A commentUpdate with an edit signed by other than original author will be rejected`, async () => {
-        const update = JSON.parse(JSON.stringify(require("../../fixtures/valid_comment_update_with_author_edit.json")));
-        expect(
-            await verifyCommentUpdate(
-                update,
-                subplebbit.encryption.publicKey,
-                "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv2gh6mwr/rE1b2I/PlRG\nSzJzS++TH8dYCBFg1b54xfjxy/acF7mvkts2ZCOFS9i89HAuUmeUKxzwU5wJMTjh\nx8+NBbLYckhyfrnV4NLqWQhP28tLyEcvK3w96rViWGN7XWJgdA+zRxmvursmoCfo\nGN4NZF8ihb8na7ApI/5NZFpRKfQe6Pd1GtoMsUlLM4H0nC4X+lr2SWsEA/6uVZy9\niFW+zsCrZhsPfeda6/lA4kMOEdYM8RtSdiZNw6EImYc7P6mrd9n52glLhkDYDJoC\niKzoLTDhezI0CM0NvhUtamyuBmkNbYcdXTQ78yCk8k6Ysc/rRPraaJP2dZASu44V\nuQIDAQAB\n-----END PUBLIC KEY-----"
-            )
-        ).to.deep.equal({ valid: true });
+        const update = lodash.cloneDeep(require("../../fixtures/signatures/commentUpdate_authorEdit/valid_commentUpdate.json"));
+        const comment = { cid: update.cid, ...require("../../fixtures/signatures/commentUpdate_authorEdit/valid_comment.json") };
+        expect(await verifyCommentUpdate(update, subplebbit, comment, plebbit)).to.deep.equal({ valid: true });
         update.edit.author.address = signers[7].address;
         update.edit.signature = await signCommentEdit(update.edit, signers[7], plebbit);
-        const verification = await verifyCommentUpdate(update, subplebbit.encryption.publicKey, signers[0].publicKey);
+        const verification = await verifyCommentUpdate(update, subplebbit, comment, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR });
     });
 });

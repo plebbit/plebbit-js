@@ -1,0 +1,67 @@
+{
+    "cid": "QmXALziDjcrMMQRNw1AExCNnQUxhstVixcAqhcMYEm3Hkh",
+    "author": {
+        "subplebbit": {
+            "postScore": 0,
+            "replyScore": 0,
+            "lastCommentCid": "QmUrBJo4dbkDtjFjqxNxLp6oevgHiGDHbDin7RBoNoHWML",
+            "firstCommentTimestamp": 1677392473
+        }
+    },
+    "downvoteCount": 0,
+    "edit": {
+        "commentCid": "QmXALziDjcrMMQRNw1AExCNnQUxhstVixcAqhcMYEm3Hkh",
+        "content": "mod role testing CommentEdit",
+        "reason": "For mod role to test editing a comment",
+        "author": { "address": "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo" },
+        "signature": {
+            "signature": "UCbxK9SKko6zWtwW5wN23L9hM2N8rNTdJtaJQ9x1Ix3ivnERpvQGyyYb/foxW3VpNtYbd2Q+AVP9uWPMMyNwAg",
+            "publicKey": "ukjNiVIlaCkELCFukhzDiNCP0BtglPaD4zqowjdGrhw",
+            "type": "ed25519",
+            "signedPropertyNames": [
+                "author",
+                "timestamp",
+                "subplebbitAddress",
+                "content",
+                "commentCid",
+                "deleted",
+                "spoiler",
+                "pinned",
+                "locked",
+                "removed",
+                "reason",
+                "flair",
+                "reason",
+                "commentAuthor"
+            ]
+        },
+        "protocolVersion": "1.0.0",
+        "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
+        "timestamp": 1677392476
+    },
+    "protocolVersion": "1.0.0",
+    "replyCount": 0,
+    "signature": {
+        "signature": "PIp7bDrtt+gBhQPD/NlfL812DblT/2mnvW2S7mUupCWWh5zyC4dI5uagKsAO8nJv6CroaGYBZH/Q10nlkk2KAA",
+        "publicKey": "tkPPciAVI7kfzmSHjazd0ekx8z9bCt9RlE5RnEpFRGo",
+        "type": "ed25519",
+        "signedPropertyNames": [
+            "author",
+            "spoiler",
+            "pinned",
+            "locked",
+            "removed",
+            "reason",
+            "flair",
+            "upvoteCount",
+            "downvoteCount",
+            "replies",
+            "updatedAt",
+            "replyCount",
+            "edit",
+            "cid"
+        ]
+    },
+    "updatedAt": 1677393699,
+    "upvoteCount": 0
+}
