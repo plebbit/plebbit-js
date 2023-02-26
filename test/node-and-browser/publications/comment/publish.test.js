@@ -41,11 +41,21 @@ describe("publishing posts", async () => {
     });
 
     it(`Can publish a post with author.avatar. Can also validate it after publishing`, async () => {
-        const commentProps = require("../../../fixtures/valid_comment_avatar_fixture.json");
+        const avatarProps = {
+            address: "0x890a2e81836e0E76e0F49995e6b51ca6ce6F39ED",
+            chainTicker: "matic",
+            id: "8",
+            signature: {
+                signature:
+                    "0x52d29d32fcb1c5b3cd3638ccd67573985c4b01816a5e77fdfb0122488a0fdeb854ca6dae4fbdb0594db88e36ba83e87a321321fcfde498f84310a6b5cd543f3f1c",
+                signedPropertyNames: ["domainSeparator", "authorAddress", "tokenAddress", "tokenId"],
+                type: "eip191"
+            }
+        };
         const post = await plebbit.createComment({
             title: "Random " + Math.random(),
             content: "Random " + Math.random(),
-            author: { avatar: commentProps.author.avatar },
+            author: { avatar: avatarProps },
             signer: lodash.sample(signers),
             subplebbitAddress
         });
