@@ -24,7 +24,7 @@ describe("challengerequest", async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengerequest fixture from previous version can be validated`, async () => {
-        const request = lodash.clone(require("../../fixtures/valid_challenge_request.json"));
+        const request = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_request.json"));
         const verificaiton = await verifyChallengeRequest(request);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
@@ -77,7 +77,7 @@ describe(`challengemessage`, async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengemessage fixture from previous version can be validated`, async () => {
-        const challenge = lodash.clone(require("../../fixtures/valid_challenge_message.json"));
+        const challenge = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_message.json"));
         const verificaiton = await verifyChallengeMessage(challenge);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
@@ -96,7 +96,7 @@ describe(`challengemessage`, async () => {
         });
     });
     it(`Invalid ChallengeMessage gets invalidated correctly`, async () => {
-        const challenge = lodash.clone(require("../../fixtures/valid_challenge_message.json"));
+        const challenge = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_message.json"));
         challenge.challengeRequestId += "1234"; // Should invalidate signature
         const verificaiton = await verifyChallengeMessage(challenge);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
@@ -109,7 +109,7 @@ describe("challengeanswer", async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengeanswer fixture from previous version can be validated`, async () => {
-        const answer = lodash.clone(require("../../fixtures/valid_challenge_answer.json"));
+        const answer = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_answer.json"));
         const verificaiton = await verifyChallengeAnswer(answer);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
@@ -190,7 +190,7 @@ describe("challengeverification", async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengeverification fixture from previous version can be validated`, async () => {
-        const challengeVerification = lodash.clone(require("../../fixtures/valid_challenge_verification.json"));
+        const challengeVerification = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_verification.json"));
         const verificaiton = await verifyChallengeVerification(challengeVerification);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
@@ -207,7 +207,7 @@ describe("challengeverification", async () => {
         });
     });
     it(`Invalid challengeverification gets invalidated correctly`, async () => {
-        const challengeVerification = lodash.clone(require("../../fixtures/valid_challenge_verification.json"));
+        const challengeVerification = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_verification.json"));
         challengeVerification.challengeRequestId += "1234"; // Invalidate signature
         const verificaiton = await verifyChallengeVerification(challengeVerification);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
