@@ -356,15 +356,8 @@ export async function verifyPage(
 ): Promise<ValidationResult> {
     for (const pageComment of page.comments) {
         if (pageComment.comment.subplebbitAddress !== subplebbit.address)
-            throwWithErrorCode(
-                "ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB",
-                `verifyPage: Failed to verify page due to comment (${pageComment.comment.cid}) having a subplebbit address (${pageComment.comment.subplebbitAddress}) that is different than the address of the subplebbit that generate this page (${subplebbit.address})`
-            );
-        if (parentCommentCid !== pageComment.comment.parentCid)
-            throwWithErrorCode(
-                "ERR_PARENT_CID_NOT_AS_EXPECTED",
-                `verifyPage: Failed to verify page due to comment (${pageComment.comment.cid}) having an unexpected parent cid (${pageComment.comment.parentCid}), the expected parent cid (${parentCommentCid})`
-            );
+            return { valid: false, reason: messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB };
+        if (parentCommentCid !== pageComment.comment.parentCid) return { valid: false, reason: messages.ERR_PARENT_CID_NOT_AS_EXPECTED };
 
         const commentSignatureValidity = await verifyComment(pageComment.comment, plebbit, true);
         if (!commentSignatureValidity.valid) return commentSignatureValidity;
