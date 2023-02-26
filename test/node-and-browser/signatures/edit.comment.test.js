@@ -1,5 +1,5 @@
-const Plebbit = require("../../../dist/node");
 const signers = require("../../fixtures/signers");
+const { timestamp } = require("../../../dist/node/util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
@@ -20,7 +20,8 @@ describe("Sign commentedit", async () => {
             commentCid: subplebbit.lastPostCid,
             reason: "New comment edit",
             content: "Just so",
-            signer: signers[7]
+            signer: signers[7],
+            timestamp: timestamp()
         };
         editSignature = await signCommentEdit(editProps, signers[7], plebbit);
     });
