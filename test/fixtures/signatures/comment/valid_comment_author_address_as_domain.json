@@ -1,0 +1,14 @@
+{
+    "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
+    "timestamp": 1677403446,
+    "signature": {
+        "signature": "PY8BdCZ3rR2Z+L2WnhrsvHr8+1OBXkMHZyV1A1aO7GHMqqfM0/yVjX2gz3NzWyHtl92MAMUnUPVzAMeaBcg5Bw",
+        "publicKey": "fhnnUqE9NCCtgcEfwSRNSk7KCbm2lzD1HGhzaol9n/k",
+        "type": "ed25519",
+        "signedPropertyNames": ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"]
+    },
+    "author": { "address": "plebbit.eth", "displayName": "Mock Author - 1677403445916" },
+    "protocolVersion": "1.0.0",
+    "content": "Mock post - 1677403445916",
+    "title": "Mock post title"
+}
