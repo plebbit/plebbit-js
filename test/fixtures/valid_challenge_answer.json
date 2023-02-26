@@ -1,19 +1,20 @@
 {
-    "type": "CHALLENGEANSWER",
-    "challengeRequestId": "9bca793b-1b09-42e1-83fa-04a0597d0ac0",
-    "challengeAnswerId": "b4735096-7822-485d-9f34-e00fb8d077f4",
-    "encryptedChallengeAnswers": {
-        "ciphertext": "ZSMipVumfRnsyusmKyoENzizzwcGTO/cgEVS7ichI/VSnef/2vx10WVXlOcuCYy1lDG2lvRV1mxQIELNca151g9Nn7Oj/L25h4ovygt2Ox/CGYgp/c6Xt4/aQZR57vpSxbkSEsidN/RF/W0r0MBa53IU6bwM4iS7oCzaMk0LBClwNY0pRo6UltwrJ6AOpZTCk6XkMMwAZ5o2+bMBiIkmBr3P/E3qlLhANhcLq+DW5nIBJXoM456F574e0nGVSfQ1i3GL8CrhnxoWshyJi4bLUpj8hvRPArKrGMbKW5z6ePTQtKBhKI/bU1bpniiguFUhIlY4zPcFEioZbb0I1HUCuimnQEa8gn/wh13Gq6OZAegY4h0wNqxu2GTfj9Q76DLLqD0wQn60/xoUneqdd05XVVq9iCyZ+qJ08cuX+0psdtH+2QyKVMEXcd7pTmfpQauhfii/ffPOxm/ulCPDmGBxWk4/t/m4U3PUgC4q5k3/Mw2Ug1rK4yBRnrOJT7nM9BZ3r9QLYCtdBcsn8O1dQTF43YtcRZshTzD6HKmKXPsl0nkOdoUPm/qy",
-        "iv": "ZaJwCXWjoaiCOL7O",
-        "tag": "DTz0OxPMT+xV3w0gNJy5AQ",
+    "challengeRequestId": "af086939-87d9-4a64-b866-a493c4bf2b89",
+    "encryptedChallenges": {
+        "ciphertext": "rteefp05Uikh5c53AOrjyIDsjowFnZlKx8A7UQPlX5Dm98Rr9S4NutldWRWHQqt7xsYRUWDkvx4dU2Le5i2A7wo25PFIrDDNY39/BeQqvMS04I4FbfnpHwv5irm51u9egIqr0n4i5X1CLZEpds90ekFcqVVsM5Tt+51gAe6tsR0K7HKpzN7MUECv826qhA/FQGDEFztGuQx0LTGG5gbI1y/3UT3nbcpXbIGeKmGR4LDgDTLZxC9KREwCJ4vFGqUlksWq4nu0WQw9nRWfGT8dsEhbILvBzERCT2+MgMwO79Kbm8vFSQ8co09izai0Y6IgOWUUqf6u96W9tHUy+QE6Z/2LMkRRu+0C34zUGhZeob8UW4J3cGJX/VoleZU0zUEteGgJRKyFL4aVBh3DH/toqXa7UcMwnJqcdFSFo2eI/h3lvayMFzSQ+nzLNWIPBCV3BiomGPg38pCxdiTL7lJCi3ErUe4iALa2Q3Qg4rX0aHxLaEh2FisgaaqL69f5uhlEP94rkFMvfu2APCcFBD/zNqkIO6yJO1RATfXfkpgK5Wn/Xdu71um/3+tqFc9kR0wJnoWrr/c60qyFvT2HZZR+HwBMU1Zl6/7ePYiqNXBeyLnb9QEp3PTQEzFoP7RjnMKj9YF1FpjRblw89wQicNalUFDuT+qH05LtQHB7F/agH5PXMvX904hLBaO8mscq6YsHrba4LAnKBMBpD5f1edEZ5ZrtmKftunOJEirAFy8WOiRQeBe5e+wAL4fY",
+        "iv": "MGTRI7KqoquHpeww",
+        "tag": "yZoi2OpxevZ1OokICjOOOQ",
         "type": "ed25519-aes-gcm"
     },
-    "signature": {
-        "signature": "oT9NuvP+7EhDQs5WtWXXSSVk1R7a5HSrzE7L+OrFGyzYFwtx2tkldnXqzKzYoi4QTSapmffe3XsjqWgQTSBxCg",
-        "publicKey": "47MWL66nrMp6CQN4WT+w9oS6dBqtSRrONa9ZM6npIoo",
-        "type": "rsa",
-        "signedPropertyNames": ["type", "challengeRequestId", "challengeAnswerId", "encryptedChallengeAnswers"]
-    },
     "protocolVersion": "1.0.0",
-    "userAgent": "/plebbit-js:0.0.1/"
+    "signature": {
+        "publicKey": "CFhuD55tmzZjWZ113tZbDw/AsuNDkgSdvCCbPeqiF10",
+        "signature": "7tcpQzlH+8HWgKfzmwvL5HMu28f9yP468vYK9sDtsgMevNglu+ZbKxL7rRWP2k5OqcpwTu9FBRarS4JsCK+BCw",
+        "signedPropertyNames": ["type", "challengeRequestId", "encryptedChallenges", "timestamp"],
+        "type": "ed25519"
+    },
+    "timestamp": 1677394645,
+    "type": "CHALLENGE",
+    "userAgent": "/plebbit-js:0.0.1/",
+    "challenges": [{ "challenge": "1+1=?", "type": "text/plain" }]
 }
