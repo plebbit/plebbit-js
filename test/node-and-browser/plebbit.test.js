@@ -5,7 +5,7 @@ const { loadIpfsFileAsJson } = require("../../dist/node/util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { messages } = require("../../dist/node/errors");
-const { mockPlebbit, publishRandomPost } = require("../../dist/node/test/test-util");
+const { mockPlebbit, publishRandomPost, loadAllPages } = require("../../dist/node/test/test-util");
 const { Buffer } = require("buffer");
 const { default: Author } = require("../../dist/node/author");
 chai.use(chaiAsPromised);
@@ -100,8 +100,8 @@ describe("plebbit (node and browser)", async () => {
 
         it("comment props are loaded correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
-            const comment = subplebbit?.posts?.pages?.hot?.comments.filter((comment) => comment.replyCount > 0)[0]?.replies?.pages?.topAll
-                ?.comments[0];
+            const newComments = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
+            const comment = newComments.filter((comment) => comment.replyCount > 0)[0]?.replies?.pages?.topAll?.comments[0];
             expect(comment).to.exist;
             const expectedCommentProps = await loadIpfsFileAsJson(comment.cid, plebbit);
             expect(expectedCommentProps.postCid).to.be.a("string");
