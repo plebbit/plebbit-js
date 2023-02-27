@@ -1,7 +1,7 @@
 const Plebbit = require("../../dist/node");
 const { expect } = require("chai");
 const signers = require("../fixtures/signers");
-const { generateMockPost, publishWithExpectedResult } = require("../../dist/node/test/test-util");
+const { generateMockPost, publishWithExpectedResult, publishRandomPost } = require("../../dist/node/test/test-util");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 const lodash = require("lodash");
 
@@ -9,6 +9,21 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 
 const mathCliSubplebbitAddress = signers[1].address;
 const imageCaptchaSubplebbitAddress = signers[2].address;
+
+describe.skip(`Stress test challenge exchange`, async () => {
+    const num = 50;
+    let plebbit, subplebbit;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        subplebbit = await plebbit.getSubplebbit(signers[0].address);
+    });
+
+    it(`Initiate ${num} challenge exchange in parallel`, async () => {
+        const promises = new Array(num).fill(null).map(() => publishRandomPost(subplebbit.address, plebbit, {}, false));
+        await Promise.all(promises);
+    });
+});
 
 describe("math-cli", async () => {
     let plebbit;
