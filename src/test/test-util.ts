@@ -394,9 +394,11 @@ export async function publishWithExpectedResult(
     expectedChallengeSuccess: boolean,
     expectedReason?: string
 ) {
+    let receivedResponse = false;
     await publication.publish();
-    await new Promise((resolve, reject) =>
+    await new Promise((resolve, reject) => {
         publication.once("challengeverification", (verificationMsg) => {
+            receivedResponse = true;
             if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
                 const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${verificationMsg.challengeSuccess}). Reason (${verificationMsg.reason})`;
                 console.error(msg);
@@ -406,8 +408,10 @@ export async function publishWithExpectedResult(
                 console.error(msg);
                 reject(msg);
             } else resolve(1);
-        })
-    );
+        });
+        // Retry after 10 seconds if we haven't received a response
+        setTimeout(() => !receivedResponse && publication.publish(), 10000);
+    });
 }
 
 export async function findCommentInPage(commentCid: string, pageCid: string, pages: Pages) {
