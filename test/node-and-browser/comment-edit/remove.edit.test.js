@@ -52,21 +52,17 @@ describe(`Removing post`, async () => {
     });
     it(`Removed post don't show in subplebbit.posts`, async () => {
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
-        const isPostInAnyPage = async () => {
-            for (const pageCid of Object.values(sub.posts.pageCids)) {
-                const pageComments = await loadAllPages(pageCid, sub.posts);
-                const isPostInPage = pageComments.some((comment) => comment.cid === postToRemove.cid);
-                if (isPostInPage) return true;
-            }
-            return false;
+        const isPostInPage = async () => {
+            const pageComments = await loadAllPages(sub.posts.pageCids.new, sub.posts);
+            return pageComments.some((comment) => comment.cid === postToRemove.cid);
         };
-        if (!(await isPostInAnyPage())) return;
+        if (!(await isPostInPage())) return;
 
         sub._updateIntervalMs = updateInterval;
         await sub.update();
         await new Promise((resolve) =>
             sub.on("update", async () => {
-                if (!(await isPostInAnyPage())) resolve();
+                if (!(await isPostInPage())) resolve();
             })
         );
         sub.stop();
@@ -175,7 +171,7 @@ describe(`Removing reply`, async () => {
         expect(replyToBeRemoved.reason).to.equal("To remove a reply");
     });
     it(`Removed replies show in parent comment pages with 'removed' = true`, async () => {
-        const pageCid = () => post.replies.pageCids?.topAll;
+        const pageCid = () => post.replies?.pageCids?.topAll;
         await waitUntil(
             async () => pageCid() && (await findCommentInPage(replyToBeRemoved.cid, pageCid(), post.replies)).removed === true,
             {

@@ -8,8 +8,6 @@ const { messages } = require("../../../dist/node/errors");
 const { verifySubplebbit, signSubplebbit } = require("../../../dist/node/signer/signatures");
 const { mockPlebbit } = require("../../../dist/node/test/test-util");
 const lodash = require("lodash");
-const stringify = require("safe-stable-stringify");
-const { verify } = require("crypto");
 
 describe("Sign subplebbit", async () => {
     let plebbit;
