@@ -197,6 +197,8 @@ class Publication extends EventEmitter implements PublicationType {
 
         this._validateSubFields();
 
+        await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange);
+
         this.pubsubMessageSigner = await this.plebbit.createSigner();
 
         const encryptedPublication = await encrypt(
