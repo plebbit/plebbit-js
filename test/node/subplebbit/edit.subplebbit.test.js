@@ -124,9 +124,9 @@ describe(`Concurrency with subplebbit.edit`, async () => {
     });
 
     [
-        { address: `address-eth-${timestamp()}-1.eth` },
+        { address: `address-eth-${Math.random().toString(36).slice(2)}-${timestamp()}-1.eth` },
         { rules: ["rule 1", "rule 2"] },
-        { address: `address-eth-${timestamp()}-2.eth`, rules: ["rule 1", "rule 2"] }
+        { address: `address-eth-${Math.random().toString(36).slice(2)}-${timestamp()}-2.eth`, rules: ["rule 1", "rule 2"] }
     ].map((editArgs) =>
         it(`edit subplebbit with multiple subplebbit instances running (${Object.keys(editArgs)})`, async () => {
             const plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
