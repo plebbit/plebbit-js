@@ -1145,10 +1145,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:subplebbit:sync");
+        await this._switchDbIfNeeded();
 
         try {
             this._ipfsNodeIpnsKeyNames = (await this.plebbit.ipfsClient.key.list()).map((key) => key.name);
-            await this._switchDbIfNeeded();
             await this._listenToIncomingRequests();
             await this._updateCommentsThatNeedToBeUpdated();
             await this.updateSubplebbitIpnsIfNeeded();
