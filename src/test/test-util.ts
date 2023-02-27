@@ -353,7 +353,7 @@ export async function publishRandomReply(
     verifyCommentPropsInParentPages = true
 ): Promise<Comment> {
     const reply = await generateMockComment(parentComment, plebbit, false, {
-        content: `Content ${Date.now() + Math.random()}`,
+        content: `Content ${Math.random() * Math.random() * Math.random()}`,
         ...commentProps
     });
     await publishWithExpectedResult(reply, true);
@@ -368,8 +368,8 @@ export async function publishRandomPost(
     verifyCommentPropsInParentPages = true
 ) {
     const post = await generateMockPost(subplebbitAddress, plebbit, false, {
-        content: `Random post Content ${Math.random()}`,
-        title: `Random post Title ${Math.random()}`,
+        content: `Random post Content ${Math.random() * Math.random() * Math.random()}`,
+        title: `Random post Title ${Math.random() * Math.random() * Math.random()}`,
         ...postProps
     });
     await publishWithExpectedResult(post, true);
