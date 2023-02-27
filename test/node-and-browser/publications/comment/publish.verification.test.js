@@ -52,11 +52,9 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
     });
 
     it(`A reply with timestamp earlier than its parent is rejected`, async () => {
-        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-        const parentPost = await plebbit.getComment(subplebbit.lastPostCid);
-        expect(parentPost.timestamp).to.be.a("number");
-        const reply = await generateMockComment(parentPost, plebbit, false, { signer: signers[0], timestamp: parentPost.timestamp - 1 });
-        expect(reply.timestamp).to.be.lessThan(parentPost.timestamp);
+        expect(post.timestamp).to.be.a("number");
+        const reply = await generateMockComment(post, plebbit, false, { signer: signers[0], timestamp: post.timestamp - 1 });
+        expect(reply.timestamp).to.be.lessThan(post.timestamp);
         await publishWithExpectedResult(reply, false, messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT);
     });
 
