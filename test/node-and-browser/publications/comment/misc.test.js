@@ -1,5 +1,11 @@
 const signers = require("../../../fixtures/signers");
-const { generateMockPost, mockPlebbit, publishRandomPost, publishRandomReply } = require("../../../../dist/node/test/test-util");
+const {
+    generateMockPost,
+    mockPlebbit,
+    publishRandomPost,
+    publishRandomReply,
+    loadAllPages
+} = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 
 const chai = require("chai");
@@ -53,7 +59,8 @@ describe("createComment", async () => {
 
     it(`Can recreate a Comment instance with replies with plebbit.createComment`, async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-        const commentToClone = subplebbit.posts.pages.hot.comments.find((comment) => comment.replyCount > 0);
+        const newComments = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
+        const commentToClone = newComments.find((comment) => comment.replyCount > 0);
         expect(commentToClone.replies).to.be.a("object");
         const commentClone = await plebbit.createComment(commentToClone);
         expect(commentClone.replies).to.be.a("object");
@@ -62,7 +69,8 @@ describe("createComment", async () => {
 
     it(`Can recreate a stringified Comment instance with replies with plebbit.createComment`, async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-        const commentToClone = subplebbit.posts.pages.hot.comments.find((comment) => comment.replyCount > 0);
+        const newComments = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
+        const commentToClone = newComments.find((comment) => comment.replyCount > 0);
         expect(commentToClone.replies).to.be.a("object");
         const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(commentToClone)));
         expect(commentClone.replies).to.be.a("object");
