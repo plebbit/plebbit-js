@@ -5,7 +5,7 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const { messages } = require("../../dist/node/errors");
-const { mockPlebbit, publishWithExpectedResult } = require("../../dist/node/test/test-util");
+const { mockPlebbit, publishWithExpectedResult, publishRandomPost } = require("../../dist/node/test/test-util");
 
 const mockComments = [];
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
@@ -66,10 +66,11 @@ describe("Comments with Authors as domains", async () => {
 });
 
 describe(`Vote with authors as domains`, async () => {
-    let plebbit, subplebbit;
+    let plebbit, subplebbit, comment;
     before(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
+        comment = await publishRandomPost(subplebbit.address, plebbit, {}, false);
     });
 
     it(`Subplebbit rejects a Vote with author.address (domain) that resolves to a different signer`, async () => {
@@ -79,7 +80,7 @@ describe(`Vote with authors as domains`, async () => {
         const vote = await tempPlebbit.createVote({
             author: { displayName: `Mock Author - ${Date.now()}`, address: "testgibbreish.eth" },
             signer: signers[6],
-            commentCid: subplebbit.lastPostCid,
+            commentCid: comment.cid,
             vote: -1,
             subplebbitAddress: subplebbit.address
         });
