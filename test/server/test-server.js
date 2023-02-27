@@ -122,7 +122,7 @@ const startIpfsNodes = async () => {
     if (process.env["NO_SUBPLEBBITS"] !== "1")
         await startSubplebbits({
             signers: signers,
-            syncInterval: 300,
+            syncInterval: 3000,
             votesPerCommentToPublish: 10,
             numOfCommentsToPublish: 10
         });
