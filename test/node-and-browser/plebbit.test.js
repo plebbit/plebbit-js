@@ -8,6 +8,7 @@ const { messages } = require("../../dist/node/errors");
 const { mockPlebbit, publishRandomPost, loadAllPages } = require("../../dist/node/test/test-util");
 const { Buffer } = require("buffer");
 const { default: Author } = require("../../dist/node/author");
+const stringify = require("safe-stable-stringify");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -95,7 +96,8 @@ describe("plebbit (node and browser)", async () => {
             expectedPostProps.cid = subplebbit.lastPostCid;
             expectedPostProps.author = new Author(expectedPostProps.author);
             const loadedPost = await plebbit.getComment(subplebbit.lastPostCid);
-            for (const key of Object.keys(expectedPostProps)) expect(expectedPostProps[key]).to.deep.equal(loadedPost[key]);
+            for (const key of Object.keys(expectedPostProps))
+                expect(stringify(expectedPostProps[key])).to.equal(stringify(loadedPost[key]));
         });
 
         it("comment props are loaded correctly", async () => {
@@ -120,7 +122,8 @@ describe("plebbit (node and browser)", async () => {
 
             const loadedComment = await plebbit.getComment(comment.cid);
             expect(loadedComment.constructor.name).to.equal("Comment");
-            for (const key of Object.keys(expectedCommentProps)) expect(expectedCommentProps[key]).to.deep.equal(loadedComment[key]);
+            for (const key of Object.keys(expectedCommentProps))
+                expect(stringify(expectedCommentProps[key])).to.equal(stringify(loadedComment[key]));
         });
     });
 
