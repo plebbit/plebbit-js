@@ -114,7 +114,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
     });
 
     it(`post.author.subplebbit.postScore increases with upvote to another post`, async () => {
-        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer });
+        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer }, false);
         await anotherPost.update();
 
         await publishVote(anotherPost.cid, 1, plebbit);
@@ -130,7 +130,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
     });
 
     it(`post.author.subplebbit.replyScore increases with upvote to author replies`, async () => {
-        const reply = await publishRandomReply(post, plebbit, { signer: post.signer });
+        const reply = await publishRandomReply(post, plebbit, { signer: post.signer }, false);
         await reply.update();
         await publishVote(reply.cid, 1, plebbit);
         await waitUntil(() => reply.upvoteCount === 1 && post.author.subplebbit.replyScore === 1, { timeout: 200000 });
@@ -147,7 +147,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
     });
 
     it(`author.subplebbit.lastCommentCid is updated with every new post of author`, async () => {
-        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer });
+        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer }, false);
         await anotherPost.update();
 
         await waitUntil(() => post.author.subplebbit.lastCommentCid === anotherPost.cid && typeof anotherPost.updatedAt === "number", {
@@ -161,7 +161,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
     });
 
     it(`author.subplebbit.lastCommentCid is updated with every new reply of author`, async () => {
-        const reply = await publishRandomReply(post, plebbit, { signer: post.signer });
+        const reply = await publishRandomReply(post, plebbit, { signer: post.signer }, false);
         await reply.update();
 
         await waitUntil(() => post.replyCount === 2 && typeof reply.updatedAt === "number", { timeout: 200000 });
