@@ -44,7 +44,7 @@ describe(`Marking comment as spoiler`, async () => {
         await publishWithExpectedResult(spoilerEdit, true);
     });
     it(`A new CommentUpdate is published with spoiler=true`, async () => {
-        await new Promise((resolve) => authorPost.once("update", resolve));
+        await waitUntil(() => authorPost.spoiler, { timeout: 100000 });
         expect(authorPost.edit.spoiler).to.be.true;
         expect(authorPost.spoiler).to.be.true;
     });
