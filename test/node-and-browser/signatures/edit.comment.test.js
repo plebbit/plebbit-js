@@ -10,7 +10,7 @@ const { verifyCommentEdit, signCommentEdit } = require("../../../dist/node/signe
 const { mockPlebbit } = require("../../../dist/node/test/test-util");
 
 describe("Sign commentedit", async () => {
-    let plebbit, subplebbit, editProps;
+    let plebbit, subplebbit, editProps, editSignature;
     before(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
