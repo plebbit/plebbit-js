@@ -14,6 +14,7 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { SignerType } from "../signer/constants";
 import Publication from "../publication";
 import * as randomBytes from "randombytes";
+import lodash from "lodash";
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
 
@@ -323,7 +324,7 @@ export async function publishRandomReply(
     verifyCommentPropsInParentPages = true
 ): Promise<Comment> {
     const reply = await generateMockComment(parentComment, plebbit, false, {
-        content: `Content ${randomBytes.default(50).toString("utf-8")}`,
+        content: `Content ${randomBytes.default(100).toString("utf-8")}`,
         ...commentProps
     });
     await publishWithExpectedResult(reply, true);
@@ -338,8 +339,8 @@ export async function publishRandomPost(
     verifyCommentPropsInParentPages = true
 ) {
     const post = await generateMockPost(subplebbitAddress, plebbit, false, {
-        content: `Random post Content ${randomBytes.default(50).toString("utf-8")}`,
-        title: `Random post Title ${randomBytes.default(50).toString("utf-8")}`,
+        content: `Random post Content ${randomBytes.default(100).toString("utf-8")}`,
+        title: `Random post Title ${randomBytes.default(100).toString("utf-8")}`,
         ...postProps
     });
     await publishWithExpectedResult(post, true);
@@ -400,7 +401,7 @@ export async function waitTillCommentIsInParentPages(
     let commentInPage: Comment;
     await waitUntil(
         async () => {
-            const repliesPageCid = parent instanceof Comment ? parent.replies?.pageCids?.topAll : parent.posts?.pageCids?.new;
+            const repliesPageCid = pagesInstance()?.pageCids?.new;
             if (repliesPageCid) commentInPage = await findCommentInPage(comment.cid, repliesPageCid, pagesInstance());
             return Boolean(commentInPage);
         },
@@ -412,6 +413,8 @@ export async function waitTillCommentIsInParentPages(
     await parent.stop();
 
     const pageCids = parent instanceof Comment ? parent.replies.pageCids : parent.posts.pageCids;
+
+    assert(lodash.isPlainObject(pageCids));
 
     if (checkInAllPages)
         for (const pageCid of Object.values(pageCids)) {
