@@ -122,6 +122,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
         expect(anotherPost.upvoteCount).to.equal(1);
         expect(anotherPost.author.subplebbit.postScore).to.equal(2);
         expect(anotherPost.author.subplebbit.replyScore).to.equal(0);
+        expect(anotherPost.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
 
         expect(post.upvoteCount).to.equal(1);
         expect(post.author.subplebbit.postScore).to.equal(2);
@@ -143,6 +144,8 @@ describe(`commentUpdate.author.subplebbit`, async () => {
         expect(reply.author.subplebbit.postScore).to.equal(2);
         expect(reply.author.subplebbit.replyScore).to.equal(1);
 
+        expect(reply.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
+
         reply.stop();
     });
 
@@ -156,6 +159,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
 
         expect(post.author.subplebbit.lastCommentCid).to.equal(anotherPost.cid);
         expect(anotherPost.author.subplebbit.lastCommentCid).to.equal(anotherPost.cid);
+        expect(anotherPost.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
 
         anotherPost.stop();
     });
@@ -168,11 +172,14 @@ describe(`commentUpdate.author.subplebbit`, async () => {
 
         expect(post.author.subplebbit.lastCommentCid).to.equal(reply.cid);
         expect(reply.author.subplebbit.lastCommentCid).to.equal(reply.cid);
+        expect(reply.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
 
         reply.stop();
     });
 
-    it.skip("CommentUpdate.author.subplebbit.firstCommentTimestamp");
+    it("CommentUpdate.author.subplebbit.firstCommentTimestamp is the timestamp of the first comment ", async () => {
+        expect(post.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
+    });
 });
 
 describe(`Publishing replies`, async () => {
@@ -193,8 +200,7 @@ describe(`Publishing replies`, async () => {
             post,
             plebbit,
             {
-                title: `Test title on Comment ${Date.now()}`,
-                content: `Test content on Comment ${Date.now()}`,
+                title: `Test title on Comment ${Date.now()} ${Math.random()}`,
                 link: "https//plebbit.com"
             },
             true
