@@ -237,7 +237,7 @@ const isJsonString = (jsonString: any) => {
 export const parseJsonStrings = (obj: any) => {
     if (obj === "[object Object]") throw Error(`Object shouldn't be [object Object]`);
     if (Array.isArray(obj)) return obj.map((o) => parseJsonStrings(o));
-    if (!isJsonString(obj) && typeof obj !== "object") return obj;
+    if (!isJsonString(obj) && obj?.constructor?.name !== "Object") return obj;
 
     const newObj = removeNullAndUndefinedValues(isJsonString(obj) ? JSON.parse(obj) : lodash.cloneDeep(obj));
     //prettier-ignore
