@@ -1,10 +1,12 @@
 const Plebbit = require("../../../dist/node");
-const { mockPlebbit } = require("../../../dist/node/test/test-util");
-const { timestamp, encode } = require("../../../dist/node/util");
+const { mockPlebbit, publishRandomPost, publishRandomReply, createMockSub } = require("../../../dist/node/test/test-util");
+const { timestamp } = require("../../../dist/node/util");
 const path = require("path");
 const { messages } = require("../../../dist/node/errors");
 const fs = require("fs");
 const { default: waitUntil } = require("async-wait-until");
+
+const stringify = require("safe-stable-stringify");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
@@ -29,7 +31,7 @@ describe(`plebbit.createSubplebbit`, async () => {
         // Sub has finished its first sync loop, should have address now
         expect(newSubplebbit.address).to.equal(newSubplebbit.signer.address);
         const subplebbitIpns = await plebbit.getSubplebbit(newSubplebbit.address);
-        expect(encode(subplebbitIpns.toJSON())).to.equal(encode(newSubplebbit.toJSON()));
+        expect(stringify(subplebbitIpns.toJSON())).to.equal(stringify(newSubplebbit.toJSON()));
         return newSubplebbit;
     };
 
@@ -56,6 +58,21 @@ describe(`plebbit.createSubplebbit`, async () => {
         await createdSub.stop();
     });
 
+    it(`Can recreate a subplebbit with replies instance with plebbit.createSubplebbit`, async () => {
+        const props = { title: "Test hello", description: "Hello there" };
+        const sub = await createMockSub(props, plebbit);
+        await sub.start();
+        await new Promise((resolve) => sub.once("update", resolve));
+        const post = await publishRandomPost(sub.address, plebbit, {}, false);
+        await publishRandomReply(post, plebbit, {}, true);
+        await new Promise((resolve) => sub.once("update", resolve));
+        expect(sub.posts).to.be.a("object");
+        const clonedSub = await plebbit.createSubplebbit(sub);
+        expect(clonedSub.posts).to.be.a("object");
+        expect(sub.toJSON()).to.deep.equal(clonedSub.toJSON());
+        await sub.stop();
+    });
+
     it(`createSubplebbit on online IPFS node doesn't take more than 10s`, async () => {
         const onlinePlebbit = await Plebbit({
             ipfsHttpClientOptions: "http://localhost:15003/api/v0",
@@ -76,11 +93,11 @@ describe(`plebbit.createSubplebbit`, async () => {
         const sub = await _createAndValidateSubArsg({ title });
         const createdSub = await plebbit.createSubplebbit({ address: sub.address });
         expect(createdSub.title).to.equal(title);
-        expect(encode(createdSub.toJSON())).to.equal(encode(sub.toJSON()));
+        expect(stringify(createdSub.toJSON())).to.equal(stringify(sub.toJSON()));
         await createdSub.stop();
     });
 
-    it(`createSubplebbit({address, ...extraProps}) creates a sub with extraProps fields over cached fields`, async () => {
+    it(`Recreating a local sub with createSubplebbit({address, ...extraProps}) should not override local sub props`, async () => {
         const newSub = await plebbit.createSubplebbit({
             title: `Test for extra props`,
             description: "Test for description extra props"
@@ -95,14 +112,14 @@ describe(`plebbit.createSubplebbit`, async () => {
             title: "nothing",
             description: "nothing also"
         });
-        expect(createdSubplebbit.title).to.equal("nothing");
-        expect(createdSubplebbit.description).to.equal("nothing also");
+        expect(createdSubplebbit.title).to.equal(newSub.title);
+        expect(createdSubplebbit.description).to.equal(newSub.description);
 
         createdSubplebbit._syncIntervalMs = syncInterval;
         await createdSubplebbit.start();
         await new Promise((resolve) => createdSubplebbit.once("update", resolve));
-        expect(createdSubplebbit.title).to.equal("nothing");
-        expect(createdSubplebbit.description).to.equal("nothing also");
+        expect(createdSubplebbit.title).to.equal(newSub.title);
+        expect(createdSubplebbit.description).to.equal(newSub.description);
         await createdSubplebbit.stop();
     });
 });

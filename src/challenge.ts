@@ -1,36 +1,18 @@
 import {
     ChallengeAnswerMessageType,
+    ChallengeAnswersTableRowInsert,
     ChallengeMessageType,
     ChallengeRequestMessageType,
-    ChallengeType,
+    ChallengeRequestsTableRowInsert,
+    ChallengesTableRow,
+    ChallengesTableRowInsert,
     ChallengeVerificationMessageType,
-    Encrypted,
-    ProtocolVersion,
-    SignatureType
+    ChallengeVerificationsTableRowInsert,
+    DecryptedChallengeAnswerMessageType,
+    ProtocolVersion
 } from "./types";
-
-export const PUBSUB_MESSAGE_TYPES = Object.freeze({
-    CHALLENGEREQUEST: "CHALLENGEREQUEST",
-    CHALLENGE: "CHALLENGE",
-    CHALLENGEANSWER: "CHALLENGEANSWER",
-    CHALLENGEVERIFICATION: "CHALLENGEVERIFICATION"
-});
-
-export class Challenge implements ChallengeType {
-    challenge: string;
-    type: "image" | "text" | "video" | "audio" | "html";
-    constructor(props: ChallengeType) {
-        this.challenge = props.challenge;
-        this.type = props.type;
-    }
-
-    toJSON(): ChallengeType {
-        return {
-            challenge: this.challenge,
-            type: this.type
-        };
-    }
-}
+import lodash from "lodash";
+import { Encrypted, SignatureType } from "./signer/constants";
 
 export class ChallengeRequestMessage implements ChallengeRequestMessageType {
     encryptedPublication: Encrypted;
@@ -40,6 +22,7 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
     signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
+    timestamp: number;
     constructor(props: Omit<ChallengeRequestMessageType, "type">) {
         this.type = "CHALLENGEREQUEST";
         this.challengeRequestId = props.challengeRequestId;
@@ -48,6 +31,7 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
+        this.timestamp = props.timestamp;
     }
 
     toJSON(): ChallengeRequestMessageType {
@@ -58,18 +42,13 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
             encryptedPublication: this.encryptedPublication,
             signature: this.signature,
             userAgent: this.userAgent,
-            protocolVersion: this.protocolVersion
+            protocolVersion: this.protocolVersion,
+            timestamp: this.timestamp
         };
     }
 
-    toJSONForDb(): Omit<ChallengeRequestMessageType, "signature" | "encryptedPublication"> {
-        return {
-            type: this.type,
-            challengeRequestId: this.challengeRequestId,
-            acceptedChallengeTypes: this.acceptedChallengeTypes,
-            userAgent: this.userAgent,
-            protocolVersion: this.protocolVersion
-        };
+    toJSONForDb(): ChallengeRequestsTableRowInsert {
+        return { ...lodash.omit(this.toJSON(), ["type", "encryptedPublication"]) };
     }
 }
 
@@ -80,6 +59,7 @@ export class ChallengeMessage implements ChallengeMessageType {
     signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
+    timestamp: number;
 
     constructor(props: Omit<ChallengeMessageType, "type">) {
         this.type = "CHALLENGE";
@@ -88,6 +68,7 @@ export class ChallengeMessage implements ChallengeMessageType {
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
+        this.timestamp = props.timestamp;
     }
 
     toJSON(): ChallengeMessageType {
@@ -97,17 +78,13 @@ export class ChallengeMessage implements ChallengeMessageType {
             challengeRequestId: this.challengeRequestId,
             signature: this.signature,
             userAgent: this.userAgent,
-            protocolVersion: this.protocolVersion
+            protocolVersion: this.protocolVersion,
+            timestamp: this.timestamp
         };
     }
 
-    toJSONForDb(): Omit<ChallengeMessageType, "signature" | "encryptedChallenges"> {
-        return {
-            type: this.type,
-            challengeRequestId: this.challengeRequestId,
-            userAgent: this.userAgent,
-            protocolVersion: this.protocolVersion
-        };
+    toJSONForDb(challengeTypes: ChallengesTableRow["challengeTypes"]): ChallengesTableRowInsert {
+        return { ...lodash.omit(this.toJSON(), ["type", "encryptedChallenges"]), challengeTypes };
     }
 }
 
@@ -119,6 +96,7 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
     signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
+    timestamp: number;
     constructor(props: Omit<ChallengeAnswerMessageType, "type">) {
         this.type = "CHALLENGEANSWER";
         this.challengeAnswerId = props.challengeAnswerId;
@@ -127,6 +105,7 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
+        this.timestamp = props.timestamp;
     }
 
     toJSON(): ChallengeAnswerMessageType {
@@ -137,18 +116,13 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
             encryptedChallengeAnswers: this.encryptedChallengeAnswers,
             signature: this.signature,
             protocolVersion: this.protocolVersion,
-            userAgent: this.userAgent
+            userAgent: this.userAgent,
+            timestamp: this.timestamp
         };
     }
 
-    toJSONForDb(): Omit<ChallengeAnswerMessageType, "signature" | "encryptedChallengeAnswers"> {
-        return {
-            type: this.type,
-            challengeRequestId: this.challengeRequestId,
-            challengeAnswerId: this.challengeAnswerId,
-            protocolVersion: this.protocolVersion,
-            userAgent: this.userAgent
-        };
+    toJSONForDb(challengeAnswers: DecryptedChallengeAnswerMessageType["challengeAnswers"]): ChallengeAnswersTableRowInsert {
+        return { ...lodash.omit(this.toJSON(), ["type", "encryptedChallengeAnswers"]), challengeAnswers };
     }
 }
 
@@ -163,6 +137,7 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
     signature: SignatureType;
     protocolVersion: "1.0.0";
     userAgent: string;
+    timestamp: number;
 
     constructor(props: Omit<ChallengeVerificationMessageType, "type">) {
         this.type = "CHALLENGEVERIFICATION";
@@ -175,6 +150,7 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
+        this.timestamp = props.timestamp;
     }
 
     toJSON(): ChallengeVerificationMessageType {
@@ -188,20 +164,12 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
             encryptedPublication: this.encryptedPublication,
             signature: this.signature,
             protocolVersion: this.protocolVersion,
-            userAgent: this.userAgent
+            userAgent: this.userAgent,
+            timestamp: this.timestamp
         };
     }
 
-    toJSONForDb(): Omit<ChallengeVerificationMessageType, "encryptedPublication" | "signature"> {
-        return {
-            type: this.type,
-            challengeRequestId: this.challengeRequestId,
-            challengeAnswerId: this.challengeAnswerId,
-            challengeSuccess: this.challengeSuccess,
-            challengeErrors: this.challengeErrors,
-            reason: this.reason,
-            protocolVersion: this.protocolVersion,
-            userAgent: this.userAgent
-        };
+    toJSONForDb(): ChallengeVerificationsTableRowInsert {
+        return { ...lodash.omit(this.toJSON(), ["type", "encryptedPublication"]) };
     }
 }

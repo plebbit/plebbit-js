@@ -1,12 +1,13 @@
 import { Plebbit } from "./plebbit";
-import { CommentType, OnlyDefinedProperties, Timeframe } from "./types";
+import { CommentWithCommentUpdate, OnlyDefinedProperties, PageIpfs, PagesType, PagesTypeIpfs, PageType, Timeframe } from "./types";
 import { nativeFunctions } from "./runtime/node/util";
 import isIPFS from "is-ipfs";
 import { messages } from "./errors";
 import errcode from "err-code";
 import Hash from "ipfs-only-hash";
 import lodash from "lodash";
-import { stringify as determinsticStringify } from "safe-stable-stringify";
+import assert from "assert";
+import { Pages } from "./pages";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -141,11 +142,9 @@ export function replaceXWithY(obj: Object, x: any, y: any): any {
     return newObj;
 }
 
-export function hotScore(comment: CommentType) {
-    if (typeof comment.downvoteCount !== "number" || typeof comment.upvoteCount !== "number")
-        throw Error(
-            `Comment.downvoteCount (${comment.downvoteCount}) and comment.upvoteCount (${comment.upvoteCount}) need to be defined before calculating hotScore`
-        );
+export function hotScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
+    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number" && typeof comment.timestamp === "number");
+
     const score = comment.upvoteCount - comment.downvoteCount;
     const order = Math.log10(Math.max(score, 1));
     const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
@@ -153,11 +152,9 @@ export function hotScore(comment: CommentType) {
     return lodash.round(sign * order + seconds / 45000, 7);
 }
 
-export function controversialScore(comment: CommentType) {
-    if (typeof comment.downvoteCount !== "number" || typeof comment.upvoteCount !== "number")
-        throw Error(
-            `Comment.downvoteCount (${comment.downvoteCount}) and comment.upvoteCount (${comment.upvoteCount}) need to be defined before calculating controversialScore`
-        );
+export function controversialScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
+    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
+
     if (comment.downvoteCount <= 0 || comment.upvoteCount <= 0) return 0;
     const magnitude = comment.upvoteCount + comment.downvoteCount;
     const balance =
@@ -167,27 +164,38 @@ export function controversialScore(comment: CommentType) {
     return Math.pow(magnitude, balance);
 }
 
-export function topScore(comment: CommentType) {
-    if (typeof comment.downvoteCount !== "number" || typeof comment.upvoteCount !== "number")
-        throw Error(
-            `Comment.downvoteCount (${comment.downvoteCount}) and comment.upvoteCount (${comment.upvoteCount}) need to be defined before calculating topScore`
-        );
+export function topScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
+    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
 
     return comment.upvoteCount - comment.downvoteCount;
 }
 
-export function newScore(comment: CommentType) {
-    if (typeof comment.timestamp !== "number")
-        throw Error(`Comment.timestamp (${comment.timestamp}) needs to defined to calculate newScore`);
+export function newScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
+    assert(typeof comment.timestamp === "number");
     return comment.timestamp;
 }
 
-export function oldScore(comment: CommentType) {
-    if (typeof comment.timestamp !== "number")
-        throw Error(`Comment.timestamp (${comment.timestamp}) needs to defined to calculate oldScore`);
+export function oldScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
+    assert(typeof comment.timestamp === "number");
+
     return -comment.timestamp;
 }
 
+export function removeNullAndUndefinedValues<T extends Object>(obj: T): T {
+    return <T>lodash.omitBy(obj, lodash.isNil);
+}
+
+export function removeNullAndUndefinedValuesRecursively<T>(obj: T): T {
+    if (Array.isArray(obj)) return <T>obj.map(removeNullAndUndefinedValuesRecursively);
+    if (!lodash.isPlainObject(obj)) return obj;
+    const cleanedObj = removeNullAndUndefinedValues(obj);
+    for (const [key, value] of Object.entries(cleanedObj))
+        if (lodash.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeNullAndUndefinedValuesRecursively(value);
+
+    return cleanedObj;
+}
+
+// TODO rename
 export function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T> {
     const newObj = JSON.parse(JSON.stringify(object));
     for (const prop in newObj)
@@ -196,15 +204,50 @@ export function removeKeysWithUndefinedValues<T extends Object>(object: T): Only
     return newObj;
 }
 
-export function encode(obj: Object): string {
-    // May change in future
-    // We're encoding in cborg and decoding to make sure all JSON objects can be stringified and parsed determinstically
-    // Meaning the order of the fields will always be the same
-    return determinsticStringify(obj);
-}
-
 export function throwWithErrorCode(code: keyof typeof messages, details?: string) {
     throw errcode(Error(messages[code]), messages[messages[code]], {
         details
     });
 }
+
+export async function parsePageIpfs(pageIpfs: PageIpfs, subplebbit: Pages["_subplebbit"]): Promise<PageType> {
+    const finalComments = await Promise.all(pageIpfs.comments.map((commentObj) => subplebbit.plebbit.createComment(commentObj.comment)));
+    for (let i = 0; i < finalComments.length; i++) {
+        //@ts-expect-error
+        finalComments[i].subplebbit = subplebbit;
+        await finalComments[i]._initCommentUpdate(pageIpfs.comments[i].commentUpdate);
+    }
+
+    return { comments: finalComments, nextCid: pageIpfs.nextCid };
+}
+
+export async function parsePagesIpfs(pagesRaw: PagesTypeIpfs, subplebbit: Pages["_subplebbit"]): Promise<PagesType> {
+    if (!pagesRaw) return undefined;
+
+    const parsedPages = await Promise.all(Object.keys(pagesRaw.pages).map((key) => parsePageIpfs(pagesRaw.pages[key], subplebbit)));
+    const pagesType: PagesType["pages"] = Object.fromEntries(Object.keys(pagesRaw.pages).map((key, i) => [key, parsedPages[i]]));
+    return { pages: pagesType, pageCids: pagesRaw.pageCids };
+}
+
+const isJsonString = (jsonString: any) => {
+    return typeof jsonString === "string" && /"((?:[^"\\\/\b\f\n\r\t]|\\u\d{4})*)"/gm.test(jsonString);
+};
+
+// Only for DB
+export const parseJsonStrings = (obj: any) => {
+    if (obj === "[object Object]") throw Error(`Object shouldn't be [object Object]`);
+    if (Array.isArray(obj)) return obj.map((o) => parseJsonStrings(o));
+    if (!isJsonString(obj) && obj?.constructor?.name !== "Object") return obj;
+
+    const newObj = removeNullAndUndefinedValues(isJsonString(obj) ? JSON.parse(obj) : lodash.cloneDeep(obj));
+    //prettier-ignore
+    const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed", "commentUpdate_deleted", "commentUpdate_spoiler", "commentUpdate_pinned", "commentUpdate_locked", "commentUpdate_removed"];
+    for (const [key, value] of Object.entries(newObj)) {
+        if (value === "[object Object]") throw Error(`key (${key}) shouldn't be [object Object]`);
+
+        if (booleanFields.includes(key) && typeof value === "number") newObj[key] = Boolean(value);
+        else if (isJsonString(value)) newObj[key] = removeNullAndUndefinedValues(JSON.parse(<any>value));
+        if (newObj[key]?.constructor?.name === "Object") newObj[key] = removeNullAndUndefinedValues(parseJsonStrings(newObj[key]));
+    }
+    return <any>newObj;
+};

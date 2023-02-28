@@ -26,11 +26,8 @@ const testCommentFields = (comment) => {
         expect(comment.postCid).to.equal(comment.cid);
         expect(comment.title).to.be.a("string");
     }
-    if (comment.depth === 1) {
-        // Comment (reply)
-        expect(comment.postCid).to.equal(comment.parentCid);
-        expect(comment.title).to.be.undefined;
-    }
+    if (comment.depth === 1) expect(comment.postCid).to.equal(comment.parentCid);
+
     expect(comment.protocolVersion).to.be.a("string");
     expect(comment.replyCount).to.be.a("number");
 
@@ -43,6 +40,7 @@ const testCommentFields = (comment) => {
     expect(comment.author.subplebbit).to.be.a("object");
     expect(comment.author.subplebbit.postScore).to.be.a("number");
     expect(comment.author.subplebbit.replyScore).to.be.a("number");
+    expect(comment.author.subplebbit.firstCommentTimestamp).to.be.a("number");
     expect(comment.author.subplebbit.lastCommentCid).to.be.a("string");
 
     expect(comment.downvoteCount).to.be.a("number");
@@ -51,13 +49,13 @@ const testCommentFields = (comment) => {
     if (!comment.link) expect(comment.original.content).to.be.a("string");
     // TODO verify flair here when implemented
 
-    if (comment.authorEdit) {
+    if (comment.edit) {
         expect(comment.author.address).to.equal(comment.author.address);
-        expect(comment.authorEdit.authorAddress).to.be.undefined; // Shouldn't be included (extra from db)
-        expect(comment.authorEdit.challengeRequestId).to.be.undefined;
-        expect(comment.authorEdit.commentCid).to.equal(comment.cid);
-        expect(comment.authorEdit.signature).to.be.a("object");
-        expect(comment.authorEdit.subplebbitAddress).to.equal(comment.subplebbitAddress);
+        expect(comment.edit.authorAddress).to.be.undefined; // Shouldn't be included (extra from db)
+        expect(comment.edit.challengeRequestId).to.be.undefined;
+        expect(comment.edit.commentCid).to.equal(comment.cid);
+        expect(comment.edit.signature).to.be.a("object");
+        expect(comment.edit.subplebbitAddress).to.equal(comment.subplebbitAddress);
         expect(comment.timestamp).to.be.a("number");
     }
 
@@ -109,7 +107,7 @@ const testPostsSort = async (sortName) => {
 
 const testRepliesSort = async (parentComments, replySortName) => {
     for (const comment of parentComments) {
-        if (lodash.isEqual(comment.replies.pages, {})) continue;
+        if (!comment.replies) return;
 
         expect(Object.keys(comment.replies.pageCids)).to.deep.equal(Object.keys(REPLIES_SORT_TYPES));
         const commentPages = await loadAllPages(comment.replies.pageCids[replySortName], subplebbit.posts);
@@ -153,7 +151,7 @@ describe("Test pages sorting", async () => {
                 for (const comment of pages[0]) {
                     const otherPageComments = pages.map((page) => page.find((c) => c.cid === comment.cid));
                     expect(otherPageComments.length).to.equal(pages.length);
-                    for (const otherPageComment of otherPageComments) expect(comment).to.deep.equal(otherPageComment);
+                    for (const otherPageComment of otherPageComments) expect(comment.toJSON()).to.deep.equal(otherPageComment.toJSON());
                 }
             }
         });
@@ -163,6 +161,7 @@ describe("Test pages sorting", async () => {
         let posts;
         before(async () => {
             posts = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
+            expect(posts.length).to.be.greaterThan(0);
         });
         Object.keys(REPLIES_SORT_TYPES).map((sortName) =>
             it(`${sortName} pages under a comment are sorted correctly`, async () => await testRepliesSort(posts, sortName))

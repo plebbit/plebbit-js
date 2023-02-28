@@ -1,14 +1,13 @@
 {
-    "subplebbitAddress": "QmbdJpNU6cAgSXHjUNnSBrUZGBtStKPkdwKyiffqRy1x6c",
-    "timestamp": 1668159678,
+    "author": { "address": "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o" },
+    "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
+    "commentCid": "Qme7V7TVpK3Po9QbiiEjMSQ3mv1VDwsTZ2EnUyu9eutTZU",
+    "timestamp": 1677422961,
+    "vote": 1,
     "signature": {
-        "signature": "cccsPjxgbX4ziV2zUcsfTP4yM5lgZHGteK4/stGzk6jTJKqIYnPQyzQvouV4qJWvsvz1yWBkT1A30zS39SgT2VxvbfKgtHJk+IN8oilX0w4IoIR2gNH6iNJ/hiAWk5KXV6v28Hbt4dcs1aMRqhZVR55PcfS+bUqwBQKyR/OMd+I4edRUDXKNR5LnIHUefn/p9aPJ9OkyScPnv3r7xL0x2VtBw4C02v4s+YUQp7Hw2eipHPuhHWQt9Ot/OoDbHpghWU2gTmfUSwe7waoeSxtegTZIITdQQV7XWGXgpv+KfFyUbTP+2ZOu//wrQagPC7w/eO0Zcw7TsohlebcVh08Ljg",
-        "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsXSLjvU8f18jnnuoJ21I\nqGhCoEnX1rHpa2b9+kAalMY6anuHUSP68E+56ehF17tsZkPDsXJ0046UrZzFXw4z\neAGYub9hg34j+VIM+3PfBIHtm70scesomHX5NpMbgk2Msd7BpOKZUo1Gq0Sg+26b\nz+i9tv+ostZ3N2fNnqR7muyTH6f9o8H+9ViTBBJ/JjTNHbF34wHNMUwcaqDXO6gV\ns7PG29jU6je7k8IcNbEd8o/S9Yj3iQYh0Q5Mwo/AOMdNjAQsUJwurF02oK/eRPu5\nntuA7aPqaOdvpLw4kYFhzSjp0IBN/2IUFa5J+c+9bqYH5UBmNXA/5OHcjiDf7enq\ndQIDAQAB\n-----END PUBLIC KEY-----",
-        "type": "rsa",
+        "signature": "x7dTBbXrB9yj8Y2+vqmV68g5fvGKY5IZboWPG7q+Ho5SmJdHkWwNxbFizp9AS7lxD+7qHsEPasP29P3rbQTvDw",
+        "publicKey": "rnXv4wh/fpRm6rEw+yX6wYfjRg7wU5lLpk1jwFrLJsg",
+        "type": "ed25519",
         "signedPropertyNames": ["subplebbitAddress", "author", "timestamp", "vote", "commentCid"]
-    },
-    "author": { "address": "QmSz169sN2FtwzsxwJxTYPN1HLvkRKrawBr4mFVCr2rsUS" },
-    "protocolVersion": "1.0.0",
-    "commentCid": "QmWxotJ8ZPPuJWmCSwsqLBZcMY6gyRDic5zkGTwsHeeE98",
-    "vote": 1
+    }
 }

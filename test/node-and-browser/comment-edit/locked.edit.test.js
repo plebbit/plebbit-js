@@ -27,10 +27,10 @@ describe(`Locking posts`, async () => {
         sub = await plebbit.getSubplebbit(subplebbitAddress);
         sub._updateIntervalMs = updateInterval;
         await sub.update();
-        postToBeLocked = await publishRandomPost(subplebbitAddress, plebbit);
+        postToBeLocked = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
 
         await postToBeLocked.update();
-        replyUnderPostToBeLocked = await publishRandomReply(postToBeLocked, plebbit);
+        replyUnderPostToBeLocked = await publishRandomReply(postToBeLocked, plebbit, {}, false);
     });
     after(async () => {
         await postToBeLocked.stop();
@@ -71,16 +71,16 @@ describe(`Locking posts`, async () => {
             subplebbitAddress: postToBeLocked.subplebbitAddress,
             commentCid: postToBeLocked.cid,
             locked: true,
-            moderatorReason: "To lock a post",
+            reason: "To lock a post",
             signer: roles[2].signer
         });
         await publishWithExpectedResult(lockedEdit, true);
     });
 
     it(`A new CommentUpdate with locked=true is published`, async () => {
-        await new Promise((resolve) => postToBeLocked.once("update", resolve));
+        await waitUntil(() => postToBeLocked.locked, { timeout: 200000 });
         expect(postToBeLocked.locked).to.be.true;
-        expect(postToBeLocked.moderatorReason).to.equal("To lock a post");
+        expect(postToBeLocked.reason).to.equal("To lock a post");
     });
     it(`subplebbit.posts includes locked post with locked=true`, async () => {
         await waitUntil(
@@ -91,13 +91,18 @@ describe(`Locking posts`, async () => {
         for (const pageCid of Object.values(sub.posts.pageCids)) {
             const lockedPostInPage = (await loadAllPages(pageCid, sub.posts)).find((c) => c.cid === postToBeLocked.cid);
             expect(lockedPostInPage.locked).to.be.true;
-            expect(lockedPostInPage.moderatorReason).to.equal("To lock a post");
+            expect(lockedPostInPage.reason).to.equal("To lock a post");
         }
     });
-    it(`Can't publish reply or vote on a locked post`, async () => {
-        const [reply, vote] = [await generateMockComment(postToBeLocked, plebbit), await generateMockVote(postToBeLocked, 1, plebbit)];
 
-        await Promise.all([reply, vote].map((pub) => publishWithExpectedResult(pub, false, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED)));
+    it(`Can't publish a reply on a locked post`, async () => {
+        const comment = await generateMockComment(postToBeLocked, plebbit, false);
+        await publishWithExpectedResult(comment, false, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
+    });
+
+    it(`Can't vote on a locked post`, async () => {
+        const vote = await generateMockVote(postToBeLocked, 1, plebbit);
+        await publishWithExpectedResult(vote, false, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
     });
 
     it(`Can't vote on a reply of a locked post`, async () => {
@@ -115,16 +120,18 @@ describe(`Locking posts`, async () => {
             subplebbitAddress: postToBeLocked.subplebbitAddress,
             commentCid: postToBeLocked.cid,
             locked: false,
-            moderatorReason: "To unlock a post",
+            reason: "To unlock a post",
             signer: roles[2].signer
         });
         await publishWithExpectedResult(unlockEdit, true);
     });
-    it(`Unlocked post can receive replies and votes again`, async () => {
-        const [reply, vote] = [
-            await generateMockComment(replyUnderPostToBeLocked, plebbit),
-            await generateMockVote(replyUnderPostToBeLocked, 1, plebbit)
-        ];
-        await Promise.all([reply, vote].map((pub) => publishWithExpectedResult(pub, true)));
+
+    it(`Unlocked post can receive replies`, async () => {
+        const reply = await generateMockComment(replyUnderPostToBeLocked, plebbit);
+        await publishWithExpectedResult(reply, true);
+    });
+    it(`Unlocked post can receive votes `, async () => {
+        const vote = await generateMockVote(replyUnderPostToBeLocked, 1, plebbit);
+        await publishWithExpectedResult(vote, true);
     });
 });

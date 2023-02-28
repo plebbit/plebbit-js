@@ -1,0 +1,26 @@
+{
+    "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
+    "timestamp": 1677411606,
+    "signature": {
+        "signature": "sv6NT59jF6AbSVhcUTjEgAydmQAV48akAuHD5Pdh9ST8333/G3Y0iV7vzBgZZ3cASHCZjopbuzRhnE8WOtOnDA",
+        "publicKey": "rnXv4wh/fpRm6rEw+yX6wYfjRg7wU5lLpk1jwFrLJsg",
+        "type": "ed25519",
+        "signedPropertyNames": ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"]
+    },
+    "author": {
+        "address": "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o",
+        "avatar": {
+            "address": "0x890a2e81836e0E76e0F49995e6b51ca6ce6F39ED",
+            "chainTicker": "matic",
+            "id": "8",
+            "signature": {
+                "signature": "0x52d29d32fcb1c5b3cd3638ccd67573985c4b01816a5e77fdfb0122488a0fdeb854ca6dae4fbdb0594db88e36ba83e87a321321fcfde498f84310a6b5cd543f3f1c",
+                "signedPropertyNames": ["domainSeparator", "authorAddress", "tokenAddress", "tokenId"],
+                "type": "eip191"
+            }
+        }
+    },
+    "protocolVersion": "1.0.0",
+    "content": "Random 0.24964627912168003",
+    "title": "Random 0.7221212552569025"
+}

@@ -1,5 +1,5 @@
 const signers = require("../../fixtures/signers");
-const { mockPlebbit, generateMockPost, publishRandomPost, publishWithExpectedResult, generateMockComment } = require("../../../dist/node/test/test-util");
+const { mockPlebbit, generateMockPost, publishRandomPost, publishWithExpectedResult } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
 const { timestamp } = require("../../../dist/node/util");
@@ -17,9 +17,9 @@ describe(`Banning authors`, async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        commentToBeBanned = await publishRandomPost(subplebbitAddress, plebbit);
+        commentToBeBanned = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await commentToBeBanned.update();
-        authorBanExpiresAt = timestamp() + 30; // Ban stays for 30 seconds
+        authorBanExpiresAt = timestamp() + 10; // Ban stays for 10 seconds
     });
 
     after(async () => {
@@ -38,17 +38,19 @@ describe(`Banning authors`, async () => {
     });
 
     it(`Banned author can't publish`, async () => {
-        const newCommentByBannedAuthor = await generateMockPost(commentToBeBanned.subplebbitAddress, plebbit, commentToBeBanned.signer);
+        const newCommentByBannedAuthor = await generateMockPost(commentToBeBanned.subplebbitAddress, plebbit, false, {
+            signer: commentToBeBanned.signer
+        });
         await publishWithExpectedResult(newCommentByBannedAuthor, false, messages.ERR_AUTHOR_IS_BANNED);
     });
 
     it(`A new CommentUpdate with comment.author.banExpiresAt is published`, async () => {
-        await waitUntil(() => typeof commentToBeBanned.author.banExpiresAt === "number", { timeout: 200000 });
-        expect(commentToBeBanned.author.banExpiresAt).to.equals(authorBanExpiresAt);
+        await waitUntil(() => typeof commentToBeBanned.author.subplebbit?.banExpiresAt === "number", { timeout: 200000 });
+        expect(commentToBeBanned.author.subplebbit.banExpiresAt).to.equals(authorBanExpiresAt);
     });
 
     it(`Regular author can't ban another author`, async () => {
-        const tryToBanComment = await publishRandomPost(subplebbitAddress, plebbit);
+        const tryToBanComment = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
 
         const banCommentEdit = await plebbit.createCommentEdit({
             subplebbitAddress: tryToBanComment.subplebbitAddress,
@@ -62,7 +64,9 @@ describe(`Banning authors`, async () => {
     it(`Banned author can publish after authorBanExpiresAt ends`, async () => {
         await new Promise((resolve) => setTimeout(resolve, (authorBanExpiresAt - timestamp()) * 1000.0 + 1000));
         expect(timestamp()).to.be.greaterThan(authorBanExpiresAt);
-        const newCommentByBannedAuthor = await generateMockPost(commentToBeBanned.subplebbitAddress, plebbit, commentToBeBanned.signer);
+        const newCommentByBannedAuthor = await generateMockPost(commentToBeBanned.subplebbitAddress, plebbit, false, {
+            signer: commentToBeBanned.signer
+        });
         await publishWithExpectedResult(newCommentByBannedAuthor, true);
     });
 });

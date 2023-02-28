@@ -86,8 +86,6 @@ const nativeFunctions: NativeFunctions = {
             agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity })
         });
 
-        
-
         const cat = async (...args: Parameters<IpfsHttpClientPublicAPI["cat"]>): Promise<string | undefined> => {
             const rawData = await all(ipfsClient.cat(...args));
             const data = uint8ArrayConcat(rawData);

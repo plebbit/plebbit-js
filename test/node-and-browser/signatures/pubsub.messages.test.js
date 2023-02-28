@@ -13,6 +13,7 @@ const signers = require("../../fixtures/signers");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
 const { ChallengeAnswerMessage } = require("../../../dist/node/challenge");
+const lodash = require("lodash");
 const version = require("../../../dist/node/version");
 
 const mathCliSubplebbitAddress = signers[1].address;
@@ -23,12 +24,12 @@ describe("challengerequest", async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengerequest fixture from previous version can be validated`, async () => {
-        const request = require("../../fixtures/valid_challenge_request.json");
+        const request = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_request.json"));
         const verificaiton = await verifyChallengeRequest(request);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
     it(`Valid live ChallengeRequest gets validated correctly`, async () => {
-        const comment = await generateMockPost(signers[0].address, plebbit, signers[5]);
+        const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[5] });
         await comment.publish();
         // comment._challengeRequest (ChallengeRequest) should be defined now
         expect(comment._challengeRequest).to.be.a("object");
@@ -40,14 +41,14 @@ describe("challengerequest", async () => {
         return new Promise(async (resolve) => {
             const tempPlebbits = [await Plebbit(plebbit), await Plebbit(plebbit)];
             tempPlebbits.forEach((tPlebbit) => (tPlebbit.resolver = plebbit.resolver));
-            const comment = await generateMockPost(signers[0].address, tempPlebbits[0], signers[6]);
+            const comment = await generateMockPost(signers[0].address, tempPlebbits[0], false, { signer: signers[6] });
 
             await Promise.all([new Promise((resolve) => comment.once("challengeverification", resolve)), comment.publish()]);
 
-            // comment.challenge (ChallengeRequest) should be defined now
+            // comment._challengeRequest (ChallengeRequest) should be defined now
             expect(comment._challengeRequest).to.be.a("object");
-            const invalidSignature = JSON.parse(JSON.stringify(comment._challengeRequest));
-            invalidSignature.encryptedPublication.encrypted = invalidSignature.encryptedPublication.encrypted.slice(1); // Signature should be invalid after
+            const invalidSignature = lodash.clone(comment._challengeRequest);
+            invalidSignature.acceptedChallengeTypes.push("test"); // Signature should be invalid after
             const verificaiton = await verifyChallengeRequest(invalidSignature);
             expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
 
@@ -76,12 +77,12 @@ describe(`challengemessage`, async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengemessage fixture from previous version can be validated`, async () => {
-        const challenge = JSON.parse(JSON.stringify(require("../../fixtures/valid_challenge_message.json")));
+        const challenge = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_message.json"));
         const verificaiton = await verifyChallengeMessage(challenge);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
     it(`Valid live challengemessage gets validated correctly`, async () => {
-        const comment = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[6]);
+        const comment = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[6] });
         comment.removeAllListeners();
 
         await comment.publish();
@@ -95,7 +96,7 @@ describe(`challengemessage`, async () => {
         });
     });
     it(`Invalid ChallengeMessage gets invalidated correctly`, async () => {
-        const challenge = JSON.parse(JSON.stringify(require("../../fixtures/valid_challenge_message.json")));
+        const challenge = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_message.json"));
         challenge.challengeRequestId += "1234"; // Should invalidate signature
         const verificaiton = await verifyChallengeMessage(challenge);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
@@ -108,12 +109,12 @@ describe("challengeanswer", async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengeanswer fixture from previous version can be validated`, async () => {
-        const answer = JSON.parse(JSON.stringify(require("../../fixtures/valid_challenge_answer.json")));
+        const answer = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_answer.json"));
         const verificaiton = await verifyChallengeAnswer(answer);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
     it(`Valid live ChallengeAnswer gets validated correctly`, async () => {
-        const comment = await generateMockPost(mathCliSubplebbitAddress, plebbit, signers[5]);
+        const comment = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[5] });
         comment.removeAllListeners();
         await comment.publish();
 
@@ -130,7 +131,7 @@ describe("challengeanswer", async () => {
         const tempPlebbits = [await Plebbit(plebbit), await Plebbit(plebbit)];
         tempPlebbits.forEach((tPlebbit) => (tPlebbit.resolver = plebbit.resolver));
 
-        const comment = await generateMockPost(mathCliSubplebbitAddress, tempPlebbits[0], signers[6]);
+        const comment = await generateMockPost(mathCliSubplebbitAddress, tempPlebbits[0], false, { signer: signers[6] });
 
         comment.removeAllListeners();
         await comment.publish();
@@ -189,12 +190,12 @@ describe("challengeverification", async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengeverification fixture from previous version can be validated`, async () => {
-        const challengeVerification = JSON.parse(JSON.stringify(require("../../fixtures/valid_challenge_verification.json")));
+        const challengeVerification = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_verification.json"));
         const verificaiton = await verifyChallengeVerification(challengeVerification);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
     it(`Valid live challengeverification gets validated correctly`, async () => {
-        const comment = await generateMockPost(signers[0].address, plebbit, signers[6]);
+        const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[6] });
         await comment.publish();
 
         await new Promise((resolve) => {
@@ -206,7 +207,7 @@ describe("challengeverification", async () => {
         });
     });
     it(`Invalid challengeverification gets invalidated correctly`, async () => {
-        const challengeVerification = JSON.parse(JSON.stringify(require("../../fixtures/valid_challenge_verification.json")));
+        const challengeVerification = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_verification.json"));
         challengeVerification.challengeRequestId += "1234"; // Invalidate signature
         const verificaiton = await verifyChallengeVerification(challengeVerification);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });

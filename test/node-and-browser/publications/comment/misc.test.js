@@ -1,10 +1,11 @@
+const Plebbit = require("../../../../dist/node"); // Don't delete this line, otherwise browser tests will give "Process not defined" error. No idea why it happens
 const signers = require("../../../fixtures/signers");
 const {
     generateMockPost,
-    generateMockComment,
     mockPlebbit,
     publishRandomPost,
-    publishRandomReply
+    publishRandomReply,
+    loadAllPages
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 
@@ -45,28 +46,50 @@ describe("createComment", async () => {
         expect(comment.toJSON()).to.deep.equal(nestedComment.toJSON());
     });
 
-    it(`(comment: Comment) === plebbit.createComment(JSON.parse(JSON.stringify(comment)))`, async () => {
-        const comment = await generateMockComment(
-            await plebbit.createComment((await plebbit.getSubplebbit(subplebbitAddress)).posts.pages.hot.comments[0]),
-            plebbit,
-            lodash.sample(signers)
-        );
-        const commentFromStringifiedComment = await plebbit.createComment(JSON.parse(JSON.stringify(comment)));
-        expect(JSON.stringify(comment)).to.equal(JSON.stringify(commentFromStringifiedComment));
+    it(`Can recreate a stringifed Comment instance with plebbit.createComment`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+        const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(subplebbit.posts.pages.hot.comments[0])));
+        expect(JSON.stringify(subplebbit.posts.pages.hot.comments[0])).to.equal(JSON.stringify(commentClone));
     });
 
-    it(`(post: Post) === plebbit.createComment(JSON.parse(JSON.stringify(post)))`, async () => {
-        const post = await generateMockPost(subplebbitAddress, plebbit, lodash.sample(signers));
+    it(`Can recreate a Comment instance with plebbit.createComment`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+        const commentClone = await plebbit.createComment(subplebbit.posts.pages.hot.comments[0]);
+        expect(subplebbit.posts.pages.hot.comments[0].toJSON()).to.deep.equal(commentClone.toJSON());
+    });
+
+    it(`Can recreate a Comment instance with replies with plebbit.createComment`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+        const newComments = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
+        const commentToClone = newComments.find((comment) => comment.replyCount > 0);
+        expect(commentToClone.replies).to.be.a("object");
+        const commentClone = await plebbit.createComment(commentToClone);
+        expect(commentClone.replies).to.be.a("object");
+        expect(commentToClone.toJSON()).to.deep.equal(commentClone.toJSON());
+    });
+
+    it(`Can recreate a stringified Comment instance with replies with plebbit.createComment`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+        const newComments = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
+        const commentToClone = newComments.find((comment) => comment.replyCount > 0);
+        expect(commentToClone.replies).to.be.a("object");
+        const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(commentToClone)));
+        expect(commentClone.replies).to.be.a("object");
+        expect(commentToClone.toJSON()).to.deep.equal(commentClone.toJSON());
+    });
+
+    it(`Can recreate a stringified Post instance with plebbit.createComment`, async () => {
+        const post = await generateMockPost(subplebbitAddress, plebbit, false, { signer: lodash.sample(signers) });
         const postFromStringifiedPost = await plebbit.createComment(JSON.parse(JSON.stringify(post)));
         expect(JSON.stringify(post)).to.equal(JSON.stringify(postFromStringifiedPost));
     });
 });
 
-describe(`comment.update`, async () => {
+describe.skip(`comment.update`, async () => {
     it(`comment.update() is working as expected after calling comment.stop()`);
 });
 
-describe(`comment.replyCount`, async () => {
+describe(`commentUpdate.replyCount`, async () => {
     let plebbit, post, reply;
     before(async () => {
         plebbit = await mockPlebbit();
@@ -78,15 +101,16 @@ describe(`comment.replyCount`, async () => {
 
     after(() => post.stop() && reply.stop());
 
-    it(`replyCount increases with a direct reply`, async () => {
-        reply = await publishRandomReply(post, plebbit);
+    it(`post.replyCount increases with a direct reply`, async () => {
+        reply = await publishRandomReply(post, plebbit, {}, false);
         await reply.update();
         await new Promise((resolve) => reply.once("update", resolve));
         await waitUntil(() => post.replyCount === 1, { timeout: 200000 });
     });
 
-    it(`replyCount increases with a reply of a reply`, async () => {
-        await publishRandomReply(reply, plebbit);
+    it(`post.replyCount increases with a reply of a reply`, async () => {
+        await publishRandomReply(reply, plebbit, {}, false);
         await waitUntil(() => post.replyCount === 2 && reply.replyCount === 1, { timeout: 200000 });
     });
 });
+

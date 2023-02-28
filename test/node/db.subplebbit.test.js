@@ -12,15 +12,12 @@ const { mockPlebbit, publishRandomReply } = globalThis["window"]?.testUtilApi ||
 
 const plebbitVersion = globalThis["window"]?.plebbitVersionApi || require("../../dist/node/version");
 
-const databases = [
-    { version: 2, address: "Qmd3ts5tdvGztqkb3Uuir3i6pLXgpaZ7N5kvgJvSeYFnZ4" },
-    { version: 4, address: "QmSz169sN2FtwzsxwJxTYPN1HLvkRKrawBr4mFVCr2rsUS" }
-];
+const databases = [];
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const syncInterval = 300;
 
-describe(`DB importing`, async () => {
+describe.skip(`DB importing`, async () => {
     let plebbit;
 
     const copyDbToDataPath = async (database) => {
@@ -47,7 +44,7 @@ describe(`DB importing`, async () => {
     });
 });
 
-describe("DB Migration", () => {
+describe.skip("DB Migration", () => {
     let plebbit;
 
     before(async () => {

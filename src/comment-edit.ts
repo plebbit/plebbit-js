@@ -1,18 +1,18 @@
-import assert from "assert";
 import { Plebbit } from "./plebbit";
 import Publication from "./publication";
 import { verifyCommentEdit } from "./signer/signatures";
 import {
     AuthorCommentEdit,
     CommentAuthorEditOptions,
-    CommentEditForDbType,
+    CommentEditPubsubMessage,
+    CommentEditsTableRowInsert,
     CommentEditType,
     Flair,
     ModeratorCommentEdit,
     PublicationType,
     PublicationTypeName
 } from "./types";
-import { removeKeysWithUndefinedValues, throwWithErrorCode } from "./util";
+import { throwWithErrorCode } from "./util";
 import isIPFS from "is-ipfs";
 
 const PUBLICATION_FIELDS: (keyof Required<PublicationType>)[] = [
@@ -31,7 +31,7 @@ export const MOD_EDIT_FIELDS: (keyof ModeratorCommentEdit)[] = [
     "pinned",
     "locked",
     "removed",
-    "moderatorReason",
+    "reason",
     "commentAuthor"
 ];
 
@@ -55,7 +55,6 @@ export class CommentEdit extends Publication implements CommentEditType {
     pinned?: boolean;
     locked?: boolean;
     removed?: boolean;
-    moderatorReason?: string;
     commentAuthor?: CommentAuthorEditOptions;
 
     constructor(props: CommentEditType, plebbit: Plebbit) {
@@ -73,13 +72,12 @@ export class CommentEdit extends Publication implements CommentEditType {
         this.pinned = props.pinned;
         this.locked = props.locked;
         this.removed = props.removed;
-        this.moderatorReason = props.moderatorReason;
         this.commentAuthor = props.commentAuthor;
     }
 
-    toJSONSkeleton(): CommentEditType {
+    toJSONPubsubMessagePublication(): CommentEditPubsubMessage {
         return {
-            ...super.toJSONSkeleton(),
+            ...super.toJSONPubsubMessagePublication(),
             commentCid: this.commentCid,
             content: this.content,
             reason: this.reason,
@@ -89,38 +87,52 @@ export class CommentEdit extends Publication implements CommentEditType {
             pinned: this.pinned,
             locked: this.locked,
             removed: this.removed,
-            moderatorReason: this.moderatorReason,
             commentAuthor: this.commentAuthor
         };
     }
 
-    toJSON() {
-        return this.toJSONSkeleton();
+    toJSONIpfs() {
+        return this.toJSONPubsubMessagePublication();
     }
 
-    toJSONForDb(challengeRequestId: string): CommentEditForDbType {
-        return removeKeysWithUndefinedValues({
+    toJSON() {
+        return this.toJSONPubsubMessagePublication();
+    }
+
+    toJSONAfterChallengeVerification() {
+        return this.toJSON();
+    }
+
+    toJSONForDb(challengeRequestId: string): CommentEditsTableRowInsert {
+        return {
             ...this.toJSON(),
-            author: JSON.stringify(this.author),
+            author: this.author.toJSONIpfs(),
             authorAddress: this.author.address,
             challengeRequestId: challengeRequestId
-        });
+        };
     }
 
     getType(): PublicationTypeName {
         return "commentedit";
     }
 
-    async publish(): Promise<void> {
-        // TODO if publishing with content,reason, deleted, verify that publisher is original author
-        if (!isIPFS.cid(this.commentCid))
-            throwWithErrorCode("ERR_CID_IS_INVALID", `commentEdit.publish: commentCid (${this.commentCid}) is invalid as a CID`);
-        const signatureValidity = await verifyCommentEdit(this.toJSON(), this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
+    private async _validateSignature() {
+        const editObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication()));
+        const signatureValidity = await verifyCommentEdit(editObj, this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid)
             throwWithErrorCode(
                 "ERR_SIGNATURE_IS_INVALID",
                 `commentEdit.publish: Failed to publish due to invalid signature. Reason=${signatureValidity.reason}`
             );
+    }
+
+    async publish(): Promise<void> {
+        // TODO if publishing with content,reason, deleted, verify that publisher is original author
+        if (!isIPFS.cid(this.commentCid))
+            throwWithErrorCode("ERR_CID_IS_INVALID", `commentEdit.publish: commentCid (${this.commentCid}) is invalid as a CID`);
+
+        await this._validateSignature();
+
         return super.publish();
     }
 }

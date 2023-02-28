@@ -27,7 +27,7 @@ export enum messages {
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",
-    ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS = "author.address is not a domain or IPNS",
+    ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 = "author.address is not a domain or B58",
 
     // Verify Signature errors
     ERR_SIGNATURE_IS_INVALID = "Signature of publication is invalid",
@@ -37,6 +37,7 @@ export enum messages {
     ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT = "Comment update is not signed by the subplebbit",
     ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR = "Author edit is not signed by original author of comment",
     ERR_SUBPLEBBIT_POSTS_INVALID = "subplebbit.posts signature is invalid",
+    ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT = "CommentUpdate.cid is different than comment.cid",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
@@ -61,5 +62,6 @@ export enum messages {
     ERR_FORBIDDEN_AUTHOR_FIELD = "The author field includes a forbidden field",
     ERR_FORBIDDEN_COMMENT_FIELD = "The comment/post contains a forbidden field",
     ERR_FORBIDDEN_SIGNER_FIELD = "The publication includes a signer field which is forbidden",
-    ERR_DUPLICATE_COMMENT = "Comment is duplicated"
+    ERR_DUPLICATE_COMMENT = "Comment is duplicated",
+    ERR_AUTHOR_ADDRESS_UNDEFINED = "author address is undefined"
 }

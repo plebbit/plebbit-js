@@ -6,6 +6,7 @@ import { Subplebbit } from "../../subplebbit";
 import assert from "assert";
 import { Knex } from "knex";
 import { Plebbit } from "../../plebbit";
+import { parseJsonStrings } from "../../util";
 
 export const mkdir = fs.mkdir;
 
@@ -16,8 +17,7 @@ export const getDefaultSubplebbitDbConfig = async (
 ): Promise<Knex.Config<any>> => {
     assert(typeof subplebbit.plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get default subplebbit db config");
     const dbPath = path.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
-    const dir = path.dirname(dbPath);
-    await mkdir(dir, { recursive: true });
+    await mkdir(path.dirname(dbPath), { recursive: true });
 
     const filename = process.env["DB_MEMORY"] === "1" ? ":memory:" : dbPath;
 
@@ -25,7 +25,12 @@ export const getDefaultSubplebbitDbConfig = async (
         client: "sqlite3",
         connection: { filename },
         useNullAsDefault: true,
-        acquireConnectionTimeout: 120000
+        acquireConnectionTimeout: 120000,
+        postProcessResponse: (result, queryContext) => {
+            // TODO: add special case for raw results
+            // (depends on dialect)
+            return parseJsonStrings(result);
+        }
     };
 };
 

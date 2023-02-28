@@ -1,0 +1,37 @@
+{
+    "author": {
+        "subplebbit": {
+            "firstCommentTimestamp": 1677394388,
+            "lastCommentCid": "QmeWdcrZxGmdWwG1bQerNGhnMfqrRQ6Nqp4iR1gAECYeKu",
+            "postScore": 0,
+            "replyScore": 0
+        }
+    },
+    "cid": "QmeWdcrZxGmdWwG1bQerNGhnMfqrRQ6Nqp4iR1gAECYeKu",
+    "downvoteCount": 0,
+    "protocolVersion": "1.0.0",
+    "replyCount": 0,
+    "signature": {
+        "publicKey": "tkPPciAVI7kfzmSHjazd0ekx8z9bCt9RlE5RnEpFRGo",
+        "signature": "wSPr4NBrd/PRTnNU/c2mSXLkChK3GuoEAi/lOV25RxJDKkWcokxATXjqUHw0N2ZY8Zm9nzTgQ+luT1OLqIKvDA",
+        "signedPropertyNames": [
+            "author",
+            "spoiler",
+            "pinned",
+            "locked",
+            "removed",
+            "reason",
+            "flair",
+            "upvoteCount",
+            "downvoteCount",
+            "replies",
+            "updatedAt",
+            "replyCount",
+            "edit",
+            "cid"
+        ],
+        "type": "ed25519"
+    },
+    "updatedAt": 1677394917,
+    "upvoteCount": 0
+}

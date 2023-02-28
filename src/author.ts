@@ -1,6 +1,7 @@
-import { AuthorDbType, AuthorType, Flair, Nft, SubplebbitAuthor, Wallet } from "./types";
+import assert from "assert";
+import { AuthorIpfsType, AuthorTypeWithCommentUpdate, Flair, Nft, SubplebbitAuthor, Wallet } from "./types";
 
-class Author implements AuthorType {
+class Author implements AuthorTypeWithCommentUpdate {
     address: string;
     previousCommentCid?: string; // linked list of the author's comments
     displayName?: string;
@@ -10,32 +11,29 @@ class Author implements AuthorType {
     banExpiresAt?: number;
     subplebbit?: SubplebbitAuthor;
 
-    constructor(props: AuthorType) {
+    constructor(props: AuthorIpfsType | AuthorTypeWithCommentUpdate) {
         this.address = props.address;
         this.previousCommentCid = props.previousCommentCid;
         this.displayName = props.displayName;
         this.wallets = props.wallets;
         this.avatar = props.avatar;
         this.flair = props.flair;
-        this.banExpiresAt = props.banExpiresAt;
-        this.subplebbit = props.subplebbit;
+        this.subplebbit = props["subplebbit"];
     }
 
-    toJSON(): AuthorType {
+    toJSONIpfs(): AuthorIpfsType {
         return {
             address: this.address,
             previousCommentCid: this.previousCommentCid,
             displayName: this.displayName,
             wallets: this.wallets,
             avatar: this.avatar,
-            flair: this.flair,
-            banExpiresAt: this.banExpiresAt,
-            subplebbit: this.subplebbit
+            flair: this.flair
         };
     }
-
-    toJSONForDb(): AuthorDbType {
-        return { address: this.address, banExpiresAt: this.banExpiresAt, flair: this.flair };
+    toJSONIpfsWithCommentUpdate(): AuthorTypeWithCommentUpdate {
+        assert(this.subplebbit);
+        return { ...this.toJSONIpfs(), subplebbit: this.subplebbit };
     }
 }
 

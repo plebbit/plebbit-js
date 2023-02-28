@@ -1,5 +1,5 @@
 import Publication from "./publication";
-import { PublicationType, PublicationTypeName, VoteForDbType, VoteType } from "./types";
+import { PublicationTypeName, VotePubsubMessage, VotesTableRowInsert, VoteType } from "./types";
 import { Plebbit } from "./plebbit";
 import isIPFS from "is-ipfs";
 import { verifyVote } from "./signer";
@@ -15,29 +15,41 @@ class Vote extends Publication implements VoteType {
         this.vote = props.vote; // Either 1, 0, -1 (upvote, cancel vote, downvote)
     }
 
-    toJSONSkeleton(): VoteType {
+    toJSONPubsubMessagePublication(): VotePubsubMessage {
         return {
-            ...super.toJSONSkeleton(),
+            ...super.toJSONPubsubMessagePublication(),
             commentCid: this.commentCid,
             vote: this.vote
         };
     }
+
+    toJSONIpfs() {
+        return this.toJSONPubsubMessagePublication();
+    }
     toJSON() {
-        return this.toJSONSkeleton();
+        return this.toJSONPubsubMessagePublication();
     }
 
     getType(): PublicationTypeName {
         return "vote";
     }
 
-    toJSONForDb(challengeRequestId: string): VoteForDbType {
+    toJSONForDb(challengeRequestId: string): VotesTableRowInsert {
         return {
             ...this.toJSON(),
-            author: JSON.stringify(this.author),
             authorAddress: this.author.address,
-            challengeRequestId: challengeRequestId,
-            signature: JSON.stringify(this.signature)
+            challengeRequestId: challengeRequestId
         };
+    }
+
+    private async _validateSignature() {
+        const voteObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringified here to simulate a message sent through IPNS/PUBSUB
+        const signatureValidity = await verifyVote(voteObj, this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
+        if (!signatureValidity.valid)
+            throwWithErrorCode(
+                "ERR_SIGNATURE_IS_INVALID",
+                `vote.publish: Failed to publish vote (${this.vote}) on comment (${this.commentCid}) due to invalid signature. Reason=${signatureValidity.reason}`
+            );
     }
 
     async publish(): Promise<void> {
@@ -45,12 +57,8 @@ class Vote extends Publication implements VoteType {
             throwWithErrorCode("ERR_PUBLICATION_MISSING_FIELD", `Vote.vote (${this.vote}) can only be -1, 0, or 1`);
         if (!isIPFS.cid(this.commentCid))
             throwWithErrorCode("ERR_CID_IS_INVALID", `Vote.publish: commentCid (${this.commentCid}) is invalid as a CID`);
-        const signatureValidity = await verifyVote(this.toJSON(), this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
-        if (!signatureValidity.valid)
-            throwWithErrorCode(
-                "ERR_SIGNATURE_IS_INVALID",
-                `vote.publish: Failed to publish due to invalid signature. Reason=${signatureValidity.reason}`
-            );
+
+        await this._validateSignature();
 
         return super.publish();
     }

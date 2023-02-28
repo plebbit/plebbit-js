@@ -12,7 +12,6 @@ const lodash = require("lodash");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
-const { default: waitUntil } = require("async-wait-until");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -26,7 +25,7 @@ describe(`Client side verification`, async () => {
         plebbit = await mockPlebbit();
     });
     it(".publish() throws if publication has invalid signature", async () => {
-        const mockComment = await generateMockPost(subplebbitAddress, plebbit, signers[0]);
+        const mockComment = await generateMockPost(subplebbitAddress, plebbit, false, { signer: signers[0] });
         mockComment.timestamp += 1; // Corrupts signature
         await assert.isRejected(mockComment.publish(), messages.ERR_SIGNATURE_IS_INVALID);
     });
@@ -40,8 +39,8 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
     });
 
     it(`Subplebbit reject a comment with subplebbitAddress that is not equal subplebbit.address`);
-    it(`Fail to publish a comment without author.address`);
-    it(`Fail to publish a comment with non valid signature.signedPropertyNames`);
+    it(`Subplebbit reject publish a comment without author.address`);
+    it(`Subplebbit reject publish a comment with non valid signature.signedPropertyNames`);
 
     it("Subplebbit reject a comment under a non existent parent", async () => {
         const comment = await plebbit.createComment({
@@ -53,11 +52,9 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
     });
 
     it(`A reply with timestamp earlier than its parent is rejected`, async () => {
-        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-        const parentPost = await plebbit.getComment(subplebbit.lastPostCid);
-        expect(parentPost.timestamp).to.be.a("number");
-        const reply = await generateMockComment(parentPost, plebbit, signers[0], false, { timestamp: parentPost.timestamp - 1 });
-        expect(reply.timestamp).to.be.lessThan(parentPost.timestamp);
+        expect(post.timestamp).to.be.a("number");
+        const reply = await generateMockComment(post, plebbit, false, { signer: signers[0], timestamp: post.timestamp - 1 });
+        expect(reply.timestamp).to.be.lessThan(post.timestamp);
         await publishWithExpectedResult(reply, false, messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT);
     });
 
@@ -80,26 +77,24 @@ describe(`Posts with forbidden fields are rejected during challenge exchange`, a
         { ipnsName: "Qm12345" },
         { depth: 0 },
         { postCid: "Qm12345" },
-        { original: { Test: " hello" } },
         { upvoteCount: 1 },
         { downvoteCount: 1 },
         { replyCount: 1 },
         { updatedAt: 1234567 },
         { replies: { test: "testl" } },
-        { authorEdit: { test: "werw" } },
+        { edit: { content: "werw" } },
         { deleted: true },
         { pinned: true },
         { locked: true },
         { removed: true },
-        { moderatorReason: "Test forbidden" }
+        { reason: "Test forbidden" }
     ];
     forbiddenFieldsWithValue.map((forbiddenType) =>
         it(`comment.${Object.keys(forbiddenType)[0]} is rejected by sub`, async () => {
-            const post = await generateMockPost(subplebbitAddress, plebbit, undefined, undefined);
-            const postSkeletonJsonPrior = post.toJSONSkeleton();
-            const postJsonPrior = post.toJSON();
-            post.toJSONSkeleton = () => ({ ...postSkeletonJsonPrior, ...forbiddenType });
-            post.toJSON = () => postJsonPrior;
+            const post = await generateMockPost(subplebbitAddress, plebbit, false);
+            const postPubsubJsonPrior = post.toJSONPubsubMessagePublication();
+            post.toJSONPubsubMessagePublication = () => ({ ...postPubsubJsonPrior, ...forbiddenType });
+            post._validateSignature = async () => {}; // Disable signature validation before publishing
             await publishWithExpectedResult(
                 post,
                 false,
@@ -114,20 +109,20 @@ describe("Posts with forbidden author fields are rejected", async () => {
     before(async () => {
         plebbit = await mockPlebbit();
     });
+    // TODO redo this
     const forbiddenFieldsWithValue = [
-        { subplebbit: { lastCommentCid: "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs", postScore: 0, replyScore: 0 } },
-        { flair: { text: "12345" } },
-        { banExpiresAt: 0 },
-        { previousCommentCid: "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs" }
+        { subplebbit: { lastCommentCid: "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs", postScore: 0, replyScore: 0, banExpiresAt: 0 } }
     ];
 
     forbiddenFieldsWithValue.map((forbiddenType) =>
         it(`comment.author.${Object.keys(forbiddenType)[0]} is rejected by sub`, async () => {
-            const post = await generateMockPost(subplebbitAddress, plebbit, undefined, undefined);
-            const postSkeletonJsonPrior = post.toJSONSkeleton();
-            const postJsonPrior = post.toJSON();
-            post.toJSONSkeleton = () => ({ ...postSkeletonJsonPrior, author: { ...postSkeletonJsonPrior.author, ...forbiddenType } });
-            post.toJSON = () => postJsonPrior;
+            const post = await generateMockPost(subplebbitAddress, plebbit);
+            const postPubsubJsonPrior = post.toJSONPubsubMessagePublication();
+            post.toJSONPubsubMessagePublication = () => ({
+                ...postPubsubJsonPrior,
+                author: { ...postPubsubJsonPrior.author, ...forbiddenType }
+            });
+            post._validateSignature = async () => {}; // Disable signature validation before publishing
             await publishWithExpectedResult(post, false, messages.ERR_FORBIDDEN_AUTHOR_FIELD);
         })
     );

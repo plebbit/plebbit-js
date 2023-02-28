@@ -27,10 +27,10 @@ describe("Deleting a post", async () => {
     before(async () => {
         plebbit = await mockPlebbit();
         [postToDelete, modPostToDelete] = await Promise.all([
-            publishRandomPost(subplebbitAddress, plebbit),
-            publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer })
+            publishRandomPost(subplebbitAddress, plebbit, {}, false),
+            publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer }, false)
         ]);
-        postReply = await publishRandomReply(postToDelete, plebbit);
+        postReply = await publishRandomReply(postToDelete, plebbit, {}, false);
     });
     it(`Regular author can't mark a post that is not theirs as deleted`, async () => {
         const deleteEdit = await plebbit.createCommentEdit({
@@ -88,12 +88,12 @@ describe("Deleting a post", async () => {
     });
 
     it(`Can't publish reply under deleted post`, async () => {
-        const replyUnderDeletedPost = await generateMockComment(postToDelete, plebbit, lodash.sample(signers));
+        const replyUnderDeletedPost = await generateMockComment(postToDelete, plebbit, false, { signer: lodash.sample(signers) });
         await publishWithExpectedResult(replyUnderDeletedPost, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
     });
 
     it(`Can't publish a reply under a reply of a deleted post`, async () => {
-        const reply = await generateMockComment(postReply, plebbit, lodash.sample(signers));
+        const reply = await generateMockComment(postReply, plebbit, false, { signer: lodash.sample(signers) });
         await publishWithExpectedResult(reply, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
     });
 
@@ -135,9 +135,9 @@ describe("Deleting a reply", async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        post = await publishRandomPost(subplebbitAddress, plebbit);
-        replyToDelete = await publishRandomReply(post, plebbit);
-        replyUnderDeletedReply = await publishRandomReply(replyToDelete, plebbit);
+        post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        replyToDelete = await publishRandomReply(post, plebbit, {}, false);
+        replyUnderDeletedReply = await publishRandomReply(replyToDelete, plebbit, {}, false);
         await Promise.all([replyToDelete.update(), post.update()]);
     });
     after(async () => {
@@ -158,7 +158,7 @@ describe("Deleting a reply", async () => {
         await waitUntil(() => replyToDelete.deleted === true, { timeout: 200000 });
     });
     it(`Deleted replies show in parent comment pages with 'deleted' = true`, async () => {
-        const pageCid = () => post.replies.pageCids?.new;
+        const pageCid = () => post.replies?.pageCids?.new;
         await waitUntil(async () => pageCid() && (await findCommentInPage(replyToDelete.cid, pageCid(), post.replies)).deleted === true, {
             timeout: 200000
         });

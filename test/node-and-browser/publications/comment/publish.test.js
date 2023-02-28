@@ -7,7 +7,8 @@ const {
     waitTillCommentIsInParentPages,
     publishRandomPost,
     mockPlebbit,
-    publishVote
+    publishVote,
+    findCommentInPage
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 const chai = require("chai");
@@ -28,33 +29,50 @@ describe("publishing posts", async () => {
     });
 
     it("Can publish a post", async function () {
-        await publishRandomPost(subplebbitAddress, plebbit);
+        await publishRandomPost(subplebbitAddress, plebbit, {});
     });
 
     it(`Can Publish a post with only link`, async () => {
         const link = "https://demo.plebbit.eth.limo";
-        const post = await generateMockPost(subplebbitAddress, plebbit, undefined, false, { signer: lodash.sample(signers), link });
+        const post = await generateMockPost(subplebbitAddress, plebbit, false, { signer: lodash.sample(signers), link });
         expect(post.link).to.equal(link);
         await publishWithExpectedResult(post, true);
         await waitTillCommentIsInParentPages(post, plebbit, { link });
     });
 
     it(`Can publish a post with author.avatar. Can also validate it after publishing`, async () => {
-        const commentProps = require("../../../fixtures/valid_comment_avatar_fixture.json");
-        const post = await plebbit.createComment({
+        const commentProps = {
             title: "Random " + Math.random(),
             content: "Random " + Math.random(),
-            author: { avatar: commentProps.author.avatar },
-            signer: lodash.sample(signers),
-            subplebbitAddress
-        });
+            subplebbitAddress,
+            author: {
+                address: signers[6].address,
+                avatar: {
+                    address: "0x890a2e81836e0E76e0F49995e6b51ca6ce6F39ED",
+                    chainTicker: "matic",
+                    id: "8",
+                    signature: {
+                        signature:
+                            "0x52d29d32fcb1c5b3cd3638ccd67573985c4b01816a5e77fdfb0122488a0fdeb854ca6dae4fbdb0594db88e36ba83e87a321321fcfde498f84310a6b5cd543f3f1c",
+                        signedPropertyNames: ["domainSeparator", "authorAddress", "tokenAddress", "tokenId"],
+                        type: "eip191"
+                    }
+                }
+            }
+        };
+        const post = await plebbit.createComment({ ...commentProps, signer: signers[6] });
 
         await publishWithExpectedResult(post, true);
-        await waitTillCommentIsInParentPages(post, plebbit, lodash.pick(commentProps, ["avatar"]));
+        await waitTillCommentIsInParentPages(post, plebbit, lodash.omit(commentProps, "author"));
+        const postSubplebbit = await plebbit.getSubplebbit(post.subplebbitAddress);
+        // Should have post
+        const postInPage = await findCommentInPage(post.cid, postSubplebbit.posts.pageCids.new, postSubplebbit.posts);
+        expect(postInPage.author.avatar).to.deep.equal(commentProps.author.avatar);
+        expect(postInPage.author.address).to.equal(commentProps.author.address);
     });
 
     it(`Publish a post with spoiler`, async () => {
-        const post = await generateMockPost(subplebbitAddress, plebbit, lodash.sample(signers), undefined, { spoiler: true });
+        const post = await generateMockPost(subplebbitAddress, plebbit, false, { spoiler: true, signer: lodash.sample(signers) });
 
         expect(post.spoiler).to.be.true;
 
@@ -62,9 +80,20 @@ describe("publishing posts", async () => {
         expect(post.spoiler).to.be.true;
         await waitTillCommentIsInParentPages(post, plebbit, { spoiler: true });
     });
+
+    it(`publish a post with author.wallets`, async () => {
+        const wallets = { btc: { address: "0xdeadbeef" }, eth: { address: "rinse12.eth" } };
+        const post = await generateMockPost(subplebbitAddress, plebbit, false, { author: { wallets } });
+        expect(post.author.wallets).to.deep.equal(wallets);
+        await publishWithExpectedResult(post, true);
+        await waitTillCommentIsInParentPages(post, plebbit);
+        const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
+        const postInPage = await findCommentInPage(post.cid, sub.posts.pageCids.new, sub.posts);
+        expect(postInPage.author.wallets).to.deep.equal(wallets);
+    });
 });
 
-describe(`author.subplebbit`, async () => {
+describe(`commentUpdate.author.subplebbit`, async () => {
     let plebbit, post;
 
     before(async () => {
@@ -85,7 +114,7 @@ describe(`author.subplebbit`, async () => {
     });
 
     it(`post.author.subplebbit.postScore increases with upvote to another post`, async () => {
-        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer });
+        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer }, false);
         await anotherPost.update();
 
         await publishVote(anotherPost.cid, 1, plebbit);
@@ -101,7 +130,7 @@ describe(`author.subplebbit`, async () => {
     });
 
     it(`post.author.subplebbit.replyScore increases with upvote to author replies`, async () => {
-        const reply = await publishRandomReply(post, plebbit, { signer: post.signer });
+        const reply = await publishRandomReply(post, plebbit, { signer: post.signer }, false);
         await reply.update();
         await publishVote(reply.cid, 1, plebbit);
         await waitUntil(() => reply.upvoteCount === 1 && post.author.subplebbit.replyScore === 1, { timeout: 200000 });
@@ -118,7 +147,7 @@ describe(`author.subplebbit`, async () => {
     });
 
     it(`author.subplebbit.lastCommentCid is updated with every new post of author`, async () => {
-        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer });
+        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer }, false);
         await anotherPost.update();
 
         await waitUntil(() => post.author.subplebbit.lastCommentCid === anotherPost.cid && typeof anotherPost.updatedAt === "number", {
@@ -132,7 +161,7 @@ describe(`author.subplebbit`, async () => {
     });
 
     it(`author.subplebbit.lastCommentCid is updated with every new reply of author`, async () => {
-        const reply = await publishRandomReply(post, plebbit, { signer: post.signer });
+        const reply = await publishRandomReply(post, plebbit, { signer: post.signer }, false);
         await reply.update();
 
         await waitUntil(() => post.replyCount === 2 && typeof reply.updatedAt === "number", { timeout: 200000 });
@@ -142,6 +171,8 @@ describe(`author.subplebbit`, async () => {
 
         reply.stop();
     });
+
+    it.skip("CommentUpdate.author.subplebbit.firstCommentTimestamp");
 });
 
 describe(`Publishing replies`, async () => {
@@ -155,17 +186,32 @@ describe(`Publishing replies`, async () => {
         parents.push(post);
     });
 
+    after(() => parents.forEach((parent) => parent.stop()));
+
+    it(`Can publish a reply (Comment) with title, content and link defined`, async () => {
+        await publishRandomReply(
+            post,
+            plebbit,
+            {
+                title: `Test title on Comment ${Date.now()}`,
+                content: `Test content on Comment ${Date.now()}`,
+                link: "https//plebbit.com"
+            },
+            true
+        );
+    });
+
     [1, 2, 3].map((depth) =>
         it(`Can publish comment with depth = ${depth}`, async () => {
             const parentComment = parents[depth - 1];
 
-            const reply = await publishRandomReply(parentComment, plebbit, { signer: post.signer });
+            const reply = await publishRandomReply(parentComment, plebbit, { signer: post.signer }, false);
             expect(reply.depth).to.be.equal(depth);
 
             await waitTillCommentIsInParentPages(
                 reply,
                 plebbit,
-                { ...lodash.omit(reply.toJSONSkeleton(), ["author", "spoiler"]), depth },
+                { ...lodash.omit(reply.toJSONPubsubMessagePublication(), ["author", "spoiler"]), depth },
                 true
             );
 

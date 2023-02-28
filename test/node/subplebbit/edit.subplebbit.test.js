@@ -73,9 +73,8 @@ describe(`subplebbit.edit`, async () => {
     it(`subplebbit.posts is reset after changing address`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(ethAddress);
         // subplebbit.posts should omit all comments that referenced the old subplebbit address
-        // So in essence it should be empty
-        expect(loadedSubplebbit.posts.pages).to.deep.equal({});
-        expect(loadedSubplebbit.posts.pageCids).to.deep.equal({});
+        // So in essence it be undefined
+        expect(loadedSubplebbit.posts).to.be.undefined;
     });
 
     it(`Started Sub can receive publications on new ENS address`, async () => {
@@ -125,9 +124,9 @@ describe(`Concurrency with subplebbit.edit`, async () => {
     });
 
     [
-        { address: `address-eth-${timestamp()}-1.eth` },
+        { address: `address-eth-${Math.random().toString(36).slice(2)}-${timestamp()}-1.eth` },
         { rules: ["rule 1", "rule 2"] },
-        { address: `address-eth-${timestamp()}-2.eth`, rules: ["rule 1", "rule 2"] }
+        { address: `address-eth-${Math.random().toString(36).slice(2)}-${timestamp()}-2.eth`, rules: ["rule 1", "rule 2"] }
     ].map((editArgs) =>
         it(`edit subplebbit with multiple subplebbit instances running (${Object.keys(editArgs)})`, async () => {
             const plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);

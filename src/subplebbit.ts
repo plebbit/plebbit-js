@@ -4,49 +4,54 @@ import { sha256 } from "js-sha256";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
 import { SortHandler } from "./sort-handler";
-import { encode, loadIpnsAsJson, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
+import { loadIpnsAsJson, parsePagesIpfs, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
 import { decrypt, encrypt, Signer } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 import {
-    AuthorDbType,
-    AuthorType,
+    AuthorTypeWithCommentUpdate,
     ChallengeAnswerMessageType,
     ChallengeMessageType,
     ChallengeRequestMessageType,
     ChallengeType,
     ChallengeVerificationMessageType,
+    CommentEditPubsubMessage,
     CommentEditType,
+    CommentPubsubMessage,
+    CommentsTableRow,
     CommentType,
     CommentUpdate,
-    CreateSubplebbitOptions,
+    CommentWithCommentUpdate,
     DbHandlerPublicAPI,
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeRequestMessageType,
     Flair,
     FlairOwner,
+    InternalSubplebbitType,
+    PagesTypeIpfs,
     ProtocolVersion,
-    SignatureType,
     SubplebbitEditOptions,
     SubplebbitEncryption,
     SubplebbitFeatures,
+    SubplebbitIpfsType,
     SubplebbitMetrics,
     SubplebbitRole,
     SubplebbitSuggested,
     SubplebbitType,
+    VotePubsubMessage,
     VoteType
 } from "./types";
 import { Comment } from "./comment";
 import Vote from "./vote";
 import Post from "./post";
 import {
-    getIpfsKeyFromPrivateKeyPem,
-    getPlebbitAddressFromPrivateKeyPem,
-    getPlebbitAddressFromPublicKeyPem,
-    getPublicKeyPemFromPrivateKeyPem
+    getIpfsKeyFromPrivateKey,
+    getPlebbitAddressFromPrivateKey,
+    getPlebbitAddressFromPublicKey,
+    getPublicKeyFromPrivateKey
 } from "./signer/util";
-import { v4 as uuidv4 } from "uuid";
 import { AUTHOR_EDIT_FIELDS, CommentEdit, MOD_EDIT_FIELDS } from "./comment-edit";
 import errcode from "err-code";
 import { messages } from "./errors";
@@ -63,10 +68,14 @@ import {
     verifyChallengeRequest,
     verifyComment,
     verifyCommentEdit,
+    verifyCommentUpdate,
     verifySubplebbit,
     verifyVote
 } from "./signer/signatures";
 import { CACHE_KEYS } from "./constants";
+import assert from "assert";
+import version from "./version";
+import { SignatureType, SignerType } from "./signer/constants";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
@@ -77,7 +86,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     description?: string;
     roles?: { [authorAddress: string]: SubplebbitRole };
     lastPostCid?: string;
-    posts: Pages;
+    posts?: Pages;
     pubsubTopic: string;
     challengeTypes?: ChallengeType[];
     metrics?: SubplebbitMetrics;
@@ -110,11 +119,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     private _syncInterval?: any;
     private _syncIntervalMs: number; // How often should a sub publish a new IPNS
     private _sync: boolean;
+    private _ipfsNodeIpnsKeyNames: string[];
+    private _subplebbitUpdateTrigger: boolean;
 
-    constructor(props: CreateSubplebbitOptions, plebbit: Plebbit) {
+    constructor(plebbit: Plebbit) {
         super();
         this.plebbit = plebbit;
-        this.initSubplebbit(props);
         this._challengeToSolution = {}; // Map challenge ID to its solution
         this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
         this._challengeToPublicKey = {}; // Map out challenge request id to their signers
@@ -134,7 +144,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
     }
 
-    initSubplebbit(newProps: SubplebbitType | SubplebbitEditOptions) {
+    async initSubplebbit(newProps: SubplebbitType | SubplebbitEditOptions | SubplebbitIpfsType) {
         const oldProps = this.toJSONInternal();
         const mergedProps = { ...oldProps, ...newProps };
         this.title = mergedProps.title;
@@ -147,27 +157,48 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.createdAt = mergedProps.createdAt;
         this.updatedAt = mergedProps.updatedAt;
         this.encryption = mergedProps.encryption;
-        this.posts = new Pages({
-            pages: mergedProps?.posts?.pages || {},
-            pageCids: mergedProps?.posts?.pageCids || {},
-            subplebbit: lodash.pick(this, ["address", "plebbit"])
-        });
-
         this.roles = mergedProps.roles;
         this.features = mergedProps.features;
         this.suggested = mergedProps.suggested;
         this.rules = mergedProps.rules;
         this.flairs = mergedProps.flairs;
         this.signature = mergedProps.signature;
+        this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
         if (!this.signer && mergedProps.signer) this.signer = new Signer(mergedProps.signer);
+
+        await this._setPosts(mergedProps.posts);
+    }
+
+    async _setPosts(newPosts: PagesTypeIpfs | Pages) {
+        if (!newPosts) {
+            this.posts = undefined;
+            return;
+        }
+
+        if (newPosts instanceof Pages) {
+            this.posts = newPosts;
+            return;
+        }
+        const isIpfs = Boolean(Object.values(newPosts.pages)[0]?.comments[0]["commentUpdate"]);
+        if (isIpfs) {
+            newPosts = newPosts as PagesTypeIpfs;
+            const parsedPages = await parsePagesIpfs(newPosts, this);
+            this.posts = new Pages({
+                pages: parsedPages?.pages || {},
+                pageCids: parsedPages?.pageCids || {},
+                subplebbit: lodash.pick(this, ["address", "plebbit", "encryption"]),
+                pagesIpfs: newPosts.pages,
+                parentCid: undefined
+            });
+        } else throw Error(`Fail to parse subplebbit.posts`);
     }
 
     private async _initSignerProps() {
         if (!this.signer?.ipfsKey?.byteLength || this.signer?.ipfsKey?.byteLength <= 0)
-            this.signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKeyPem(this.signer.privateKey));
+            this.signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(this.signer.privateKey));
         if (!this.signer.ipnsKeyName) this.signer.ipnsKeyName = this.signer.address;
-        if (!this.signer.publicKey) this.signer.publicKey = await getPublicKeyPemFromPrivateKeyPem(this.signer.privateKey);
-        if (!this.signer.address) this.signer.address = await getPlebbitAddressFromPrivateKeyPem(this.signer.privateKey);
+        if (!this.signer.publicKey) this.signer.publicKey = await getPublicKeyFromPrivateKey(this.signer.privateKey);
+        if (!this.signer.address) this.signer.address = await getPlebbitAddressFromPrivateKey(this.signer.privateKey);
 
         this.encryption = {
             type: "aes-cbc",
@@ -184,7 +215,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 }
             });
             await this.dbHandler.initDbConfigIfNeeded();
-            this.sortHandler = new SortHandler({ address: this.address, plebbit: this.plebbit, dbHandler: this.dbHandler });
+            this.sortHandler = new SortHandler(lodash.pick(this, ["address", "plebbit", "dbHandler", "encryption"]));
         }
     }
 
@@ -200,14 +231,15 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         this.validateCaptchaAnswerCallback = newCallback;
     }
 
-    toJSONInternal() {
+    toJSONInternal(): InternalSubplebbitType {
         return {
             ...this.toJSON(),
-            signer: this.signer ? lodash.pick(this.signer, ["privateKey", "type", "address"]) : undefined
+            signer: this.signer ? lodash.pick(this.signer, ["privateKey", "type", "address"]) : undefined,
+            _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
         };
     }
 
-    toJSON(): SubplebbitType {
+    toJSON(): SubplebbitIpfsType {
         return {
             title: this.title,
             description: this.description,
@@ -230,10 +262,16 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         };
     }
 
-    private async _importSignerIntoIpfsIfNeeded(ipnsKeyName: string, ipfsKey: Uint8Array) {
-        if (!ipnsKeyName) throw Error(`signer.ipnsKeyName need to be defined before importing singer into IPFS`);
-        const keyExistsInNode = (await this.plebbit.ipfsClient.key.list()).some((key) => key.name === ipnsKeyName);
-        if (!keyExistsInNode) await nativeFunctions.importSignerIntoIpfsNode(ipnsKeyName, ipfsKey, this.plebbit);
+    private async _importSignerIntoIpfsIfNeeded(signer: Required<Pick<SignerType, "ipnsKeyName" | "privateKey">>) {
+        assert(signer.ipnsKeyName);
+        if (!this._ipfsNodeIpnsKeyNames) this._ipfsNodeIpnsKeyNames = (await this.plebbit.ipfsClient.key.list()).map((key) => key.name);
+
+        const keyExistsInNode = this._ipfsNodeIpnsKeyNames.some((key) => key === signer.ipnsKeyName);
+        if (!keyExistsInNode) {
+            const ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(signer.privateKey));
+            await nativeFunctions.importSignerIntoIpfsNode(signer.ipnsKeyName, ipfsKey, this.plebbit);
+            this._ipfsNodeIpnsKeyNames.push(signer.ipnsKeyName);
+        }
     }
 
     // TODO rename and make this private
@@ -248,16 +286,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         if (await this.dbHandler.keyvHas(internalStateKey)) {
             log(`Merging internal subplebbit state from DB and createSubplebbitOptions`);
-            await this._mergeInstanceStateWithDbState(removeKeysWithUndefinedValues(this.toJSONInternal()));
+            await this._mergeInstanceStateWithDbState({});
         }
 
         if (!this.signer) throw Error(`subplebbit.signer needs to be defined before proceeding`);
         await this._initSignerProps();
 
-        if (
-            !(await this.dbHandler.keyvHas(internalStateKey)) ||
-            encode(this.toJSONInternal()) !== encode(await this._getDbInternalState())
-        ) {
+        if (!(await this.dbHandler.keyvHas(internalStateKey))) {
             log(`Updating the internal state of subplebbit in DB with createSubplebbitOptions`);
             await this._updateDbInternalState(this.toJSONInternal());
         }
@@ -268,7 +303,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     private async assertDomainResolvesCorrectly(domain: string) {
         if (this.plebbit.resolver.isDomain(domain)) {
             const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(domain);
-            const derivedAddress = await getPlebbitAddressFromPublicKeyPem(this.encryption.publicKey);
+            const derivedAddress = await getPlebbitAddressFromPublicKey(this.encryption.publicKey);
             if (resolvedAddress !== derivedAddress)
                 throwWithErrorCode(
                     "ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS",
@@ -288,7 +323,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
             log(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
             await this._updateDbInternalState(lodash.pick(newSubplebbitOptions, "address"));
-            await this.dbHandler.keyvDelete(CACHE_KEYS[CACHE_KEYS.POSTS_SUBPLEBBIT]); // To trigger a new subplebbit.posts
             await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                 address: newSubplebbitOptions.address,
                 plebbit: {
@@ -303,6 +337,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         log(`Subplebbit (${this.address}) props (${Object.keys(newSubplebbitOptions)}) has been edited`);
 
+        this._subplebbitUpdateTrigger = true;
+
         return this;
     }
 
@@ -313,7 +349,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             // Local sub
             const subState: SubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
 
-            if (encode(this.toJSONInternal()) !== encode(subState)) {
+            if (deterministicStringify(this.toJSONInternal()) !== deterministicStringify(subState)) {
                 log(`Remote Subplebbit received a new update. Will emit an update event`);
                 this.initSubplebbit(subState);
                 this.emit("update", this);
@@ -330,7 +366,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 }
 
             const ipnsAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
-            let subplebbitIpns: SubplebbitType;
+            let subplebbitIpns: SubplebbitIpfsType;
 
             try {
                 subplebbitIpns = await loadIpnsAsJson(ipnsAddress, this.plebbit);
@@ -343,7 +379,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             if (!updateValidity.valid) {
                 log.error(`Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
                 this.emit("error", `Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
-            } else if (encode(this.toJSON()) !== encode(subplebbitIpns)) {
+            } else if (this.updatedAt !== subplebbitIpns.updatedAt) {
                 this.initSubplebbit(subplebbitIpns);
                 log(`Remote Subplebbit received a new update. Will emit an update event`);
                 this.emit("update", this);
@@ -368,85 +404,84 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
     async stop() {
         this._updateInterval = clearInterval(this._updateInterval);
         if (this._sync) {
-            this._sync = false;
-
-            this._syncInterval = clearInterval(this._syncInterval);
-
             await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic, this.handleChallengeExchange);
+            await this.dbHandler.rollbackAllTransactions();
             await this.dbHandler.unlockSubStart();
+            this._sync = false;
+            this._syncInterval = clearInterval(this._syncInterval);
         }
     }
 
-    private async updateSubplebbitIpns() {
+    private async _validateLocalSignature(newSignature: SignatureType, record: Omit<SubplebbitIpfsType, "signature">) {
+        const ipnsRecord: SubplebbitIpfsType = JSON.parse(JSON.stringify({ ...record, signature: newSignature })); // stringify it so it would be of the same content as IPNS or pubsub
+        const signatureValidation = await verifySubplebbit(ipnsRecord, this.plebbit);
+        assert.equal(
+            signatureValidation.valid,
+            true,
+            `Failed to validate subplebbit (${this.address}) local signature due to reason (${signatureValidation.reason})`
+        );
+    }
+    private async updateSubplebbitIpnsIfNeeded() {
         const log = Logger("plebbit-js:subplebbit:sync");
-
-        const trx: any = await this.dbHandler.createTransaction("subplebbit");
-        const latestPost = await this.dbHandler.queryLatestPost(trx);
-        await this.dbHandler.commitTransaction("subplebbit");
-        this.lastPostCid = latestPost?.cid;
-
-        const [metrics, subplebbitPosts] = await Promise.all([
-            this.dbHandler.querySubplebbitMetrics(undefined),
-            this.sortHandler.generateSubplebbitPosts(undefined)
-        ]);
-
-        this.posts = new Pages({
-            pages: subplebbitPosts ? lodash.pick(subplebbitPosts.pages, "hot") : {},
-            pageCids: subplebbitPosts ? subplebbitPosts.pageCids : {},
-            subplebbit: subplebbitPosts?.subplebbit
-        });
-
-        const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
-        let currentIpns: SubplebbitType | undefined;
-        try {
-            currentIpns = await loadIpnsAsJson(resolvedAddress, this.plebbit);
-        } catch (e) {
-            log(`${e}\n subplebbit IPNS (${resolvedAddress}) is not defined, will publish a new record`);
-        }
-
-        this.metricsCid = (await this.plebbit.ipfsClient.add(encode(metrics))).path;
 
         const lastPublishTooOld = this.updatedAt < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
 
-        await this._mergeInstanceStateWithDbState(lodash.pick(this.toJSON(), ["posts", "lastPostCid", "metricsCid"]));
+        if (!this._subplebbitUpdateTrigger && !lastPublishTooOld) return; // No reason to update
 
-        if (!currentIpns || encode(currentIpns) !== encode(this.toJSON()) || lastPublishTooOld) {
-            this.updatedAt = timestamp();
-            const newSignature = await signSubplebbit(this.toJSON(), this.signer);
-            const signatureValidation = await verifySubplebbit({ ...this.toJSON(), signature: newSignature }, this.plebbit);
-            if (!signatureValidation.valid)
-                throw Error(`Newly generated subplebbit JSON has an invalid signature due to reason (${signatureValidation.reason})`);
-            this.signature = newSignature;
+        const trx: any = await this.dbHandler.createTransaction("subplebbit");
+        const latestPost = await this.dbHandler.queryLatestPostCid(trx);
+        await this.dbHandler.commitTransaction("subplebbit");
 
-            await this._updateDbInternalState(lodash.pick(this, ["posts", "lastPostCid", "metricsCid", "updatedAt", "signature"]));
+        const [metrics, subplebbitPosts] = await Promise.all([
+            this.dbHandler.querySubplebbitMetrics(undefined),
+            this.sortHandler.generateSubplebbitPosts()
+        ]);
 
-            const file = await this.plebbit.ipfsClient.add(encode(this.toJSON()));
-            await this.plebbit.ipfsClient.name.publish(file.path, {
-                lifetime: "72h", // TODO decide on optimal time later
-                key: this.signer.ipnsKeyName,
-                allowOffline: true
-            });
-            this.emit("update", this);
-            log.trace(`Published a new IPNS record for sub(${this.address})`);
-        }
+        const metricsCid = (await this.plebbit.ipfsClient.add(deterministicStringify(metrics))).path;
+
+        await this._mergeInstanceStateWithDbState({});
+
+        const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
+        const newIpns: Omit<SubplebbitIpfsType, "signature"> = {
+            ...lodash.omit(this.toJSON(), "signature"),
+            lastPostCid: latestPost?.cid,
+            metricsCid,
+            updatedAt,
+            posts: subplebbitPosts ? { pageCids: subplebbitPosts.pageCids, pages: lodash.pick(subplebbitPosts.pages, "hot") } : undefined
+        };
+        const signature = await signSubplebbit(newIpns, this.signer);
+        await this._validateLocalSignature(signature, newIpns);
+        await this.initSubplebbit({ ...newIpns, signature });
+        this._subplebbitUpdateTrigger = false;
+
+        await this._updateDbInternalState(
+            lodash.pick(this.toJSONInternal(), ["posts", "lastPostCid", "metricsCid", "updatedAt", "signature", "_subplebbitUpdateTrigger"])
+        );
+
+        const file = await this.plebbit.ipfsClient.add(deterministicStringify({ ...newIpns, signature }));
+        await this.plebbit.ipfsClient.name.publish(file.path, {
+            lifetime: "72h", // TODO decide on optimal time later
+            key: this.signer.ipnsKeyName,
+            allowOffline: true
+        });
+        this.emit("update", this);
+        log(`Published a new IPNS record for sub(${this.address})`);
     }
 
-    private async _insertAuthorIfNotInDb(author: AuthorDbType, trx) {
-        if (!(await this.dbHandler.queryAuthor(author.address, trx))) await this.dbHandler.insertAuthor(author, trx);
-    }
-
-    private async handleCommentEdit(commentEdit: CommentEdit, challengeRequestId: string) {
+    private async handleCommentEdit(commentEditRaw: CommentEditPubsubMessage, challengeRequestId: string) {
         const log = Logger("plebbit-js:subplebbit:handleCommentEdit");
 
-        const validRes = await verifyCommentEdit(commentEdit, this.plebbit, false);
+        const validRes = await verifyCommentEdit(commentEditRaw, this.plebbit, false);
 
         if (!validRes.valid) {
             log(`(${challengeRequestId}): `, validRes.reason);
             return validRes.reason;
         }
 
+        const commentEdit = await this.plebbit.createCommentEdit(commentEditRaw);
+
         const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
-        const editorAddress = await getPlebbitAddressFromPublicKeyPem(commentEdit.signature.publicKey);
+        const editorAddress = await getPlebbitAddressFromPublicKey(commentEdit.signature.publicKey);
         const modRole = this.roles && this.roles[commentEdit.author.address];
         if (commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey) {
             // CommentEdit is signed by original author
@@ -459,11 +494,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             }
 
             const trx = await this.dbHandler.createTransaction(challengeRequestId);
-
-            await this._insertAuthorIfNotInDb(commentEdit.author.toJSONForDb(), trx);
             await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId), trx);
-            // If comment.flair is last modified by a mod, then reject
-            await this.dbHandler.editComment(commentEdit.toJSONForDb(challengeRequestId), trx);
             await this.dbHandler.commitTransaction(challengeRequestId);
             log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEdit.toJSON());
         } else if (modRole) {
@@ -488,29 +519,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             }
 
             const trx = await this.dbHandler.createTransaction(challengeRequestId);
-
-            await this._insertAuthorIfNotInDb(commentEdit.author.toJSONForDb(), trx);
-
             await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId), trx);
-            await this.dbHandler.editComment(commentEdit.toJSONForDb(challengeRequestId), trx);
-
-            if (commentEdit.commentAuthor) {
-                // A mod is is trying to ban an author or add a flair to author
-                const newAuthorProps: AuthorDbType = {
-                    address: commentToBeEdited.author.address,
-                    banExpiresAt: commentEdit.commentAuthor.banExpiresAt,
-                    flair: commentEdit.commentAuthor.flair
-                };
-                await this.dbHandler.updateAuthorInAuthorsTable(newAuthorProps, trx);
-                await this.dbHandler.updateAuthorInCommentsTable(newAuthorProps, trx);
-                log(
-                    `(${challengeRequestId}): `,
-                    `Following props has been added to author (${newAuthorProps.address}): `,
-                    newAuthorProps,
-                    "By mod: ",
-                    modRole
-                );
-            }
             await this.dbHandler.commitTransaction(challengeRequestId);
         } else {
             // CommentEdit is signed by someone who's not the original author or a mod. Reject it
@@ -521,27 +530,28 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
-    private async handleVote(newVote: Vote, challengeRequestId: string) {
+    private async handleVote(newVoteProps: VoteType, challengeRequestId: string) {
         const log = Logger("plebbit-js:subplebbit:handleVote");
 
-        const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVote.commentCid, newVote.author.address);
+        const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVoteProps.commentCid, newVoteProps.author.address);
 
-        const validRes = await verifyVote(newVote, this.plebbit, false);
+        const validRes = await verifyVote(newVoteProps, this.plebbit, false);
         if (!validRes.valid) {
             log(`(${challengeRequestId}): `, validRes.reason);
             return validRes.reason;
         }
 
-        if (lastVote && newVote.signature.publicKey !== lastVote.signature.publicKey) {
-            const msg = `Author (${newVote.author.address}) attempted to change vote on (${newVote.commentCid}) without having correct credentials`;
+        if (lastVote && newVoteProps.signature.publicKey !== lastVote.signature.publicKey) {
+            const msg = `Author (${newVoteProps.author.address}) attempted to change vote on (${newVoteProps.commentCid}) without having correct credentials`;
             log(`(${challengeRequestId}): `, msg);
             return msg;
         } else {
+            const newVote = await this.plebbit.createVote(newVoteProps);
             const trx = await this.dbHandler.createTransaction(challengeRequestId);
-            await this._insertAuthorIfNotInDb(newVote.author.toJSONForDb(), trx);
-            await this.dbHandler.upsertVote(newVote.toJSONForDb(challengeRequestId), trx);
+            await this.dbHandler.deleteVote(newVote.author.address, newVote.commentCid, trx);
+            await this.dbHandler.insertVote(newVote.toJSONForDb(challengeRequestId), trx);
             await this.dbHandler.commitTransaction(challengeRequestId);
-            log.trace(`(${challengeRequestId}): `, `Upserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
+            log.trace(`(${challengeRequestId}): `, `inserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
         }
     }
 
@@ -555,18 +565,19 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         delete this._challengeToPublication[challengeRequestId];
         delete this._challengeToPublicKey[challengeRequestId];
 
-        if (publication.signer) {
+        if (publication["signer"]) {
             log(`(${challengeRequestId}): `, messages.ERR_FORBIDDEN_SIGNER_FIELD);
             return messages.ERR_FORBIDDEN_SIGNER_FIELD;
         }
 
         log.trace(`(${challengeRequestId}): `, `Will attempt to store publication if valid, `, publication);
 
+        // TODO get rid of postOrCommentOrVote here
         const postOrCommentOrVote: Vote | CommentEdit | Post | Comment = publication.hasOwnProperty("vote")
-            ? await this.plebbit.createVote(<VoteType>publication)
+            ? await this.plebbit.createVote(<VotePubsubMessage>publication)
             : publication["commentCid"]
             ? await this.plebbit.createCommentEdit(<CommentEditType>publication)
-            : await this.plebbit.createComment(<CommentType>publication);
+            : await this.plebbit.createComment(<CommentPubsubMessage>publication);
 
         if (postOrCommentOrVote.subplebbitAddress !== this.address) {
             log(`(${challengeRequestId}): `, messages.ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS);
@@ -574,8 +585,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
         if (postOrCommentOrVote?.author?.address) {
             // Check if author is banned
-            const author = await this.dbHandler.queryAuthor(postOrCommentOrVote.author.address);
-            if (typeof author?.banExpiresAt === "number" && author.banExpiresAt > timestamp()) {
+            const authorModEdits = await this.dbHandler.queryAuthorModEdits(postOrCommentOrVote.author.address);
+            if (typeof authorModEdits.banExpiresAt === "number" && authorModEdits.banExpiresAt > timestamp()) {
                 log(`(${challengeRequestId}): `, messages.ERR_AUTHOR_IS_BANNED);
                 return messages.ERR_AUTHOR_IS_BANNED;
             }
@@ -585,13 +596,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             return msg;
         }
 
-        const forbiddenAuthorFields: (keyof AuthorType)[] = ["subplebbit", "flair", "banExpiresAt", "previousCommentCid"];
+        const forbiddenAuthorFields: (keyof AuthorTypeWithCommentUpdate)[] = ["subplebbit"];
 
-        if (
-            Object.keys(removeKeysWithUndefinedValues(publication.author)).some((key: keyof AuthorType) =>
-                forbiddenAuthorFields.includes(key)
-            )
-        ) {
+        if (Object.keys(publication.author).some((key: keyof AuthorTypeWithCommentUpdate) => forbiddenAuthorFields.includes(key))) {
             log(`(${challengeRequestId}): `, messages.ERR_FORBIDDEN_AUTHOR_FIELD);
             return messages.ERR_FORBIDDEN_AUTHOR_FIELD;
         }
@@ -615,29 +622,35 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 return messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST;
             }
 
-            if (parent.removed && !(postOrCommentOrVote instanceof CommentEdit)) {
+            const parentFlags = await this.dbHandler.queryCommentFlags(parentCid);
+
+            if (parentFlags.removed && !(postOrCommentOrVote instanceof CommentEdit)) {
                 log(`(${challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED);
                 return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED;
             }
 
-            if (parent.authorEdit?.deleted && !(postOrCommentOrVote instanceof CommentEdit)) {
+            const isParentDeleted = await this.dbHandler.queryAuthorEditDeleted(parentCid);
+
+            if (isParentDeleted && !(postOrCommentOrVote instanceof CommentEdit)) {
                 log(`(${challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
                 return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED;
             }
 
-            const post = await this.dbHandler.queryComment(parent.postCid);
+            const postFlags = await this.dbHandler.queryCommentFlags(parent.postCid);
 
-            if (post.removed && !(postOrCommentOrVote instanceof CommentEdit)) {
+            if (postFlags.removed && !(postOrCommentOrVote instanceof CommentEdit)) {
                 log(`(${challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED);
                 return messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED;
             }
 
-            if (post.authorEdit?.deleted && !(postOrCommentOrVote instanceof CommentEdit)) {
+            const isPostDeleted = await this.dbHandler.queryAuthorEditDeleted(parent.postCid);
+
+            if (isPostDeleted && !(postOrCommentOrVote instanceof CommentEdit)) {
                 log(`(${challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
                 return messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED;
             }
 
-            if (post.locked && !(postOrCommentOrVote instanceof CommentEdit)) {
+            if (postFlags.locked && !(postOrCommentOrVote instanceof CommentEdit)) {
                 log(`(${challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
                 return messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED;
             }
@@ -649,10 +662,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
 
         if (postOrCommentOrVote instanceof Vote) {
-            const res = await this.handleVote(postOrCommentOrVote, challengeRequestId);
+            const res = await this.handleVote(<VoteType>publication, challengeRequestId);
             if (res) return res;
         } else if (postOrCommentOrVote instanceof CommentEdit) {
-            const res = await this.handleCommentEdit(postOrCommentOrVote, challengeRequestId);
+            const res = await this.handleCommentEdit(<CommentEditPubsubMessage>publication, challengeRequestId);
             if (res) return res;
         } else if (postOrCommentOrVote instanceof Comment) {
             const forbiddenCommentFields: (keyof CommentType | "deleted")[] = [
@@ -663,30 +676,25 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 "ipnsName",
                 "depth",
                 "postCid",
-                "original",
                 "upvoteCount",
                 "downvoteCount",
                 "replyCount",
                 "updatedAt",
                 "replies",
-                "authorEdit",
+                "edit",
                 "deleted",
                 "pinned",
                 "locked",
                 "removed",
-                "moderatorReason"
+                "reason"
             ];
 
-            if (
-                Object.keys(removeKeysWithUndefinedValues(publication)).some((key: keyof CommentType) =>
-                    forbiddenCommentFields.includes(key)
-                )
-            ) {
+            if (Object.keys(publication).some((key: keyof CommentType) => forbiddenCommentFields.includes(key))) {
                 log(`(${challengeRequestId}): `, messages.ERR_FORBIDDEN_COMMENT_FIELD);
                 return messages.ERR_FORBIDDEN_COMMENT_FIELD;
             }
 
-            const validRes = await verifyComment(postOrCommentOrVote, this.plebbit, false);
+            const validRes = await verifyComment(publication, this.plebbit, false);
 
             if (!validRes.valid) {
                 log(`(${challengeRequestId}): `, validRes.reason);
@@ -694,64 +702,48 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             }
 
             // Comment and Post need to add file to ipfs
-            const ipnsKeyName = sha256(encode(postOrCommentOrVote.toJSONSkeleton()));
+            const ipnsKeyName = sha256(deterministicStringify(publication));
 
             if (await this.dbHandler.querySigner(ipnsKeyName)) {
                 log(`(${challengeRequestId}): `, messages.ERR_DUPLICATE_COMMENT);
                 return messages.ERR_DUPLICATE_COMMENT;
             }
 
-            const ipfsSigner = new Signer({
-                ...(await this.plebbit.createSigner()),
-                ipnsKeyName
-            });
-            ipfsSigner.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKeyPem(ipfsSigner.privateKey));
-            await this.dbHandler.insertSigner(lodash.pick(ipfsSigner, ["ipnsKeyName", "privateKey", "type"]), undefined);
+            const ipfsSigner = await this.plebbit.createSigner();
+            ipfsSigner.ipnsKeyName = ipnsKeyName;
+            await this.dbHandler.insertSigner(ipfsSigner.toJSONSignersTableRow(), undefined);
+            ipfsSigner.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(ipfsSigner.privateKey));
             postOrCommentOrVote.setCommentIpnsKey(
                 await nativeFunctions.importSignerIntoIpfsNode(ipfsSigner.ipnsKeyName, ipfsSigner.ipfsKey, this.plebbit)
             );
 
             if (postOrCommentOrVote instanceof Post) {
                 const trx = await this.dbHandler.createTransaction(challengeRequestId);
-                postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPost(trx))?.cid);
-                await this._insertAuthorIfNotInDb(postOrCommentOrVote.author.toJSONForDb(), trx);
-
+                postOrCommentOrVote.setPreviousCid((await this.dbHandler.queryLatestPostCid(trx))?.cid);
                 postOrCommentOrVote.setDepth(0);
-                const file = await this.plebbit.ipfsClient.add(encode(postOrCommentOrVote.toJSONIpfs()));
+                const file = await this.plebbit.ipfsClient.add(deterministicStringify(postOrCommentOrVote.toJSONIpfs()));
                 postOrCommentOrVote.setPostCid(file.path);
                 postOrCommentOrVote.setCid(file.path);
-                postOrCommentOrVote.original = lodash.pick(postOrCommentOrVote.toJSON(), ["author", "content", "flair"]);
 
-                await this.dbHandler.insertComment(postOrCommentOrVote.toJSONForDb(challengeRequestId), trx);
+                await this.dbHandler.insertComment(postOrCommentOrVote.toJSONCommentsTableRowInsert(challengeRequestId), trx);
                 await this.dbHandler.commitTransaction(challengeRequestId);
 
-                postOrCommentOrVote.ipnsKeyName = postOrCommentOrVote.original = undefined; // so that ipnsKeyName and original would not be included in ChallengeVerification
                 log(`(${challengeRequestId}): `, `New post with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
             } else if (postOrCommentOrVote instanceof Comment) {
                 // Comment
                 const trx = await this.dbHandler.createTransaction(challengeRequestId);
                 const [commentsUnderParent, parent] = await Promise.all([
-                    this.dbHandler.queryCommentsUnderComment(
-                        postOrCommentOrVote.parentCid,
-                        { excludeDeletedComments: true, excludeRemovedComments: true },
-                        trx
-                    ),
+                    this.dbHandler.queryCommentsUnderComment(postOrCommentOrVote.parentCid, trx),
                     this.dbHandler.queryComment(postOrCommentOrVote.parentCid, trx)
                 ]);
-
-                await this._insertAuthorIfNotInDb(postOrCommentOrVote.author.toJSONForDb(), trx);
-
                 postOrCommentOrVote.setPreviousCid(commentsUnderParent[0]?.cid);
                 postOrCommentOrVote.setDepth(parent.depth + 1);
                 postOrCommentOrVote.setPostCid(parent.postCid);
-                const file = await this.plebbit.ipfsClient.add(encode(postOrCommentOrVote.toJSONIpfs()));
+                const file = await this.plebbit.ipfsClient.add(deterministicStringify(postOrCommentOrVote.toJSONIpfs()));
                 postOrCommentOrVote.setCid(file.path);
-                postOrCommentOrVote.original = lodash.pick(postOrCommentOrVote.toJSON(), ["author", "content", "flair"]);
-
-                await this.dbHandler.insertComment(postOrCommentOrVote.toJSONForDb(challengeRequestId), trx);
+                await this.dbHandler.insertComment(postOrCommentOrVote.toJSONCommentsTableRowInsert(challengeRequestId), trx);
                 await this.dbHandler.commitTransaction(challengeRequestId);
 
-                postOrCommentOrVote.ipnsKeyName = postOrCommentOrVote.original = undefined; // so that ipnsKeyName would not be included in ChallengeVerification
                 log(`(${challengeRequestId}): `, `New comment with cid ${postOrCommentOrVote.cid} has been inserted into DB`);
             }
         }
@@ -764,24 +756,26 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
 
         const decryptedRequest: DecryptedChallengeRequestMessageType = {
             ...request,
-            publication: JSON.parse(
-                await decrypt(request.encryptedPublication.encrypted, request.encryptedPublication.encryptedKey, this.signer.privateKey)
-            )
+            publication: JSON.parse(await decrypt(request.encryptedPublication, this.signer.privateKey, request.signature.publicKey))
         };
         this._challengeToPublication[request.challengeRequestId] = decryptedRequest.publication;
         this._challengeToPublicKey[request.challengeRequestId] = decryptedRequest.signature.publicKey;
+        await this.dbHandler.insertChallengeRequest(request.toJSONForDb(), undefined);
         this.emit("challengerequest", decryptedRequest);
         const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(decryptedRequest);
         log(`Received a request to a challenge (${request.challengeRequestId})`);
         if (providedChallenges.length === 0) {
             // Subplebbit owner has chosen to skip challenging this user or post
             log.trace(`(${request.challengeRequestId}): No challenge is required`);
-            await this.dbHandler.upsertChallenge(request.toJSONForDb(), undefined);
 
             const publicationOrReason = await this.storePublicationIfValid(decryptedRequest.publication, request.challengeRequestId);
             const encryptedPublication =
                 typeof publicationOrReason !== "string"
-                    ? await encrypt(encode(publicationOrReason.toJSON()), request.signature.publicKey)
+                    ? await encrypt(
+                          deterministicStringify(publicationOrReason.toJSONAfterChallengeVerification()),
+                          this.signer.privateKey,
+                          request.signature.publicKey
+                      )
                     : undefined;
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
@@ -793,7 +787,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 encryptedPublication: encryptedPublication,
                 challengeErrors: undefined,
                 userAgent: env.USER_AGENT,
-                protocolVersion: env.PROTOCOL_VERSION
+                protocolVersion: env.PROTOCOL_VERSION,
+                timestamp: timestamp()
             };
             const challengeVerification = new ChallengeVerificationMessage({
                 ...toSignMsg,
@@ -801,10 +796,13 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
 
             await Promise.all([
-                this.dbHandler.upsertChallenge(challengeVerification.toJSONForDb(), undefined),
-                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(encode(challengeVerification)))
+                this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
+                this.plebbit.pubsubIpfsClient.pubsub.publish(
+                    this.pubsubTopic,
+                    uint8ArrayFromString(deterministicStringify(challengeVerification))
+                )
             ]);
-            log(
+            log.trace(
                 `(${request.challengeRequestId}): `,
                 `Published ${challengeVerification.type} over pubsub: `,
                 lodash.omit(toSignMsg, ["encryptedPublication"])
@@ -816,7 +814,12 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 protocolVersion: env.PROTOCOL_VERSION,
                 userAgent: env.USER_AGENT,
                 challengeRequestId: request.challengeRequestId,
-                encryptedChallenges: await encrypt(encode(providedChallenges), request.signature.publicKey)
+                encryptedChallenges: await encrypt(
+                    deterministicStringify(providedChallenges),
+                    this.signer.privateKey,
+                    request.signature.publicKey
+                ),
+                timestamp: timestamp()
             };
 
             const challengeMessage = new ChallengeMessage({
@@ -824,11 +827,15 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 signature: await signChallengeMessage(toSignChallenge, this.signer)
             });
 
+            const challengeTypes = providedChallenges.map((challenge) => challenge.type);
             await Promise.all([
-                this.dbHandler.upsertChallenge({ ...challengeMessage.toJSONForDb(), challenges: providedChallenges }, undefined),
-                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(encode(challengeMessage)))
+                this.dbHandler.insertChallenge(challengeMessage.toJSONForDb(challengeTypes), undefined),
+                this.plebbit.pubsubIpfsClient.pubsub.publish(
+                    this.pubsubTopic,
+                    uint8ArrayFromString(deterministicStringify(challengeMessage))
+                )
             ]);
-            log(
+            log.trace(
                 `(${request.challengeRequestId}): `,
                 `Published ${challengeMessage.type} over pubsub: `,
                 lodash.omit(toSignChallenge, ["encryptedChallenges"])
@@ -841,15 +848,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         const log = Logger("plebbit-js:subplebbit:handleChallengeAnswer");
 
         const decryptedAnswers: string[] = JSON.parse(
-            await decrypt(
-                challengeAnswer.encryptedChallengeAnswers.encrypted,
-                challengeAnswer.encryptedChallengeAnswers.encryptedKey,
-                this.signer?.privateKey
-            )
+            await decrypt(challengeAnswer.encryptedChallengeAnswers, this.signer?.privateKey, challengeAnswer.signature.publicKey)
         );
 
         const decryptedChallengeAnswer: DecryptedChallengeAnswerMessageType = { ...challengeAnswer, challengeAnswers: decryptedAnswers };
-
+        await this.dbHandler.insertChallengeAnswer(challengeAnswer.toJSONForDb(decryptedChallengeAnswer.challengeAnswers), undefined);
         this.emit("challengeanswer", decryptedChallengeAnswer);
 
         const [challengeSuccess, challengeErrors] = await this.validateCaptchaAnswerCallback(decryptedChallengeAnswer);
@@ -857,17 +860,14 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             log.trace(`(${challengeAnswer.challengeRequestId}): `, `User has been answered correctly`);
             const storedPublication = this._challengeToPublication[challengeAnswer.challengeRequestId];
 
-            await this.dbHandler.upsertChallenge(
-                {
-                    ...challengeAnswer.toJSONForDb(),
-                    challengeAnswers: decryptedChallengeAnswer.challengeAnswers
-                },
-                undefined
-            );
             const publicationOrReason = await this.storePublicationIfValid(storedPublication, challengeAnswer.challengeRequestId); // could contain "publication" or "reason"
             const encryptedPublication =
                 typeof publicationOrReason !== "string"
-                    ? await encrypt(encode(publicationOrReason.toJSON()), challengeAnswer.signature.publicKey)
+                    ? await encrypt(
+                          deterministicStringify(publicationOrReason.toJSONAfterChallengeVerification()),
+                          this.signer.privateKey,
+                          challengeAnswer.signature.publicKey
+                      )
                     : undefined;
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
@@ -879,7 +879,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 encryptedPublication: encryptedPublication,
                 challengeErrors: challengeErrors,
                 userAgent: env.USER_AGENT,
-                protocolVersion: env.PROTOCOL_VERSION
+                protocolVersion: env.PROTOCOL_VERSION,
+                timestamp: timestamp()
             };
             const challengeVerification = new ChallengeVerificationMessage({
                 ...toSignMsg,
@@ -887,8 +888,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
 
             await Promise.all([
-                this.dbHandler.upsertChallenge(challengeVerification.toJSONForDb(), undefined),
-                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(encode(challengeVerification)))
+                this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
+                this.plebbit.pubsubIpfsClient.pubsub.publish(
+                    this.pubsubTopic,
+                    uint8ArrayFromString(deterministicStringify(challengeVerification))
+                )
             ]);
             log(
                 `(${challengeAnswer.challengeRequestId}): `,
@@ -908,7 +912,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 challengeSuccess: challengeSuccess,
                 challengeErrors: challengeErrors,
                 userAgent: env.USER_AGENT,
-                protocolVersion: env.PROTOCOL_VERSION
+                protocolVersion: env.PROTOCOL_VERSION,
+                timestamp: timestamp()
             };
 
             const challengeVerification = new ChallengeVerificationMessage({
@@ -917,8 +922,11 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             });
 
             await Promise.all([
-                this.dbHandler.upsertChallenge(challengeVerification.toJSONForDb(), undefined),
-                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(encode(challengeVerification)))
+                this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
+                this.plebbit.pubsubIpfsClient.pubsub.publish(
+                    this.pubsubTopic,
+                    uint8ArrayFromString(deterministicStringify(challengeVerification))
+                )
             ]);
             log(`(${challengeAnswer.challengeRequestId}): `, `Published ${challengeVerification.type} over pubsub:`, toSignVerification);
             this.emit("challengeverification", challengeVerification);
@@ -936,7 +944,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 challengeSuccess: false,
                 reason: validation.reason,
                 userAgent: env.USER_AGENT,
-                protocolVersion: env.PROTOCOL_VERSION
+                protocolVersion: env.PROTOCOL_VERSION,
+                timestamp: timestamp()
             };
 
             const challengeVerification = new ChallengeVerificationMessage({
@@ -944,7 +953,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
                 signature: await signChallengeVerification(toSignVerification, this.signer)
             });
 
-            await this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, uint8ArrayFromString(encode(challengeVerification)));
+            await this.plebbit.pubsubIpfsClient.pubsub.publish(
+                this.pubsubTopic,
+                uint8ArrayFromString(deterministicStringify(challengeVerification))
+            );
 
             const err = errcode(Error(messages.ERR_SIGNATURE_IS_INVALID), messages[messages.ERR_SIGNATURE_IS_INVALID], {
                 details: `subplebbit.handleChallengeExchange: Failed to verify ${msgParsed.type}, Failed verification reason: ${validation.reason}`
@@ -960,10 +972,6 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         let msgParsed: ChallengeRequestMessageType | ChallengeAnswerMessageType | undefined;
         try {
             msgParsed = <ChallengeRequestMessageType | ChallengeAnswerMessageType>JSON.parse(uint8ArrayToString(pubsubMsg.data));
-
-            // log(`Received msg via pubsub`, msgParsed);
-            // log(`this._challengeToPublication`, Object.keys(this._challengeToPublication));
-            // log(`this._challengeToPublicKey`, Object.keys(this._challengeToPublicKey));
 
             if (msgParsed.type === "CHALLENGEREQUEST") {
                 await this._verifyPubsubMsgSignature(msgParsed);
@@ -987,15 +995,7 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         // captcha, reason for skipping captcha (if it's skipped by nullifying captcha)
         const { image, text } = await nativeFunctions.createImageCaptcha(300, 100);
         this._challengeToSolution[request.challengeRequestId] = [text];
-        return [
-            [
-                {
-                    challenge: image,
-                    type: "image"
-                }
-            ],
-            undefined
-        ];
+        return [[{ challenge: image, type: "image/png" }], undefined];
     }
 
     private async defaultValidateCaptcha(answerMessage: DecryptedChallengeAnswerMessageType): Promise<[boolean, string[] | undefined]> {
@@ -1011,60 +1011,56 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         return [answerIsCorrect, challengeErrors];
     }
 
-    private async _publishCommentIpns(dbComment: Comment, options: CommentUpdate) {
-        dbComment._initCommentUpdate(options);
+    private async _publishCommentIpns(dbComment: Pick<CommentType, "ipnsKeyName" | "cid">, options: CommentUpdate) {
         const signerRaw = await this.dbHandler.querySigner(dbComment.ipnsKeyName);
+
         if (!signerRaw) throw Error(`Comment ${dbComment.cid} IPNS signer is not stored in DB`);
-        await this._importSignerIntoIpfsIfNeeded(
-            signerRaw.ipnsKeyName,
-            new Uint8Array(await getIpfsKeyFromPrivateKeyPem(signerRaw.privateKey))
-        );
-        const file = await this.plebbit.ipfsClient.add(encode({ ...dbComment.toJSONCommentUpdate(), signature: options.signature }));
+        await this._importSignerIntoIpfsIfNeeded(signerRaw);
+        const file = await this.plebbit.ipfsClient.add(deterministicStringify(options));
         await this.plebbit.ipfsClient.name.publish(file.path, {
             lifetime: "72h",
-            key: dbComment.ipnsKeyName,
+            key: signerRaw.ipnsKeyName,
             allowOffline: true
         });
     }
 
-    private async syncComment(dbComment: Comment) {
+    private async _validateCommentUpdate(update: CommentUpdate, comment: Pick<CommentWithCommentUpdate, "cid" | "signature">) {
+        const simUpdate = JSON.parse(deterministicStringify(update)); // We need to stringify the update, so it will have the same shape as if it were sent by pubsub or IPNS
+        const signatureValidity = await verifyCommentUpdate(simUpdate, this, comment, this.plebbit);
+        assert(signatureValidity.valid, `Comment Update signature is invalid. Reason (${signatureValidity.reason})`);
+    }
+
+    private async _updateComment(comment: CommentsTableRow): Promise<void> {
         const log = Logger("plebbit-js:subplebbit:sync:syncComment");
 
-        let commentIpns: CommentUpdate | undefined;
-        try {
-            commentIpns = dbComment.ipnsName && (await loadIpnsAsJson(dbComment.ipnsName, this.plebbit));
-        } catch (e) {
-            log.trace(
-                `Failed to load Comment (${dbComment.cid}) IPNS (${dbComment.ipnsName}) while syncing. Will attempt to publish a new IPNS record`
-            );
-        }
+        // If we're here that means we're gonna calculate the new update and publish it
+        log(`Attempting to update Comment (${comment.cid})`);
 
-        const updateTriggerKey = CACHE_KEYS[CACHE_KEYS.PREFIX_TRIGGER_COMMENT_UPDATE_].concat(dbComment.cid);
-        const updateTriggered: boolean | undefined = await this.dbHandler.keyvGet(updateTriggerKey);
-        if (
-            !commentIpns ||
-            updateTriggered ||
-            encode(lodash.omit(commentIpns, ["replies", "signature"])) !==
-                encode(lodash.omit(dbComment.toJSONCommentUpdate(), ["replies", "signature"]))
-        ) {
-            log.trace(`Attempting to update Comment (${dbComment.cid})`);
-            await this.sortHandler.deleteCommentPageCache(dbComment);
-            dbComment.author.subplebbit = await this.dbHandler.querySubplebbitAuthorFields(dbComment.author.address);
-            dbComment.setUpdatedAt(timestamp());
-            await this.dbHandler.updateComment(lodash.pick(dbComment.toJSONForDb(undefined), ["updatedAt", "cid"])); // Need to insert comment in DB before generating pages so props updated above would be included in pages
-            await this.dbHandler.updateAuthorInCommentsTable(lodash.pick(dbComment.author, ["address", "subplebbit"]));
-            dbComment.setReplies(await this.sortHandler.generateRepliesPages(dbComment, undefined));
-            const newIpns = await this._publishCommentIpns(dbComment, {
-                ...dbComment.toJSONCommentUpdate(),
-                signature: await signCommentUpdate(dbComment.toJSONCommentUpdate(), this.signer)
-            });
-            await this.dbHandler.keyvDelete(updateTriggerKey);
-            if (dbComment.parentCid) {
-                const triggerParentUpdateKey = CACHE_KEYS[CACHE_KEYS.PREFIX_TRIGGER_COMMENT_UPDATE_].concat(dbComment.parentCid);
-                await this.dbHandler.keyvSet(triggerParentUpdateKey, true);
-            }
-            return newIpns;
-        }
+        // This comment will have the local new CommentUpdate, which we will publish over IPNS
+        // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
+        const [calculatedCommentUpdate, storedCommentUpdate, generatedPages] = await Promise.all([
+            this.dbHandler.queryCalculatedCommentUpdate(comment),
+            this.dbHandler.queryStoredCommentUpdate(comment),
+            this.sortHandler.generateRepliesPages(comment)
+        ]);
+        if (calculatedCommentUpdate.replyCount > 0) assert(generatedPages);
+
+        const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
+
+        const commentUpdatePriorToSigning: Omit<CommentUpdate, "signature"> = {
+            ...calculatedCommentUpdate,
+            replies: generatedPages ? { pageCids: generatedPages.pageCids, pages: lodash.pick(generatedPages.pages, "topAll") } : undefined,
+            updatedAt: newUpdatedAt,
+            protocolVersion: version.PROTOCOL_VERSION
+        };
+        const newIpns: CommentUpdate = {
+            ...commentUpdatePriorToSigning,
+            signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
+        };
+        await this._validateCommentUpdate(newIpns, comment); // Should be removed once signature are working properly
+        await this.dbHandler.upsertCommentUpdate(newIpns);
+
+        await this._publishCommentIpns(comment, newIpns);
     }
 
     private async _listenToIncomingRequests() {
@@ -1112,25 +1108,56 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         }
     }
 
+    private async _updateCommentsThatNeedToBeUpdated() {
+        // Criteria:
+        // 1 - IPNS about to expire (every 72h) OR
+        // 2 - Comment has no row in commentUpdates OR
+        // 3 - comment.ipnsKeyName is not part of /key/list of IPFS RPC API
+        // 4 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit
+
+        // After retrieving all comments with any of criteria above, also add their parents to the list
+        // Also add all comments of each author to the list
+
+        const log = Logger(`plebbit-js:subplebbit:_updateCommentsThatNeedToBeUpdated`);
+        const minimumUpdatedAt = timestamp() - 71 * 60 * 60; // Make sure a comment gets updated every 71 hours at least
+
+        const trx = await this.dbHandler.createTransaction("_updateCommentsThatNeedToBeUpdated");
+        const commentsToUpdate = await this.dbHandler!.queryCommentsToBeUpdated(
+            {
+                minimumUpdatedAt,
+                ipnsKeyNames: this._ipfsNodeIpnsKeyNames
+            },
+            trx
+        );
+        await this.dbHandler.commitTransaction("_updateCommentsThatNeedToBeUpdated");
+        if (commentsToUpdate.length === 0) return;
+
+        this._subplebbitUpdateTrigger = true;
+
+        log(`Will update ${commentsToUpdate.length} comments in this update loop for subplebbit (${this.address})`);
+
+        const commentsGroupedByDepth = lodash.groupBy(commentsToUpdate, "depth");
+
+        const depthsKeySorted = Object.keys(commentsGroupedByDepth).sort((a, b) => Number(b) - Number(a)); // Make sure comments with higher depths are sorted first
+
+        for (const depthKey of depthsKeySorted) await Promise.all(commentsGroupedByDepth[depthKey].map(this._updateComment.bind(this)));
+    }
+
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:subplebbit:sync");
-
         await this._switchDbIfNeeded();
-        await this._listenToIncomingRequests();
 
         try {
-            const dbComments = await this.dbHandler!.queryComments();
-            await Promise.all(
-                dbComments.map(async (commentProps: CommentType) => this.syncComment(await this.plebbit.createComment(commentProps)))
-            );
-            await this.sortHandler.cacheCommentsPages();
-            await this.updateSubplebbitIpns();
+            this._ipfsNodeIpnsKeyNames = (await this.plebbit.ipfsClient.key.list()).map((key) => key.name);
+            await this._listenToIncomingRequests();
+            await this._updateCommentsThatNeedToBeUpdated();
+            await this.updateSubplebbitIpnsIfNeeded();
         } catch (e) {
             log.error(`Failed to sync due to error,`, e);
         }
     }
 
-    private async _updateDbInternalState(props: Partial<SubplebbitType>) {
+    private async _updateDbInternalState(props: Partial<InternalSubplebbitType>) {
         if (Object.keys(props).length === 0) return;
         await this.dbHandler.lockSubState();
         const internalStateBefore: SubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
@@ -1162,7 +1189,8 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         await this.dbHandler.initDbIfNeeded();
 
         // Import subplebbit keys onto ipfs node
-        await this._importSignerIntoIpfsIfNeeded(this.signer.ipnsKeyName, this.signer.ipfsKey);
+
+        await this._importSignerIntoIpfsIfNeeded({ ipnsKeyName: this.signer.ipnsKeyName, privateKey: this.signer.privateKey });
 
         if (!this.provideCaptchaCallback) {
             log("Subplebbit owner has not provided any captcha. Will go with default image captcha");
@@ -1181,6 +1209,9 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
             await this._updateDbInternalState(lodash.pick(this, "createdAt"));
         }
 
+        await this._listenToIncomingRequests();
+        this._subplebbitUpdateTrigger = true;
+
         this.syncIpnsWithDb()
             .then(() => this._syncLoop(this._syncIntervalMs))
             .catch((reason) => {
@@ -1196,34 +1227,10 @@ export class Subplebbit extends EventEmitter implements SubplebbitType {
         if (!this.plebbit.ipfsClient) throw Error("Ipfs client is not defined");
 
         await nativeFunctions.deleteSubplebbit(this.address, this.plebbit.dataPath);
-        const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
-        try {
-            await this.plebbit.ipfsClient.pin.rm(resolvedAddress);
-        } catch (e) {
-            if (!e.message.includes("not pinned")) throw e;
-        }
-        // block.rm requires CID.parse but it throws an error in Electron. Most likely due to context isolation
-        //@ts-ignore
-        await this.plebbit.ipfsClient.block.rm(resolvedAddress, { force: true });
-
         if (typeof this.signer?.ipnsKeyName === "string")
             // Key may not exist on ipfs node
             try {
                 await this.plebbit.ipfsClient.key.rm(this.signer.ipnsKeyName);
             } catch {}
-    }
-
-    async _addPublicationToDb(publication: CommentEdit | Vote | Comment | Post) {
-        const log = Logger("plebbit-js:subplebbit:_addPublicationToDb");
-        log(`Adding ${publication.getType()} to DB with author,`, removeKeysWithUndefinedValues(publication.author));
-        const decryptedRequestType: Omit<ChallengeRequestMessageType, "encryptedPublication" | "signature"> = {
-            type: "CHALLENGEREQUEST",
-            challengeRequestId: uuidv4(),
-            protocolVersion: env.PROTOCOL_VERSION,
-            userAgent: env.USER_AGENT
-        };
-
-        await this.dbHandler.upsertChallenge(decryptedRequestType);
-        return await this.storePublicationIfValid(publication.toJSON(), decryptedRequestType.challengeRequestId);
     }
 }

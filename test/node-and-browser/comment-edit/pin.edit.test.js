@@ -47,8 +47,8 @@ describe(`Pinning posts`, async () => {
         sub._updateIntervalMs = updateInterval;
         await sub.update();
 
-        postToPin = await publishRandomPost(subplebbitAddress, plebbit, { timestamp: 1100 });
-        secondPostToPin = await publishRandomPost(subplebbitAddress, plebbit, { timestamp: 1000 });
+        postToPin = await publishRandomPost(subplebbitAddress, plebbit, { timestamp: 1100 }, false);
+        secondPostToPin = await publishRandomPost(subplebbitAddress, plebbit, { timestamp: 1000 }, false);
 
         await postToPin.update();
         await secondPostToPin.update();
@@ -65,7 +65,7 @@ describe(`Pinning posts`, async () => {
         const pinEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToPin.subplebbitAddress,
             commentCid: postToPin.cid,
-            moderatorReason: "To pin a post",
+            reason: "To pin a post",
             pinned: true,
             signer: postToPin.signer
         });
@@ -75,7 +75,7 @@ describe(`Pinning posts`, async () => {
         const pinEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToPin.subplebbitAddress,
             commentCid: postToPin.cid,
-            moderatorReason: "To pin a post",
+            reason: "To pin a post",
             pinned: true,
             signer: await plebbit.createSigner()
         });
@@ -86,7 +86,7 @@ describe(`Pinning posts`, async () => {
         const pinEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToPin.subplebbitAddress,
             commentCid: postToPin.cid,
-            moderatorReason: "To pin a post",
+            reason: "To pin a post",
             pinned: true,
             signer: roles[2].signer
         });
@@ -95,7 +95,7 @@ describe(`Pinning posts`, async () => {
     it(`A new CommentUpdate is published with pinned=true`, async () => {
         await waitUntil(() => postToPin.pinned === true, { timeout: 200000 });
         expect(postToPin.pinned).to.be.true;
-        expect(postToPin.moderatorReason).to.equal("To pin a post");
+        expect(postToPin.reason).to.equal("To pin a post");
     });
     it(`A pinned post is on the top of every page in subplebbit.posts`, async () => {
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
@@ -121,7 +121,7 @@ describe(`Pinning posts`, async () => {
             const postInPage = pageComments.find((comment) => comment.cid === postToPin.cid);
             expect(postInPage).to.exist;
             expect(postInPage.pinned).to.be.true;
-            expect(postInPage.moderatorReason).to.equal("To pin a post");
+            expect(postInPage.reason).to.equal("To pin a post");
         }
     });
 
@@ -129,7 +129,7 @@ describe(`Pinning posts`, async () => {
         const pinEdit = await plebbit.createCommentEdit({
             subplebbitAddress: secondPostToPin.subplebbitAddress,
             commentCid: secondPostToPin.cid,
-            moderatorReason: "To pin the second post",
+            reason: "To pin the second post",
             pinned: true,
             signer: roles[2].signer
         });
@@ -172,14 +172,14 @@ describe(`Pinning posts`, async () => {
         const pinEdit = await plebbit.createCommentEdit({
             subplebbitAddress: secondPostToPin.subplebbitAddress,
             commentCid: secondPostToPin.cid,
-            moderatorReason: "To unpin the second post",
+            reason: "To unpin the second post",
             pinned: false,
             signer: roles[2].signer
         });
         await publishWithExpectedResult(pinEdit, true);
     });
     it(`A new CommentUpdate is published with pinned=false`, async () => {
-        await waitUntil(() => secondPostToPin.pinned === false && secondPostToPin.moderatorReason === "To unpin the second post", {
+        await waitUntil(() => secondPostToPin.pinned === false && secondPostToPin.reason === "To unpin the second post", {
             timeout: 200000
         });
     });
@@ -199,14 +199,14 @@ describe(`Pinning posts`, async () => {
             const pageComments = await loadAllPages(pageCid, sub.posts);
             expect(pageComments[0].cid).to.equal(postToPin.cid);
             expect(pageComments[0].pinned).to.be.true;
-            expect(pageComments[0].moderatorReason).to.equal("To pin a post");
+            expect(pageComments[0].reason).to.equal("To pin a post");
 
             if (!POSTS_SORT_TYPES[sortName].timeframe || POSTS_SORT_TYPES[sortName].timeframe === "ALL") {
                 const secondPinnedPostInPage = pageComments.find((comment) => comment.cid === secondPostToPin.cid);
                 // post may not be included in the page since it's not pinned anymore and can only be included if its timestamp matches the page timeframe
                 expect(secondPinnedPostInPage).to.exist;
                 expect(secondPinnedPostInPage.pinned).to.be.false;
-                expect(secondPinnedPostInPage.moderatorReason).to.equal("To unpin the second post");
+                expect(secondPinnedPostInPage.reason).to.equal("To unpin the second post");
             }
 
             // Rest of comments should be sorted like regular page
@@ -243,7 +243,7 @@ describe(`Pinning replies`, async () => {
         const pinEdit = await plebbit.createCommentEdit({
             subplebbitAddress: replyToPin.subplebbitAddress,
             commentCid: replyToPin.cid,
-            moderatorReason: "To pin the reply",
+            reason: "To pin the reply",
             pinned: true,
             signer: roles[2].signer
         });
@@ -270,7 +270,7 @@ describe(`Pinning replies`, async () => {
             const replyInPage = pageComments.find((comment) => comment.cid === replyToPin.cid);
             expect(replyInPage).to.exist;
             expect(replyInPage.pinned).to.be.true;
-            expect(replyInPage.moderatorReason).to.equal("To pin the reply");
+            expect(replyInPage.reason).to.equal("To pin the reply");
         }
     });
 });
