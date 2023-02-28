@@ -93,7 +93,7 @@ describe("publishing posts", async () => {
     });
 });
 
-describe(`author.subplebbit`, async () => {
+describe(`commentUpdate.author.subplebbit`, async () => {
     let plebbit, post;
 
     before(async () => {
@@ -171,6 +171,8 @@ describe(`author.subplebbit`, async () => {
 
         reply.stop();
     });
+
+    it.skip("CommentUpdate.author.subplebbit.firstCommentTimestamp");
 });
 
 describe(`Publishing replies`, async () => {

@@ -1,3 +1,4 @@
+const Plebbit = require("../../../../dist/node"); // Don't delete this line, otherwise browser tests will give "Process not defined" error. No idea why it happens
 const signers = require("../../../fixtures/signers");
 const {
     generateMockPost,
@@ -84,11 +85,11 @@ describe("createComment", async () => {
     });
 });
 
-describe(`comment.update`, async () => {
+describe.skip(`comment.update`, async () => {
     it(`comment.update() is working as expected after calling comment.stop()`);
 });
 
-describe(`comment.replyCount`, async () => {
+describe(`commentUpdate.replyCount`, async () => {
     let plebbit, post, reply;
     before(async () => {
         plebbit = await mockPlebbit();
@@ -113,4 +114,3 @@ describe(`comment.replyCount`, async () => {
     });
 });
 
-describe.skip("CommentUpdate.author.subplebbit.firstCommentTimestamp");
