@@ -230,14 +230,20 @@ export async function parsePagesIpfs(pagesRaw: PagesTypeIpfs, subplebbit: Pages[
 }
 
 const isJsonString = (jsonString: any) => {
-    return typeof jsonString === "string" && /"((?:[^"\\\/\b\f\n\r\t]|\\u\d{4})*)"/gm.test(jsonString);
+    if (typeof jsonString !== "string" || (!jsonString.startsWith("{") && !jsonString.startsWith("["))) return false;
+    try {
+        JSON.parse(jsonString);
+        return true;
+    } catch {
+        return false;
+    }
 };
 
 // Only for DB
 export const parseJsonStrings = (obj: any) => {
     if (obj === "[object Object]") throw Error(`Object shouldn't be [object Object]`);
     if (Array.isArray(obj)) return obj.map((o) => parseJsonStrings(o));
-    if (!isJsonString(obj) && obj?.constructor?.name !== "Object") return obj;
+    if (!isJsonString(obj) && !lodash.isPlainObject(obj)) return obj;
 
     const newObj = removeNullAndUndefinedValues(isJsonString(obj) ? JSON.parse(obj) : lodash.cloneDeep(obj));
     //prettier-ignore
