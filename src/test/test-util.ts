@@ -12,7 +12,7 @@ import waitUntil from "async-wait-until";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { SignerType } from "../signer/constants";
-import { CommentEdit } from "../comment-edit";
+import Publication from "../publication";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -316,36 +316,6 @@ export async function mockPlebbit(dataPath?: string) {
     return plebbit;
 }
 
-async function _waitTillCommentIsOnline(comment: Comment, plebbit: Plebbit) {
-    if (comment.depth === 0) {
-        const loadedSub = await plebbit.getSubplebbit(comment.subplebbitAddress);
-        //@ts-ignore
-        loadedSub._updateIntervalMs = comment._updateIntervalMs = 200;
-        await loadedSub.update();
-
-        await waitUntil(
-            async () => {
-                if (!loadedSub?.posts?.pageCids?.new) return false;
-                const commentInPage = findCommentInPage(comment.cid, loadedSub.posts.pageCids.new, loadedSub.posts);
-                return Boolean(commentInPage);
-            },
-            { timeout: 100000 }
-        );
-        await loadedSub.stop();
-    } else {
-        const parentComment = await plebbit.getComment(comment.parentCid);
-        //@ts-ignore
-        parentComment._updateIntervalMs = 200;
-        await parentComment.update();
-
-        await waitUntil(() => parentComment.replies?.pages?.topAll?.comments?.some((tComment) => tComment.cid === comment.cid), {
-            intervalBetweenAttempts: 100,
-            timeout: 200000
-        });
-        parentComment.stop();
-    }
-}
-
 export async function publishRandomReply(
     parentComment: Comment,
     plebbit: Plebbit,
@@ -389,11 +359,7 @@ export async function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbit:
     await publishWithExpectedResult(voteObj, true);
 }
 
-export async function publishWithExpectedResult(
-    publication: Comment | Vote | CommentEdit,
-    expectedChallengeSuccess: boolean,
-    expectedReason?: string
-) {
+export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
     let receivedResponse = false;
     await publication.publish();
     await new Promise((resolve, reject) => {
