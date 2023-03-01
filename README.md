@@ -207,9 +207,17 @@ Pages {
   pages: {[key: PostsSortType | RepliesSortType]: Page} // e.g. subplebbit.posts.pages.hot.comments[0].cid = 'Qm...'
   pageCids: {[key: PostsSortType | RepliesSortType | ModSortType]: pageCid} // e.g. subplebbit.posts.pageCids.topAll = 'Qm...'
 }
-Page /* (IPFS file) */ {
-  nextCid?: string // get next page (sorted by the same sort type)
-  comments: Comment[] // Comments should include Comment + CommentUpdate data
+Page {
+  nextCid: string // get next page (sorted by the same sort type)
+  comments: Comment[] // Comments should include merged Comment and CommentUpdate
+}
+PageIpfs /* (IPFS file) */ {
+  nextCid: string // get next page (sorted by the same sort type)
+  comments: CommentAndCommentUpdate[] // PageIpfs is fetched from IPFS, then Comments and CommentUpdates are merged to create the Page instance
+}
+CommentAndCommentUpdate {
+  comment: Comment
+  commentUpdate: CommentUpdate
 }
 PostsSortType: 'hot' | 'new' | 'active' | 'topHour' | 'topDay' | 'topWeek' | 'topMonth' | 'topYear' | 'topAll' | 'controversialHour' | 'controversialDay' | 'controversialWeek' | 'controversialMonth' | 'controversialYear' | 'controversialAll'
 RepliesSortType: 'topAll' | 'new' | 'old' | 'controversialAll'
