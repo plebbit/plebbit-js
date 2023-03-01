@@ -548,7 +548,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
     }
 
     private isPublicationComment(publication: DecryptedChallengeRequestMessageType["publication"]) {
-        return publication.hasOwnProperty("content") || publication.hasOwnProperty("title") || publication.hasOwnProperty("link");
+        return !this.isPublicationVote(publication) && !this.isPublicationCommentEdit(publication);
     }
 
     private isPublicationReply(publication: DecryptedChallengeRequestMessageType["publication"]) {
