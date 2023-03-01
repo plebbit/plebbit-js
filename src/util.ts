@@ -1,5 +1,14 @@
 import { Plebbit } from "./plebbit";
-import { CommentWithCommentUpdate, OnlyDefinedProperties, PageIpfs, PagesType, PagesTypeIpfs, PageType, Timeframe } from "./types";
+import {
+    CommentWithCommentUpdate,
+    OnlyDefinedProperties,
+    PageIpfs,
+    PagesType,
+    PagesTypeIpfs,
+    PagesTypeJson,
+    PageType,
+    Timeframe
+} from "./types";
 import { nativeFunctions } from "./runtime/node/util";
 import isIPFS from "is-ipfs";
 import { messages } from "./errors";
@@ -257,3 +266,48 @@ export const parseJsonStrings = (obj: any) => {
     }
     return <any>newObj;
 };
+
+// To use for both subplebbit.posts and comment.replies
+
+export async function parseRawPages(
+    replies: PagesTypeIpfs | PagesTypeJson | Pages | undefined,
+    parentCid: string | undefined,
+    subplebbit: Pages["_subplebbit"]
+): Promise<Pages | undefined> {
+    if (!replies) return undefined;
+
+    if (replies instanceof Pages) return replies;
+
+    const isIpfs = Boolean(Object.values(replies.pages)[0]?.comments[0]["commentUpdate"]);
+
+    if (isIpfs) {
+        replies = replies as PagesTypeIpfs;
+        const parsedPages = await parsePagesIpfs(replies, subplebbit);
+        return new Pages({
+            pages: parsedPages.pages,
+            pageCids: parsedPages.pageCids,
+            subplebbit: subplebbit,
+            pagesIpfs: replies.pages,
+            parentCid: parentCid
+        });
+    } else {
+        replies = replies as PagesTypeJson;
+        const repliesClone = lodash.cloneDeep(replies) as PagesType;
+        //@ts-expect-error
+        const pageKeys: (keyof PagesType["pages"])[] = Object.keys(repliesClone.pages);
+        for (const key of pageKeys)
+            repliesClone.pages[key].comments = await Promise.all(
+                replies.pages[key].comments.map((comment) =>
+                    subplebbit.plebbit.createComment.bind(subplebbit.plebbit)({ ...comment, subplebbit })
+                )
+            );
+
+        return new Pages({
+            pages: repliesClone.pages,
+            pageCids: replies.pageCids,
+            subplebbit: subplebbit,
+            pagesIpfs: undefined,
+            parentCid: parentCid
+        });
+    }
+}

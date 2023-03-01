@@ -1,4 +1,4 @@
-import { loadIpnsAsJson, parsePagesIpfs, throwWithErrorCode } from "./util";
+import { loadIpnsAsJson, parseRawPages, throwWithErrorCode } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
 import {
@@ -10,9 +10,7 @@ import {
     CommentType,
     CommentUpdate,
     CommentWithCommentUpdate,
-    CommentWithCommentUpdateIfExistsType,
     Flair,
-    PagesTypeIpfs,
     ProtocolVersion,
     PublicationTypeName
 } from "./types";
@@ -25,7 +23,7 @@ import assert from "assert";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
-export class Comment extends Publication implements CommentType {
+export class Comment extends Publication implements Omit<CommentType, "replies"> {
     // public
     title?: string;
     link?: string;
@@ -115,21 +113,39 @@ export class Comment extends Publication implements CommentType {
         this.flair = props.flair || props.edit?.flair || this.flair;
         this.author.flair = props.author?.subplebbit?.flair || props.edit?.author?.flair || this.author?.flair;
 
-        await this.setReplies(props.replies);
+        assert(this.cid);
+        if (!this.subplebbit) this.subplebbit = await this.plebbit.getSubplebbit(this.subplebbitAddress);
+        this.replies = await parseRawPages(props.replies, this.cid, this.subplebbit);
     }
 
     getType(): PublicationTypeName {
         return "comment";
     }
 
-    toJSON(): CommentWithCommentUpdateIfExistsType {
+    toJSON(): CommentType {
+        const base = this.cid ? this.toJSONAfterChallengeVerification() : this.toJSONPubsubMessagePublication();
         return {
-            comment: {
-                ...this.toJSONPubsubMessagePublication(),
-                ...(this.cid ? this.toJSONAfterChallengeVerification() : {}),
-                ...this.original
-            },
-            commentUpdate: this._rawCommentUpdate
+            ...base,
+            ...(typeof this.updatedAt === "number"
+                ? {
+                      author: this.author.toJSONIpfsWithCommentUpdate(),
+                      original: this.original,
+                      upvoteCount: this.upvoteCount,
+                      downvoteCount: this.downvoteCount,
+                      replyCount: this.replyCount,
+                      updatedAt: this.updatedAt,
+                      deleted: this.deleted,
+                      pinned: this.pinned,
+                      locked: this.locked,
+                      removed: this.removed,
+                      reason: this.reason,
+                      edit: this.edit,
+                      protocolVersion: this.protocolVersion,
+                      spoiler: this.spoiler,
+                      flair: this.flair,
+                      replies: this.replies?.toJSON()
+                  }
+                : {})
         };
     }
 
@@ -188,6 +204,29 @@ export class Comment extends Publication implements CommentType {
         };
     }
 
+    toJSONMerged(): CommentWithCommentUpdate {
+        assert(this.ipnsName && typeof this.updatedAt === "number" && this.original);
+        return {
+            ...this.toJSONAfterChallengeVerification(),
+            author: this.author.toJSONIpfsWithCommentUpdate(),
+            original: this.original,
+            upvoteCount: this.upvoteCount,
+            downvoteCount: this.downvoteCount,
+            replyCount: this.replyCount,
+            updatedAt: this.updatedAt,
+            deleted: this.deleted,
+            pinned: this.pinned,
+            locked: this.locked,
+            removed: this.removed,
+            reason: this.reason,
+            edit: this.edit,
+            protocolVersion: this.protocolVersion,
+            spoiler: this.spoiler,
+            flair: this.flair,
+            replies: this.replies?.toJSON()
+        };
+    }
+
     setCommentIpnsKey(ipnsKey: { Id: string; Name: string }) {
         // Contains name and id
         this.ipnsName = ipnsKey.Id;
@@ -212,31 +251,6 @@ export class Comment extends Publication implements CommentType {
 
     setUpdatedAt(newUpdatedAt: number) {
         this.updatedAt = newUpdatedAt;
-    }
-
-    async setReplies(replies: PagesTypeIpfs | Pages) {
-        if (!replies) {
-            this.replies = undefined;
-            return;
-        }
-        assert(this.subplebbit && this.cid);
-        if (replies instanceof Pages) {
-            this.replies = replies;
-            return;
-        }
-        const isIpfs = Boolean(Object.values(replies.pages)[0]?.comments[0]["commentUpdate"]);
-
-        if (isIpfs) {
-            replies = replies as PagesTypeIpfs;
-            const parsedPages = await parsePagesIpfs(replies, this.subplebbit);
-            this.replies = new Pages({
-                pages: parsedPages?.pages,
-                pageCids: parsedPages?.pageCids,
-                subplebbit: lodash.pick(this.subplebbit, ["address", "plebbit", "encryption"]),
-                pagesIpfs: replies.pages,
-                parentCid: this.cid
-            });
-        } else throw Error(`Fail to parse comment.replies`);
     }
 
     async updateOnce() {

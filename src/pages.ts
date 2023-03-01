@@ -1,9 +1,21 @@
 import { loadIpfsFileAsJson, parsePageIpfs, throwWithErrorCode } from "./util";
 import { Subplebbit } from "./subplebbit";
 
-import { CommentIpfsType, PageIpfs, PagesType, PagesTypeIpfs, PageType, PostSortName, ReplySortName } from "./types";
+import {
+    CommentIpfsType,
+    CommentWithCommentUpdate,
+    PageIpfs,
+    PagesType,
+    PagesTypeIpfs,
+    PagesTypeJson,
+    PageType,
+    PostSortName,
+    ReplySortName
+} from "./types";
 import isIPFS from "is-ipfs";
 import { verifyPage } from "./signer/signatures";
+import lodash from "lodash";
+import assert from "assert";
 
 export class Pages implements PagesType {
     pages: Partial<Record<PostSortName | ReplySortName, PageType>>;
@@ -11,9 +23,9 @@ export class Pages implements PagesType {
     pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
     private _subplebbit: Pick<Subplebbit, "address" | "plebbit" | "encryption">;
     private _parentCid: CommentIpfsType["parentCid"];
-    private _pagesIpfs: PagesTypeIpfs["pages"];
+    private _pagesIpfs?: PagesTypeIpfs["pages"];
     constructor(
-        props: PagesType & { subplebbit: Pages["_subplebbit"]; parentCid: CommentIpfsType["parentCid"]; pagesIpfs: Pages["_pagesIpfs"] }
+        props: PagesType & { subplebbit: Pages["_subplebbit"]; parentCid: CommentIpfsType["parentCid"]; pagesIpfs?: Pages["_pagesIpfs"] }
     ) {
         this.pages = props.pages;
         this.pageCids = props.pageCids;
@@ -32,7 +44,16 @@ export class Pages implements PagesType {
         return await parsePageIpfs(pageIpfs, this._subplebbit);
     }
 
-    toJSON(): PagesTypeIpfs {
+    toJSON(): PagesTypeJson {
+        const pagesJson = lodash.mapValues(this.pages, (page) => {
+            const commentsJson: CommentWithCommentUpdate[] = page.comments.map((comment) => comment.toJSONMerged());
+            return { comments: commentsJson, nextCid: page.nextCid };
+        });
+        return { pages: pagesJson, pageCids: this.pageCids };
+    }
+
+    toJSONIpfs(): PagesTypeIpfs {
+        assert(this._pagesIpfs);
         return {
             pages: this._pagesIpfs,
             pageCids: this.pageCids

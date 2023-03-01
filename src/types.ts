@@ -32,12 +32,22 @@ export interface PageType {
     nextCid?: string;
 }
 
+export interface PageTypeJson {
+    comments: CommentWithCommentUpdate[];
+    nextCid?: string;
+}
+
 export interface PageIpfs extends Omit<PageType, "comments"> {
     comments: { comment: CommentIpfsWithCid; commentUpdate: CommentUpdate }[];
 }
 
 export interface PagesType {
     pages: Partial<Record<PostSortName | ReplySortName, PageType>>;
+    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
+}
+
+export interface PagesTypeJson {
+    pages: Partial<Record<PostSortName | ReplySortName, PageTypeJson>>;
     pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
 }
 
@@ -283,14 +293,14 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
     pubsubTopic: string;
     metricsCid?: string;
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
-    posts?: Pages;
+    posts?: PagesTypeJson;
 }
 
 export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts"> {
     posts?: PagesTypeIpfs;
 }
 
-export interface InternalSubplebbitType extends SubplebbitIpfsType {
+export interface InternalSubplebbitType extends Omit<SubplebbitType, "posts">, Pick<SubplebbitIpfsType, "posts"> {
     signer: Pick<SignerType, "address" | "privateKey" | "type">;
     _subplebbitUpdateTrigger: boolean;
 }
@@ -368,23 +378,19 @@ export interface CommentUpdate {
     };
 }
 
-export interface CommentWithCommentUpdateIfExistsType {
-    comment: CommentPubsubMessage & Partial<CommentIpfsWithCid>;
-    commentUpdate?: CommentUpdate;
-}
-
 export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "replies">>, Omit<CreateCommentOptions, "signer"> {
     author: AuthorTypeWithCommentUpdate;
     timestamp: number;
     protocolVersion: ProtocolVersion;
     signature: SignatureType;
-    replies?: Pages;
+    replies?: PagesTypeJson;
     postCid?: string;
     previousCid?: string; // each post is a linked list
     ipnsKeyName?: string;
     depth?: number;
     signer?: SignerType;
-    original?: Pick<Partial<CommentType>, "author" | "content" | "flair">;
+    original?: Pick<Partial<CommentType>, "author" | "content" | "flair" | "protocolVersion">;
+    deleted?: CommentType["edit"]["deleted"];
     thumbnailUrl?: string;
     cid?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
     ipnsName?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
@@ -406,7 +412,9 @@ export interface CommentWithCommentUpdate
             | "signer"
         >,
         Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth">>,
-        Omit<CommentUpdate, "author"> {}
+        Omit<CommentUpdate, "author" | "replies"> {
+    replies?: PagesTypeJson;
+}
 
 export interface CommentIpfsType
     extends Omit<CreateCommentOptions, "signer" | "timestamp" | "author">,

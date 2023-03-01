@@ -4,7 +4,7 @@ import { Plebbit } from "./plebbit";
 import { throwWithErrorCode } from "./util";
 import assert from "assert";
 
-class Post extends Comment implements PostType {
+class Post extends Comment implements Omit<PostType, "replies"> {
     parentCid: undefined;
     depth: 0;
 

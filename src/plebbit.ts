@@ -4,7 +4,7 @@ import {
     CommentIpfsType,
     CommentPubsubMessage,
     CommentType,
-    CommentWithCommentUpdateIfExistsType,
+    CommentWithCommentUpdate,
     CreateCommentEditOptions,
     CreateCommentOptions,
     CreatePublicationOptions,
@@ -163,27 +163,19 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     }
 
     private async _createCommentInstance(
-        options: CreateCommentOptions | CommentWithCommentUpdateIfExistsType | CommentIpfsType | CommentPubsubMessage,
+        options: CreateCommentOptions | CommentIpfsType | CommentPubsubMessage | CommentWithCommentUpdate,
         subplebbit?: Subplebbit
     ) {
-        if (options["comment"]) {
-            options = options as CommentWithCommentUpdateIfExistsType;
-            const comment = options.comment.parentCid ? new Comment(options.comment, this) : new Post(options.comment, this);
-            if (options.commentUpdate) {
-                //@ts-expect-error
-                comment.subplebbit = subplebbit || (await this.getSubplebbit(options.comment.subplebbitAddress));
-                await comment._initCommentUpdate(options.commentUpdate);
-            }
-            return comment;
-        } else {
-            options = options as CreateCommentOptions | CommentIpfsType | CommentPubsubMessage;
-            const comment = options.parentCid ? new Comment(<CommentType>options, this) : new Post(<PostType>options, this);
-            return comment;
-        }
+        options = options as CreateCommentOptions | CommentIpfsType | CommentPubsubMessage;
+        const comment = options.parentCid ? new Comment(<CommentType>options, this) : new Post(<PostType>options, this);
+        comment["subplebbit"] = subplebbit;
+        //@ts-expect-error
+        if (typeof options["updatedAt"] === "number") await comment._initCommentUpdate(<CommentUpdate>options);
+        return comment;
     }
 
     async createComment(
-        options: CreateCommentOptions | CommentWithCommentUpdateIfExistsType | CommentIpfsType | CommentPubsubMessage | Comment
+        options: CreateCommentOptions | CommentWithCommentUpdate | CommentIpfsType | CommentPubsubMessage | CommentType | Comment
     ): Promise<Comment | Post> {
         const log = Logger("plebbit-js:plebbit:createComment");
 
