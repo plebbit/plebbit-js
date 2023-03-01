@@ -13,8 +13,9 @@ import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { SignerType } from "../signer/constants";
 import Publication from "../publication";
-import * as randomBytes from "randombytes";
 import lodash from "lodash";
+import { v4 as uuidv4 } from "uuid";
+
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
 
@@ -324,7 +325,7 @@ export async function publishRandomReply(
     verifyCommentPropsInParentPages = true
 ): Promise<Comment> {
     const reply = await generateMockComment(parentComment, plebbit, false, {
-        content: `Content ${randomBytes.default(100).toString("utf-8")}`,
+        content: `Content ${uuidv4()}`,
         ...commentProps
     });
     await publishWithExpectedResult(reply, true);
@@ -339,8 +340,8 @@ export async function publishRandomPost(
     verifyCommentPropsInParentPages = true
 ) {
     const post = await generateMockPost(subplebbitAddress, plebbit, false, {
-        content: `Random post Content ${randomBytes.default(100).toString("utf-8")}`,
-        title: `Random post Title ${randomBytes.default(100).toString("utf-8")}`,
+        content: `Random post Content ${uuidv4()}`,
+        title: `Random post Title ${uuidv4()}`,
         ...postProps
     });
     await publishWithExpectedResult(post, true);
