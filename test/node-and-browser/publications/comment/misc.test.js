@@ -75,7 +75,7 @@ describe("createComment", async () => {
         expect(commentToClone.replies).to.be.a("object");
         const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(commentToClone)));
         expect(commentClone.replies).to.be.a("object");
-        expect(commentToClone.toJSON()).to.deep.equal(commentClone.toJSON());
+        expect(JSON.stringify(commentToClone.toJSON())).to.equal(JSON.stringify(commentClone.toJSON()));
     });
 
     it(`Can recreate a stringified Post instance with plebbit.createComment`, async () => {
@@ -113,4 +113,3 @@ describe(`commentUpdate.replyCount`, async () => {
         await waitUntil(() => post.replyCount === 2 && reply.replyCount === 1, { timeout: 200000 });
     });
 });
-

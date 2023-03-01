@@ -39,7 +39,7 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
     it(`subplebbit = await createSubplebbit(JSON.parse(JSON.stringify(await getSubplebbit())))`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         const createdSubplebbit = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(loadedSubplebbit)));
-        expect(loadedSubplebbit.toJSON()).to.deep.equal(createdSubplebbit.toJSON());
+        expect(stringify(loadedSubplebbit.toJSON())).to.equal(stringify(createdSubplebbit.toJSON()));
     });
 
     it(`Sub JSON props does not change by creating a Subplebbit object via plebbit.createSubplebbit`, async () => {
@@ -55,7 +55,19 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
         expect(subJson.roles).to.deep.equal(subObj.roles);
         expect(subJson.signature).to.deep.equal(subObj.signature);
 
-        expect(subJson.posts).to.deep.equal(subObj.posts.toJSON());
+        expect(subJson.posts.pageCids).to.deep.equal(subObj.posts.pageCids);
+
+        const subLoaded = await plebbit.getSubplebbit(subJson.address);
+        for (const pageKey of Object.keys(subJson.posts.pages)) {
+            const subJsonComments = await Promise.all(
+                subJson.posts.pages[pageKey].comments.map((comment) => plebbit.createComment({ ...comment.comment, subplebbit: subLoaded }))
+            );
+
+            for (let i = 0; i < subJsonComments.length; i++)
+                await subJsonComments[i]._initCommentUpdate(subJson.posts.pages[pageKey].comments[i].commentUpdate);
+
+            expect(stringify(subJsonComments)).to.equal(stringify(subObj.posts.pages[pageKey].comments));
+        }
     });
 });
 
@@ -97,7 +109,7 @@ describe("plebbit.getSubplebbit", async () => {
         expect(_subplebbitIpns.posts).to.be.a("object");
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
         // Remove undefined keys from json
-        expect(stringify(loadedSubplebbit.toJSON())).to.equals(stringify(_subplebbitIpns));
+        expect(stringify(loadedSubplebbit.toJSONIpfs())).to.equals(stringify(_subplebbitIpns));
     });
 
     it("Throws an error when subplebbit address is incorrect", async () => {

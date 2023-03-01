@@ -61,7 +61,6 @@
         "lodash-es": "4.17.21",
         "peer-id": "0.16.0",
         "proper-lockfile": "github:Rinse12/node-proper-lockfile",
-        "randombytes": "^2.1.0",
         "safe-stable-stringify": "2.4.1",
         "skia-canvas": "1.0.0",
         "sqlite3": "5.1.2",

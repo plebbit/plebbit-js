@@ -24,7 +24,7 @@ describe("Sign subplebbit", async () => {
     });
     it(`Can sign and validate live subplebbit correctly`, async () => {
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
-        const subplebbitToSign = lodash.cloneDeep(subplebbit.toJSON());
+        const subplebbitToSign = lodash.cloneDeep(subplebbit.toJSONIpfs());
 
         delete subplebbitToSign["signature"];
         subplebbitToSign.signature = await signSubplebbit(subplebbitToSign, signers[0], plebbit);
@@ -45,7 +45,7 @@ describe("Verify subplebbit", async () => {
 
     it(`Can validate live subplebbit`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(signers[0].address);
-        expect(await verifySubplebbit(loadedSubplebbit.toJSON(), plebbit)).to.deep.equal({ valid: true });
+        expect(await verifySubplebbit(loadedSubplebbit.toJSONIpfs(), plebbit)).to.deep.equal({ valid: true });
     });
     it(`Valid subplebbit fixture is validated correctly`, async () => {
         const sub = lodash.cloneDeep(require("../../fixtures/valid_subplebbit.json"));
@@ -56,14 +56,14 @@ describe("Verify subplebbit", async () => {
         const tempPlebbit = await Plebbit(plebbit);
         tempPlebbit.resolver.resolveSubplebbitAddressIfNeeded = (address) => (address === "plebbit.eth" ? signers[4].address : address);
         const sub = await plebbit.getSubplebbit("plebbit.eth");
-        const verification = await verifySubplebbit(sub.toJSON(), tempPlebbit);
+        const verification = await verifySubplebbit(sub.toJSONIpfs(), tempPlebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY });
     });
 
     it(`Invalidate a subplebbit signature if subplebbit.posts has an invalid page`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(signers[0].address);
 
-        const subJson = loadedSubplebbit.toJSON();
+        const subJson = loadedSubplebbit.toJSONIpfs();
         expect(await verifySubplebbit(subJson, plebbit)).to.deep.equal({ valid: true });
 
         subJson.posts.pages.hot.comments[0].comment.content += "1234"; // Invalidate signature
