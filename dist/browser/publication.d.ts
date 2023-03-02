@@ -1,14 +1,15 @@
 /// <reference types="node" />
 import EventEmitter from "events";
 import Author from "./author";
-import { Signature, Signer } from "./signer";
+import { Signer } from "./signer";
 import { ProtocolVersion, PublicationType, PublicationTypeName } from "./types";
 import { Plebbit } from "./plebbit";
 import { Subplebbit } from "./subplebbit";
+import { SignatureType } from "./signer/constants";
 declare class Publication extends EventEmitter implements PublicationType {
     subplebbitAddress: string;
     timestamp: number;
-    signature: Signature;
+    signature: SignatureType;
     signer: Signer;
     author: Author;
     protocolVersion: ProtocolVersion;
@@ -20,8 +21,9 @@ declare class Publication extends EventEmitter implements PublicationType {
     constructor(props: PublicationType, plebbit: Plebbit);
     _initProps(props: PublicationType): void;
     getType(): PublicationTypeName;
-    toJSON(): PublicationType;
-    toJSONSkeleton(): PublicationType;
+    toJSONAfterChallengeVerification(): PublicationType;
+    toJSONIpfs(): PublicationType;
+    toJSONPubsubMessagePublication(): PublicationType;
     private handleChallengeExchange;
     publishChallengeAnswers(challengeAnswers: string[]): Promise<void>;
     private _validatePublicationFields;

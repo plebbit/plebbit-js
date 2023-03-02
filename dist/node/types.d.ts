@@ -1,9 +1,11 @@
 import { CID, IPFSHTTPClient, Options } from "ipfs-http-client";
-import { Pages } from "./pages";
 import { DbHandler } from "./runtime/node/db-handler";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
 import { Plebbit } from "./plebbit";
+import { Knex } from "knex";
+import { Comment } from "./comment";
+import { CommentEditSignedPropertyNamesUnion, CommentSignedPropertyNamesUnion, Encrypted, SignatureType, SignerType, VoteSignedPropertyNamesUnion } from "./signer/constants";
 export declare type ProtocolVersion = "1.0.0";
 export declare type BlockchainProvider = {
     url: string;
@@ -19,37 +21,38 @@ export interface PlebbitOptions {
     };
     resolveAuthorAddresses?: boolean;
 }
-export declare type CreateSignerOptions = {
-    privateKey?: string;
-    type?: "rsa";
-};
 export interface PageType {
-    comments: CommentType[];
+    comments: Comment[];
     nextCid?: string;
 }
+export interface PageTypeJson {
+    comments: CommentWithCommentUpdate[];
+    nextCid?: string;
+}
+export interface PageIpfs extends Omit<PageType, "comments"> {
+    comments: {
+        comment: CommentIpfsWithCid;
+        commentUpdate: CommentUpdate;
+    }[];
+}
 export interface PagesType {
-    pages?: Partial<Record<PostSortName | ReplySortName, PageType>>;
-    pageCids?: Partial<Record<PostSortName | ReplySortName, string>>;
+    pages: Partial<Record<PostSortName | ReplySortName, PageType>>;
+    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
 }
-export interface SignerType {
-    type: "rsa";
-    privateKey: string;
-    publicKey?: string;
-    address: string;
-    ipfsKey?: Uint8Array;
-    ipnsKeyName?: string;
+export interface PagesTypeJson {
+    pages: Partial<Record<PostSortName | ReplySortName, PageTypeJson>>;
+    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
 }
-export declare type Encrypted = {
-    encrypted: string;
-    encryptedKey: string;
-    type: "aes-cbc";
-};
+export interface PagesTypeIpfs {
+    pages: Partial<Record<PostSortName | ReplySortName, PageIpfs>>;
+    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
+}
 export declare type SubplebbitEncryption = {
     type: "aes-cbc";
     publicKey: string;
 };
 export interface CreateCommentOptions extends CreatePublicationOptions {
-    signer: SignerType | Pick<SignerType, "privateKey" | "type">;
+    signer: Pick<SignerType, "privateKey" | "type">;
     parentCid?: string;
     content?: string;
     title?: string;
@@ -60,19 +63,22 @@ export interface CreateCommentOptions extends CreatePublicationOptions {
 export interface CreateVoteOptions extends CreatePublicationOptions {
     commentCid: string;
     vote: 1 | 0 | -1;
-    signer: SignerType | Pick<SignerType, "privateKey" | "type">;
+    signer: Pick<SignerType, "privateKey" | "type">;
 }
 export interface VoteType extends Omit<CreateVoteOptions, "signer">, PublicationType {
-    author: AuthorType;
+    author: CommentIpfsType["author"];
     timestamp: number;
     signer?: SignerType;
 }
 export interface SubplebbitAuthor {
     postScore: number;
     replyScore: number;
+    banExpiresAt?: number;
+    flair?: Flair;
+    firstCommentTimestamp: number;
     lastCommentCid: string;
 }
-export interface AuthorType {
+export interface AuthorIpfsType {
     address: string;
     previousCommentCid?: string;
     displayName?: string;
@@ -81,25 +87,20 @@ export interface AuthorType {
     };
     avatar?: Nft;
     flair?: Flair;
-    banExpiresAt?: number;
+}
+export interface AuthorTypeWithCommentUpdate extends AuthorIpfsType {
     subplebbit?: SubplebbitAuthor;
 }
 export declare type Wallet = {
     address: string;
 };
-export interface SignatureType {
-    signature: string;
-    publicKey: string;
-    type: "rsa";
-    signedPropertyNames: SignedPropertyNames;
-}
 export interface PublicationType extends Required<CreatePublicationOptions> {
-    author: AuthorType;
+    author: AuthorIpfsType;
     signature: SignatureType;
     protocolVersion: ProtocolVersion;
 }
 export interface CreatePublicationOptions {
-    author?: Partial<Omit<AuthorType, "subplebbit" | "banExpiresAt">>;
+    author?: Partial<AuthorIpfsType>;
     subplebbitAddress: string;
     timestamp?: number;
 }
@@ -110,7 +111,7 @@ export interface ModeratorCommentEditOptions {
     pinned?: boolean;
     locked?: boolean;
     removed?: boolean;
-    moderatorReason?: string;
+    reason?: string;
     commentAuthor?: CommentAuthorEditOptions;
 }
 interface AuthorCommentEditOptions {
@@ -125,15 +126,16 @@ export interface AuthorCommentEdit extends AuthorCommentEditOptions, Publication
 }
 export interface ModeratorCommentEdit extends ModeratorCommentEditOptions, PublicationType {
 }
-export declare type CommentAuthorEditOptions = Pick<AuthorType, "banExpiresAt" | "flair">;
+export declare type CommentAuthorEditOptions = Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
 export interface CreateCommentEditOptions extends AuthorCommentEdit, ModeratorCommentEdit {
     signer: SignerType | Pick<SignerType, "privateKey" | "type">;
 }
 export declare type Nft = {
     chainTicker: string;
-    id: string;
     address: string;
-    signature: string;
+    id: string;
+    timestamp: number;
+    signature: SignatureType;
 };
 export declare type SubplebbitRole = {
     role: "owner" | "admin" | "moderator";
@@ -143,10 +145,11 @@ interface PubsubMessage {
     signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
+    timestamp: number;
 }
 export interface ChallengeType {
     challenge: string;
-    type: "image" | "text" | "video" | "audio" | "html";
+    type: "image/png" | "text/plain" | "chain/<chainTicker>";
 }
 export interface ChallengeRequestMessageType extends PubsubMessage {
     challengeRequestId: string;
@@ -155,7 +158,7 @@ export interface ChallengeRequestMessageType extends PubsubMessage {
     acceptedChallengeTypes?: string[];
 }
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType {
-    publication: VoteType | CommentEditType | CommentType | PostType;
+    publication: VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage | PostPubsubMessage;
 }
 export interface ChallengeMessageType extends PubsubMessage {
     challengeRequestId: string;
@@ -249,12 +252,19 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
     pubsubTopic: string;
     metricsCid?: string;
     protocolVersion: ProtocolVersion;
-    posts: Pages | Pick<Pages, "pages" | "pageCids">;
+    posts?: PagesTypeJson;
+}
+export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts"> {
+    posts?: PagesTypeIpfs;
+}
+export interface InternalSubplebbitType extends Omit<SubplebbitType, "posts">, Pick<SubplebbitIpfsType, "posts"> {
+    signer: Pick<SignerType, "address" | "privateKey" | "type">;
+    _subplebbitUpdateTrigger: boolean;
 }
 export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     createdAt?: number;
     updatedAt?: number;
-    signer?: Pick<SignerType, "privateKey" | "type"> | SignerType;
+    signer?: Pick<SignerType, "privateKey" | "type">;
     encryption?: SubplebbitEncryption;
     signature?: SignatureType;
 }
@@ -266,7 +276,6 @@ export interface SubplebbitEditOptions {
     };
     rules?: string[];
     lastPostCid?: string;
-    posts?: Pages | Pick<Pages, "pages" | "pageCids">;
     pubsubTopic?: string;
     challengeTypes?: ChallengeType[];
     metrics?: SubplebbitMetrics;
@@ -279,68 +288,75 @@ export declare type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "AL
 export declare type PostSortName = "hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll";
 export declare type ReplySortName = "topAll" | "new" | "old" | "controversialAll";
 export declare type SortProps = {
-    score: (comment: CommentType) => number;
+    score: (comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) => number;
     timeframe?: Timeframe;
-    dbSorted: boolean;
 };
 export declare type PostSort = Record<PostSortName, SortProps>;
 export declare type ReplySort = Record<ReplySortName, SortProps>;
 export interface CommentUpdate {
+    cid: string;
     upvoteCount: number;
     downvoteCount: number;
     replyCount: number;
-    authorEdit?: AuthorCommentEdit;
-    replies: PagesType;
+    edit?: AuthorCommentEdit;
+    replies?: PagesTypeIpfs;
     flair?: Flair;
     spoiler?: boolean;
     pinned?: boolean;
     locked?: boolean;
     removed?: boolean;
-    moderatorReason?: string;
+    reason?: string;
     updatedAt: number;
     protocolVersion: ProtocolVersion;
     signature: SignatureType;
-    author?: Pick<AuthorType, "banExpiresAt" | "flair" | "subplebbit">;
+    author?: {
+        subplebbit: SubplebbitAuthor;
+    };
 }
-export interface CommentType extends Partial<CommentUpdate>, Omit<CreateCommentOptions, "signer">, PublicationType {
-    author: AuthorType;
+export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "replies">>, Omit<CreateCommentOptions, "signer"> {
+    author: AuthorTypeWithCommentUpdate;
     timestamp: number;
     protocolVersion: ProtocolVersion;
     signature: SignatureType;
+    replies?: PagesTypeJson;
     postCid?: string;
     previousCid?: string;
     ipnsKeyName?: string;
     depth?: number;
     signer?: SignerType;
-    original?: Pick<Partial<CommentType>, "author" | "content" | "flair">;
+    original?: Pick<Partial<CommentType>, "author" | "content" | "flair" | "protocolVersion">;
+    deleted?: CommentType["edit"]["deleted"];
     thumbnailUrl?: string;
     cid?: string;
     ipnsName?: string;
 }
+export interface CommentWithCommentUpdate extends Omit<CommentType, "replyCount" | "downvoteCount" | "upvoteCount" | "replies" | "updatedAt" | "original" | "cid" | "postCid" | "depth" | "ipnsKeyName" | "signer">, Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth">>, Omit<CommentUpdate, "author" | "replies"> {
+    replies?: PagesTypeJson;
+}
 export interface CommentIpfsType extends Omit<CreateCommentOptions, "signer" | "timestamp" | "author">, PublicationType, Pick<CommentType, "previousCid" | "postCid" | "thumbnailUrl">, Pick<Required<CommentType>, "depth" | "ipnsName"> {
+    author: AuthorIpfsType;
+}
+export interface CommentIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postCid">, Pick<CommentWithCommentUpdate, "cid" | "postCid"> {
 }
 export interface PostType extends Omit<CommentType, "parentCid" | "depth"> {
     depth: 0;
     parentCid: undefined;
-    title: string;
-    link?: string;
-    thumbnailUrl?: string;
+}
+export interface PostIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postCid" | "depth" | "parentCid" | "title" | "link" | "thumbnailUrl">, Pick<CommentWithCommentUpdate, "cid" | "postCid">, Pick<PostType, "depth" | "parentCid" | "title" | "link" | "thumbnailUrl"> {
 }
 export interface CommentEditType extends PublicationType, Omit<CreateCommentEditOptions, "signer"> {
+    author: CommentIpfsType["author"];
     signer?: SignerType;
 }
 export declare type PublicationTypeName = "comment" | "vote" | "commentedit" | "commentupdate" | "subplebbit";
-export declare type SignatureTypes = PublicationTypeName | "challengerequestmessage" | "challengemessage" | "challengeanswermessage" | "challengeverificationmessage";
-export declare type CommentSignedPropertyNames = (keyof Pick<CreateCommentOptions, "subplebbitAddress" | "author" | "timestamp" | "content" | "title" | "link" | "parentCid">)[];
-export declare type CommentEditSignedPropertyNames = (keyof Omit<CreateCommentEditOptions, "signer" | "signature" | "protocolVersion">)[];
-export declare type CommentUpdatedSignedPropertyNames = (keyof Omit<CommentUpdate, "signature" | "protocolVersion">)[];
-export declare type VoteSignedPropertyNames = (keyof Omit<CreateVoteOptions, "signer" | "protocolVersion">)[];
-export declare type SubplebbitSignedPropertyNames = (keyof Omit<SubplebbitType, "signer" | "signature" | "protocolVersion">)[];
-export declare type ChallengeRequestMessageSignedPropertyNames = (keyof Omit<ChallengeRequestMessageType, "signature" | "protocolVersion" | "userAgent">)[];
-export declare type ChallengeMessageSignedPropertyNames = (keyof Omit<ChallengeMessageType, "signature" | "protocolVersion" | "userAgent">)[];
-export declare type ChallengeAnswerMessageSignedPropertyNames = (keyof Omit<ChallengeAnswerMessageType, "signature" | "protocolVersion" | "userAgent">)[];
-export declare type ChallengeVerificationMessageSignedPropertyNames = (keyof Omit<ChallengeVerificationMessageType, "signature" | "protocolVersion" | "userAgent">)[];
-export declare type SignedPropertyNames = CommentSignedPropertyNames | CommentEditSignedPropertyNames | VoteSignedPropertyNames | SubplebbitSignedPropertyNames | CommentUpdatedSignedPropertyNames | ChallengeRequestMessageSignedPropertyNames | ChallengeMessageSignedPropertyNames | ChallengeAnswerMessageSignedPropertyNames | ChallengeVerificationMessageSignedPropertyNames;
+export interface CommentPubsubMessage extends Pick<CommentType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {
+}
+export interface PostPubsubMessage extends Pick<PostType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {
+}
+export interface VotePubsubMessage extends Pick<VoteType, VoteSignedPropertyNamesUnion | "signature" | "protocolVersion"> {
+}
+export interface CommentEditPubsubMessage extends Pick<CommentEditType, CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion"> {
+}
 declare type FunctionPropertyOf<T> = {
     [P in keyof T]: T[P] extends Function ? P : never;
 }[keyof T];
@@ -381,27 +397,70 @@ export declare type NativeFunctions = {
 export declare type OnlyDefinedProperties<T> = Pick<T, {
     [Prop in keyof T]: T[Prop] extends undefined ? never : Prop;
 }[keyof T]>;
-export declare type CommentEditForDbType = OnlyDefinedProperties<Omit<CommentEditType, "author"> & {
-    author: string;
-    authorAddress: string;
-    challengeRequestId: string;
-}>;
-export declare type CommentForDbType = OnlyDefinedProperties<Omit<CommentType, "replyCount" | "upvoteCount" | "downvoteCount" | "replies" | "signature" | "author" | "authorEdit"> & {
-    authorEdit: string;
-    original: string;
-    author: string;
-    authorAddress: string;
-    challengeRequestId?: string;
-    ipnsKeyName: string;
-    signature: string;
-}>;
-export declare type VoteForDbType = Omit<VoteType, "author" | "signature"> & {
-    author: string;
-    authorAddress: string;
-    challengeRequestId: string;
-    signature: string;
-};
-export declare type AuthorDbType = Pick<AuthorType, "address" | "banExpiresAt" | "flair">;
-export declare type PublicationToVerify = CommentEditType | VoteType | CommentType | PostType | CommentUpdate | SubplebbitType | ChallengeRequestMessageType | ChallengeMessageType | ChallengeAnswerMessageType | ChallengeVerificationMessageType;
-export declare type PublicationsToSign = CreateCommentEditOptions | CreateVoteOptions | CreateCommentOptions | Omit<CommentUpdate, "signature"> | Omit<SubplebbitType, "signature"> | Omit<ChallengeAnswerMessageType, "signature"> | Omit<ChallengeRequestMessageType, "signature"> | Omit<ChallengeVerificationMessageType, "signature"> | Omit<ChallengeMessageType, "signature">;
+export interface CommentsTableRow extends CommentIpfsWithCid, Required<Pick<CommentType, "ipnsKeyName">> {
+    authorAddress: AuthorIpfsType["address"];
+    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
+    id: number;
+    insertedAt: number;
+}
+export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "insertedAt"> {
+}
+export interface CommentUpdatesRow extends CommentUpdate {
+    insertedAt: number;
+}
+export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "insertedAt"> {
+}
+export interface VotesTableRow extends VoteType {
+    authorAddress: AuthorIpfsType["address"];
+    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
+    insertedAt: number;
+}
+export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {
+}
+export interface ChallengeRequestsTableRow extends Omit<ChallengeRequestMessageType, "type" | "encryptedPublication"> {
+    insertedAt: number;
+}
+export interface ChallengeRequestsTableRowInsert extends Omit<ChallengeRequestsTableRow, "insertedAt"> {
+}
+export interface ChallengesTableRow extends Omit<ChallengeMessageType, "type" | "encryptedChallenges"> {
+    challengeTypes: ChallengeType["type"][];
+    insertedAt: number;
+}
+export interface ChallengesTableRowInsert extends Omit<ChallengesTableRow, "insertedAt"> {
+}
+export interface ChallengeAnswersTableRow extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encryptedChallengeAnswers"> {
+    insertedAt: number;
+}
+export interface ChallengeAnswersTableRowInsert extends Omit<ChallengeAnswersTableRow, "insertedAt"> {
+}
+export interface ChallengeVerificationsTableRow extends Omit<ChallengeVerificationMessageType, "type" | "encryptedPublication"> {
+    insertedAt: number;
+}
+export interface ChallengeVerificationsTableRowInsert extends Omit<ChallengeVerificationsTableRow, "insertedAt"> {
+}
+export interface SignersTableRow extends Required<Pick<SignerType, "privateKey" | "ipnsKeyName" | "type">> {
+    insertedAt: number;
+}
+export interface SingersTableRowInsert extends Omit<SignersTableRow, "insertedAt"> {
+}
+export interface CommentEditsTableRow extends CommentEditType {
+    authorAddress: AuthorIpfsType["address"];
+    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
+    insertedAt: number;
+}
+export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt"> {
+}
+declare module "knex/types/tables" {
+    interface Tables {
+        comments: Knex.CompositeTableType<CommentsTableRow, CommentsTableRowInsert, null, null>;
+        commentUpdates: Knex.CompositeTableType<CommentUpdatesRow, CommentUpdatesTableRowInsert, Omit<CommentUpdatesTableRowInsert, "cid">, Omit<CommentUpdatesTableRowInsert, "cid">>;
+        votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert, null>;
+        challengeRequests: Knex.CompositeTableType<ChallengeRequestsTableRow, ChallengeRequestsTableRowInsert, null, null>;
+        challenges: Knex.CompositeTableType<ChallengesTableRow, ChallengesTableRowInsert, null, null>;
+        challengeAnswers: Knex.CompositeTableType<ChallengeAnswersTableRow, ChallengeAnswersTableRowInsert, null, null>;
+        challengeVerifications: Knex.CompositeTableType<ChallengeVerificationsTableRow, ChallengeVerificationsTableRowInsert, null, null>;
+        signers: Knex.CompositeTableType<SignersTableRow, SingersTableRowInsert, null, null>;
+        commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRowInsert, null, null>;
+    }
+}
 export {};

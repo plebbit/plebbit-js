@@ -35,17 +35,20 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createSigner = exports.Signer = exports.decrypt = exports.encrypt = exports.verifyVote = exports.verifySubplebbit = exports.verifyComment = exports.Signature = void 0;
+exports.createSigner = exports.Signer = exports.decrypt = exports.encrypt = exports.verifyVote = exports.verifySubplebbit = exports.verifyComment = void 0;
+var assert_1 = __importDefault(require("assert"));
 var util_1 = require("./util");
 var signatures_1 = require("./signatures");
-Object.defineProperty(exports, "Signature", { enumerable: true, get: function () { return signatures_1.Signature; } });
 Object.defineProperty(exports, "verifyComment", { enumerable: true, get: function () { return signatures_1.verifyComment; } });
 Object.defineProperty(exports, "verifySubplebbit", { enumerable: true, get: function () { return signatures_1.verifySubplebbit; } });
 Object.defineProperty(exports, "verifyVote", { enumerable: true, get: function () { return signatures_1.verifyVote; } });
 var encryption_1 = require("./encryption");
-Object.defineProperty(exports, "encrypt", { enumerable: true, get: function () { return encryption_1.encrypt; } });
-Object.defineProperty(exports, "decrypt", { enumerable: true, get: function () { return encryption_1.decrypt; } });
+Object.defineProperty(exports, "encrypt", { enumerable: true, get: function () { return encryption_1.encryptEd25519AesGcm; } });
+Object.defineProperty(exports, "decrypt", { enumerable: true, get: function () { return encryption_1.decryptEd25519AesGcm; } });
 var Signer = /** @class */ (function () {
     function Signer(props) {
         var _a, _b;
@@ -61,6 +64,10 @@ var Signer = /** @class */ (function () {
                     ? new Uint8Array(props.ipfsKey)
                     : undefined;
     }
+    Signer.prototype.toJSONSignersTableRow = function () {
+        (0, assert_1.default)(this.type && this.privateKey && this.ipnsKeyName);
+        return { type: this.type, privateKey: this.privateKey, ipnsKeyName: this.ipnsKeyName };
+    };
     return Signer;
 }());
 exports.Signer = Signer;
@@ -73,21 +80,18 @@ var createSigner = function (createSignerOptions) {
                 case 0:
                     privateKey = createSignerOptions.privateKey, signerType = createSignerOptions.type;
                     if (!privateKey) return [3 /*break*/, 1];
-                    if (signerType !== "rsa")
-                        throw Error("invalid signer createSignerOptions.type, not 'rsa'");
+                    if (signerType !== "ed25519")
+                        throw Error("invalid signer createSignerOptions.type, not 'ed25519'");
                     return [3 /*break*/, 3];
-                case 1: return [4 /*yield*/, (0, util_1.generatePrivateKeyPem)()];
+                case 1: return [4 /*yield*/, (0, util_1.generatePrivateKey)()];
                 case 2:
                     privateKey = _b.sent();
-                    signerType = "rsa";
+                    signerType = "ed25519";
                     _b.label = 3;
                 case 3:
                     if (typeof signerType !== "string")
                         throw Error("createSignerOptions does not include type");
-                    return [4 /*yield*/, Promise.all([
-                            (0, util_1.getPublicKeyPemFromPrivateKeyPem)(privateKey),
-                            (0, util_1.getPlebbitAddressFromPrivateKeyPem)(privateKey)
-                        ])];
+                    return [4 /*yield*/, Promise.all([(0, util_1.getPublicKeyFromPrivateKey)(privateKey), (0, util_1.getPlebbitAddressFromPrivateKey)(privateKey)])];
                 case 4:
                     _a = _b.sent(), publicKey = _a[0], address = _a[1];
                     return [2 /*return*/, new Signer({

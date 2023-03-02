@@ -90,7 +90,7 @@ var Publication = /** @class */ (function (_super) {
         this.subplebbitAddress = props.subplebbitAddress;
         this.timestamp = props.timestamp;
         this.signer = this.signer || props["signer"];
-        this.signature = new signer_1.Signature(props.signature);
+        this.signature = props.signature;
         if (props.author)
             this.author = new author_1.default(props.author);
         this.protocolVersion = props.protocolVersion;
@@ -99,16 +99,21 @@ var Publication = /** @class */ (function (_super) {
     Publication.prototype.getType = function () {
         throw new Error("Should be implemented by children of Publication");
     };
-    Publication.prototype.toJSON = function () {
-        return __assign({}, this.toJSONSkeleton());
+    // The publication with extra fields supplemented by the subplebbit after ChallengeVerification
+    Publication.prototype.toJSONAfterChallengeVerification = function () {
+        return this.toJSONPubsubMessagePublication();
     };
-    // TODO make this private/protected
-    Publication.prototype.toJSONSkeleton = function () {
+    // When publication is added as a file to IPFS
+    Publication.prototype.toJSONIpfs = function () {
+        return this.toJSONPubsubMessagePublication();
+    };
+    // This is the publication that user publishes over pubsub
+    Publication.prototype.toJSONPubsubMessagePublication = function () {
         return {
             subplebbitAddress: this.subplebbitAddress,
             timestamp: this.timestamp,
-            signature: this.signature instanceof signer_1.Signature ? this.signature.toJSON() : this.signature,
-            author: this.author.toJSON(),
+            signature: this.signature,
+            author: this.author.toJSONIpfs(),
             protocolVersion: this.protocolVersion
         };
     };
@@ -132,7 +137,7 @@ var Publication = /** @class */ (function (_super) {
                         }
                         log("Received encrypted challenges.  Will decrypt and emit them on \"challenge\" event. User shoud publish solution by calling publishChallengeAnswers");
                         _b = (_a = JSON).parse;
-                        return [4 /*yield*/, (0, signer_1.decrypt)(msgParsed.encryptedChallenges.encrypted, msgParsed.encryptedChallenges.encryptedKey, this.pubsubMessageSigner.privateKey)];
+                        return [4 /*yield*/, (0, signer_1.decrypt)(msgParsed.encryptedChallenges, this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)];
                     case 2:
                         decryptedChallenges = _b.apply(_a, [_e.sent()]);
                         decryptedChallenge = __assign(__assign({}, msgParsed), { challenges: decryptedChallenges });
@@ -151,7 +156,7 @@ var Publication = /** @class */ (function (_super) {
                         if (!(msgParsed.challengeSuccess && msgParsed.encryptedPublication)) return [3 /*break*/, 6];
                         log("Challenge (".concat(msgParsed.challengeRequestId, ") has passed. Will update publication props from ChallengeVerificationMessage.publication"));
                         _d = (_c = JSON).parse;
-                        return [4 /*yield*/, (0, signer_1.decrypt)(msgParsed.encryptedPublication.encrypted, msgParsed.encryptedPublication.encryptedKey, this.pubsubMessageSigner.privateKey)];
+                        return [4 /*yield*/, (0, signer_1.decrypt)(msgParsed.encryptedPublication, this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)];
                     case 5:
                         decryptedPublication = _d.apply(_c, [_e.sent()]);
                         (0, assert_1.default)(decryptedPublication);
@@ -182,7 +187,7 @@ var Publication = /** @class */ (function (_super) {
                         log = (0, plebbit_logger_1.default)("plebbit-js:publication:publishChallengeAnswers");
                         if (!Array.isArray(challengeAnswers))
                             challengeAnswers = [challengeAnswers];
-                        return [4 /*yield*/, (0, signer_1.encrypt)(JSON.stringify(challengeAnswers), this.subplebbit.encryption.publicKey)];
+                        return [4 /*yield*/, (0, signer_1.encrypt)(JSON.stringify(challengeAnswers), this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)];
                     case 1:
                         encryptedChallengeAnswers = _e.sent();
                         toSignAnswer = {
@@ -191,7 +196,8 @@ var Publication = /** @class */ (function (_super) {
                             challengeAnswerId: (0, uuid_1.v4)(),
                             encryptedChallengeAnswers: encryptedChallengeAnswers,
                             userAgent: version_1.default.USER_AGENT,
-                            protocolVersion: version_1.default.PROTOCOL_VERSION
+                            protocolVersion: version_1.default.PROTOCOL_VERSION,
+                            timestamp: (0, util_1.timestamp)()
                         };
                         _a = this;
                         _b = challenge_1.ChallengeAnswerMessage.bind;
@@ -241,12 +247,15 @@ var Publication = /** @class */ (function (_super) {
                     case 1:
                         _a.subplebbit = _g.sent();
                         this._validateSubFields();
+                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange)];
+                    case 2:
+                        _g.sent();
                         _b = this;
                         return [4 /*yield*/, this.plebbit.createSigner()];
-                    case 2:
-                        _b.pubsubMessageSigner = _g.sent();
-                        return [4 /*yield*/, (0, signer_1.encrypt)(JSON.stringify(this.toJSONSkeleton()), this.subplebbit.encryption.publicKey)];
                     case 3:
+                        _b.pubsubMessageSigner = _g.sent();
+                        return [4 /*yield*/, (0, signer_1.encrypt)(JSON.stringify(this.toJSONPubsubMessagePublication()), this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)];
+                    case 4:
                         encryptedPublication = _g.sent();
                         toSignMsg = {
                             type: "CHALLENGEREQUEST",
@@ -254,21 +263,22 @@ var Publication = /** @class */ (function (_super) {
                             challengeRequestId: (0, uuid_1.v4)(),
                             acceptedChallengeTypes: options.acceptedChallengeTypes,
                             userAgent: version_1.default.USER_AGENT,
-                            protocolVersion: version_1.default.PROTOCOL_VERSION
+                            protocolVersion: version_1.default.PROTOCOL_VERSION,
+                            timestamp: (0, util_1.timestamp)()
                         };
                         _c = this;
                         _d = challenge_1.ChallengeRequestMessage.bind;
                         _e = [__assign({}, toSignMsg)];
                         _f = {};
                         return [4 /*yield*/, (0, signatures_1.signChallengeRequest)(toSignMsg, this.pubsubMessageSigner)];
-                    case 4:
+                    case 5:
                         _c._challengeRequest = new (_d.apply(challenge_1.ChallengeRequestMessage, [void 0, __assign.apply(void 0, _e.concat([(_f.signature = _g.sent(), _f)]))]))();
                         log.trace("Attempting to publish ".concat(this.getType(), " with options"), options);
                         return [4 /*yield*/, Promise.all([
                                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(this._challengeRequest))),
                                 this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange)
                             ])];
-                    case 5:
+                    case 6:
                         _g.sent();
                         log("Sent a challenge request (".concat(this._challengeRequest.challengeRequestId, ")"));
                         this.emit("challengerequest", this._challengeRequest);

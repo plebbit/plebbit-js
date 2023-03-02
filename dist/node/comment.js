@@ -68,16 +68,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Comment = void 0;
 var util_1 = require("./util");
 var publication_1 = __importDefault(require("./publication"));
-var pages_1 = require("./pages");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var lodash_1 = __importDefault(require("lodash"));
 var signatures_1 = require("./signer/signatures");
+var assert_1 = __importDefault(require("assert"));
 var DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 var Comment = /** @class */ (function (_super) {
     __extends(Comment, _super);
     function Comment(props, plebbit) {
         var _this = _super.call(this, props, plebbit) || this;
         _this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
+        // these functions might get separated from their `this` when used
+        _this.publish = _this.publish.bind(_this);
+        _this.update = _this.update.bind(_this);
+        _this.stop = _this.stop.bind(_this);
         return _this;
     }
     Comment.prototype._initProps = function (props) {
@@ -89,96 +93,116 @@ var Comment = /** @class */ (function (_super) {
         this.ipnsKeyName = props.ipnsKeyName;
         this.depth = props.depth;
         this.link = props.link;
+        this.title = props.title;
         this.thumbnailUrl = props.thumbnailUrl;
         this.content = props.content;
         this.original = props.original;
+        this.spoiler = props.spoiler;
+        this.protocolVersion = props.protocolVersion;
+        this.flair = props.flair;
         this.setPreviousCid(props.previousCid);
-        // CommentUpdate props
-        this._initCommentUpdate(props);
-        // these functions might get separated from their `this` when used
-        this.publish = this.publish.bind(this);
-        this.update = this.update.bind(this);
-        this.stop = this.stop.bind(this);
     };
     Comment.prototype._initCommentUpdate = function (props) {
-        var _a, _b, _c, _d, _e, _f, _g;
-        this.upvoteCount = props.upvoteCount;
-        this.downvoteCount = props.downvoteCount;
-        this.replyCount = props.replyCount;
-        this.updatedAt = props.updatedAt;
-        this.setReplies(props.replies);
-        this.deleted = (_a = props.authorEdit) === null || _a === void 0 ? void 0 : _a.deleted;
-        this.pinned = props.pinned;
-        this.locked = props.locked;
-        this.removed = props.removed;
-        this.moderatorReason = props.moderatorReason;
-        this.authorEdit = props.authorEdit;
-        this.spoiler = (_c = (_b = props.authorEdit) === null || _b === void 0 ? void 0 : _b.spoiler) !== null && _c !== void 0 ? _c : props.spoiler;
-        this.protocolVersion = props.protocolVersion;
-        if ((_d = props.author) === null || _d === void 0 ? void 0 : _d.banExpiresAt)
-            this.author.banExpiresAt = props.author.banExpiresAt;
-        if ((_e = props.author) === null || _e === void 0 ? void 0 : _e.flair)
-            this.author.flair = props.author.flair;
-        if ((_f = props.author) === null || _f === void 0 ? void 0 : _f.subplebbit)
-            this.author.subplebbit = props.author.subplebbit;
-        if ((_g = props.authorEdit) === null || _g === void 0 ? void 0 : _g.content)
-            this.content = props.authorEdit.content;
-        // TODO set merged comment flair here
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        return __awaiter(this, void 0, void 0, function () {
+            var _l, _m;
+            return __generator(this, function (_o) {
+                switch (_o.label) {
+                    case 0:
+                        if (!this.original)
+                            this.original = lodash_1.default.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"]);
+                        this._rawCommentUpdate = props;
+                        this.upvoteCount = props.upvoteCount;
+                        this.downvoteCount = props.downvoteCount;
+                        this.replyCount = props.replyCount;
+                        this.updatedAt = props.updatedAt;
+                        this.deleted = (_a = props.edit) === null || _a === void 0 ? void 0 : _a.deleted;
+                        this.pinned = props.pinned;
+                        this.locked = props.locked;
+                        this.removed = props.removed;
+                        this.reason = props.reason;
+                        this.edit = props.edit;
+                        this.protocolVersion = props.protocolVersion;
+                        // Merge props from original comment and CommentUpdate
+                        this.spoiler = (_c = (_b = props.edit) === null || _b === void 0 ? void 0 : _b.spoiler) !== null && _c !== void 0 ? _c : this.spoiler;
+                        this.author.subplebbit = props.author.subplebbit;
+                        if ((_d = props.edit) === null || _d === void 0 ? void 0 : _d.content)
+                            this.content = props.edit.content;
+                        this.flair = props.flair || ((_e = props.edit) === null || _e === void 0 ? void 0 : _e.flair) || this.flair;
+                        this.author.flair = ((_g = (_f = props.author) === null || _f === void 0 ? void 0 : _f.subplebbit) === null || _g === void 0 ? void 0 : _g.flair) || ((_j = (_h = props.edit) === null || _h === void 0 ? void 0 : _h.author) === null || _j === void 0 ? void 0 : _j.flair) || ((_k = this.author) === null || _k === void 0 ? void 0 : _k.flair);
+                        (0, assert_1.default)(this.cid);
+                        if (!!this.subplebbit) return [3 /*break*/, 2];
+                        _l = this;
+                        return [4 /*yield*/, this.plebbit.getSubplebbit(this.subplebbitAddress)];
+                    case 1:
+                        _l.subplebbit = _o.sent();
+                        _o.label = 2;
+                    case 2:
+                        _m = this;
+                        return [4 /*yield*/, (0, util_1.parseRawPages)(props.replies, this.cid, this.subplebbit)];
+                    case 3:
+                        _m.replies = _o.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
     };
     Comment.prototype.getType = function () {
         return "comment";
     };
     Comment.prototype.toJSON = function () {
-        return __assign(__assign(__assign({}, this.toJSONSkeleton()), (typeof this.updatedAt === "number" ? this.toJSONCommentUpdate() : undefined)), { cid: this.cid, original: this.original, author: this.author.toJSON(), previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl, ipnsKeyName: this.ipnsKeyName });
+        var _a;
+        var base = this.cid ? this.toJSONAfterChallengeVerification() : this.toJSONPubsubMessagePublication();
+        return __assign(__assign({}, base), (typeof this.updatedAt === "number"
+            ? {
+                author: this.author.toJSONIpfsWithCommentUpdate(),
+                original: this.original,
+                upvoteCount: this.upvoteCount,
+                downvoteCount: this.downvoteCount,
+                replyCount: this.replyCount,
+                updatedAt: this.updatedAt,
+                deleted: this.deleted,
+                pinned: this.pinned,
+                locked: this.locked,
+                removed: this.removed,
+                reason: this.reason,
+                edit: this.edit,
+                protocolVersion: this.protocolVersion,
+                spoiler: this.spoiler,
+                flair: this.flair,
+                replies: (_a = this.replies) === null || _a === void 0 ? void 0 : _a.toJSON()
+            }
+            : {}));
     };
-    Comment.prototype.toJSONPages = function () {
-        return __assign(__assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["ipnsKeyName"])), this.toJSONCommentUpdate(true)), { author: this.author.toJSON(), deleted: this.deleted });
+    Comment.prototype.toJSONPagesIpfs = function (commentUpdate) {
+        (0, assert_1.default)(this.cid && this.postCid);
+        return {
+            comment: __assign(__assign({}, this.toJSONIpfs()), { author: this.author.toJSONIpfs(), cid: this.cid, postCid: this.postCid }),
+            commentUpdate: commentUpdate
+        };
     };
     Comment.prototype.toJSONIpfs = function () {
         if (typeof this.ipnsName !== "string")
             throw Error("comment.ipnsName should be defined before calling toJSONIpfs");
         if (typeof this.depth !== "number")
             throw Error("comment.depth should be defined before calling toJSONIpfs");
-        return __assign(__assign({}, this.toJSONSkeleton()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl });
+        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl });
     };
-    Comment.prototype.toJSONSkeleton = function () {
-        return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { content: this.content, parentCid: this.parentCid, flair: this.flair, spoiler: this.spoiler, link: this.link });
+    Comment.prototype.toJSONPubsubMessagePublication = function () {
+        return __assign(__assign({}, _super.prototype.toJSONPubsubMessagePublication.call(this)), { content: this.content, parentCid: this.parentCid, flair: this.flair, spoiler: this.spoiler, link: this.link, title: this.title });
     };
-    Comment.prototype.toJSONForDb = function (challengeRequestId) {
-        if (typeof this.ipnsKeyName !== "string")
-            throw Error("comment.ipnsKeyName needs to be defined before inserting comment in DB");
-        return (0, util_1.removeKeysWithUndefinedValues)(__assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["replyCount", "upvoteCount", "downvoteCount", "replies"])), { author: JSON.stringify(this.author), authorEdit: JSON.stringify(this.authorEdit), original: JSON.stringify(this.original), authorAddress: this.author.address, challengeRequestId: challengeRequestId, ipnsKeyName: this.ipnsKeyName, signature: JSON.stringify(this.signature) }));
+    Comment.prototype.toJSONAfterChallengeVerification = function () {
+        (0, assert_1.default)(this.cid && this.postCid);
+        return __assign(__assign({}, this.toJSONIpfs()), { postCid: this.postCid, cid: this.cid });
     };
-    Comment.prototype.toJSONCommentUpdate = function (skipValidation) {
-        if (skipValidation === void 0) { skipValidation = false; }
-        if (!skipValidation) {
-            if (typeof this.upvoteCount !== "number" ||
-                typeof this.downvoteCount !== "number" ||
-                typeof this.replyCount !== "number" ||
-                typeof this.updatedAt !== "number")
-                throw Error("upvoteCount, downvoteCount, replyCount, and updatedAt need to be properly defined as numbers");
-        }
-        var author = {
-            banExpiresAt: this.author.banExpiresAt,
-            flair: this.flair,
-            subplebbit: this.author.subplebbit
-        };
-        return {
-            upvoteCount: this.upvoteCount,
-            downvoteCount: this.downvoteCount,
-            replyCount: this.replyCount,
-            authorEdit: this.authorEdit,
-            replies: this.replies.toJSON(),
-            flair: this.flair,
-            spoiler: this.spoiler,
-            pinned: this.pinned,
-            locked: this.locked,
-            removed: this.removed,
-            moderatorReason: this.moderatorReason,
-            updatedAt: this.updatedAt,
-            protocolVersion: this.protocolVersion,
-            author: author
-        };
+    Comment.prototype.toJSONCommentsTableRowInsert = function (challengeRequestId) {
+        (0, assert_1.default)(this.ipnsKeyName && this.cid && this.postCid);
+        return __assign(__assign({}, this.toJSONIpfs()), { postCid: this.postCid, cid: this.cid, authorAddress: this.author.address, challengeRequestId: challengeRequestId, ipnsKeyName: this.ipnsKeyName });
+    };
+    Comment.prototype.toJSONMerged = function () {
+        var _a;
+        (0, assert_1.default)(this.ipnsName && typeof this.updatedAt === "number" && this.original);
+        return __assign(__assign({}, this.toJSONAfterChallengeVerification()), { author: this.author.toJSONIpfsWithCommentUpdate(), original: this.original, upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replyCount: this.replyCount, updatedAt: this.updatedAt, deleted: this.deleted, pinned: this.pinned, locked: this.locked, removed: this.removed, reason: this.reason, edit: this.edit, protocolVersion: this.protocolVersion, spoiler: this.spoiler, flair: this.flair, replies: (_a = this.replies) === null || _a === void 0 ? void 0 : _a.toJSON() });
     };
     Comment.prototype.setCommentIpnsKey = function (ipnsKey) {
         // Contains name and id
@@ -200,17 +224,9 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype.setUpdatedAt = function (newUpdatedAt) {
         this.updatedAt = newUpdatedAt;
     };
-    Comment.prototype.setReplies = function (replies) {
-        var _a;
-        this.replies = new pages_1.Pages({
-            pages: { topAll: (_a = replies === null || replies === void 0 ? void 0 : replies.pages) === null || _a === void 0 ? void 0 : _a.topAll },
-            pageCids: (replies === null || replies === void 0 ? void 0 : replies.pageCids) || {},
-            subplebbit: { plebbit: this.plebbit, address: this.subplebbitAddress }
-        });
-    };
     Comment.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, res, e_1, _a, signatureValidity;
+            var log, res, e_1, _a, commentInstance, signatureValidity;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -227,12 +243,7 @@ var Comment = /** @class */ (function (_super) {
                         log.error("Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error: "), e_1);
                         return [2 /*return*/];
                     case 4:
-                        // Make a copy of fields that may be changed with a CommentUpdate
-                        if (!this.original)
-                            this.original = lodash_1.default.pick(this.toJSON(), ["author", "flair", "content"]);
-                        if (!(res &&
-                            (!this.updatedAt ||
-                                !lodash_1.default.isEqual((0, util_1.removeKeysWithUndefinedValues)(lodash_1.default.omit(this.toJSONCommentUpdate(), ["signature"])), lodash_1.default.omit(res, ["signature"]))))) return [3 /*break*/, 8];
+                        if (!(res && this.updatedAt !== res.updatedAt)) return [3 /*break*/, 8];
                         if (!!this.subplebbit) return [3 /*break*/, 6];
                         _a = this;
                         return [4 /*yield*/, this.plebbit.getSubplebbit(this.subplebbitAddress)];
@@ -241,7 +252,8 @@ var Comment = /** @class */ (function (_super) {
                         _b.label = 6;
                     case 6:
                         log("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
-                        return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(res, this.subplebbit.encryption.publicKey, this.signature.publicKey)];
+                        commentInstance = lodash_1.default.pick(this, ["cid", "signature"]);
+                        return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(res, this.subplebbit, commentInstance, this.plebbit)];
                     case 7:
                         signatureValidity = _b.sent();
                         if (!signatureValidity.valid) {
@@ -278,16 +290,30 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype.stop = function () {
         this._updateInterval = clearInterval(this._updateInterval);
     };
-    Comment.prototype.publish = function () {
+    Comment.prototype._validateSignature = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var signatureValidity;
+            var commentObj, signatureValidity;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, (0, signatures_1.verifyComment)(this.toJSON(), this.plebbit, true)];
+                    case 0:
+                        commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication()));
+                        return [4 /*yield*/, (0, signatures_1.verifyComment)(commentObj, this.plebbit, true)];
                     case 1:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)
                             (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", "comment.publish: Failed to publish due to invalid signature. Reason=".concat(signatureValidity.reason));
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Comment.prototype.publish = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._validateSignature()];
+                    case 1:
+                        _a.sent();
                         return [2 /*return*/, _super.prototype.publish.call(this)];
                 }
             });

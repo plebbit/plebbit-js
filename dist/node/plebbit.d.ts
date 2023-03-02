@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { BlockchainProvider, CommentEditType, CommentType, CreateCommentEditOptions, CreateCommentOptions, CreateSignerOptions, CreateSubplebbitOptions, CreateVoteOptions, NativeFunctions, PlebbitOptions, PostType, SubplebbitType, VoteType } from "./types";
+import { BlockchainProvider, CommentEditType, CommentIpfsType, CommentPubsubMessage, CommentType, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateSubplebbitOptions, CreateVoteOptions, NativeFunctions, PlebbitOptions, SubplebbitIpfsType, SubplebbitType, VotePubsubMessage, VoteType } from "./types";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
@@ -10,6 +10,7 @@ import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
 import EventEmitter from "events";
 import { Options } from "ipfs-http-client";
+import { CreateSignerOptions } from "./signer/constants";
 export declare class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
     pubsubIpfsClient: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">;
@@ -29,10 +30,11 @@ export declare class Plebbit extends EventEmitter implements PlebbitOptions {
     getSubplebbit(subplebbitAddress: string): Promise<Subplebbit>;
     getComment(cid: string): Promise<Comment | Post>;
     private _initMissingFields;
-    createComment(options: CreateCommentOptions | CommentType | PostType | Comment | Post): Promise<Comment | Post>;
+    private _createCommentInstance;
+    createComment(options: CreateCommentOptions | CommentWithCommentUpdate | CommentIpfsType | CommentPubsubMessage | CommentType | Comment): Promise<Comment | Post>;
     _canRunSub(): boolean;
-    createSubplebbit(options?: CreateSubplebbitOptions | SubplebbitType): Promise<Subplebbit>;
-    createVote(options: CreateVoteOptions | VoteType): Promise<Vote>;
+    createSubplebbit(options?: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType): Promise<Subplebbit>;
+    createVote(options: CreateVoteOptions | VoteType | VotePubsubMessage): Promise<Vote>;
     createCommentEdit(options: CreateCommentEditOptions | CommentEditType): Promise<CommentEdit>;
     createSigner(createSignerOptions?: CreateSignerOptions): Promise<Signer>;
     listSubplebbits(): Promise<string[]>;

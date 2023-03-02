@@ -50,14 +50,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.throwWithErrorCode = exports.encode = exports.removeKeysWithUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.fetchCid = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.parseRawPages = exports.parseJsonStrings = exports.parsePagesIpfs = exports.parsePageIpfs = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.fetchCid = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var util_1 = require("./runtime/browser/util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var errors_1 = require("./errors");
 var err_code_1 = __importDefault(require("err-code"));
 var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
 var lodash_1 = __importDefault(require("lodash"));
-var safe_stable_stringify_1 = require("safe-stable-stringify");
+var assert_1 = __importDefault(require("assert"));
+var pages_1 = require("./pages");
 //This is temp. TODO replace this with accurate mapping
 exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -252,8 +253,7 @@ function replaceXWithY(obj, x, y) {
 }
 exports.replaceXWithY = replaceXWithY;
 function hotScore(comment) {
-    if (typeof comment.downvoteCount !== "number" || typeof comment.upvoteCount !== "number")
-        throw Error("Comment.downvoteCount (".concat(comment.downvoteCount, ") and comment.upvoteCount (").concat(comment.upvoteCount, ") need to be defined before calculating hotScore"));
+    (0, assert_1.default)(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number" && typeof comment.timestamp === "number");
     var score = comment.upvoteCount - comment.downvoteCount;
     var order = Math.log10(Math.max(score, 1));
     var sign = score > 0 ? 1 : score < 0 ? -1 : 0;
@@ -262,8 +262,7 @@ function hotScore(comment) {
 }
 exports.hotScore = hotScore;
 function controversialScore(comment) {
-    if (typeof comment.downvoteCount !== "number" || typeof comment.upvoteCount !== "number")
-        throw Error("Comment.downvoteCount (".concat(comment.downvoteCount, ") and comment.upvoteCount (").concat(comment.upvoteCount, ") need to be defined before calculating controversialScore"));
+    (0, assert_1.default)(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
     if (comment.downvoteCount <= 0 || comment.upvoteCount <= 0)
         return 0;
     var magnitude = comment.upvoteCount + comment.downvoteCount;
@@ -274,23 +273,39 @@ function controversialScore(comment) {
 }
 exports.controversialScore = controversialScore;
 function topScore(comment) {
-    if (typeof comment.downvoteCount !== "number" || typeof comment.upvoteCount !== "number")
-        throw Error("Comment.downvoteCount (".concat(comment.downvoteCount, ") and comment.upvoteCount (").concat(comment.upvoteCount, ") need to be defined before calculating topScore"));
+    (0, assert_1.default)(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
     return comment.upvoteCount - comment.downvoteCount;
 }
 exports.topScore = topScore;
 function newScore(comment) {
-    if (typeof comment.timestamp !== "number")
-        throw Error("Comment.timestamp (".concat(comment.timestamp, ") needs to defined to calculate newScore"));
+    (0, assert_1.default)(typeof comment.timestamp === "number");
     return comment.timestamp;
 }
 exports.newScore = newScore;
 function oldScore(comment) {
-    if (typeof comment.timestamp !== "number")
-        throw Error("Comment.timestamp (".concat(comment.timestamp, ") needs to defined to calculate oldScore"));
+    (0, assert_1.default)(typeof comment.timestamp === "number");
     return -comment.timestamp;
 }
 exports.oldScore = oldScore;
+function removeNullAndUndefinedValues(obj) {
+    return lodash_1.default.omitBy(obj, lodash_1.default.isNil);
+}
+exports.removeNullAndUndefinedValues = removeNullAndUndefinedValues;
+function removeNullAndUndefinedValuesRecursively(obj) {
+    if (Array.isArray(obj))
+        return obj.map(removeNullAndUndefinedValuesRecursively);
+    if (!lodash_1.default.isPlainObject(obj))
+        return obj;
+    var cleanedObj = removeNullAndUndefinedValues(obj);
+    for (var _i = 0, _a = Object.entries(cleanedObj); _i < _a.length; _i++) {
+        var _b = _a[_i], key = _b[0], value = _b[1];
+        if (lodash_1.default.isPlainObject(value) || Array.isArray(value))
+            cleanedObj[key] = removeNullAndUndefinedValuesRecursively(value);
+    }
+    return cleanedObj;
+}
+exports.removeNullAndUndefinedValuesRecursively = removeNullAndUndefinedValuesRecursively;
+// TODO rename
 function removeKeysWithUndefinedValues(object) {
     var _a, _b;
     var newObj = JSON.parse(JSON.stringify(object));
@@ -300,16 +315,147 @@ function removeKeysWithUndefinedValues(object) {
     return newObj;
 }
 exports.removeKeysWithUndefinedValues = removeKeysWithUndefinedValues;
-function encode(obj) {
-    // May change in future
-    // We're encoding in cborg and decoding to make sure all JSON objects can be stringified and parsed determinstically
-    // Meaning the order of the fields will always be the same
-    return (0, safe_stable_stringify_1.stringify)(obj);
-}
-exports.encode = encode;
 function throwWithErrorCode(code, details) {
     throw (0, err_code_1.default)(Error(errors_1.messages[code]), errors_1.messages[errors_1.messages[code]], {
         details: details
     });
 }
 exports.throwWithErrorCode = throwWithErrorCode;
+function parsePageIpfs(pageIpfs, subplebbit) {
+    return __awaiter(this, void 0, void 0, function () {
+        var finalComments, i;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, Promise.all(pageIpfs.comments.map(function (commentObj) { return subplebbit.plebbit.createComment(commentObj.comment); }))];
+                case 1:
+                    finalComments = _a.sent();
+                    i = 0;
+                    _a.label = 2;
+                case 2:
+                    if (!(i < finalComments.length)) return [3 /*break*/, 5];
+                    //@ts-expect-error
+                    finalComments[i].subplebbit = subplebbit;
+                    return [4 /*yield*/, finalComments[i]._initCommentUpdate(pageIpfs.comments[i].commentUpdate)];
+                case 3:
+                    _a.sent();
+                    _a.label = 4;
+                case 4:
+                    i++;
+                    return [3 /*break*/, 2];
+                case 5: return [2 /*return*/, { comments: finalComments, nextCid: pageIpfs.nextCid }];
+            }
+        });
+    });
+}
+exports.parsePageIpfs = parsePageIpfs;
+function parsePagesIpfs(pagesRaw, subplebbit) {
+    return __awaiter(this, void 0, void 0, function () {
+        var parsedPages, pagesType;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (!pagesRaw)
+                        return [2 /*return*/, undefined];
+                    return [4 /*yield*/, Promise.all(Object.keys(pagesRaw.pages).map(function (key) { return parsePageIpfs(pagesRaw.pages[key], subplebbit); }))];
+                case 1:
+                    parsedPages = _a.sent();
+                    pagesType = Object.fromEntries(Object.keys(pagesRaw.pages).map(function (key, i) { return [key, parsedPages[i]]; }));
+                    return [2 /*return*/, { pages: pagesType, pageCids: pagesRaw.pageCids }];
+            }
+        });
+    });
+}
+exports.parsePagesIpfs = parsePagesIpfs;
+var isJsonString = function (jsonString) {
+    if (typeof jsonString !== "string" || (!jsonString.startsWith("{") && !jsonString.startsWith("[")))
+        return false;
+    try {
+        JSON.parse(jsonString);
+        return true;
+    }
+    catch (_a) {
+        return false;
+    }
+};
+// Only for DB
+var parseJsonStrings = function (obj) {
+    var _a, _b;
+    if (obj === "[object Object]")
+        throw Error("Object shouldn't be [object Object]");
+    if (Array.isArray(obj))
+        return obj.map(function (o) { return (0, exports.parseJsonStrings)(o); });
+    if (!isJsonString(obj) && !lodash_1.default.isPlainObject(obj))
+        return obj;
+    var newObj = removeNullAndUndefinedValues(isJsonString(obj) ? JSON.parse(obj) : lodash_1.default.cloneDeep(obj));
+    //prettier-ignore
+    var booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed", "commentUpdate_deleted", "commentUpdate_spoiler", "commentUpdate_pinned", "commentUpdate_locked", "commentUpdate_removed"];
+    for (var _i = 0, _c = Object.entries(newObj); _i < _c.length; _i++) {
+        var _d = _c[_i], key = _d[0], value = _d[1];
+        if (value === "[object Object]")
+            throw Error("key (".concat(key, ") shouldn't be [object Object]"));
+        if (booleanFields.includes(key) && typeof value === "number")
+            newObj[key] = Boolean(value);
+        else if (isJsonString(value))
+            newObj[key] = removeNullAndUndefinedValues(JSON.parse(value));
+        if (((_b = (_a = newObj[key]) === null || _a === void 0 ? void 0 : _a.constructor) === null || _b === void 0 ? void 0 : _b.name) === "Object")
+            newObj[key] = removeNullAndUndefinedValues((0, exports.parseJsonStrings)(newObj[key]));
+    }
+    return newObj;
+};
+exports.parseJsonStrings = parseJsonStrings;
+// To use for both subplebbit.posts and comment.replies
+function parseRawPages(replies, parentCid, subplebbit) {
+    var _a;
+    return __awaiter(this, void 0, void 0, function () {
+        var isIpfs, parsedPages, repliesClone, pageKeys, _i, pageKeys_1, key, _b;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
+                case 0:
+                    if (!replies)
+                        return [2 /*return*/, undefined];
+                    if (replies instanceof pages_1.Pages)
+                        return [2 /*return*/, replies];
+                    isIpfs = Boolean((_a = Object.values(replies.pages)[0]) === null || _a === void 0 ? void 0 : _a.comments[0]["commentUpdate"]);
+                    if (!isIpfs) return [3 /*break*/, 2];
+                    replies = replies;
+                    return [4 /*yield*/, parsePagesIpfs(replies, subplebbit)];
+                case 1:
+                    parsedPages = _c.sent();
+                    return [2 /*return*/, new pages_1.Pages({
+                            pages: parsedPages.pages,
+                            pageCids: parsedPages.pageCids,
+                            subplebbit: subplebbit,
+                            pagesIpfs: replies.pages,
+                            parentCid: parentCid
+                        })];
+                case 2:
+                    replies = replies;
+                    repliesClone = lodash_1.default.cloneDeep(replies);
+                    pageKeys = Object.keys(repliesClone.pages);
+                    _i = 0, pageKeys_1 = pageKeys;
+                    _c.label = 3;
+                case 3:
+                    if (!(_i < pageKeys_1.length)) return [3 /*break*/, 6];
+                    key = pageKeys_1[_i];
+                    _b = repliesClone.pages[key];
+                    return [4 /*yield*/, Promise.all(replies.pages[key].comments.map(function (comment) {
+                            return subplebbit.plebbit.createComment.bind(subplebbit.plebbit)(__assign(__assign({}, comment), { subplebbit: subplebbit }));
+                        }))];
+                case 4:
+                    _b.comments = _c.sent();
+                    _c.label = 5;
+                case 5:
+                    _i++;
+                    return [3 /*break*/, 3];
+                case 6: return [2 /*return*/, new pages_1.Pages({
+                        pages: repliesClone.pages,
+                        pageCids: replies.pageCids,
+                        subplebbit: subplebbit,
+                        pagesIpfs: undefined,
+                        parentCid: parentCid
+                    })];
+            }
+        });
+    });
+}
+exports.parseRawPages = parseRawPages;

@@ -1,8 +1,8 @@
 import Publication from "./publication";
 import { Pages } from "./pages";
-import { AuthorCommentEdit, CommentForDbType, CommentIpfsType, CommentType, CommentUpdate, Flair, PagesType, ProtocolVersion, PublicationTypeName } from "./types";
+import { AuthorCommentEdit, CommentIpfsType, CommentIpfsWithCid, CommentPubsubMessage, CommentsTableRowInsert, CommentType, CommentUpdate, CommentWithCommentUpdate, Flair, ProtocolVersion, PublicationTypeName } from "./types";
 import { Plebbit } from "./plebbit";
-export declare class Comment extends Publication implements CommentType {
+export declare class Comment extends Publication implements Omit<CommentType, "replies"> {
     title?: string;
     link?: string;
     thumbnailUrl?: string;
@@ -15,45 +15,37 @@ export declare class Comment extends Publication implements CommentType {
     ipnsName?: string;
     depth?: number;
     postCid?: string;
-    original?: Pick<Partial<CommentType>, "author" | "content" | "flair">;
+    original?: Pick<Partial<CommentType>, "author" | "content" | "flair" | "protocolVersion">;
     upvoteCount?: number;
     downvoteCount?: number;
     replyCount?: number;
     updatedAt?: number;
-    replies: Pages;
-    authorEdit?: AuthorCommentEdit;
+    replies?: Pages;
+    edit?: AuthorCommentEdit;
     flair?: Flair;
-    deleted?: CommentType["authorEdit"]["deleted"];
+    deleted?: CommentType["edit"]["deleted"];
     spoiler?: boolean;
     pinned?: boolean;
     locked?: boolean;
     removed?: boolean;
-    moderatorReason?: string;
+    reason?: string;
     private _updateInterval?;
     private _updateIntervalMs;
+    private _rawCommentUpdate?;
     constructor(props: CommentType, plebbit: Plebbit);
     _initProps(props: CommentType): void;
-    _initCommentUpdate(props: CommentUpdate): void;
+    _initCommentUpdate(props: CommentUpdate): Promise<void>;
     getType(): PublicationTypeName;
     toJSON(): CommentType;
-    toJSONPages(): CommentType & {
-        deleted?: CommentType["authorEdit"]["deleted"];
+    toJSONPagesIpfs(commentUpdate: CommentUpdate): {
+        comment: CommentIpfsWithCid;
+        commentUpdate: CommentUpdate;
     };
     toJSONIpfs(): CommentIpfsType;
-    toJSONSkeleton(): {
-        content: string;
-        parentCid: string;
-        flair: Flair;
-        spoiler: boolean;
-        link: string;
-        author: import("./types").AuthorType;
-        signature: import("./types").SignatureType;
-        protocolVersion: "1.0.0";
-        subplebbitAddress: string;
-        timestamp: number;
-    };
-    toJSONForDb(challengeRequestId?: string): CommentForDbType;
-    toJSONCommentUpdate(skipValidation?: boolean): Omit<CommentUpdate, "signature">;
+    toJSONPubsubMessagePublication(): CommentPubsubMessage;
+    toJSONAfterChallengeVerification(): CommentIpfsWithCid;
+    toJSONCommentsTableRowInsert(challengeRequestId: string): CommentsTableRowInsert;
+    toJSONMerged(): CommentWithCommentUpdate;
     setCommentIpnsKey(ipnsKey: {
         Id: string;
         Name: string;
@@ -63,9 +55,9 @@ export declare class Comment extends Publication implements CommentType {
     setPreviousCid(newPreviousCid?: string): void;
     setDepth(newDepth: number): void;
     setUpdatedAt(newUpdatedAt: number): void;
-    setReplies(replies?: Pages | PagesType): void;
     updateOnce(): Promise<void>;
     update(): Promise<void>;
     stop(): void;
+    private _validateSignature;
     publish(): Promise<void>;
 }

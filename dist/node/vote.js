@@ -77,21 +77,40 @@ var Vote = /** @class */ (function (_super) {
         _this.vote = props.vote; // Either 1, 0, -1 (upvote, cancel vote, downvote)
         return _this;
     }
-    Vote.prototype.toJSONSkeleton = function () {
-        return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { commentCid: this.commentCid, vote: this.vote });
+    Vote.prototype.toJSONPubsubMessagePublication = function () {
+        return __assign(__assign({}, _super.prototype.toJSONPubsubMessagePublication.call(this)), { commentCid: this.commentCid, vote: this.vote });
+    };
+    Vote.prototype.toJSONIpfs = function () {
+        return this.toJSONPubsubMessagePublication();
     };
     Vote.prototype.toJSON = function () {
-        return this.toJSONSkeleton();
+        return this.toJSONPubsubMessagePublication();
     };
     Vote.prototype.getType = function () {
         return "vote";
     };
     Vote.prototype.toJSONForDb = function (challengeRequestId) {
-        return __assign(__assign({}, this.toJSON()), { author: JSON.stringify(this.author), authorAddress: this.author.address, challengeRequestId: challengeRequestId, signature: JSON.stringify(this.signature) });
+        return __assign(__assign({}, this.toJSON()), { authorAddress: this.author.address, challengeRequestId: challengeRequestId });
+    };
+    Vote.prototype._validateSignature = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var voteObj, signatureValidity;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        voteObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication()));
+                        return [4 /*yield*/, (0, signer_1.verifyVote)(voteObj, this.plebbit, true)];
+                    case 1:
+                        signatureValidity = _a.sent();
+                        if (!signatureValidity.valid)
+                            (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", "vote.publish: Failed to publish vote (".concat(this.vote, ") on comment (").concat(this.commentCid, ") due to invalid signature. Reason=").concat(signatureValidity.reason));
+                        return [2 /*return*/];
+                }
+            });
+        });
     };
     Vote.prototype.publish = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var signatureValidity;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -99,11 +118,9 @@ var Vote = /** @class */ (function (_super) {
                             (0, util_1.throwWithErrorCode)("ERR_PUBLICATION_MISSING_FIELD", "Vote.vote (".concat(this.vote, ") can only be -1, 0, or 1"));
                         if (!is_ipfs_1.default.cid(this.commentCid))
                             (0, util_1.throwWithErrorCode)("ERR_CID_IS_INVALID", "Vote.publish: commentCid (".concat(this.commentCid, ") is invalid as a CID"));
-                        return [4 /*yield*/, (0, signer_1.verifyVote)(this.toJSON(), this.plebbit, true)];
+                        return [4 /*yield*/, this._validateSignature()];
                     case 1:
-                        signatureValidity = _a.sent();
-                        if (!signatureValidity.valid)
-                            (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", "vote.publish: Failed to publish due to invalid signature. Reason=".concat(signatureValidity.reason));
+                        _a.sent();
                         return [2 /*return*/, _super.prototype.publish.call(this)];
                 }
             });

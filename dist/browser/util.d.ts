@@ -1,6 +1,7 @@
 import { Plebbit } from "./plebbit";
-import { CommentType, OnlyDefinedProperties, Timeframe } from "./types";
+import { CommentWithCommentUpdate, OnlyDefinedProperties, PageIpfs, PagesType, PagesTypeIpfs, PagesTypeJson, PageType, Timeframe } from "./types";
 import { messages } from "./errors";
+import { Pages } from "./pages";
 export declare const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number>;
 export declare function fetchCid(cid: string, plebbit: Plebbit, catOptions?: {
     length: number;
@@ -9,11 +10,16 @@ export declare function loadIpfsFileAsJson(cid: string, plebbit: Plebbit): Promi
 export declare function loadIpnsAsJson(ipns: string, plebbit: Plebbit): Promise<any>;
 export declare function timestamp(): number;
 export declare function replaceXWithY(obj: Object, x: any, y: any): any;
-export declare function hotScore(comment: CommentType): number;
-export declare function controversialScore(comment: CommentType): number;
-export declare function topScore(comment: CommentType): number;
-export declare function newScore(comment: CommentType): number;
-export declare function oldScore(comment: CommentType): number;
+export declare function hotScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">): number;
+export declare function controversialScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">): number;
+export declare function topScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">): number;
+export declare function newScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">): number;
+export declare function oldScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">): number;
+export declare function removeNullAndUndefinedValues<T extends Object>(obj: T): T;
+export declare function removeNullAndUndefinedValuesRecursively<T>(obj: T): T;
 export declare function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T>;
-export declare function encode(obj: Object): string;
 export declare function throwWithErrorCode(code: keyof typeof messages, details?: string): void;
+export declare function parsePageIpfs(pageIpfs: PageIpfs, subplebbit: Pages["_subplebbit"]): Promise<PageType>;
+export declare function parsePagesIpfs(pagesRaw: PagesTypeIpfs, subplebbit: Pages["_subplebbit"]): Promise<PagesType>;
+export declare const parseJsonStrings: (obj: any) => any;
+export declare function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | Pages | undefined, parentCid: string | undefined, subplebbit: Pages["_subplebbit"]): Promise<Pages | undefined>;

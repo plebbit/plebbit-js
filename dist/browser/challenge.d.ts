@@ -1,16 +1,5 @@
-import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeType, ChallengeVerificationMessageType, Encrypted, ProtocolVersion, SignatureType } from "./types";
-export declare const PUBSUB_MESSAGE_TYPES: Readonly<{
-    CHALLENGEREQUEST: "CHALLENGEREQUEST";
-    CHALLENGE: "CHALLENGE";
-    CHALLENGEANSWER: "CHALLENGEANSWER";
-    CHALLENGEVERIFICATION: "CHALLENGEVERIFICATION";
-}>;
-export declare class Challenge implements ChallengeType {
-    challenge: string;
-    type: "image" | "text" | "video" | "audio" | "html";
-    constructor(props: ChallengeType);
-    toJSON(): ChallengeType;
-}
+import { ChallengeAnswerMessageType, ChallengeAnswersTableRowInsert, ChallengeMessageType, ChallengeRequestMessageType, ChallengeRequestsTableRowInsert, ChallengesTableRow, ChallengesTableRowInsert, ChallengeVerificationMessageType, ChallengeVerificationsTableRowInsert, DecryptedChallengeAnswerMessageType, ProtocolVersion } from "./types";
+import { Encrypted, SignatureType } from "./signer/constants";
 export declare class ChallengeRequestMessage implements ChallengeRequestMessageType {
     encryptedPublication: Encrypted;
     type: "CHALLENGEREQUEST";
@@ -19,9 +8,10 @@ export declare class ChallengeRequestMessage implements ChallengeRequestMessageT
     signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
+    timestamp: number;
     constructor(props: Omit<ChallengeRequestMessageType, "type">);
     toJSON(): ChallengeRequestMessageType;
-    toJSONForDb(): Omit<ChallengeRequestMessageType, "signature" | "encryptedPublication">;
+    toJSONForDb(): ChallengeRequestsTableRowInsert;
 }
 export declare class ChallengeMessage implements ChallengeMessageType {
     encryptedChallenges: Encrypted;
@@ -30,9 +20,10 @@ export declare class ChallengeMessage implements ChallengeMessageType {
     signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
+    timestamp: number;
     constructor(props: Omit<ChallengeMessageType, "type">);
     toJSON(): ChallengeMessageType;
-    toJSONForDb(): Omit<ChallengeMessageType, "signature" | "encryptedChallenges">;
+    toJSONForDb(challengeTypes: ChallengesTableRow["challengeTypes"]): ChallengesTableRowInsert;
 }
 export declare class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
     type: "CHALLENGEANSWER";
@@ -42,9 +33,10 @@ export declare class ChallengeAnswerMessage implements ChallengeAnswerMessageTyp
     signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
+    timestamp: number;
     constructor(props: Omit<ChallengeAnswerMessageType, "type">);
     toJSON(): ChallengeAnswerMessageType;
-    toJSONForDb(): Omit<ChallengeAnswerMessageType, "signature" | "encryptedChallengeAnswers">;
+    toJSONForDb(challengeAnswers: DecryptedChallengeAnswerMessageType["challengeAnswers"]): ChallengeAnswersTableRowInsert;
 }
 export declare class ChallengeVerificationMessage implements ChallengeVerificationMessageType {
     type: "CHALLENGEVERIFICATION";
@@ -57,7 +49,8 @@ export declare class ChallengeVerificationMessage implements ChallengeVerificati
     signature: SignatureType;
     protocolVersion: "1.0.0";
     userAgent: string;
+    timestamp: number;
     constructor(props: Omit<ChallengeVerificationMessageType, "type">);
     toJSON(): ChallengeVerificationMessageType;
-    toJSONForDb(): Omit<ChallengeVerificationMessageType, "encryptedPublication" | "signature">;
+    toJSONForDb(): ChallengeVerificationsTableRowInsert;
 }

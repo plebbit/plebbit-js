@@ -44,18 +44,18 @@ var fs_1 = require("fs");
 var native_functions_1 = __importDefault(require("./native-functions"));
 var path_1 = __importDefault(require("path"));
 var assert_1 = __importDefault(require("assert"));
+var util_1 = require("../../util");
 exports.mkdir = fs_1.promises.mkdir;
 var getDefaultDataPath = function () { return path_1.default.join(process.cwd(), ".plebbit"); };
 exports.getDefaultDataPath = getDefaultDataPath;
 var getDefaultSubplebbitDbConfig = function (subplebbit) { return __awaiter(void 0, void 0, void 0, function () {
-    var dbPath, dir, filename;
+    var dbPath, filename;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 (0, assert_1.default)(typeof subplebbit.plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get default subplebbit db config");
                 dbPath = path_1.default.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
-                dir = path_1.default.dirname(dbPath);
-                return [4 /*yield*/, (0, exports.mkdir)(dir, { recursive: true })];
+                return [4 /*yield*/, (0, exports.mkdir)(path_1.default.dirname(dbPath), { recursive: true })];
             case 1:
                 _a.sent();
                 filename = process.env["DB_MEMORY"] === "1" ? ":memory:" : dbPath;
@@ -63,7 +63,12 @@ var getDefaultSubplebbitDbConfig = function (subplebbit) { return __awaiter(void
                         client: "sqlite3",
                         connection: { filename: filename },
                         useNullAsDefault: true,
-                        acquireConnectionTimeout: 120000
+                        acquireConnectionTimeout: 120000,
+                        postProcessResponse: function (result, queryContext) {
+                            // TODO: add special case for raw results
+                            // (depends on dialect)
+                            return (0, util_1.parseJsonStrings)(result);
+                        }
                     }];
         }
     });

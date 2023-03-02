@@ -39,60 +39,56 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Page = exports.Pages = void 0;
+exports.Pages = void 0;
 var util_1 = require("./util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var signatures_1 = require("./signer/signatures");
+var lodash_1 = __importDefault(require("lodash"));
+var assert_1 = __importDefault(require("assert"));
 var Pages = /** @class */ (function () {
     function Pages(props) {
         this.pages = props.pages;
         this.pageCids = props.pageCids;
-        this.subplebbit = props.subplebbit;
+        this._subplebbit = props.subplebbit;
+        this._parentCid = props.parentCid;
+        this._pagesIpfs = props.pagesIpfs;
     }
     Pages.prototype.getPage = function (pageCid) {
         return __awaiter(this, void 0, void 0, function () {
-            var page, _a, signatureValidity;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var pageIpfs, signatureValidity;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
                         if (!is_ipfs_1.default.cid(pageCid))
                             (0, util_1.throwWithErrorCode)("ERR_CID_IS_INVALID", "getPage: cid (".concat(pageCid, ") is invalid as a CID"));
-                        if (typeof this.subplebbit.address !== "string")
-                            throw Error("Address of subplebbit is needed to load pages");
-                        _a = Page.bind;
-                        return [4 /*yield*/, (0, util_1.loadIpfsFileAsJson)(pageCid, this.subplebbit.plebbit)];
+                        return [4 /*yield*/, (0, util_1.loadIpfsFileAsJson)(pageCid, this._subplebbit.plebbit)];
                     case 1:
-                        page = new (_a.apply(Page, [void 0, _b.sent()]))();
-                        return [4 /*yield*/, (0, signatures_1.verifyPage)(page, this.subplebbit.plebbit, this.subplebbit.address)];
+                        pageIpfs = _a.sent();
+                        return [4 /*yield*/, (0, signatures_1.verifyPage)(pageIpfs, this._subplebbit.plebbit, this._subplebbit, this._parentCid)];
                     case 2:
-                        signatureValidity = _b.sent();
+                        signatureValidity = _a.sent();
                         if (!signatureValidity.valid)
                             throw Error(signatureValidity.reason);
-                        return [2 /*return*/, page];
+                        return [4 /*yield*/, (0, util_1.parsePageIpfs)(pageIpfs, this._subplebbit)];
+                    case 3: return [2 /*return*/, _a.sent()];
                 }
             });
         });
     };
     Pages.prototype.toJSON = function () {
+        var pagesJson = lodash_1.default.mapValues(this.pages, function (page) {
+            var commentsJson = page.comments.map(function (comment) { return comment.toJSONMerged(); });
+            return { comments: commentsJson, nextCid: page.nextCid };
+        });
+        return { pages: pagesJson, pageCids: this.pageCids };
+    };
+    Pages.prototype.toJSONIpfs = function () {
+        (0, assert_1.default)(this._pagesIpfs);
         return {
-            pages: this.pages,
+            pages: this._pagesIpfs,
             pageCids: this.pageCids
         };
     };
     return Pages;
 }());
 exports.Pages = Pages;
-var Page = /** @class */ (function () {
-    function Page(props) {
-        this.comments = props.comments;
-        this.nextCid = props.nextCid;
-    }
-    Page.prototype.toJSON = function () {
-        return {
-            comments: this.comments,
-            nextCid: this.nextCid
-        };
-    };
-    return Page;
-}());
-exports.Page = Page;

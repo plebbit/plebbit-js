@@ -21,7 +21,7 @@ export declare enum messages {
     ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit",
     ERR_GENERATED_CID_DOES_NOT_MATCH = "The CID generated from loaded content does not match the provided CID",
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",
-    ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS = "author.address is not a domain or IPNS",
+    ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 = "author.address is not a domain or B58",
     ERR_SIGNATURE_IS_INVALID = "Signature of publication is invalid",
     ERR_AUTHOR_NOT_MATCHING_SIGNATURE = "comment.author.address doesn't match comment.signature.publicKey",
     ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY = "subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey",
@@ -29,6 +29,7 @@ export declare enum messages {
     ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT = "Comment update is not signed by the subplebbit",
     ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR = "Author edit is not signed by original author of comment",
     ERR_SUBPLEBBIT_POSTS_INVALID = "subplebbit.posts signature is invalid",
+    ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT = "CommentUpdate.cid is different than comment.cid",
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
     ERR_PARENT_CID_NOT_AS_EXPECTED = "Comment under parent comment/post should have parentCid initialized",
     ERR_UNAUTHORIZED_COMMENT_EDIT = "Can't edit the comment due to lack of authorization",
@@ -48,5 +49,6 @@ export declare enum messages {
     ERR_FORBIDDEN_AUTHOR_FIELD = "The author field includes a forbidden field",
     ERR_FORBIDDEN_COMMENT_FIELD = "The comment/post contains a forbidden field",
     ERR_FORBIDDEN_SIGNER_FIELD = "The publication includes a signer field which is forbidden",
-    ERR_DUPLICATE_COMMENT = "Comment is duplicated"
+    ERR_DUPLICATE_COMMENT = "Comment is duplicated",
+    ERR_AUTHOR_ADDRESS_UNDEFINED = "author address is undefined"
 }

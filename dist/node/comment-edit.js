@@ -94,7 +94,7 @@ exports.MOD_EDIT_FIELDS = __spreadArray(__spreadArray([], PUBLICATION_FIELDS, tr
     "pinned",
     "locked",
     "removed",
-    "moderatorReason",
+    "reason",
     "commentAuthor"
 ], false);
 exports.AUTHOR_EDIT_FIELDS = __spreadArray(__spreadArray([], PUBLICATION_FIELDS, true), [
@@ -121,35 +121,54 @@ var CommentEdit = /** @class */ (function (_super) {
         this.pinned = props.pinned;
         this.locked = props.locked;
         this.removed = props.removed;
-        this.moderatorReason = props.moderatorReason;
         this.commentAuthor = props.commentAuthor;
     };
-    CommentEdit.prototype.toJSONSkeleton = function () {
-        return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { commentCid: this.commentCid, content: this.content, reason: this.reason, deleted: this.deleted, flair: this.flair, spoiler: this.spoiler, pinned: this.pinned, locked: this.locked, removed: this.removed, moderatorReason: this.moderatorReason, commentAuthor: this.commentAuthor });
+    CommentEdit.prototype.toJSONPubsubMessagePublication = function () {
+        return __assign(__assign({}, _super.prototype.toJSONPubsubMessagePublication.call(this)), { commentCid: this.commentCid, content: this.content, reason: this.reason, deleted: this.deleted, flair: this.flair, spoiler: this.spoiler, pinned: this.pinned, locked: this.locked, removed: this.removed, commentAuthor: this.commentAuthor });
+    };
+    CommentEdit.prototype.toJSONIpfs = function () {
+        return this.toJSONPubsubMessagePublication();
     };
     CommentEdit.prototype.toJSON = function () {
-        return this.toJSONSkeleton();
+        return this.toJSONPubsubMessagePublication();
+    };
+    CommentEdit.prototype.toJSONAfterChallengeVerification = function () {
+        return this.toJSON();
     };
     CommentEdit.prototype.toJSONForDb = function (challengeRequestId) {
-        return (0, util_1.removeKeysWithUndefinedValues)(__assign(__assign({}, this.toJSON()), { author: JSON.stringify(this.author), authorAddress: this.author.address, challengeRequestId: challengeRequestId }));
+        return __assign(__assign({}, this.toJSON()), { author: this.author.toJSONIpfs(), authorAddress: this.author.address, challengeRequestId: challengeRequestId });
     };
     CommentEdit.prototype.getType = function () {
         return "commentedit";
     };
+    CommentEdit.prototype._validateSignature = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var editObj, signatureValidity;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        editObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication()));
+                        return [4 /*yield*/, (0, signatures_1.verifyCommentEdit)(editObj, this.plebbit, true)];
+                    case 1:
+                        signatureValidity = _a.sent();
+                        if (!signatureValidity.valid)
+                            (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", "commentEdit.publish: Failed to publish due to invalid signature. Reason=".concat(signatureValidity.reason));
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     CommentEdit.prototype.publish = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var signatureValidity;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         // TODO if publishing with content,reason, deleted, verify that publisher is original author
                         if (!is_ipfs_1.default.cid(this.commentCid))
                             (0, util_1.throwWithErrorCode)("ERR_CID_IS_INVALID", "commentEdit.publish: commentCid (".concat(this.commentCid, ") is invalid as a CID"));
-                        return [4 /*yield*/, (0, signatures_1.verifyCommentEdit)(this.toJSON(), this.plebbit, true)];
+                        return [4 /*yield*/, this._validateSignature()];
                     case 1:
-                        signatureValidity = _a.sent();
-                        if (!signatureValidity.valid)
-                            (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", "commentEdit.publish: Failed to publish due to invalid signature. Reason=".concat(signatureValidity.reason));
+                        _a.sent();
                         return [2 /*return*/, _super.prototype.publish.call(this)];
                 }
             });

@@ -166,11 +166,11 @@ var Plebbit = /** @class */ (function (_super) {
     };
     Plebbit.prototype.getSubplebbit = function (subplebbitAddress) {
         return __awaiter(this, void 0, void 0, function () {
-            var resolvedSubplebbitAddress, subplebbitJson, signatureValidity;
+            var resolvedSubplebbitAddress, subplebbitJson, signatureValidity, subplebbit;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!this.resolver.isDomain(subplebbitAddress) && !is_ipfs_1.default.cid(subplebbitAddress))
+                        if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
                             (0, util_2.throwWithErrorCode)("ERR_INVALID_SUBPLEBBIT_ADDRESS", "getSubplebbit: subplebbitAddress (".concat(subplebbitAddress, ") can't be used to get a subplebbit"));
                         return [4 /*yield*/, this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
                     case 1:
@@ -183,14 +183,18 @@ var Plebbit = /** @class */ (function (_super) {
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)
                             (0, util_2.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", "getSubplebbit: Failed verification reason: ".concat(signatureValidity.reason));
-                        return [2 /*return*/, new subplebbit_1.Subplebbit(subplebbitJson, this)];
+                        subplebbit = new subplebbit_1.Subplebbit(this);
+                        return [4 /*yield*/, subplebbit.initSubplebbit(subplebbitJson)];
+                    case 4:
+                        _a.sent();
+                        return [2 /*return*/, subplebbit];
                 }
             });
         });
     };
     Plebbit.prototype.getComment = function (cid) {
         return __awaiter(this, void 0, void 0, function () {
-            var commentJson, signatureValidity, title;
+            var commentJson, signatureValidity;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -203,11 +207,8 @@ var Plebbit = /** @class */ (function (_super) {
                     case 2:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)
-                            (0, util_2.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", "getComment: Failed verification reason: ".concat(signatureValidity.reason));
-                        title = commentJson.title;
-                        return [2 /*return*/, typeof title === "string"
-                                ? new post_1.default(__assign(__assign({}, commentJson), { cid: cid, title: title, postCid: cid }), this)
-                                : new comment_1.Comment(__assign(__assign({}, commentJson), { cid: cid }), this)];
+                            (0, util_2.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", "getComment (".concat(cid, "): Failed verification reason: ").concat(signatureValidity.reason));
+                        return [2 /*return*/, this.createComment(__assign(__assign({}, commentJson), { cid: cid }))];
                 }
             });
         });
@@ -226,7 +227,7 @@ var Plebbit = /** @class */ (function (_super) {
                         }
                         if (!!clonedOptions.signer.address) return [3 /*break*/, 2];
                         _b = clonedOptions.signer;
-                        return [4 /*yield*/, (0, util_3.getPlebbitAddressFromPrivateKeyPem)(clonedOptions.signer.privateKey)];
+                        return [4 /*yield*/, (0, util_3.getPlebbitAddressFromPrivateKey)(clonedOptions.signer.privateKey)];
                     case 1:
                         _b.address = _c.sent();
                         _c.label = 2;
@@ -240,6 +241,25 @@ var Plebbit = /** @class */ (function (_super) {
             });
         });
     };
+    Plebbit.prototype._createCommentInstance = function (options, subplebbit) {
+        return __awaiter(this, void 0, void 0, function () {
+            var comment;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        options = options;
+                        comment = options.parentCid ? new comment_1.Comment(options, this) : new post_1.default(options, this);
+                        comment["subplebbit"] = subplebbit;
+                        if (!(typeof options["updatedAt"] === "number")) return [3 /*break*/, 2];
+                        return [4 /*yield*/, comment._initCommentUpdate(options)];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2: return [2 /*return*/, comment];
+                }
+            });
+        });
+    };
     Plebbit.prototype.createComment = function (options) {
         return __awaiter(this, void 0, void 0, function () {
             var log, finalOptions, _a;
@@ -247,17 +267,19 @@ var Plebbit = /** @class */ (function (_super) {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createComment");
-                        if (!options.signer)
-                            return [2 /*return*/, typeof options.title === "string" ? new post_1.default(options, this) : new comment_1.Comment(options, this)];
+                        finalOptions = options instanceof comment_1.Comment ? options.toJSON() : options;
+                        if (!options["signer"] || options["signature"])
+                            return [2 /*return*/, this._createCommentInstance(finalOptions, options["subplebbit"])];
                         return [4 /*yield*/, this._initMissingFields(options, log)];
                     case 1:
-                        finalOptions = _b.sent();
+                        //@ts-ignore
+                        finalOptions = (_b.sent());
                         _a = finalOptions;
                         return [4 /*yield*/, (0, signatures_1.signComment)(finalOptions, finalOptions.signer, this)];
                     case 2:
                         _a.signature = _b.sent();
                         finalOptions.protocolVersion = version_1.default.PROTOCOL_VERSION;
-                        return [2 /*return*/, typeof finalOptions.title === "string" ? new post_1.default(finalOptions, this) : new comment_1.Comment(finalOptions, this)];
+                        return [2 /*return*/, this._createCommentInstance(finalOptions)];
                 }
             });
         });
@@ -290,9 +312,12 @@ var Plebbit = /** @class */ (function (_super) {
                                             throw Error("missing nativeFunctions required to create a subplebbit");
                                         if (canRunSub && !this.dataPath)
                                             (0, util_2.throwWithErrorCode)("ERR_DATA_PATH_IS_NOT_DEFINED", "createSubplebbit: canRunSub=".concat(canRunSub, ", plebbitOptions.dataPath=").concat(this.dataPath));
-                                        subplebbit = new subplebbit_1.Subplebbit(options, this);
-                                        return [4 /*yield*/, subplebbit.prePublish()];
+                                        subplebbit = new subplebbit_1.Subplebbit(this);
+                                        return [4 /*yield*/, subplebbit.initSubplebbit(options)];
                                     case 1:
+                                        _a.sent();
+                                        return [4 /*yield*/, subplebbit.prePublish()];
+                                    case 2:
                                         _a.sent(); // May fail because sub is already being created (locked)
                                         log("Created subplebbit (".concat(subplebbit.address, ") with props:"), (0, util_2.removeKeysWithUndefinedValues)(lodash_1.default.omit(subplebbit.toJSON(), ["signer"])));
                                         return [2 /*return*/, subplebbit];
@@ -300,8 +325,16 @@ var Plebbit = /** @class */ (function (_super) {
                             });
                         }); };
                         remoteSub = function () { return __awaiter(_this, void 0, void 0, function () {
+                            var subplebbit;
                             return __generator(this, function (_a) {
-                                return [2 /*return*/, new subplebbit_1.Subplebbit(options, this)];
+                                switch (_a.label) {
+                                    case 0:
+                                        subplebbit = new subplebbit_1.Subplebbit(this);
+                                        return [4 /*yield*/, subplebbit.initSubplebbit(options)];
+                                    case 1:
+                                        _a.sent();
+                                        return [2 /*return*/, subplebbit];
+                                }
                             });
                         }); };
                         if (!(options.address && !options.signer)) return [3 /*break*/, 1];
@@ -357,7 +390,7 @@ var Plebbit = /** @class */ (function (_super) {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createVote");
-                        if (!options.signer)
+                        if (!options["signer"])
                             return [2 /*return*/, new vote_1.default(options, this)];
                         return [4 /*yield*/, this._initMissingFields(options, log)];
                     case 1:
@@ -379,7 +412,7 @@ var Plebbit = /** @class */ (function (_super) {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createCommentEdit");
-                        if (!options.signer)
+                        if (!options.signer || options.signature)
                             return [2 /*return*/, new comment_edit_1.CommentEdit(options, this)]; // User just wants to instantiate a CommentEdit object, not publish
                         return [4 /*yield*/, this._initMissingFields(options, log)];
                     case 1:

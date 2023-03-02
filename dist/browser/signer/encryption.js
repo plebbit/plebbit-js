@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -39,139 +62,146 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.decrypt = exports.encrypt = exports.decryptBufferRsa = exports.encryptBufferRsa = exports.decryptStringAesCbc = exports.encryptStringAesCbc = exports.generateKeyAesCbc = void 0;
+exports.decryptEd25519AesGcm = exports.encryptEd25519AesGcm = exports.decryptStringAesGcm = exports.encryptStringAesGcm = void 0;
 var node_forge_1 = __importDefault(require("node-forge"));
 var to_string_1 = require("uint8arrays/to-string");
 var from_string_1 = require("uint8arrays/from-string");
-var util_1 = require("./util");
-var libp2p_crypto_1 = __importDefault(require("libp2p-crypto"));
-var validateArgumentNotEmptyString = function (value, propertyName, functionName) {
-    if (typeof value !== "string")
-        throw Error("function '".concat(functionName, "' argument '").concat(propertyName, "': '").concat(value, "' not a string"));
-    if (value.length === 0)
-        throw Error("function '".concat(functionName, "' argument '").concat(propertyName, "': '").concat(value, "' empty string"));
+var ed = __importStar(require("@noble/ed25519"));
+var isProbablyBuffer = function (arg) { return arg && typeof arg !== "string" && typeof arg !== "number"; };
+var uint8ArrayToNodeForgeBuffer = function (uint8Array) {
+    var forgeBuffer = node_forge_1.default.util.createBuffer();
+    for (var _i = 0, uint8Array_1 = uint8Array; _i < uint8Array_1.length; _i++) {
+        var byte = uint8Array_1[_i];
+        forgeBuffer.putByte(byte);
+    }
+    return forgeBuffer;
 };
-var generateKeyAesCbc = function () { return __awaiter(void 0, void 0, void 0, function () {
+// NOTE: never pass the last param 'iv', only used for testing, it must always be random
+var encryptStringAesGcm = function (plaintext, key, iv) { return __awaiter(void 0, void 0, void 0, function () {
+    var keyAsForgeBuffer, ivAsForgeBuffer, cipher;
     return __generator(this, function (_a) {
-        // key should be 16 bytes for AES CBC 128
-        return [2 /*return*/, libp2p_crypto_1.default.randomBytes(16)];
-    });
-}); };
-exports.generateKeyAesCbc = generateKeyAesCbc;
-var encryptStringAesCbc = function (stringToEncrypt, key) { return __awaiter(void 0, void 0, void 0, function () {
-    var keyAsForgeBuffer, iv, cipher, encryptedBase64;
-    return __generator(this, function (_a) {
-        keyAsForgeBuffer = node_forge_1.default.util.createBuffer((0, to_string_1.toString)(key, "base16"), "hex");
-        iv = node_forge_1.default.util.createBuffer((0, to_string_1.toString)(key, "base16"), "hex");
-        cipher = node_forge_1.default.cipher.createCipher("AES-CBC", keyAsForgeBuffer);
-        cipher.start({ iv: iv });
-        cipher.update(node_forge_1.default.util.createBuffer(stringToEncrypt, "utf8"));
+        if (!plaintext || typeof plaintext !== "string")
+            throw Error("encryptStringAesGcm plaintext '".concat(plaintext, "' not a string"));
+        if (!isProbablyBuffer(key))
+            throw Error("encryptStringAesGcm invalid key '".concat(key, "' not buffer"));
+        // use random 12 bytes uint8 array for iv
+        if (!iv) {
+            iv = ed.utils.randomPrivateKey().slice(0, 12);
+        }
+        keyAsForgeBuffer = uint8ArrayToNodeForgeBuffer(key);
+        ivAsForgeBuffer = uint8ArrayToNodeForgeBuffer(iv);
+        cipher = node_forge_1.default.cipher.createCipher("AES-GCM", keyAsForgeBuffer);
+        cipher.start({ iv: ivAsForgeBuffer });
+        cipher.update(node_forge_1.default.util.createBuffer(plaintext, "utf8"));
         cipher.finish();
-        encryptedBase64 = (0, to_string_1.toString)((0, from_string_1.fromString)(cipher.output.toHex(), "base16"), "base64");
-        return [2 /*return*/, encryptedBase64];
+        return [2 /*return*/, {
+                ciphertext: (0, from_string_1.fromString)(cipher.output.toHex(), "base16"),
+                iv: iv,
+                // AES-GCM has authentication tag https://en.wikipedia.org/wiki/Galois/Counter_Mode
+                tag: (0, from_string_1.fromString)(cipher.mode.tag.toHex(), "base16")
+            }];
     });
 }); };
-exports.encryptStringAesCbc = encryptStringAesCbc;
-var decryptStringAesCbc = function (encryptedString, key) { return __awaiter(void 0, void 0, void 0, function () {
-    var keyAsForgeBuffer, iv, cipher, decrypted;
+exports.encryptStringAesGcm = encryptStringAesGcm;
+var decryptStringAesGcm = function (ciphertext, key, iv, tag) { return __awaiter(void 0, void 0, void 0, function () {
+    var keyAsForgeBuffer, ivAsForgeBuffer, tagAsForgeBuffer, cipher, decrypted;
     return __generator(this, function (_a) {
-        keyAsForgeBuffer = node_forge_1.default.util.createBuffer((0, to_string_1.toString)(key, "base16"), "hex");
-        iv = node_forge_1.default.util.createBuffer((0, to_string_1.toString)(key, "base16"), "hex");
-        cipher = node_forge_1.default.cipher.createDecipher("AES-CBC", keyAsForgeBuffer);
-        cipher.start({ iv: iv });
-        cipher.update(node_forge_1.default.util.createBuffer((0, from_string_1.fromString)(encryptedString, "base64")));
+        if (!isProbablyBuffer(ciphertext))
+            throw Error("decryptStringAesGcm invalid ciphertext '".concat(ciphertext, "' not buffer"));
+        if (!isProbablyBuffer(key))
+            throw Error("decryptStringAesGcm invalid key '".concat(key, "' not buffer"));
+        if (!isProbablyBuffer(iv))
+            throw Error("decryptStringAesGcm invalid iv '".concat(iv, "' not buffer"));
+        if (!isProbablyBuffer(tag))
+            throw Error("decryptStringAesGcm invalid tag '".concat(tag, "' not buffer"));
+        keyAsForgeBuffer = uint8ArrayToNodeForgeBuffer(key);
+        ivAsForgeBuffer = uint8ArrayToNodeForgeBuffer(iv);
+        tagAsForgeBuffer = uint8ArrayToNodeForgeBuffer(tag);
+        cipher = node_forge_1.default.cipher.createDecipher("AES-GCM", keyAsForgeBuffer);
+        cipher.start({ iv: ivAsForgeBuffer, tag: tagAsForgeBuffer });
+        cipher.update(node_forge_1.default.util.createBuffer(ciphertext));
         cipher.finish();
         decrypted = cipher.output.toString();
         return [2 /*return*/, decrypted];
     });
 }); };
-exports.decryptStringAesCbc = decryptStringAesCbc;
-var encryptBufferRsa = function (stringToEncrypt, publicKeyPem) { return __awaiter(void 0, void 0, void 0, function () {
-    var peerId, encryptedKeyBase64, _a;
+exports.decryptStringAesGcm = decryptStringAesGcm;
+var encryptEd25519AesGcm = function (plaintext, privateKeyBase64, publicKeyBase64) { return __awaiter(void 0, void 0, void 0, function () {
+    var privateKeyBuffer, publicKeyBuffer, randomPaddingLength, padding, aesGcmKey, aesGcmKey16Bytes, _a, ciphertext, iv, tag, encryptedBase64;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
-                validateArgumentNotEmptyString(publicKeyPem, "publicKeyPem", "encryptBufferRsa");
-                return [4 /*yield*/, (0, util_1.getPeerIdFromPublicKeyPem)(publicKeyPem)];
-            case 1:
-                peerId = _b.sent();
-                _a = to_string_1.toString;
-                return [4 /*yield*/, peerId.pubKey.encrypt(stringToEncrypt)];
-            case 2:
-                encryptedKeyBase64 = _a.apply(void 0, [_b.sent(), "base64"]);
-                return [2 /*return*/, encryptedKeyBase64];
-        }
-    });
-}); };
-exports.encryptBufferRsa = encryptBufferRsa;
-var decryptBufferRsa = function (encryptedStringBase64, privateKeyPem, privateKeyPemPassword) {
-    if (privateKeyPemPassword === void 0) { privateKeyPemPassword = ""; }
-    return __awaiter(void 0, void 0, void 0, function () {
-        var keyPair, decrypted;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    validateArgumentNotEmptyString(encryptedStringBase64, "encryptedStringBase64", "decryptBufferRsa");
-                    validateArgumentNotEmptyString(privateKeyPem, "privateKeyPem", "decryptBufferRsa");
-                    return [4 /*yield*/, (0, util_1.getKeyPairFromPrivateKeyPem)(privateKeyPem, privateKeyPemPassword)];
-                case 1:
-                    keyPair = _a.sent();
-                    return [4 /*yield*/, keyPair.decrypt((0, from_string_1.fromString)(encryptedStringBase64, "base64"))];
-                case 2:
-                    decrypted = _a.sent();
-                    return [2 /*return*/, decrypted];
-            }
-        });
-    });
-};
-exports.decryptBufferRsa = decryptBufferRsa;
-var encrypt = function (stringToEncrypt, publicKeyPem) { return __awaiter(void 0, void 0, void 0, function () {
-    var randomPaddingLength, padding, key, encryptedBase64, encryptedKeyBase64;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                validateArgumentNotEmptyString(stringToEncrypt, "stringToEncrypt", "encrypt");
-                validateArgumentNotEmptyString(publicKeyPem, "publicKeyPem", "encrypt");
+                if (!plaintext || typeof plaintext !== "string")
+                    throw Error("encryptEd25519AesGcm plaintext '".concat(plaintext, "' not a string"));
+                if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")
+                    throw Error("encryptEd25519AesGcm privateKeyBase64 not a string");
+                privateKeyBuffer = (0, from_string_1.fromString)(privateKeyBase64, "base64");
+                if (privateKeyBuffer.length !== 32)
+                    throw Error("encryptEd25519AesGcm publicKeyBase64 ed25519 public key length not 32 bytes (".concat(privateKeyBuffer.length, " bytes)"));
+                if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
+                    throw Error("encryptEd25519AesGcm publicKeyBase64 '".concat(publicKeyBase64, "' not a string"));
+                publicKeyBuffer = (0, from_string_1.fromString)(publicKeyBase64, "base64");
+                if (publicKeyBuffer.length !== 32)
+                    throw Error("encryptEd25519AesGcm publicKeyBase64 '".concat(publicKeyBase64, "' ed25519 public key length not 32 bytes (").concat(publicKeyBuffer.length, " bytes)"));
                 randomPaddingLength = Math.round(Math.random() * 5000);
                 padding = "";
                 while (padding.length < randomPaddingLength) {
                     padding += " ";
                 }
-                return [4 /*yield*/, (0, exports.generateKeyAesCbc)()];
+                return [4 /*yield*/, ed.getSharedSecret(privateKeyBuffer, publicKeyBuffer)];
             case 1:
-                key = _a.sent();
-                return [4 /*yield*/, (0, exports.encryptStringAesCbc)(stringToEncrypt + padding, key)];
+                aesGcmKey = _b.sent();
+                aesGcmKey16Bytes = aesGcmKey.slice(0, 16);
+                return [4 /*yield*/, (0, exports.encryptStringAesGcm)(plaintext + padding, aesGcmKey16Bytes)];
             case 2:
-                encryptedBase64 = _a.sent();
-                return [4 /*yield*/, (0, exports.encryptBufferRsa)(key, publicKeyPem)];
-            case 3:
-                encryptedKeyBase64 = _a.sent();
-                return [2 /*return*/, { encrypted: encryptedBase64, encryptedKey: encryptedKeyBase64, type: "aes-cbc" }];
+                _a = _b.sent(), ciphertext = _a.ciphertext, iv = _a.iv, tag = _a.tag;
+                encryptedBase64 = {
+                    ciphertext: (0, to_string_1.toString)(ciphertext, "base64"),
+                    iv: (0, to_string_1.toString)(iv, "base64"),
+                    // AES-GCM has authentication tag https://en.wikipedia.org/wiki/Galois/Counter_Mode
+                    tag: (0, to_string_1.toString)(tag, "base64"),
+                    type: "ed25519-aes-gcm"
+                };
+                return [2 /*return*/, encryptedBase64];
         }
     });
 }); };
-exports.encrypt = encrypt;
-var decrypt = function (encryptedString, encryptedKey, privateKeyPem, privateKeyPemPassword) {
-    if (privateKeyPemPassword === void 0) { privateKeyPemPassword = ""; }
-    return __awaiter(void 0, void 0, void 0, function () {
-        var key, decrypted;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    validateArgumentNotEmptyString(encryptedString, "encryptedString", "decrypt");
-                    validateArgumentNotEmptyString(encryptedKey, "encryptedKey", "decrypt");
-                    validateArgumentNotEmptyString(privateKeyPem, "privateKeyPem", "decrypt");
-                    return [4 /*yield*/, (0, exports.decryptBufferRsa)(encryptedKey, privateKeyPem)];
-                case 1:
-                    key = _a.sent();
-                    return [4 /*yield*/, (0, exports.decryptStringAesCbc)(encryptedString, key)];
-                case 2:
-                    decrypted = _a.sent();
-                    // remove padding
-                    decrypted = decrypted.replace(/ *$/, "");
-                    return [2 /*return*/, decrypted];
-            }
-        });
+exports.encryptEd25519AesGcm = encryptEd25519AesGcm;
+var decryptEd25519AesGcm = function (encrypted, privateKeyBase64, publicKeyBase64) { return __awaiter(void 0, void 0, void 0, function () {
+    var ciphertextBuffer, privateKeyBuffer, publicKeyBuffer, ivBuffer, tagBuffer, aesGcmKey, aesGcmKey16Bytes, decrypted;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                if (!(encrypted === null || encrypted === void 0 ? void 0 : encrypted.ciphertext) || typeof (encrypted === null || encrypted === void 0 ? void 0 : encrypted.ciphertext) !== "string")
+                    throw Error("decryptEd25519AesGcm encrypted.ciphertext '".concat(encrypted.ciphertext, "' not a string"));
+                ciphertextBuffer = (0, from_string_1.fromString)(encrypted.ciphertext, "base64");
+                if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")
+                    throw Error("decryptEd25519AesGcm ".concat(privateKeyBase64, " privateKeyBase64 not a string"));
+                privateKeyBuffer = (0, from_string_1.fromString)(privateKeyBase64, "base64");
+                if (privateKeyBuffer.length !== 32)
+                    throw Error("decryptEd25519AesGcm publicKeyBase64 ed25519 public key length not 32 bytes (".concat(privateKeyBuffer.length, " bytes)"));
+                if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
+                    throw Error("decryptEd25519AesGcm publicKeyBase64 '".concat(publicKeyBase64, "' not a string"));
+                publicKeyBuffer = (0, from_string_1.fromString)(publicKeyBase64, "base64");
+                if (publicKeyBuffer.length !== 32)
+                    throw Error("decryptEd25519AesGcm publicKeyBase64 '".concat(publicKeyBase64, "' ed25519 public key length not 32 bytes (").concat(publicKeyBuffer.length, " bytes)"));
+                if (!(encrypted === null || encrypted === void 0 ? void 0 : encrypted.iv) || typeof (encrypted === null || encrypted === void 0 ? void 0 : encrypted.iv) !== "string")
+                    throw Error("decryptEd25519AesGcm encrypted.iv '".concat(encrypted.iv, "' not a string"));
+                ivBuffer = (0, from_string_1.fromString)(encrypted.iv, "base64");
+                if (!(encrypted === null || encrypted === void 0 ? void 0 : encrypted.tag) || typeof (encrypted === null || encrypted === void 0 ? void 0 : encrypted.tag) !== "string")
+                    throw Error("decryptEd25519AesGcm encrypted.tag '".concat(encrypted.tag, "' not a string"));
+                tagBuffer = (0, from_string_1.fromString)(encrypted.tag, "base64");
+                return [4 /*yield*/, ed.getSharedSecret(privateKeyBuffer, publicKeyBuffer)];
+            case 1:
+                aesGcmKey = _a.sent();
+                aesGcmKey16Bytes = aesGcmKey.slice(0, 16);
+                return [4 /*yield*/, (0, exports.decryptStringAesGcm)(ciphertextBuffer, aesGcmKey16Bytes, ivBuffer, tagBuffer)];
+            case 2:
+                decrypted = _a.sent();
+                // remove padding
+                decrypted = decrypted.replace(/ *$/, "");
+                return [2 /*return*/, decrypted];
+        }
     });
-};
-exports.decrypt = decrypt;
+}); };
+exports.decryptEd25519AesGcm = decryptEd25519AesGcm;

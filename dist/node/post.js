@@ -61,26 +61,30 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var comment_1 = require("./comment");
 var util_1 = require("./util");
+var assert_1 = __importDefault(require("assert"));
 var Post = /** @class */ (function (_super) {
     __extends(Post, _super);
     function Post(props, plebbit) {
         return _super.call(this, props, plebbit) || this;
     }
     Post.prototype._initProps = function (props) {
+        assert_1.default.equal(props["parentCid"], undefined);
         _super.prototype._initProps.call(this, props);
-        this.thumbnailUrl = props.thumbnailUrl;
-        this.title = props.title;
         this.parentCid = undefined;
-        this.link = props.link;
     };
-    Post.prototype.toJSON = function () {
-        return __assign(__assign(__assign({}, _super.prototype.toJSON.call(this)), this.toJSONSkeleton()), { depth: this.depth });
+    Post.prototype.toJSONPubsubMessagePublication = function () {
+        return __assign(__assign({}, _super.prototype.toJSONPubsubMessagePublication.call(this)), { title: this.title, parentCid: undefined, link: this.link });
     };
-    Post.prototype.toJSONSkeleton = function () {
-        return __assign(__assign({}, _super.prototype.toJSONSkeleton.call(this)), { thumbnailUrl: this.thumbnailUrl, title: this.title, parentCid: undefined, link: this.link });
+    Post.prototype.toJSONAfterChallengeVerification = function () {
+        assert_1.default.equal(this.depth, 0);
+        assert_1.default.equal(this.parentCid, undefined);
+        return __assign(__assign({}, _super.prototype.toJSONAfterChallengeVerification.call(this)), { depth: this.depth, parentCid: this.parentCid, title: this.title });
     };
     Post.prototype.publish = function () {
         return __awaiter(this, void 0, void 0, function () {
