@@ -363,7 +363,14 @@ export async function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbit:
 
 export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
     let receivedResponse = false;
-    await publication.publish();
+
+    const retryPublishLoop = async () => {
+        if (receivedResponse) return;
+        await publication.publish();
+        setTimeout(retryPublishLoop, 10000); // Retry after 10 seconds if we haven't received a response
+    };
+
+    await retryPublishLoop();
     await new Promise((resolve, reject) => {
         publication.once("challengeverification", (verificationMsg) => {
             receivedResponse = true;
@@ -377,8 +384,6 @@ export async function publishWithExpectedResult(publication: Publication, expect
                 reject(msg);
             } else resolve(1);
         });
-        // Retry after 10 seconds if we haven't received a response
-        setTimeout(() => !receivedResponse && publication.publish(), 10000);
     });
 }
 
