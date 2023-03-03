@@ -110,7 +110,8 @@ class Publication extends EventEmitter implements PublicationType {
                 );
                 assert(decryptedPublication);
                 this._initProps(decryptedPublication);
-            } else
+            } else if (msgParsed.challengeSuccess) log(`Challenge (${msgParsed.challengeRequestId}) has passed`);
+            else
                 log.error(
                     `Challenge ${msgParsed.challengeRequestId} has failed to pass. Challenge errors = ${msgParsed.challengeErrors}, reason = '${msgParsed.reason}'`
                 );
