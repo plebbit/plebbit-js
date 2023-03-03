@@ -21,7 +21,7 @@ export class Pages implements PagesType {
     pages: Partial<Record<PostSortName | ReplySortName, PageType>>;
 
     pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
-    private _subplebbit: Pick<Subplebbit, "address" | "plebbit" | "encryption">;
+    private _subplebbit: Pick<Subplebbit, "address" | "plebbit">;
     private _parentCid: CommentIpfsType["parentCid"];
     private _pagesIpfs?: PagesTypeIpfs["pages"];
     constructor(

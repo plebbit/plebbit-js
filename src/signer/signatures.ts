@@ -312,14 +312,16 @@ async function _getValidationResult(publication: PublicationToVerify) {
 
 export async function verifyCommentUpdate(
     update: CommentUpdate,
-    subplebbit: Pick<SubplebbitType, "address" | "encryption">,
+    subplebbit: Pick<SubplebbitType, "address">,
     comment: Pick<CommentWithCommentUpdate, "signature" | "cid">,
     plebbit: Plebbit
 ): Promise<ValidationResult> {
     if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
         return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
 
-    if (update.signature.publicKey !== subplebbit.encryption.publicKey)
+    const updateSignatureAddress: string = await getPlebbitAddressFromPublicKey(update.signature.publicKey);
+    const subplebbitResolvedAddress = await plebbit.resolver.resolveSubplebbitAddressIfNeeded(subplebbit.address);
+    if (updateSignatureAddress !== subplebbitResolvedAddress)
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT };
 
     if (update.cid !== comment.cid) return { valid: false, reason: messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT };
@@ -355,7 +357,7 @@ export async function verifyChallengeVerification(verification: ChallengeVerific
 export async function verifyPage(
     page: PageIpfs,
     plebbit: Plebbit,
-    subplebbit: Pick<SubplebbitType, "address" | "encryption">,
+    subplebbit: Pick<SubplebbitType, "address">,
     parentCommentCid: string | undefined
 ): Promise<ValidationResult> {
     for (const pageComment of page.comments) {
