@@ -197,9 +197,7 @@ async function _publishComments(parentComments: Comment[], subplebbit: Subplebbi
     if (parentComments.length === 0)
         await Promise.all(
             new Array(numOfCommentsToPublish).fill(null).map(async () => {
-                const post = await generateMockPost(subplebbit.address, subplebbit.plebbit, true, { signer: signers[0] });
-                await publishWithExpectedResult(post, true);
-                comments.push(post);
+                comments.push(await publishRandomPost(subplebbit.address, subplebbit.plebbit, {}, false));
             })
         );
     else
@@ -209,35 +207,26 @@ async function _publishComments(parentComments: Comment[], subplebbit: Subplebbi
                     await Promise.all(
                         new Array(numOfCommentsToPublish).fill(null).map(async () => {
                             assert(typeof parentComment?.cid === "string");
-                            const comment = await generateMockComment(parentComment, subplebbit.plebbit, true, { signer: signers[0] });
-                            await publishWithExpectedResult(comment, true);
-                            comments.push(<Comment>comment);
+                            comments.push(await publishRandomReply(parentComment, subplebbit.plebbit, {}, false));
                         })
                     )
             )
         );
+    assert.equal(comments.length, numOfCommentsToPublish);
     return comments;
 }
 
 async function _publishVotes(comments: Comment[], subplebbit: Subplebbit, votesPerCommentToPublish: number, signers: SignerType[]) {
     const votes: Vote[] = [];
-    await Promise.all(
-        comments.map(async (comment) => {
-            return await Promise.all(
-                new Array(votesPerCommentToPublish).fill(null).map(async (_, i) => {
-                    const vote: Vote = await generateMockVote(
-                        comment,
-                        Math.random() > 0.5 ? 1 : -1,
-                        subplebbit.plebbit,
-                        signers[i % signers.length]
-                    );
-                    await publishWithExpectedResult(vote, true);
-                    votes.push(vote);
-                })
-            );
-        })
-    );
 
+    for (const comment of comments) {
+        const votesPromises = new Array(votesPerCommentToPublish)
+            .fill(null)
+            .map(() => publishVote(comment.cid, Math.random() > 0.5 ? 1 : -1, subplebbit.plebbit, {}));
+        votes.push(...(await Promise.all(votesPromises)));
+    }
+
+    assert.equal(votes.length, votesPerCommentToPublish * comments.length);
     console.log(`${votes.length} votes for ${comments.length} ${comments[0].depth === 0 ? "posts" : "replies"} have been published`);
     return votes;
 }
@@ -359,18 +348,15 @@ export async function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbit:
         ...voteProps
     });
     await publishWithExpectedResult(voteObj, true);
+    return voteObj;
 }
 
 export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
-    let receivedResponse = false;
+    let receivedResponse: boolean = false;
 
-    const retryPublishLoop = async () => {
-        if (receivedResponse) return;
-        await publication.publish();
-        setTimeout(retryPublishLoop, 10000); // Retry after 10 seconds if we haven't received a response
-    };
+    setTimeout(() => assert(receivedResponse, `Publication did not receive any response`), 10000); // throw after 10 seconds if we haven't received a response
 
-    await retryPublishLoop();
+    await publication.publish();
     await new Promise((resolve, reject) => {
         publication.once("challengeverification", (verificationMsg) => {
             receivedResponse = true;
