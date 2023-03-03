@@ -273,11 +273,11 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 log.error(`Comment (${this.cid}) IPNS (${this.ipnsName}) signature is invalid due to '${signatureValidity.reason}'`);
                 return;
             }
-            this._initCommentUpdate(res);
+            await this._initCommentUpdate(res);
             this.emit("update", this);
         } else if (res) {
             log.trace(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
-            this._initCommentUpdate(res);
+            await this._initCommentUpdate(res);
         }
     }
 
