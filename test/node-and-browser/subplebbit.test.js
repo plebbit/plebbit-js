@@ -69,6 +69,22 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
             expect(stringify(subJsonComments)).to.equal(stringify(subObj.posts.pages[pageKey].comments));
         }
     });
+
+    it("subplebbit instance created with only address prop can call getPage", async () => {
+        const remotePlebbit = await Plebbit(mockPlebbit);
+        remotePlebbit.dataPath = undefined;
+        const actualSub = await plebbit.getSubplebbit(subplebbitAddress);
+        expect(actualSub.createdAt).to.be.a("number");
+
+        expect(actualSub.posts.pages.hot).to.be.a("object");
+        const pageCid = actualSub.posts.pageCids.new; // get it somehow
+        expect(pageCid).to.be.a("string");
+        const newSubplebbit = await plebbit.createSubplebbit({ address: actualSub.address });
+        expect(newSubplebbit.createdAt).to.be.undefined;
+
+        const page = await newSubplebbit.posts.getPage(pageCid);
+        expect(page.comments.length).to.be.greaterThan(0);
+    });
 });
 
 describe("subplebbit.update", async () => {

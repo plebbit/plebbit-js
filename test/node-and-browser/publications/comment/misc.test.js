@@ -83,6 +83,27 @@ describe("createComment", async () => {
         const postFromStringifiedPost = await plebbit.createComment(JSON.parse(JSON.stringify(post)));
         expect(JSON.stringify(post)).to.equal(JSON.stringify(postFromStringifiedPost));
     });
+
+    it("comment instance created with {subplebbitAddress, cid} prop can call getPage", async () => {
+        const post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        expect(post.replies).to.be.a("object");
+        await publishRandomReply(post, plebbit, {}, true);
+        await Promise.all([post.update(), new Promise((resolve) => post.once("update", resolve))]);
+        expect(post.content).to.be.a("string");
+        expect(post.replyCount).to.equal(1);
+        expect(post.replies.pages.topAll.comments.length).to.equal(1);
+
+        await post.stop();
+
+        const pageCid = post.replies.pageCids.new;
+        expect(pageCid).to.be.a("string");
+
+        const postClone = await plebbit.createComment({ subplebbitAddress: post.subplebbitAddress, cid: post.cid });
+        expect(postClone.content).to.be.undefined;
+
+        const page = await postClone.replies.getPage(pageCid);
+        expect(page.comments.length).to.be.equal(1);
+    });
 });
 
 describe.skip(`comment.update`, async () => {
