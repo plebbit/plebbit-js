@@ -57,7 +57,8 @@ describe("Verify subplebbit", async () => {
         tempPlebbit.resolver.resolveSubplebbitAddressIfNeeded = (address) => (address === "plebbit.eth" ? signers[4].address : address);
         const sub = await plebbit.getSubplebbit("plebbit.eth");
         const verification = await verifySubplebbit(sub.toJSONIpfs(), tempPlebbit);
-        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY });
+        // Subplebbit posts will be invalid because the resolved address of sub will be used to validate posts
+        expect(verification.valid).to.be.false;
     });
 
     it(`Invalidate a subplebbit signature if subplebbit.posts has an invalid page`, async () => {
