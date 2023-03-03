@@ -231,8 +231,6 @@ export async function parsePageIpfs(pageIpfs: PageIpfs, subplebbit: Pages["_subp
 }
 
 export async function parsePagesIpfs(pagesRaw: PagesTypeIpfs, subplebbit: Pages["_subplebbit"]): Promise<PagesType> {
-    if (!pagesRaw) return undefined;
-
     const parsedPages = await Promise.all(Object.keys(pagesRaw.pages).map((key) => parsePageIpfs(pagesRaw.pages[key], subplebbit)));
     const pagesType: PagesType["pages"] = Object.fromEntries(Object.keys(pagesRaw.pages).map((key, i) => [key, parsedPages[i]]));
     return { pages: pagesType, pageCids: pagesRaw.pageCids };

@@ -23,9 +23,6 @@ class Vote extends Publication implements VoteType {
         };
     }
 
-    toJSONIpfs() {
-        return this.toJSONPubsubMessagePublication();
-    }
     toJSON() {
         return this.toJSONPubsubMessagePublication();
     }

@@ -61,16 +61,6 @@ class Publication extends EventEmitter implements PublicationType {
         throw new Error(`Should be implemented by children of Publication`);
     }
 
-    // The publication with extra fields supplemented by the subplebbit after ChallengeVerification
-    toJSONAfterChallengeVerification() {
-        return this.toJSONPubsubMessagePublication();
-    }
-
-    // When publication is added as a file to IPFS
-    toJSONIpfs() {
-        return this.toJSONPubsubMessagePublication();
-    }
-
     // This is the publication that user publishes over pubsub
     toJSONPubsubMessagePublication(): PublicationType {
         return {
