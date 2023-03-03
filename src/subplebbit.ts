@@ -318,12 +318,14 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
             await this._switchDbIfNeeded();
         }
 
-        await this._updateDbInternalState(lodash.omit(newSubplebbitOptions, "address"));
-        this.initSubplebbit(lodash.omit(newSubplebbitOptions, "address"));
+        const newSubProps = {
+            ...lodash.omit(newSubplebbitOptions, "address"),
+            _subplebbitUpdateTrigger: true
+        };
+        await this._updateDbInternalState(newSubProps);
+        this.initSubplebbit(newSubProps);
 
         log(`Subplebbit (${this.address}) props (${Object.keys(newSubplebbitOptions)}) has been edited`);
-
-        this._subplebbitUpdateTrigger = true;
 
         return this;
     }
@@ -1132,6 +1134,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:subplebbit:sync");
         await this._switchDbIfNeeded();
+        await this._mergeInstanceStateWithDbState({});
 
         try {
             this._ipfsNodeIpnsKeyNames = (await this.plebbit.ipfsClient.key.list()).map((key) => key.name);
