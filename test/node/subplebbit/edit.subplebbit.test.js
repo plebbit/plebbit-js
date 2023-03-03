@@ -8,6 +8,7 @@ const stringify = require("safe-stable-stringify");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { POSTS_SORT_TYPES } = require("../../../dist/node/sort-handler");
+const { v4 } = require("uuid");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -125,9 +126,9 @@ describe(`Concurrency with subplebbit.edit`, async () => {
     });
 
     [
-        { address: `address-eth-${Math.random().toString(36).slice(2)}-${timestamp()}-1.eth` },
+        { address: `address-eth-${v4()}-1.eth` },
         { rules: ["rule 1", "rule 2"] },
-        { address: `address-eth-${Math.random().toString(36).slice(2)}-${timestamp()}-2.eth`, rules: ["rule 1", "rule 2"] }
+        { address: `address-eth-${v4()}-2.eth`, rules: ["rule 1", "rule 2"] }
     ].map((editArgs) =>
         it(`edit subplebbit with multiple subplebbit instances running (${Object.keys(editArgs)})`, async () => {
             const plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
