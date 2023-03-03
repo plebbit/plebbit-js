@@ -106,11 +106,10 @@ const testPostsSort = async (sortName) => {
 };
 
 const testRepliesSort = async (parentComments, replySortName) => {
-    for (const comment of parentComments) {
-        if (!comment.replies) return;
-
+    const commentsWithReplies = parentComments.filter((comment) => comment.replyCount > 0);
+    for (const comment of commentsWithReplies) {
         expect(Object.keys(comment.replies.pageCids)).to.deep.equal(Object.keys(REPLIES_SORT_TYPES));
-        const commentPages = await loadAllPages(comment.replies.pageCids[replySortName], subplebbit.posts);
+        const commentPages = await loadAllPages(comment.replies.pageCids[replySortName], comment.replies);
         testListOfSortedComments(commentPages, replySortName);
         await testRepliesSort(commentPages, replySortName);
     }
