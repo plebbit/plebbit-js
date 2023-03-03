@@ -340,8 +340,8 @@ export async function publishRandomPost(
     verifyCommentPropsInParentPages = true
 ) {
     const post = await generateMockPost(subplebbitAddress, plebbit, false, {
-        content: `Random post Content ${uuidv4()}`,
-        title: `Random post Title ${uuidv4()}`,
+        content: `Random post Content ${uuidv4()} ${lodash.uniqueId()}`,
+        title: `Random post Title ${uuidv4()} ${lodash.uniqueId()}`,
         ...postProps
     });
     await publishWithExpectedResult(post, true);

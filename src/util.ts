@@ -271,8 +271,15 @@ export async function parseRawPages(
     replies: PagesTypeIpfs | PagesTypeJson | Pages | undefined,
     parentCid: string | undefined,
     subplebbit: Pages["_subplebbit"]
-): Promise<Pages | undefined> {
-    if (!replies) return undefined;
+): Promise<Pages> {
+    if (!replies)
+        return new Pages({
+            pages: undefined,
+            pageCids: undefined,
+            subplebbit: subplebbit,
+            pagesIpfs: undefined,
+            parentCid: parentCid
+        });
 
     if (replies instanceof Pages) return replies;
 

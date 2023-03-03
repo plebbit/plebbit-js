@@ -38,11 +38,9 @@ import {
     SubplebbitRole,
     SubplebbitSuggested,
     SubplebbitType,
-    VotePubsubMessage,
     VoteType
 } from "./types";
 import { Comment } from "./comment";
-import Vote from "./vote";
 import Post from "./post";
 import {
     getIpfsKeyFromPrivateKey,
@@ -50,7 +48,7 @@ import {
     getPlebbitAddressFromPublicKey,
     getPublicKeyFromPrivateKey
 } from "./signer/util";
-import { AUTHOR_EDIT_FIELDS, CommentEdit, MOD_EDIT_FIELDS } from "./comment-edit";
+import { AUTHOR_EDIT_FIELDS, MOD_EDIT_FIELDS } from "./comment-edit";
 import errcode from "err-code";
 import { messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
@@ -84,7 +82,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
     description?: string;
     roles?: { [authorAddress: string]: SubplebbitRole };
     lastPostCid?: string;
-    posts?: Pages;
+    posts: Pages;
     pubsubTopic: string;
     challengeTypes?: ChallengeType[];
     metrics?: SubplebbitMetrics;

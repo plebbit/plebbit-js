@@ -74,7 +74,8 @@ describe(`subplebbit.edit`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(ethAddress);
         // subplebbit.posts should omit all comments that referenced the old subplebbit address
         // So in essence it be undefined
-        expect(loadedSubplebbit.posts).to.be.undefined;
+        expect(loadedSubplebbit.posts.pages).to.be.undefined;
+        expect(loadedSubplebbit.posts.pageCids).to.undefined;
     });
 
     it(`Started Sub can receive publications on new ENS address`, async () => {

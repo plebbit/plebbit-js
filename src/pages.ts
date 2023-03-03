@@ -52,7 +52,8 @@ export class Pages implements PagesType {
         return { pages: pagesJson, pageCids: this.pageCids };
     }
 
-    toJSONIpfs(): PagesTypeIpfs {
+    toJSONIpfs(): PagesTypeIpfs | undefined {
+        if (!this.pages) return undefined;
         assert(this._pagesIpfs);
         return {
             pages: this._pagesIpfs,

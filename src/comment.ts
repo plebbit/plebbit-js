@@ -45,7 +45,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     downvoteCount?: number;
     replyCount?: number;
     updatedAt?: number;
-    replies?: Pages;
+    replies: Pages;
     edit?: AuthorCommentEdit;
     flair?: Flair;
     deleted?: CommentType["edit"]["deleted"];
@@ -71,6 +71,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     }
 
     _initProps(props: CommentType) {
+        // This function is called once at in the constructor
         super._initProps(props);
         this.postCid = props.postCid;
         this.cid = props.cid;
@@ -87,6 +88,13 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.protocolVersion = props.protocolVersion;
         this.flair = props.flair;
         this.setPreviousCid(props.previousCid);
+        this.replies = new Pages({
+            pages: undefined,
+            pageCids: undefined,
+            subplebbit: { address: this.subplebbitAddress, plebbit: this.plebbit },
+            pagesIpfs: undefined,
+            parentCid: this.cid
+        });
     }
 
     async _initCommentUpdate(props: CommentUpdate) {
@@ -114,8 +122,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.author.flair = props.author?.subplebbit?.flair || props.edit?.author?.flair || this.author?.flair;
 
         assert(this.cid);
-        if (!this.subplebbit) this.subplebbit = await this.plebbit.getSubplebbit(this.subplebbitAddress);
-        this.replies = await parseRawPages(props.replies, this.cid, this.subplebbit);
+        this.replies = await parseRawPages(props.replies, this.cid, { address: this.subplebbitAddress, plebbit: this.plebbit });
     }
 
     getType(): PublicationTypeName {
@@ -264,11 +271,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         }
 
         if (res && this.updatedAt !== res.updatedAt) {
-            if (!this.subplebbit) this.subplebbit = await this.plebbit.getSubplebbit(this.subplebbitAddress);
             log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
             //@ts-expect-error
             const commentInstance: Pick<CommentWithCommentUpdate, "cid" | "signature"> = lodash.pick(this, ["cid", "signature"]);
-            const signatureValidity = await verifyCommentUpdate(res, this.subplebbit, commentInstance, this.plebbit);
+            const signatureValidity = await verifyCommentUpdate(res, { address: this.subplebbitAddress }, commentInstance, this.plebbit);
             if (!signatureValidity.valid) {
                 log.error(`Comment (${this.cid}) IPNS (${this.ipnsName}) signature is invalid due to '${signatureValidity.reason}'`);
                 return;
