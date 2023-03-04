@@ -47,7 +47,7 @@ describe(`subplebbit.start`, async () => {
         // There are cases where ipfs node can fail and be restarted
         // When that happens, the subscription to subplebbit.pubsubTopic will not be restored
         // The restoration of subscription should happen within the sync loop of Subplebbit
-        await subplebbit.plebbit.pubsubIpfsClient.pubsub.unsubscribe(subplebbit.pubsubTopic);
+        await subplebbit.plebbit.pubsubIpfsClient.pubsub.unsubscribe(subplebbit.pubsubTopic, subplebbit.handleChallengeExchange);
         await waitUntil(async () => (await subplebbit.plebbit.pubsubIpfsClient.pubsub.ls()).includes(subplebbit.address), {
             timeout: 150000
         });
