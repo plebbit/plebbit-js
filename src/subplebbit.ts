@@ -1056,7 +1056,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
         // Make sure subplebbit listens to pubsub topic
         const subscribedTopics = await this.plebbit.pubsubIpfsClient.pubsub.ls();
         if (!subscribedTopics.includes(this.pubsubTopic)) {
-            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic); // Make sure it's not hanging
+            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic, this.handleChallengeExchange); // Make sure it's not hanging
             await this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, this.handleChallengeExchange);
             log.trace(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
         }
@@ -1200,6 +1200,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
 
         await this._listenToIncomingRequests();
         this._subplebbitUpdateTrigger = true;
+        await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
 
         this.syncIpnsWithDb()
             .then(() => this._syncLoop(this._syncIntervalMs))
