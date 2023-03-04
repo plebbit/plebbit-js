@@ -128,7 +128,8 @@ export class DbHandler {
 
         const trx: Transaction = this._currentTrxs[transactionId];
         if (trx) {
-            assert(trx && trx.isTransaction && !trx.isCompleted(), `Transaction (${transactionId}) needs to be stored to rollback`);
+            assert(trx.isTransaction, `Transaction (${transactionId}) needs to be stored to rollback`);
+            if (trx.isCompleted()) return;
             await this._currentTrxs[transactionId].rollback();
             delete this._currentTrxs[transactionId];
         }
