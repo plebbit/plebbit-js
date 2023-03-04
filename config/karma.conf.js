@@ -2,6 +2,8 @@
 // to not have to type it every time
 require("dotenv").config();
 
+const os = require("os");
+
 const mochaConfig = require("./.mocharc.js");
 
 // possible to add flags when launching the browser
@@ -28,24 +30,39 @@ if (process.env.DEBUG) {
     `;
 }
 
+function injectCodeBeforeFactory() {
+    return (content, file, done) => done(codeToInjectBefore + content);
+}
+
+const injectCodeBeforePlugin = {
+    "preprocessor:inject-code-before": ["factory", injectCodeBeforeFactory]
+};
+
+let frameworks = ["mocha", "chai", "sinon"];
+
+const plugins = [...browserPlugins, require("karma-mocha"), require("karma-chai"), require("karma-sinon"), require("karma-spec-reporter")];
+
+if (!process.env["CI"]) {
+    frameworks = ["parallel", ...frameworks];
+    plugins.push(require("karma-parallel"));
+}
+
+plugins.push(injectCodeBeforePlugin);
+
 module.exports = function (config) {
     config.set({
         // chai adds "expect" matchers
         // sinon adds mocking utils
         // NOTE: 'parallel' must be the first framework in the list
-        frameworks: ["parallel", "mocha", "chai", "sinon"],
+        frameworks: frameworks,
         client: {
             mocha: mochaConfig
         },
-        plugins: [
-            ...browserPlugins,
-            require("karma-mocha"),
-            require("karma-chai"),
-            require("karma-sinon"),
-            require("karma-spec-reporter"),
-            require("karma-parallel"),
-            injectCodeBeforePlugin
-        ],
+        plugins: plugins,
+
+        parallelOptions: {
+            executors: Math.ceil(os.cpus().length / 2.0)
+        },
 
         basePath: "../",
         files: [
@@ -84,12 +101,4 @@ module.exports = function (config) {
         captureTimeout: mochaConfig.timeout,
         browserDisconnectTimeout: mochaConfig.timeout
     });
-};
-
-function injectCodeBeforeFactory() {
-    return (content, file, done) => done(codeToInjectBefore + content);
-}
-
-const injectCodeBeforePlugin = {
-    "preprocessor:inject-code-before": ["factory", injectCodeBeforeFactory]
 };
