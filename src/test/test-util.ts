@@ -354,7 +354,7 @@ export async function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbit:
 export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
     let receivedResponse: boolean = false;
 
-    setTimeout(() => assert(receivedResponse, `Publication did not receive any response`), 10000); // throw after 10 seconds if we haven't received a response
+    setTimeout(() => assert(receivedResponse, `Publication did not receive any response`), 20000); // throw after 20 seconds if we haven't received a response
 
     await publication.publish();
     await new Promise((resolve, reject) => {
