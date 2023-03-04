@@ -57,7 +57,7 @@ ModeratorCommentEditOptions {
   removed?: boolean
   reason?: string
   commentAuthor?: {
-    flair: Flair
+    flair?: Flair
     banExpiresAt?: number
   }
 }
