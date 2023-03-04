@@ -33,10 +33,14 @@ describe(`subplebbit.start`, async () => {
     });
 
     it(`Can start a sub after stopping it`, async () => {
-        await subplebbit.stop();
-        await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-        await publishRandomPost(subplebbit.address, plebbit, {}, true);
+        const newSub = await createMockSub({}, plebbit);
+        await newSub.start();
+        await new Promise((resolve) => newSub.once("update", resolve));
+        await publishRandomPost(newSub.address, plebbit, {}, false);
+        await newSub.stop();
+        await newSub.start();
+        await publishRandomPost(subplebbit.address, plebbit, {}, false);
+        await newSub.stop();
     });
 
     it(`Sub can receive publications after pubsub topic subscription disconnects`, async () => {
