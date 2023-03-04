@@ -56,17 +56,19 @@ describe("challengerequest", async () => {
                 comment.subplebbit.pubsubTopic,
                 fromString(JSON.stringify(invalidSignature))
             );
-            await tempPlebbits[1].pubsubIpfsClient.pubsub.subscribe(comment.subplebbit.pubsubTopic, (pubsubMsg) => {
+
+            const subMethod = (pubsubMsg) => {
                 const msgParsed = JSON.parse(toString(pubsubMsg["data"]));
                 if (msgParsed.type === "CHALLENGEVERIFICATION" && msgParsed.challengeRequestId === invalidSignature.challengeRequestId) {
                     expect(msgParsed.challengeSuccess).to.be.false;
                     expect(msgParsed.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
                     expect(msgParsed.publication).to.be.undefined;
                     expect(msgParsed.encryptedPublication).to.be.undefined;
-                    tempPlebbits[1].pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, arguments.callee);
+                    tempPlebbits[1].pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, subMethod);
                     resolve();
                 }
-            });
+            };
+            await tempPlebbits[1].pubsubIpfsClient.pubsub.subscribe(comment.subplebbit.pubsubTopic, subMethod);
         });
     });
 });
@@ -165,7 +167,7 @@ describe("challengeanswer", async () => {
                     fromString(JSON.stringify(challengeAnswer))
                 );
 
-                await tempPlebbits[1].pubsubIpfsClient.pubsub.subscribe(comment.subplebbit.pubsubTopic, (pubsubMsg) => {
+                const subMethod = (pubsubMsg) => {
                     const msgParsed = JSON.parse(toString(pubsubMsg["data"]));
                     if (
                         msgParsed.type === "CHALLENGEVERIFICATION" &&
@@ -175,10 +177,12 @@ describe("challengeanswer", async () => {
                         expect(msgParsed.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
                         expect(msgParsed.publication).to.be.undefined;
                         expect(msgParsed.encryptedPublication).to.be.undefined;
-                        tempPlebbits[1].pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, arguments.callee);
+                        tempPlebbits[1].pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, subMethod);
                         resolve();
                     }
-                });
+                };
+
+                await tempPlebbits[1].pubsubIpfsClient.pubsub.subscribe(comment.subplebbit.pubsubTopic, subMethod);
             });
         });
     });
