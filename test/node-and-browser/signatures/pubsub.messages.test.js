@@ -63,7 +63,7 @@ describe("challengerequest", async () => {
                     expect(msgParsed.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
                     expect(msgParsed.publication).to.be.undefined;
                     expect(msgParsed.encryptedPublication).to.be.undefined;
-                    tempPlebbits[1].pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic);
+                    tempPlebbits[1].pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, arguments.callee);
                     resolve();
                 }
             });
@@ -175,7 +175,7 @@ describe("challengeanswer", async () => {
                         expect(msgParsed.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
                         expect(msgParsed.publication).to.be.undefined;
                         expect(msgParsed.encryptedPublication).to.be.undefined;
-                        tempPlebbits[1].pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic);
+                        tempPlebbits[1].pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, arguments.callee);
                         resolve();
                     }
                 });
