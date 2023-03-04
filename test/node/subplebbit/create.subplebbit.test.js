@@ -98,24 +98,28 @@ describe(`plebbit.createSubplebbit`, async () => {
     });
 
     it(`Recreating a local sub with createSubplebbit({address, ...extraProps}) should not override local sub props`, async () => {
-        const newSub = await plebbit.createSubplebbit({
-            title: `Test for extra props`,
-            description: "Test for description extra props"
-        });
-        newSub._syncIntervalMs = syncInterval;
+        const newSub = await createMockSub(
+            {
+                title: `Test for extra props`,
+                description: "Test for description extra props"
+            },
+            plebbit
+        );
         await newSub.start();
         await new Promise((resolve) => newSub.once("update", resolve));
         await newSub.stop();
 
-        const createdSubplebbit = await plebbit.createSubplebbit({
-            address: newSub.address,
-            title: "nothing",
-            description: "nothing also"
-        });
+        const createdSubplebbit = await createMockSub(
+            {
+                address: newSub.address,
+                title: "nothing",
+                description: "nothing also"
+            },
+            plebbit
+        );
         expect(createdSubplebbit.title).to.equal(newSub.title);
         expect(createdSubplebbit.description).to.equal(newSub.description);
 
-        createdSubplebbit._syncIntervalMs = syncInterval;
         await createdSubplebbit.start();
         await new Promise((resolve) => createdSubplebbit.once("update", resolve));
         expect(createdSubplebbit.title).to.equal(newSub.title);
