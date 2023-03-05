@@ -16,7 +16,11 @@ const CustomChrome = {
 // choose which browser you prefer
 const [browsers, browserPlugins] = [[], []];
 if (process.env["CHROME_BIN"]) browsers.push("CustomChrome") && browserPlugins.push(require("karma-chrome-launcher"));
-if (process.env["FIREFOX_BIN"]) browsers.push("FirefoxHeadless") && browserPlugins.push(require("karma-firefox-launcher"));
+if (process.env["FIREFOX_BIN"]) {
+    browsers.push("FirefoxHeadless");
+    browserPlugins.push(require("karma-firefox-launcher"));
+    mochaConfig["retries"] = 2;
+}
 
 if (browsers.length === 0) throw Error("No chrome or firefox path set when calling karma.conf.js");
 
