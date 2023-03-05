@@ -1,3 +1,4 @@
+const Plebbit = require("../../../dist/node");
 const { verifyPage } = require("../../../dist/node/signer/signatures");
 const { messages } = require("../../../dist/node/errors");
 const { expect } = require("chai");
@@ -5,7 +6,6 @@ const signers = require("../../fixtures/signers");
 const lodash = require("lodash");
 const { loadIpfsFileAsJson } = require("../../../dist/node/util");
 
-const Plebbit = require("../../../dist/node");
 const { mockPlebbit } = require("../../../dist/node/test/test-util");
 
 const subAddress = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR";

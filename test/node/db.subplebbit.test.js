@@ -1,6 +1,5 @@
-const { publishRandomPost } = require("../../dist/node/test/test-util");
-
 const Plebbit = globalThis["window"]?.plebbitApi || require("../../dist/node");
+const { publishRandomPost } = require("../../dist/node/test/test-util");
 const chai = globalThis["window"]?.chaiApi || require("chai");
 const chaiAsPromised = globalThis["window"]?.chaiAsPromisedApi || require("chai-as-promised");
 chai.use(chaiAsPromised);

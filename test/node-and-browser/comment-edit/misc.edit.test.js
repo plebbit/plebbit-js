@@ -1,3 +1,4 @@
+const Plebbit = require("../../../dist/node");
 const { expect } = require("chai");
 const signers = require("../../fixtures/signers");
 const { mockPlebbit } = require("../../../dist/node/test/test-util");

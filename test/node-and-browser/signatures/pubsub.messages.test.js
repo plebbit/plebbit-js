@@ -1,3 +1,4 @@
+const Plebbit = require("../../../dist/node");
 const {
     verifyChallengeRequest,
     verifyChallengeAnswer,
@@ -6,7 +7,6 @@ const {
     verifyChallengeVerification
 } = require("../../../dist/node/signer/signatures");
 const { generateMockPost, mockPlebbit } = require("../../../dist/node/test/test-util");
-const Plebbit = require("../../../dist/node");
 const { toString } = require("uint8arrays/to-string");
 const { fromString } = require("uint8arrays/from-string");
 const signers = require("../../fixtures/signers");

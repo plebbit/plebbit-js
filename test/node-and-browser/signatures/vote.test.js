@@ -1,3 +1,4 @@
+const Plebbit = require("../../../dist/node");
 const signers = require("../../fixtures/signers");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");

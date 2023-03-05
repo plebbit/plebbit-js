@@ -1,8 +1,8 @@
+const Plebbit = require("../../../dist/node");
 const { mockPlebbit, publishRandomPost, createMockSub } = require("../../../dist/node/test/test-util");
 const path = require("path");
 const fs = require("fs");
 const { default: waitUntil } = require("async-wait-until");
-const Plebbit = require("../../../dist/node");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");

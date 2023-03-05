@@ -1,5 +1,5 @@
-const { TIMEFRAMES_TO_SECONDS } = require("../../dist/node/util");
 const Plebbit = require("../../dist/node");
+const { TIMEFRAMES_TO_SECONDS } = require("../../dist/node/util");
 const { expect } = require("chai");
 const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../dist/node/sort-handler");
 const signers = require("../fixtures/signers");

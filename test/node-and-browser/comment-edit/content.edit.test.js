@@ -1,3 +1,4 @@
+const Plebbit = require("../../../dist/node");
 const signers = require("../../fixtures/signers");
 const { mockPlebbit, publishRandomPost, publishWithExpectedResult } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");

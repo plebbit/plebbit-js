@@ -1,8 +1,8 @@
+const Plebbit = require("../../../dist/node");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-const Plebbit = require("../../../dist/node");
 const {
     signComment,
     verifyComment,
