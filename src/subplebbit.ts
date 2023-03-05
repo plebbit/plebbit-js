@@ -206,7 +206,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
     toJSONInternal(): InternalSubplebbitType {
         return {
             ...this.toJSON(),
-            posts: this.posts?.toJSONIpfs(),
+            posts: this.posts?.toJSON(),
             signer: this.signer ? lodash.pick(this.signer, ["privateKey", "type", "address"]) : undefined,
             _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
         };

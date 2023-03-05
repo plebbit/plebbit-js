@@ -300,7 +300,7 @@ export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts"> {
     posts?: PagesTypeIpfs;
 }
 
-export interface InternalSubplebbitType extends Omit<SubplebbitType, "posts">, Pick<SubplebbitIpfsType, "posts"> {
+export interface InternalSubplebbitType extends SubplebbitType {
     signer: Pick<SignerType, "address" | "privateKey" | "type">;
     _subplebbitUpdateTrigger: boolean;
 }
