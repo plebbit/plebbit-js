@@ -96,6 +96,7 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
 }
 Author {
   address: string
+  shortAddress: string // not part of IPFS files, added to `Author` instance as convenience. Copy address, if address is a hash, remove hash prefix and trim to 12 first chars
   previousCommentCid?: string // linked list of the author's comments
   displayName?: string
   wallets?: {[chainTicker: string]: Wallet}
@@ -340,6 +341,7 @@ Encrypted {
   - [`subplebbit.update()`](#subplebbitupdate)
   - `subplebbit.delete()`
   - `subplebbit.address`
+  - `subplebbit.shortAddress`
   - `subplebbit.roles`
   - `subplebbit.posts`
   - `subplebbit.lastPostCid`
@@ -383,6 +385,7 @@ Encrypted {
   - `comment.depth`
   - `(only available after challengeverification event)`
   - `comment.cid`
+  - `comment.shortCid`
   - `(only available after first update event)`
   - `comment.edit`
   - `comment.original`
