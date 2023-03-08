@@ -45,6 +45,7 @@ export class Pages implements PagesType {
     }
 
     toJSON(): PagesTypeJson {
+        if (!this.pages) return undefined;
         const pagesJson = lodash.mapValues(this.pages, (page) => {
             const commentsJson: CommentWithCommentUpdate[] = page.comments.map((comment) => comment.toJSONMerged());
             return { comments: commentsJson, nextCid: page.nextCid };
