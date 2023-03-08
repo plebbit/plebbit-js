@@ -323,7 +323,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
             _subplebbitUpdateTrigger: true
         };
         await this._updateDbInternalState(newSubProps);
-        this.initSubplebbit(newSubProps);
+        await this.initSubplebbit(newSubProps);
 
         log(`Subplebbit (${this.address}) props (${Object.keys(newSubplebbitOptions)}) has been edited`);
 
@@ -339,7 +339,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
 
             if (deterministicStringify(this.toJSONInternal()) !== deterministicStringify(subState)) {
                 log(`Remote Subplebbit received a new update. Will emit an update event`);
-                this.initSubplebbit(subState);
+                await this.initSubplebbit(subState);
                 this.emit("update", this);
             }
         } else {
@@ -368,7 +368,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
                 log.error(`Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
                 this.emit("error", `Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
             } else if (this.updatedAt !== subplebbitIpns.updatedAt) {
-                this.initSubplebbit(subplebbitIpns);
+                await this.initSubplebbit(subplebbitIpns);
                 log(`Remote Subplebbit received a new update. Will emit an update event`);
                 this.emit("update", this);
             }
@@ -431,7 +431,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
 
         const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
         const newIpns: Omit<SubplebbitIpfsType, "signature"> = {
-            ...lodash.omit(this.toJSONIpfs(), "signature"),
+            ...lodash.omit(this._toJSONBase(), "signature"),
             lastPostCid: latestPost?.cid,
             metricsCid,
             updatedAt,
@@ -1064,13 +1064,14 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
 
     private async _getDbInternalState() {
         await this.dbHandler.lockSubState();
-        const internalState: SubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
+        const internalState: InternalSubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
         await this.dbHandler.unlockSubState();
         return internalState;
     }
 
     private async _mergeInstanceStateWithDbState(overrideProps: Partial<InternalSubplebbitType>) {
-        this.initSubplebbit({ ...lodash.omit(await this._getDbInternalState(), "address"), ...overrideProps });
+        const currentDbState = lodash.omit(await this._getDbInternalState(), "address");
+        await this.initSubplebbit({ ...currentDbState, ...overrideProps });
     }
 
     private async _switchDbIfNeeded() {
