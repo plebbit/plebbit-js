@@ -910,6 +910,7 @@ export class DbHandler {
 
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.create.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        if (!fs.existsSync(lockfilePath) || !fs.existsSync(subDbPath)) return;
         try {
             await lockfile.unlock(subDbPath, { lockfilePath, realpath: false });
             log(`Unlocked creation of sub (${subAddress})`);
@@ -960,6 +961,7 @@ export class DbHandler {
 
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        if (!fs.existsSync(lockfilePath) || !fs.existsSync(subDbPath)) return;
         await lockfile.unlock(subDbPath, { lockfilePath });
 
         log.trace(`Unlocked state of sub (${subAddress})`);
