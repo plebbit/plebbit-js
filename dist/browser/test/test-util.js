@@ -50,7 +50,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createMockSub = exports.waitTillCommentIsInParentPages = exports.findCommentInPage = exports.publishWithExpectedResult = exports.publishVote = exports.publishRandomPost = exports.publishRandomReply = exports.mockPlebbit = exports.startSubplebbits = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
+exports.createMockSub = exports.waitTillCommentIsInParentPages = exports.findCommentInPage = exports.publishWithExpectedResult = exports.publishVote = exports.publishRandomPost = exports.publishRandomReply = exports.mockRemotePlebbit = exports.mockPlebbit = exports.startSubplebbits = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
 var util_1 = require("../util");
 var comment_1 = require("../comment");
 var index_1 = __importDefault(require("../index"));
@@ -353,16 +353,14 @@ function _publishComments(parentComments, subplebbit, numOfCommentsToPublish, si
                     comments = [];
                     if (!(parentComments.length === 0)) return [3 /*break*/, 2];
                     return [4 /*yield*/, Promise.all(new Array(numOfCommentsToPublish).fill(null).map(function () { return __awaiter(_this, void 0, void 0, function () {
-                            var post;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0: return [4 /*yield*/, generateMockPost(subplebbit.address, subplebbit.plebbit, true, { signer: signers[0] })];
+                            var _a, _b;
+                            return __generator(this, function (_c) {
+                                switch (_c.label) {
+                                    case 0:
+                                        _b = (_a = comments).push;
+                                        return [4 /*yield*/, publishRandomPost(subplebbit.address, subplebbit.plebbit, {}, false)];
                                     case 1:
-                                        post = _a.sent();
-                                        return [4 /*yield*/, publishWithExpectedResult(post, true)];
-                                    case 2:
-                                        _a.sent();
-                                        comments.push(post);
+                                        _b.apply(_a, [_c.sent()]);
                                         return [2 /*return*/];
                                 }
                             });
@@ -375,18 +373,15 @@ function _publishComments(parentComments, subplebbit, numOfCommentsToPublish, si
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0: return [4 /*yield*/, Promise.all(new Array(numOfCommentsToPublish).fill(null).map(function () { return __awaiter(_this, void 0, void 0, function () {
-                                        var comment;
-                                        return __generator(this, function (_a) {
-                                            switch (_a.label) {
+                                        var _a, _b;
+                                        return __generator(this, function (_c) {
+                                            switch (_c.label) {
                                                 case 0:
                                                     (0, assert_1.default)(typeof (parentComment === null || parentComment === void 0 ? void 0 : parentComment.cid) === "string");
-                                                    return [4 /*yield*/, generateMockComment(parentComment, subplebbit.plebbit, true, { signer: signers[0] })];
+                                                    _b = (_a = comments).push;
+                                                    return [4 /*yield*/, publishRandomReply(parentComment, subplebbit.plebbit, {}, false)];
                                                 case 1:
-                                                    comment = _a.sent();
-                                                    return [4 /*yield*/, publishWithExpectedResult(comment, true)];
-                                                case 2:
-                                                    _a.sent();
-                                                    comments.push(comment);
+                                                    _b.apply(_a, [_c.sent()]);
                                                     return [2 /*return*/];
                                             }
                                         });
@@ -398,44 +393,51 @@ function _publishComments(parentComments, subplebbit, numOfCommentsToPublish, si
                 case 3:
                     _a.sent();
                     _a.label = 4;
-                case 4: return [2 /*return*/, comments];
+                case 4:
+                    assert_1.default.equal(comments.length, numOfCommentsToPublish);
+                    return [2 /*return*/, comments];
             }
         });
     });
 }
 function _publishVotes(comments, subplebbit, votesPerCommentToPublish, signers) {
     return __awaiter(this, void 0, void 0, function () {
-        var votes;
-        var _this = this;
+        var votes, _loop_1, _i, comments_1, comment;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     votes = [];
-                    return [4 /*yield*/, Promise.all(comments.map(function (comment) { return __awaiter(_this, void 0, void 0, function () {
-                            var _this = this;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0: return [4 /*yield*/, Promise.all(new Array(votesPerCommentToPublish).fill(null).map(function (_, i) { return __awaiter(_this, void 0, void 0, function () {
-                                            var vote;
-                                            return __generator(this, function (_a) {
-                                                switch (_a.label) {
-                                                    case 0: return [4 /*yield*/, generateMockVote(comment, Math.random() > 0.5 ? 1 : -1, subplebbit.plebbit, signers[i % signers.length])];
-                                                    case 1:
-                                                        vote = _a.sent();
-                                                        return [4 /*yield*/, publishWithExpectedResult(vote, true)];
-                                                    case 2:
-                                                        _a.sent();
-                                                        votes.push(vote);
-                                                        return [2 /*return*/];
-                                                }
-                                            });
-                                        }); }))];
-                                    case 1: return [2 /*return*/, _a.sent()];
-                                }
-                            });
-                        }); }))];
+                    _loop_1 = function (comment) {
+                        var votesPromises, _b, _c, _d;
+                        return __generator(this, function (_e) {
+                            switch (_e.label) {
+                                case 0:
+                                    votesPromises = new Array(votesPerCommentToPublish)
+                                        .fill(null)
+                                        .map(function () { return publishVote(comment.cid, Math.random() > 0.5 ? 1 : -1, subplebbit.plebbit, {}); });
+                                    _c = (_b = votes.push).apply;
+                                    _d = [votes];
+                                    return [4 /*yield*/, Promise.all(votesPromises)];
+                                case 1:
+                                    _c.apply(_b, _d.concat([(_e.sent())]));
+                                    return [2 /*return*/];
+                            }
+                        });
+                    };
+                    _i = 0, comments_1 = comments;
+                    _a.label = 1;
                 case 1:
+                    if (!(_i < comments_1.length)) return [3 /*break*/, 4];
+                    comment = comments_1[_i];
+                    return [5 /*yield**/, _loop_1(comment)];
+                case 2:
                     _a.sent();
+                    _a.label = 3;
+                case 3:
+                    _i++;
+                    return [3 /*break*/, 1];
+                case 4:
+                    assert_1.default.equal(votes.length, votesPerCommentToPublish * comments.length);
                     console.log("".concat(votes.length, " votes for ").concat(comments.length, " ").concat(comments[0].depth === 0 ? "posts" : "replies", " have been published"));
                     return [2 /*return*/, votes];
             }
@@ -556,6 +558,21 @@ function mockPlebbit(dataPath) {
     });
 }
 exports.mockPlebbit = mockPlebbit;
+function mockRemotePlebbit() {
+    return __awaiter(this, void 0, void 0, function () {
+        var plebbit;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, mockPlebbit()];
+                case 1:
+                    plebbit = _a.sent();
+                    plebbit._canRunSub = function () { return false; };
+                    return [2 /*return*/, plebbit];
+            }
+        });
+    });
+}
+exports.mockRemotePlebbit = mockRemotePlebbit;
 function publishRandomReply(parentComment, plebbit, commentProps, verifyCommentPropsInParentPages) {
     if (verifyCommentPropsInParentPages === void 0) { verifyCommentPropsInParentPages = true; }
     return __awaiter(this, void 0, void 0, function () {
@@ -585,7 +602,7 @@ function publishRandomPost(subplebbitAddress, plebbit, postProps, verifyCommentP
         var post;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, generateMockPost(subplebbitAddress, plebbit, false, __assign({ content: "Random post Content ".concat((0, uuid_1.v4)()), title: "Random post Title ".concat((0, uuid_1.v4)()) }, postProps))];
+                case 0: return [4 /*yield*/, generateMockPost(subplebbitAddress, plebbit, false, __assign({ content: "Random post Content ".concat((0, uuid_1.v4)(), " ").concat(lodash_1.default.uniqueId()), title: "Random post Title ".concat((0, uuid_1.v4)(), " ").concat(lodash_1.default.uniqueId()) }, postProps))];
                 case 1:
                     post = _a.sent();
                     return [4 /*yield*/, publishWithExpectedResult(post, true)];
@@ -625,7 +642,7 @@ function publishVote(commentCid, vote, plebbit, voteProps) {
                     return [4 /*yield*/, publishWithExpectedResult(voteObj, true)];
                 case 5:
                     _e.sent();
-                    return [2 /*return*/];
+                    return [2 /*return*/, voteObj];
             }
         });
     });
@@ -642,6 +659,7 @@ function publishWithExpectedResult(publication, expectedChallengeSuccess, expect
                 case 1:
                     _a.sent();
                     return [4 /*yield*/, new Promise(function (resolve, reject) {
+                            setTimeout(function () { return !receivedResponse && reject("Publication did not receive any response"); }, 10000); // throw after 30 seconds if we haven't received a response
                             publication.once("challengeverification", function (verificationMsg) {
                                 receivedResponse = true;
                                 if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
@@ -657,8 +675,6 @@ function publishWithExpectedResult(publication, expectedChallengeSuccess, expect
                                 else
                                     resolve(1);
                             });
-                            // Retry after 10 seconds if we haven't received a response
-                            setTimeout(function () { return !receivedResponse && publication.publish(); }, 10000);
                         })];
                 case 2:
                     _a.sent();

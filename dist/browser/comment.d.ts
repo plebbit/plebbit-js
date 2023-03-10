@@ -20,7 +20,7 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     downvoteCount?: number;
     replyCount?: number;
     updatedAt?: number;
-    replies?: Pages;
+    replies: Pages;
     edit?: AuthorCommentEdit;
     flair?: Flair;
     deleted?: CommentType["edit"]["deleted"];

@@ -353,10 +353,7 @@ function parsePagesIpfs(pagesRaw, subplebbit) {
         var parsedPages, pagesType;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0:
-                    if (!pagesRaw)
-                        return [2 /*return*/, undefined];
-                    return [4 /*yield*/, Promise.all(Object.keys(pagesRaw.pages).map(function (key) { return parsePageIpfs(pagesRaw.pages[key], subplebbit); }))];
+                case 0: return [4 /*yield*/, Promise.all(Object.keys(pagesRaw.pages).map(function (key) { return parsePageIpfs(pagesRaw.pages[key], subplebbit); }))];
                 case 1:
                     parsedPages = _a.sent();
                     pagesType = Object.fromEntries(Object.keys(pagesRaw.pages).map(function (key, i) { return [key, parsedPages[i]]; }));
@@ -412,7 +409,13 @@ function parseRawPages(replies, parentCid, subplebbit) {
             switch (_c.label) {
                 case 0:
                     if (!replies)
-                        return [2 /*return*/, undefined];
+                        return [2 /*return*/, new pages_1.Pages({
+                                pages: undefined,
+                                pageCids: undefined,
+                                subplebbit: subplebbit,
+                                pagesIpfs: undefined,
+                                parentCid: parentCid
+                            })];
                     if (replies instanceof pages_1.Pages)
                         return [2 /*return*/, replies];
                     isIpfs = Boolean((_a = Object.values(replies.pages)[0]) === null || _a === void 0 ? void 0 : _a.comments[0]["commentUpdate"]);

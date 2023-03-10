@@ -19,9 +19,10 @@ export declare function startSubplebbits(props: {
     numOfCommentsToPublish: number;
 }): Promise<void>;
 export declare function mockPlebbit(dataPath?: string): Promise<Plebbit>;
+export declare function mockRemotePlebbit(): Promise<Plebbit>;
 export declare function publishRandomReply(parentComment: Comment, plebbit: Plebbit, commentProps: Partial<CreateCommentOptions>, verifyCommentPropsInParentPages?: boolean): Promise<Comment>;
 export declare function publishRandomPost(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<PostType>, verifyCommentPropsInParentPages?: boolean): Promise<Comment | Post>;
-export declare function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbit: Plebbit, voteProps?: Partial<VoteType>): Promise<void>;
+export declare function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbit: Plebbit, voteProps?: Partial<VoteType>): Promise<Vote>;
 export declare function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string): Promise<void>;
 export declare function findCommentInPage(commentCid: string, pageCid: string, pages: Pages): Promise<Comment>;
 export declare function waitTillCommentIsInParentPages(comment: Comment, plebbit: Plebbit, propsToCheckFor?: Partial<CreateCommentOptions>, checkInAllPages?: boolean): Promise<void>;

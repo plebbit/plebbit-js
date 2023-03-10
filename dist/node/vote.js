@@ -80,9 +80,6 @@ var Vote = /** @class */ (function (_super) {
     Vote.prototype.toJSONPubsubMessagePublication = function () {
         return __assign(__assign({}, _super.prototype.toJSONPubsubMessagePublication.call(this)), { commentCid: this.commentCid, vote: this.vote });
     };
-    Vote.prototype.toJSONIpfs = function () {
-        return this.toJSONPubsubMessagePublication();
-    };
     Vote.prototype.toJSON = function () {
         return this.toJSONPubsubMessagePublication();
     };

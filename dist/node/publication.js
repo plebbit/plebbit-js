@@ -99,14 +99,6 @@ var Publication = /** @class */ (function (_super) {
     Publication.prototype.getType = function () {
         throw new Error("Should be implemented by children of Publication");
     };
-    // The publication with extra fields supplemented by the subplebbit after ChallengeVerification
-    Publication.prototype.toJSONAfterChallengeVerification = function () {
-        return this.toJSONPubsubMessagePublication();
-    };
-    // When publication is added as a file to IPFS
-    Publication.prototype.toJSONIpfs = function () {
-        return this.toJSONPubsubMessagePublication();
-    };
     // This is the publication that user publishes over pubsub
     Publication.prototype.toJSONPubsubMessagePublication = function () {
         return {
@@ -163,7 +155,10 @@ var Publication = /** @class */ (function (_super) {
                         this._initProps(decryptedPublication);
                         return [3 /*break*/, 7];
                     case 6:
-                        log.error("Challenge ".concat(msgParsed.challengeRequestId, " has failed to pass. Challenge errors = ").concat(msgParsed.challengeErrors, ", reason = '").concat(msgParsed.reason, "'"));
+                        if (msgParsed.challengeSuccess)
+                            log("Challenge (".concat(msgParsed.challengeRequestId, ") has passed"));
+                        else
+                            log.error("Challenge ".concat(msgParsed.challengeRequestId, " has failed to pass. Challenge errors = ").concat(msgParsed.challengeErrors, ", reason = '").concat(msgParsed.reason, "'"));
                         _e.label = 7;
                     case 7:
                         this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication }), this);

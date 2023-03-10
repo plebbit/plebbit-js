@@ -6,7 +6,6 @@ declare class Vote extends Publication implements VoteType {
     vote: 1 | 0 | -1;
     constructor(props: VoteType, plebbit: Plebbit);
     toJSONPubsubMessagePublication(): VotePubsubMessage;
-    toJSONIpfs(): VotePubsubMessage;
     toJSON(): VotePubsubMessage;
     getType(): PublicationTypeName;
     toJSONForDb(challengeRequestId: string): VotesTableRowInsert;

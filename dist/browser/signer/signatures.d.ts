@@ -20,10 +20,10 @@ export declare function verifyVote(vote: VotePubsubMessage, plebbit: Plebbit, ov
 export declare function verifyCommentEdit(edit: CommentEditPubsubMessage, plebbit: Plebbit, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
 export declare function verifyComment(comment: CommentPubsubMessage | CommentIpfsType, plebbit: Plebbit, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
 export declare function verifySubplebbit(subplebbit: SubplebbitIpfsType, plebbit: Plebbit): Promise<ValidationResult>;
-export declare function verifyCommentUpdate(update: CommentUpdate, subplebbit: Pick<SubplebbitType, "address" | "encryption">, comment: Pick<CommentWithCommentUpdate, "signature" | "cid">, plebbit: Plebbit): Promise<ValidationResult>;
+export declare function verifyCommentUpdate(update: CommentUpdate, subplebbit: Pick<SubplebbitType, "address">, comment: Pick<CommentWithCommentUpdate, "signature" | "cid">, plebbit: Plebbit): Promise<ValidationResult>;
 export declare function verifyChallengeRequest(request: ChallengeRequestMessageType): Promise<ValidationResult>;
 export declare function verifyChallengeMessage(challenge: ChallengeMessageType): Promise<ValidationResult>;
 export declare function verifyChallengeAnswer(answer: ChallengeAnswerMessageType): Promise<ValidationResult>;
 export declare function verifyChallengeVerification(verification: ChallengeVerificationMessageType): Promise<ValidationResult>;
-export declare function verifyPage(page: PageIpfs, plebbit: Plebbit, subplebbit: Pick<SubplebbitType, "address" | "encryption">, parentCommentCid: string | undefined): Promise<ValidationResult>;
+export declare function verifyPage(page: PageIpfs, plebbit: Plebbit, subplebbit: Pick<SubplebbitType, "address">, parentCommentCid: string | undefined): Promise<ValidationResult>;
 export {};

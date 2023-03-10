@@ -17,9 +17,7 @@ export declare class CommentEdit extends Publication implements CommentEditType 
     constructor(props: CommentEditType, plebbit: Plebbit);
     _initProps(props: CommentEditType): void;
     toJSONPubsubMessagePublication(): CommentEditPubsubMessage;
-    toJSONIpfs(): CommentEditPubsubMessage;
     toJSON(): CommentEditPubsubMessage;
-    toJSONAfterChallengeVerification(): CommentEditPubsubMessage;
     toJSONForDb(challengeRequestId: string): CommentEditsTableRowInsert;
     getType(): PublicationTypeName;
     private _validateSignature;

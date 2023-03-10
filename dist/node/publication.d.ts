@@ -21,8 +21,6 @@ declare class Publication extends EventEmitter implements PublicationType {
     constructor(props: PublicationType, plebbit: Plebbit);
     _initProps(props: PublicationType): void;
     getType(): PublicationTypeName;
-    toJSONAfterChallengeVerification(): PublicationType;
-    toJSONIpfs(): PublicationType;
     toJSONPubsubMessagePublication(): PublicationType;
     private handleChallengeExchange;
     publishChallengeAnswers(challengeAnswers: string[]): Promise<void>;

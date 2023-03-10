@@ -13,7 +13,7 @@ export declare class Subplebbit extends EventEmitter implements Omit<SubplebbitT
         [authorAddress: string]: SubplebbitRole;
     };
     lastPostCid?: string;
-    posts?: Pages;
+    posts: Pages;
     pubsubTopic: string;
     challengeTypes?: ChallengeType[];
     metrics?: SubplebbitMetrics;
