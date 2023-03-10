@@ -505,9 +505,8 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("authorAddress", authorAddresses);
     }
 
-    async queryParents(comment: Pick<CommentsTableRow, "cid">, trx?: Transaction): Promise<CommentsTableRow[]> {
+    async queryParents(rootComment: Pick<CommentsTableRow, "cid" | "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]> {
         const parents: CommentsTableRow[] = [];
-        const rootComment = await this.queryComment(comment.cid, trx);
         let curParentCid = rootComment.parentCid;
         while (curParentCid) {
             const parent = await this.queryComment(curParentCid, trx);
@@ -521,6 +520,15 @@ export class DbHandler {
         opts: { minimumUpdatedAt: number; ipnsKeyNames: string[] },
         trx?: Transaction
     ): Promise<CommentsTableRow[]> {
+                // Criteria:
+        // 1 - IPNS about to expire (every 72h) OR
+        // 2 - Comment has no row in commentUpdates OR
+        // 3 - comment.ipnsKeyName is not part of /key/list of IPFS RPC API
+        // 4 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit
+
+        // After retrieving all comments with any of criteria above, also add their parents to the list
+        // Also add all comments of each author to the list
+
         // Add comments with no CommentUpdate
 
         const criteriaOneTwoThree = await this._baseTransaction(trx)(TABLES.COMMENTS)

@@ -1092,15 +1092,6 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
     }
 
     private async _updateCommentsThatNeedToBeUpdated() {
-        // Criteria:
-        // 1 - IPNS about to expire (every 72h) OR
-        // 2 - Comment has no row in commentUpdates OR
-        // 3 - comment.ipnsKeyName is not part of /key/list of IPFS RPC API
-        // 4 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit
-
-        // After retrieving all comments with any of criteria above, also add their parents to the list
-        // Also add all comments of each author to the list
-
         const log = Logger(`plebbit-js:subplebbit:_updateCommentsThatNeedToBeUpdated`);
         const minimumUpdatedAt = timestamp() - 71 * 60 * 60; // Make sure a comment gets updated every 71 hours at least
 
