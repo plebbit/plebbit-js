@@ -84,13 +84,13 @@ describe("sign comment", async () => {
         const cloneComment = lodash.cloneDeep(signedCommentClone);
         delete cloneComment["signature"];
         cloneComment.author.address = "gibbreish";
-        assert.isRejected(signComment(cloneComment, signers[7]), messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS);
+        await assert.isRejected(signComment(cloneComment, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER);
     });
     it(`signComment throws with author.address=undefined`, async () => {
         const cloneComment = lodash.cloneDeep(signedCommentClone);
         delete cloneComment["signature"];
         cloneComment.author.address = undefined;
-        assert.isRejected(signComment(cloneComment, signers[7]), messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_IPNS);
+        await assert.isRejected(signComment(cloneComment, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER);
     });
     it("can sign a comment with author.displayName = undefined", async () => {
         const signer = signers[4];
