@@ -65,7 +65,6 @@ describe(`plebbit.createSubplebbit`, async () => {
         await new Promise((resolve) => sub.once("update", resolve));
         const post = await publishRandomPost(sub.address, plebbit, {}, false);
         await publishRandomReply(post, plebbit, {}, true);
-        await new Promise((resolve) => sub.once("update", resolve));
         expect(sub.posts).to.be.a("object");
         const clonedSub = await plebbit.createSubplebbit(sub);
         expect(clonedSub.posts).to.be.a("object");
