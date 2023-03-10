@@ -22,4 +22,4 @@ export declare function throwWithErrorCode(code: keyof typeof messages, details?
 export declare function parsePageIpfs(pageIpfs: PageIpfs, subplebbit: Pages["_subplebbit"]): Promise<PageType>;
 export declare function parsePagesIpfs(pagesRaw: PagesTypeIpfs, subplebbit: Pages["_subplebbit"]): Promise<PagesType>;
 export declare const parseJsonStrings: (obj: any) => any;
-export declare function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | Pages | undefined, parentCid: string | undefined, subplebbit: Pages["_subplebbit"]): Promise<Pages | undefined>;
+export declare function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | Pages | undefined, parentCid: string | undefined, subplebbit: Pages["_subplebbit"]): Promise<Pages>;

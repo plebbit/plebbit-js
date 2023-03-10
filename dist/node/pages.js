@@ -76,6 +76,8 @@ var Pages = /** @class */ (function () {
         });
     };
     Pages.prototype.toJSON = function () {
+        if (!this.pages)
+            return undefined;
         var pagesJson = lodash_1.default.mapValues(this.pages, function (page) {
             var commentsJson = page.comments.map(function (comment) { return comment.toJSONMerged(); });
             return { comments: commentsJson, nextCid: page.nextCid };
@@ -83,6 +85,8 @@ var Pages = /** @class */ (function () {
         return { pages: pagesJson, pageCids: this.pageCids };
     };
     Pages.prototype.toJSONIpfs = function () {
+        if (!this.pages)
+            return undefined;
         (0, assert_1.default)(this._pagesIpfs);
         return {
             pages: this._pagesIpfs,

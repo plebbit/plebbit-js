@@ -471,25 +471,31 @@ function _getValidationResult(publication) {
 }
 function verifyCommentUpdate(update, subplebbit, comment, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
-        var pagesValidity, invalidPageValidity;
+        var updateSignatureAddress, subplebbitResolvedAddress, pagesValidity, invalidPageValidity;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR }];
-                    if (update.signature.publicKey !== subplebbit.encryption.publicKey)
+                    return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPublicKey)(update.signature.publicKey)];
+                case 1:
+                    updateSignatureAddress = _a.sent();
+                    return [4 /*yield*/, plebbit.resolver.resolveSubplebbitAddressIfNeeded(subplebbit.address)];
+                case 2:
+                    subplebbitResolvedAddress = _a.sent();
+                    if (updateSignatureAddress !== subplebbitResolvedAddress)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT }];
                     if (update.cid !== comment.cid)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT }];
-                    if (!update.replies) return [3 /*break*/, 2];
+                    if (!update.replies) return [3 /*break*/, 4];
                     return [4 /*yield*/, Promise.all(Object.values(update.replies.pages).map(function (page) { return verifyPage(page, plebbit, subplebbit, comment.cid); }))];
-                case 1:
+                case 3:
                     pagesValidity = _a.sent();
                     invalidPageValidity = pagesValidity.find(function (validity) { return !validity.valid; });
                     if (invalidPageValidity)
                         return [2 /*return*/, invalidPageValidity];
-                    _a.label = 2;
-                case 2: return [2 /*return*/, _getValidationResult(update)];
+                    _a.label = 4;
+                case 4: return [2 /*return*/, _getValidationResult(update)];
             }
         });
     });

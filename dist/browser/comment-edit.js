@@ -126,14 +126,8 @@ var CommentEdit = /** @class */ (function (_super) {
     CommentEdit.prototype.toJSONPubsubMessagePublication = function () {
         return __assign(__assign({}, _super.prototype.toJSONPubsubMessagePublication.call(this)), { commentCid: this.commentCid, content: this.content, reason: this.reason, deleted: this.deleted, flair: this.flair, spoiler: this.spoiler, pinned: this.pinned, locked: this.locked, removed: this.removed, commentAuthor: this.commentAuthor });
     };
-    CommentEdit.prototype.toJSONIpfs = function () {
-        return this.toJSONPubsubMessagePublication();
-    };
     CommentEdit.prototype.toJSON = function () {
         return this.toJSONPubsubMessagePublication();
-    };
-    CommentEdit.prototype.toJSONAfterChallengeVerification = function () {
-        return this.toJSON();
     };
     CommentEdit.prototype.toJSONForDb = function (challengeRequestId) {
         return __assign(__assign({}, this.toJSON()), { author: this.author.toJSONIpfs(), authorAddress: this.author.address, challengeRequestId: challengeRequestId });

@@ -68,6 +68,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Comment = void 0;
 var util_1 = require("./util");
 var publication_1 = __importDefault(require("./publication"));
+var pages_1 = require("./pages");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var lodash_1 = __importDefault(require("lodash"));
 var signatures_1 = require("./signer/signatures");
@@ -85,6 +86,7 @@ var Comment = /** @class */ (function (_super) {
         return _this;
     }
     Comment.prototype._initProps = function (props) {
+        // This function is called once at in the constructor
         _super.prototype._initProps.call(this, props);
         this.postCid = props.postCid;
         this.cid = props.cid;
@@ -101,16 +103,23 @@ var Comment = /** @class */ (function (_super) {
         this.protocolVersion = props.protocolVersion;
         this.flair = props.flair;
         this.setPreviousCid(props.previousCid);
+        this.replies = new pages_1.Pages({
+            pages: undefined,
+            pageCids: undefined,
+            subplebbit: { address: this.subplebbitAddress, plebbit: this.plebbit },
+            pagesIpfs: undefined,
+            parentCid: this.cid
+        });
     };
     Comment.prototype._initCommentUpdate = function (props) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
         return __awaiter(this, void 0, void 0, function () {
-            var _l, _m;
-            return __generator(this, function (_o) {
-                switch (_o.label) {
+            var _l;
+            return __generator(this, function (_m) {
+                switch (_m.label) {
                     case 0:
                         if (!this.original)
-                            this.original = lodash_1.default.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"]);
+                            this.original = (0, util_1.removeNullAndUndefinedValuesRecursively)(lodash_1.default.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"]));
                         this._rawCommentUpdate = props;
                         this.upvoteCount = props.upvoteCount;
                         this.downvoteCount = props.downvoteCount;
@@ -131,17 +140,10 @@ var Comment = /** @class */ (function (_super) {
                         this.flair = props.flair || ((_e = props.edit) === null || _e === void 0 ? void 0 : _e.flair) || this.flair;
                         this.author.flair = ((_g = (_f = props.author) === null || _f === void 0 ? void 0 : _f.subplebbit) === null || _g === void 0 ? void 0 : _g.flair) || ((_j = (_h = props.edit) === null || _h === void 0 ? void 0 : _h.author) === null || _j === void 0 ? void 0 : _j.flair) || ((_k = this.author) === null || _k === void 0 ? void 0 : _k.flair);
                         (0, assert_1.default)(this.cid);
-                        if (!!this.subplebbit) return [3 /*break*/, 2];
                         _l = this;
-                        return [4 /*yield*/, this.plebbit.getSubplebbit(this.subplebbitAddress)];
+                        return [4 /*yield*/, (0, util_1.parseRawPages)(props.replies, this.cid, { address: this.subplebbitAddress, plebbit: this.plebbit })];
                     case 1:
-                        _l.subplebbit = _o.sent();
-                        _o.label = 2;
-                    case 2:
-                        _m = this;
-                        return [4 /*yield*/, (0, util_1.parseRawPages)(props.replies, this.cid, this.subplebbit)];
-                    case 3:
-                        _m.replies = _o.sent();
+                        _l.replies = _m.sent();
                         return [2 /*return*/];
                 }
             });
@@ -226,49 +228,45 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, res, e_1, _a, commentInstance, signatureValidity;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var log, res, e_1, commentInstance, signatureValidity;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:comment:update");
-                        _b.label = 1;
+                        _a.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, , 4]);
+                        _a.trys.push([1, 3, , 4]);
                         return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.plebbit)];
                     case 2:
-                        res = _b.sent();
+                        res = _a.sent();
                         return [3 /*break*/, 4];
                     case 3:
-                        e_1 = _b.sent();
+                        e_1 = _a.sent();
                         log.error("Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error: "), e_1);
                         return [2 /*return*/];
                     case 4:
-                        if (!(res && this.updatedAt !== res.updatedAt)) return [3 /*break*/, 8];
-                        if (!!this.subplebbit) return [3 /*break*/, 6];
-                        _a = this;
-                        return [4 /*yield*/, this.plebbit.getSubplebbit(this.subplebbitAddress)];
-                    case 5:
-                        _a.subplebbit = _b.sent();
-                        _b.label = 6;
-                    case 6:
+                        if (!(res && this.updatedAt !== res.updatedAt)) return [3 /*break*/, 7];
                         log("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
                         commentInstance = lodash_1.default.pick(this, ["cid", "signature"]);
-                        return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(res, this.subplebbit, commentInstance, this.plebbit)];
-                    case 7:
-                        signatureValidity = _b.sent();
+                        return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(res, { address: this.subplebbitAddress }, commentInstance, this.plebbit)];
+                    case 5:
+                        signatureValidity = _a.sent();
                         if (!signatureValidity.valid) {
                             log.error("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") signature is invalid due to '").concat(signatureValidity.reason, "'"));
                             return [2 /*return*/];
                         }
-                        this._initCommentUpdate(res);
+                        return [4 /*yield*/, this._initCommentUpdate(res)];
+                    case 6:
+                        _a.sent();
                         this.emit("update", this);
                         return [3 /*break*/, 9];
+                    case 7:
+                        if (!res) return [3 /*break*/, 9];
+                        log.trace("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
+                        return [4 /*yield*/, this._initCommentUpdate(res)];
                     case 8:
-                        if (res) {
-                            log.trace("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
-                            this._initCommentUpdate(res);
-                        }
-                        _b.label = 9;
+                        _a.sent();
+                        _a.label = 9;
                     case 9: return [2 /*return*/];
                 }
             });
