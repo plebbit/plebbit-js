@@ -190,6 +190,7 @@ async function _startEnsSubplebbit(signers: SignerType[], syncInterval: number, 
     await subplebbit.start();
     await subplebbit.edit({ address: "plebbit.eth" });
     assert.equal(subplebbit.address, "plebbit.eth");
+    return subplebbit;
 }
 
 async function _publishComments(parentComments: Comment[], subplebbit: Subplebbit, numOfCommentsToPublish: number, signers: SignerType[]) {
@@ -275,13 +276,21 @@ export async function startSubplebbits(props: {
     subplebbit._syncIntervalMs = props.syncInterval;
     await subplebbit.start();
     console.time("populate");
-    await Promise.all([
+    const [imageSub, mathSub, ensSub] = await Promise.all([
         _startImageCaptchaSubplebbit(props.signers, props.syncInterval, props.dataPath),
         _startMathCliSubplebbit(props.signers, props.syncInterval, props.dataPath),
         _startEnsSubplebbit(props.signers, props.syncInterval, props.dataPath),
         _populateSubplebbit(subplebbit, props)
     ]);
     console.timeEnd("populate");
+
+    for (const sub of [imageSub, mathSub, ensSub, subplebbit]) {
+        sub.on("update", () => {
+            const lastUpdatedAt = sub["lastUpdatedAt"];
+            console.log(`Sub (${sub.address}) took ${sub.updatedAt - lastUpdatedAt} seconds for update loop to complete`);
+            sub["lastUpdatedAt"] = sub.updatedAt;
+        });
+    }
 
     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 }
@@ -378,9 +387,15 @@ export async function publishWithExpectedResult(publication: Publication, expect
     });
 }
 
-export async function findCommentInPage(commentCid: string, pageCid: string, pages: Pages) {
-    const commentPages = await loadAllPages(pageCid, pages);
-    return commentPages.find((c) => c.cid === commentCid);
+export async function findCommentInPage(commentCid: string, pageCid: string, pages: Pages): Promise<Comment | undefined> {
+    let currentPageCid = lodash.clone(pageCid);
+    while (currentPageCid) {
+        const loadedPage = await pages.getPage(currentPageCid);
+        const commentInPage = loadedPage.comments.find((c) => c.cid === commentCid);
+        if (commentInPage) return commentInPage;
+        currentPageCid = loadedPage.nextCid;
+    }
+    return undefined;
 }
 
 export async function waitTillCommentIsInParentPages(
