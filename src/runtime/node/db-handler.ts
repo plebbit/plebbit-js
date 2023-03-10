@@ -520,7 +520,7 @@ export class DbHandler {
         opts: { minimumUpdatedAt: number; ipnsKeyNames: string[] },
         trx?: Transaction
     ): Promise<CommentsTableRow[]> {
-                // Criteria:
+        // Criteria:
         // 1 - IPNS about to expire (every 72h) OR
         // 2 - Comment has no row in commentUpdates OR
         // 3 - comment.ipnsKeyName is not part of /key/list of IPFS RPC API
@@ -535,8 +535,8 @@ export class DbHandler {
             .select(`${TABLES.COMMENTS}.*`)
             .leftJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
-            .orWhere(`${TABLES.COMMENT_UPDATES}.updatedAt`, "<=", opts.minimumUpdatedAt);
-
+            .orWhere(`${TABLES.COMMENT_UPDATES}.updatedAt`, "<=", opts.minimumUpdatedAt)
+            .orWhereNotIn("ipnsKeyName", opts.ipnsKeyNames);
         const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
         const restCriteria: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
