@@ -1,4 +1,4 @@
-import { loadIpnsAsJson, parseRawPages, throwWithErrorCode } from "./util";
+import { loadIpnsAsJson, parseRawPages, removeNullAndUndefinedValuesRecursively, throwWithErrorCode } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
 import {
@@ -99,7 +99,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
     async _initCommentUpdate(props: CommentUpdate) {
         if (!this.original)
-            this.original = lodash.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"]);
+            this.original = removeNullAndUndefinedValuesRecursively(lodash.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"]));
         this._rawCommentUpdate = props;
 
         this.upvoteCount = props.upvoteCount;
