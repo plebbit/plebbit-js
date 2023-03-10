@@ -529,8 +529,8 @@ export class DbHandler {
             .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
             .orWhere(`${TABLES.COMMENT_UPDATES}.updatedAt`, "<=", opts.minimumUpdatedAt);
 
-        const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 3");
-        const restQuery = this._baseTransaction(trx)(TABLES.COMMENTS)
+        const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
+        const restCriteria: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .leftJoin(TABLES.VOTES, `${TABLES.COMMENTS}.cid`, `${TABLES.VOTES}.commentCid`)
@@ -546,15 +546,14 @@ export class DbHandler {
             .having(`voteLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`editLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`childCommentLastInsertedAt`, ">=", lastUpdatedAtWithBuffer);
-        const restCriteria: CommentsTableRow[] = await restQuery;
 
         const comments: CommentsTableRow[] = lodash.uniqBy([...criteriaOneTwoThree, ...restCriteria], (comment) => comment.cid);
 
         const parents: CommentsTableRow[] = lodash.flattenDeep(
-            await Promise.all(comments.map((comment) => this.queryParents(comment, trx)))
+            await Promise.all(comments.filter((comment) => comment.parentCid).map((comment) => this.queryParents(comment, trx)))
         );
         const authorComments: CommentsTableRow[] = await this.queryCommentsOfAuthor(
-            comments.map((comment) => comment.authorAddress),
+            lodash.uniq(comments.map((comment) => comment.authorAddress)),
             trx
         );
         const uniqComments = lodash.uniqBy([...comments, ...parents, ...authorComments], (comment) => comment.cid);
@@ -852,12 +851,13 @@ export class DbHandler {
 
     async unlockSubStart(subAddress = this._subplebbit.address) {
         if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
-        if (!(await this.isSubStartLocked(subAddress))) return;
 
         const log = Logger("plebbit-js:lock:start");
+        log.trace(`Attempting to unlock the start of sub (${subAddress})`);
 
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        if (!fs.existsSync(lockfilePath)) return;
 
         try {
             await lockfile.unlock(subDbPath, { lockfilePath });
@@ -907,10 +907,11 @@ export class DbHandler {
     async unlockSubCreation(subAddress = this._subplebbit.address) {
         if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
         const log = Logger("plebbit-js:lock:unlockSubCreation");
+        log.trace(`Attempting to unlock the creation of sub (${subAddress})`);
 
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.create.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-        if (!fs.existsSync(lockfilePath) || !fs.existsSync(subDbPath)) return;
+        if (!fs.existsSync(lockfilePath)) return;
         try {
             await lockfile.unlock(subDbPath, { lockfilePath, realpath: false });
             log(`Unlocked creation of sub (${subAddress})`);
@@ -958,11 +959,12 @@ export class DbHandler {
         if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
 
         const log = Logger("plebbit-js:lock:unlockSubState");
+        log.trace(`Attempting to unlock the state of sub (${subAddress})`);
 
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-        if (!fs.existsSync(lockfilePath) || !fs.existsSync(subDbPath)) return;
-        await lockfile.unlock(subDbPath, { lockfilePath });
+        if (!fs.existsSync(lockfilePath)) return;
+        await lockfile.unlock(subDbPath, { lockfilePath, realpath: false });
 
         log.trace(`Unlocked state of sub (${subAddress})`);
     }
