@@ -307,6 +307,12 @@ export async function mockPlebbit(dataPath?: string) {
     return plebbit;
 }
 
+export async function mockRemotePlebbit() {
+    const plebbit = await mockPlebbit();
+    plebbit._canRunSub = () => false;
+    return plebbit;
+}
+
 export async function publishRandomReply(
     parentComment: Comment,
     plebbit: Plebbit,
@@ -354,10 +360,9 @@ export async function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbit:
 export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
     let receivedResponse: boolean = false;
 
-    setTimeout(() => assert(receivedResponse, `Publication did not receive any response`), 20000); // throw after 20 seconds if we haven't received a response
-
     await publication.publish();
     await new Promise((resolve, reject) => {
+        setTimeout(() => !receivedResponse && reject(`Publication did not receive any response`), 10000); // throw after 30 seconds if we haven't received a response
         publication.once("challengeverification", (verificationMsg) => {
             receivedResponse = true;
             if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {

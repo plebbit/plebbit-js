@@ -1,7 +1,6 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const { mockPlebbit, publishRandomPost } = require("../../dist/node/test/test-util");
-const { messages } = require("../../dist/node/errors");
+const { mockPlebbit, publishRandomPost, mockRemotePlebbit } = require("../../dist/node/test/test-util");
 
 const lodash = require("lodash");
 
@@ -21,7 +20,7 @@ const subplebbitSigner = signers[0];
 describe(`plebbit.createSubplebbit - Remote`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
 
     it(`subplebbit = await createSubplebbit(await getSubplebbit(address))`, async () => {
@@ -39,12 +38,13 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
     it(`subplebbit = await createSubplebbit(JSON.parse(JSON.stringify(await getSubplebbit())))`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         const createdSubplebbit = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(loadedSubplebbit)));
-        expect(stringify(loadedSubplebbit.toJSON())).to.equal(stringify(createdSubplebbit.toJSON()));
+        expect(loadedSubplebbit.toJSON()).to.deep.equal(createdSubplebbit.toJSON());
     });
 
     it(`Sub JSON props does not change by creating a Subplebbit object via plebbit.createSubplebbit`, async () => {
-        const subJson = JSON.parse(JSON.stringify(require("../fixtures/valid_subplebbit.json")));
-        const subObj = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(require("../fixtures/valid_subplebbit.json"))));
+        const remotePlebbit = await mockRemotePlebbit();
+        const subJson = lodash.cloneDeep(require("../fixtures/valid_subplebbit.json"));
+        const subObj = await remotePlebbit.createSubplebbit(lodash.cloneDeep(require("../fixtures/valid_subplebbit.json")));
         expect(subJson.lastPostCid).to.equal(subObj.lastPostCid);
         expect(subJson.pubsubTopic).to.equal(subObj.pubsubTopic);
         expect(subJson.address).to.equal(subObj.address);
@@ -57,29 +57,30 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
 
         expect(subJson.posts.pageCids).to.deep.equal(subObj.posts.pageCids);
 
-        const subLoaded = await plebbit.getSubplebbit(subJson.address);
+        const subLoaded = await remotePlebbit.getSubplebbit(subJson.address);
         for (const pageKey of Object.keys(subJson.posts.pages)) {
             const subJsonComments = await Promise.all(
-                subJson.posts.pages[pageKey].comments.map((comment) => plebbit.createComment({ ...comment.comment, subplebbit: subLoaded }))
+                subJson.posts.pages[pageKey].comments.map((comment) =>
+                    remotePlebbit.createComment({ ...comment.comment, subplebbit: subLoaded })
+                )
             );
 
             for (let i = 0; i < subJsonComments.length; i++)
                 await subJsonComments[i]._initCommentUpdate(subJson.posts.pages[pageKey].comments[i].commentUpdate);
 
-            expect(stringify(subJsonComments)).to.equal(stringify(subObj.posts.pages[pageKey].comments));
+            expect(subJsonComments.map((c) => c.toJSON())).to.deep.equal(subObj.posts.pages[pageKey].comments.map((c) => c.toJSON()));
         }
     });
 
-    it("subplebbit instance created with only address prop can call getPage", async () => {
-        const remotePlebbit = await Plebbit(mockPlebbit);
-        remotePlebbit.dataPath = undefined;
-        const actualSub = await plebbit.getSubplebbit(subplebbitAddress);
+    it("Remote subplebbit instance created with only address prop can call getPage", async () => {
+        const remotePlebbit = await mockRemotePlebbit();
+        const actualSub = await remotePlebbit.getSubplebbit(subplebbitAddress);
         expect(actualSub.createdAt).to.be.a("number");
 
         expect(actualSub.posts.pages.hot).to.be.a("object");
         const pageCid = actualSub.posts.pageCids.new; // get it somehow
         expect(pageCid).to.be.a("string");
-        const newSubplebbit = await plebbit.createSubplebbit({ address: actualSub.address });
+        const newSubplebbit = await remotePlebbit.createSubplebbit({ address: actualSub.address });
         expect(newSubplebbit.createdAt).to.be.undefined;
 
         const page = await newSubplebbit.posts.getPage(pageCid);
