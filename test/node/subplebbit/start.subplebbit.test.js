@@ -108,7 +108,7 @@ describe(`Start lock`, async () => {
         await sameSub.stop();
     });
 
-    it(`Can start subplebbit if create lock is stale (10s)`, async () => {
+    it(`Can start subplebbit if start lock is stale (10s)`, async () => {
         // Lock is considered stale if lock has not been updated in 10000 ms (10s)
         const sub = await plebbit.createSubplebbit();
 
