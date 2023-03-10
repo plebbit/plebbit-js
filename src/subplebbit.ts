@@ -481,9 +481,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
                 }
             }
 
-            const trx = await this.dbHandler.createTransaction(challengeRequestId);
-            await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId), trx);
-            await this.dbHandler.commitTransaction(challengeRequestId);
+            await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId));
             log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEdit.toJSON());
         } else if (modRole) {
             log.trace(
@@ -506,9 +504,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
                 return msg;
             }
 
-            const trx = await this.dbHandler.createTransaction(challengeRequestId);
-            await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId), trx);
-            await this.dbHandler.commitTransaction(challengeRequestId);
+            await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId));
         } else {
             // CommentEdit is signed by someone who's not the original author or a mod. Reject it
             // Editor has no subplebbit role like owner, moderator or admin, and their signer is not the signer used in the original comment
@@ -535,10 +531,8 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
             return msg;
         } else {
             const newVote = await this.plebbit.createVote(newVoteProps);
-            const trx = await this.dbHandler.createTransaction(challengeRequestId);
-            await this.dbHandler.deleteVote(newVote.author.address, newVote.commentCid, trx);
-            await this.dbHandler.insertVote(newVote.toJSONForDb(challengeRequestId), trx);
-            await this.dbHandler.commitTransaction(challengeRequestId);
+            await this.dbHandler.deleteVote(newVote.author.address, newVote.commentCid);
+            await this.dbHandler.insertVote(newVote.toJSONForDb(challengeRequestId));
             log.trace(`(${challengeRequestId}): `, `inserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
         }
     }
@@ -719,13 +713,13 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
             if (commentToInsert instanceof Post) {
                 const trx = await this.dbHandler.createTransaction(challengeRequestId);
                 commentToInsert.setPreviousCid((await this.dbHandler.queryLatestPostCid(trx))?.cid);
+                await this.dbHandler.commitTransaction(challengeRequestId);
                 commentToInsert.setDepth(0);
                 const file = await this.plebbit.ipfsClient.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setPostCid(file.path);
                 commentToInsert.setCid(file.path);
 
-                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(challengeRequestId), trx);
-                await this.dbHandler.commitTransaction(challengeRequestId);
+                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(challengeRequestId));
 
                 log(`(${challengeRequestId}): `, `New post with cid ${commentToInsert.cid} has been inserted into DB`);
             } else if (commentToInsert instanceof Comment) {
@@ -735,13 +729,13 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
                     this.dbHandler.queryCommentsUnderComment(commentToInsert.parentCid, trx),
                     this.dbHandler.queryComment(commentToInsert.parentCid, trx)
                 ]);
+                await this.dbHandler.commitTransaction(challengeRequestId);
                 commentToInsert.setPreviousCid(commentsUnderParent[0]?.cid);
                 commentToInsert.setDepth(parent.depth + 1);
                 commentToInsert.setPostCid(parent.postCid);
                 const file = await this.plebbit.ipfsClient.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setCid(file.path);
-                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(challengeRequestId), trx);
-                await this.dbHandler.commitTransaction(challengeRequestId);
+                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(challengeRequestId));
 
                 log(`(${challengeRequestId}): `, `New comment with cid ${commentToInsert.cid} has been inserted into DB`);
             }
