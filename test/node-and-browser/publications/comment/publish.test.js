@@ -34,7 +34,7 @@ describe("publishing posts", async () => {
 
     it(`Can Publish a post with only link`, async () => {
         const link = "https://demo.plebbit.eth.limo";
-        const post = await generateMockPost(subplebbitAddress, plebbit, false, { signer: lodash.sample(signers), link });
+        const post = await generateMockPost(subplebbitAddress, plebbit, false, { link });
         expect(post.link).to.equal(link);
         await publishWithExpectedResult(post, true);
         await waitTillCommentIsInParentPages(post, plebbit, { link });
@@ -72,7 +72,7 @@ describe("publishing posts", async () => {
     });
 
     it(`Publish a post with spoiler`, async () => {
-        const post = await generateMockPost(subplebbitAddress, plebbit, false, { spoiler: true, signer: lodash.sample(signers) });
+        const post = await generateMockPost(subplebbitAddress, plebbit, false, { spoiler: true });
 
         expect(post.spoiler).to.be.true;
 
