@@ -57,6 +57,7 @@ describe(`subplebbit.edit`, async () => {
         await subplebbit.edit({ address: ethAddress });
         expect(subplebbit.address).to.equal(ethAddress);
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        expect(subplebbit.address).to.equal(ethAddress);
     });
 
     it(`Start locks are moved to the new address`, async () => {
