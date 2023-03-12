@@ -356,6 +356,9 @@ Encrypted {
   - `subplebbit.updatedAt`
   - `subplebbit.metricsCid`
   - `subplebbit.signer`
+  - `subplebbit.state`
+  - `subplebbit.updatingState`
+  - `subplebbit.startedState`  
 - [Subplebbit Events](#subplebbit-events)
   - [`update`](#update)
   - [`challengerequest`](#challengerequest)
@@ -363,6 +366,9 @@ Encrypted {
   - `challenge`
   - `challengeverification`
   - `error`
+  - [`statechange`](#statechange)
+  - [`updatingstatechange`](#updatingstatechange)
+  - [`startedstatechange`](#startedstatechange)
 - [Comment API](#comment-api)
   - [`comment.publish()`](#commentpublish)
   - [`comment.publishChallengeAnswers()`](#commentpublishchallengeanswerschallengeanswers)
@@ -383,6 +389,9 @@ Encrypted {
   - `comment.flair`
   - `comment.spoiler`
   - `comment.depth`
+  - `comment.state`
+  - `comment.updatingState`
+  - `comment.publishingState`  
   - `(only available after challengeverification event)`
   - `comment.cid`
   - `comment.shortCid`
@@ -406,6 +415,9 @@ Encrypted {
   - `challengerequest`
   - `challengeanswer`
   - `error`
+  - [`statechange`](#statechange)
+  - [`updatingstatechange`](#updatingstatechange)
+  - [`publishingstatechange`](#publishingstatechange)
 - [Pages API](#pages-api)
   - [`pages.getPage(pageCid)`](#pagesgetpagepagecid)
   - `pages.pages`
@@ -1144,11 +1156,57 @@ Object is of the form:
 { // ...TODO }
 ```
 
+### `challengerequest`
+
+> When the user publishes a comment, he makes a `'challengerequest'` to the pubsub, the subplebbit owner will send back a `challenge`, eg. a captcha that the user must complete.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `ChallengeRequestMessage` | The comment of the user and the challenge request |
+
+Object is of the form:
+
+```js
+{ // ...TODO }
+```
+
 #### Example
 
 ```js
 { // ...TODO }
 ```
+
+### `statechange`
+
+> `Subplebbit.state` property changed.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `'stopped' \| 'updating' \| 'started'` | The `Subplebbit.state` property |
+
+### `updatingstatechange`
+
+> `Subplebbit.updatingState` property changed.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `'stopped' \| 'resolving-address' \| 'fetching-ipns' \| 'fetching-ipfs' \| 'failed' \| 'succeeded'` | The `Subplebbit.updatingState` property |
+
+### `startedstatechange`
+
+> `Subplebbit.startedState` property changed.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `'stopped' \| 'fetching-ipns' \| 'publishing-ipns' \| 'failed' \| 'succeeded'` | The `Subplebbit.startedState` property |
 
 ## Comment API
 The comment API for publishing a comment as an author, or getting comment updates. `Comment`, `Vote` and `CommentEdit` inherit `Publication` class and all have a similar API. A `Comment` updates itselfs on update events after `Comment.update()` is called if `Comment.cid` or `Comment.ipnsName` exists.
@@ -1310,6 +1368,36 @@ comment.on('challenge', async (challengeMessage) => {
 comment.on('challengeverification', (challengeVerification) => console.log('published post cid is', challengeVerification?.publication?.cid))
 await comment.publish()
 ```
+
+### `statechange`
+
+> `Comment.state` property changed.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `'stopped' \| 'updating' \| 'publishing'` | The `Comment.state` property |
+
+### `updatingstatechange`
+
+> `Comment.updatingState` property changed.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `'stopped' \| 'resolving-author-address' \| 'fetching-ipns' \| 'fetching-ipfs' \| 'failed' \| 'succeeded'` | The `Comment.updatingState` property |
+
+### `publishingstatechange`
+
+> `Comment.publishingState` property changed.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `'stopped' \| 'resolving-subplebbit-address' \| 'fetching-subplebbit-ipns' \| 'fetching-subplebbit-ipfs' \| 'publishing-challenge-request' \| 'waiting-challenge' \| 'publishing-challenge-answer' \| 'waiting-challenge-verification' \| 'failed' \| 'succeeded'` | The `Comment.publishingState` property |
 
 ## Pages API
 The pages API for scrolling pages of a subplebbit or replies to a post/comment. `Subplebbit.posts` and `Comment.replies` are `Pages` instances. `Subplebbit.posts.pages.hot` is a `Page` instance.
