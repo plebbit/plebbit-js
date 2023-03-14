@@ -35,7 +35,7 @@ export async function generateMockPost(
     plebbit: Plebbit,
     randomTimestamp = false,
     postProps: Partial<CreateCommentOptions | PostType> = {}
-) {
+): Promise<Post> {
     const postTimestamp = (randomTimestamp && generateRandomTimestamp()) || timestamp();
     const postStartTestTime = Date.now() / 1000 + Math.random();
     const signer = postProps?.signer || (await plebbit.createSigner());
@@ -54,7 +54,7 @@ export async function generateMockPost(
     if (post.constructor.name !== "Post") throw Error("createComment should return Post if title is provided");
     post.once("challenge", (challengeMsg) => post.publishChallengeAnswers([]));
 
-    return post;
+    return <Post>post;
 }
 
 // TODO rework this
@@ -121,12 +121,8 @@ export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promi
     return sortedComments;
 }
 
-async function _mockPlebbit(signers: SignerType[], dataPath: string) {
-    const plebbit = await PlebbitIndex({
-        ipfsHttpClientOptions: "http://localhost:15001/api/v0",
-        pubsubHttpClientOptions: `http://localhost:15002/api/v0`,
-        dataPath
-    });
+async function _mockSubplebbitPlebbit(signers: SignerType[], dataPath: string) {
+    const plebbit = await mockPlebbit(dataPath);
     //@ts-ignore
     plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
         if (authorAddress === "plebbit.eth") return signers[6].address;
@@ -146,9 +142,9 @@ async function _mockPlebbit(signers: SignerType[], dataPath: string) {
 }
 
 async function _startMathCliSubplebbit(signers: SignerType[], syncInterval: number, dataPath: string) {
-    const plebbit = await _mockPlebbit(signers, dataPath);
+    const plebbit = await _mockSubplebbitPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[1]);
-    const subplebbit = await plebbit.createSubplebbit({ signer });
+    const subplebbit = await createMockSub({ signer }, plebbit);
 
     subplebbit.setProvideCaptchaCallback(async (challengeRequestMessage) => {
         // Expected return is:
@@ -168,9 +164,9 @@ async function _startMathCliSubplebbit(signers: SignerType[], syncInterval: numb
 }
 
 async function _startImageCaptchaSubplebbit(signers: SignerType[], syncInterval: number, dataPath: string) {
-    const plebbit = await _mockPlebbit(signers, dataPath);
+    const plebbit = await _mockSubplebbitPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[2]);
-    const subplebbit = await plebbit.createSubplebbit({ signer });
+    const subplebbit = await createMockSub({ signer }, plebbit);
 
     // Image captcha are default
     //@ts-ignore
@@ -185,9 +181,9 @@ async function _startImageCaptchaSubplebbit(signers: SignerType[], syncInterval:
 }
 
 async function _startEnsSubplebbit(signers: SignerType[], syncInterval: number, dataPath: string) {
-    const plebbit = await _mockPlebbit(signers, dataPath);
+    const plebbit = await _mockSubplebbitPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[3]);
-    const subplebbit = await plebbit.createSubplebbit({ signer });
+    const subplebbit = await createMockSub({ signer }, plebbit);
     subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
     //@ts-ignore
     subplebbit._syncIntervalMs = syncInterval;
@@ -197,39 +193,37 @@ async function _startEnsSubplebbit(signers: SignerType[], syncInterval: number, 
     return subplebbit;
 }
 
-async function _publishComments(parentComments: Comment[], subplebbit: Subplebbit, numOfCommentsToPublish: number, signers: SignerType[]) {
-    const comments: Comment[] = [];
-    if (parentComments.length === 0)
-        await Promise.all(
-            new Array(numOfCommentsToPublish).fill(null).map(async () => {
-                comments.push(await publishRandomPost(subplebbit.address, subplebbit.plebbit, {}, false));
-            })
-        );
-    else
-        await Promise.all(
-            parentComments.map(
-                async (parentComment) =>
-                    await Promise.all(
-                        new Array(numOfCommentsToPublish).fill(null).map(async () => {
-                            assert(typeof parentComment?.cid === "string");
-                            comments.push(await publishRandomReply(parentComment, subplebbit.plebbit, {}, false));
-                        })
-                    )
-            )
-        );
-    assert.equal(comments.length, numOfCommentsToPublish);
-    return comments;
+async function _publishPosts(subplebbitAddress: string, numOfPosts: number) {
+    return Promise.all(
+        new Array(numOfPosts).fill(null).map(async () => {
+            const plebbit = await mockPlebbit();
+            return publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        })
+    );
 }
 
-async function _publishVotes(comments: Comment[], subplebbit: Subplebbit, votesPerCommentToPublish: number, signers: SignerType[]) {
-    const votes: Vote[] = [];
+async function _publishReplies(parentComment: Comment, numOfReplies: number) {
+    return Promise.all(
+        new Array(numOfReplies).fill(null).map(async () => {
+            const plebbit = await mockPlebbit();
+            return publishRandomReply(parentComment, plebbit, {}, false);
+        })
+    );
+}
 
-    for (const comment of comments) {
-        const votesPromises = new Array(votesPerCommentToPublish)
-            .fill(null)
-            .map(() => publishVote(comment.cid, Math.random() > 0.5 ? 1 : -1, subplebbit.plebbit, {}));
-        votes.push(...(await Promise.all(votesPromises)));
-    }
+async function _publishVotesOnOneComment(comment: Comment, votesPerCommentToPublish: number) {
+    return Promise.all(
+        new Array(votesPerCommentToPublish).fill(null).map(async () => {
+            const plebbit = await mockPlebbit();
+            return publishVote(comment.cid, Math.random() > 0.5 ? 1 : -1, plebbit, {});
+        })
+    );
+}
+
+async function _publishVotes(comments: Comment[], votesPerCommentToPublish: number) {
+    const votes: Vote[] = lodash.flattenDeep(
+        await Promise.all(comments.map((comment) => _publishVotesOnOneComment(comment, votesPerCommentToPublish)))
+    );
 
     assert.equal(votes.length, votesPerCommentToPublish * comments.length);
     console.log(`${votes.length} votes for ${comments.length} ${comments[0].depth === 0 ? "posts" : "replies"} have been published`);
@@ -253,14 +247,14 @@ async function _populateSubplebbit(
         }
     });
     await new Promise((resolve) => subplebbit.once("update", resolve));
-    const posts = await _publishComments([], subplebbit, props.numOfCommentsToPublish, props.signers); // If no comment[] is provided, we publish posts
+    const posts = await _publishPosts(subplebbit.address, props.numOfCommentsToPublish); // If no comment[] is provided, we publish posts
     console.log(`Have successfully published ${posts.length} posts`);
     const [replies] = await Promise.all([
-        _publishComments([posts[0]], subplebbit, props.numOfCommentsToPublish, props.signers),
-        _publishVotes(posts, subplebbit, props.votesPerCommentToPublish, props.signers)
+        _publishReplies(posts[0], props.numOfCommentsToPublish),
+        _publishVotes(posts, props.votesPerCommentToPublish)
     ]);
     console.log(`Have sucessfully published ${replies.length} replies`);
-    await _publishVotes(replies, subplebbit, props.votesPerCommentToPublish, props.signers);
+    await _publishVotes(replies, props.votesPerCommentToPublish);
 }
 
 export async function startSubplebbits(props: {
@@ -270,9 +264,9 @@ export async function startSubplebbits(props: {
     votesPerCommentToPublish: number;
     numOfCommentsToPublish: number;
 }) {
-    const plebbit = await _mockPlebbit(props.signers, props.dataPath);
+    const plebbit = await _mockSubplebbitPlebbit(props.signers, props.dataPath);
     const signer = await plebbit.createSigner(props.signers[0]);
-    const subplebbit = await plebbit.createSubplebbit({ signer });
+    const subplebbit = await createMockSub({ signer }, plebbit);
 
     subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
 

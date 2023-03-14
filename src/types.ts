@@ -1,5 +1,4 @@
 import { CID, IPFSHTTPClient, Options } from "ipfs-http-client";
-import { Pages } from "./pages";
 import { DbHandler } from "./runtime/node/db-handler";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
