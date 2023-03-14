@@ -4,6 +4,7 @@ const getIpfsPath = require("go-ipfs").path;
 const { execSync, exec } = require("child_process");
 const { startSubplebbits } = require("../../dist/node/test/test-util");
 const signers = require("../fixtures/signers");
+const http = require("http");
 
 const ipfsPath = getIpfsPath();
 
@@ -109,15 +110,15 @@ const startIpfsNodes = async () => {
     // Will return valid content for one cid and invalid content for another
     // The purpose is to test whether plebbit.fetchCid will throw if we retrieved the invalid content
 
-    require("http")
-        .createServer((req, res) => {
-            res.setHeader("Access-Control-Allow-Origin", "*");
-            if (req.url === "/ipfs/QmbWqTYuyfcpDyn6gawRf5eSFVtYnGDAKttjESXjjbAHbr") res.end("Hello plebs"); // Valid content
-            else if (req.url === "/ipfs/QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav")
-                res.end("This string does not generate the CID in the URL. This should throw an error in plebbit.fetchCid");
-            else res.end("Unknown CID");
-        })
-        .listen(33415);
+    http.createServer((req, res) => {
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        if (req.url === "/ipfs/QmbWqTYuyfcpDyn6gawRf5eSFVtYnGDAKttjESXjjbAHbr") res.end("Hello plebs"); // Valid content
+        else if (req.url === "/ipfs/QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav")
+            res.end("This string does not generate the CID in the URL. This should throw an error in plebbit.fetchCid");
+        else res.end("Unknown CID");
+    }).listen(33415);
+
+    require("./pubsub-mock-server");
 
     if (process.env["NO_SUBPLEBBITS"] !== "1")
         await startSubplebbits({
@@ -130,7 +131,5 @@ const startIpfsNodes = async () => {
     // create a test server to be able to use npm module 'wait-on'
     // to know when the test server is finished getting ready
     // and able to start the automated tests
-    require("http")
-        .createServer((req, res) => res.end("test server ready"))
-        .listen(14952);
+    http.createServer((req, res) => res.end("test server ready")).listen(14952);
 })();

@@ -15,6 +15,7 @@ import { SignerType } from "../signer/constants";
 import Publication from "../publication";
 import lodash from "lodash";
 import { v4 as uuidv4 } from "uuid";
+import { create as createMockIpfsClient } from "./mock-ipfs-client";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -138,6 +139,9 @@ async function _mockPlebbit(signers: SignerType[], dataPath: string) {
         else if (plebbit.resolver.isDomain(subplebbitAddress)) throw Error(`${subplebbitAddress} has no subplebbit-address`);
         return subplebbitAddress;
     };
+
+    plebbit.pubsubIpfsClient = createMockIpfsClient(true);
+
     return plebbit;
 }
 
@@ -313,6 +317,8 @@ export async function mockPlebbit(dataPath?: string) {
         else if (subAddress === "testgibbreish.eth") throw new Error(`Domain (${subAddress}) has no subplebbit-address`);
         return subAddress;
     };
+
+    plebbit.pubsubIpfsClient = createMockIpfsClient(false);
     return plebbit;
 }
 
