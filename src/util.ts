@@ -316,3 +316,9 @@ export async function parseRawPages(
         });
     }
 }
+
+export function shortifyCid(cid: string): string {
+    // Remove prefix (Qm)
+    // Return first 12 characters
+    return cid.slice(2).slice(0, 12);
+}

@@ -1,4 +1,4 @@
-import { loadIpnsAsJson, parseRawPages, removeNullAndUndefinedValuesRecursively, throwWithErrorCode } from "./util";
+import { loadIpnsAsJson, parseRawPages, removeNullAndUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
 import {
@@ -30,6 +30,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     thumbnailUrl?: string;
     protocolVersion: ProtocolVersion;
     cid?: string;
+    shortCid?: string;
     parentCid?: string;
     content?: string;
     // Props that get defined after challengeverification
@@ -74,7 +75,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         // This function is called once at in the constructor
         super._initProps(props);
         this.postCid = props.postCid;
-        this.cid = props.cid;
+        this.setCid(props.cid);
         this.parentCid = props.parentCid;
         this.ipnsName = props.ipnsName; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.ipnsKeyName = props.ipnsKeyName;
@@ -99,7 +100,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
     async _initCommentUpdate(props: CommentUpdate) {
         if (!this.original)
-            this.original = removeNullAndUndefinedValuesRecursively(lodash.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"]));
+            this.original = removeNullAndUndefinedValuesRecursively(
+                lodash.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"])
+            );
         this._rawCommentUpdate = props;
 
         this.upvoteCount = props.upvoteCount;
@@ -130,7 +133,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     }
 
     toJSON(): CommentType {
-        const base = this.cid ? this.toJSONAfterChallengeVerification() : this.toJSONPubsubMessagePublication();
+        const base = this.cid
+            ? { ...this.toJSONAfterChallengeVerification(), shortCid: this.shortCid }
+            : this.toJSONPubsubMessagePublication();
         return {
             ...base,
             ...(typeof this.updatedAt === "number"
@@ -246,6 +251,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
     setCid(newCid: string) {
         this.cid = newCid;
+        if (this.cid) this.shortCid = shortifyCid(this.cid);
     }
 
     setPreviousCid(newPreviousCid?: string) {
