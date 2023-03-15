@@ -52,7 +52,7 @@ describe("Editing comment.content", async () => {
             signer: commentToBeEdited.signer
         });
         await publishWithExpectedResult(commentEdit, true);
-        await new Promise((resolve) => commentToBeEdited.once("update", resolve));
+        await waitUntil(() => commentToBeEdited.content === editedText, { timeout: 200000 });
         expect(commentToBeEdited.edit.content).to.equal(editedText);
         expect(commentToBeEdited.content).to.equal(editedText);
         expect(commentToBeEdited.original?.content).to.equal(originalContent);
@@ -76,7 +76,7 @@ describe("Editing comment.content", async () => {
             signer: commentToBeEdited.signer
         });
         await publishWithExpectedResult(commentEdit, true);
-        await new Promise((resolve) => commentToBeEdited.once("update", resolve));
+        await waitUntil(() => commentToBeEdited.content === editedText, { timeout: 200000 });
         expect(commentToBeEdited.edit.content).to.equal(editedText);
         expect(commentToBeEdited.content).to.equal(editedText);
         expect(commentToBeEdited.original?.content).to.equal(originalContent);
