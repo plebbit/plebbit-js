@@ -12,6 +12,7 @@ const lodash = require("lodash");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { default: waitUntil } = require("async-wait-until");
+const stringify = require("safe-stable-stringify");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -29,6 +30,7 @@ describe("createComment", async () => {
             subplebbitAddress,
             author: {
                 address: signers[4].address,
+                shortAddress: signers[4].address.slice(7).slice(0, 12),
                 displayName: `Mock Author - comment = await createComment(await createComment)`
             },
             signer: signers[4],
@@ -40,7 +42,7 @@ describe("createComment", async () => {
 
         expect(comment.content).to.equal(props.content);
         expect(comment.subplebbitAddress).to.equal(props.subplebbitAddress);
-        expect(JSON.stringify(comment.author)).to.equal(JSON.stringify(props.author));
+        expect(stringify(comment.author)).to.equal(stringify(props.author));
         expect(comment.timestamp).to.equal(props.timestamp);
 
         expect(comment.toJSON()).to.deep.equal(nestedComment.toJSON());
