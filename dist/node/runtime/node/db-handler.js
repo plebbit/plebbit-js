@@ -868,28 +868,25 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.queryParents = function (comment, trx) {
+    DbHandler.prototype.queryParents = function (rootComment, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var parents, rootComment, curParentCid, parent_1;
+            var parents, curParentCid, parent_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         parents = [];
-                        return [4 /*yield*/, this.queryComment(comment.cid, trx)];
-                    case 1:
-                        rootComment = _a.sent();
                         curParentCid = rootComment.parentCid;
-                        _a.label = 2;
-                    case 2:
-                        if (!curParentCid) return [3 /*break*/, 4];
+                        _a.label = 1;
+                    case 1:
+                        if (!curParentCid) return [3 /*break*/, 3];
                         return [4 /*yield*/, this.queryComment(curParentCid, trx)];
-                    case 3:
+                    case 2:
                         parent_1 = _a.sent();
                         if (parent_1)
                             parents.push(parent_1);
                         curParentCid = parent_1 === null || parent_1 === void 0 ? void 0 : parent_1.parentCid;
-                        return [3 /*break*/, 2];
-                    case 4: return [2 /*return*/, parents];
+                        return [3 /*break*/, 1];
+                    case 3: return [2 /*return*/, parents];
                 }
             });
         });
@@ -904,7 +901,8 @@ var DbHandler = /** @class */ (function () {
                             .select("".concat(TABLES.COMMENTS, ".*"))
                             .leftJoin(TABLES.COMMENT_UPDATES, "".concat(TABLES.COMMENTS, ".cid"), "".concat(TABLES.COMMENT_UPDATES, ".cid"))
                             .whereNull("".concat(TABLES.COMMENT_UPDATES, ".updatedAt"))
-                            .orWhere("".concat(TABLES.COMMENT_UPDATES, ".updatedAt"), "<=", opts.minimumUpdatedAt)];
+                            .orWhere("".concat(TABLES.COMMENT_UPDATES, ".updatedAt"), "<=", opts.minimumUpdatedAt)
+                            .orWhereNotIn("ipnsKeyName", opts.ipnsKeyNames)];
                     case 1:
                         criteriaOneTwoThree = _c.sent();
                         lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");

@@ -1005,7 +1005,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 9:
                         _p.sent();
-                        log.trace("(".concat(request.challengeRequestId, "): "), "Published ".concat(challengeVerification.type, " over pubsub: "), lodash_1.default.omit(toSignMsg, ["encryptedPublication"]));
+                        log("(".concat(request.challengeRequestId, "): "), "Published ".concat(challengeVerification.type, " over pubsub: "), lodash_1.default.omit(toSignMsg, ["encryptedPublication"]));
                         this.emit("challengeverification", __assign(__assign({}, challengeVerification), { publication: decryptedRequest.publication }));
                         return [3 /*break*/, 14];
                     case 10:
@@ -1361,7 +1361,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, this.handleChallengeExchange)];
                     case 3:
                         _a.sent();
-                        log.trace("Waiting for publications on pubsub topic (".concat(this.pubsubTopic, ")"));
+                        log("Waiting for publications on pubsub topic (".concat(this.pubsubTopic, ")"));
                         _a.label = 4;
                     case 4: return [2 /*return*/];
                 }
