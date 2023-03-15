@@ -89,7 +89,7 @@ var Comment = /** @class */ (function (_super) {
         // This function is called once at in the constructor
         _super.prototype._initProps.call(this, props);
         this.postCid = props.postCid;
-        this.cid = props.cid;
+        this.setCid(props.cid);
         this.parentCid = props.parentCid;
         this.ipnsName = props.ipnsName; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
         this.ipnsKeyName = props.ipnsKeyName;
@@ -154,7 +154,8 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.toJSON = function () {
         var _a;
-        var base = this.cid ? this.toJSONAfterChallengeVerification() : this.toJSONPubsubMessagePublication();
+        var base = this.cid
+            ? __assign(__assign({}, this.toJSONAfterChallengeVerification()), { shortCid: this.shortCid }) : this.toJSONPubsubMessagePublication();
         return __assign(__assign({}, base), (typeof this.updatedAt === "number"
             ? {
                 author: this.author.toJSONIpfsWithCommentUpdate(),
@@ -216,6 +217,8 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.setCid = function (newCid) {
         this.cid = newCid;
+        if (this.cid)
+            this.shortCid = (0, util_1.shortifyCid)(this.cid);
     };
     Comment.prototype.setPreviousCid = function (newPreviousCid) {
         this.previousCid = newPreviousCid;

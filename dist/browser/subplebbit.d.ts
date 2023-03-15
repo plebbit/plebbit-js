@@ -21,6 +21,7 @@ export declare class Subplebbit extends EventEmitter implements Omit<SubplebbitT
     suggested?: SubplebbitSuggested;
     flairs?: Record<FlairOwner, Flair[]>;
     address: string;
+    shortAddress: string;
     metricsCid?: string;
     createdAt: number;
     updatedAt: number;
@@ -46,6 +47,7 @@ export declare class Subplebbit extends EventEmitter implements Omit<SubplebbitT
     private _subplebbitUpdateTrigger;
     constructor(plebbit: Plebbit);
     initSubplebbit(newProps: InternalSubplebbitType | SubplebbitEditOptions | SubplebbitIpfsType): Promise<void>;
+    private setAddress;
     private _initSignerProps;
     private initDbHandlerIfNeeded;
     setProvideCaptchaCallback(newCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[ChallengeType[], string | undefined]>): void;

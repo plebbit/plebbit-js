@@ -23,3 +23,5 @@ export declare function parsePageIpfs(pageIpfs: PageIpfs, subplebbit: Pages["_su
 export declare function parsePagesIpfs(pagesRaw: PagesTypeIpfs, subplebbit: Pages["_subplebbit"]): Promise<PagesType>;
 export declare const parseJsonStrings: (obj: any) => any;
 export declare function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | Pages | undefined, parentCid: string | undefined, subplebbit: Pages["_subplebbit"]): Promise<Pages>;
+export declare function shortifyAddress(address: string): string;
+export declare function shortifyCid(cid: string): string;

@@ -138,7 +138,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this.title = mergedProps.title;
                         this.description = mergedProps.description;
                         this.lastPostCid = mergedProps.lastPostCid;
-                        this.address = mergedProps.address;
+                        this.setAddress(mergedProps.address);
                         this.pubsubTopic = mergedProps.pubsubTopic;
                         this.challengeTypes = mergedProps.challengeTypes;
                         this.metricsCid = mergedProps.metricsCid;
@@ -162,6 +162,10 @@ var Subplebbit = /** @class */ (function (_super) {
                 }
             });
         });
+    };
+    Subplebbit.prototype.setAddress = function (newAddress) {
+        this.address = newAddress;
+        this.shortAddress = (0, util_1.shortifyAddress)(this.address);
     };
     Subplebbit.prototype._initSignerProps = function () {
         var _a, _b, _c, _d;
@@ -237,7 +241,7 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.toJSON = function () {
         var _a;
-        return __assign(__assign({}, this._toJSONBase()), { posts: (_a = this.posts) === null || _a === void 0 ? void 0 : _a.toJSON() });
+        return __assign(__assign({}, this._toJSONBase()), { posts: (_a = this.posts) === null || _a === void 0 ? void 0 : _a.toJSON(), shortAddress: this.shortAddress });
     };
     Subplebbit.prototype._toJSONBase = function () {
         return {
@@ -1418,7 +1422,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         internalState = _a.sent();
                         potentialNewAddresses = lodash_1.default.uniq([internalState.address, this.dbHandler.subAddress(), this.address]);
                         if (!this.dbHandler.isDbInMemory()) return [3 /*break*/, 2];
-                        this.address = this.dbHandler.subAddress();
+                        this.setAddress(this.dbHandler.subAddress());
                         return [3 /*break*/, 9];
                     case 2:
                         if (!(potentialNewAddresses.length > 1)) return [3 /*break*/, 9];
@@ -1439,7 +1443,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _a.sent();
                         _a.label = 6;
                     case 6:
-                        this.address = newAddress;
+                        this.setAddress(newAddress);
                         this.dbHandler = this.sortHandler = undefined;
                         return [4 /*yield*/, this.initDbHandlerIfNeeded()];
                     case 7:

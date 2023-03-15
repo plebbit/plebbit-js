@@ -15,6 +15,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var assert_1 = __importDefault(require("assert"));
+var util_1 = require("./util");
 var Author = /** @class */ (function () {
     function Author(props) {
         this.address = props.address;
@@ -24,7 +25,11 @@ var Author = /** @class */ (function () {
         this.avatar = props.avatar;
         this.flair = props.flair;
         this.subplebbit = props["subplebbit"];
+        this.shortAddress = (0, util_1.shortifyAddress)(this.address);
     }
+    Author.prototype.toJSON = function () {
+        return __assign(__assign({}, (this.subplebbit ? this.toJSONIpfsWithCommentUpdate() : this.toJSONIpfs())), { shortAddress: this.shortAddress });
+    };
     Author.prototype.toJSONIpfs = function () {
         return {
             address: this.address,

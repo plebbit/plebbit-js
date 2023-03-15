@@ -8,6 +8,7 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     thumbnailUrl?: string;
     protocolVersion: ProtocolVersion;
     cid?: string;
+    shortCid?: string;
     parentCid?: string;
     content?: string;
     ipnsKeyName?: string;

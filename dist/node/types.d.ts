@@ -246,6 +246,7 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
     signature: SignatureType;
     encryption: SubplebbitEncryption;
     address: string;
+    shortAddress: string;
     signer?: SignerType;
     createdAt: number;
     updatedAt: number;
@@ -254,10 +255,10 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
     protocolVersion: ProtocolVersion;
     posts?: PagesTypeJson;
 }
-export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts"> {
+export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shortAddress"> {
     posts?: PagesTypeIpfs;
 }
-export interface InternalSubplebbitType extends SubplebbitType {
+export interface InternalSubplebbitType extends Omit<SubplebbitType, "shortAddress"> {
     signer: Pick<SignerType, "address" | "privateKey" | "type">;
     _subplebbitUpdateTrigger: boolean;
 }
@@ -328,6 +329,7 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     deleted?: CommentType["edit"]["deleted"];
     thumbnailUrl?: string;
     cid?: string;
+    shortCid?: string;
     ipnsName?: string;
 }
 export interface CommentWithCommentUpdate extends Omit<CommentType, "replyCount" | "downvoteCount" | "upvoteCount" | "replies" | "updatedAt" | "original" | "cid" | "postCid" | "depth" | "ipnsKeyName" | "signer">, Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth">>, Omit<CommentUpdate, "author" | "replies"> {

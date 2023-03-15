@@ -50,7 +50,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseRawPages = exports.parseJsonStrings = exports.parsePagesIpfs = exports.parsePageIpfs = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.fetchCid = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parseJsonStrings = exports.parsePagesIpfs = exports.parsePageIpfs = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.fetchCid = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var util_1 = require("./runtime/node/util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var errors_1 = require("./errors");
@@ -462,3 +462,19 @@ function parseRawPages(replies, parentCid, subplebbit) {
     });
 }
 exports.parseRawPages = parseRawPages;
+function shortifyAddress(address) {
+    if (address.includes("."))
+        return address; // If a domain then no need to shortify
+    // Remove prefix (12D3KooW)
+    var removedPrefix = address.slice(7);
+    // Return first 12 characters
+    var shortAddress = removedPrefix.slice(0, 12);
+    return shortAddress;
+}
+exports.shortifyAddress = shortifyAddress;
+function shortifyCid(cid) {
+    // Remove prefix (Qm)
+    // Return first 12 characters
+    return cid.slice(2).slice(0, 12);
+}
+exports.shortifyCid = shortifyCid;
