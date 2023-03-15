@@ -136,8 +136,6 @@ async function _mockSubplebbitPlebbit(signers: SignerType[], dataPath: string) {
         return subplebbitAddress;
     };
 
-    plebbit.pubsubIpfsClient = createMockIpfsClient(true);
-
     return plebbit;
 }
 
@@ -166,10 +164,10 @@ async function _startMathCliSubplebbit(signers: SignerType[], syncInterval: numb
 async function _startImageCaptchaSubplebbit(signers: SignerType[], syncInterval: number, dataPath: string) {
     const plebbit = await _mockSubplebbitPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[2]);
-    const subplebbit = await createMockSub({ signer }, plebbit);
+    const subplebbit = await plebbit.createSubplebbit({ signer });
 
     // Image captcha are default
-    //@ts-ignore
+    //@ts-expect-error
     subplebbit._syncIntervalMs = syncInterval;
     await subplebbit.start();
     subplebbit.setValidateCaptchaAnswerCallback(async (challengeAnswerMessage) => {
@@ -183,9 +181,9 @@ async function _startImageCaptchaSubplebbit(signers: SignerType[], syncInterval:
 async function _startEnsSubplebbit(signers: SignerType[], syncInterval: number, dataPath: string) {
     const plebbit = await _mockSubplebbitPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[3]);
-    const subplebbit = await createMockSub({ signer }, plebbit);
+    const subplebbit = await plebbit.createSubplebbit({ signer });
     subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
-    //@ts-ignore
+    //@ts-expect-error
     subplebbit._syncIntervalMs = syncInterval;
     await subplebbit.start();
     await subplebbit.edit({ address: "plebbit.eth" });
@@ -312,7 +310,7 @@ export async function mockPlebbit(dataPath?: string) {
         return subAddress;
     };
 
-    plebbit.pubsubIpfsClient = createMockIpfsClient(false);
+    plebbit.pubsubIpfsClient = createMockIpfsClient();
     return plebbit;
 }
 
@@ -371,7 +369,7 @@ export async function publishWithExpectedResult(publication: Publication, expect
 
     await publication.publish();
     await new Promise((resolve, reject) => {
-        setTimeout(() => !receivedResponse && reject(`Publication did not receive any response`), 10000); // throw after 30 seconds if we haven't received a response
+        setTimeout(() => !receivedResponse && reject(`Publication did not receive any response`), 20000); // throw after 20 seconds if we haven't received a response
         publication.once("challengeverification", (verificationMsg) => {
             receivedResponse = true;
             if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
