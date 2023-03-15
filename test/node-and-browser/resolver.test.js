@@ -38,7 +38,7 @@ describe("Comments with Authors as domains", async () => {
     it(`Subplebbit rejects a comment if plebbit-author-address points to a different address than signer`, async () => {
         // There are two mocks of resovleAuthorAddressIfNeeded, one return undefined on testgibbreish.eth (server side) and this one returns signers[6]
         // The purpose is to test whether server rejects publications that has different plebbit-author-address and signer address
-        const tempPlebbit = await Plebbit(plebbit);
+        const tempPlebbit = await mockPlebbit();
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) =>
             authorAddress === "testgibbreish.eth" ? signers[6].address : authorAddress;
         const mockPost = await tempPlebbit.createComment({
@@ -56,7 +56,7 @@ describe("Comments with Authors as domains", async () => {
     });
 
     it(`getComment corrects author.address to derived address in case plebbit-author-address points to another address`, async () => {
-        const tempPlebbit = await Plebbit(plebbit);
+        const tempPlebbit = await mockPlebbit();
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress;
         // verifyPublication in getComment should overwrite author.address to derived address
@@ -74,7 +74,7 @@ describe(`Vote with authors as domains`, async () => {
     });
 
     it(`Subplebbit rejects a Vote with author.address (domain) that resolves to a different signer`, async () => {
-        const tempPlebbit = await Plebbit(plebbit);
+        const tempPlebbit = await mockPlebbit();
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) =>
             authorAddress === "testgibbreish.eth" ? signers[6].address : authorAddress;
         const vote = await tempPlebbit.createVote({
