@@ -3,7 +3,7 @@ const { Server } = require("socket.io");
 const ipfsMockPort = 25963;
 
 // Create a wss to mock ipfs pubsub
-const pubsubIoServer = new Server(ipfsMockPort);
+const pubsubIoServer = new Server(ipfsMockPort, { cors: { origin: "*" } });
 let peers = [];
 
 pubsubIoServer.on("connection", async (connectedPeer) => {
