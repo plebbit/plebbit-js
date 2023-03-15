@@ -55,7 +55,7 @@ describe("image captcha", async () => {
         plebbit = await mockPlebbit();
     });
     it("can post after answering correctly", async function () {
-        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit, false, { signer: signers[0] });
+        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
         mockPost.removeAllListeners();
 
         mockPost.once("challenge", async (challengeMsg) => {
@@ -67,7 +67,7 @@ describe("image captcha", async () => {
     });
 
     it("Throws an error if unable to solve image captcha", async function () {
-        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit, false, { signer: signers[0] });
+        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
         await publishWithExpectedResult(mockPost, false);
     });
 });

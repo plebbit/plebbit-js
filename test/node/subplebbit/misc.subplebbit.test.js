@@ -9,8 +9,6 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-const syncInterval = 300;
-
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 describe("plebbit.listSubplebbits", async () => {
@@ -70,9 +68,7 @@ describe(`subplebbit.lastPostCid`, async () => {
     let plebbit, sub;
     before(async () => {
         plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
-        sub = await plebbit.createSubplebbit();
-        sub._syncIntervalMs = syncInterval;
-        sub.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
+        sub = await createMockSub({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
     });
@@ -81,7 +77,7 @@ describe(`subplebbit.lastPostCid`, async () => {
 
     it(`subplebbit.lastPostCid reflects latest post published`, async () => {
         expect(sub.lastPostCid).to.be.undefined;
-        const post = await publishRandomPost(sub.address, plebbit);
+        const post = await publishRandomPost(sub.address, plebbit, {}, false);
         await waitUntil(() => typeof sub.lastPostCid === "string", { timeout: 200000 });
         expect(sub.lastPostCid).to.equal(post.cid);
     });
@@ -111,7 +107,7 @@ describe(`Create a sub with basic auth urls`, async () => {
         const sub = await createMockSub({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
-        await publishRandomPost(sub.address, plebbit);
+        await publishRandomPost(sub.address, plebbit, {}, false);
         await sub.stop();
     });
 
@@ -128,7 +124,7 @@ describe(`Create a sub with basic auth urls`, async () => {
         const sub = await createMockSub({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
-        await publishRandomPost(sub.address, plebbit);
+        await publishRandomPost(sub.address, plebbit, {}, false);
         await sub.stop();
     });
 });
