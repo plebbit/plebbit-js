@@ -38,25 +38,20 @@ describe("challengerequest", async () => {
     });
 
     it(`Subplebbit responds to a challenge request with invalid signature if signature of challenge request is invalid`, async () => {
-        return new Promise(async (resolve) => {
-            const tempPlebbits = [await Plebbit(plebbit), await Plebbit(plebbit)];
-            tempPlebbits.forEach((tPlebbit) => (tPlebbit.resolver = plebbit.resolver));
-            const comment = await generateMockPost(signers[0].address, tempPlebbits[0], false, { signer: signers[6] });
+        const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[6] });
 
-            await Promise.all([new Promise((resolve) => comment.once("challengeverification", resolve)), comment.publish()]);
+        await Promise.all([new Promise((resolve) => comment.once("challengeverification", resolve)), comment.publish()]);
 
-            // comment._challengeRequest (ChallengeRequest) should be defined now
-            expect(comment._challengeRequest).to.be.a("object");
-            const invalidSignature = lodash.clone(comment._challengeRequest);
-            invalidSignature.acceptedChallengeTypes.push("test"); // Signature should be invalid after
-            const verificaiton = await verifyChallengeRequest(invalidSignature);
-            expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
+        // comment._challengeRequest (ChallengeRequest) should be defined now
+        expect(comment._challengeRequest).to.be.a("object");
+        const invalidSignature = lodash.clone(comment._challengeRequest);
+        invalidSignature.acceptedChallengeTypes.push("test"); // Signature should be invalid after
+        const verificaiton = await verifyChallengeRequest(invalidSignature);
+        expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
 
-            await tempPlebbits[1].pubsubIpfsClient.pubsub.publish(
-                comment.subplebbit.pubsubTopic,
-                fromString(JSON.stringify(invalidSignature))
-            );
+        await plebbit.pubsubIpfsClient.pubsub.publish(comment.subplebbit.pubsubTopic, fromString(JSON.stringify(invalidSignature)));
 
+        await new Promise(async (resolve) => {
             const subMethod = (pubsubMsg) => {
                 const msgParsed = JSON.parse(toString(pubsubMsg["data"]));
                 if (msgParsed.type === "CHALLENGEVERIFICATION" && msgParsed.challengeRequestId === invalidSignature.challengeRequestId) {
@@ -64,11 +59,11 @@ describe("challengerequest", async () => {
                     expect(msgParsed.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
                     expect(msgParsed.publication).to.be.undefined;
                     expect(msgParsed.encryptedPublication).to.be.undefined;
-                    tempPlebbits[1].pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, subMethod);
+                    plebbit.pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, subMethod);
                     resolve();
                 }
             };
-            await tempPlebbits[1].pubsubIpfsClient.pubsub.subscribe(comment.subplebbit.pubsubTopic, subMethod);
+            await plebbit.pubsubIpfsClient.pubsub.subscribe(comment.subplebbit.pubsubTopic, subMethod);
         });
     });
 });
@@ -130,10 +125,7 @@ describe("challengeanswer", async () => {
         });
     });
     it(`Subplebbit rejects challenge answer with invalid signature`, async () => {
-        const tempPlebbits = [await Plebbit(plebbit), await Plebbit(plebbit)];
-        tempPlebbits.forEach((tPlebbit) => (tPlebbit.resolver = plebbit.resolver));
-
-        const comment = await generateMockPost(mathCliSubplebbitAddress, tempPlebbits[0], false, { signer: signers[6] });
+        const comment = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[6] });
 
         comment.removeAllListeners();
         await comment.publish();
@@ -162,10 +154,7 @@ describe("challengeanswer", async () => {
                     reason: messages.ERR_SIGNATURE_IS_INVALID
                 });
 
-                await tempPlebbits[1].pubsubIpfsClient.pubsub.publish(
-                    comment.subplebbit.pubsubTopic,
-                    fromString(JSON.stringify(challengeAnswer))
-                );
+                await plebbit.pubsubIpfsClient.pubsub.publish(comment.subplebbit.pubsubTopic, fromString(JSON.stringify(challengeAnswer)));
 
                 const subMethod = (pubsubMsg) => {
                     const msgParsed = JSON.parse(toString(pubsubMsg["data"]));
@@ -177,12 +166,12 @@ describe("challengeanswer", async () => {
                         expect(msgParsed.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
                         expect(msgParsed.publication).to.be.undefined;
                         expect(msgParsed.encryptedPublication).to.be.undefined;
-                        tempPlebbits[1].pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, subMethod);
+                        plebbit.pubsubIpfsClient.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, subMethod);
                         resolve();
                     }
                 };
 
-                await tempPlebbits[1].pubsubIpfsClient.pubsub.subscribe(comment.subplebbit.pubsubTopic, subMethod);
+                await plebbit.pubsubIpfsClient.pubsub.subscribe(comment.subplebbit.pubsubTopic, subMethod);
             });
         });
     });
