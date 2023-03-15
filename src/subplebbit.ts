@@ -789,7 +789,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
                     uint8ArrayFromString(deterministicStringify(challengeVerification))
                 )
             ]);
-            log.trace(
+            log(
                 `(${request.challengeRequestId}): `,
                 `Published ${challengeVerification.type} over pubsub: `,
                 lodash.omit(toSignMsg, ["encryptedPublication"])
@@ -1052,7 +1052,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
         if (!subscribedTopics.includes(this.pubsubTopic)) {
             await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic, this.handleChallengeExchange); // Make sure it's not hanging
             await this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, this.handleChallengeExchange);
-            log.trace(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
+            log(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
         }
     }
 
