@@ -4,7 +4,7 @@ import { sha256 } from "js-sha256";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
 import { SortHandler } from "./sort-handler";
-import { loadIpnsAsJson, parseRawPages, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
+import { loadIpnsAsJson, parseRawPages, removeKeysWithUndefinedValues, shortifyAddress, throwWithErrorCode, timestamp } from "./util";
 import { decrypt, encrypt, Signer } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
@@ -90,6 +90,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
     suggested?: SubplebbitSuggested;
     flairs?: Record<FlairOwner, Flair[]>;
     address: string;
+    shortAddress: string;
     metricsCid?: string;
     createdAt: number;
     updatedAt: number;
@@ -146,7 +147,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
         this.title = mergedProps.title;
         this.description = mergedProps.description;
         this.lastPostCid = mergedProps.lastPostCid;
-        this.address = mergedProps.address;
+        this.setAddress(mergedProps.address);
         this.pubsubTopic = mergedProps.pubsubTopic;
         this.challengeTypes = mergedProps.challengeTypes;
         this.metricsCid = mergedProps.metricsCid;
@@ -163,6 +164,11 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
         if (!this.signer && mergedProps.signer) this.signer = new Signer(mergedProps.signer);
 
         this.posts = await parseRawPages(mergedProps.posts, undefined, this);
+    }
+
+    private setAddress(newAddress: string) {
+        this.address = newAddress;
+        this.shortAddress = shortifyAddress(this.address);
     }
 
     private async _initSignerProps() {
@@ -215,7 +221,8 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
     toJSON(): SubplebbitType {
         return {
             ...this._toJSONBase(),
-            posts: this.posts?.toJSON()
+            posts: this.posts?.toJSON(),
+            shortAddress: this.shortAddress
         };
     }
 
@@ -1075,7 +1082,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
         const internalState: SubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
         const potentialNewAddresses = lodash.uniq([internalState.address, this.dbHandler.subAddress(), this.address]);
 
-        if (this.dbHandler.isDbInMemory()) this.address = this.dbHandler.subAddress();
+        if (this.dbHandler.isDbInMemory()) this.setAddress(this.dbHandler.subAddress());
         else if (potentialNewAddresses.length > 1) {
             const wasSubRunning = (await Promise.all(potentialNewAddresses.map(this.dbHandler.isSubStartLocked))).some(Boolean);
             const newAddresses = potentialNewAddresses.filter((address) => this.dbHandler.subDbExists(address));
@@ -1084,7 +1091,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
             log(`Updating to a new address (${newAddress}) `);
             await Promise.all(potentialNewAddresses.map(this.dbHandler.unlockSubStart));
             if (wasSubRunning) await this.dbHandler.lockSubStart(newAddress);
-            this.address = newAddress;
+            this.setAddress(newAddress);
             this.dbHandler = this.sortHandler = undefined;
             await this.initDbHandlerIfNeeded();
             await this.dbHandler.initDbIfNeeded();

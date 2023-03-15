@@ -286,6 +286,7 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
     signature: SignatureType;
     encryption: SubplebbitEncryption;
     address: string;
+    shortAddress: string;
     signer?: SignerType;
     createdAt: number;
     updatedAt: number;
@@ -295,11 +296,11 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
     posts?: PagesTypeJson;
 }
 
-export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts"> {
+export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shortAddress"> {
     posts?: PagesTypeIpfs;
 }
 
-export interface InternalSubplebbitType extends SubplebbitType {
+export interface InternalSubplebbitType extends Omit<SubplebbitType, "shortAddress"> {
     signer: Pick<SignerType, "address" | "privateKey" | "type">;
     _subplebbitUpdateTrigger: boolean;
 }

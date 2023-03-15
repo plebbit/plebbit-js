@@ -1,5 +1,6 @@
 import assert from "assert";
 import { AuthorIpfsType, AuthorTypeWithCommentUpdate, Flair, Nft, SubplebbitAuthor, Wallet } from "./types";
+import { shortifyAddress } from "./util";
 
 class Author implements AuthorTypeWithCommentUpdate {
     address: string;
@@ -10,6 +11,7 @@ class Author implements AuthorTypeWithCommentUpdate {
     flair?: Flair;
     banExpiresAt?: number;
     subplebbit?: SubplebbitAuthor;
+    shortAddress: string;
 
     constructor(props: AuthorIpfsType | AuthorTypeWithCommentUpdate) {
         this.address = props.address;
@@ -19,6 +21,14 @@ class Author implements AuthorTypeWithCommentUpdate {
         this.avatar = props.avatar;
         this.flair = props.flair;
         this.subplebbit = props["subplebbit"];
+        this.shortAddress = shortifyAddress(this.address);
+    }
+
+    toJSON(){
+        return {
+            ...(this.subplebbit ? this.toJSONIpfsWithCommentUpdate() : this.toJSONIpfs()),
+            shortAddress: this.shortAddress
+        }
     }
 
     toJSONIpfs(): AuthorIpfsType {
