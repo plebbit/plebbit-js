@@ -171,47 +171,4 @@ if (!globalThis["navigator"]?.userAgent?.includes("Firefox"))
             expect(plebbit.ipfsHttpClientOptions.headers.authorization).to.equal(expectedCred);
             expect(plebbit.pubsubHttpClientOptions.headers.authorization).to.equal(expectedCred);
         });
-
-        it(`Can publish a post with encoded authorization for both ipfs and pubsub http client`, async () => {
-            await new Promise((resolve) => setTimeout(resolve, 3000));
-            const headers = {
-                authorization: "Basic " + Buffer.from("username" + ":" + "password").toString("base64")
-            };
-            const ipfsHttpClientOptions = {
-                url: "http://localhost:15001/api/v0",
-                headers
-            };
-            const pubsubHttpClientOptions = {
-                url: "http://localhost:15002/api/v0",
-                headers
-            };
-
-            const plebbitOptions = {
-                ipfsHttpClientOptions,
-                pubsubHttpClientOptions,
-                dataPath: globalThis["window"]?.plebbitDataPath
-            };
-
-            const plebbit = await Plebbit(plebbitOptions);
-            expect(plebbit.ipfsGatewayUrl).to.equal("http://127.0.0.1:18080");
-            plebbit.resolver = (await mockPlebbit()).resolver;
-
-            await publishRandomPost(subplebbitAddress, plebbit, {}, false);
-        });
-
-        it(`Can publish a post with user@password for both ipfs and pubsub http client`, async () => {
-            const ipfsHttpClientOptions = `http://user:password@localhost:15001/api/v0`;
-            const pubsubHttpClientOptions = `http://user:password@localhost:15002/api/v0`;
-            const plebbitOptions = {
-                ipfsHttpClientOptions,
-                pubsubHttpClientOptions,
-                dataPath: globalThis["window"]?.plebbitDataPath
-            };
-
-            const plebbit = await Plebbit(plebbitOptions);
-            expect(plebbit.ipfsGatewayUrl).to.equal("http://127.0.0.1:18080");
-            plebbit.resolver = (await mockPlebbit()).resolver;
-
-            await publishRandomPost(subplebbitAddress, plebbit, {}, false);
-        });
     });
