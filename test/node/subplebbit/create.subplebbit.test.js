@@ -136,7 +136,7 @@ describe("Create lock", async () => {
         const subSigner = await plebbit.createSigner();
         const subDbLockPath = path.join(plebbit.dataPath, "subplebbits", `${subSigner.address}.create.lock`);
         plebbit.createSubplebbit({ signer: subSigner });
-        await waitUntil(() => fs.existsSync(subDbLockPath), { timeout: 60000 });
+        await waitUntil(() => fs.existsSync(subDbLockPath), { timeout: 60000, intervalBetweenAttempts: 10 });
         await assert.isRejected(plebbit.createSubplebbit({ address: subSigner.address }), messages.ERR_SUB_CREATION_LOCKED);
     });
 
@@ -144,7 +144,7 @@ describe("Create lock", async () => {
         const subSigner = await plebbit.createSigner();
         const subDbLockPath = path.join(plebbit.dataPath, "subplebbits", `${subSigner.address}.create.lock`);
         plebbit.createSubplebbit({ signer: subSigner });
-        await waitUntil(() => fs.existsSync(subDbLockPath));
+        await waitUntil(() => fs.existsSync(subDbLockPath), { timeout: 60000, intervalBetweenAttempts: 10 });
         const watcher = fs.promises.watch(subDbLockPath, {});
         let eventCount = 0;
         for await (const event of watcher) {
