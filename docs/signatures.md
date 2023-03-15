@@ -1,130 +1,68 @@
 ### Plebbit signature types:
 
-- 'rsa':
+- 'ed25519':
 
 ```js
-const libp2pCrypto = require('libp2p-crypto')
-const cborg = require('cborg')
-const PeerId = require('peer-id')
-const jose = require('jose')
-const assert = require('assert')
+const ed = require('@noble/ed25519')
 const {fromString: uint8ArrayFromString} = require('uint8arrays/from-string')
 const {toString: uint8ArrayToString} = require('uint8arrays/to-string')
+const {Ed25519PublicKey, Ed25519PrivateKey} = require('libp2p-crypto/src/keys/ed25519-class')
+const cborg = require('cborg')
 
-const generateKeyPair = async () => {
-  const keyPair = await libp2pCrypto.keys.generateKeyPair('RSA', 2048)
-  return keyPair
+const generatePrivateKey = async () => {
+  const privateKeyBuffer = ed.utils.randomPrivateKey()
+  const privateKeyBase64 = uint8ArrayToString(privateKeyBuffer, 'base64')
+  return privateKeyBase64
 }
 
-const getPrivateKeyPemFromKeyPair = async (keyPair, password = '') => {
-  // you can optionally encrypt the PEM by providing a password
-  // https://en.wikipedia.org/wiki/PKCS_8
-  const privateKeyPem = await keyPair.export(password, 'pkcs-8')
-  return privateKeyPem
+const getPublicKeyFromPrivateKey = async (privateKeyBase64) => {
+  const privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, 'base64')
+  const publicKeyBuffer = await ed.getPublicKey(privateKeyBuffer)
+  return uint8ArrayToString(publicKeyBuffer, 'base64')
 }
 
-const getKeyPairFromPrivateKeyPem = async (privateKeyPem, password = '') => {
-  // you can optionally encrypt the PEM by providing a password
-  // https://en.wikipedia.org/wiki/PKCS_8
-  const keyPair = await libp2pCrypto.keys.import(privateKeyPem, password)
-  return keyPair
+const signBufferEd25519 = async (bufferToSign, privateKeyBase64) => {
+  const privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, 'base64')
+  // do not use to sign strings, it doesn't encode properly in the browser
+  const signature = await ed.sign(bufferToSign, privateKeyBuffer)
+  return signature
 }
 
-const getIpfsKeyFromPrivateKeyPem = async (privateKeyPem, password = '') => {
-  // you can optionally encrypt the PEM by providing a password
-  // https://en.wikipedia.org/wiki/PKCS_8
-  const keyPair = await libp2pCrypto.keys.import(privateKeyPem, password)
-  return keyPair.bytes
+const verifyBufferEd25519 = async (bufferToSign, bufferSignature, publicKeyBase64) => {
+  const publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, 'base64')
+  const isValid = await ed.verify(bufferSignature, bufferToSign, publicKeyBuffer)
+  return isValid
 }
 
-const getPublicKeyPemFromKeyPair = async (keyPair) => {
-  // https://en.wikipedia.org/wiki/PKCS_8
-  const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {extractable: true})
-  const publicKeyPem = await jose.exportSPKI(publicKeyFromJsonWebToken)
-  return publicKeyPem
-}
-
-const getPublicKeyPemFromPrivateKeyPem = async (privateKeyPem, password = '') => {
-  // you can optionally encrypt the PEM by providing a password
-  // https://en.wikipedia.org/wiki/PKCS_8
-  const keyPair = await getKeyPairFromPrivateKeyPem(privateKeyPem, password)
-  return getPublicKeyPemFromKeyPair(keyPair)
-}
-
-let publicKeyRsaConstructor
-const getPublicKeyRsaConstructor = async () => {
-  // we are forced to do this because publicKeyRsaConstructor isn't public
-  if (!publicKeyRsaConstructor) {
-    const keyPair = await libp2pCrypto.keys.generateKeyPair('RSA', 2048)
-    // get the constuctor for the PublicKeyRsaInstance
-    publicKeyRsaConstructor = keyPair.public.constructor
+const getBufferToSign = (objectToSign, signedPropertyNames) => {
+  const propsToSign = {}
+  for (const propertyName of signedPropertyNames) {
+    if (objectToSign[propertyName] !== undefined && objectToSign[propertyName] !== null) {
+      propsToSign[propertyName] = objectToSign[propertyName]
+    }
   }
-  return publicKeyRsaConstructor
+  const bufferToSign = cborg.encode(propsToSign)
+  return bufferToSign
 }
 
-const getPeerIdFromPublicKeyPem = async (publicKeyPem) => {
-  const publicKeyFromPem = await jose.importSPKI(publicKeyPem, 'RS256', {extractable: true})
-  const jsonWebToken = await jose.exportJWK(publicKeyFromPem)
-  const PublicKeyRsa = await getPublicKeyRsaConstructor()
-  const publicKeyRsaInstance = new PublicKeyRsa(jsonWebToken)
-  const peerId = await PeerId.createFromPubKey(publicKeyRsaInstance.bytes)
-  return peerId
-}
-
-const getPeerIdFromPrivateKeyPem = async (privateKeyPem) => {
-  const keyPair = await getKeyPairFromPrivateKeyPem(privateKeyPem)
-  const peerId = await PeerId.createFromPubKey(keyPair.public.bytes)
-  return peerId
-}
-
-const generatePrivateKeyPem = async (privateKeyPem) => {
-  const keyPair = await generateKeyPair()
-  privateKeyPem = await getPrivateKeyPemFromKeyPair(keyPair)
-  return privateKeyPem
-}
-
-const getPlebbitAddressFromPrivateKeyPem = async (privateKeyPem) => {
-  const peerId = await getPeerIdFromPrivateKeyPem(privateKeyPem)
-  return peerId.toB58String() 
-}
-
-const createCommentSignature = async (comment, signer) => {
-  // private and public key PEM are https://en.wikipedia.org/wiki/PKCS_8
-  const keyPair = await getKeyPairFromPrivateKeyPem(signer.privateKey)
-  const {subplebbitAddress, author, timestamp, parentCid, content, title, link} = comment
-  const fieldsToSign = cborg.encode({subplebbitAddress, author, timestamp, parentCid, content, title, link})
-  const signature = uint8ArrayToString(await keyPair.sign(fieldsToSign), 'base64')
-  const publicKey = await getPublicKeyPemFromKeyPair(keyPair)
-  const type = 'rsa'
-  return {signature, publicKey, type}
-}
-
-const verifyCommentSignature = async (comment) => {
-  const peerId = await getPeerIdFromPublicKeyPem(comment.signature.publicKey)
-  assert(peerId.equals(PeerId.createFromB58String(comment.author.address)), `comment.author.address doesn't match comment.signature.publicKey`)
-
-  // note: postCid is not included because it's written by the sub owner, not the author
-  const {subplebbitAddress, author, timestamp, parentCid, content, title, link} = comment
-  const fieldsToVerify = cborg.encode({subplebbitAddress, author, timestamp, parentCid, content, title, link})
-  const signatureIsValid = await peerId.pubKey.verify(fieldsToVerify, uint8ArrayFromString(comment.signature.signature, 'base64'))
-  assert(signatureIsValid, `comment.signature invalid`)
-}
-
-// sign a comment
 ;(async () => {
-  const privateKeyPem = await generatePrivateKeyPem()
-  const signer = {privateKey: privateKeyPem}
-  const authorAddress = await getPlebbitAddressFromPrivateKeyPem(privateKeyPem)
-  const comment = {
-    subplebbitAddress: 'memes.eth',
-    author: {address: authorAddress}, 
-    timestamp: Math.round(Date.now() / 1000),
-    parentCid: 'some cid...', 
-    content: 'some content...',
-  }
-  const signature = await createCommentSignature(comment, signer)
-  const signedComment = {...comment, signature}
-  console.log({signedComment})
-  await verifyCommentSignature(signedComment)
+  // generate private key
+  const privateKey = await generatePrivateKey()
+  console.log({privateKey})
+
+  // get public key from private key
+  const publicKey = await getPublicKeyFromPrivateKey(privateKey)
+  console.log({publicKey})
+
+  // sign
+  const bufferToSign = getBufferToSign({content: 'content', author: {address: 'address'}}, ['author', 'content', 'parentCid'])
+  console.log({bufferToSign, bufferToSignUtf8: uint8ArrayToString(bufferToSign, 'utf8')})
+  console.log(JSON.stringify({content: 'content', author: {address: 'address'}, signedPropertyNames: ['author', 'content', 'parentCid']}))
+  const bufferSignature = await signBufferEd25519(bufferToSign, privateKey)
+  console.log({bufferSignature})
+
+  // verify
+  const verification = await verifyBufferEd25519(bufferToSign, bufferSignature, publicKey)
+  console.log({verification})
 })()
 ```

@@ -128,14 +128,14 @@ Nft {
 }
 Signature {
   signature: string // data in base64
-  publicKey: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
+  publicKey: string // 32 bytes base64 string
   type: 'ed25519' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
   signedPropertyNames: string[] // the fields that were signed as part of the signature e.g. ['title', 'content', 'author', etc.] client should require that certain fields be signed or reject the publication, e.g. 'content', 'author', 'timestamp' are essential
 }
 Signer {
-  privateKey?: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
+  privateKey?: string // 32 bytes base64 string
   type: 'ed25519' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm https://eips.ethereum.org/EIPS/eip-191
-  publicKey?: string // PEM format, optional, not needed for signing
+  publicKey?: string // 32 bytes base64 string
   address: string // public key hash, not needed for signing
   ipfsKey?: IpfsKey // a Key object used for importing into IpfsHttpClient https://docs.ipfs.io/reference/cli/#ipfs-key-import
 }
@@ -193,8 +193,8 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   markdownVideoReplies?: boolean
 }
 SubplebbitEncryption {
-  type: 'aes-cbc' // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
-  publicKey: string // PEM format https://en.wikipedia.org/wiki/PKCS_8
+  type: 'ed25519-aes-gcm' // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
+  publicKey: string // 32 bytes base64 string
 }
 SubplebbitRole {
   role: 'owner' | 'admin' | 'moderator'
@@ -311,9 +311,10 @@ Challenge {
 }
 Encrypted {
   // examples available at https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
-  encrypted: string // base64 encrypted string with AES CBC 128 // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_block_chaining_(CBC)
-  encryptedKey: string // base64 encrypted key for the AES CBC 128 encrypted content, encrypted using subplebbit.encryption settings, always generate a new key with AES CBC or it's insecure
-  type: 'aes-cbc'
+  ciphertext: string // base64 encrypted string with AES GCM 128 // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Galois/counter_(GCM)
+  iv: string // base64 iv for the AES GCM 128 encrypted content
+  tag: string // base64 authentication tag, AES GCM has authentication tag https://en.wikipedia.org/wiki/Galois/Counter_Mode
+  type: 'ed25519-aes-gcm'
 }
 ```
 

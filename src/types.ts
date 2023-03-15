@@ -57,7 +57,7 @@ export interface PagesTypeIpfs {
 
 export type SubplebbitEncryption = {
     type: "aes-cbc"; // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
-    publicKey: string; // PEM format https://en.wikipedia.org/wiki/PKCS_8
+    publicKey: string; // 32 bytes base64 string (same as subplebbit.signer.publicKey)
 };
 export interface CreateCommentOptions extends CreatePublicationOptions {
     signer: Pick<SignerType, "privateKey" | "type">;

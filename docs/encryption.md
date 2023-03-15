@@ -1,198 +1,138 @@
 ### Plebbit encryption types:
 
-- 'aes-cbc':
+- 'ed25519-aes-gcm':
 
 ```js
-const PeerId = require('peer-id')
-const jose = require('jose')
+const ed = require('@noble/ed25519')
 const {fromString: uint8ArrayFromString} = require('uint8arrays/from-string')
 const {toString: uint8ArrayToString} = require('uint8arrays/to-string')
 const forge = require('node-forge')
-const libp2pCrypto = require('libp2p-crypto')
 
-const generateKeyPair = async () => {
-  const keyPair = await libp2pCrypto.keys.generateKeyPair('RSA', 2048)
-  return keyPair
+const generatePrivateKey = async () => {
+  const privateKeyBuffer = ed.utils.randomPrivateKey()
+  const privateKeyBase64 = uint8ArrayToString(privateKeyBuffer, 'base64')
+  return privateKeyBase64
 }
 
-const getPrivateKeyPemFromKeyPair = async (keyPair, password = '') => {
-  // you can optionally encrypt the PEM by providing a password
-  // https://en.wikipedia.org/wiki/PKCS_8
-  const privateKeyPem = await keyPair.export(password, 'pkcs-8')
-  return privateKeyPem
+const getPublicKeyFromPrivateKey = async (privateKeyBase64) => {
+  const privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, 'base64')
+  const publicKeyBuffer = await ed.getPublicKey(privateKeyBuffer)
+  return uint8ArrayToString(publicKeyBuffer, 'base64')
 }
 
-const getKeyPairFromPrivateKeyPem = async (privateKeyPem, password = '') => {
-  // you can optionally encrypt the PEM by providing a password
-  // https://en.wikipedia.org/wiki/PKCS_8
-  const keyPair = await libp2pCrypto.keys.import(privateKeyPem, password)
-  return keyPair
-}
-
-const getIpfsKeyFromPrivateKeyPem = async (privateKeyPem, password = '') => {
-  // you can optionally encrypt the PEM by providing a password
-  // https://en.wikipedia.org/wiki/PKCS_8
-  const keyPair = await libp2pCrypto.keys.import(privateKeyPem, password)
-  return keyPair.bytes
-}
-
-const getPublicKeyPemFromKeyPair = async (keyPair) => {
-  // https://en.wikipedia.org/wiki/PKCS_8
-  const publicKeyFromJsonWebToken = await jose.importJWK(keyPair._publicKey, 'RS256', {extractable: true})
-  const publicKeyPem = await jose.exportSPKI(publicKeyFromJsonWebToken)
-  return publicKeyPem
-}
-
-const getPublicKeyPemFromPrivateKeyPem = async (privateKeyPem, password = '') => {
-  // you can optionally encrypt the PEM by providing a password
-  // https://en.wikipedia.org/wiki/PKCS_8
-  const keyPair = await getKeyPairFromPrivateKeyPem(privateKeyPem, password)
-  return getPublicKeyPemFromKeyPair(keyPair)
-}
-
-let publicKeyRsaConstructor
-const getPublicKeyRsaConstructor = async () => {
-  // we are forced to do this because publicKeyRsaConstructor isn't public
-  if (!publicKeyRsaConstructor) {
-    const keyPair = await libp2pCrypto.keys.generateKeyPair('RSA', 2048)
-    // get the constuctor for the PublicKeyRsaInstance
-    publicKeyRsaConstructor = keyPair.public.constructor
+const uint8ArrayToNodeForgeBuffer = (uint8Array) => {
+  const forgeBuffer = forge.util.createBuffer()
+  for (const byte of uint8Array) {
+    forgeBuffer.putByte(byte)
   }
-  return publicKeyRsaConstructor
+  return forgeBuffer
 }
 
-const getPeerIdFromPublicKeyPem = async (publicKeyPem) => {
-  const publicKeyFromPem = await jose.importSPKI(publicKeyPem, 'RS256', {extractable: true})
-  const jsonWebToken = await jose.exportJWK(publicKeyFromPem)
-  const PublicKeyRsa = await getPublicKeyRsaConstructor()
-  const publicKeyRsaInstance = new PublicKeyRsa(jsonWebToken)
-  const peerId = await PeerId.createFromPubKey(publicKeyRsaInstance.bytes)
-  return peerId
+// NOTE: never pass the last param 'iv', only used for testing, it must always be random
+const encryptStringAesGcm = async (plaintext, key) => {
+  // use random 12 bytes uint8 array for iv
+  const iv = ed.utils.randomPrivateKey().slice(0, 12)
+
+  // node-forge doesn't accept uint8Array
+  const keyAsForgeBuffer = uint8ArrayToNodeForgeBuffer(key)
+  const ivAsForgeBuffer = uint8ArrayToNodeForgeBuffer(iv)
+
+  const cipher = forge.cipher.createCipher("AES-GCM", keyAsForgeBuffer)
+  cipher.start({ iv: ivAsForgeBuffer })
+  cipher.update(forge.util.createBuffer(plaintext, "utf8"))
+  cipher.finish()
+
+  return {
+    ciphertext: uint8ArrayFromString(cipher.output.toHex(), "base16"),
+    iv,
+    // AES-GCM has authentication tag https://en.wikipedia.org/wiki/Galois/Counter_Mode
+    tag: uint8ArrayFromString(cipher.mode.tag.toHex(), "base16")
+  }
 }
 
-const getPeerIdFromPrivateKeyPem = async (privateKeyPem) => {
-  const keyPair = await getKeyPairFromPrivateKeyPem(privateKeyPem)
-  const peerId = await PeerId.createFromPubKey(keyPair.public.bytes)
-  return peerId
+const decryptStringAesGcm = async (ciphertext, key, iv, tag) => {
+  // node-forge doesn't accept uint8Array
+  const keyAsForgeBuffer = uint8ArrayToNodeForgeBuffer(key)
+  const ivAsForgeBuffer = uint8ArrayToNodeForgeBuffer(iv)
+  const tagAsForgeBuffer = uint8ArrayToNodeForgeBuffer(tag)
+
+  const cipher = forge.cipher.createDecipher("AES-GCM", keyAsForgeBuffer)
+  cipher.start({ iv: ivAsForgeBuffer, tag: tagAsForgeBuffer })
+  cipher.update(forge.util.createBuffer(ciphertext))
+  cipher.finish()
+  const decrypted = cipher.output.toString()
+  return decrypted
 }
 
-const generatePrivateKeyPem = async (privateKeyPem) => {
-  const keyPair = await generateKeyPair()
-  privateKeyPem = await getPrivateKeyPemFromKeyPair(keyPair)
-  return privateKeyPem
+const encryptEd25519AesGcm = async (plaintext, privateKeyBase64, publicKeyBase64) => {
+  const privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, "base64")
+  const publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, "base64")
+
+  // add random padding to prevent linking encrypted publications by sizes
+  const randomPaddingLength = Math.round(Math.random() * 5000)
+  let padding = ""
+  while (padding.length < randomPaddingLength) {
+    padding += " "
+  }
+
+  // compute the shared secret of the sender and recipient and use it as the encryption key
+  // do not publish this secret https://datatracker.ietf.org/doc/html/rfc7748#section-6.1
+  const aesGcmKey = await ed.getSharedSecret(privateKeyBuffer, publicKeyBuffer)
+  // use 16 bytes key for AES-128
+  const aesGcmKey16Bytes = aesGcmKey.slice(0, 16)
+
+  // AES GCM using 128-bit key https://en.wikipedia.org/wiki/Galois/Counter_Mode
+  const { ciphertext, iv, tag } = await encryptStringAesGcm(plaintext + padding, aesGcmKey16Bytes)
+
+  const encryptedBase64 = {
+    ciphertext: uint8ArrayToString(ciphertext, "base64"),
+    iv: uint8ArrayToString(iv, "base64"),
+    // AES-GCM has authentication tag https://en.wikipedia.org/wiki/Galois/Counter_Mode
+    tag: uint8ArrayToString(tag, "base64"),
+    type: "ed25519-aes-gcm"
+  }
+  return encryptedBase64
 }
 
-const getPlebbitAddressFromPrivateKeyPem = async (privateKeyPem) => {
-  const peerId = await getPeerIdFromPrivateKeyPem(privateKeyPem)
-  return peerId.toB58String() 
+const decryptEd25519AesGcm = async (encrypted, privateKeyBase64, publicKeyBase64) => {
+  const ciphertextBuffer = uint8ArrayFromString(encrypted.ciphertext, "base64")
+  const privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, "base64")
+  const publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, "base64")
+  const ivBuffer = uint8ArrayFromString(encrypted.iv, "base64")
+  const tagBuffer = uint8ArrayFromString(encrypted.tag, "base64")
+
+  // compute the shared secret of the sender and recipient and use it as the encryption key
+  // do not publish this secret https://datatracker.ietf.org/doc/html/rfc7748#section-6.1
+  const aesGcmKey = await ed.getSharedSecret(privateKeyBuffer, publicKeyBuffer)
+  // use 16 bytes key for AES-128
+  const aesGcmKey16Bytes = aesGcmKey.slice(0, 16)
+
+  // AES GCM using 128-bit key https://en.wikipedia.org/wiki/Galois/Counter_Mode
+  let decrypted = await decryptStringAesGcm(ciphertextBuffer, aesGcmKey16Bytes, ivBuffer, tagBuffer)
+
+  // remove padding
+  decrypted = decrypted.replace(/ *$/, "")
+
+  return decrypted
 }
 
-export const generateKeyAesCbc = async () => {
-    // key should be 16 bytes for AES CBC 128
-    return libp2pCrypto.randomBytes(16);
-};
-
-export const encryptStringAesCbc = async (stringToEncrypt, key) => {
-    // node-forge takes in buffers and string weirdly in the browser so use hex instead
-    const keyAsForgeBuffer = forge.util.createBuffer(uint8ArrayToString(key, "base16"), "hex");
-    // use the key as initializaton vector because we don't need an iv since we never reuse keys
-    const iv = forge.util.createBuffer(uint8ArrayToString(key, "base16"), "hex");
-
-    const cipher = forge.cipher.createCipher("AES-CBC", keyAsForgeBuffer);
-    cipher.start({iv});
-    cipher.update(forge.util.createBuffer(stringToEncrypt, "utf8"));
-    cipher.finish();
-    const encryptedBase64 = uint8ArrayToString(uint8ArrayFromString(cipher.output.toHex(), "base16"), "base64");
-    return encryptedBase64;
-};
-
-export const decryptStringAesCbc = async (encryptedString, key) => {
-    // node-forge takes in buffers and string weirdly in the browser so use hex instead
-    const keyAsForgeBuffer = forge.util.createBuffer(uint8ArrayToString(key, "base16"), "hex");
-    // use the key as initializaton vector because we don't need an iv since we never reuse keys
-    const iv = forge.util.createBuffer(uint8ArrayToString(key, "base16"), "hex");
-
-    const cipher = forge.cipher.createDecipher("AES-CBC", keyAsForgeBuffer);
-    cipher.start({iv});
-    cipher.update(forge.util.createBuffer(uint8ArrayFromString(encryptedString, "base64")));
-    cipher.finish();
-    const decrypted = cipher.output.toString();
-    return decrypted;
-};
-
-const encryptBufferRsa = async (stringToEncrypt, publicKeyPem) => {
-    const peerId = await getPeerIdFromPublicKeyPem(publicKeyPem);
-    const encryptedKeyBase64 = uint8ArrayToString(await peerId.pubKey.encrypt(stringToEncrypt), "base64");
-    return encryptedKeyBase64;
-};
-
-const decryptBufferRsa = async (encryptedStringBase64, privateKeyPem, privateKeyPemPassword = "") => {
-    const keyPair = await getKeyPairFromPrivateKeyPem(privateKeyPem, privateKeyPemPassword);
-    const decrypted = await keyPair.decrypt(uint8ArrayFromString(encryptedStringBase64, "base64"));
-    return decrypted;
-};
-
-export const encrypt = async (stringToEncrypt, publicKeyPem) => {
-    // add random padding to prevent linking encrypted publications by sizes
-    // TODO: eventually use an algorithm to find the most anonymous padding length
-    const randomPaddingLength = Math.round(Math.random() * 5000)
-    let padding = ''
-    while (padding.length < randomPaddingLength) {
-        padding += ' '
-    }
-
-    // generate key of the cipher and encrypt the string using AES CBC 128
-    // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_block_chaining_(CBC)
-    const key = await generateKeyAesCbc(); // not secure to reuse keys because we don't use iv
-    const encryptedBase64 = await encryptStringAesCbc(stringToEncrypt + padding, key);
-
-    // encrypt the AES CBC key with public key
-    const encryptedKeyBase64 = await encryptBufferRsa(key, publicKeyPem);
-    return { encrypted: encryptedBase64, encryptedKey: encryptedKeyBase64, type: "aes-cbc" };
-};
-
-export const decrypt = async (encryptedString, encryptedKey, privateKeyPem, privateKeyPemPassword = "") => {
-    // decrypt key
-    // you can optionally encrypt the PEM by providing a password
-    // https://en.wikipedia.org/wiki/PKCS_8
-    const key = await decryptBufferRsa(encryptedKey, privateKeyPem);
-
-    // decrypt string using AES CBC 128
-    // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_block_chaining_(CBC)
-    let decrypted = await decryptStringAesCbc(encryptedString, key);
-
-    // remove padding
-    decrypted = decrypted.replace(/ *$/, '')
-
-    return decrypted;
-};
-
-// encrypt a publication
 ;(async () => {
-  const authorPrivateKeyPem = await generatePrivateKeyPem()
-  const authorAddress = await getPlebbitAddressFromPrivateKeyPem(authorPrivateKeyPem)
-  const publication = {
-    subplebbitAddress: 'memes.eth',
-    author: {address: authorAddress}, 
-    timestamp: Math.round(Date.now() / 1000),
-    parentCid: 'some cid...', 
-    content: 'some content...',
-  }
+  // generate private key
+  const privateKey = await generatePrivateKey()
+  console.log({privateKey})
 
-  // test large content
-  let i = 1000
-  while (i--) {
-    publication.content += 'some content...'
-  }
+  // get public key from private key
+  const publicKey = await getPublicKeyFromPrivateKey(privateKey)
+  console.log({publicKey})
 
-  const subplebbitEncryptionPrivateKeyPem = await generatePrivateKeyPem()
-  const subplebbitEncryptionPublicKeyPem = await getPublicKeyPemFromPrivateKeyPem(subplebbitEncryptionPrivateKeyPem)
+  // encrypt
+  const recipientPrivateKey = await generatePrivateKey()
+  const recipientPublicKey = await getPublicKeyFromPrivateKey(recipientPrivateKey)
+  const encrypted = await encryptEd25519AesGcm('hello', privateKey, recipientPublicKey)
+  console.log({encrypted})
 
-  // author encrypts his publication using subplebbit owner public key
-  const {encrypted, encryptedKey} = await encrypt(JSON.stringify(publication), subplebbitEncryptionPublicKeyPem)
-
-  // subplebbit owner decrypts publication with his own private key
-  const decryptedPublication = JSON.parse(await decrypt(encrypted, encryptedKey, subplebbitEncryptionPrivateKeyPem))
-  console.log({encrypted, encryptedKey, decryptedPublication})
+  // decrypt
+  const decrypted = await decryptEd25519AesGcm(encrypted, recipientPrivateKey, publicKey)
+  console.log({decrypted})
 })()
 ```
