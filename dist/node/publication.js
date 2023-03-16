@@ -61,6 +61,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -84,6 +93,14 @@ var Publication = /** @class */ (function (_super) {
         _this.plebbit = plebbit;
         _this._initProps(props);
         _this.handleChallengeExchange = _this.handleChallengeExchange.bind(_this);
+        _this.on("error", function () {
+            var _a;
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return (_a = _this.plebbit).emit.apply(_a, __spreadArray(["error"], args, false));
+        });
         return _this;
     }
     Publication.prototype._initProps = function (props) {
@@ -111,7 +128,7 @@ var Publication = /** @class */ (function (_super) {
     };
     Publication.prototype.handleChallengeExchange = function (pubsubMsg) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, msgParsed, challengeMsgValidity, decryptedChallenges, _a, _b, decryptedChallenge, signatureValidation, decryptedPublication, _c, _d;
+            var log, msgParsed, challengeMsgValidity, errMsg, decryptedChallenges, _a, _b, decryptedChallenge, signatureValidation, errMsg, decryptedPublication, _c, _d;
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
@@ -124,7 +141,9 @@ var Publication = /** @class */ (function (_super) {
                     case 1:
                         challengeMsgValidity = _e.sent();
                         if (!challengeMsgValidity.valid) {
-                            log.error("Received a CHALLENGEMESSAGE with invalid signature. Failed verification reason: ".concat(challengeMsgValidity.reason));
+                            errMsg = "Received a CHALLENGEMESSAGE with invalid signature. Failed verification reason: ".concat(challengeMsgValidity.reason);
+                            log.error(errMsg);
+                            this.emit("error", errMsg);
                             return [2 /*return*/];
                         }
                         log("Received encrypted challenges.  Will decrypt and emit them on \"challenge\" event. User shoud publish solution by calling publishChallengeAnswers");
@@ -141,7 +160,9 @@ var Publication = /** @class */ (function (_super) {
                     case 4:
                         signatureValidation = _e.sent();
                         if (!signatureValidation.valid) {
-                            log.error("Received a CHALLENGEVERIFICATIONMESSAGE with invalid signature. Failed verification reason: ".concat(signatureValidation.reason));
+                            errMsg = "Received a CHALLENGEVERIFICATIONMESSAGE with invalid signature. Failed verification reason: ".concat(signatureValidation.reason);
+                            log.error(errMsg);
+                            this.emit("error", errMsg);
                             return [2 /*return*/];
                         }
                         decryptedPublication = void 0;
@@ -158,7 +179,7 @@ var Publication = /** @class */ (function (_super) {
                         if (msgParsed.challengeSuccess)
                             log("Challenge (".concat(msgParsed.challengeRequestId, ") has passed"));
                         else
-                            log.error("Challenge ".concat(msgParsed.challengeRequestId, " has failed to pass. Challenge errors = ").concat(msgParsed.challengeErrors, ", reason = '").concat(msgParsed.reason, "'"));
+                            log("Challenge ".concat(msgParsed.challengeRequestId, " has failed to pass. Challenge errors = ").concat(msgParsed.challengeErrors, ", reason = '").concat(msgParsed.reason, "'"));
                         _e.label = 7;
                     case 7:
                         this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication }), this);
