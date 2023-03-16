@@ -16,13 +16,13 @@ import {
 
 export type ProtocolVersion = "1.0.0";
 
-export type BlockchainProvider = { url: string; chainId: number };
+export type ChainProvider = { url: string; chainId: number };
 export interface PlebbitOptions {
     ipfsGatewayUrl?: string;
     ipfsHttpClientOptions?: Options | string;
     pubsubHttpClientOptions?: Options | string;
     dataPath?: string;
-    blockchainProviders?: { [chainTicker: string]: BlockchainProvider };
+    chainProviders?: { [chainTicker: string]: ChainProvider };
     resolveAuthorAddresses?: boolean;
 }
 
@@ -221,7 +221,7 @@ export interface DecryptedChallengeVerificationMessageType extends ChallengeVeri
     publication?: DecryptedChallengeRequestMessageType["publication"];
 }
 
-export type SubplebbitMetrics = {
+export type SubplebbitStats = {
     hourActiveUserCount: number;
     dayActiveUserCount: number;
     weekActiveUserCount: number;
@@ -291,7 +291,7 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
     createdAt: number;
     updatedAt: number;
     pubsubTopic: string;
-    metricsCid?: string;
+    statsCid?: string;
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
     posts?: PagesTypeJson;
 }
@@ -321,7 +321,7 @@ export interface SubplebbitEditOptions {
     lastPostCid?: string;
     pubsubTopic?: string;
     challengeTypes?: ChallengeType[];
-    metrics?: SubplebbitMetrics;
+    stats?: SubplebbitStats;
     features?: SubplebbitFeatures;
     suggested?: SubplebbitSuggested;
     flairs?: Record<FlairOwner, Flair[]>; // list of post/author flairs authors and mods can choose from

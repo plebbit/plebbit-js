@@ -59,6 +59,9 @@ export class CommentEdit extends Publication implements CommentEditType {
 
     constructor(props: CommentEditType, plebbit: Plebbit) {
         super(props, plebbit);
+
+        // public method should be bound
+        this.publish = this.publish.bind(this)
     }
 
     _initProps(props: CommentEditType) {

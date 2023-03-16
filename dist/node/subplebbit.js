@@ -199,7 +199,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _j.label = 6;
                     case 6:
                         this.encryption = {
-                            type: "aes-cbc",
+                            type: "ed25519-aes-gcm",
                             publicKey: this.signer.publicKey
                         };
                         return [2 /*return*/];

@@ -46,6 +46,9 @@ class Publication extends EventEmitter implements PublicationType {
         this._initProps(props);
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
         this.on("error", (...args) => this.plebbit.emit("error", ...args));
+
+        // public method should be bound
+        this.publishChallengeAnswers = this.publishChallengeAnswers.bind(this)
     }
 
     _initProps(props: PublicationType) {

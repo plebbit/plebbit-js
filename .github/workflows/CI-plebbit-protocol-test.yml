@@ -34,7 +34,6 @@ jobs:
       - run: yarn remove @plebbit/plebbit-js
       - run: yarn add ./plebbit-js
       # build
-      - run: yarn build
       - run: yarn webpack
       # disable hosts we shouldn't use
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts

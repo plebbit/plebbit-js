@@ -121,7 +121,7 @@ export const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[
     "lastPostCid",
     "posts",
     "challengeTypes",
-    "metricsCid",
+    "statsCid",
     "createdAt",
     "updatedAt",
     "features",
