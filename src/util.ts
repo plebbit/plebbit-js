@@ -320,7 +320,7 @@ export async function parseRawPages(
 export function shortifyAddress(address: string): string {
     if (address.includes(".")) return address; // If a domain then no need to shortify
     // Remove prefix (12D3KooW)
-    const removedPrefix = address.slice(7);
+    const removedPrefix = address.slice(8);
     // Return first 12 characters
     const shortAddress = removedPrefix.slice(0, 12);
     return shortAddress;
