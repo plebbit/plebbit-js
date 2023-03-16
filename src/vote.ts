@@ -13,6 +13,9 @@ class Vote extends Publication implements VoteType {
         super(props, plebbit);
         this.commentCid = props.commentCid;
         this.vote = props.vote; // Either 1, 0, -1 (upvote, cancel vote, downvote)
+
+        // public method should be bound
+        this.publish = this.publish.bind(this)
     }
 
     toJSONPubsubMessagePublication(): VotePubsubMessage {
