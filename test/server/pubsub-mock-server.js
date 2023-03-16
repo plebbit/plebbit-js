@@ -14,8 +14,6 @@ pubsubIoServer.on("connection", async (connectedPeer) => {
     });
     connectedPeer.onAny(async (topic, message) => {
         for (const curPeer of peers) curPeer.emit(topic, message);
-
-        console.log(`Number of peers is ${peers.length}`);
     });
     peers.push(connectedPeer);
 });
