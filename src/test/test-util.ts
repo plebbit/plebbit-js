@@ -191,36 +191,23 @@ async function _startEnsSubplebbit(signers: SignerType[], syncInterval: number, 
     return subplebbit;
 }
 
-async function _publishPosts(subplebbitAddress: string, numOfPosts: number) {
+async function _publishPosts(subplebbitAddress: string, numOfPosts: number, plebbit: Plebbit) {
+    return Promise.all(new Array(numOfPosts).fill(null).map(() => publishRandomPost(subplebbitAddress, plebbit, {}, false)));
+}
+
+async function _publishReplies(parentComment: Comment, numOfReplies: number, plebbit: Plebbit) {
+    return Promise.all(new Array(numOfReplies).fill(null).map(() => publishRandomReply(parentComment, plebbit, {}, false)));
+}
+
+async function _publishVotesOnOneComment(comment: Comment, votesPerCommentToPublish: number, plebbit: Plebbit) {
     return Promise.all(
-        new Array(numOfPosts).fill(null).map(async () => {
-            const plebbit = await mockPlebbit();
-            return publishRandomPost(subplebbitAddress, plebbit, {}, false);
-        })
+        new Array(votesPerCommentToPublish).fill(null).map(() => publishVote(comment.cid, Math.random() > 0.5 ? 1 : -1, plebbit, {}))
     );
 }
 
-async function _publishReplies(parentComment: Comment, numOfReplies: number) {
-    return Promise.all(
-        new Array(numOfReplies).fill(null).map(async () => {
-            const plebbit = await mockPlebbit();
-            return publishRandomReply(parentComment, plebbit, {}, false);
-        })
-    );
-}
-
-async function _publishVotesOnOneComment(comment: Comment, votesPerCommentToPublish: number) {
-    return Promise.all(
-        new Array(votesPerCommentToPublish).fill(null).map(async () => {
-            const plebbit = await mockPlebbit();
-            return publishVote(comment.cid, Math.random() > 0.5 ? 1 : -1, plebbit, {});
-        })
-    );
-}
-
-async function _publishVotes(comments: Comment[], votesPerCommentToPublish: number) {
+async function _publishVotes(comments: Comment[], votesPerCommentToPublish: number, plebbit: Plebbit) {
     const votes: Vote[] = lodash.flattenDeep(
-        await Promise.all(comments.map((comment) => _publishVotesOnOneComment(comment, votesPerCommentToPublish)))
+        await Promise.all(comments.map((comment) => _publishVotesOnOneComment(comment, votesPerCommentToPublish, plebbit)))
     );
 
     assert.equal(votes.length, votesPerCommentToPublish * comments.length);
@@ -245,14 +232,14 @@ async function _populateSubplebbit(
         }
     });
     await new Promise((resolve) => subplebbit.once("update", resolve));
-    const posts = await _publishPosts(subplebbit.address, props.numOfCommentsToPublish); // If no comment[] is provided, we publish posts
+    const posts = await _publishPosts(subplebbit.address, props.numOfCommentsToPublish, subplebbit.plebbit); // If no comment[] is provided, we publish posts
     console.log(`Have successfully published ${posts.length} posts`);
     const [replies] = await Promise.all([
-        _publishReplies(posts[0], props.numOfCommentsToPublish),
-        _publishVotes(posts, props.votesPerCommentToPublish)
+        _publishReplies(posts[0], props.numOfCommentsToPublish, subplebbit.plebbit),
+        _publishVotes(posts, props.votesPerCommentToPublish, subplebbit.plebbit)
     ]);
     console.log(`Have sucessfully published ${replies.length} replies`);
-    await _publishVotes(replies, props.votesPerCommentToPublish);
+    await _publishVotes(replies, props.votesPerCommentToPublish, subplebbit.plebbit);
 }
 
 export async function startSubplebbits(props: {
