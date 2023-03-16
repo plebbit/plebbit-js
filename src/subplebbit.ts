@@ -179,7 +179,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
         if (!this.signer.address) this.signer.address = await getPlebbitAddressFromPrivateKey(this.signer.privateKey);
 
         this.encryption = {
-            type: "aes-cbc",
+            type: "ed25519-aes-gcm",
             publicKey: this.signer.publicKey
         };
     }
