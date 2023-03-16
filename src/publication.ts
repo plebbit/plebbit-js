@@ -45,6 +45,7 @@ class Publication extends EventEmitter implements PublicationType {
         this.plebbit = plebbit;
         this._initProps(props);
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
+        this.on("error", (...args) => this.plebbit.emit("error", ...args));
     }
 
     _initProps(props: PublicationType) {
@@ -80,7 +81,9 @@ class Publication extends EventEmitter implements PublicationType {
         if (msgParsed?.type === "CHALLENGE") {
             const challengeMsgValidity = await verifyChallengeMessage(msgParsed);
             if (!challengeMsgValidity.valid) {
-                log.error(`Received a CHALLENGEMESSAGE with invalid signature. Failed verification reason: ${challengeMsgValidity.reason}`);
+                const errMsg = `Received a CHALLENGEMESSAGE with invalid signature. Failed verification reason: ${challengeMsgValidity.reason}`;
+                log.error(errMsg);
+                this.emit("error", errMsg);
                 return;
             }
 
@@ -95,9 +98,9 @@ class Publication extends EventEmitter implements PublicationType {
         } else if (msgParsed?.type === "CHALLENGEVERIFICATION") {
             const signatureValidation = await verifyChallengeVerification(msgParsed);
             if (!signatureValidation.valid) {
-                log.error(
-                    `Received a CHALLENGEVERIFICATIONMESSAGE with invalid signature. Failed verification reason: ${signatureValidation.reason}`
-                );
+                const errMsg = `Received a CHALLENGEVERIFICATIONMESSAGE with invalid signature. Failed verification reason: ${signatureValidation.reason}`;
+                log.error(errMsg);
+                this.emit("error", errMsg);
                 return;
             }
             let decryptedPublication: PublicationType | undefined;
