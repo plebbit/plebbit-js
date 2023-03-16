@@ -48,7 +48,7 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
         expect(subJson.lastPostCid).to.equal(subObj.lastPostCid);
         expect(subJson.pubsubTopic).to.equal(subObj.pubsubTopic);
         expect(subJson.address).to.equal(subObj.address);
-        expect(subJson.metricsCid).to.equal(subObj.metricsCid);
+        expect(subJson.statsCid).to.equal(subObj.statsCid);
         expect(subJson.createdAt).to.equal(subObj.createdAt);
         expect(subJson.updatedAt).to.equal(subObj.updatedAt);
         expect(subJson.encryption).to.deep.equal(subObj.encryption);
@@ -117,7 +117,7 @@ describe("plebbit.getSubplebbit", async () => {
         expect(_subplebbitIpns.lastPostCid).to.be.a.string;
         expect(_subplebbitIpns.pubsubTopic).to.be.a.string;
         expect(_subplebbitIpns.address).to.be.a.string;
-        expect(_subplebbitIpns.metricsCid).to.be.a.string;
+        expect(_subplebbitIpns.statsCid).to.be.a.string;
         expect(_subplebbitIpns.createdAt).to.be.a("number");
         expect(_subplebbitIpns.updatedAt).to.be.a("number");
         expect(_subplebbitIpns.encryption).to.be.a("object");

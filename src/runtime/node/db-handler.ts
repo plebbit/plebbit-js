@@ -24,7 +24,7 @@ import {
     SignersTableRow,
     SingersTableRowInsert,
     SubplebbitAuthor,
-    SubplebbitMetrics,
+    SubplebbitStats,
     VotesTableRow,
     VotesTableRowInsert
 } from "../../types";
@@ -570,15 +570,15 @@ export class DbHandler {
     }
 
     // TODO rewrite this
-    async querySubplebbitMetrics(trx?: Transaction): Promise<SubplebbitMetrics> {
-        const metrics = await Promise.all(
+    async querySubplebbitStats(trx?: Transaction): Promise<SubplebbitStats> {
+        const stats = await Promise.all(
             ["PostCount", "ActiveUserCount"].map(
-                async (metricType) =>
+                async (statType) =>
                     await Promise.all(
                         Object.keys(TIMEFRAMES_TO_SECONDS).map(async (timeframe) => {
-                            const propertyName = `${timeframe.toLowerCase()}${metricType}`;
+                            const propertyName = `${timeframe.toLowerCase()}${statType}`;
                             const [from, to] = [Math.max(0, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe]), timestamp()];
-                            if (metricType === "ActiveUserCount") {
+                            if (statType === "ActiveUserCount") {
                                 const res = (
                                     await this._baseTransaction(trx)(TABLES.COMMENTS)
                                         .countDistinct("comments.authorAddress")
@@ -586,7 +586,7 @@ export class DbHandler {
                                         .whereBetween("comments.timestamp", [from, to])
                                 )[0]["count(distinct `comments`.`authorAddress`)"];
                                 return { [propertyName]: res };
-                            } else if (metricType === "PostCount") {
+                            } else if (statType === "PostCount") {
                                 const query = this._baseTransaction(trx)(TABLES.COMMENTS)
                                     .count()
                                     .whereBetween("timestamp", [from, to])
@@ -599,8 +599,8 @@ export class DbHandler {
             )
         );
 
-        const combinedMetrics: SubplebbitMetrics = Object.assign({}, ...metrics.flat());
-        return combinedMetrics;
+        const combinedStats: SubplebbitStats = Object.assign({}, ...stats.flat());
+        return combinedStats;
     }
 
     async queryCommentsUnderComment(parentCid: string | null, trx?: Transaction): Promise<CommentsTableRow[]> {

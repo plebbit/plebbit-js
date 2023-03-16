@@ -34,7 +34,7 @@ import {
     SubplebbitEncryption,
     SubplebbitFeatures,
     SubplebbitIpfsType,
-    SubplebbitMetrics,
+    SubplebbitStats,
     SubplebbitRole,
     SubplebbitSuggested,
     SubplebbitType,
@@ -85,13 +85,13 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
     posts: Pages;
     pubsubTopic: string;
     challengeTypes?: ChallengeType[];
-    metrics?: SubplebbitMetrics;
+    stats?: SubplebbitStats;
     features?: SubplebbitFeatures;
     suggested?: SubplebbitSuggested;
     flairs?: Record<FlairOwner, Flair[]>;
     address: string;
     shortAddress: string;
-    metricsCid?: string;
+    statsCid?: string;
     createdAt: number;
     updatedAt: number;
     signer?: Signer;
@@ -150,7 +150,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
         this.setAddress(mergedProps.address);
         this.pubsubTopic = mergedProps.pubsubTopic;
         this.challengeTypes = mergedProps.challengeTypes;
-        this.metricsCid = mergedProps.metricsCid;
+        this.statsCid = mergedProps.statsCid;
         this.createdAt = mergedProps.createdAt;
         this.updatedAt = mergedProps.updatedAt;
         this.encryption = mergedProps.encryption;
@@ -234,7 +234,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
             pubsubTopic: this.pubsubTopic,
             address: this.address,
             challengeTypes: this.challengeTypes,
-            metricsCid: this.metricsCid,
+            statsCid: this.statsCid,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
             encryption: this.encryption,
@@ -427,12 +427,12 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
         const latestPost = await this.dbHandler.queryLatestPostCid(trx);
         await this.dbHandler.commitTransaction("subplebbit");
 
-        const [metrics, subplebbitPosts] = await Promise.all([
-            this.dbHandler.querySubplebbitMetrics(undefined),
+        const [stats, subplebbitPosts] = await Promise.all([
+            this.dbHandler.querySubplebbitStats(undefined),
             this.sortHandler.generateSubplebbitPosts()
         ]);
 
-        const metricsCid = (await this.plebbit.ipfsClient.add(deterministicStringify(metrics))).path;
+        const statsCid = (await this.plebbit.ipfsClient.add(deterministicStringify(stats))).path;
 
         await this._mergeInstanceStateWithDbState({});
 
@@ -440,7 +440,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
         const newIpns: Omit<SubplebbitIpfsType, "signature"> = {
             ...lodash.omit(this._toJSONBase(), "signature"),
             lastPostCid: latestPost?.cid,
-            metricsCid,
+            statsCid,
             updatedAt,
             posts: subplebbitPosts ? { pageCids: subplebbitPosts.pageCids, pages: lodash.pick(subplebbitPosts.pages, "hot") } : undefined
         };
@@ -450,7 +450,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
         this._subplebbitUpdateTrigger = false;
 
         await this._updateDbInternalState(
-            lodash.pick(this.toJSONInternal(), ["posts", "lastPostCid", "metricsCid", "updatedAt", "signature", "_subplebbitUpdateTrigger"])
+            lodash.pick(this.toJSONInternal(), ["posts", "lastPostCid", "statsCid", "updatedAt", "signature", "_subplebbitUpdateTrigger"])
         );
 
         const file = await this.plebbit.ipfsClient.add(deterministicStringify({ ...newIpns, signature }));

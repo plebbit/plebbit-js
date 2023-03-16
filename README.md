@@ -148,7 +148,7 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   lastPostCid?: string // the most recent post in the linked list of posts
   posts?: Pages // only preload page 1 sorted by 'hot', might preload more later, comments should include Comment + CommentUpdate data
   challengeTypes?: ChallengeType[] // optional, only used for displaying on frontend, don't rely on it for challenge negotiation
-  metricsCid?: string
+  statsCid?: string
   createdAt: number
   updatedAt: number
   features?: SubplebbitFeatures
@@ -225,7 +225,7 @@ CommentAndCommentUpdate {
 PostsSortType: 'hot' | 'new' | 'active' | 'topHour' | 'topDay' | 'topWeek' | 'topMonth' | 'topYear' | 'topAll' | 'controversialHour' | 'controversialDay' | 'controversialWeek' | 'controversialMonth' | 'controversialYear' | 'controversialAll'
 RepliesSortType: 'topAll' | 'new' | 'old' | 'controversialAll'
 ModSortType: 'reports' | 'spam' | 'modqueue' | 'unmoderated' | 'edited'
-SubplebbitMetrics {
+SubplebbitStats {
   hourActiveUserCount: number
   dayActiveUserCount: number
   weekActiveUserCount: number
@@ -355,7 +355,7 @@ Encrypted {
   - `subplebbit.settings`
   - `subplebbit.createdAt`
   - `subplebbit.updatedAt`
-  - `subplebbit.metricsCid`
+  - `subplebbit.statsCid`
   - `subplebbit.signer`
   - `subplebbit.state`
   - `subplebbit.updatingState`
