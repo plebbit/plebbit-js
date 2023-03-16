@@ -231,7 +231,7 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, res, e_1, commentInstance, signatureValidity;
+            var log, res, e_1, errMsg, commentInstance, signatureValidity, errMsg;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -245,7 +245,9 @@ var Comment = /** @class */ (function (_super) {
                         return [3 /*break*/, 4];
                     case 3:
                         e_1 = _a.sent();
-                        log.error("Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error: "), e_1);
+                        errMsg = "Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error: ");
+                        log.error(errMsg, e_1);
+                        this.emit("error", errMsg, e_1);
                         return [2 /*return*/];
                     case 4:
                         if (!(res && this.updatedAt !== res.updatedAt)) return [3 /*break*/, 7];
@@ -255,7 +257,9 @@ var Comment = /** @class */ (function (_super) {
                     case 5:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid) {
-                            log.error("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") signature is invalid due to '").concat(signatureValidity.reason, "'"));
+                            errMsg = "Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") signature is invalid due to '").concat(signatureValidity.reason, "'");
+                            log.error(errMsg);
+                            this.emit("error", errMsg);
                             return [2 /*return*/];
                         }
                         return [4 /*yield*/, this._initCommentUpdate(res)];

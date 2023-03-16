@@ -48,7 +48,7 @@ export interface PagesTypeIpfs {
     pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
 }
 export declare type SubplebbitEncryption = {
-    type: "aes-cbc";
+    type: "ed25519-aes-gcm";
     publicKey: string;
 };
 export interface CreateCommentOptions extends CreatePublicationOptions {
