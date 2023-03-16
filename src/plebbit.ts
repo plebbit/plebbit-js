@@ -1,5 +1,5 @@
 import {
-    BlockchainProvider,
+    ChainProvider,
     CommentEditType,
     CommentIpfsType,
     CommentPubsubMessage,
@@ -48,7 +48,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsHttpClientOptions?: Options;
     pubsubHttpClientOptions: Options;
     dataPath?: string;
-    blockchainProviders?: { [chainTicker: string]: BlockchainProvider };
+    chainProviders?: { [chainTicker: string]: ChainProvider };
     resolveAuthorAddresses?: boolean;
 
     constructor(options: PlebbitOptions = {}) {
@@ -68,7 +68,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
             : this.ipfsClient
             ? this.ipfsClient
             : nativeFunctions.createIpfsClient(this.pubsubHttpClientOptions);
-        this.blockchainProviders = options.blockchainProviders || {
+        this.chainProviders = options.chainProviders || {
             avax: {
                 url: "https://api.avax.network/ext/bc/C/rpc",
                 chainId: 43114
@@ -82,7 +82,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         this._memCache = new TinyCache();
         this.resolver = new Resolver({
             plebbit: { _memCache: this._memCache, resolveAuthorAddresses: this.resolveAuthorAddresses },
-            blockchainProviders: this.blockchainProviders
+            chainProviders: this.chainProviders
         });
         this.dataPath = options.dataPath || getDefaultDataPath();
     }

@@ -4,7 +4,7 @@
 const ethers = require('ethers')
 
 // the user can edit these blockchains settings in the account or plebbit-js settings
-const blockchainProviders = {
+const chainProviders = {
   avax: {
     url: 'https://api.avax.network/ext/bc/C/rpc',
     chainId: 43114
@@ -16,25 +16,25 @@ const blockchainProviders = {
 }
 
 // cache the blockchain providers because only 1 should be running at the same time
-const cachedBlockchainProviders = {}
-const getBlockchainProvider = (chainTicker) => {
-  if (cachedBlockchainProviders[chainTicker]) {
-    return cachedBlockchainProviders[chainTicker]
+const cachedChainProviders = {}
+const getChainProvider = (chainTicker) => {
+  if (cachedChainProviders[chainTicker]) {
+    return cachedChainProviders[chainTicker]
   }
-  if (blockchainProviders[chainTicker]) {
-    cachedBlockchainProviders[chainTicker] = new ethers.providers.JsonRpcProvider({url: blockchainProviders[chainTicker].url}, blockchainProviders[chainTicker].chainId)
-    return cachedBlockchainProviders[chainTicker]
+  if (chainProviders[chainTicker]) {
+    cachedChainProviders[chainTicker] = new ethers.providers.JsonRpcProvider({url: chainProviders[chainTicker].url}, chainProviders[chainTicker].chainId)
+    return cachedChainProviders[chainTicker]
   }
   if (chainTicker === 'eth') {
-    cachedBlockchainProviders['eth'] = ethers.getDefaultProvider()
-    return cachedBlockchainProviders['eth']
+    cachedChainProviders['eth'] = ethers.getDefaultProvider()
+    return cachedChainProviders['eth']
   }
-  throw Error(`no blockchain provider settings for chain ticker '${chainTicker}'`)
+  throw Error(`no chain provider settings for chain ticker '${chainTicker}'`)
 }
 
 const resolveEnsTxtRecord = async (ensName, txtRecordName) => {
-  const blockchainProvider = getBlockchainProvider('eth')
-  const resolver = await blockchainProvider.getResolver(ensName)
+  const chainProvider = getChainProvider('eth')
+  const resolver = await chainProvider.getResolver(ensName)
   const txtRecordResult = await resolver.getText(txtRecordName)
   return txtRecordResult
 }

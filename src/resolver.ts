@@ -1,48 +1,48 @@
 import { ethers } from "ethers";
 import { Plebbit } from "./plebbit";
-import { BlockchainProvider } from "./types";
+import { ChainProvider } from "./types";
 import assert from "assert";
 import isIPFS from "is-ipfs";
 import Logger from "@plebbit/plebbit-logger";
 import { throwWithErrorCode } from "./util";
 
 export class Resolver {
-    blockchainProviders: { [chainTicker: string]: BlockchainProvider };
-    private cachedBlockchainProviders: { [chainTicker: string]: ethers.providers.BaseProvider };
+    chainProviders: { [chainTicker: string]: ChainProvider };
+    private cachedChainProviders: { [chainTicker: string]: ethers.providers.BaseProvider };
     private plebbit: Pick<Plebbit, "_memCache" | "resolveAuthorAddresses">;
 
-    constructor(options: { plebbit: Resolver["plebbit"]; blockchainProviders: { [chainTicker: string]: BlockchainProvider } }) {
-        this.blockchainProviders = options.blockchainProviders;
-        this.cachedBlockchainProviders = {};
+    constructor(options: { plebbit: Resolver["plebbit"]; chainProviders: { [chainTicker: string]: ChainProvider } }) {
+        this.chainProviders = options.chainProviders;
+        this.cachedChainProviders = {};
         this.plebbit = options.plebbit;
     }
 
     toJSON() {
-        return { blockchainProviders: this.blockchainProviders };
+        return { chainProviders: this.chainProviders };
     }
 
-    // cache the blockchain providers because only 1 should be running at the same time
-    _getBlockchainProvider(chainTicker: string) {
+    // cache the chain providers because only 1 should be running at the same time
+    _getChainProvider(chainTicker: string) {
         assert(chainTicker && typeof chainTicker === "string", `invalid chainTicker '${chainTicker}'`);
-        assert(this.blockchainProviders, `invalid blockchainProviders '${this.blockchainProviders}'`);
-        if (this.cachedBlockchainProviders[chainTicker]) {
-            return this.cachedBlockchainProviders[chainTicker];
+        assert(this.chainProviders, `invalid chainProviders '${this.chainProviders}'`);
+        if (this.cachedChainProviders[chainTicker]) {
+            return this.cachedChainProviders[chainTicker];
         }
         if (chainTicker === "eth") {
             // if using eth, use ethers' default provider unless another provider is specified
-            if (!this.blockchainProviders["eth"] || this.blockchainProviders["eth"]?.url?.match(/DefaultProvider/i)) {
-                this.cachedBlockchainProviders["eth"] = ethers.getDefaultProvider();
-                return this.cachedBlockchainProviders["eth"];
+            if (!this.chainProviders["eth"] || this.chainProviders["eth"]?.url?.match(/DefaultProvider/i)) {
+                this.cachedChainProviders["eth"] = ethers.getDefaultProvider();
+                return this.cachedChainProviders["eth"];
             }
         }
-        if (this.blockchainProviders[chainTicker]) {
-            this.cachedBlockchainProviders[chainTicker] = new ethers.providers.JsonRpcProvider(
-                { url: this.blockchainProviders[chainTicker].url },
-                this.blockchainProviders[chainTicker].chainId
+        if (this.chainProviders[chainTicker]) {
+            this.cachedChainProviders[chainTicker] = new ethers.providers.JsonRpcProvider(
+                { url: this.chainProviders[chainTicker].url },
+                this.chainProviders[chainTicker].chainId
             );
-            return this.cachedBlockchainProviders[chainTicker];
+            return this.cachedChainProviders[chainTicker];
         }
-        throw Error(`no blockchain provider options set for chain ticker '${chainTicker}'`);
+        throw Error(`no chain provider options set for chain ticker '${chainTicker}'`);
     }
 
     async _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string> {
@@ -51,14 +51,14 @@ export class Resolver {
         const cachedResponse: string | undefined = this.plebbit._memCache.get(ensName + txtRecordName);
         if (cachedResponse && typeof cachedResponse === "string") return cachedResponse;
 
-        const blockchainProvider = this._getBlockchainProvider("eth");
-        const resolver = await blockchainProvider.getResolver(ensName);
-        if (!resolver) throwWithErrorCode("ERR_ENS_RESOLVER_NOT_FOUND", `ensName: ${ensName}, blockchainProvider: ${blockchainProvider}`);
+        const chainProvider = this._getChainProvider("eth");
+        const resolver = await chainProvider.getResolver(ensName);
+        if (!resolver) throwWithErrorCode("ERR_ENS_RESOLVER_NOT_FOUND", `ensName: ${ensName}, chainProvider: ${chainProvider}`);
         const txtRecordResult = await resolver.getText(txtRecordName);
         if (!txtRecordResult)
             throwWithErrorCode(
                 "ERR_ENS_TXT_RECORD_NOT_FOUND",
-                `ensName: ${ensName}, txtRecordName: ${txtRecordName}, blockchainProvider: ${blockchainProvider}`
+                `ensName: ${ensName}, txtRecordName: ${txtRecordName}, chainProvider: ${chainProvider}`
             );
 
         log.trace(`Resolved text record name (${txtRecordName}) of ENS (${ensName}) to ${txtRecordResult}`);

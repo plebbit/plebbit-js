@@ -16,13 +16,13 @@ import {
 
 export type ProtocolVersion = "1.0.0";
 
-export type BlockchainProvider = { url: string; chainId: number };
+export type ChainProvider = { url: string; chainId: number };
 export interface PlebbitOptions {
     ipfsGatewayUrl?: string;
     ipfsHttpClientOptions?: Options | string;
     pubsubHttpClientOptions?: Options | string;
     dataPath?: string;
-    blockchainProviders?: { [chainTicker: string]: BlockchainProvider };
+    chainProviders?: { [chainTicker: string]: ChainProvider };
     resolveAuthorAddresses?: boolean;
 }
 

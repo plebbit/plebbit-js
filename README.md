@@ -447,10 +447,10 @@ An object which may have the following keys:
 | ipfsHttpClientOptions | `string` or `IpfsHttpClientOptions` or `undefined` | `undefined` | Optional URL of an IPFS API or [IpfsHttpClientOptions](https://www.npmjs.com/package/ipfs-http-client#options), `'http://localhost:5001/api/v0'` to use a local IPFS node |
 | pubsubHttpClientOptions | `string` or `IpfsHttpClientOptions` or `undefined` | `'https://pubsubprovider.xyz/api/v0'` | Optional URL or [IpfsHttpClientOptions](https://www.npmjs.com/package/ipfs-http-client#options) used for pubsub publishing when `ipfsHttpClientOptions` isn't available, like in the browser |
 | dataPath | `string`  or `undefined` | .plebbit folder in the current working directory | (Node only) Optional folder path to create/resume the user and subplebbit databases |
-| blockchainProviders | `{[chainTicker: string]: BlockchainProvider}` or `undefined` | default providers for supported chains | Optional provider RPC URLs and chain IDs |
-| resolveAuthorAddresses | `boolean`  or `undefined` | `true` | Optionally disable resolving blockchain domain author addresses, which can be done lazily later to save time |
+| chainProviders | `{[chainTicker: string]: ChainProvider}` or `undefined` | default providers for supported chains | Optional provider RPC URLs and chain IDs |
+| resolveAuthorAddresses | `boolean`  or `undefined` | `true` | Optionally disable resolving crypto domain author addresses, which can be done lazily later to save time |
 
-##### BlockchainProvider
+##### ChainProvider
 
 An object which may have the following keys:
 
@@ -1018,8 +1018,8 @@ An object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| address | `string` or `undefined` | Address of the subplebbit, used to add a blockchain domain |
-| signer | `Signer` or `undefined` | Signer of the subplebbit, useful to change the private if the owner gets hacked, but still has his blockchain domain
+| address | `string` or `undefined` | Address of the subplebbit, used to add a crypto domain |
+| signer | `Signer` or `undefined` | Signer of the subplebbit, useful to change the private if the owner gets hacked, but still has his crypto domain
 | title | `string` or `undefined` | Title of the subplebbit |
 | description | `string` or `undefined` | Description of the subplebbit |
 | roles | `{[authorAddress: string]: SubplebbitRole}` or `undefined` | Author addresses of the moderators |

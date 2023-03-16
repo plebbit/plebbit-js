@@ -8,7 +8,7 @@ const fetch = require('isomorphic-fetch')
 const ipfsGatewayUrl = 'https://ipfs.io'
 
 // the user can edit these blockchains settings in the account or plebbit-js settings
-const blockchainProviders = {
+const chainProviders = {
   avax: {
     url: 'https://api.avax.network/ext/bc/C/rpc',
     chainId: 43114
@@ -20,20 +20,20 @@ const blockchainProviders = {
 }
 
 // cache the blockchain providers because only 1 should be running at the same time
-const cachedBlockchainProviders = {}
-const getBlockchainProvider = (chainTicker) => {
-  if (cachedBlockchainProviders[chainTicker]) {
-    return cachedBlockchainProviders[chainTicker]
+const cachedChainProviders = {}
+const getChainProvider = (chainTicker) => {
+  if (cachedChainProviders[chainTicker]) {
+    return cachedChainProviders[chainTicker]
   }
-  if (blockchainProviders[chainTicker]) {
-    cachedBlockchainProviders[chainTicker] = new ethers.providers.JsonRpcProvider({url: blockchainProviders[chainTicker].url}, blockchainProviders[chainTicker].chainId)
-    return cachedBlockchainProviders[chainTicker]
+  if (chainProviders[chainTicker]) {
+    cachedChainProviders[chainTicker] = new ethers.providers.JsonRpcProvider({url: chainProviders[chainTicker].url}, chainProviders[chainTicker].chainId)
+    return cachedChainProviders[chainTicker]
   }
   if (chainTicker === 'eth') {
-    cachedBlockchainProviders['eth'] = ethers.getDefaultProvider()
-    return cachedBlockchainProviders['eth']
+    cachedChainProviders['eth'] = ethers.getDefaultProvider()
+    return cachedChainProviders['eth']
   }
-  throw Error(`no blockchain provider settings for chain ticker '${chainTicker}'`)
+  throw Error(`no chain provider settings for chain ticker '${chainTicker}'`)
 }
 
 const nftAbi = [
@@ -42,8 +42,8 @@ const nftAbi = [
 ]
 
 const getNftImageUrl = async (nft) => {
-  const blockchainProvider = getBlockchainProvider(nft.chainTicker)
-  const nftContract = new ethers.Contract(nft.address, nftAbi, blockchainProvider)
+  const chainProvider = getChainProvider(nft.chainTicker)
+  const nftContract = new ethers.Contract(nft.address, nftAbi, chainProvider)
   let nftUrl = await nftContract.tokenURI(nft.id)
 
   // if the ipfs nft is json, get the image url using the ipfs gateway in account settings
@@ -84,8 +84,8 @@ const createNftSignature = async (nft, authorAddress, ethersJsSigner) => {
 }
 
 const verifyNftSignature = async (nft, authorAddress) => {
-  const blockchainProvider = getBlockchainProvider(nft.chainTicker)
-  const nftContract = new ethers.Contract(nft.address, nftAbi, blockchainProvider)
+  const chainProvider = getChainProvider(nft.chainTicker)
+  const nftContract = new ethers.Contract(nft.address, nftAbi, chainProvider)
   // get the owner of the nft at nft.id
   const currentNftOwnerAddress = await nftContract.ownerOf(nft.id)
   let messageThatShouldBeSigned = {}
