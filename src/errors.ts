@@ -1,8 +1,5 @@
 export enum messages {
-    ERR_ENS_RESOLVER_NOT_FOUND = "ENS resolver is not found",
-    ERR_ENS_TXT_RECORD_NOT_FOUND = "ENS resolver did not find the text record",
     ERR_SUB_SIGNER_NOT_DEFINED = "Subplebbit signer is not defined",
-    ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS = "subplebbit-address is pointing to a different address than subplebbit.signer.address",
     ERR_SUB_CAN_EITHER_RUN_OR_UPDATE = "Subplebbit can either sync through .start() or update, but not both",
     ERR_PUBLICATION_MISSING_FIELD = "Publication is missing field(s)",
     ERR_COMMENT_UPDATE_MISSING_IPNS_NAME = "Can't update comment without a defined IPNS name (comment.ipnsName)",
@@ -11,19 +8,15 @@ export enum messages {
     ERR_ENS_AUTHOR_ADDRESS_POINTS_TO_INVALID_IPNS = "plebbit-author-address resolves to an invalid IPNS",
     ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_IPNS = "subplebbit-address resolves to an invalid IPNS",
     ERR_CID_IS_INVALID = "CID is invalid",
-    ERR_SUB_HAS_NO_DB_CONFIG = "Subplebbit has no db config",
     ERR_DATA_PATH_IS_NOT_DEFINED = "plebbitOptions.dataPath needs to be defined with native functions",
     ERR_IPNS_IS_INVALID = "IPNS is invalid",
 
-    // Lock errors
-    ERR_SUB_STATE_LOCKED = "The internal state of the subplebbit in DB is locked",
-    ERR_SUB_CREATION_LOCKED = "Subplebbit creation is locked",
-    ERR_SUB_ALREADY_STARTED = "Subplebbit already started",
-
     // Fetch errors
-    ERR_FAILED_TO_FETCH_GENERIC = "Failed to fetch",
+    ERR_FAILED_TO_FETCH_HTTP_GENERIC = "Failed to fetch via HTTP",
+    ERR_FAILED_TO_FETCH_IPFS_GENERIC = "Failed to fetch a file via IPFS",
+    ERR_FAILED_TO_RESOLVE_IPNS = "Failed to fetch IPNS",
     ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit",
-    ERR_GENERATED_CID_DOES_NOT_MATCH = "The CID generated from loaded content does not match the provided CID",
+    ERR_CALCULATED_CID_DOES_NOT_MATCH = "The CID calculated from loaded content does not match the provided CID",
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",
@@ -63,5 +56,18 @@ export enum messages {
     ERR_FORBIDDEN_COMMENT_FIELD = "The comment/post contains a forbidden field",
     ERR_FORBIDDEN_SIGNER_FIELD = "The publication includes a signer field which is forbidden",
     ERR_DUPLICATE_COMMENT = "Comment is duplicated",
-    ERR_AUTHOR_ADDRESS_UNDEFINED = "author address is undefined"
+    ERR_AUTHOR_ADDRESS_UNDEFINED = "author address is undefined",
+
+    // Resolver errors
+    ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER = "no chain provider options set for chain ticker",
+    ERR_ENS_RESOLVER_NOT_FOUND = "ENS resolver is not found",
+    ERR_ENS_TXT_RECORD_NOT_FOUND = "ENS resolver did not find the text record",
+    ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS = "subplebbit-address is pointing to a different address than subplebbit.signer.address",
+
+    // Local sub errors
+    ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE = "subplebbit.signer needs to be defined before proceeding",
+    ERR_SUB_STATE_LOCKED = "The internal state of the subplebbit in DB is locked",
+    ERR_SUB_CREATION_LOCKED = "Subplebbit creation is locked",
+    ERR_SUB_ALREADY_STARTED = "Subplebbit already started",
+    ERR_FAILED_TO_IMPORT_IPFS_KEY = "Subplebbit failed to import IPFS key"
 }

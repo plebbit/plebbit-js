@@ -53,7 +53,8 @@ describe("Test util functions", async () => {
     describe("loadIpnsAsJson", async () => {
         it("Throws if provided with invalid ipns", async () => {
             const gibberishIpns = "12345";
-            await assert.isRejected(loadIpnsAsJson(gibberishIpns, plebbit), 'could not resolve name: "12345" is missing a DNSLink record'); // Provide message here
+            await assert.isRejected(loadIpnsAsJson(gibberishIpns, plebbit), messages.ERR_FAILED_TO_RESOLVE_IPNS); // Provide message here
+            await assert.isRejected(loadIpnsAsJson(gibberishIpns, gatewayPlebbit), messages.ERR_FAILED_TO_FETCH_HTTP_GENERIC); // Provide message here
         });
         it("Loads an IPNS file as JSON correctly", async () => {
             const jsonFileTest = { 1234: "1234" };

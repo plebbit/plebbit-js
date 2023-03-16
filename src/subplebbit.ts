@@ -282,7 +282,8 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
             await this._mergeInstanceStateWithDbState({});
         }
 
-        if (!this.signer) throw Error(`subplebbit.signer needs to be defined before proceeding`);
+        
+        if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", JSON.stringify({address: this.address}));
         await this._initSignerProps();
 
         if (!(await this.dbHandler.keyvHas(internalStateKey))) {

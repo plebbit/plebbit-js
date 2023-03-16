@@ -19,6 +19,7 @@ import { Agent as HttpsAgent } from "https";
 import FormData from "form-data";
 import { Multiaddr } from "multiaddr";
 import * as fileType from "file-type";
+import { throwWithErrorCode } from "../../util";
 
 const nativeFunctions: NativeFunctions = {
     createImageCaptcha: async (...args): Promise<{ image: string; text: string }> => {
@@ -143,7 +144,12 @@ const nativeFunctions: NativeFunctions = {
             body: data,
             headers: <Record<string, string>>plebbit.ipfsHttpClientOptions.headers
         });
-        if (res.status !== 200) throw Error(`failed ipfs import key: '${url}' '${res.status}' '${res.statusText}'`);
+
+        if (res.status !== 200)
+            throwWithErrorCode(
+                "ERR_FAILED_TO_IMPORT_IPFS_KEY",
+                JSON.stringify({ url, status: res.status, statusText: res.statusText, ipnsKeyName })
+            );
         const resJson: { Id: string; Name: string } = await res.json();
         return resJson;
     },

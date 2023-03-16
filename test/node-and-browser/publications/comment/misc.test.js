@@ -30,7 +30,7 @@ describe("createComment", async () => {
             subplebbitAddress,
             author: {
                 address: signers[4].address,
-                shortAddress: signers[4].address.slice(7).slice(0, 12),
+                shortAddress: signers[4].address.slice(8).slice(0, 12),
                 displayName: `Mock Author - comment = await createComment(await createComment)`
             },
             signer: signers[4],

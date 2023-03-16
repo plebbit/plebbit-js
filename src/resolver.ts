@@ -42,7 +42,7 @@ export class Resolver {
             );
             return this.cachedChainProviders[chainTicker];
         }
-        throw Error(`no chain provider options set for chain ticker '${chainTicker}'`);
+        throwWithErrorCode("ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER", JSON.stringify({ chainTicker }));
     }
 
     async _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string> {
