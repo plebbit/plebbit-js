@@ -272,7 +272,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         try {
             res = await loadIpnsAsJson(this.ipnsName, this.plebbit);
         } catch (e) {
-            log.error(`Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error: `, e);
+            const errMsg = `Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error: `;
+            log.error(errMsg, e);
+            this.emit("error", errMsg, e);
             return;
         }
 
@@ -282,7 +284,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             const commentInstance: Pick<CommentWithCommentUpdate, "cid" | "signature"> = lodash.pick(this, ["cid", "signature"]);
             const signatureValidity = await verifyCommentUpdate(res, { address: this.subplebbitAddress }, commentInstance, this.plebbit);
             if (!signatureValidity.valid) {
-                log.error(`Comment (${this.cid}) IPNS (${this.ipnsName}) signature is invalid due to '${signatureValidity.reason}'`);
+                const errMsg = `Comment (${this.cid}) IPNS (${this.ipnsName}) signature is invalid due to '${signatureValidity.reason}'`;
+                log.error(errMsg);
+                this.emit("error", errMsg);
                 return;
             }
             await this._initCommentUpdate(res);
