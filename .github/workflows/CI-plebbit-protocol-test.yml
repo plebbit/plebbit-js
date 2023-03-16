@@ -1,0 +1,45 @@
+# test @plebbit/plebbit-protocol-test repo which are independent tests
+# to make sure the protocol never changes
+name: CI plebbit-protocol-test
+
+on:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - run: sudo apt install -y xvfb
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      # move plebbit-js (working dir) to temp folder
+      - run: cp -r . ../plebbit-js-tmp && rm -fr `ls -A1`
+      # clone plebbit-protocol-test repo to working dir
+      - run: git clone https://github.com/plebbit/plebbit-protocol-test.git .
+      # log the current commit for debugging
+      - run: git log -n 1
+      # move plebbit-js back to working dir in a sub folder
+      - run: mv ../plebbit-js-tmp plebbit-js
+      # build the latest plebbit-js dist folder
+      - run: cd plebbit-js && npm ci
+      - run: cd plebbit-js && npm run build
+      - run: rm -fr plebbit-js/node_modules
+      # install plebbit-protocol-test
+      - run: yarn install --frozen-lockfile
+      # install latest plebbit-js using add ./plebbit-js (local folder module)
+      - run: yarn remove @plebbit/plebbit-js
+      - run: yarn add ./plebbit-js
+      # build
+      - run: yarn build
+      - run: yarn webpack
+      # disable hosts we shouldn't use
+      - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
+      - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
+      # test
+      - run: yarn test:server & yarn test:server:wait-on
+      - run: yarn test
+      - run: CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) yarn test:browser
