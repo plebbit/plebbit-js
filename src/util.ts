@@ -214,9 +214,13 @@ export function removeKeysWithUndefinedValues<T extends Object>(object: T): Only
 }
 
 export function throwWithErrorCode(code: keyof typeof messages, details?: string) {
-    throw errcode(Error(messages[code]), messages[messages[code]], {
+    const error = errcode(Error(messages[code]), messages[messages[code]], {
         details
     });
+    error.toString = () => `${error.constructor.name}: ${code}: ${error.message}: ${JSON.stringify(details)}`;
+
+
+    throw error;
 }
 
 export async function parsePageIpfs(pageIpfs: PageIpfs, subplebbit: Pages["_subplebbit"]): Promise<PageType> {
