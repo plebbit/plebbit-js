@@ -141,7 +141,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this.setAddress(mergedProps.address);
                         this.pubsubTopic = mergedProps.pubsubTopic;
                         this.challengeTypes = mergedProps.challengeTypes;
-                        this.metricsCid = mergedProps.metricsCid;
+                        this.statsCid = mergedProps.statsCid;
                         this.createdAt = mergedProps.createdAt;
                         this.updatedAt = mergedProps.updatedAt;
                         this.encryption = mergedProps.encryption;
@@ -251,7 +251,7 @@ var Subplebbit = /** @class */ (function (_super) {
             pubsubTopic: this.pubsubTopic,
             address: this.address,
             challengeTypes: this.challengeTypes,
-            metricsCid: this.metricsCid,
+            statsCid: this.statsCid,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
             encryption: this.encryption,
@@ -552,7 +552,7 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.updateSubplebbitIpnsIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, lastPublishTooOld, trx, latestPost, _a, metrics, subplebbitPosts, metricsCid, updatedAt, newIpns, signature, file;
+            var log, lastPublishTooOld, trx, latestPost, _a, stats, subplebbitPosts, statsCid, updatedAt, newIpns, signature, file;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -570,19 +570,19 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 3:
                         _b.sent();
                         return [4 /*yield*/, Promise.all([
-                                this.dbHandler.querySubplebbitMetrics(undefined),
+                                this.dbHandler.querySubplebbitStats(undefined),
                                 this.sortHandler.generateSubplebbitPosts()
                             ])];
                     case 4:
-                        _a = _b.sent(), metrics = _a[0], subplebbitPosts = _a[1];
-                        return [4 /*yield*/, this.plebbit.ipfsClient.add((0, safe_stable_stringify_1.stringify)(metrics))];
+                        _a = _b.sent(), stats = _a[0], subplebbitPosts = _a[1];
+                        return [4 /*yield*/, this.plebbit.ipfsClient.add((0, safe_stable_stringify_1.stringify)(stats))];
                     case 5:
-                        metricsCid = (_b.sent()).path;
+                        statsCid = (_b.sent()).path;
                         return [4 /*yield*/, this._mergeInstanceStateWithDbState({})];
                     case 6:
                         _b.sent();
                         updatedAt = (0, util_1.timestamp)() === this.updatedAt ? (0, util_1.timestamp)() + 1 : (0, util_1.timestamp)();
-                        newIpns = __assign(__assign({}, lodash_1.default.omit(this._toJSONBase(), "signature")), { lastPostCid: latestPost === null || latestPost === void 0 ? void 0 : latestPost.cid, metricsCid: metricsCid, updatedAt: updatedAt, posts: subplebbitPosts ? { pageCids: subplebbitPosts.pageCids, pages: lodash_1.default.pick(subplebbitPosts.pages, "hot") } : undefined });
+                        newIpns = __assign(__assign({}, lodash_1.default.omit(this._toJSONBase(), "signature")), { lastPostCid: latestPost === null || latestPost === void 0 ? void 0 : latestPost.cid, statsCid: statsCid, updatedAt: updatedAt, posts: subplebbitPosts ? { pageCids: subplebbitPosts.pageCids, pages: lodash_1.default.pick(subplebbitPosts.pages, "hot") } : undefined });
                         return [4 /*yield*/, (0, signatures_1.signSubplebbit)(newIpns, this.signer)];
                     case 7:
                         signature = _b.sent();
@@ -593,7 +593,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 9:
                         _b.sent();
                         this._subplebbitUpdateTrigger = false;
-                        return [4 /*yield*/, this._updateDbInternalState(lodash_1.default.pick(this.toJSONInternal(), ["posts", "lastPostCid", "metricsCid", "updatedAt", "signature", "_subplebbitUpdateTrigger"]))];
+                        return [4 /*yield*/, this._updateDbInternalState(lodash_1.default.pick(this.toJSONInternal(), ["posts", "lastPostCid", "statsCid", "updatedAt", "signature", "_subplebbitUpdateTrigger"]))];
                     case 10:
                         _b.sent();
                         return [4 /*yield*/, this.plebbit.ipfsClient.add((0, safe_stable_stringify_1.stringify)(__assign(__assign({}, newIpns), { signature: signature })))];

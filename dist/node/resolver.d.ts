@@ -1,23 +1,23 @@
 import { ethers } from "ethers";
-import { BlockchainProvider } from "./types";
+import { ChainProvider } from "./types";
 export declare class Resolver {
-    blockchainProviders: {
-        [chainTicker: string]: BlockchainProvider;
+    chainProviders: {
+        [chainTicker: string]: ChainProvider;
     };
-    private cachedBlockchainProviders;
+    private cachedChainProviders;
     private plebbit;
     constructor(options: {
         plebbit: Resolver["plebbit"];
-        blockchainProviders: {
-            [chainTicker: string]: BlockchainProvider;
+        chainProviders: {
+            [chainTicker: string]: ChainProvider;
         };
     });
     toJSON(): {
-        blockchainProviders: {
-            [chainTicker: string]: BlockchainProvider;
+        chainProviders: {
+            [chainTicker: string]: ChainProvider;
         };
     };
-    _getBlockchainProvider(chainTicker: string): ethers.providers.BaseProvider;
+    _getChainProvider(chainTicker: string): ethers.providers.BaseProvider;
     _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string>;
     resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string>;
     resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string>;

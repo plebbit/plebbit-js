@@ -47,37 +47,37 @@ var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var util_1 = require("./util");
 var Resolver = /** @class */ (function () {
     function Resolver(options) {
-        this.blockchainProviders = options.blockchainProviders;
-        this.cachedBlockchainProviders = {};
+        this.chainProviders = options.chainProviders;
+        this.cachedChainProviders = {};
         this.plebbit = options.plebbit;
     }
     Resolver.prototype.toJSON = function () {
-        return { blockchainProviders: this.blockchainProviders };
+        return { chainProviders: this.chainProviders };
     };
-    // cache the blockchain providers because only 1 should be running at the same time
-    Resolver.prototype._getBlockchainProvider = function (chainTicker) {
+    // cache the chain providers because only 1 should be running at the same time
+    Resolver.prototype._getChainProvider = function (chainTicker) {
         var _a, _b;
         (0, assert_1.default)(chainTicker && typeof chainTicker === "string", "invalid chainTicker '".concat(chainTicker, "'"));
-        (0, assert_1.default)(this.blockchainProviders, "invalid blockchainProviders '".concat(this.blockchainProviders, "'"));
-        if (this.cachedBlockchainProviders[chainTicker]) {
-            return this.cachedBlockchainProviders[chainTicker];
+        (0, assert_1.default)(this.chainProviders, "invalid chainProviders '".concat(this.chainProviders, "'"));
+        if (this.cachedChainProviders[chainTicker]) {
+            return this.cachedChainProviders[chainTicker];
         }
         if (chainTicker === "eth") {
             // if using eth, use ethers' default provider unless another provider is specified
-            if (!this.blockchainProviders["eth"] || ((_b = (_a = this.blockchainProviders["eth"]) === null || _a === void 0 ? void 0 : _a.url) === null || _b === void 0 ? void 0 : _b.match(/DefaultProvider/i))) {
-                this.cachedBlockchainProviders["eth"] = ethers_1.ethers.getDefaultProvider();
-                return this.cachedBlockchainProviders["eth"];
+            if (!this.chainProviders["eth"] || ((_b = (_a = this.chainProviders["eth"]) === null || _a === void 0 ? void 0 : _a.url) === null || _b === void 0 ? void 0 : _b.match(/DefaultProvider/i))) {
+                this.cachedChainProviders["eth"] = ethers_1.ethers.getDefaultProvider();
+                return this.cachedChainProviders["eth"];
             }
         }
-        if (this.blockchainProviders[chainTicker]) {
-            this.cachedBlockchainProviders[chainTicker] = new ethers_1.ethers.providers.JsonRpcProvider({ url: this.blockchainProviders[chainTicker].url }, this.blockchainProviders[chainTicker].chainId);
-            return this.cachedBlockchainProviders[chainTicker];
+        if (this.chainProviders[chainTicker]) {
+            this.cachedChainProviders[chainTicker] = new ethers_1.ethers.providers.JsonRpcProvider({ url: this.chainProviders[chainTicker].url }, this.chainProviders[chainTicker].chainId);
+            return this.cachedChainProviders[chainTicker];
         }
-        throw Error("no blockchain provider options set for chain ticker '".concat(chainTicker, "'"));
+        throw Error("no chain provider options set for chain ticker '".concat(chainTicker, "'"));
     };
     Resolver.prototype._resolveEnsTxtRecord = function (ensName, txtRecordName) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, cachedResponse, blockchainProvider, resolver, txtRecordResult;
+            var log, cachedResponse, chainProvider, resolver, txtRecordResult;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -85,17 +85,17 @@ var Resolver = /** @class */ (function () {
                         cachedResponse = this.plebbit._memCache.get(ensName + txtRecordName);
                         if (cachedResponse && typeof cachedResponse === "string")
                             return [2 /*return*/, cachedResponse];
-                        blockchainProvider = this._getBlockchainProvider("eth");
-                        return [4 /*yield*/, blockchainProvider.getResolver(ensName)];
+                        chainProvider = this._getChainProvider("eth");
+                        return [4 /*yield*/, chainProvider.getResolver(ensName)];
                     case 1:
                         resolver = _a.sent();
                         if (!resolver)
-                            (0, util_1.throwWithErrorCode)("ERR_ENS_RESOLVER_NOT_FOUND", "ensName: ".concat(ensName, ", blockchainProvider: ").concat(blockchainProvider));
+                            (0, util_1.throwWithErrorCode)("ERR_ENS_RESOLVER_NOT_FOUND", "ensName: ".concat(ensName, ", chainProvider: ").concat(chainProvider));
                         return [4 /*yield*/, resolver.getText(txtRecordName)];
                     case 2:
                         txtRecordResult = _a.sent();
                         if (!txtRecordResult)
-                            (0, util_1.throwWithErrorCode)("ERR_ENS_TXT_RECORD_NOT_FOUND", "ensName: ".concat(ensName, ", txtRecordName: ").concat(txtRecordName, ", blockchainProvider: ").concat(blockchainProvider));
+                            (0, util_1.throwWithErrorCode)("ERR_ENS_TXT_RECORD_NOT_FOUND", "ensName: ".concat(ensName, ", txtRecordName: ").concat(txtRecordName, ", chainProvider: ").concat(chainProvider));
                         log.trace("Resolved text record name (".concat(txtRecordName, ") of ENS (").concat(ensName, ") to ").concat(txtRecordResult));
                         this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // Expire memory ENS cache after an hour
                         return [2 /*return*/, txtRecordResult];

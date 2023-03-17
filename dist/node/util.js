@@ -466,7 +466,7 @@ function shortifyAddress(address) {
     if (address.includes("."))
         return address; // If a domain then no need to shortify
     // Remove prefix (12D3KooW)
-    var removedPrefix = address.slice(7);
+    var removedPrefix = address.slice(8);
     // Return first 12 characters
     var shortAddress = removedPrefix.slice(0, 12);
     return shortAddress;

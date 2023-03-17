@@ -1,6 +1,6 @@
 import { Knex } from "knex";
 import Transaction = Knex.Transaction;
-import { AuthorCommentEdit, ChallengeAnswersTableRowInsert, ChallengeRequestsTableRowInsert, ChallengesTableRowInsert, ChallengeVerificationsTableRowInsert, CommentEditsTableRowInsert, CommentsTableRow, CommentsTableRowInsert, CommentUpdate, CommentUpdatesRow, CommentUpdatesTableRowInsert, CommentWithCommentUpdate, SignersTableRow, SingersTableRowInsert, SubplebbitAuthor, SubplebbitMetrics, VotesTableRow, VotesTableRowInsert } from "../../types";
+import { AuthorCommentEdit, ChallengeAnswersTableRowInsert, ChallengeRequestsTableRowInsert, ChallengesTableRowInsert, ChallengeVerificationsTableRowInsert, CommentEditsTableRowInsert, CommentsTableRow, CommentsTableRowInsert, CommentUpdate, CommentUpdatesRow, CommentUpdatesTableRowInsert, CommentWithCommentUpdate, SignersTableRow, SingersTableRowInsert, SubplebbitAuthor, SubplebbitStats, VotesTableRow, VotesTableRowInsert } from "../../types";
 import { PageOptions } from "../../sort-handler";
 export declare class DbHandler {
     private _knex;
@@ -61,7 +61,7 @@ export declare class DbHandler {
         minimumUpdatedAt: number;
         ipnsKeyNames: string[];
     }, trx?: Transaction): Promise<CommentsTableRow[]>;
-    querySubplebbitMetrics(trx?: Transaction): Promise<SubplebbitMetrics>;
+    querySubplebbitStats(trx?: Transaction): Promise<SubplebbitStats>;
     queryCommentsUnderComment(parentCid: string | null, trx?: Transaction): Promise<CommentsTableRow[]>;
     queryComment(cid: string, trx?: Transaction): Promise<CommentsTableRow | undefined>;
     private _queryCommentUpvote;

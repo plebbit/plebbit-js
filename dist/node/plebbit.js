@@ -103,7 +103,7 @@ var Plebbit = /** @class */ (function (_super) {
             : _this.ipfsClient
                 ? _this.ipfsClient
                 : util_1.nativeFunctions.createIpfsClient(_this.pubsubHttpClientOptions);
-        _this.blockchainProviders = options.blockchainProviders || {
+        _this.chainProviders = options.chainProviders || {
             avax: {
                 url: "https://api.avax.network/ext/bc/C/rpc",
                 chainId: 43114
@@ -117,7 +117,7 @@ var Plebbit = /** @class */ (function (_super) {
         _this._memCache = new tinycache_1.default();
         _this.resolver = new resolver_1.Resolver({
             plebbit: { _memCache: _this._memCache, resolveAuthorAddresses: _this.resolveAuthorAddresses },
-            blockchainProviders: _this.blockchainProviders
+            chainProviders: _this.chainProviders
         });
         _this.dataPath = options.dataPath || (0, util_1.getDefaultDataPath)();
         return _this;

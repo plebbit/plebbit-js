@@ -939,13 +939,13 @@ var DbHandler = /** @class */ (function () {
         });
     };
     // TODO rewrite this
-    DbHandler.prototype.querySubplebbitMetrics = function (trx) {
+    DbHandler.prototype.querySubplebbitStats = function (trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var metrics, combinedMetrics;
+            var stats, combinedStats;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, Promise.all(["PostCount", "ActiveUserCount"].map(function (metricType) { return __awaiter(_this, void 0, void 0, function () {
+                    case 0: return [4 /*yield*/, Promise.all(["PostCount", "ActiveUserCount"].map(function (statType) { return __awaiter(_this, void 0, void 0, function () {
                             var _this = this;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
@@ -955,9 +955,9 @@ var DbHandler = /** @class */ (function () {
                                             return __generator(this, function (_d) {
                                                 switch (_d.label) {
                                                     case 0:
-                                                        propertyName = "".concat(timeframe.toLowerCase()).concat(metricType);
+                                                        propertyName = "".concat(timeframe.toLowerCase()).concat(statType);
                                                         _a = [Math.max(0, (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[timeframe]), (0, util_1.timestamp)()], from = _a[0], to = _a[1];
-                                                        if (!(metricType === "ActiveUserCount")) return [3 /*break*/, 2];
+                                                        if (!(statType === "ActiveUserCount")) return [3 /*break*/, 2];
                                                         return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
                                                                 .countDistinct("comments.authorAddress")
                                                                 .join(TABLES.VOTES, "".concat(TABLES.COMMENTS, ".authorAddress"), "=", "".concat(TABLES.VOTES, ".authorAddress"))
@@ -966,7 +966,7 @@ var DbHandler = /** @class */ (function () {
                                                         res = (_d.sent())[0]["count(distinct `comments`.`authorAddress`)"];
                                                         return [2 /*return*/, (_b = {}, _b[propertyName] = res, _b)];
                                                     case 2:
-                                                        if (!(metricType === "PostCount")) return [3 /*break*/, 4];
+                                                        if (!(statType === "PostCount")) return [3 /*break*/, 4];
                                                         query = this._baseTransaction(trx)(TABLES.COMMENTS)
                                                             .count()
                                                             .whereBetween("timestamp", [from, to])
@@ -984,9 +984,9 @@ var DbHandler = /** @class */ (function () {
                             });
                         }); }))];
                     case 1:
-                        metrics = _a.sent();
-                        combinedMetrics = Object.assign.apply(Object, __spreadArray([{}], metrics.flat(), false));
-                        return [2 /*return*/, combinedMetrics];
+                        stats = _a.sent();
+                        combinedStats = Object.assign.apply(Object, __spreadArray([{}], stats.flat(), false));
+                        return [2 /*return*/, combinedStats];
                 }
             });
         });

@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { BlockchainProvider, CommentEditType, CommentIpfsType, CommentPubsubMessage, CommentType, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateSubplebbitOptions, CreateVoteOptions, NativeFunctions, PlebbitOptions, SubplebbitIpfsType, SubplebbitType, VotePubsubMessage, VoteType } from "./types";
+import { ChainProvider, CommentEditType, CommentIpfsType, CommentPubsubMessage, CommentType, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateSubplebbitOptions, CreateVoteOptions, NativeFunctions, PlebbitOptions, SubplebbitIpfsType, SubplebbitType, VotePubsubMessage, VoteType } from "./types";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
@@ -20,8 +20,8 @@ export declare class Plebbit extends EventEmitter implements PlebbitOptions {
     ipfsHttpClientOptions?: Options;
     pubsubHttpClientOptions: Options;
     dataPath?: string;
-    blockchainProviders?: {
-        [chainTicker: string]: BlockchainProvider;
+    chainProviders?: {
+        [chainTicker: string]: ChainProvider;
     };
     resolveAuthorAddresses?: boolean;
     constructor(options?: PlebbitOptions);

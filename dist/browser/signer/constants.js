@@ -60,7 +60,7 @@ exports.SubplebbitSignedPropertyNames = [
     "lastPostCid",
     "posts",
     "challengeTypes",
-    "metricsCid",
+    "statsCid",
     "createdAt",
     "updatedAt",
     "features",

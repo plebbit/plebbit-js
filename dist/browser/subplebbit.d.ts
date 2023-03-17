@@ -4,7 +4,7 @@ import { ChallengeAnswerMessage } from "./challenge";
 import { Signer } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
-import { ChallengeType, DbHandlerPublicAPI, DecryptedChallengeAnswerMessageType, DecryptedChallengeRequestMessageType, Flair, FlairOwner, InternalSubplebbitType, ProtocolVersion, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitIpfsType, SubplebbitMetrics, SubplebbitRole, SubplebbitSuggested, SubplebbitType } from "./types";
+import { ChallengeType, DbHandlerPublicAPI, DecryptedChallengeAnswerMessageType, DecryptedChallengeRequestMessageType, Flair, FlairOwner, InternalSubplebbitType, ProtocolVersion, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitIpfsType, SubplebbitStats, SubplebbitRole, SubplebbitSuggested, SubplebbitType } from "./types";
 import { SignatureType } from "./signer/constants";
 export declare class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "posts"> {
     title?: string;
@@ -16,13 +16,13 @@ export declare class Subplebbit extends EventEmitter implements Omit<SubplebbitT
     posts: Pages;
     pubsubTopic: string;
     challengeTypes?: ChallengeType[];
-    metrics?: SubplebbitMetrics;
+    stats?: SubplebbitStats;
     features?: SubplebbitFeatures;
     suggested?: SubplebbitSuggested;
     flairs?: Record<FlairOwner, Flair[]>;
     address: string;
     shortAddress: string;
-    metricsCid?: string;
+    statsCid?: string;
     createdAt: number;
     updatedAt: number;
     signer?: Signer;
