@@ -108,7 +108,10 @@ exports.AUTHOR_EDIT_FIELDS = __spreadArray(__spreadArray([], PUBLICATION_FIELDS,
 var CommentEdit = /** @class */ (function (_super) {
     __extends(CommentEdit, _super);
     function CommentEdit(props, plebbit) {
-        return _super.call(this, props, plebbit) || this;
+        var _this = _super.call(this, props, plebbit) || this;
+        // public method should be bound
+        _this.publish = _this.publish.bind(_this);
+        return _this;
     }
     CommentEdit.prototype._initProps = function (props) {
         _super.prototype._initProps.call(this, props);

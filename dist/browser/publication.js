@@ -101,6 +101,8 @@ var Publication = /** @class */ (function (_super) {
             }
             return (_a = _this.plebbit).emit.apply(_a, __spreadArray(["error"], args, false));
         });
+        // public method should be bound
+        _this.publishChallengeAnswers = _this.publishChallengeAnswers.bind(_this);
         return _this;
     }
     Publication.prototype._initProps = function (props) {

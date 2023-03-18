@@ -75,6 +75,8 @@ var Vote = /** @class */ (function (_super) {
         var _this = _super.call(this, props, plebbit) || this;
         _this.commentCid = props.commentCid;
         _this.vote = props.vote; // Either 1, 0, -1 (upvote, cancel vote, downvote)
+        // public method should be bound
+        _this.publish = _this.publish.bind(_this);
         return _this;
     }
     Vote.prototype.toJSONPubsubMessagePublication = function () {

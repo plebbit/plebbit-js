@@ -7,7 +7,7 @@ import { Knex } from "knex";
 import { Comment } from "./comment";
 import { CommentEditSignedPropertyNamesUnion, CommentSignedPropertyNamesUnion, Encrypted, SignatureType, SignerType, VoteSignedPropertyNamesUnion } from "./signer/constants";
 export declare type ProtocolVersion = "1.0.0";
-export declare type BlockchainProvider = {
+export declare type ChainProvider = {
     url: string;
     chainId: number;
 };
@@ -16,8 +16,8 @@ export interface PlebbitOptions {
     ipfsHttpClientOptions?: Options | string;
     pubsubHttpClientOptions?: Options | string;
     dataPath?: string;
-    blockchainProviders?: {
-        [chainTicker: string]: BlockchainProvider;
+    chainProviders?: {
+        [chainTicker: string]: ChainProvider;
     };
     resolveAuthorAddresses?: boolean;
 }
@@ -189,7 +189,7 @@ export interface ChallengeVerificationMessageType extends PubsubMessage {
 export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType {
     publication?: DecryptedChallengeRequestMessageType["publication"];
 }
-export declare type SubplebbitMetrics = {
+export declare type SubplebbitStats = {
     hourActiveUserCount: number;
     dayActiveUserCount: number;
     weekActiveUserCount: number;
@@ -251,7 +251,7 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
     createdAt: number;
     updatedAt: number;
     pubsubTopic: string;
-    metricsCid?: string;
+    statsCid?: string;
     protocolVersion: ProtocolVersion;
     posts?: PagesTypeJson;
 }
@@ -279,7 +279,7 @@ export interface SubplebbitEditOptions {
     lastPostCid?: string;
     pubsubTopic?: string;
     challengeTypes?: ChallengeType[];
-    metrics?: SubplebbitMetrics;
+    stats?: SubplebbitStats;
     features?: SubplebbitFeatures;
     suggested?: SubplebbitSuggested;
     flairs?: Record<FlairOwner, Flair[]>;
