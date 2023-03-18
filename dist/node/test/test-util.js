@@ -340,68 +340,35 @@ function _startEnsSubplebbit(signers, syncInterval, dataPath) {
         });
     });
 }
-function _publishPosts(subplebbitAddress, numOfPosts) {
+function _publishPosts(subplebbitAddress, numOfPosts, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
-        var _this = this;
         return __generator(this, function (_a) {
-            return [2 /*return*/, Promise.all(new Array(numOfPosts).fill(null).map(function () { return __awaiter(_this, void 0, void 0, function () {
-                    var plebbit;
-                    return __generator(this, function (_a) {
-                        switch (_a.label) {
-                            case 0: return [4 /*yield*/, mockPlebbit()];
-                            case 1:
-                                plebbit = _a.sent();
-                                return [2 /*return*/, publishRandomPost(subplebbitAddress, plebbit, {}, false)];
-                        }
-                    });
-                }); }))];
+            return [2 /*return*/, Promise.all(new Array(numOfPosts).fill(null).map(function () { return publishRandomPost(subplebbitAddress, plebbit, {}, false); }))];
         });
     });
 }
-function _publishReplies(parentComment, numOfReplies) {
+function _publishReplies(parentComment, numOfReplies, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
-        var _this = this;
         return __generator(this, function (_a) {
-            return [2 /*return*/, Promise.all(new Array(numOfReplies).fill(null).map(function () { return __awaiter(_this, void 0, void 0, function () {
-                    var plebbit;
-                    return __generator(this, function (_a) {
-                        switch (_a.label) {
-                            case 0: return [4 /*yield*/, mockPlebbit()];
-                            case 1:
-                                plebbit = _a.sent();
-                                return [2 /*return*/, publishRandomReply(parentComment, plebbit, {}, false)];
-                        }
-                    });
-                }); }))];
+            return [2 /*return*/, Promise.all(new Array(numOfReplies).fill(null).map(function () { return publishRandomReply(parentComment, plebbit, {}, false); }))];
         });
     });
 }
-function _publishVotesOnOneComment(comment, votesPerCommentToPublish) {
+function _publishVotesOnOneComment(comment, votesPerCommentToPublish, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
-        var _this = this;
         return __generator(this, function (_a) {
-            return [2 /*return*/, Promise.all(new Array(votesPerCommentToPublish).fill(null).map(function () { return __awaiter(_this, void 0, void 0, function () {
-                    var plebbit;
-                    return __generator(this, function (_a) {
-                        switch (_a.label) {
-                            case 0: return [4 /*yield*/, mockPlebbit()];
-                            case 1:
-                                plebbit = _a.sent();
-                                return [2 /*return*/, publishVote(comment.cid, Math.random() > 0.5 ? 1 : -1, plebbit, {})];
-                        }
-                    });
-                }); }))];
+            return [2 /*return*/, Promise.all(new Array(votesPerCommentToPublish).fill(null).map(function () { return publishVote(comment.cid, Math.random() > 0.5 ? 1 : -1, plebbit, {}); }))];
         });
     });
 }
-function _publishVotes(comments, votesPerCommentToPublish) {
+function _publishVotes(comments, votesPerCommentToPublish, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
         var votes, _a, _b;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
                     _b = (_a = lodash_1.default).flattenDeep;
-                    return [4 /*yield*/, Promise.all(comments.map(function (comment) { return _publishVotesOnOneComment(comment, votesPerCommentToPublish); }))];
+                    return [4 /*yield*/, Promise.all(comments.map(function (comment) { return _publishVotesOnOneComment(comment, votesPerCommentToPublish, plebbit); }))];
                 case 1:
                     votes = _b.apply(_a, [_c.sent()]);
                     assert_1.default.equal(votes.length, votesPerCommentToPublish * comments.length);
@@ -429,18 +396,18 @@ function _populateSubplebbit(subplebbit, props) {
                     return [4 /*yield*/, new Promise(function (resolve) { return subplebbit.once("update", resolve); })];
                 case 2:
                     _b.sent();
-                    return [4 /*yield*/, _publishPosts(subplebbit.address, props.numOfCommentsToPublish)];
+                    return [4 /*yield*/, _publishPosts(subplebbit.address, props.numOfCommentsToPublish, subplebbit.plebbit)];
                 case 3:
                     posts = _b.sent();
                     console.log("Have successfully published ".concat(posts.length, " posts"));
                     return [4 /*yield*/, Promise.all([
-                            _publishReplies(posts[0], props.numOfCommentsToPublish),
-                            _publishVotes(posts, props.votesPerCommentToPublish)
+                            _publishReplies(posts[0], props.numOfCommentsToPublish, subplebbit.plebbit),
+                            _publishVotes(posts, props.votesPerCommentToPublish, subplebbit.plebbit)
                         ])];
                 case 4:
                     replies = (_b.sent())[0];
                     console.log("Have sucessfully published ".concat(replies.length, " replies"));
-                    return [4 /*yield*/, _publishVotes(replies, props.votesPerCommentToPublish)];
+                    return [4 /*yield*/, _publishVotes(replies, props.votesPerCommentToPublish, subplebbit.plebbit)];
                 case 5:
                     _b.sent();
                     return [2 /*return*/];

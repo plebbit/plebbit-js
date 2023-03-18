@@ -73,7 +73,7 @@ var Resolver = /** @class */ (function () {
             this.cachedChainProviders[chainTicker] = new ethers_1.ethers.providers.JsonRpcProvider({ url: this.chainProviders[chainTicker].url }, this.chainProviders[chainTicker].chainId);
             return this.cachedChainProviders[chainTicker];
         }
-        throw Error("no chain provider options set for chain ticker '".concat(chainTicker, "'"));
+        (0, util_1.throwWithErrorCode)("ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER", JSON.stringify({ chainTicker: chainTicker }));
     };
     Resolver.prototype._resolveEnsTxtRecord = function (ensName, txtRecordName) {
         return __awaiter(this, void 0, void 0, function () {

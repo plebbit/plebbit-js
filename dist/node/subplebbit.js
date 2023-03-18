@@ -326,7 +326,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _a.label = 6;
                     case 6:
                         if (!this.signer)
-                            throw Error("subplebbit.signer needs to be defined before proceeding");
+                            (0, util_1.throwWithErrorCode)("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", JSON.stringify({ address: this.address }));
                         return [4 /*yield*/, this._initSignerProps()];
                     case 7:
                         _a.sent();
@@ -945,46 +945,92 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
+    Subplebbit.prototype._decryptOrRespondWithFailure = function (request) {
+        return __awaiter(this, void 0, void 0, function () {
+            var decrypted, _a, toSignMsg, challengeVerification, _b, _c;
+            var _d;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
+                    case 0:
+                        _e.trys.push([0, 2, , 5]);
+                        return [4 /*yield*/, (0, signer_1.decrypt)(request.type === "CHALLENGEANSWER" ? request.encryptedChallengeAnswers : request.encryptedPublication, this.signer.privateKey, request.signature.publicKey)];
+                    case 1:
+                        decrypted = _e.sent();
+                        return [3 /*break*/, 5];
+                    case 2:
+                        _a = _e.sent();
+                        toSignMsg = {
+                            type: "CHALLENGEVERIFICATION",
+                            challengeRequestId: request.challengeRequestId,
+                            challengeAnswerId: request["challengeAnswerId"],
+                            challengeSuccess: false,
+                            reason: errors_1.messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG,
+                            userAgent: version_1.default.USER_AGENT,
+                            protocolVersion: version_1.default.PROTOCOL_VERSION,
+                            timestamp: (0, util_1.timestamp)()
+                        };
+                        _b = challenge_1.ChallengeVerificationMessage.bind;
+                        _c = [__assign({}, toSignMsg)];
+                        _d = {};
+                        return [4 /*yield*/, (0, signatures_1.signChallengeVerification)(toSignMsg, this.signer)];
+                    case 3:
+                        challengeVerification = new (_b.apply(challenge_1.ChallengeVerificationMessage, [void 0, __assign.apply(void 0, _c.concat([(_d.signature = _e.sent(), _d)]))]))();
+                        return [4 /*yield*/, Promise.all([
+                                this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
+                                this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, (0, from_string_1.fromString)((0, safe_stable_stringify_1.stringify)(challengeVerification)))
+                            ])];
+                    case 4:
+                        _e.sent();
+                        return [3 /*break*/, 5];
+                    case 5:
+                        if (decrypted && request.type === "CHALLENGEREQUEST")
+                            return [2 /*return*/, __assign(__assign({}, request), { publication: JSON.parse(decrypted) })];
+                        else if (decrypted && request.type === "CHALLENGEANSWER")
+                            return [2 /*return*/, __assign(__assign({}, request), { challengeAnswers: JSON.parse(decrypted) })];
+                        return [2 /*return*/, undefined];
+                }
+            });
+        });
+    };
     Subplebbit.prototype.handleChallengeRequest = function (request) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, decryptedRequest, _a, _b, _c, _d, providedChallenges, reasonForSkippingCaptcha, publicationOrReason, encryptedPublication, _e, toSignMsg, challengeVerification, _f, _g, toSignChallenge, challengeMessage, _h, _j, challengeTypes;
-            var _k, _l, _m, _o;
-            return __generator(this, function (_p) {
-                switch (_p.label) {
+            var log, decryptedRequest, _a, providedChallenges, reasonForSkippingCaptcha, publicationOrReason, encryptedPublication, _b, toSignMsg, challengeVerification, _c, _d, toSignChallenge, challengeMessage, _e, _f, challengeTypes;
+            var _g, _h, _j;
+            return __generator(this, function (_k) {
+                switch (_k.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:handleChallengeRequest");
-                        _a = [__assign({}, request)];
-                        _k = {};
-                        _c = (_b = JSON).parse;
-                        return [4 /*yield*/, (0, signer_1.decrypt)(request.encryptedPublication, this.signer.privateKey, request.signature.publicKey)];
+                        return [4 /*yield*/, this._decryptOrRespondWithFailure(request)];
                     case 1:
-                        decryptedRequest = __assign.apply(void 0, _a.concat([(_k.publication = _c.apply(_b, [_p.sent()]), _k)]));
+                        decryptedRequest = _k.sent();
+                        if (!decryptedRequest)
+                            return [2 /*return*/];
                         this._challengeToPublication[request.challengeRequestId] = decryptedRequest.publication;
                         this._challengeToPublicKey[request.challengeRequestId] = decryptedRequest.signature.publicKey;
                         return [4 /*yield*/, this.dbHandler.insertChallengeRequest(request.toJSONForDb(), undefined)];
                     case 2:
-                        _p.sent();
+                        _k.sent();
                         this.emit("challengerequest", decryptedRequest);
                         return [4 /*yield*/, this.provideCaptchaCallback(decryptedRequest)];
                     case 3:
-                        _d = _p.sent(), providedChallenges = _d[0], reasonForSkippingCaptcha = _d[1];
+                        _a = _k.sent(), providedChallenges = _a[0], reasonForSkippingCaptcha = _a[1];
                         log("Received a request to a challenge (".concat(request.challengeRequestId, ")"));
                         if (!(providedChallenges.length === 0)) return [3 /*break*/, 10];
                         // Subplebbit owner has chosen to skip challenging this user or post
                         log.trace("(".concat(request.challengeRequestId, "): No challenge is required"));
                         return [4 /*yield*/, this.storePublicationIfValid(decryptedRequest.publication, request.challengeRequestId)];
                     case 4:
-                        publicationOrReason = _p.sent();
+                        publicationOrReason = _k.sent();
                         if (!lodash_1.default.isPlainObject(publicationOrReason)) return [3 /*break*/, 6];
                         return [4 /*yield*/, (0, signer_1.encrypt)((0, safe_stable_stringify_1.stringify)(publicationOrReason), this.signer.privateKey, request.signature.publicKey)];
                     case 5:
-                        _e = _p.sent();
+                        _b = _k.sent();
                         return [3 /*break*/, 7];
                     case 6:
-                        _e = undefined;
-                        _p.label = 7;
+                        _b = undefined;
+                        _k.label = 7;
                     case 7:
-                        encryptedPublication = _e;
+                        encryptedPublication = _b;
                         toSignMsg = {
                             type: "CHALLENGEVERIFICATION",
                             challengeRequestId: request.challengeRequestId,
@@ -997,23 +1043,23 @@ var Subplebbit = /** @class */ (function (_super) {
                             protocolVersion: version_1.default.PROTOCOL_VERSION,
                             timestamp: (0, util_1.timestamp)()
                         };
-                        _f = challenge_1.ChallengeVerificationMessage.bind;
-                        _g = [__assign({}, toSignMsg)];
-                        _l = {};
+                        _c = challenge_1.ChallengeVerificationMessage.bind;
+                        _d = [__assign({}, toSignMsg)];
+                        _g = {};
                         return [4 /*yield*/, (0, signatures_1.signChallengeVerification)(toSignMsg, this.signer)];
                     case 8:
-                        challengeVerification = new (_f.apply(challenge_1.ChallengeVerificationMessage, [void 0, __assign.apply(void 0, _g.concat([(_l.signature = _p.sent(), _l)]))]))();
+                        challengeVerification = new (_c.apply(challenge_1.ChallengeVerificationMessage, [void 0, __assign.apply(void 0, _d.concat([(_g.signature = _k.sent(), _g)]))]))();
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
                                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, (0, from_string_1.fromString)((0, safe_stable_stringify_1.stringify)(challengeVerification)))
                             ])];
                     case 9:
-                        _p.sent();
+                        _k.sent();
                         log("(".concat(request.challengeRequestId, "): "), "Published ".concat(challengeVerification.type, " over pubsub: "), lodash_1.default.omit(toSignMsg, ["encryptedPublication"]));
                         this.emit("challengeverification", __assign(__assign({}, challengeVerification), { publication: decryptedRequest.publication }));
                         return [3 /*break*/, 14];
                     case 10:
-                        _m = {
+                        _h = {
                             type: "CHALLENGE",
                             protocolVersion: version_1.default.PROTOCOL_VERSION,
                             userAgent: version_1.default.USER_AGENT,
@@ -1021,67 +1067,66 @@ var Subplebbit = /** @class */ (function (_super) {
                         };
                         return [4 /*yield*/, (0, signer_1.encrypt)((0, safe_stable_stringify_1.stringify)(providedChallenges), this.signer.privateKey, request.signature.publicKey)];
                     case 11:
-                        toSignChallenge = (_m.encryptedChallenges = _p.sent(),
-                            _m.timestamp = (0, util_1.timestamp)(),
-                            _m);
-                        _h = challenge_1.ChallengeMessage.bind;
-                        _j = [__assign({}, toSignChallenge)];
-                        _o = {};
+                        toSignChallenge = (_h.encryptedChallenges = _k.sent(),
+                            _h.timestamp = (0, util_1.timestamp)(),
+                            _h);
+                        _e = challenge_1.ChallengeMessage.bind;
+                        _f = [__assign({}, toSignChallenge)];
+                        _j = {};
                         return [4 /*yield*/, (0, signatures_1.signChallengeMessage)(toSignChallenge, this.signer)];
                     case 12:
-                        challengeMessage = new (_h.apply(challenge_1.ChallengeMessage, [void 0, __assign.apply(void 0, _j.concat([(_o.signature = _p.sent(), _o)]))]))();
+                        challengeMessage = new (_e.apply(challenge_1.ChallengeMessage, [void 0, __assign.apply(void 0, _f.concat([(_j.signature = _k.sent(), _j)]))]))();
                         challengeTypes = providedChallenges.map(function (challenge) { return challenge.type; });
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.insertChallenge(challengeMessage.toJSONForDb(challengeTypes), undefined),
                                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, (0, from_string_1.fromString)((0, safe_stable_stringify_1.stringify)(challengeMessage)))
                             ])];
                     case 13:
-                        _p.sent();
+                        _k.sent();
                         log.trace("(".concat(request.challengeRequestId, "): "), "Published ".concat(challengeMessage.type, " over pubsub: "), lodash_1.default.omit(toSignChallenge, ["encryptedChallenges"]));
                         this.emit("challengemessage", __assign(__assign({}, challengeMessage), { challenges: providedChallenges }));
-                        _p.label = 14;
+                        _k.label = 14;
                     case 14: return [2 /*return*/];
                 }
             });
         });
     };
     Subplebbit.prototype.handleChallengeAnswer = function (challengeAnswer) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log, decryptedAnswers, _b, _c, decryptedChallengeAnswer, _d, challengeSuccess, challengeErrors, storedPublication, publicationOrReason, encryptedPublication, _e, toSignMsg, challengeVerification, _f, _g, toSignVerification, challengeVerification, _h, _j;
-            var _k, _l;
-            return __generator(this, function (_m) {
-                switch (_m.label) {
+            var log, decryptedChallengeAnswer, _a, challengeSuccess, challengeErrors, storedPublication, publicationOrReason, encryptedPublication, _b, toSignMsg, challengeVerification, _c, _d, toSignVerification, challengeVerification, _e, _f;
+            var _g, _h;
+            return __generator(this, function (_j) {
+                switch (_j.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:handleChallengeAnswer");
-                        _c = (_b = JSON).parse;
-                        return [4 /*yield*/, (0, signer_1.decrypt)(challengeAnswer.encryptedChallengeAnswers, (_a = this.signer) === null || _a === void 0 ? void 0 : _a.privateKey, challengeAnswer.signature.publicKey)];
+                        return [4 /*yield*/, this._decryptOrRespondWithFailure(challengeAnswer)];
                     case 1:
-                        decryptedAnswers = _c.apply(_b, [_m.sent()]);
-                        decryptedChallengeAnswer = __assign(__assign({}, challengeAnswer), { challengeAnswers: decryptedAnswers });
+                        decryptedChallengeAnswer = _j.sent();
+                        if (!decryptedChallengeAnswer)
+                            return [2 /*return*/];
                         return [4 /*yield*/, this.dbHandler.insertChallengeAnswer(challengeAnswer.toJSONForDb(decryptedChallengeAnswer.challengeAnswers), undefined)];
                     case 2:
-                        _m.sent();
+                        _j.sent();
                         this.emit("challengeanswer", decryptedChallengeAnswer);
                         return [4 /*yield*/, this.validateCaptchaAnswerCallback(decryptedChallengeAnswer)];
                     case 3:
-                        _d = _m.sent(), challengeSuccess = _d[0], challengeErrors = _d[1];
+                        _a = _j.sent(), challengeSuccess = _a[0], challengeErrors = _a[1];
                         if (!challengeSuccess) return [3 /*break*/, 10];
                         log.trace("(".concat(challengeAnswer.challengeRequestId, "): "), "User has been answered correctly");
                         storedPublication = this._challengeToPublication[challengeAnswer.challengeRequestId];
                         return [4 /*yield*/, this.storePublicationIfValid(storedPublication, challengeAnswer.challengeRequestId)];
                     case 4:
-                        publicationOrReason = _m.sent();
+                        publicationOrReason = _j.sent();
                         if (!lodash_1.default.isPlainObject(publicationOrReason)) return [3 /*break*/, 6];
                         return [4 /*yield*/, (0, signer_1.encrypt)((0, safe_stable_stringify_1.stringify)(publicationOrReason), this.signer.privateKey, challengeAnswer.signature.publicKey)];
                     case 5:
-                        _e = _m.sent();
+                        _b = _j.sent();
                         return [3 /*break*/, 7];
                     case 6:
-                        _e = undefined;
-                        _m.label = 7;
+                        _b = undefined;
+                        _j.label = 7;
                     case 7:
-                        encryptedPublication = _e;
+                        encryptedPublication = _b;
                         toSignMsg = {
                             type: "CHALLENGEVERIFICATION",
                             challengeRequestId: challengeAnswer.challengeRequestId,
@@ -1094,18 +1139,18 @@ var Subplebbit = /** @class */ (function (_super) {
                             protocolVersion: version_1.default.PROTOCOL_VERSION,
                             timestamp: (0, util_1.timestamp)()
                         };
-                        _f = challenge_1.ChallengeVerificationMessage.bind;
-                        _g = [__assign({}, toSignMsg)];
-                        _k = {};
+                        _c = challenge_1.ChallengeVerificationMessage.bind;
+                        _d = [__assign({}, toSignMsg)];
+                        _g = {};
                         return [4 /*yield*/, (0, signatures_1.signChallengeVerification)(toSignMsg, this.signer)];
                     case 8:
-                        challengeVerification = new (_f.apply(challenge_1.ChallengeVerificationMessage, [void 0, __assign.apply(void 0, _g.concat([(_k.signature = _m.sent(), _k)]))]))();
+                        challengeVerification = new (_c.apply(challenge_1.ChallengeVerificationMessage, [void 0, __assign.apply(void 0, _d.concat([(_g.signature = _j.sent(), _g)]))]))();
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
                                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, (0, from_string_1.fromString)((0, safe_stable_stringify_1.stringify)(challengeVerification)))
                             ])];
                     case 9:
-                        _m.sent();
+                        _j.sent();
                         log("(".concat(challengeAnswer.challengeRequestId, "): "), "Published ".concat(challengeVerification.type, " over pubsub:"), lodash_1.default.omit(toSignMsg, ["encryptedPublication"]));
                         this.emit("challengeverification", __assign(__assign({}, challengeVerification), { publication: encryptedPublication ? publicationOrReason : undefined }));
                         return [3 /*break*/, 13];
@@ -1121,21 +1166,21 @@ var Subplebbit = /** @class */ (function (_super) {
                             protocolVersion: version_1.default.PROTOCOL_VERSION,
                             timestamp: (0, util_1.timestamp)()
                         };
-                        _h = challenge_1.ChallengeVerificationMessage.bind;
-                        _j = [__assign({}, toSignVerification)];
-                        _l = {};
+                        _e = challenge_1.ChallengeVerificationMessage.bind;
+                        _f = [__assign({}, toSignVerification)];
+                        _h = {};
                         return [4 /*yield*/, (0, signatures_1.signChallengeVerification)(toSignVerification, this.signer)];
                     case 11:
-                        challengeVerification = new (_h.apply(challenge_1.ChallengeVerificationMessage, [void 0, __assign.apply(void 0, _j.concat([(_l.signature = _m.sent(), _l)]))]))();
+                        challengeVerification = new (_e.apply(challenge_1.ChallengeVerificationMessage, [void 0, __assign.apply(void 0, _f.concat([(_h.signature = _j.sent(), _h)]))]))();
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
                                 this.plebbit.pubsubIpfsClient.pubsub.publish(this.pubsubTopic, (0, from_string_1.fromString)((0, safe_stable_stringify_1.stringify)(challengeVerification)))
                             ])];
                     case 12:
-                        _m.sent();
+                        _j.sent();
                         log("(".concat(challengeAnswer.challengeRequestId, "): "), "Published ".concat(challengeVerification.type, " over pubsub:"), toSignVerification);
                         this.emit("challengeverification", challengeVerification);
-                        _m.label = 13;
+                        _j.label = 13;
                     case 13: return [2 /*return*/];
                 }
             });

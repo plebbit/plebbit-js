@@ -73,6 +73,7 @@ export declare class Subplebbit extends EventEmitter implements Omit<SubplebbitT
     private isPublicationPost;
     private isPublicationCommentEdit;
     private storePublicationIfValid;
+    private _decryptOrRespondWithFailure;
     private handleChallengeRequest;
     handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage): Promise<void>;
     private _verifyPubsubMsgSignature;
