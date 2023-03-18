@@ -96,6 +96,7 @@ var https_1 = require("https");
 var form_data_1 = __importDefault(require("form-data"));
 var multiaddr_1 = require("multiaddr");
 var fileType = __importStar(require("file-type"));
+var util_1 = require("../../util");
 var nativeFunctions = {
     createImageCaptcha: function () {
         var args = [];
@@ -320,7 +321,7 @@ var nativeFunctions = {
                 case 1:
                     res = _b.sent();
                     if (res.status !== 200)
-                        throw Error("failed ipfs import key: '".concat(url, "' '").concat(res.status, "' '").concat(res.statusText, "'"));
+                        (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_IMPORT_IPFS_KEY", JSON.stringify({ url: url, status: res.status, statusText: res.statusText, ipnsKeyName: ipnsKeyName }));
                     return [4 /*yield*/, res.json()];
                 case 2:
                     resJson = _b.sent();

@@ -79,6 +79,7 @@ function fetchWithLimit(url, options) {
                     _d.trys.push([0, 4, , 5]);
                     return [4 /*yield*/, util_1.nativeFunctions.fetch(url, __assign(__assign({}, options), { size: DOWNLOAD_LIMIT_BYTES }))];
                 case 1:
+                    //@ts-expect-error
                     res = _d.sent();
                     if (!(((_a = res === null || res === void 0 ? void 0 : res.body) === null || _a === void 0 ? void 0 : _a.getReader) === undefined)) return [3 /*break*/, 3];
                     return [4 /*yield*/, res.text()];
@@ -87,9 +88,9 @@ function fetchWithLimit(url, options) {
                 case 4:
                     e_1 = _d.sent();
                     if (e_1.message.includes("over limit"))
-                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", "fetch: url (".concat(url, ") points to a file larger than download limit (").concat(DOWNLOAD_LIMIT_BYTES, ") bytes"));
+                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", JSON.stringify({ url: url, downloadLimit: DOWNLOAD_LIMIT_BYTES }));
                     else
-                        throw Error("Failed to fetch url (".concat(url, ") with options (").concat(JSON.stringify(options), ") due to error (").concat(e_1, ")"));
+                        throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", JSON.stringify({ url: url, status: res === null || res === void 0 ? void 0 : res.status, statusText: res === null || res === void 0 ? void 0 : res.statusText }));
                     return [3 /*break*/, 5];
                 case 5:
                     if (!(((_b = res === null || res === void 0 ? void 0 : res.body) === null || _b === void 0 ? void 0 : _b.getReader) !== undefined)) return [3 /*break*/, 9];
@@ -122,7 +123,7 @@ function fetchCid(cid, plebbit, catOptions) {
     var _a;
     if (catOptions === void 0) { catOptions = { length: DOWNLOAD_LIMIT_BYTES }; }
     return __awaiter(this, void 0, void 0, function () {
-        var fileContent, url, _b, resText, res, error, e_2, generatedCid;
+        var fileContent, url, _b, resText, res, error, e_2, calculatedCid;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
@@ -138,7 +139,7 @@ function fetchCid(cid, plebbit, catOptions) {
                     if (res.status === 200)
                         fileContent = resText;
                     else
-                        throw Error("Failed to load IPFS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText));
+                        throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", JSON.stringify({ url: url, status: res.status, statusText: res.statusText }));
                     return [3 /*break*/, 7];
                 case 2:
                     error = void 0;
@@ -155,15 +156,15 @@ function fetchCid(cid, plebbit, catOptions) {
                     return [3 /*break*/, 6];
                 case 6:
                     if (typeof fileContent !== "string")
-                        throw Error("Was not able to load file with CID (".concat(cid, ") due to error: ").concat(error));
+                        throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_GENERIC", JSON.stringify({ cid: cid, error: error, options: catOptions }));
                     _c.label = 7;
                 case 7: return [4 /*yield*/, ipfs_only_hash_1.default.of(fileContent)];
                 case 8:
-                    generatedCid = _c.sent();
-                    if (fileContent.length === DOWNLOAD_LIMIT_BYTES && generatedCid !== cid)
-                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", "fetchCid: CID (".concat(cid, ") points to a file larger than download limit ").concat(DOWNLOAD_LIMIT_BYTES));
-                    if (generatedCid !== cid)
-                        throwWithErrorCode("ERR_GENERATED_CID_DOES_NOT_MATCH", "fetchCid: Loaded file generates a different CID (".concat(generatedCid, ") than provided CID (").concat(cid, ")"));
+                    calculatedCid = _c.sent();
+                    if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
+                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", JSON.stringify({ cid: cid, downloadLimit: DOWNLOAD_LIMIT_BYTES }));
+                    if (calculatedCid !== cid)
+                        throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", JSON.stringify({ calculatedCid: calculatedCid, cid: cid }));
                     return [2 /*return*/, fileContent];
             }
         });
@@ -192,7 +193,7 @@ function loadIpnsAsJson(ipns, plebbit) {
             switch (_c.label) {
                 case 0:
                     if (typeof ipns !== "string")
-                        throwWithErrorCode("ERR_IPNS_IS_INVALID", "loadIpnsAsJson: ipns (".concat(ipns, ") is undefined"));
+                        throwWithErrorCode("ERR_IPNS_IS_INVALID", JSON.stringify({ ipns: ipns }));
                     if (!!plebbit.ipfsClient) return [3 /*break*/, 2];
                     url = "".concat(plebbit.ipfsGatewayUrl, "/ipns/").concat(ipns);
                     return [4 /*yield*/, fetchWithLimit(url, {
@@ -205,7 +206,7 @@ function loadIpnsAsJson(ipns, plebbit) {
                     if (res.status === 200)
                         return [2 /*return*/, JSON.parse(resText)];
                     else
-                        throw Error("Failed to load IPNS via url (".concat(url, "). Status code ").concat(res.status, " and status text ").concat(res.statusText));
+                        throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", JSON.stringify({ url: url, status: res.status, statusText: res.statusText }));
                     return [3 /*break*/, 7];
                 case 2:
                     cid = void 0, error = void 0;
@@ -222,7 +223,7 @@ function loadIpnsAsJson(ipns, plebbit) {
                     return [3 /*break*/, 6];
                 case 6:
                     if (typeof cid !== "string")
-                        throw Error("ipns (".concat(ipns, ") record ").concat(error ? " fails to resolve due to error ".concat(error, " ") : " does not exist"));
+                        throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS", JSON.stringify({ ipns: ipns, error: error }));
                     return [2 /*return*/, loadIpfsFileAsJson(cid, plebbit)];
                 case 7: return [2 /*return*/];
             }
@@ -316,9 +317,11 @@ function removeKeysWithUndefinedValues(object) {
 }
 exports.removeKeysWithUndefinedValues = removeKeysWithUndefinedValues;
 function throwWithErrorCode(code, details) {
-    throw (0, err_code_1.default)(Error(errors_1.messages[code]), errors_1.messages[errors_1.messages[code]], {
+    var error = (0, err_code_1.default)(Error(errors_1.messages[code]), errors_1.messages[errors_1.messages[code]], {
         details: details
     });
+    error.toString = function () { return "".concat(error.constructor.name, ": ").concat(code, ": ").concat(error.message, ": ").concat(JSON.stringify(details)); };
+    throw error;
 }
 exports.throwWithErrorCode = throwWithErrorCode;
 function parsePageIpfs(pageIpfs, subplebbit) {
