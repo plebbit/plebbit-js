@@ -41,7 +41,10 @@ async function fetchWithLimit(url: string, options?): Promise<[resText: string, 
         if (e.message.includes("over limit"))
             throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", JSON.stringify({ url, downloadLimit: DOWNLOAD_LIMIT_BYTES }));
         else
-            throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", JSON.stringify({ url, status: res.status, statusText: res.statusText }));
+            throwWithErrorCode(
+                "ERR_FAILED_TO_FETCH_HTTP_GENERIC",
+                JSON.stringify({ url, status: res?.status, statusText: res?.statusText })
+            );
         // If error is not related to size limit, then throw it again
     }
 
