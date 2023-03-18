@@ -57,6 +57,7 @@ export enum messages {
     ERR_FORBIDDEN_SIGNER_FIELD = "The publication includes a signer field which is forbidden",
     ERR_DUPLICATE_COMMENT = "Comment is duplicated",
     ERR_AUTHOR_ADDRESS_UNDEFINED = "author address is undefined",
+    ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG = "Subplebbit failed to decrypt the pubsub message",
 
     // Resolver errors
     ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER = "no chain provider options set for chain ticker",

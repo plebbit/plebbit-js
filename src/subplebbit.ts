@@ -751,13 +751,51 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
         }
     }
 
+    private async _decryptOrRespondWithFailure(
+        request: ChallengeRequestMessage | ChallengeAnswerMessage
+    ): Promise<DecryptedChallengeRequestMessageType | DecryptedChallengeAnswerMessageType | undefined> {
+        let decrypted: any | undefined;
+        try {
+            decrypted = await decrypt(
+                request.type === "CHALLENGEANSWER" ? request.encryptedChallengeAnswers : request.encryptedPublication,
+                this.signer.privateKey,
+                request.signature.publicKey
+            );
+        } catch {
+            const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
+                type: "CHALLENGEVERIFICATION",
+                challengeRequestId: request.challengeRequestId,
+                challengeAnswerId: request["challengeAnswerId"],
+                challengeSuccess: false,
+                reason: messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG,
+                userAgent: env.USER_AGENT,
+                protocolVersion: env.PROTOCOL_VERSION,
+                timestamp: timestamp()
+            };
+            const challengeVerification = new ChallengeVerificationMessage({
+                ...toSignMsg,
+                signature: await signChallengeVerification(toSignMsg, this.signer)
+            });
+
+            await Promise.all([
+                this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
+                this.plebbit.pubsubIpfsClient.pubsub.publish(
+                    this.pubsubTopic,
+                    uint8ArrayFromString(deterministicStringify(challengeVerification))
+                )
+            ]);
+        }
+
+        if (decrypted && request.type === "CHALLENGEREQUEST") return { ...request, publication: JSON.parse(decrypted) };
+        else if (decrypted && request.type === "CHALLENGEANSWER") return { ...request, challengeAnswers: JSON.parse(decrypted) };
+        return undefined;
+    }
+
     private async handleChallengeRequest(request: ChallengeRequestMessage) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeRequest");
 
-        const decryptedRequest: DecryptedChallengeRequestMessageType = {
-            ...request,
-            publication: JSON.parse(await decrypt(request.encryptedPublication, this.signer.privateKey, request.signature.publicKey))
-        };
+        const decryptedRequest = <DecryptedChallengeRequestMessageType>await this._decryptOrRespondWithFailure(request);
+        if (!decryptedRequest) return;
         this._challengeToPublication[request.challengeRequestId] = decryptedRequest.publication;
         this._challengeToPublicKey[request.challengeRequestId] = decryptedRequest.signature.publicKey;
         await this.dbHandler.insertChallengeRequest(request.toJSONForDb(), undefined);
@@ -842,11 +880,9 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
     async handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeAnswer");
 
-        const decryptedAnswers: string[] = JSON.parse(
-            await decrypt(challengeAnswer.encryptedChallengeAnswers, this.signer?.privateKey, challengeAnswer.signature.publicKey)
-        );
+        const decryptedChallengeAnswer = <DecryptedChallengeAnswerMessageType>await this._decryptOrRespondWithFailure(challengeAnswer);
+        if (!decryptedChallengeAnswer) return;
 
-        const decryptedChallengeAnswer: DecryptedChallengeAnswerMessageType = { ...challengeAnswer, challengeAnswers: decryptedAnswers };
         await this.dbHandler.insertChallengeAnswer(challengeAnswer.toJSONForDb(decryptedChallengeAnswer.challengeAnswers), undefined);
         this.emit("challengeanswer", decryptedChallengeAnswer);
 
