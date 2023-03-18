@@ -4,6 +4,10 @@ const signers = require("../fixtures/signers");
 const { generateMockPost, publishWithExpectedResult, publishRandomPost } = require("../../dist/node/test/test-util");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 const lodash = require("lodash");
+const { fromString } = require("uint8arrays/from-string");
+const { signChallengeRequest, signChallengeAnswer } = require("../../dist/node/signer/signatures");
+const { messages } = require("../../dist/node/errors");
+const { encrypt } = require("../../dist/node/signer/index");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
@@ -110,5 +114,68 @@ describe(`Validation of pubsub messages`, async () => {
         await mockPost.publish();
 
         await new Promise((resolve) => setTimeout(resolve, 10000));
+    });
+
+    it(`Sub responds with error to a ChallengeRequest that can't be decrypted`, async () => {
+        const tempPlebbit = await mockPlebbit();
+        tempPlebbit.pubsubIpfsClient.pubsub.publish = () => undefined;
+        const comment = await generateMockPost(signers[0].address, tempPlebbit);
+        await comment.publish(); // comment._challengeRequest should be defined now, although it hasn't been published
+
+        comment._challengeRequest.encryptedPublication = await encrypt(
+            JSON.stringify(comment.toJSONPubsubMessagePublication()),
+            comment.pubsubMessageSigner.privateKey,
+            signers[5].publicKey // Use a public key that cannot be decrypted for the sub
+        );
+
+        comment._challengeRequest.signature = await signChallengeRequest(comment._challengeRequest, comment.pubsubMessageSigner);
+
+        await plebbit.pubsubIpfsClient.pubsub.publish(
+            comment.subplebbit.pubsubTopic,
+            fromString(JSON.stringify(comment._challengeRequest))
+        );
+
+        await new Promise((resolve) => {
+            comment.once("challengeverification", (verificationMsg) => {
+                expect(verificationMsg.challengeSuccess).to.be.false;
+                expect(verificationMsg.reason).to.equal(messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);
+                expect(verificationMsg.publication).to.be.undefined;
+                resolve();
+            });
+        });
+    });
+
+    it(`Sub responds with error to a ChallengeAnswer that can't be decrypted`, async () => {
+        const tempPlebbit = await mockPlebbit();
+        const comment = await generateMockPost(imageCaptchaSubplebbitAddress, tempPlebbit);
+        comment.removeAllListeners("challenge");
+
+        comment.once("challenge", async (challengeMsg) => {
+            tempPlebbit.pubsubIpfsClient.pubsub.publish = () => undefined;
+
+            await comment.publishChallengeAnswers([]);
+            // comment._challengeAnswer should be defined now
+            comment._challengeAnswer.encryptedChallengeAnswers = await encrypt(
+                JSON.stringify([]),
+                comment.pubsubMessageSigner.privateKey,
+                signers[5].publicKey // Use a public key that cannot be decrypted for the sub
+            );
+            comment._challengeAnswer.signature = await signChallengeAnswer(comment._challengeAnswer, comment.pubsubMessageSigner);
+            await plebbit.pubsubIpfsClient.pubsub.publish(
+                comment.subplebbit.pubsubTopic,
+                fromString(JSON.stringify(comment._challengeAnswer))
+            );
+        });
+
+        await comment.publish();
+
+        await new Promise((resolve) => {
+            comment.once("challengeverification", (verificationMsg) => {
+                expect(verificationMsg.challengeSuccess).to.be.false;
+                expect(verificationMsg.reason).to.equal(messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);
+                expect(verificationMsg.publication).to.be.undefined;
+                resolve();
+            });
+        });
     });
 });
