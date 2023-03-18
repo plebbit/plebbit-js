@@ -272,9 +272,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         try {
             res = await loadIpnsAsJson(this.ipnsName, this.plebbit);
         } catch (e) {
-            const errMsg = `Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error: `;
-            log.error(errMsg, e);
-            this.emit("error", errMsg, e);
+            const errMsg = `Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error: ${e}`;
+            log.error(errMsg);
+            this.emit("error", errMsg);
             return;
         }
 

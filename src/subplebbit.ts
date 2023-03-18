@@ -1,5 +1,4 @@
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
-import EventEmitter from "events";
 import { sha256 } from "js-sha256";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
@@ -38,7 +37,9 @@ import {
     SubplebbitRole,
     SubplebbitSuggested,
     SubplebbitType,
-    VoteType
+    VoteType,
+    DecryptedChallengeVerificationMessageType,
+    DecryptedChallengeMessageType
 } from "./types";
 import { Comment } from "./comment";
 import Post from "./post";
@@ -72,11 +73,23 @@ import { CACHE_KEYS } from "./constants";
 import assert from "assert";
 import version from "./version";
 import { SignatureType, SignerType } from "./signer/constants";
+import { TypedEmitter } from "tiny-typed-emitter";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
 
-export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "posts"> {
+interface SubplebbitEvents {
+    challengerequest: (request: DecryptedChallengeRequestMessageType) => void;
+    challengemessage: (challenge: DecryptedChallengeMessageType) => void;
+    challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
+    challengeverification: (verification: DecryptedChallengeVerificationMessageType) => void;
+
+    error: (errMsg: string) => void;
+
+    update: (updatedSubplebbit: Subplebbit) => void;
+}
+
+export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
     // public
     title?: string;
     description?: string;
@@ -313,7 +326,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
             this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch((err) => {
                 const editError = errcode(err, err.code, { details: `subplebbit.edit: ${err.details}` });
                 log.error(editError);
-                this.emit("error", editError);
+                this.emit("error", editError.toString());
             });
             log(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
             await this._updateDbInternalState(lodash.pick(newSubplebbitOptions, "address"));
@@ -357,7 +370,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
                 } catch (e) {
                     const updateError = errcode(e, e.code, { details: `subplebbit.update: ${e.details}` });
                     log.error(updateError);
-                    this.emit("error", updateError);
+                    this.emit("error", updateError.toString());
                     return;
                 }
 
@@ -927,7 +940,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
             );
             this.emit("challengeverification", {
                 ...challengeVerification,
-                publication: encryptedPublication ? publicationOrReason : undefined
+                publication: encryptedPublication ? <CommentIpfsWithCid>publicationOrReason : undefined
             });
         } else {
             log.trace(`Challenge (${challengeAnswer.challengeRequestId}) has been answered incorrectly`);
@@ -987,7 +1000,7 @@ export class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "po
             const err = errcode(Error(messages.ERR_SIGNATURE_IS_INVALID), messages[messages.ERR_SIGNATURE_IS_INVALID], {
                 details: `subplebbit.handleChallengeExchange: Failed to verify ${msgParsed.type}, Failed verification reason: ${validation.reason}`
             });
-            this.emit("error", err);
+            this.emit("error", err.toString());
             throw err;
         }
     }

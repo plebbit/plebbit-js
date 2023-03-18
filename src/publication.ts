@@ -2,7 +2,6 @@ import { ChallengeAnswerMessage, ChallengeRequestMessage } from "./challenge";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { v4 as uuidv4 } from "uuid";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
-import EventEmitter from "events";
 import Author from "./author";
 import assert from "assert";
 import { decrypt, encrypt, Signer } from "./signer";
@@ -13,6 +12,7 @@ import {
     ChallengeType,
     ChallengeVerificationMessageType,
     DecryptedChallengeMessageType,
+    DecryptedChallengeVerificationMessageType,
     ProtocolVersion,
     PublicationType,
     PublicationTypeName
@@ -24,8 +24,20 @@ import { Subplebbit } from "./subplebbit";
 import { signChallengeAnswer, signChallengeRequest, verifyChallengeMessage, verifyChallengeVerification } from "./signer/signatures";
 import { throwWithErrorCode, timestamp } from "./util";
 import { SignatureType } from "./signer/constants";
+import { TypedEmitter } from "tiny-typed-emitter";
+import { Comment } from "./comment";
 
-class Publication extends EventEmitter implements PublicationType {
+interface PublicationEvents {
+    challengerequest: (request: ChallengeRequestMessage) => void;
+    challenge: (challenge: DecryptedChallengeMessageType) => void;
+    challengeanswer: (answer: ChallengeAnswerMessage) => void;
+    challengeverification: (verification: DecryptedChallengeVerificationMessageType, decryptedComment: Comment) => void; // Should we include the updated publication instance here? not sure
+    error: (errorMsg: string) => void;
+    // For comment only
+    update: (updatedInstance: Comment) => void;
+}
+
+class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     subplebbitAddress: string;
     timestamp: number;
     signature: SignatureType;
@@ -122,7 +134,11 @@ class Publication extends EventEmitter implements PublicationType {
                     `Challenge ${msgParsed.challengeRequestId} has failed to pass. Challenge errors = ${msgParsed.challengeErrors}, reason = '${msgParsed.reason}'`
                 );
 
-            this.emit("challengeverification", { ...msgParsed, publication: decryptedPublication }, this);
+            this.emit(
+                "challengeverification",
+                { ...msgParsed, publication: decryptedPublication },
+                this instanceof Comment ? this : undefined
+            );
             await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange);
         }
     }
