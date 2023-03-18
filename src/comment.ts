@@ -119,7 +119,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
         // Merge props from original comment and CommentUpdate
         this.spoiler = props.edit?.spoiler ?? this.spoiler;
-        this.author.subplebbit = props.author.subplebbit;
+        this.author.subplebbit = props.author?.subplebbit;
         if (props.edit?.content) this.content = props.edit.content;
         this.flair = props.flair || props.edit?.flair || this.flair;
         this.author.flair = props.author?.subplebbit?.flair || props.edit?.author?.flair || this.author?.flair;
