@@ -38,8 +38,7 @@ import {
     SubplebbitSuggested,
     SubplebbitType,
     VoteType,
-    DecryptedChallengeVerificationMessageType,
-    DecryptedChallengeMessageType
+    SubplebbitEvents
 } from "./types";
 import { Comment } from "./comment";
 import Post from "./post";
@@ -77,17 +76,6 @@ import { TypedEmitter } from "tiny-typed-emitter";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
-
-interface SubplebbitEvents {
-    challengerequest: (request: DecryptedChallengeRequestMessageType) => void;
-    challengemessage: (challenge: DecryptedChallengeMessageType) => void;
-    challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
-    challengeverification: (verification: DecryptedChallengeVerificationMessageType) => void;
-
-    error: (errMsg: string) => void;
-
-    update: (updatedSubplebbit: Subplebbit) => void;
-}
 
 export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
     // public
@@ -853,7 +841,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 `Published ${challengeVerification.type} over pubsub: `,
                 lodash.omit(toSignMsg, ["encryptedPublication"])
             );
-            this.emit("challengeverification", { ...challengeVerification, publication: decryptedRequest.publication });
+            this.emit("challengeverification", {
+                ...challengeVerification,
+                publication: typeof publicationOrReason === "string" ? undefined : publicationOrReason
+            });
         } else {
             const toSignChallenge: Omit<ChallengeMessageType, "signature"> = {
                 type: "CHALLENGE",

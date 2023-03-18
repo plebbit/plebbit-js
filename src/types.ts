@@ -13,6 +13,7 @@ import {
     SignerType,
     VoteSignedPropertyNamesUnion
 } from "./signer/constants";
+import { Subplebbit } from "./subplebbit";
 
 export type ProtocolVersion = "1.0.0";
 
@@ -218,7 +219,7 @@ export interface ChallengeVerificationMessageType extends PubsubMessage {
 }
 
 export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType {
-    publication?: DecryptedChallengeRequestMessageType["publication"];
+    publication?: CommentIpfsWithCid; // Only comments receive new props after verification for now
 }
 
 export type SubplebbitStats = {
@@ -290,7 +291,7 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
     signer?: SignerType;
     createdAt: number;
     updatedAt: number;
-    pubsubTopic: string;
+    pubsubTopic?: string;
     statsCid?: string;
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
     posts?: PagesTypeJson;
@@ -582,4 +583,26 @@ declare module "knex/types/tables" {
         signers: Knex.CompositeTableType<SignersTableRow, SingersTableRowInsert, null, null>;
         commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRowInsert, null, null>;
     }
+}
+
+// Event emitter declaration
+export interface SubplebbitEvents {
+    challengerequest: (request: DecryptedChallengeRequestMessageType) => void;
+    challengemessage: (challenge: DecryptedChallengeMessageType) => void;
+    challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
+    challengeverification: (verification: DecryptedChallengeVerificationMessageType) => void;
+
+    error: (errMsg: string) => void;
+
+    update: (updatedSubplebbit: Subplebbit) => void;
+}
+
+export interface PublicationEvents {
+    challengerequest: (request: DecryptedChallengeRequestMessageType) => void;
+    challenge: (challenge: DecryptedChallengeMessageType) => void;
+    challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
+    challengeverification: (verification: DecryptedChallengeVerificationMessageType, decryptedComment?: Comment) => void; // Should we include the updated publication instance here? not sure
+    error: (errorMsg: string) => void;
+    // For comment only
+    update: (updatedInstance: Comment) => void;
 }

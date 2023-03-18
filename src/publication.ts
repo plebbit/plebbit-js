@@ -11,9 +11,10 @@ import {
     ChallengeRequestMessageType,
     ChallengeType,
     ChallengeVerificationMessageType,
+    CommentIpfsWithCid,
     DecryptedChallengeMessageType,
-    DecryptedChallengeVerificationMessageType,
     ProtocolVersion,
+    PublicationEvents,
     PublicationType,
     PublicationTypeName
 } from "./types";
@@ -26,16 +27,6 @@ import { throwWithErrorCode, timestamp } from "./util";
 import { SignatureType } from "./signer/constants";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { Comment } from "./comment";
-
-interface PublicationEvents {
-    challengerequest: (request: ChallengeRequestMessage) => void;
-    challenge: (challenge: DecryptedChallengeMessageType) => void;
-    challengeanswer: (answer: ChallengeAnswerMessage) => void;
-    challengeverification: (verification: DecryptedChallengeVerificationMessageType, decryptedComment: Comment) => void; // Should we include the updated publication instance here? not sure
-    error: (errorMsg: string) => void;
-    // For comment only
-    update: (updatedInstance: Comment) => void;
-}
 
 class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     subplebbitAddress: string;
@@ -60,7 +51,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this.on("error", (...args) => this.plebbit.emit("error", ...args));
 
         // public method should be bound
-        this.publishChallengeAnswers = this.publishChallengeAnswers.bind(this)
+        this.publishChallengeAnswers = this.publishChallengeAnswers.bind(this);
     }
 
     _initProps(props: PublicationType) {
@@ -118,7 +109,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 this.emit("error", errMsg);
                 return;
             }
-            let decryptedPublication: PublicationType | undefined;
+            let decryptedPublication: CommentIpfsWithCid | undefined;
             if (msgParsed.challengeSuccess && msgParsed.encryptedPublication) {
                 log(
                     `Challenge (${msgParsed.challengeRequestId}) has passed. Will update publication props from ChallengeVerificationMessage.publication`
@@ -173,7 +164,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             uint8ArrayFromString(JSON.stringify(this._challengeAnswer))
         );
         log(`Responded to challenge (${this._challengeAnswer.challengeRequestId}) with answers`, challengeAnswers);
-        this.emit("challengeanswer", this._challengeAnswer);
+        this.emit("challengeanswer", { ...this._challengeAnswer, challengeAnswers });
     }
 
     private _validatePublicationFields() {
@@ -244,7 +235,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange)
         ]);
         log(`Sent a challenge request (${this._challengeRequest.challengeRequestId})`);
-        this.emit("challengerequest", this._challengeRequest);
+        this.emit("challengerequest", { ...this._challengeRequest, publication: this.toJSONPubsubMessagePublication() });
     }
 }
 
