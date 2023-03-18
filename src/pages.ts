@@ -44,7 +44,7 @@ export class Pages implements PagesType {
         return await parsePageIpfs(pageIpfs, this._subplebbit);
     }
 
-    toJSON(): PagesTypeJson {
+    toJSON(): PagesTypeJson | undefined {
         if (!this.pages) return undefined;
         const pagesJson = lodash.mapValues(this.pages, (page) => {
             const commentsJson: CommentWithCommentUpdate[] = page.comments.map((comment) => comment.toJSONMerged());
