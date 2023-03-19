@@ -1398,7 +1398,7 @@ await comment.publish()
 
 | Type | Description |
 | -------- | -------- |
-| `'unpublished' \| 'resolving-subplebbit-address' \| 'fetching-subplebbit-ipns' \| 'fetching-subplebbit-ipfs' \| 'publishing-challenge-request' \| 'waiting-challenge' \| 'waiting-challenge-answers' \| 'publishing-challenge-answer' \| 'waiting-challenge-verification' \| 'failed' \| 'succeeded'` | The `Comment.publishingState` property |
+| `'stopped' \| 'resolving-subplebbit-address' \| 'fetching-subplebbit-ipns' \| 'fetching-subplebbit-ipfs' \| 'publishing-challenge-request' \| 'waiting-challenge' \| 'waiting-challenge-answers' \| 'publishing-challenge-answer' \| 'waiting-challenge-verification' \| 'failed' \| 'succeeded'` | The `Comment.publishingState` property |
 
 ## Pages API
 The pages API for scrolling pages of a subplebbit or replies to a post/comment. `Subplebbit.posts` and `Comment.replies` are `Pages` instances. `Subplebbit.posts.pages.hot` is a `Page` instance.
