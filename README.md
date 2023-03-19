@@ -216,11 +216,11 @@ Page {
 }
 PageIpfs /* (IPFS file) */ {
   nextCid: string // get next page (sorted by the same sort type)
-  comments: CommentAndCommentUpdate[] // PageIpfs is fetched from IPFS, then Comments and CommentUpdates are merged to create the Page instance
+  comments: PageIpfsComment[] // PageIpfs is fetched from IPFS, then Comments and CommentUpdates are merged to create the Page instance
 }
-CommentAndCommentUpdate {
+PageIpfsComment {
   comment: Comment
-  commentUpdate: CommentUpdate
+  update: CommentUpdate
 }
 PostsSortType: 'hot' | 'new' | 'active' | 'topHour' | 'topDay' | 'topWeek' | 'topMonth' | 'topYear' | 'topAll' | 'controversialHour' | 'controversialDay' | 'controversialWeek' | 'controversialMonth' | 'controversialYear' | 'controversialAll'
 RepliesSortType: 'topAll' | 'new' | 'old' | 'controversialAll'

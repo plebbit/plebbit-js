@@ -38,7 +38,7 @@ export interface PageTypeJson {
 }
 
 export interface PageIpfs extends Omit<PageType, "comments"> {
-    comments: { comment: CommentIpfsWithCid; commentUpdate: CommentUpdate }[];
+    comments: { comment: CommentIpfsWithCid; update: CommentUpdate }[];
 }
 
 export interface PagesType {

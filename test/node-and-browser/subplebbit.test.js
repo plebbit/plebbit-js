@@ -67,7 +67,7 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
             );
 
             for (let i = 0; i < subJsonComments.length; i++)
-                await subJsonComments[i]._initCommentUpdate(subJson.posts.pages[pageKey].comments[i].commentUpdate);
+                await subJsonComments[i]._initCommentUpdate(subJson.posts.pages[pageKey].comments[i].update);
 
             expect(subJsonComments.map((c) => c.toJSON())).to.deep.equal(subObj.posts.pages[pageKey].comments.map((c) => c.toJSON()));
         }

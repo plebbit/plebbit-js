@@ -69,7 +69,7 @@ describe(`verify pages`, async () => {
         it(`comment.flair (original)`);
         it("comment.content (author has never modified comment.content before))", async () => {
             const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
-            const commentWithNoEditIndex = invalidPage.comments.findIndex((comment) => !comment.commentUpdate.edit?.content);
+            const commentWithNoEditIndex = invalidPage.comments.findIndex((comment) => !comment.update.edit?.content);
             invalidPage.comments[commentWithNoEditIndex].comment.content = "Content modified by sub illegally";
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
@@ -77,7 +77,7 @@ describe(`verify pages`, async () => {
 
         it(`comment.content (when author has modified comment.content before)`, async () => {
             const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
-            const commentWithEditIndex = invalidPage.comments.findIndex((comment) => comment.commentUpdate.edit?.content);
+            const commentWithEditIndex = invalidPage.comments.findIndex((comment) => comment.update.edit?.content);
             expect(commentWithEditIndex).to.be.greaterThanOrEqual(commentWithEditIndex);
             invalidPage.comments[commentWithEditIndex].comment.content = "Content modified by sub illegally";
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
@@ -86,28 +86,28 @@ describe(`verify pages`, async () => {
 
         it(`commentUpdate.edit.content`, async () => {
             const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
-            const commentWithEditIndex = invalidPage.comments.findIndex((comment) => comment.commentUpdate.edit?.content);
-            invalidPage.comments[commentWithEditIndex].commentUpdate.edit.content = "Content modified by sub illegally";
+            const commentWithEditIndex = invalidPage.comments.findIndex((comment) => comment.update.edit?.content);
+            invalidPage.comments[commentWithEditIndex].update.edit.content = "Content modified by sub illegally";
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });
 
         it(`commentUpdate.edit.spoiler`, async () => {
             const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
-            const commentWithSpoilerIndex = invalidPage.comments.findIndex((comment) => comment.commentUpdate.edit?.spoiler);
+            const commentWithSpoilerIndex = invalidPage.comments.findIndex((comment) => comment.update.edit?.spoiler);
             expect(commentWithSpoilerIndex).to.be.greaterThanOrEqual(0);
-            invalidPage.comments[commentWithSpoilerIndex].commentUpdate.edit.spoiler =
-                !invalidPage.comments[commentWithSpoilerIndex].commentUpdate.edit.spoiler;
+            invalidPage.comments[commentWithSpoilerIndex].update.edit.spoiler =
+                !invalidPage.comments[commentWithSpoilerIndex].update.edit.spoiler;
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });
 
         it(`commentUpdate.edit.deleted`, async () => {
             const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
-            const commentWithDeletedIndex = invalidPage.comments.findIndex((comment) => comment.commentUpdate.edit);
+            const commentWithDeletedIndex = invalidPage.comments.findIndex((comment) => comment.update.edit);
             expect(commentWithDeletedIndex).to.be.greaterThanOrEqual(0);
-            invalidPage.comments[commentWithDeletedIndex].commentUpdate.edit.deleted = !Boolean(
-                invalidPage.comments[commentWithDeletedIndex].commentUpdate.edit.deleted
+            invalidPage.comments[commentWithDeletedIndex].update.edit.deleted = !Boolean(
+                invalidPage.comments[commentWithDeletedIndex].update.edit.deleted
             );
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
@@ -123,9 +123,9 @@ describe(`verify pages`, async () => {
         });
         it(`comment.parentCid`, async () => {
             const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
-            const commentWithRepliesIndex = invalidPage.comments.findIndex((comment) => comment.commentUpdate.replyCount > 0);
+            const commentWithRepliesIndex = invalidPage.comments.findIndex((comment) => comment.update.replyCount > 0);
             expect(commentWithRepliesIndex).to.be.greaterThanOrEqual(0);
-            invalidPage.comments[commentWithRepliesIndex].commentUpdate.replies.pages.topAll.comments[0].comment.parentCid += "123"; // Should invalidate page
+            invalidPage.comments[commentWithRepliesIndex].update.replies.pages.topAll.comments[0].comment.parentCid += "123"; // Should invalidate page
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_PARENT_CID_NOT_AS_EXPECTED });
         });
