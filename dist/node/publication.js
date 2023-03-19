@@ -78,7 +78,6 @@ var challenge_1 = require("./challenge");
 var from_string_1 = require("uint8arrays/from-string");
 var uuid_1 = require("uuid");
 var to_string_1 = require("uint8arrays/to-string");
-var events_1 = __importDefault(require("events"));
 var author_1 = __importDefault(require("./author"));
 var assert_1 = __importDefault(require("assert"));
 var signer_1 = require("./signer");
@@ -86,6 +85,8 @@ var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var version_1 = __importDefault(require("./version"));
 var signatures_1 = require("./signer/signatures");
 var util_1 = require("./util");
+var tiny_typed_emitter_1 = require("tiny-typed-emitter");
+var comment_1 = require("./comment");
 var Publication = /** @class */ (function (_super) {
     __extends(Publication, _super);
     function Publication(props, plebbit) {
@@ -184,7 +185,7 @@ var Publication = /** @class */ (function (_super) {
                             log("Challenge ".concat(msgParsed.challengeRequestId, " has failed to pass. Challenge errors = ").concat(msgParsed.challengeErrors, ", reason = '").concat(msgParsed.reason, "'"));
                         _e.label = 7;
                     case 7:
-                        this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication }), this);
+                        this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication }), this instanceof comment_1.Comment ? this : undefined);
                         return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange)];
                     case 8:
                         _e.sent();
@@ -228,7 +229,7 @@ var Publication = /** @class */ (function (_super) {
                     case 3:
                         _e.sent();
                         log("Responded to challenge (".concat(this._challengeAnswer.challengeRequestId, ") with answers"), challengeAnswers);
-                        this.emit("challengeanswer", this._challengeAnswer);
+                        this.emit("challengeanswer", __assign(__assign({}, this._challengeAnswer), { challengeAnswers: challengeAnswers }));
                         return [2 /*return*/];
                 }
             });
@@ -299,12 +300,12 @@ var Publication = /** @class */ (function (_super) {
                     case 6:
                         _g.sent();
                         log("Sent a challenge request (".concat(this._challengeRequest.challengeRequestId, ")"));
-                        this.emit("challengerequest", this._challengeRequest);
+                        this.emit("challengerequest", __assign(__assign({}, this._challengeRequest), { publication: this.toJSONPubsubMessagePublication() }));
                         return [2 /*return*/];
                 }
             });
         });
     };
     return Publication;
-}(events_1.default));
+}(tiny_typed_emitter_1.TypedEmitter));
 exports.default = Publication;

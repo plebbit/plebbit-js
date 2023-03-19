@@ -19,7 +19,7 @@ export declare class SortHandler {
     private commentChunksToPages;
     sortComments(comments: {
         comment: CommentsTableRow;
-        commentUpdate: CommentUpdatesRow;
+        update: CommentUpdatesRow;
     }[], sortName: PostSortName | ReplySortName, options: PageOptions): Promise<PageGenerationRes | undefined>;
     private _generationResToPages;
     private _generateSubplebbitPosts;

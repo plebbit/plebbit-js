@@ -196,9 +196,9 @@ var SortHandler = /** @class */ (function () {
                                                         case 0: return [4 /*yield*/, this.subplebbit.plebbit.createComment(commentProps.comment)];
                                                         case 1:
                                                             comment = _a.sent();
-                                                            if (commentProps.commentUpdate.replyCount > 0)
-                                                                (0, assert_1.default)(commentProps.commentUpdate.replies);
-                                                            return [2 /*return*/, comment.toJSONPagesIpfs(commentProps.commentUpdate)];
+                                                            if (commentProps.update.replyCount > 0)
+                                                                (0, assert_1.default)(commentProps.update.replies);
+                                                            return [2 /*return*/, comment.toJSONPagesIpfs(commentProps.update)];
                                                     }
                                                 });
                                             }); }))];
@@ -243,18 +243,18 @@ var SortHandler = /** @class */ (function () {
                         scoreSort = function (obj1, obj2) {
                             var score1 = sortProps.score({
                                 timestamp: obj1.comment.timestamp,
-                                upvoteCount: obj1.commentUpdate.upvoteCount,
-                                downvoteCount: obj1.commentUpdate.downvoteCount
+                                upvoteCount: obj1.update.upvoteCount,
+                                downvoteCount: obj1.update.downvoteCount
                             });
                             var score2 = sortProps.score({
                                 timestamp: obj2.comment.timestamp,
-                                upvoteCount: obj2.commentUpdate.upvoteCount,
-                                downvoteCount: obj2.commentUpdate.downvoteCount
+                                upvoteCount: obj2.update.upvoteCount,
+                                downvoteCount: obj2.update.downvoteCount
                             });
                             return score2 - score1;
                         };
-                        pinnedComments = comments.filter(function (obj) { return obj.commentUpdate.pinned === true; }).sort(scoreSort);
-                        unpinnedComments = comments.filter(function (obj) { return !obj.commentUpdate.pinned; }).sort(scoreSort);
+                        pinnedComments = comments.filter(function (obj) { return obj.update.pinned === true; }).sort(scoreSort);
+                        unpinnedComments = comments.filter(function (obj) { return !obj.update.pinned; }).sort(scoreSort);
                         if (sortProps.timeframe) {
                             timestampLower_1 = (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[sortProps.timeframe];
                             unpinnedComments = unpinnedComments.filter(function (obj) { return obj.comment.timestamp >= timestampLower_1; });

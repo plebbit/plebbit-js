@@ -1,12 +1,11 @@
-/// <reference types="node" />
-import EventEmitter from "events";
 import { ChallengeAnswerMessage } from "./challenge";
 import { Signer } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
-import { ChallengeType, DbHandlerPublicAPI, DecryptedChallengeAnswerMessageType, DecryptedChallengeRequestMessageType, Flair, FlairOwner, InternalSubplebbitType, ProtocolVersion, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitIpfsType, SubplebbitStats, SubplebbitRole, SubplebbitSuggested, SubplebbitType } from "./types";
+import { ChallengeType, DbHandlerPublicAPI, DecryptedChallengeAnswerMessageType, DecryptedChallengeRequestMessageType, Flair, FlairOwner, InternalSubplebbitType, ProtocolVersion, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitIpfsType, SubplebbitStats, SubplebbitRole, SubplebbitSuggested, SubplebbitType, SubplebbitEvents } from "./types";
 import { SignatureType } from "./signer/constants";
-export declare class Subplebbit extends EventEmitter implements Omit<SubplebbitType, "posts"> {
+import { TypedEmitter } from "tiny-typed-emitter";
+export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
     title?: string;
     description?: string;
     roles?: {

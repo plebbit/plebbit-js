@@ -553,7 +553,7 @@ function verifyPage(page, plebbit, subplebbit, parentCommentCid) {
                     commentSignatureValidity = _b.sent();
                     if (!commentSignatureValidity.valid)
                         return [2 /*return*/, commentSignatureValidity];
-                    return [4 /*yield*/, verifyCommentUpdate(pageComment.commentUpdate, subplebbit, pageComment.comment, plebbit)];
+                    return [4 /*yield*/, verifyCommentUpdate(pageComment.update, subplebbit, pageComment.comment, plebbit)];
                 case 3:
                     commentUpdateSignatureValidity = _b.sent();
                     if (!commentUpdateSignatureValidity.valid)

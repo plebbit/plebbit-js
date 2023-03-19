@@ -52,7 +52,7 @@ export declare class DbHandler {
     queryReplyCount(commentCid: string, trx?: Transaction): Promise<number>;
     queryCommentsForPages(options: Omit<PageOptions, "pageSize">, trx?: Transaction): Promise<{
         comment: CommentsTableRow;
-        commentUpdate: CommentUpdatesRow;
+        update: CommentUpdatesRow;
     }[]>;
     queryStoredCommentUpdate(comment: Pick<CommentsTableRow, "cid">, trx?: any): Promise<CommentUpdatesRow | undefined>;
     queryCommentsOfAuthor(authorAddresses: string | string[], trx?: Transaction): Promise<CommentsTableRow[]>;

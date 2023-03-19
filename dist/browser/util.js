@@ -338,7 +338,7 @@ function parsePageIpfs(pageIpfs, subplebbit) {
                     if (!(i < finalComments.length)) return [3 /*break*/, 5];
                     //@ts-expect-error
                     finalComments[i].subplebbit = subplebbit;
-                    return [4 /*yield*/, finalComments[i]._initCommentUpdate(pageIpfs.comments[i].commentUpdate)];
+                    return [4 /*yield*/, finalComments[i]._initCommentUpdate(pageIpfs.comments[i].update)];
                 case 3:
                     _a.sent();
                     _a.label = 4;
@@ -421,7 +421,7 @@ function parseRawPages(replies, parentCid, subplebbit) {
                             })];
                     if (replies instanceof pages_1.Pages)
                         return [2 /*return*/, replies];
-                    isIpfs = Boolean((_a = Object.values(replies.pages)[0]) === null || _a === void 0 ? void 0 : _a.comments[0]["commentUpdate"]);
+                    isIpfs = Boolean((_a = Object.values(replies.pages)[0]) === null || _a === void 0 ? void 0 : _a.comments[0]["update"]);
                     if (!isIpfs) return [3 /*break*/, 2];
                     replies = replies;
                     return [4 /*yield*/, parsePagesIpfs(replies, subplebbit)];
