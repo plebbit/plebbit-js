@@ -5,6 +5,7 @@ const {
     mockPlebbit,
     publishRandomPost,
     publishRandomReply,
+    publishWithExpectedResult,
     loadAllPages
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
@@ -134,5 +135,34 @@ describe(`commentUpdate.replyCount`, async () => {
     it(`post.replyCount increases with a reply of a reply`, async () => {
         await publishRandomReply(reply, plebbit, {}, false);
         await waitUntil(() => post.replyCount === 2 && reply.replyCount === 1, { timeout: 200000 });
+    });
+});
+
+describe(`comment.state`, async () => {
+    let plebbit, comment;
+    before(async () => {
+        plebbit = await mockPlebbit();
+        comment = await generateMockPost(subplebbitAddress, plebbit);
+    });
+
+    it(`state is stopped by default`, async () => {
+        expect(comment.state).to.equal("stopped");
+    });
+
+    it(`state changes to publishing after calling .publish()`, async () => {
+        let receivedStateChange = false;
+        comment.once("statechange", (newState) => (receivedStateChange = newState === "publishing"));
+        await publishWithExpectedResult(comment, true);
+        expect(comment.state).to.equal("publishing");
+        expect(receivedStateChange).to.be.true;
+    });
+
+    it(`state changes to updating after calling updating`, async () => {
+        let receivedStateChange = false;
+        comment.once("statechange", (newState) => (receivedStateChange = newState === "updating"));
+        await comment.update();
+        expect(comment.state).to.equal("updating");
+        expect(receivedStateChange).to.be.true;
+        comment.stop();
     });
 });
