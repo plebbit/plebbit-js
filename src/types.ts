@@ -605,6 +605,7 @@ export interface PublicationEvents {
     challengeverification: (verification: DecryptedChallengeVerificationMessageType, decryptedComment?: Comment) => void; // Should we include the updated publication instance here? not sure
     error: (errorMsg: string) => void;
     publishingstatechange: (newState: Publication["publishingState"]) => void;
+    statechange: (newState: Publication["state"]) => void;
 
     // For comment only
     update: (updatedInstance: Comment) => void;

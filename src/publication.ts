@@ -36,6 +36,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     author: Author;
     protocolVersion: ProtocolVersion;
 
+    state: "stopped" | "updating" | "publishing";
     publishingState:
         | "stopped"
         | "resolving-subplebbit-address"
@@ -60,6 +61,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         super();
         this.plebbit = plebbit;
         this._updatePublishingState("stopped");
+        this._updateState("stopped");
         this._initProps(props);
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
         this.on("error", (...args) => this.plebbit.emit("error", ...args));
@@ -220,6 +222,11 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this.emit("publishingstatechange", this.publishingState);
     }
 
+    protected _updateState(newState: Publication["state"]) {
+        this.state = newState;
+        this.emit("statechange", this.state);
+    }
+
     private _setPublishingStateUpdaters() {
         let resolvedAddress: string;
         const commentSubplebbitAddress = this.subplebbitAddress;
@@ -247,6 +254,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
     async publish() {
         const log = Logger("plebbit-js:publication:publish");
+        this._updateState("publishing");
 
         this._validatePublicationFields();
 

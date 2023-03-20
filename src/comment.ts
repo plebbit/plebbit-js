@@ -301,6 +301,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         if (typeof this.ipnsName !== "string") throwWithErrorCode("ERR_COMMENT_UPDATE_MISSING_IPNS_NAME");
 
         if (this._updateInterval) return; // Do nothing if it's already updating
+        this._updateState("updating");
         this.updateOnce();
         this._updateInterval = setInterval(this.updateOnce.bind(this), this._updateIntervalMs);
     }
