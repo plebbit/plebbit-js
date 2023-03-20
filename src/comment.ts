@@ -56,6 +56,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     removed?: boolean;
     reason?: string;
 
+    // updating states
+    updatingState: "stopped" | "resolving-author-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
+
     // private
     private _updateInterval?: any;
     private _updateIntervalMs: number;
@@ -65,6 +68,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         super(props, plebbit);
         this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
 
+        this._setUpdatingState("stopped");
         // these functions might get separated from their `this` when used
         this.publish = this.publish.bind(this);
         this.update = this.update.bind(this);
@@ -270,8 +274,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         const log = Logger("plebbit-js:comment:update");
         let res: CommentUpdate | undefined;
         try {
-            res = await loadIpnsAsJson(this.ipnsName, this.plebbit);
+            this._setUpdatingState("fetching-ipns");
+            res = await loadIpnsAsJson(this.ipnsName, this.plebbit, (ipns, cid) => this._setUpdatingState("fetching-ipfs"));
         } catch (e) {
+            this._setUpdatingState("failed");
             const errMsg = `Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error: ${e}`;
             log.error(errMsg);
             this.emit("error", errMsg);
@@ -284,17 +290,25 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             const commentInstance: Pick<CommentWithCommentUpdate, "cid" | "signature"> = lodash.pick(this, ["cid", "signature"]);
             const signatureValidity = await verifyCommentUpdate(res, { address: this.subplebbitAddress }, commentInstance, this.plebbit);
             if (!signatureValidity.valid) {
+                this._setUpdatingState("failed");
                 const errMsg = `Comment (${this.cid}) IPNS (${this.ipnsName}) signature is invalid due to '${signatureValidity.reason}'`;
                 log.error(errMsg);
                 this.emit("error", errMsg);
                 return;
             }
+            this._setUpdatingState("succeeded");
             await this._initCommentUpdate(res);
             this.emit("update", this);
         } else if (res) {
             log.trace(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
+            this._setUpdatingState("succeeded");
             await this._initCommentUpdate(res);
         }
+    }
+
+    private _setUpdatingState(newState: Comment["updatingState"]) {
+        this.updatingState = newState;
+        this.emit("updatingstatechange", this.updatingState);
     }
 
     async update() {

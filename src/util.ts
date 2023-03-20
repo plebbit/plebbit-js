@@ -109,7 +109,7 @@ export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit) {
     return JSON.parse(await fetchCid(cid, plebbit));
 }
 
-export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
+export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit, callbackAfterResolve?: (ipns: string, cid: string) => void) {
     if (typeof ipns !== "string") throwWithErrorCode("ERR_IPNS_IS_INVALID", JSON.stringify({ ipns }));
     if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
@@ -132,6 +132,7 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
         }
         if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS", JSON.stringify({ ipns, error }));
         plebbit.emit("resolvedsubplebbitipns", ipns, cid);
+        if (callbackAfterResolve) callbackAfterResolve(ipns, cid);
         return loadIpfsFileAsJson(cid, plebbit);
     }
 }
