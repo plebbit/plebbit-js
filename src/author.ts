@@ -9,7 +9,6 @@ class Author implements AuthorTypeWithCommentUpdate {
     wallets?: { [chainTicker: string]: Wallet };
     avatar?: Nft;
     flair?: Flair;
-    banExpiresAt?: number;
     subplebbit?: SubplebbitAuthor;
     shortAddress: string;
 
