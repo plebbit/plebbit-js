@@ -1,12 +1,11 @@
-/// <reference types="node" />
-import EventEmitter from "events";
 import Author from "./author";
 import { Signer } from "./signer";
-import { ProtocolVersion, PublicationType, PublicationTypeName } from "./types";
+import { ProtocolVersion, PublicationEvents, PublicationType, PublicationTypeName } from "./types";
 import { Plebbit } from "./plebbit";
 import { Subplebbit } from "./subplebbit";
 import { SignatureType } from "./signer/constants";
-declare class Publication extends EventEmitter implements PublicationType {
+import { TypedEmitter } from "tiny-typed-emitter";
+declare class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     subplebbitAddress: string;
     timestamp: number;
     signature: SignatureType;

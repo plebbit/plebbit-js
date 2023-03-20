@@ -65,7 +65,7 @@ export class SortHandler {
     }
 
     private async commentChunksToPages(
-        chunks: { comment: CommentsTableRow; commentUpdate: CommentUpdatesRow }[][],
+        chunks: { comment: CommentsTableRow; update: CommentUpdatesRow }[][],
         sortName: PostSortName | ReplySortName
     ): Promise<PageGenerationRes> {
         assert(chunks.length > 0);
@@ -77,8 +77,8 @@ export class SortHandler {
                 return await Promise.all(
                     chunk.map(async (commentProps) => {
                         const comment = await this.subplebbit.plebbit.createComment(commentProps.comment);
-                        if (commentProps.commentUpdate.replyCount > 0) assert(commentProps.commentUpdate.replies);
-                        return comment.toJSONPagesIpfs(commentProps.commentUpdate);
+                        if (commentProps.update.replyCount > 0) assert(commentProps.update.replies);
+                        return comment.toJSONPagesIpfs(commentProps.update);
                     })
                 );
             })
@@ -94,7 +94,7 @@ export class SortHandler {
 
     // Resolves to sortedComments
     async sortComments(
-        comments: { comment: CommentsTableRow; commentUpdate: CommentUpdatesRow }[],
+        comments: { comment: CommentsTableRow; update: CommentUpdatesRow }[],
         sortName: PostSortName | ReplySortName,
         options: PageOptions
     ): Promise<PageGenerationRes | undefined> {
@@ -103,25 +103,25 @@ export class SortHandler {
         if (typeof sortProps.score !== "function") throw Error(`SortProps[${sortName}] is not defined`);
 
         const scoreSort = (
-            obj1: { comment: CommentsTableRow; commentUpdate: CommentUpdatesRow },
-            obj2: { comment: CommentsTableRow; commentUpdate: CommentUpdatesRow }
+            obj1: { comment: CommentsTableRow; update: CommentUpdatesRow },
+            obj2: { comment: CommentsTableRow; update: CommentUpdatesRow }
         ) => {
             const score1 = sortProps.score({
                 timestamp: obj1.comment.timestamp,
-                upvoteCount: obj1.commentUpdate.upvoteCount,
-                downvoteCount: obj1.commentUpdate.downvoteCount
+                upvoteCount: obj1.update.upvoteCount,
+                downvoteCount: obj1.update.downvoteCount
             });
             const score2 = sortProps.score({
                 timestamp: obj2.comment.timestamp,
-                upvoteCount: obj2.commentUpdate.upvoteCount,
-                downvoteCount: obj2.commentUpdate.downvoteCount
+                upvoteCount: obj2.update.upvoteCount,
+                downvoteCount: obj2.update.downvoteCount
             });
             return score2 - score1;
         };
 
-        const pinnedComments = comments.filter((obj) => obj.commentUpdate.pinned === true).sort(scoreSort);
+        const pinnedComments = comments.filter((obj) => obj.update.pinned === true).sort(scoreSort);
 
-        let unpinnedComments = comments.filter((obj) => !obj.commentUpdate.pinned).sort(scoreSort);
+        let unpinnedComments = comments.filter((obj) => !obj.update.pinned).sort(scoreSort);
         if (sortProps.timeframe) {
             const timestampLower: number = timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe];
             unpinnedComments = unpinnedComments.filter((obj) => obj.comment.timestamp >= timestampLower);

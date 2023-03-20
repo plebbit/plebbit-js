@@ -845,7 +845,7 @@ var DbHandler = /** @class */ (function () {
                         commentsRaw = _a.sent();
                         comments = commentsRaw.map(function (commentRaw) { return ({
                             comment: lodash_1.default.pickBy(commentRaw, function (value, key) { return !key.startsWith("commentUpdate_"); }),
-                            commentUpdate: lodash_1.default.mapKeys(lodash_1.default.pickBy(commentRaw, function (value, key) { return key.startsWith("commentUpdate_"); }), function (value, key) { return key.replace("commentUpdate_", ""); })
+                            update: lodash_1.default.mapKeys(lodash_1.default.pickBy(commentRaw, function (value, key) { return key.startsWith("commentUpdate_"); }), function (value, key) { return key.replace("commentUpdate_", ""); })
                         }); });
                         return [2 /*return*/, comments];
                 }

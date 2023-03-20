@@ -112,11 +112,11 @@ var Comment = /** @class */ (function (_super) {
         });
     };
     Comment.prototype._initCommentUpdate = function (props) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
         return __awaiter(this, void 0, void 0, function () {
-            var _l;
-            return __generator(this, function (_m) {
-                switch (_m.label) {
+            var _m;
+            return __generator(this, function (_o) {
+                switch (_o.label) {
                     case 0:
                         if (!this.original)
                             this.original = (0, util_1.removeNullAndUndefinedValuesRecursively)(lodash_1.default.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"]));
@@ -134,16 +134,16 @@ var Comment = /** @class */ (function (_super) {
                         this.protocolVersion = props.protocolVersion;
                         // Merge props from original comment and CommentUpdate
                         this.spoiler = (_c = (_b = props.edit) === null || _b === void 0 ? void 0 : _b.spoiler) !== null && _c !== void 0 ? _c : this.spoiler;
-                        this.author.subplebbit = props.author.subplebbit;
-                        if ((_d = props.edit) === null || _d === void 0 ? void 0 : _d.content)
+                        this.author.subplebbit = (_d = props.author) === null || _d === void 0 ? void 0 : _d.subplebbit;
+                        if ((_e = props.edit) === null || _e === void 0 ? void 0 : _e.content)
                             this.content = props.edit.content;
-                        this.flair = props.flair || ((_e = props.edit) === null || _e === void 0 ? void 0 : _e.flair) || this.flair;
-                        this.author.flair = ((_g = (_f = props.author) === null || _f === void 0 ? void 0 : _f.subplebbit) === null || _g === void 0 ? void 0 : _g.flair) || ((_j = (_h = props.edit) === null || _h === void 0 ? void 0 : _h.author) === null || _j === void 0 ? void 0 : _j.flair) || ((_k = this.author) === null || _k === void 0 ? void 0 : _k.flair);
+                        this.flair = props.flair || ((_f = props.edit) === null || _f === void 0 ? void 0 : _f.flair) || this.flair;
+                        this.author.flair = ((_h = (_g = props.author) === null || _g === void 0 ? void 0 : _g.subplebbit) === null || _h === void 0 ? void 0 : _h.flair) || ((_k = (_j = props.edit) === null || _j === void 0 ? void 0 : _j.author) === null || _k === void 0 ? void 0 : _k.flair) || ((_l = this.author) === null || _l === void 0 ? void 0 : _l.flair);
                         (0, assert_1.default)(this.cid);
-                        _l = this;
+                        _m = this;
                         return [4 /*yield*/, (0, util_1.parseRawPages)(props.replies, this.cid, { address: this.subplebbitAddress, plebbit: this.plebbit })];
                     case 1:
-                        _l.replies = _m.sent();
+                        _m.replies = _o.sent();
                         return [2 /*return*/];
                 }
             });
@@ -181,7 +181,7 @@ var Comment = /** @class */ (function (_super) {
         (0, assert_1.default)(this.cid && this.postCid);
         return {
             comment: __assign(__assign({}, this.toJSONIpfs()), { author: this.author.toJSONIpfs(), cid: this.cid, postCid: this.postCid }),
-            commentUpdate: commentUpdate
+            update: commentUpdate
         };
     };
     Comment.prototype.toJSONIpfs = function () {
@@ -245,9 +245,9 @@ var Comment = /** @class */ (function (_super) {
                         return [3 /*break*/, 4];
                     case 3:
                         e_1 = _a.sent();
-                        errMsg = "Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error: ");
-                        log.error(errMsg, e_1);
-                        this.emit("error", errMsg, e_1);
+                        errMsg = "Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error: ").concat(e_1);
+                        log.error(errMsg);
+                        this.emit("error", errMsg);
                         return [2 /*return*/];
                     case 4:
                         if (!(res && this.updatedAt !== res.updatedAt)) return [3 /*break*/, 7];

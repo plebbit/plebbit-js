@@ -76,7 +76,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Subplebbit = void 0;
 var to_string_1 = require("uint8arrays/to-string");
-var events_1 = __importDefault(require("events"));
 var js_sha256_1 = require("js-sha256");
 var from_string_1 = require("uint8arrays/from-string");
 var challenge_1 = require("./challenge");
@@ -98,6 +97,7 @@ var signatures_1 = require("./signer/signatures");
 var constants_1 = require("./constants");
 var assert_1 = __importDefault(require("assert"));
 var version_2 = __importDefault(require("./version"));
+var tiny_typed_emitter_1 = require("tiny-typed-emitter");
 var DEFAULT_UPDATE_INTERVAL_MS = 60000;
 var DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
 var Subplebbit = /** @class */ (function (_super) {
@@ -380,7 +380,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch(function (err) {
                             var editError = (0, err_code_1.default)(err, err.code, { details: "subplebbit.edit: ".concat(err.details) });
                             log.error(editError);
-                            _this.emit("error", editError);
+                            _this.emit("error", editError.toString());
                         });
                         log("Attempting to edit subplebbit.address from ".concat(this.address, " to ").concat(newSubplebbitOptions.address));
                         return [4 /*yield*/, this._updateDbInternalState(lodash_1.default.pick(newSubplebbitOptions, "address"))];
@@ -444,7 +444,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         e_1 = _a.sent();
                         updateError = (0, err_code_1.default)(e_1, e_1.code, { details: "subplebbit.update: ".concat(e_1.details) });
                         log.error(updateError);
-                        this.emit("error", updateError);
+                        this.emit("error", updateError.toString());
                         return [2 /*return*/];
                     case 8: return [4 /*yield*/, this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address)];
                     case 9:
@@ -1056,7 +1056,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 9:
                         _k.sent();
                         log("(".concat(request.challengeRequestId, "): "), "Published ".concat(challengeVerification.type, " over pubsub: "), lodash_1.default.omit(toSignMsg, ["encryptedPublication"]));
-                        this.emit("challengeverification", __assign(__assign({}, challengeVerification), { publication: decryptedRequest.publication }));
+                        this.emit("challengeverification", __assign(__assign({}, challengeVerification), { publication: typeof publicationOrReason === "string" ? undefined : publicationOrReason }));
                         return [3 /*break*/, 14];
                     case 10:
                         _h = {
@@ -1227,7 +1227,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         err = (0, err_code_1.default)(Error(errors_1.messages.ERR_SIGNATURE_IS_INVALID), errors_1.messages[errors_1.messages.ERR_SIGNATURE_IS_INVALID], {
                             details: "subplebbit.handleChallengeExchange: Failed to verify ".concat(msgParsed.type, ", Failed verification reason: ").concat(validation.reason)
                         });
-                        this.emit("error", err);
+                        this.emit("error", err.toString());
                         throw err;
                     case 7: return [2 /*return*/];
                 }
@@ -1732,5 +1732,5 @@ var Subplebbit = /** @class */ (function (_super) {
         });
     };
     return Subplebbit;
-}(events_1.default));
+}(tiny_typed_emitter_1.TypedEmitter));
 exports.Subplebbit = Subplebbit;

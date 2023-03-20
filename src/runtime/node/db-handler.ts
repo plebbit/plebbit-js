@@ -477,7 +477,7 @@ export class DbHandler {
     async queryCommentsForPages(
         options: Omit<PageOptions, "pageSize">,
         trx?: Transaction
-    ): Promise<{ comment: CommentsTableRow; commentUpdate: CommentUpdatesRow }[]> {
+    ): Promise<{ comment: CommentsTableRow; update: CommentUpdatesRow }[]> {
         //prettier-ignore
         const commentUpdateColumns: (keyof CommentUpdatesRow)[] = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "signature", "spoiler", "updatedAt", "upvoteCount", "replies"];
         const aliasSelect = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
@@ -485,9 +485,9 @@ export class DbHandler {
         const commentsRaw: CommentsTableRow[] = await this._basePageQuery(options, trx).select([`${TABLES.COMMENTS}.*`, ...aliasSelect]);
 
         //@ts-expect-error
-        const comments: { comment: CommentsTableRow; commentUpdate: CommentUpdatesRow }[] = commentsRaw.map((commentRaw) => ({
+        const comments: { comment: CommentsTableRow; update: CommentUpdatesRow }[] = commentsRaw.map((commentRaw) => ({
             comment: lodash.pickBy(commentRaw, (value, key) => !key.startsWith("commentUpdate_")),
-            commentUpdate: lodash.mapKeys(
+            update: lodash.mapKeys(
                 lodash.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")),
                 (value, key) => key.replace("commentUpdate_", "")
             )

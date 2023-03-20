@@ -368,7 +368,7 @@ export async function verifyPage(
         const commentSignatureValidity = await verifyComment(pageComment.comment, plebbit, true);
         if (!commentSignatureValidity.valid) return commentSignatureValidity;
         const commentUpdateSignatureValidity = await verifyCommentUpdate(
-            pageComment.commentUpdate,
+            pageComment.update,
             subplebbit,
             pageComment.comment,
             plebbit

@@ -231,7 +231,7 @@ export async function parsePageIpfs(pageIpfs: PageIpfs, subplebbit: Pages["_subp
     for (let i = 0; i < finalComments.length; i++) {
         //@ts-expect-error
         finalComments[i].subplebbit = subplebbit;
-        await finalComments[i]._initCommentUpdate(pageIpfs.comments[i].commentUpdate);
+        await finalComments[i]._initCommentUpdate(pageIpfs.comments[i].update);
     }
 
     return { comments: finalComments, nextCid: pageIpfs.nextCid };
@@ -290,7 +290,7 @@ export async function parseRawPages(
 
     if (replies instanceof Pages) return replies;
 
-    const isIpfs = Boolean(Object.values(replies.pages)[0]?.comments[0]["commentUpdate"]);
+    const isIpfs = Boolean(Object.values(replies.pages)[0]?.comments[0]["update"]);
 
     if (isIpfs) {
         replies = replies as PagesTypeIpfs;

@@ -40,7 +40,7 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     toJSON(): CommentType;
     toJSONPagesIpfs(commentUpdate: CommentUpdate): {
         comment: CommentIpfsWithCid;
-        commentUpdate: CommentUpdate;
+        update: CommentUpdate;
     };
     toJSONIpfs(): CommentIpfsType;
     toJSONPubsubMessagePublication(): CommentPubsubMessage;

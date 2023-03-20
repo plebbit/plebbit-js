@@ -11,6 +11,6 @@ export declare class Pages implements PagesType {
         pagesIpfs?: Pages["_pagesIpfs"];
     });
     getPage(pageCid: string): Promise<PageType>;
-    toJSON(): PagesTypeJson;
+    toJSON(): PagesTypeJson | undefined;
     toJSONIpfs(): PagesTypeIpfs | undefined;
 }

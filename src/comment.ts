@@ -165,7 +165,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         };
     }
 
-    toJSONPagesIpfs(commentUpdate: CommentUpdate): { comment: CommentIpfsWithCid; commentUpdate: CommentUpdate } {
+    toJSONPagesIpfs(commentUpdate: CommentUpdate): { comment: CommentIpfsWithCid; update: CommentUpdate } {
         assert(this.cid && this.postCid);
         return {
             comment: {
@@ -174,7 +174,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 cid: this.cid,
                 postCid: this.postCid
             },
-            commentUpdate
+            update: commentUpdate
         };
     }
 
