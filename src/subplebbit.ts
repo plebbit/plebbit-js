@@ -276,9 +276,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this.dbHandler.lockSubCreation();
         await this.dbHandler.initDbIfNeeded();
 
-        const internalStateKey = CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT];
-
-        if (await this.dbHandler.keyvHas(internalStateKey)) {
+        if (await this.dbHandler.keyvHas(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT])) {
             log(`Merging internal subplebbit state from DB and createSubplebbitOptions`);
             await this._mergeInstanceStateWithDbState({});
         }
@@ -286,7 +284,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", JSON.stringify({ address: this.address }));
         await this._initSignerProps();
 
-        if (!(await this.dbHandler.keyvHas(internalStateKey))) {
+        if (!(await this.dbHandler.keyvHas(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]))) {
             log(`Updating the internal state of subplebbit in DB with createSubplebbitOptions`);
             await this._updateDbInternalState(this.toJSONInternal());
         }
@@ -343,7 +341,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         if (this.dbHandler) {
             // Local sub
-            const subState: InternalSubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
+            const subState = await this._getDbInternalState();
 
             if (deterministicStringify(this.toJSONInternal()) !== deterministicStringify(subState)) {
                 log(`Remote Subplebbit received a new update. Will emit an update event`);
@@ -1120,7 +1118,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const log = Logger("plebbit-js:subplebbit:sync");
 
         // Will check if address has been changed, and if so connect to the new db with the new address
-        const internalState: SubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
+        const internalState = await this._getDbInternalState();
         const potentialNewAddresses = lodash.uniq([internalState.address, this.dbHandler.subAddress(), this.address]);
 
         if (this.dbHandler.isDbInMemory()) this.setAddress(this.dbHandler.subAddress());
