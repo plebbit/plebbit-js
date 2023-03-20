@@ -11,6 +11,7 @@ import {
     CreateSubplebbitOptions,
     CreateVoteOptions,
     NativeFunctions,
+    PlebbitEvents,
     PlebbitOptions,
     PostType,
     SubplebbitIpfsType,
@@ -29,7 +30,6 @@ import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
 import { getPlebbitAddressFromPrivateKey } from "./signer/util";
-import EventEmitter from "events";
 import isIPFS from "is-ipfs";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
@@ -37,9 +37,10 @@ import lodash from "lodash";
 import { signComment, signCommentEdit, signVote } from "./signer/signatures";
 import { Options } from "ipfs-http-client";
 import { Buffer } from "buffer";
+import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions, SignerType } from "./signer/constants";
 
-export class Plebbit extends EventEmitter implements PlebbitOptions {
+export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
     pubsubIpfsClient: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">;
     resolver: Resolver;
@@ -81,7 +82,7 @@ export class Plebbit extends EventEmitter implements PlebbitOptions {
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         this._memCache = new TinyCache();
         this.resolver = new Resolver({
-            plebbit: { _memCache: this._memCache, resolveAuthorAddresses: this.resolveAuthorAddresses },
+            plebbit: { _memCache: this._memCache, resolveAuthorAddresses: this.resolveAuthorAddresses, emit: this.emit.bind(this) },
             chainProviders: this.chainProviders
         });
         this.dataPath = options.dataPath || getDefaultDataPath();

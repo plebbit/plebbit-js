@@ -100,6 +100,8 @@ export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { len
     if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
         throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", JSON.stringify({ cid, downloadLimit: DOWNLOAD_LIMIT_BYTES }));
     if (calculatedCid !== cid) throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", JSON.stringify({ calculatedCid, cid }));
+
+    plebbit.emit("fetchedcid", cid, fileContent);
     return fileContent;
 }
 
@@ -116,8 +118,10 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
             cache: "no-store",
             size: DOWNLOAD_LIMIT_BYTES
         });
-        if (res.status === 200) return JSON.parse(resText);
-        else
+        if (res.status === 200) {
+            plebbit.emit("fetchedipns", ipns, resText);
+            return JSON.parse(resText);
+        } else
             throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", JSON.stringify({ url, status: res.status, statusText: res.statusText }));
     } else {
         let cid: string | undefined, error;
@@ -127,6 +131,7 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit) {
             error = e;
         }
         if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS", JSON.stringify({ ipns, error }));
+        plebbit.emit("resolvedsubplebbitipns", ipns, cid);
         return loadIpfsFileAsJson(cid, plebbit);
     }
 }

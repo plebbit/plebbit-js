@@ -2,14 +2,14 @@ import { ethers } from "ethers";
 import { Plebbit } from "./plebbit";
 import { ChainProvider } from "./types";
 import assert from "assert";
-import isIPFS from "is-ipfs";
 import Logger from "@plebbit/plebbit-logger";
+import lodash from "lodash";
 import { throwWithErrorCode } from "./util";
 
 export class Resolver {
     chainProviders: { [chainTicker: string]: ChainProvider };
     private cachedChainProviders: { [chainTicker: string]: ethers.providers.BaseProvider };
-    private plebbit: Pick<Plebbit, "_memCache" | "resolveAuthorAddresses">;
+    private plebbit: Pick<Plebbit, "_memCache" | "resolveAuthorAddresses" | "emit">;
 
     constructor(options: { plebbit: Resolver["plebbit"]; chainProviders: { [chainTicker: string]: ChainProvider } }) {
         this.chainProviders = options.chainProviders;
@@ -19,6 +19,10 @@ export class Resolver {
 
     toJSON() {
         return { chainProviders: this.chainProviders };
+    }
+
+    toString() {
+        return JSON.stringify(this.toJSON());
     }
 
     // cache the chain providers because only 1 should be running at the same time
@@ -71,28 +75,21 @@ export class Resolver {
     async resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string> {
         assert(typeof authorAddress === "string", "authorAddress needs to be a string to be resolved");
         if (!this.plebbit.resolveAuthorAddresses) return authorAddress;
-        if (authorAddress.endsWith(".eth")) {
-            const resolvedAuthorAddress = await this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address");
-            if (!isIPFS.cid(resolvedAuthorAddress))
-                throwWithErrorCode(
-                    "ERR_ENS_AUTHOR_ADDRESS_POINTS_TO_INVALID_IPNS",
-                    `resolver: Author address (${authorAddress}) resolves to an incorrect IPNS (${resolvedAuthorAddress})`
-                );
-            return resolvedAuthorAddress;
-        } else return authorAddress;
+        let resolved = lodash.clone(authorAddress);
+        if (authorAddress.endsWith(".eth")) resolved = await this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address");
+
+        this.plebbit.emit("resolvedauthoraddress", authorAddress, resolved);
+        return resolved;
     }
 
     async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string> {
         assert(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
-        if (subplebbitAddress.endsWith(".eth")) {
-            const resolvedSubplebbitAddress = await this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address");
-            if (!isIPFS.cid(resolvedSubplebbitAddress))
-                throwWithErrorCode(
-                    "ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_IPNS",
-                    `resolver: subplebbitAddress (${subplebbitAddress}) resolves to an incorrect IPNS (${resolvedSubplebbitAddress})`
-                );
-            return resolvedSubplebbitAddress;
-        } else return subplebbitAddress;
+        let resolvedSubplebbitAddress: string = lodash.clone(subplebbitAddress);
+        if (subplebbitAddress.endsWith(".eth"))
+            resolvedSubplebbitAddress = await this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address");
+
+        this.plebbit.emit("resolvedsubplebbitaddress", subplebbitAddress, resolvedSubplebbitAddress);
+        return resolvedSubplebbitAddress;
     }
 
     isDomain(address: string): boolean {

@@ -14,6 +14,7 @@ import {
     VoteSignedPropertyNamesUnion
 } from "./signer/constants";
 import { Subplebbit } from "./subplebbit";
+import Publication from "./publication";
 
 export type ProtocolVersion = "1.0.0";
 
@@ -603,6 +604,17 @@ export interface PublicationEvents {
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType, decryptedComment?: Comment) => void; // Should we include the updated publication instance here? not sure
     error: (errorMsg: string) => void;
+    publishingstatechange: (newState: Publication["publishingState"]) => void;
+
     // For comment only
     update: (updatedInstance: Comment) => void;
+}
+
+export interface PlebbitEvents {
+    resolvedsubplebbitaddress: (subplebbitAddress: string, resolvedSubplebbitAddress: string) => void; // Emitted when subplebbit address (domain) is resolved to an IPNS
+    resolvedauthoraddress: (authorAddress: string, resolvedAuthorAddress: string) => void; // Emitted when author address is resolved to an IPNS
+    resolvedsubplebbitipns: (ipns: string, cid: string) => void; // Emitted when IPNS is resolved to a CID
+    fetchedcid: (cid: string, content: string) => void; // Emitted when a CID is fetched with its file content
+    fetchedipns: (ipns: string, content: string) => void; // Emitted when an IPNS is fetched with its file content
+    error: (errorMsg: string) => void;
 }

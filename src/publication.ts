@@ -36,6 +36,19 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     author: Author;
     protocolVersion: ProtocolVersion;
 
+    publishingState:
+        | "stopped"
+        | "resolving-subplebbit-address"
+        | "fetching-subplebbit-ipns"
+        | "fetching-subplebbit-ipfs"
+        | "publishing-challenge-request"
+        | "waiting-challenge"
+        | "waiting-challenge-answers"
+        | "publishing-challenge-answer"
+        | "waiting-challenge-verification"
+        | "failed"
+        | "succeeded";
+
     // private
     protected plebbit: Plebbit;
     protected subplebbit?: Subplebbit;
@@ -46,6 +59,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     constructor(props: PublicationType, plebbit: Plebbit) {
         super();
         this.plebbit = plebbit;
+        this._updatePublishingState("stopped");
         this._initProps(props);
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
         this.on("error", (...args) => this.plebbit.emit("error", ...args));
@@ -100,6 +114,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 await decrypt(msgParsed.encryptedChallenges, this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)
             );
             const decryptedChallenge: DecryptedChallengeMessageType = { ...msgParsed, challenges: decryptedChallenges };
+            this._updatePublishingState("waiting-challenge-answers");
             this.emit("challenge", decryptedChallenge);
         } else if (msgParsed?.type === "CHALLENGEVERIFICATION") {
             const signatureValidation = await verifyChallengeVerification(msgParsed);
@@ -107,28 +122,35 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 const errMsg = `Received a CHALLENGEVERIFICATIONMESSAGE with invalid signature. Failed verification reason: ${signatureValidation.reason}`;
                 log.error(errMsg);
                 this.emit("error", errMsg);
+                this._updatePublishingState("failed");
                 return;
             }
             let decryptedPublication: CommentIpfsWithCid | undefined;
-            if (msgParsed.challengeSuccess && msgParsed.encryptedPublication) {
-                log(
-                    `Challenge (${msgParsed.challengeRequestId}) has passed. Will update publication props from ChallengeVerificationMessage.publication`
-                );
-                decryptedPublication = JSON.parse(
-                    await decrypt(msgParsed.encryptedPublication, this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)
-                );
-                assert(decryptedPublication);
-                this._initProps(decryptedPublication);
-            } else if (msgParsed.challengeSuccess) log(`Challenge (${msgParsed.challengeRequestId}) has passed`);
-            else
+            if (msgParsed.challengeSuccess) {
+                this._updatePublishingState("succeeded");
+                log(`Challenge (${msgParsed.challengeRequestId}) has passed`);
+                if (msgParsed.encryptedPublication) {
+                    decryptedPublication = JSON.parse(
+                        await decrypt(
+                            msgParsed.encryptedPublication,
+                            this.pubsubMessageSigner.privateKey,
+                            this.subplebbit.encryption.publicKey
+                        )
+                    );
+                    assert(decryptedPublication);
+                    this._initProps(decryptedPublication);
+                }
+            } else {
+                this._updatePublishingState("failed");
                 log(
                     `Challenge ${msgParsed.challengeRequestId} has failed to pass. Challenge errors = ${msgParsed.challengeErrors}, reason = '${msgParsed.reason}'`
                 );
+            }
 
             this.emit(
                 "challengeverification",
                 { ...msgParsed, publication: decryptedPublication },
-                this instanceof Comment ? this : undefined
+                this instanceof Comment && decryptedPublication ? this : undefined
             );
             await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange);
         }
@@ -139,6 +161,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         const log = Logger("plebbit-js:publication:publishChallengeAnswers");
 
         if (!Array.isArray(challengeAnswers)) challengeAnswers = [challengeAnswers];
+        this._updatePublishingState("publishing-challenge-answer");
 
         const encryptedChallengeAnswers = await encrypt(
             JSON.stringify(challengeAnswers),
@@ -163,6 +186,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             this.subplebbit.pubsubTopic,
             uint8ArrayFromString(JSON.stringify(this._challengeAnswer))
         );
+        this._updatePublishingState("waiting-challenge-verification");
         log(`Responded to challenge (${this._challengeAnswer.challengeRequestId}) with answers`, challengeAnswers);
         this.emit("challengeanswer", { ...this._challengeAnswer, challengeAnswers });
     }
@@ -191,13 +215,46 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             throwWithErrorCode("ERR_SUBPLEBBIT_MISSING_FIELD", `${this.getType()}.publish: subplebbit.pubsubTopic does not exist`);
     }
 
+    private _updatePublishingState(newState: Publication["publishingState"]) {
+        this.publishingState = newState;
+        this.emit("publishingstatechange", this.publishingState);
+    }
+
+    private _setPublishingStateUpdaters() {
+        let resolvedAddress: string;
+        const commentSubplebbitAddress = this.subplebbitAddress;
+        const resolvedSubplebbitAddress = ((subAddress: string, subResolvedAddress: string) => {
+            if (subAddress === commentSubplebbitAddress) {
+                this._updatePublishingState("fetching-subplebbit-ipns");
+                resolvedAddress = subResolvedAddress;
+                this.plebbit.removeListener("resolvedsubplebbitaddress", resolvedSubplebbitAddress);
+            }
+        }).bind(this);
+
+        this.plebbit.on("resolvedsubplebbitaddress", resolvedSubplebbitAddress);
+
+        const fetchingSubIpfs = ((ipns: string, cid: string) => {
+            assert(resolvedAddress);
+            if (ipns === resolvedAddress) {
+                this._updatePublishingState("fetching-subplebbit-ipfs");
+                this.plebbit.removeListener("resolvedsubplebbitipns", fetchingSubIpfs);
+            }
+        }).bind(this);
+
+        // insert condition here
+        if (this.plebbit.ipfsClient) this.plebbit.on("resolvedsubplebbitipns", fetchingSubIpfs);
+    }
+
     async publish() {
         const log = Logger("plebbit-js:publication:publish");
 
         this._validatePublicationFields();
 
         const options = { acceptedChallengeTypes: [] };
+        this._updatePublishingState("resolving-subplebbit-address");
+        this._setPublishingStateUpdaters();
         this.subplebbit = await this.plebbit.getSubplebbit(this.subplebbitAddress);
+        this._updatePublishingState("publishing-challenge-request");
 
         this._validateSubFields();
 
@@ -234,6 +291,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             ),
             this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange)
         ]);
+        this._updatePublishingState("waiting-challenge");
         log(`Sent a challenge request (${this._challengeRequest.challengeRequestId})`);
         this.emit("challengerequest", { ...this._challengeRequest, publication: this.toJSONPubsubMessagePublication() });
     }
