@@ -227,7 +227,7 @@ describe(`Publishing replies`, async () => {
     );
 });
 
-describe.only(`comment.publishingState`, async () => {
+describe(`comment.publishingState`, async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockPlebbit();
@@ -295,5 +295,20 @@ describe.only(`comment.publishingState`, async () => {
 
         expect(gatewayPlebbit.eventNames()).to.deep.equal([]); // Make sure events has been unsubscribed from
         expect(recordedStates).to.deep.equal(expectedStates);
+    });
+
+    it(`comment.publishingState = 'failed' if user provide incorrect answer`, async () => {
+        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+        mockPost.removeAllListeners();
+
+        mockPost.once("challenge", async (challengeMsg) => {
+            expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
+            await mockPost.publishChallengeAnswers(["1"]); // Wrong answer here
+        });
+
+        await publishWithExpectedResult(mockPost, false);
+
+        expect(plebbit.eventNames()).to.deep.equal([]); // Make sure events has been unsubscribed from
+        expect(mockPost.publishingState).to.equal("failed");
     });
 });
