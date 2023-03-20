@@ -166,3 +166,48 @@ describe(`comment.state`, async () => {
         comment.stop();
     });
 });
+
+describe("comment.updatingState", async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
+
+    it(`updatingState is stopped by default`, async () => {
+        const mockPost = await generateMockPost(subplebbitAddress, plebbit);
+        expect(mockPost.updatingState).to.equal("stopped");
+    });
+
+    it(`updating states is in correct order upon updating a comment with IPFS client`, async () => {
+        const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        const expectedStates = ["fetching-ipns", "fetching-ipfs", "succeeded"];
+        const recordedStates = [];
+        mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+        await mockPost.update();
+
+        await new Promise((resolve) => mockPost.once("update", resolve));
+        await mockPost.stop();
+
+        expect(recordedStates.slice(recordedStates.length - 3)).to.deep.equal(expectedStates);
+        expect(plebbit.eventNames()).to.deep.equal([]); // Make sure events has been unsubscribed from
+    });
+
+    it(`updating states is in correct order upon updating a comment with gateway`, async () => {
+        const gatewayPlebbit = await mockPlebbit();
+        gatewayPlebbit.ipfsHttpClientOptions = gatewayPlebbit.ipfsClient = undefined;
+
+        const mockPost = await publishRandomPost(subplebbitAddress, gatewayPlebbit, {}, false);
+        const expectedStates = ["fetching-ipns", "succeeded"];
+        const recordedStates = [];
+        mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+        await mockPost.update();
+
+        await new Promise((resolve) => mockPost.once("update", resolve));
+        await mockPost.stop();
+
+        expect(recordedStates.slice(recordedStates.length - 2)).to.deep.equal(expectedStates);
+        expect(gatewayPlebbit.eventNames()).to.deep.equal([]); // Make sure events has been unsubscribed from
+    });
+});
