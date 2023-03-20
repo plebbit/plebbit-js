@@ -123,17 +123,12 @@ export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promi
 
 async function _mockSubplebbitPlebbit(signers: SignerType[], dataPath: string) {
     const plebbit = await mockPlebbit(dataPath);
-    //@ts-ignore
-    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-        if (authorAddress === "plebbit.eth") return signers[6].address;
-        else if (authorAddress === "testgibbreish.eth") return undefined;
-        return authorAddress;
-    };
-    //@ts-ignore
-    plebbit.resolver.resolveSubplebbitAddressIfNeeded = async (subplebbitAddress) => {
-        if (subplebbitAddress === "plebbit.eth") return signers[3].address;
-        else if (plebbit.resolver.isDomain(subplebbitAddress)) throw Error(`${subplebbitAddress} has no subplebbit-address`);
-        return subplebbitAddress;
+
+    plebbit.resolver._resolveEnsTxtRecord = async (ensName: string, textRecord: string) => {
+        if (ensName === "plebbit.eth" && textRecord === "subplebbit-address") return signers[3].address;
+        else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address") return signers[6].address;
+        else if (ensName === "testgibbreish.eth" && textRecord === "plebbit-author-address") return undefined;
+        else if (textRecord === "subplebbit-address") throw Error(`${ensName} has no subplebbit-address`);
     };
 
     return plebbit;
@@ -285,16 +280,13 @@ export async function mockPlebbit(dataPath?: string) {
         dataPath
     });
 
-    plebbit.resolver.resolveAuthorAddressIfNeeded = async (authorAddress) => {
-        if (authorAddress === "plebbit.eth") return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // signers[6].address
-        else if (authorAddress === "testgibbreish.eth") throw new Error(`Domain (${authorAddress}) has no plebbit-author-address`);
-        return authorAddress;
-    };
-
-    plebbit.resolver.resolveSubplebbitAddressIfNeeded = async (subAddress) => {
-        if (subAddress === "plebbit.eth") return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3].address
-        else if (subAddress === "testgibbreish.eth") throw new Error(`Domain (${subAddress}) has no subplebbit-address`);
-        return subAddress;
+    plebbit.resolver._resolveEnsTxtRecord = async (ensName: string, textRecord: string) => {
+        if (ensName === "plebbit.eth" && textRecord === "subplebbit-address") return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo";
+        else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address")
+            return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y";
+        else if (ensName === "testgibbreish.eth" && textRecord === "plebbit-author-address")
+            throw new Error(`Domain (${ensName}) has no plebbit-author-address`);
+        else if (textRecord === "subplebbit-address") throw Error(`${ensName} has no subplebbit-address`);
     };
 
     plebbit.pubsubIpfsClient = createMockIpfsClient();
