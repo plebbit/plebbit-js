@@ -283,8 +283,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await this._mergeInstanceStateWithDbState({});
         }
 
-        
-        if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", JSON.stringify({address: this.address}));
+        if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", JSON.stringify({ address: this.address }));
         await this._initSignerProps();
 
         if (!(await this.dbHandler.keyvHas(internalStateKey))) {
@@ -686,7 +685,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 "pinned",
                 "locked",
                 "removed",
-                "reason"
+                "reason",
+                "shortCid"
             ];
 
             if (Object.keys(publication).some((key: keyof CommentType) => forbiddenCommentFields.includes(key))) {

@@ -87,7 +87,8 @@ describe(`Posts with forbidden fields are rejected during challenge exchange`, a
         { pinned: true },
         { locked: true },
         { removed: true },
-        { reason: "Test forbidden" }
+        { reason: "Test forbidden" },
+        { shortCid: "Qm1234" }
     ];
     forbiddenFieldsWithValue.map((forbiddenType) =>
         it(`comment.${Object.keys(forbiddenType)[0]} is rejected by sub`, async () => {
