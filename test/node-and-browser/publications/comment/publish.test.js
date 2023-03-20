@@ -18,6 +18,7 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
+const imageCaptchaSubplebbitAddress = signers[2].address;
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
@@ -224,4 +225,75 @@ describe(`Publishing replies`, async () => {
             parents.push(reply);
         })
     );
+});
+
+describe.only(`comment.publishingState`, async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
+
+    it(`publishingState is stopped by default`, async () => {
+        const comment = await generateMockPost(subplebbitAddress, plebbit);
+        expect(comment.publishingState).to.equal("stopped");
+    });
+
+    it(`publishing states is in correct order upon publishing a comment with IPFS client`, async () => {
+        const expectedStates = [
+            "resolving-subplebbit-address",
+            "fetching-subplebbit-ipns",
+            "fetching-subplebbit-ipfs",
+            "publishing-challenge-request",
+            "waiting-challenge",
+            "waiting-challenge-answers",
+            "publishing-challenge-answer",
+            "waiting-challenge-verification",
+            "succeeded"
+        ];
+        const recordedStates = [];
+        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+        mockPost.removeAllListeners();
+
+        mockPost.once("challenge", async (challengeMsg) => {
+            expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
+            await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
+        });
+
+        mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
+
+        await publishWithExpectedResult(mockPost, true);
+
+        expect(plebbit.eventNames()).to.deep.equal([]); // Make sure events has been unsubscribed from
+        expect(recordedStates).to.deep.equal(expectedStates);
+    });
+
+    it(`publishing states is in correct order upon publishing a comment with gateway`, async () => {
+        const gatewayPlebbit = await mockPlebbit();
+        gatewayPlebbit.ipfsHttpClientOptions = gatewayPlebbit.ipfsClient = undefined;
+        const expectedStates = [
+            "resolving-subplebbit-address",
+            "fetching-subplebbit-ipns",
+            "publishing-challenge-request",
+            "waiting-challenge",
+            "waiting-challenge-answers",
+            "publishing-challenge-answer",
+            "waiting-challenge-verification",
+            "succeeded"
+        ];
+        const recordedStates = [];
+        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, gatewayPlebbit);
+        mockPost.removeAllListeners();
+
+        mockPost.once("challenge", async (challengeMsg) => {
+            expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
+            await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
+        });
+
+        mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
+
+        await publishWithExpectedResult(mockPost, true);
+
+        expect(gatewayPlebbit.eventNames()).to.deep.equal([]); // Make sure events has been unsubscribed from
+        expect(recordedStates).to.deep.equal(expectedStates);
+    });
 });
