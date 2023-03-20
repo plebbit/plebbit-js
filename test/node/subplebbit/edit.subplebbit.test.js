@@ -22,9 +22,12 @@ describe(`subplebbit.edit`, async () => {
         plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
         subplebbit = await createMockSub({}, plebbit);
         ethAddress = `test-edit-${timestamp()}.eth`;
+        const originalPlebbit = await mockPlebbit();
         const subplebbitAddress = lodash.clone(subplebbit.address);
-        plebbit.resolver.resolveSubplebbitAddressIfNeeded = (subplebbitDomain) =>
-            subplebbitDomain === ethAddress ? subplebbitAddress : subplebbitDomain;
+        plebbit.resolver._resolveEnsTxtRecord = (ensName, txtRecordName) => {
+            if (ensName === ethAddress && txtRecordName) return subplebbitAddress;
+            else return originalPlebbit.resolver._resolveEnsTxtRecord(ensName, txtRecordName);
+        };
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
         await publishRandomPost(subplebbit.address, plebbit);
@@ -206,8 +209,13 @@ describe(`Concurrency with subplebbit.edit`, async () => {
         const customPlebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
         const signer = await customPlebbit.createSigner();
         const domain = `edit-before-start-${timestamp()}.eth`;
-        customPlebbit.resolver.resolveSubplebbitAddressIfNeeded = async (subAddress) =>
-            subAddress === domain ? signer.address : subAddress;
+
+        const originalPlebbit = await mockPlebbit();
+
+        customPlebbit.resolver._resolveEnsTxtRecord = (ensName, txtRecordName) => {
+            if (ensName === domain && txtRecordName === "subplebbit-address") return signer.address;
+            else return originalPlebbit.resolver._resolveEnsTxtRecord(ensName, txtRecordName);
+        };
         const sub = await createMockSub({ signer }, customPlebbit);
         await sub.edit({ address: domain });
         // Check for locks
