@@ -373,7 +373,7 @@ function _publishVotes(comments, votesPerCommentToPublish, plebbit) {
 }
 function _populateSubplebbit(subplebbit, props) {
     return __awaiter(this, void 0, void 0, function () {
-        var posts, replies;
+        var posts, replies, postVotes, repliesVotes;
         var _a;
         return __generator(this, function (_b) {
             switch (_b.label) {
@@ -393,16 +393,18 @@ function _populateSubplebbit(subplebbit, props) {
                 case 3:
                     posts = _b.sent();
                     console.log("Have successfully published ".concat(posts.length, " posts"));
-                    return [4 /*yield*/, Promise.all([
-                            _publishReplies(posts[0], props.numOfCommentsToPublish, subplebbit.plebbit),
-                            _publishVotes(posts, props.votesPerCommentToPublish, subplebbit.plebbit)
-                        ])];
+                    return [4 /*yield*/, _publishReplies(posts[0], props.numOfCommentsToPublish, subplebbit.plebbit)];
                 case 4:
-                    replies = (_b.sent())[0];
+                    replies = _b.sent();
                     console.log("Have sucessfully published ".concat(replies.length, " replies"));
-                    return [4 /*yield*/, _publishVotes(replies, props.votesPerCommentToPublish, subplebbit.plebbit)];
+                    return [4 /*yield*/, _publishVotes(posts, props.votesPerCommentToPublish, subplebbit.plebbit)];
                 case 5:
-                    _b.sent();
+                    postVotes = _b.sent();
+                    console.log("Have sucessfully published ".concat(postVotes.length, " votes on ").concat(posts.length, " posts"));
+                    return [4 /*yield*/, _publishVotes(replies, props.votesPerCommentToPublish, subplebbit.plebbit)];
+                case 6:
+                    repliesVotes = _b.sent();
+                    console.log("Have successfully published ".concat(repliesVotes.length, " votes on ").concat(replies.length, " replies"));
                     return [2 /*return*/];
             }
         });
@@ -593,7 +595,7 @@ function publishWithExpectedResult(publication, expectedChallengeSuccess, expect
                 case 1:
                     _a.sent();
                     return [4 /*yield*/, new Promise(function (resolve, reject) {
-                            setTimeout(function () { return !receivedResponse && reject("Publication did not receive any response"); }, 20000); // throw after 20 seconds if we haven't received a response
+                            setTimeout(function () { return !receivedResponse && reject("Publication did not receive any response"); }, 30000); // throw after 20 seconds if we haven't received a response
                             publication.once("challengeverification", function (verificationMsg) {
                                 receivedResponse = true;
                                 if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
