@@ -39,8 +39,6 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
       # test
-      # - run: DEBUG="plebbit-js:*" yarn test:server & yarn test:server:wait-on
-      # - run: DEBUG="plebbit-js:*" yarn test
-      # run test server on the same line to debug a crash
-      - run: DEBUG="plebbit-js:*" yarn test:server & yarn test:server:wait-on && yarn test
+      - run: DEBUG="plebbit-js:*" yarn test:server & yarn test:server:wait-on
+      - run: DEBUG="plebbit-js:*" yarn test
       - run: DEBUG="plebbit-js:*" CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) yarn test:browser
