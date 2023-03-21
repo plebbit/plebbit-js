@@ -207,8 +207,8 @@ Flair {
   expiresAt?: timestamp in second, a flair assigned to an author by a mod will follow the author in future comments, unless it expires
 }
 Pages {
-  pages: {[key: PostsSortType | RepliesSortType]: Page} // e.g. subplebbit.posts.pages.hot.comments[0].cid = 'Qm...'
-  pageCids: {[key: PostsSortType | RepliesSortType | ModSortType]: pageCid} // e.g. subplebbit.posts.pageCids.topAll = 'Qm...'
+  pages: {[key: PostsSortType | RepliesSortType]: Page} // e.g. subplebbit.posts.pages.hot.comments[0].cid = '12D3KooW...'
+  pageCids: {[key: PostsSortType | RepliesSortType | ModSortType]: pageCid} // e.g. subplebbit.posts.pageCids.topAll = '12D3KooW...'
 }
 Page {
   nextCid: string // get next page (sorted by the same sort type)
@@ -496,7 +496,7 @@ const plebbit = await Plebbit(options) // should be independent instance, not si
 #### Example
 
 ```js
-const multisubAddress = 'QmbWqx...' // or 'john.eth'
+const multisubAddress = '12D3KooW...' // or 'john.eth'
 const multisub = await plebbit.getSubplebbit(multisubAddress)
 const multisubSubplebbitAddresses = multisub.map(subplebbit => subplebbit.address)
 console.log(multisubSubplebbitAddresses)
@@ -521,7 +521,7 @@ console.log(multisubSubplebbitAddresses)
 #### Example
 
 ```js
-const subplebbitAddress = 'QmbWqx...'
+const subplebbitAddress = '12D3KooW...'
 const subplebbit = await plebbit.getSubplebbit(subplebbitAddress)
 console.log(subplebbit)
 
@@ -560,7 +560,7 @@ Prints:
 #### Example
 
 ```js
-const commentCid = 'QmbWqx...'
+const commentCid = 'Qm...'
 const comment = await plebbit.getComment(commentCid)
 console.log('comment:', comment)
 comment.on('update', updatedComment => console.log('comment with latest data', updatedComment))
@@ -682,14 +682,14 @@ const signer = await plebbit.createSigner()
 const subplebbit = await plebbit.createSubplebbit({signer, title: 'Memes', description: 'Post your memes here.'})
 
 // instantiate an already existing subplebbit instance
-const subplebbitOptions = {address: 'Qmb...',}
+const subplebbitOptions = {address: '12D3KooW...',}
 const subplebbit = await plebbit.createSubplebbit(subplebbitOptions)
 
 // edit the subplebbit info in the database
 await subplebbit.edit({
   title: 'Memes',
   description: 'Post your memes here.',
-  pubsubTopic: 'Qmb...'
+  pubsubTopic: '12D3KooW...'
 })
 
 // start publishing updates every 5 minutes
@@ -697,16 +697,16 @@ await subplebbit.start()
 
 // instantiate an already existing subplebbit instance and initialize any property on it
 const subplebbit = await plebbit.createSubplebbit({
-  address: 'Qmb...',
+  address: '12D3KooW...',
   title: 'Memes',
   posts: {
     pages: {
       hot: {
-        nextCid: 'Qmb...', 
+        nextCid: 'Qm...', 
         comments: [{content: 'My first post', ...post}]
       }
     },
-    pageCids: {topAll: 'Qmb...', new: 'Qmb...', ...pageCids}
+    pageCids: {topAll: 'Qm...', new: 'Qm...', ...pageCids}
   }
 })
 console.log(subplebbit.title) // prints 'Memes'
@@ -809,18 +809,18 @@ comment.update()
 
 // initialize any property on the Comment instance
 const comment = await plebbit.createComment({
-  cid: 'Qmb...',
+  cid: 'Qm...',
   content: 'My first post',
   locked: true,
   upvoteCount: 100,
   replies: {
     pages: {
       topAll: {
-        nextCid: 'Qmb...', 
+        nextCid: 'Qm...', 
         comments: [{content: 'My first reply', ...reply}]
       }
     },
-    pageCids: {new: 'Qmb...', old: 'Qmb...', ...pageCids}
+    pageCids: {new: 'Qm...', old: 'Qm...', ...pageCids}
   }
 })
 console.log(comment.content) // prints 'My first post'
@@ -1062,7 +1062,7 @@ const subplebbit = await plebbit.createSubplebbit(options)
 await subplebbit.edit({
   title: 'Memes',
   description: 'Post your memes here.',
-  pubsubTopic: 'Qmb...'
+  pubsubTopic: '12D3KooW...'
 })
 // start publishing updates/new posts
 await subplebbit.start()
@@ -1080,7 +1080,7 @@ await subplebbit.start()
 
 ```js
 const options = {
-  address: 'Qmb...'
+  address: '12D3KooW...'
 }
 const subplebbit = await plebbit.createSubplebbit(options)
 subplebbit.on('update', (updatedSubplebbitInstance) => {
@@ -1109,7 +1109,7 @@ The subplebbit events.
 
 ```js
 const options = {
-  address: 'Qmb...'
+  address: '12D3KooW...'
 }
 const subplebbit = await plebbit.createSubplebbit(options)
 subplebbit.on('update', (updatedSubplebbit) => console.log(updatedSubplebbit))
@@ -1257,7 +1257,7 @@ await comment.publish()
 #### Example
 
 ```js
-const commentCid = 'Qmb...'
+const commentCid = 'Qm...'
 const comment = await plebbit.getComment(commentCid)
 comment.on('update', (updatedCommentInstance) => {
   console.log(updatedCommentInstance)
