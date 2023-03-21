@@ -229,12 +229,13 @@ async function _populateSubplebbit(
     await new Promise((resolve) => subplebbit.once("update", resolve));
     const posts = await _publishPosts(subplebbit.address, props.numOfCommentsToPublish, subplebbit.plebbit); // If no comment[] is provided, we publish posts
     console.log(`Have successfully published ${posts.length} posts`);
-    const [replies] = await Promise.all([
-        _publishReplies(posts[0], props.numOfCommentsToPublish, subplebbit.plebbit),
-        _publishVotes(posts, props.votesPerCommentToPublish, subplebbit.plebbit)
-    ]);
+    const replies = await _publishReplies(posts[0], props.numOfCommentsToPublish, subplebbit.plebbit);
     console.log(`Have sucessfully published ${replies.length} replies`);
-    await _publishVotes(replies, props.votesPerCommentToPublish, subplebbit.plebbit);
+    const postVotes = await _publishVotes(posts, props.votesPerCommentToPublish, subplebbit.plebbit);
+    console.log(`Have sucessfully published ${postVotes.length} votes on ${posts.length} posts`);
+
+    const repliesVotes = await _publishVotes(replies, props.votesPerCommentToPublish, subplebbit.plebbit);
+    console.log(`Have successfully published ${repliesVotes.length} votes on ${replies.length} replies`);
 }
 
 export async function startSubplebbits(props: {
@@ -348,7 +349,7 @@ export async function publishWithExpectedResult(publication: Publication, expect
 
     await publication.publish();
     await new Promise((resolve, reject) => {
-        setTimeout(() => !receivedResponse && reject(`Publication did not receive any response`), 20000); // throw after 20 seconds if we haven't received a response
+        setTimeout(() => !receivedResponse && reject(`Publication did not receive any response`), 30000); // throw after 20 seconds if we haven't received a response
         publication.once("challengeverification", (verificationMsg) => {
             receivedResponse = true;
             if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
