@@ -416,8 +416,8 @@ Encrypted {
   - `challengerequest`
   - `challengeanswer`
   - `error`
-  - [`statechange`](#statechange)
-  - [`updatingstatechange`](#updatingstatechange)
+  - [`statechange`](#statechange-1)
+  - [`updatingstatechange`](#updatingstatechange-1)
   - [`publishingstatechange`](#publishingstatechange)
 - [Pages API](#pages-api)
   - [`pages.getPage(pageCid)`](#pagesgetpagepagecid)
