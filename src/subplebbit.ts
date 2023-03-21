@@ -341,7 +341,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         if (this.dbHandler) {
             // Local sub
-            const subState = await this._getDbInternalState();
+            const subState = await this._getDbInternalState(false);
 
             if (deterministicStringify(this.toJSONInternal()) !== deterministicStringify(subState)) {
                 log(`Remote Subplebbit received a new update. Will emit an update event`);
@@ -1102,10 +1102,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
     }
 
-    private async _getDbInternalState() {
-        await this.dbHandler.lockSubState();
+    private async _getDbInternalState(lock = true) {
+        if (lock) await this.dbHandler.lockSubState();
         const internalState: InternalSubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
-        await this.dbHandler.unlockSubState();
+        if (lock) await this.dbHandler.unlockSubState();
         return internalState;
     }
 
@@ -1118,7 +1118,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const log = Logger("plebbit-js:subplebbit:sync");
 
         // Will check if address has been changed, and if so connect to the new db with the new address
-        const internalState = await this._getDbInternalState();
+        const internalState = await this._getDbInternalState(false);
         const potentialNewAddresses = lodash.uniq([internalState.address, this.dbHandler.subAddress(), this.address]);
 
         if (this.dbHandler.isDbInMemory()) this.setAddress(this.dbHandler.subAddress());
