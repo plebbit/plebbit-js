@@ -7,7 +7,7 @@ export declare function fetchCid(cid: string, plebbit: Plebbit, catOptions?: {
     length: number;
 }): Promise<string>;
 export declare function loadIpfsFileAsJson(cid: string, plebbit: Plebbit): Promise<any>;
-export declare function loadIpnsAsJson(ipns: string, plebbit: Plebbit): Promise<any>;
+export declare function loadIpnsAsJson(ipns: string, plebbit: Plebbit, callbackAfterResolve?: (ipns: string, cid: string) => void): Promise<any>;
 export declare function timestamp(): number;
 export declare function replaceXWithY(obj: Object, x: any, y: any): any;
 export declare function hotScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">): number;

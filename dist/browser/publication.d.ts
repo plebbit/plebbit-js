@@ -12,6 +12,8 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     signer: Signer;
     author: Author;
     protocolVersion: ProtocolVersion;
+    state: "stopped" | "updating" | "publishing";
+    publishingState: "stopped" | "resolving-subplebbit-address" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs" | "publishing-challenge-request" | "waiting-challenge" | "waiting-challenge-answers" | "publishing-challenge-answer" | "waiting-challenge-verification" | "failed" | "succeeded";
     protected plebbit: Plebbit;
     protected subplebbit?: Subplebbit;
     protected pubsubMessageSigner: Signer;
@@ -25,6 +27,9 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     publishChallengeAnswers(challengeAnswers: string[]): Promise<void>;
     private _validatePublicationFields;
     private _validateSubFields;
+    private _updatePublishingState;
+    protected _updateState(newState: Publication["state"]): void;
+    private _setPublishingStateUpdaters;
     publish(): Promise<void>;
 }
 export default Publication;

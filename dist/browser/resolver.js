@@ -42,8 +42,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Resolver = void 0;
 var ethers_1 = require("ethers");
 var assert_1 = __importDefault(require("assert"));
-var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
+var lodash_1 = __importDefault(require("lodash"));
 var util_1 = require("./util");
 var Resolver = /** @class */ (function () {
     function Resolver(options) {
@@ -53,6 +53,9 @@ var Resolver = /** @class */ (function () {
     }
     Resolver.prototype.toJSON = function () {
         return { chainProviders: this.chainProviders };
+    };
+    Resolver.prototype.toString = function () {
+        return JSON.stringify(this.toJSON());
     };
     // cache the chain providers because only 1 should be running at the same time
     Resolver.prototype._getChainProvider = function (chainTicker) {
@@ -105,21 +108,22 @@ var Resolver = /** @class */ (function () {
     };
     Resolver.prototype.resolveAuthorAddressIfNeeded = function (authorAddress) {
         return __awaiter(this, void 0, void 0, function () {
-            var resolvedAuthorAddress;
+            var resolved;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         (0, assert_1.default)(typeof authorAddress === "string", "authorAddress needs to be a string to be resolved");
                         if (!this.plebbit.resolveAuthorAddresses)
                             return [2 /*return*/, authorAddress];
+                        resolved = lodash_1.default.clone(authorAddress);
                         if (!authorAddress.endsWith(".eth")) return [3 /*break*/, 2];
                         return [4 /*yield*/, this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address")];
                     case 1:
-                        resolvedAuthorAddress = _a.sent();
-                        if (!is_ipfs_1.default.cid(resolvedAuthorAddress))
-                            (0, util_1.throwWithErrorCode)("ERR_ENS_AUTHOR_ADDRESS_POINTS_TO_INVALID_IPNS", "resolver: Author address (".concat(authorAddress, ") resolves to an incorrect IPNS (").concat(resolvedAuthorAddress, ")"));
-                        return [2 /*return*/, resolvedAuthorAddress];
-                    case 2: return [2 /*return*/, authorAddress];
+                        resolved = _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        this.plebbit.emit("resolvedauthoraddress", authorAddress, resolved);
+                        return [2 /*return*/, resolved];
                 }
             });
         });
@@ -131,14 +135,15 @@ var Resolver = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         (0, assert_1.default)(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
+                        resolvedSubplebbitAddress = lodash_1.default.clone(subplebbitAddress);
                         if (!subplebbitAddress.endsWith(".eth")) return [3 /*break*/, 2];
                         return [4 /*yield*/, this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address")];
                     case 1:
                         resolvedSubplebbitAddress = _a.sent();
-                        if (!is_ipfs_1.default.cid(resolvedSubplebbitAddress))
-                            (0, util_1.throwWithErrorCode)("ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_IPNS", "resolver: subplebbitAddress (".concat(subplebbitAddress, ") resolves to an incorrect IPNS (").concat(resolvedSubplebbitAddress, ")"));
+                        _a.label = 2;
+                    case 2:
+                        this.plebbit.emit("resolvedsubplebbitaddress", subplebbitAddress, resolvedSubplebbitAddress);
                         return [2 /*return*/, resolvedSubplebbitAddress];
-                    case 2: return [2 /*return*/, subplebbitAddress];
                 }
             });
         });

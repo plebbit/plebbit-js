@@ -17,6 +17,7 @@ export declare class Resolver {
             [chainTicker: string]: ChainProvider;
         };
     };
+    toString(): string;
     _getChainProvider(chainTicker: string): ethers.providers.BaseProvider;
     _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string>;
     resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string>;

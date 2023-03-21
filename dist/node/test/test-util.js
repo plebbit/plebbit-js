@@ -209,24 +209,17 @@ function _mockSubplebbitPlebbit(signers, dataPath) {
                 case 0: return [4 /*yield*/, mockPlebbit(dataPath)];
                 case 1:
                     plebbit = _a.sent();
-                    //@ts-ignore
-                    plebbit.resolver.resolveAuthorAddressIfNeeded = function (authorAddress) { return __awaiter(_this, void 0, void 0, function () {
+                    plebbit.resolver._resolveEnsTxtRecord = function (ensName, textRecord) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
-                            if (authorAddress === "plebbit.eth")
-                                return [2 /*return*/, signers[6].address];
-                            else if (authorAddress === "testgibbreish.eth")
-                                return [2 /*return*/, undefined];
-                            return [2 /*return*/, authorAddress];
-                        });
-                    }); };
-                    //@ts-ignore
-                    plebbit.resolver.resolveSubplebbitAddressIfNeeded = function (subplebbitAddress) { return __awaiter(_this, void 0, void 0, function () {
-                        return __generator(this, function (_a) {
-                            if (subplebbitAddress === "plebbit.eth")
+                            if (ensName === "plebbit.eth" && textRecord === "subplebbit-address")
                                 return [2 /*return*/, signers[3].address];
-                            else if (plebbit.resolver.isDomain(subplebbitAddress))
-                                throw Error("".concat(subplebbitAddress, " has no subplebbit-address"));
-                            return [2 /*return*/, subplebbitAddress];
+                            else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address")
+                                return [2 /*return*/, signers[6].address];
+                            else if (ensName === "testgibbreish.eth" && textRecord === "plebbit-author-address")
+                                return [2 /*return*/, undefined];
+                            else if (textRecord === "subplebbit-address")
+                                throw Error("".concat(ensName, " has no subplebbit-address"));
+                            return [2 /*return*/];
                         });
                     }); };
                     return [2 /*return*/, plebbit];
@@ -479,22 +472,17 @@ function mockPlebbit(dataPath) {
                     })];
                 case 1:
                     plebbit = _a.sent();
-                    plebbit.resolver.resolveAuthorAddressIfNeeded = function (authorAddress) { return __awaiter(_this, void 0, void 0, function () {
+                    plebbit.resolver._resolveEnsTxtRecord = function (ensName, textRecord) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
-                            if (authorAddress === "plebbit.eth")
-                                return [2 /*return*/, "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"]; // signers[6].address
-                            else if (authorAddress === "testgibbreish.eth")
-                                throw new Error("Domain (".concat(authorAddress, ") has no plebbit-author-address"));
-                            return [2 /*return*/, authorAddress];
-                        });
-                    }); };
-                    plebbit.resolver.resolveSubplebbitAddressIfNeeded = function (subAddress) { return __awaiter(_this, void 0, void 0, function () {
-                        return __generator(this, function (_a) {
-                            if (subAddress === "plebbit.eth")
-                                return [2 /*return*/, "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"]; // signers[3].address
-                            else if (subAddress === "testgibbreish.eth")
-                                throw new Error("Domain (".concat(subAddress, ") has no subplebbit-address"));
-                            return [2 /*return*/, subAddress];
+                            if (ensName === "plebbit.eth" && textRecord === "subplebbit-address")
+                                return [2 /*return*/, "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"];
+                            else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address")
+                                return [2 /*return*/, "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"];
+                            else if (ensName === "testgibbreish.eth" && textRecord === "plebbit-author-address")
+                                throw new Error("Domain (".concat(ensName, ") has no plebbit-author-address"));
+                            else if (textRecord === "subplebbit-address")
+                                throw Error("".concat(ensName, " has no subplebbit-address"));
+                            return [2 /*return*/];
                         });
                     }); };
                     plebbit.pubsubIpfsClient = (0, mock_ipfs_client_1.create)();

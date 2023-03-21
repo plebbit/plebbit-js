@@ -30,6 +30,7 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     locked?: boolean;
     removed?: boolean;
     reason?: string;
+    updatingState: "stopped" | "resolving-author-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
     private _updateInterval?;
     private _updateIntervalMs;
     private _rawCommentUpdate?;
@@ -57,6 +58,7 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     setDepth(newDepth: number): void;
     setUpdatedAt(newUpdatedAt: number): void;
     updateOnce(): Promise<void>;
+    private _setUpdatingState;
     update(): Promise<void>;
     stop(): void;
     private _validateSignature;

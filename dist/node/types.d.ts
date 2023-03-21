@@ -7,6 +7,7 @@ import { Knex } from "knex";
 import { Comment } from "./comment";
 import { CommentEditSignedPropertyNamesUnion, CommentSignedPropertyNamesUnion, Encrypted, SignatureType, SignerType, VoteSignedPropertyNamesUnion } from "./signer/constants";
 import { Subplebbit } from "./subplebbit";
+import Publication from "./publication";
 export declare type ProtocolVersion = "1.0.0";
 export declare type ChainProvider = {
     url: string;
@@ -480,6 +481,17 @@ export interface PublicationEvents {
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType, decryptedComment?: Comment) => void;
     error: (errorMsg: string) => void;
+    publishingstatechange: (newState: Publication["publishingState"]) => void;
+    statechange: (newState: Publication["state"]) => void;
     update: (updatedInstance: Comment) => void;
+    updatingstatechange: (newState: Comment["updatingState"]) => void;
+}
+export interface PlebbitEvents {
+    resolvedsubplebbitaddress: (subplebbitAddress: string, resolvedSubplebbitAddress: string) => void;
+    resolvedauthoraddress: (authorAddress: string, resolvedAuthorAddress: string) => void;
+    resolvedsubplebbitipns: (ipns: string, cid: string) => void;
+    fetchedcid: (cid: string, content: string) => void;
+    fetchedipns: (ipns: string, content: string) => void;
+    error: (errorMsg: string) => void;
 }
 export {};

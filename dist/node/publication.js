@@ -92,6 +92,8 @@ var Publication = /** @class */ (function (_super) {
     function Publication(props, plebbit) {
         var _this = _super.call(this) || this;
         _this.plebbit = plebbit;
+        _this._updatePublishingState("stopped");
+        _this._updateState("stopped");
         _this._initProps(props);
         _this.handleChallengeExchange = _this.handleChallengeExchange.bind(_this);
         _this.on("error", function () {
@@ -155,10 +157,11 @@ var Publication = /** @class */ (function (_super) {
                     case 2:
                         decryptedChallenges = _b.apply(_a, [_e.sent()]);
                         decryptedChallenge = __assign(__assign({}, msgParsed), { challenges: decryptedChallenges });
+                        this._updatePublishingState("waiting-challenge-answers");
                         this.emit("challenge", decryptedChallenge);
-                        return [3 /*break*/, 9];
+                        return [3 /*break*/, 10];
                     case 3:
-                        if (!((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.type) === "CHALLENGEVERIFICATION")) return [3 /*break*/, 9];
+                        if (!((msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.type) === "CHALLENGEVERIFICATION")) return [3 /*break*/, 10];
                         return [4 /*yield*/, (0, signatures_1.verifyChallengeVerification)(msgParsed)];
                     case 4:
                         signatureValidation = _e.sent();
@@ -166,31 +169,33 @@ var Publication = /** @class */ (function (_super) {
                             errMsg = "Received a CHALLENGEVERIFICATIONMESSAGE with invalid signature. Failed verification reason: ".concat(signatureValidation.reason);
                             log.error(errMsg);
                             this.emit("error", errMsg);
+                            this._updatePublishingState("failed");
                             return [2 /*return*/];
                         }
                         decryptedPublication = void 0;
-                        if (!(msgParsed.challengeSuccess && msgParsed.encryptedPublication)) return [3 /*break*/, 6];
-                        log("Challenge (".concat(msgParsed.challengeRequestId, ") has passed. Will update publication props from ChallengeVerificationMessage.publication"));
+                        if (!msgParsed.challengeSuccess) return [3 /*break*/, 7];
+                        this._updatePublishingState("succeeded");
+                        log("Challenge (".concat(msgParsed.challengeRequestId, ") has passed"));
+                        if (!msgParsed.encryptedPublication) return [3 /*break*/, 6];
                         _d = (_c = JSON).parse;
                         return [4 /*yield*/, (0, signer_1.decrypt)(msgParsed.encryptedPublication, this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)];
                     case 5:
                         decryptedPublication = _d.apply(_c, [_e.sent()]);
                         (0, assert_1.default)(decryptedPublication);
                         this._initProps(decryptedPublication);
-                        return [3 /*break*/, 7];
-                    case 6:
-                        if (msgParsed.challengeSuccess)
-                            log("Challenge (".concat(msgParsed.challengeRequestId, ") has passed"));
-                        else
-                            log("Challenge ".concat(msgParsed.challengeRequestId, " has failed to pass. Challenge errors = ").concat(msgParsed.challengeErrors, ", reason = '").concat(msgParsed.reason, "'"));
-                        _e.label = 7;
+                        _e.label = 6;
+                    case 6: return [3 /*break*/, 8];
                     case 7:
-                        this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication }), this instanceof comment_1.Comment ? this : undefined);
-                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange)];
+                        this._updatePublishingState("failed");
+                        log("Challenge ".concat(msgParsed.challengeRequestId, " has failed to pass. Challenge errors = ").concat(msgParsed.challengeErrors, ", reason = '").concat(msgParsed.reason, "'"));
+                        _e.label = 8;
                     case 8:
+                        this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication }), this instanceof comment_1.Comment && decryptedPublication ? this : undefined);
+                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange)];
+                    case 9:
                         _e.sent();
-                        _e.label = 9;
-                    case 9: return [2 /*return*/];
+                        _e.label = 10;
+                    case 10: return [2 /*return*/];
                 }
             });
         });
@@ -206,6 +211,7 @@ var Publication = /** @class */ (function (_super) {
                         log = (0, plebbit_logger_1.default)("plebbit-js:publication:publishChallengeAnswers");
                         if (!Array.isArray(challengeAnswers))
                             challengeAnswers = [challengeAnswers];
+                        this._updatePublishingState("publishing-challenge-answer");
                         return [4 /*yield*/, (0, signer_1.encrypt)(JSON.stringify(challengeAnswers), this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)];
                     case 1:
                         encryptedChallengeAnswers = _e.sent();
@@ -228,6 +234,7 @@ var Publication = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.publish(this.subplebbit.pubsubTopic, (0, from_string_1.fromString)(JSON.stringify(this._challengeAnswer)))];
                     case 3:
                         _e.sent();
+                        this._updatePublishingState("waiting-challenge-verification");
                         log("Responded to challenge (".concat(this._challengeAnswer.challengeRequestId, ") with answers"), challengeAnswers);
                         this.emit("challengeanswer", __assign(__assign({}, this._challengeAnswer), { challengeAnswers: challengeAnswers }));
                         return [2 /*return*/];
@@ -251,6 +258,37 @@ var Publication = /** @class */ (function (_super) {
         if (typeof this.subplebbit.pubsubTopic !== "string")
             (0, util_1.throwWithErrorCode)("ERR_SUBPLEBBIT_MISSING_FIELD", "".concat(this.getType(), ".publish: subplebbit.pubsubTopic does not exist"));
     };
+    Publication.prototype._updatePublishingState = function (newState) {
+        this.publishingState = newState;
+        this.emit("publishingstatechange", this.publishingState);
+    };
+    Publication.prototype._updateState = function (newState) {
+        this.state = newState;
+        this.emit("statechange", this.state);
+    };
+    Publication.prototype._setPublishingStateUpdaters = function () {
+        var _this = this;
+        var resolvedAddress;
+        var commentSubplebbitAddress = this.subplebbitAddress;
+        var resolvedSubplebbitAddress = (function (subAddress, subResolvedAddress) {
+            if (subAddress === commentSubplebbitAddress) {
+                _this._updatePublishingState("fetching-subplebbit-ipns");
+                resolvedAddress = subResolvedAddress;
+                _this.plebbit.removeListener("resolvedsubplebbitaddress", resolvedSubplebbitAddress);
+            }
+        }).bind(this);
+        this.plebbit.on("resolvedsubplebbitaddress", resolvedSubplebbitAddress);
+        var fetchingSubIpfs = (function (ipns, cid) {
+            (0, assert_1.default)(resolvedAddress);
+            if (ipns === resolvedAddress) {
+                _this._updatePublishingState("fetching-subplebbit-ipfs");
+                _this.plebbit.removeListener("resolvedsubplebbitipns", fetchingSubIpfs);
+            }
+        }).bind(this);
+        // insert condition here
+        if (this.plebbit.ipfsClient)
+            this.plebbit.on("resolvedsubplebbitipns", fetchingSubIpfs);
+    };
     Publication.prototype.publish = function () {
         return __awaiter(this, void 0, void 0, function () {
             var log, options, _a, _b, encryptedPublication, toSignMsg, _c, _d, _e;
@@ -259,12 +297,16 @@ var Publication = /** @class */ (function (_super) {
                 switch (_g.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:publication:publish");
+                        this._updateState("publishing");
                         this._validatePublicationFields();
                         options = { acceptedChallengeTypes: [] };
+                        this._updatePublishingState("resolving-subplebbit-address");
+                        this._setPublishingStateUpdaters();
                         _a = this;
                         return [4 /*yield*/, this.plebbit.getSubplebbit(this.subplebbitAddress)];
                     case 1:
                         _a.subplebbit = _g.sent();
+                        this._updatePublishingState("publishing-challenge-request");
                         this._validateSubFields();
                         return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange)];
                     case 2:
@@ -299,6 +341,7 @@ var Publication = /** @class */ (function (_super) {
                             ])];
                     case 6:
                         _g.sent();
+                        this._updatePublishingState("waiting-challenge");
                         log("Sent a challenge request (".concat(this._challengeRequest.challengeRequestId, ")"));
                         this.emit("challengerequest", __assign(__assign({}, this._challengeRequest), { publication: this.toJSONPubsubMessagePublication() }));
                         return [2 /*return*/];

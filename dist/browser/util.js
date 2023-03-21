@@ -165,6 +165,7 @@ function fetchCid(cid, plebbit, catOptions) {
                         throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", JSON.stringify({ cid: cid, downloadLimit: DOWNLOAD_LIMIT_BYTES }));
                     if (calculatedCid !== cid)
                         throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", JSON.stringify({ calculatedCid: calculatedCid, cid: cid }));
+                    plebbit.emit("fetchedcid", cid, fileContent);
                     return [2 /*return*/, fileContent];
             }
         });
@@ -185,7 +186,7 @@ function loadIpfsFileAsJson(cid, plebbit) {
     });
 }
 exports.loadIpfsFileAsJson = loadIpfsFileAsJson;
-function loadIpnsAsJson(ipns, plebbit) {
+function loadIpnsAsJson(ipns, plebbit, callbackAfterResolve) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
         var url, _b, resText, res, cid, error, e_3;
@@ -203,8 +204,10 @@ function loadIpnsAsJson(ipns, plebbit) {
                         })];
                 case 1:
                     _b = _c.sent(), resText = _b[0], res = _b[1];
-                    if (res.status === 200)
+                    if (res.status === 200) {
+                        plebbit.emit("fetchedipns", ipns, resText);
                         return [2 /*return*/, JSON.parse(resText)];
+                    }
                     else
                         throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", JSON.stringify({ url: url, status: res.status, statusText: res.statusText }));
                     return [3 /*break*/, 7];
@@ -224,6 +227,9 @@ function loadIpnsAsJson(ipns, plebbit) {
                 case 6:
                     if (typeof cid !== "string")
                         throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS", JSON.stringify({ ipns: ipns, error: error }));
+                    plebbit.emit("resolvedsubplebbitipns", ipns, cid);
+                    if (callbackAfterResolve)
+                        callbackAfterResolve(ipns, cid);
                     return [2 /*return*/, loadIpfsFileAsJson(cid, plebbit)];
                 case 7: return [2 /*return*/];
             }

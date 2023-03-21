@@ -301,7 +301,7 @@ var Subplebbit = /** @class */ (function (_super) {
     // TODO rename and make this private
     Subplebbit.prototype.prePublish = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, internalStateKey;
+            var log;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -315,8 +315,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.dbHandler.initDbIfNeeded()];
                     case 3:
                         _a.sent();
-                        internalStateKey = constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.INTERNAL_SUBPLEBBIT];
-                        return [4 /*yield*/, this.dbHandler.keyvHas(internalStateKey)];
+                        return [4 /*yield*/, this.dbHandler.keyvHas(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.INTERNAL_SUBPLEBBIT])];
                     case 4:
                         if (!_a.sent()) return [3 /*break*/, 6];
                         log("Merging internal subplebbit state from DB and createSubplebbitOptions");
@@ -330,7 +329,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this._initSignerProps()];
                     case 7:
                         _a.sent();
-                        return [4 /*yield*/, this.dbHandler.keyvHas(internalStateKey)];
+                        return [4 /*yield*/, this.dbHandler.keyvHas(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.INTERNAL_SUBPLEBBIT])];
                     case 8:
                         if (!!(_a.sent())) return [3 /*break*/, 10];
                         log("Updating the internal state of subplebbit in DB with createSubplebbitOptions");
@@ -420,7 +419,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:update");
                         if (!this.dbHandler) return [3 /*break*/, 4];
-                        return [4 /*yield*/, this.dbHandler.keyvGet(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.INTERNAL_SUBPLEBBIT])];
+                        return [4 /*yield*/, this._getDbInternalState(false)];
                     case 1:
                         subState = _a.sent();
                         if (!((0, safe_stable_stringify_1.stringify)(this.toJSONInternal()) !== (0, safe_stable_stringify_1.stringify)(subState))) return [3 /*break*/, 3];
@@ -852,7 +851,8 @@ var Subplebbit = /** @class */ (function (_super) {
                             "pinned",
                             "locked",
                             "removed",
-                            "reason"
+                            "reason",
+                            "shortCid"
                         ];
                         if (Object.keys(publication).some(function (key) { return forbiddenCommentFields_1.includes(key); })) {
                             log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_FORBIDDEN_COMMENT_FIELD);
@@ -1417,21 +1417,27 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Subplebbit.prototype._getDbInternalState = function () {
+    Subplebbit.prototype._getDbInternalState = function (lock) {
+        if (lock === void 0) { lock = true; }
         return __awaiter(this, void 0, void 0, function () {
             var internalState;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.dbHandler.lockSubState()];
+                    case 0:
+                        if (!lock) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.dbHandler.lockSubState()];
                     case 1:
                         _a.sent();
-                        return [4 /*yield*/, this.dbHandler.keyvGet(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.INTERNAL_SUBPLEBBIT])];
-                    case 2:
-                        internalState = _a.sent();
-                        return [4 /*yield*/, this.dbHandler.unlockSubState()];
+                        _a.label = 2;
+                    case 2: return [4 /*yield*/, this.dbHandler.keyvGet(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.INTERNAL_SUBPLEBBIT])];
                     case 3:
+                        internalState = _a.sent();
+                        if (!lock) return [3 /*break*/, 5];
+                        return [4 /*yield*/, this.dbHandler.unlockSubState()];
+                    case 4:
                         _a.sent();
-                        return [2 /*return*/, internalState];
+                        _a.label = 5;
+                    case 5: return [2 /*return*/, internalState];
                 }
             });
         });
@@ -1462,7 +1468,7 @@ var Subplebbit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:sync");
-                        return [4 /*yield*/, this.dbHandler.keyvGet(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.INTERNAL_SUBPLEBBIT])];
+                        return [4 /*yield*/, this._getDbInternalState(false)];
                     case 1:
                         internalState = _a.sent();
                         potentialNewAddresses = lodash_1.default.uniq([internalState.address, this.dbHandler.subAddress(), this.address]);

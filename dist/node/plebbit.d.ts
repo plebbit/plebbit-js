@@ -1,5 +1,4 @@
-/// <reference types="node" />
-import { ChainProvider, CommentEditType, CommentIpfsType, CommentPubsubMessage, CommentType, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateSubplebbitOptions, CreateVoteOptions, NativeFunctions, PlebbitOptions, SubplebbitIpfsType, SubplebbitType, VotePubsubMessage, VoteType } from "./types";
+import { ChainProvider, CommentEditType, CommentIpfsType, CommentPubsubMessage, CommentType, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateSubplebbitOptions, CreateVoteOptions, NativeFunctions, PlebbitEvents, PlebbitOptions, SubplebbitIpfsType, SubplebbitType, VotePubsubMessage, VoteType } from "./types";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
@@ -8,10 +7,10 @@ import { Signer } from "./signer";
 import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
-import EventEmitter from "events";
 import { Options } from "ipfs-http-client";
+import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions } from "./signer/constants";
-export declare class Plebbit extends EventEmitter implements PlebbitOptions {
+export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
     pubsubIpfsClient: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">;
     resolver: Resolver;

@@ -77,13 +77,13 @@ var resolver_1 = require("./resolver");
 var tinycache_1 = __importDefault(require("tinycache"));
 var comment_edit_1 = require("./comment-edit");
 var util_3 = require("./signer/util");
-var events_1 = __importDefault(require("events"));
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var version_1 = __importDefault(require("./version"));
 var lodash_1 = __importDefault(require("lodash"));
 var signatures_1 = require("./signer/signatures");
 var buffer_1 = require("buffer");
+var tiny_typed_emitter_1 = require("tiny-typed-emitter");
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
     function Plebbit(options) {
@@ -116,7 +116,7 @@ var Plebbit = /** @class */ (function (_super) {
         _this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         _this._memCache = new tinycache_1.default();
         _this.resolver = new resolver_1.Resolver({
-            plebbit: { _memCache: _this._memCache, resolveAuthorAddresses: _this.resolveAuthorAddresses },
+            plebbit: { _memCache: _this._memCache, resolveAuthorAddresses: _this.resolveAuthorAddresses, emit: _this.emit.bind(_this) },
             chainProviders: _this.chainProviders
         });
         _this.dataPath = options.dataPath || (0, util_1.getDefaultDataPath)();
@@ -449,5 +449,5 @@ var Plebbit = /** @class */ (function (_super) {
         });
     };
     return Plebbit;
-}(events_1.default));
+}(tiny_typed_emitter_1.TypedEmitter));
 exports.Plebbit = Plebbit;

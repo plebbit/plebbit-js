@@ -79,6 +79,7 @@ var Comment = /** @class */ (function (_super) {
     function Comment(props, plebbit) {
         var _this = _super.call(this, props, plebbit) || this;
         _this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
+        _this._setUpdatingState("stopped");
         // these functions might get separated from their `this` when used
         _this.publish = _this.publish.bind(_this);
         _this.update = _this.update.bind(_this);
@@ -232,6 +233,7 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
             var log, res, e_1, errMsg, commentInstance, signatureValidity, errMsg;
+            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -239,12 +241,14 @@ var Comment = /** @class */ (function (_super) {
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.plebbit)];
+                        this._setUpdatingState("fetching-ipns");
+                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.plebbit, function (ipns, cid) { return _this._setUpdatingState("fetching-ipfs"); })];
                     case 2:
                         res = _a.sent();
                         return [3 /*break*/, 4];
                     case 3:
                         e_1 = _a.sent();
+                        this._setUpdatingState("failed");
                         errMsg = "Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error: ").concat(e_1);
                         log.error(errMsg);
                         this.emit("error", errMsg);
@@ -257,11 +261,13 @@ var Comment = /** @class */ (function (_super) {
                     case 5:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid) {
+                            this._setUpdatingState("failed");
                             errMsg = "Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") signature is invalid due to '").concat(signatureValidity.reason, "'");
                             log.error(errMsg);
                             this.emit("error", errMsg);
                             return [2 /*return*/];
                         }
+                        this._setUpdatingState("succeeded");
                         return [4 /*yield*/, this._initCommentUpdate(res)];
                     case 6:
                         _a.sent();
@@ -270,6 +276,7 @@ var Comment = /** @class */ (function (_super) {
                     case 7:
                         if (!res) return [3 /*break*/, 9];
                         log.trace("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
+                        this._setUpdatingState("succeeded");
                         return [4 /*yield*/, this._initCommentUpdate(res)];
                     case 8:
                         _a.sent();
@@ -279,6 +286,10 @@ var Comment = /** @class */ (function (_super) {
             });
         });
     };
+    Comment.prototype._setUpdatingState = function (newState) {
+        this.updatingState = newState;
+        this.emit("updatingstatechange", this.updatingState);
+    };
     Comment.prototype.update = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -286,6 +297,7 @@ var Comment = /** @class */ (function (_super) {
                     (0, util_1.throwWithErrorCode)("ERR_COMMENT_UPDATE_MISSING_IPNS_NAME");
                 if (this._updateInterval)
                     return [2 /*return*/]; // Do nothing if it's already updating
+                this._updateState("updating");
                 this.updateOnce();
                 this._updateInterval = setInterval(this.updateOnce.bind(this), this._updateIntervalMs);
                 return [2 /*return*/];

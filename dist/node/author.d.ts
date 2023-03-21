@@ -8,7 +8,6 @@ declare class Author implements AuthorTypeWithCommentUpdate {
     };
     avatar?: Nft;
     flair?: Flair;
-    banExpiresAt?: number;
     subplebbit?: SubplebbitAuthor;
     shortAddress: string;
     constructor(props: AuthorIpfsType | AuthorTypeWithCommentUpdate);
