@@ -36,7 +36,7 @@ class Post extends Comment implements Omit<PostType, "replies"> {
 
     async publish(): Promise<void> {
         if (typeof this.title !== "string")
-            throwWithErrorCode("ERR_PUBLICATION_MISSING_FIELD", `${this.getType()}.publish: title (${this.title}) should be a string`);
+            throwWithErrorCode("ERR_PUBLICATION_MISSING_FIELD", { type: this.getType(), title: this.title });
         return super.publish();
     }
 }

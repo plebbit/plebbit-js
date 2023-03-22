@@ -286,7 +286,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await this._mergeInstanceStateWithDbState({});
         }
 
-        if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", JSON.stringify({ address: this.address }));
+        if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
         await this._initSignerProps();
 
         if (!(await this.dbHandler.keyvHas(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]))) {
@@ -302,10 +302,11 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(domain);
             const derivedAddress = await getPlebbitAddressFromPublicKey(this.encryption.publicKey);
             if (resolvedAddress !== derivedAddress)
-                throwWithErrorCode(
-                    "ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS",
-                    `subplebbit.address (${this.address}), resolved address (${resolvedAddress}), subplebbit.signer.address (${this.signer?.address})`
-                );
+                throwWithErrorCode("ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS", {
+                    subplebbitAddress: this.address,
+                    resolvedAddress,
+                    signerAddress: this.signer.address
+                });
         }
     }
 
@@ -1238,8 +1239,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     async start() {
         const log = Logger("plebbit-js:subplebbit:start");
 
-        if (!this.signer?.address)
-            throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED", `signer: ${JSON.stringify(this.signer)}, address: ${this.address}`);
+        if (!this.signer?.address) throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED");
         await this.initDbHandlerIfNeeded();
         await this.dbHandler.lockSubStart(); // Will throw if sub is locked already
         this._sync = true;
@@ -1281,7 +1281,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     async delete() {
         await this.stop();
         if (typeof this.plebbit.dataPath !== "string")
-            throwWithErrorCode("ERR_DATA_PATH_IS_NOT_DEFINED", `delete: plebbitOptions.dataPath=${this.plebbit.dataPath}`);
+            throwWithErrorCode("ERR_DATA_PATH_IS_NOT_DEFINED", { plebbitDataPath: this.plebbit.dataPath });
         if (!this.plebbit.ipfsClient) throw Error("Ipfs client is not defined");
 
         await nativeFunctions.deleteSubplebbit(this.address, this.plebbit.dataPath);

@@ -120,16 +120,12 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
-            throwWithErrorCode(
-                "ERR_INVALID_SUBPLEBBIT_ADDRESS",
-                `getSubplebbit: subplebbitAddress (${subplebbitAddress}) can't be used to get a subplebbit`
-            );
+            throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
         const resolvedSubplebbitAddress = await this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
         const subplebbitJson: SubplebbitIpfsType = await loadIpnsAsJson(resolvedSubplebbitAddress, this);
         const signatureValidity = await verifySubplebbit(subplebbitJson, this);
 
-        if (!signatureValidity.valid)
-            throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", `getSubplebbit: Failed verification reason: ${signatureValidity.reason}`);
+        if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
 
         const subplebbit = new Subplebbit(this);
         await subplebbit.initSubplebbit(subplebbitJson);
@@ -141,8 +137,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (!isIPFS.cid(cid)) throwWithErrorCode("ERR_CID_IS_INVALID", `getComment: cid (${cid}) is invalid as a CID`);
         const commentJson: CommentIpfsType = await loadIpfsFileAsJson(cid, this);
         const signatureValidity = await verifyComment(commentJson, this, true);
-        if (!signatureValidity.valid)
-            throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", `getComment (${cid}): Failed verification reason: ${signatureValidity.reason}`);
+        if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { cid, signatureValidity });
 
         return this.createComment({ ...commentJson, cid });
     }
@@ -208,12 +203,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const canRunSub = this._canRunSub();
 
         const localSub = async () => {
-            if (!canRunSub) throw Error("missing nativeFunctions required to create a subplebbit");
-            if (canRunSub && !this.dataPath)
-                throwWithErrorCode(
-                    "ERR_DATA_PATH_IS_NOT_DEFINED",
-                    `createSubplebbit: canRunSub=${canRunSub}, plebbitOptions.dataPath=${this.dataPath}`
-                );
+            if (!canRunSub) throwWithErrorCode("ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS", { canRunSub, dataPath: this.dataPath });
+            if (canRunSub && !this.dataPath) throwWithErrorCode("ERR_DATA_PATH_IS_NOT_DEFINED", { canRunSub, dataPath: this.dataPath });
 
             const subplebbit = new Subplebbit(this);
             await subplebbit.initSubplebbit(options);

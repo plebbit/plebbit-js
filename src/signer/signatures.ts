@@ -85,10 +85,7 @@ async function _validateAuthorIpns(author: CreateCommentOptions["author"], signe
     } else {
         const derivedAddress = await getPlebbitAddressFromPrivateKey(signer.privateKey);
         if (derivedAddress !== author.address)
-            throwWithErrorCode(
-                "ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER",
-                `author.address=${author.address}, signer.address=${derivedAddress}`
-            );
+            throwWithErrorCode("ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER", { authorAddress: author.address, signerAddress: derivedAddress });
     }
 }
 
@@ -367,12 +364,7 @@ export async function verifyPage(
 
         const commentSignatureValidity = await verifyComment(pageComment.comment, plebbit, true);
         if (!commentSignatureValidity.valid) return commentSignatureValidity;
-        const commentUpdateSignatureValidity = await verifyCommentUpdate(
-            pageComment.update,
-            subplebbit,
-            pageComment.comment,
-            plebbit
-        );
+        const commentUpdateSignatureValidity = await verifyCommentUpdate(pageComment.update, subplebbit, pageComment.comment, plebbit);
         if (!commentUpdateSignatureValidity.valid) return commentUpdateSignatureValidity;
     }
     return { valid: true };

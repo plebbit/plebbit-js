@@ -146,10 +146,7 @@ const nativeFunctions: NativeFunctions = {
         });
 
         if (res.status !== 200)
-            throwWithErrorCode(
-                "ERR_FAILED_TO_IMPORT_IPFS_KEY",
-                JSON.stringify({ url, status: res.status, statusText: res.statusText, ipnsKeyName })
-            );
+            throwWithErrorCode("ERR_FAILED_TO_IMPORT_IPFS_KEY", { url, status: res.status, statusText: res.statusText, ipnsKeyName });
         const resJson: { Id: string; Name: string } = await res.json();
         return resJson;
     },

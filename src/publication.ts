@@ -195,26 +195,20 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
     private _validatePublicationFields() {
         if (typeof this.timestamp !== "number" || this.timestamp < 0)
-            throwWithErrorCode(
-                "ERR_PUBLICATION_MISSING_FIELD",
-                `${this.getType()}.publish: timestamp (${this.timestamp}) should be a positive number`
-            );
+            throwWithErrorCode("ERR_PUBLICATION_MISSING_FIELD", { type: this.getType, timestamp: this.timestamp });
 
         if (typeof this.author?.address !== "string")
-            throwWithErrorCode(
-                "ERR_PUBLICATION_MISSING_FIELD",
-                `${this.getType()}.publish: author.address (${this.author.address}) should be a string`
-            );
+            throwWithErrorCode("ERR_PUBLICATION_MISSING_FIELD", { type: this.getType(), authorAddress: this.author?.address });
         if (typeof this.subplebbitAddress !== "string")
-            throwWithErrorCode("ERR_PUBLICATION_MISSING_FIELD", `${this.getType()}.publish: subplebbitAddress should be a string`);
+            throwWithErrorCode("ERR_PUBLICATION_MISSING_FIELD", { type: this.getType(), subplebbitAddress: this.subplebbitAddress });
     }
 
     private _validateSubFields() {
         if (typeof this.subplebbit?.encryption?.publicKey !== "string")
-            throwWithErrorCode("ERR_SUBPLEBBIT_MISSING_FIELD", `${this.getType()}.publish: subplebbit.encryption.publicKey does not exist`);
+            throwWithErrorCode("ERR_SUBPLEBBIT_MISSING_FIELD", { subplebbitPublicKey: this.subplebbit?.encryption?.publicKey });
 
         if (typeof this.subplebbit.pubsubTopic !== "string")
-            throwWithErrorCode("ERR_SUBPLEBBIT_MISSING_FIELD", `${this.getType()}.publish: subplebbit.pubsubTopic does not exist`);
+            throwWithErrorCode("ERR_SUBPLEBBIT_MISSING_FIELD", { subplebbitPubsubTopic: this.subplebbit?.pubsubTopic });
     }
 
     private _updatePublishingState(newState: Publication["publishingState"]) {

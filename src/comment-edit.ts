@@ -61,7 +61,7 @@ export class CommentEdit extends Publication implements CommentEditType {
         super(props, plebbit);
 
         // public method should be bound
-        this.publish = this.publish.bind(this)
+        this.publish = this.publish.bind(this);
     }
 
     _initProps(props: CommentEditType) {
@@ -114,17 +114,12 @@ export class CommentEdit extends Publication implements CommentEditType {
     private async _validateSignature() {
         const editObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication()));
         const signatureValidity = await verifyCommentEdit(editObj, this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
-        if (!signatureValidity.valid)
-            throwWithErrorCode(
-                "ERR_SIGNATURE_IS_INVALID",
-                `commentEdit.publish: Failed to publish due to invalid signature. Reason=${signatureValidity.reason}`
-            );
+        if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }
 
     async publish(): Promise<void> {
         // TODO if publishing with content,reason, deleted, verify that publisher is original author
-        if (!isIPFS.cid(this.commentCid))
-            throwWithErrorCode("ERR_CID_IS_INVALID", `commentEdit.publish: commentCid (${this.commentCid}) is invalid as a CID`);
+        if (!isIPFS.cid(this.commentCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { commentCid: this.commentCid });
 
         await this._validateSignature();
 

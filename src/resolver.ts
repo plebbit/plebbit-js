@@ -46,7 +46,7 @@ export class Resolver {
             );
             return this.cachedChainProviders[chainTicker];
         }
-        throwWithErrorCode("ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER", JSON.stringify({ chainTicker }));
+        throwWithErrorCode("ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER", { chainTicker });
     }
 
     async _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string> {
@@ -57,13 +57,9 @@ export class Resolver {
 
         const chainProvider = this._getChainProvider("eth");
         const resolver = await chainProvider.getResolver(ensName);
-        if (!resolver) throwWithErrorCode("ERR_ENS_RESOLVER_NOT_FOUND", `ensName: ${ensName}, chainProvider: ${chainProvider}`);
+        if (!resolver) throwWithErrorCode("ERR_ENS_RESOLVER_NOT_FOUND", { ensName, chainProvider });
         const txtRecordResult = await resolver.getText(txtRecordName);
-        if (!txtRecordResult)
-            throwWithErrorCode(
-                "ERR_ENS_TXT_RECORD_NOT_FOUND",
-                `ensName: ${ensName}, txtRecordName: ${txtRecordName}, chainProvider: ${chainProvider}`
-            );
+        if (!txtRecordResult) throwWithErrorCode("ERR_ENS_TXT_RECORD_NOT_FOUND", { ensName, txtRecordName, chainProvider });
 
         log.trace(`Resolved text record name (${txtRecordName}) of ENS (${ensName}) to ${txtRecordResult}`);
 

@@ -17,6 +17,7 @@ import Hash from "ipfs-only-hash";
 import lodash from "lodash";
 import assert from "assert";
 import { Pages } from "./pages";
+import { PlebbitError } from "./plebbit-error";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -38,13 +39,8 @@ async function fetchWithLimit(url: string, options?): Promise<[resText: string, 
         // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
         if (res?.body?.getReader === undefined) return [await res.text(), res];
     } catch (e) {
-        if (e.message.includes("over limit"))
-            throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", JSON.stringify({ url, downloadLimit: DOWNLOAD_LIMIT_BYTES }));
-        else
-            throwWithErrorCode(
-                "ERR_FAILED_TO_FETCH_HTTP_GENERIC",
-                JSON.stringify({ url, status: res?.status, statusText: res?.statusText })
-            );
+        if (e.message.includes("over limit")) throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
+        else throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", { url, status: res?.status, statusText: res?.statusText });
         // If error is not related to size limit, then throw it again
     }
 
@@ -64,10 +60,7 @@ async function fetchWithLimit(url: string, options?): Promise<[resText: string, 
             if (value) resText += decoder.decode(value);
             if (done || !value) break;
             if (value.length + totalBytesRead > DOWNLOAD_LIMIT_BYTES)
-                throwWithErrorCode(
-                    "ERR_OVER_DOWNLOAD_LIMIT",
-                    `fetch: url (${url}) points to a file larger than download limit (${DOWNLOAD_LIMIT_BYTES}) bytes`
-                );
+                throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
             totalBytesRead += value.length;
         }
         return [resText, res];
@@ -82,8 +75,7 @@ export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { len
         const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
         const [resText, res] = await fetchWithLimit(url, { headers: plebbit.ipfsHttpClientOptions?.headers, cache: "force-cache" });
         if (res.status === 200) fileContent = resText;
-        else
-            throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", JSON.stringify({ url, status: res.status, statusText: res.statusText }));
+        else throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", { url, status: res.status, statusText: res.statusText });
     } else {
         let error;
         try {
@@ -92,14 +84,13 @@ export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { len
             error = e;
         }
 
-        if (typeof fileContent !== "string")
-            throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_GENERIC", JSON.stringify({ cid, error, options: catOptions }));
+        if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_GENERIC", { cid, error, options: catOptions });
     }
 
     const calculatedCid: string = await Hash.of(fileContent);
     if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
-        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", JSON.stringify({ cid, downloadLimit: DOWNLOAD_LIMIT_BYTES }));
-    if (calculatedCid !== cid) throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", JSON.stringify({ calculatedCid, cid }));
+        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
+    if (calculatedCid !== cid) throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid, cid });
 
     plebbit.emit("fetchedcid", cid, fileContent);
     return fileContent;
@@ -110,7 +101,7 @@ export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit) {
 }
 
 export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit, callbackAfterResolve?: (ipns: string, cid: string) => void) {
-    if (typeof ipns !== "string") throwWithErrorCode("ERR_IPNS_IS_INVALID", JSON.stringify({ ipns }));
+    if (typeof ipns !== "string") throwWithErrorCode("ERR_IPNS_IS_INVALID", { ipns });
     if (!plebbit.ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
         const [resText, res] = await fetchWithLimit(url, {
@@ -121,8 +112,7 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit, callbackAft
         if (res.status === 200) {
             plebbit.emit("fetchedipns", ipns, resText);
             return JSON.parse(resText);
-        } else
-            throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", JSON.stringify({ url, status: res.status, statusText: res.statusText }));
+        } else throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", { url, status: res.status, statusText: res.statusText });
     } else {
         let cid: string | undefined, error;
         try {
@@ -130,7 +120,7 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit, callbackAft
         } catch (e) {
             error = e;
         }
-        if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS", JSON.stringify({ ipns, error }));
+        if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS", { ipns, error });
         plebbit.emit("resolvedsubplebbitipns", ipns, cid);
         if (callbackAfterResolve) callbackAfterResolve(ipns, cid);
         return loadIpfsFileAsJson(cid, plebbit);
@@ -217,13 +207,8 @@ export function removeKeysWithUndefinedValues<T extends Object>(object: T): Only
     return newObj;
 }
 
-export function throwWithErrorCode(code: keyof typeof messages, details?: string) {
-    const error = errcode(Error(messages[code]), messages[messages[code]], {
-        details
-    });
-    error.toString = () => `${error.constructor.name}: ${code}: ${error.message}: ${JSON.stringify(details)}`;
-
-    throw error;
+export function throwWithErrorCode(code: keyof typeof messages, details?: {}) {
+    throw new PlebbitError(code, details);
 }
 
 export async function parsePageIpfs(pageIpfs: PageIpfs, subplebbit: Pages["_subplebbit"]): Promise<PageType> {

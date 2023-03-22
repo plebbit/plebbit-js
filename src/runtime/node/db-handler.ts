@@ -849,7 +849,8 @@ export class DbHandler {
             });
             log(`Locked the start of subplebbit (${subAddress}) successfully`);
         } catch (e) {
-            if (e.message === "Lock file is already being held") throwWithErrorCode("ERR_SUB_ALREADY_STARTED", `subAddress=${subAddress}`);
+            if (e.message === "Lock file is already being held")
+                throwWithErrorCode("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: subAddress });
             else {
                 log(`Error while trying to lock start of sub (${subAddress}): ${e}`);
                 throw e;
@@ -904,7 +905,8 @@ export class DbHandler {
             });
             log(`Locked the creation of subplebbit (${subAddress}) successfully`);
         } catch (e) {
-            if (e.message === "Lock file is already being held") throwWithErrorCode("ERR_SUB_CREATION_LOCKED", `subAddress=${subAddress}`);
+            if (e.message === "Lock file is already being held")
+                throwWithErrorCode("ERR_SUB_CREATION_LOCKED", { subplebbitAddress: subAddress });
             else {
                 log(`Error while trying to lock creation of sub (${subAddress}): ${e}`);
                 throw e;
@@ -959,7 +961,8 @@ export class DbHandler {
             });
             log.trace(`Locked the state of subplebbit (${subAddress}) successfully`);
         } catch (e) {
-            if (e.message === "Lock file is already being held") throwWithErrorCode("ERR_SUB_STATE_LOCKED", `subAddress=${subAddress}`);
+            if (e.message === "Lock file is already being held")
+                throwWithErrorCode("ERR_SUB_STATE_LOCKED", { subplebbitAddress: subAddress });
         }
     }
 
