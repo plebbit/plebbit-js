@@ -1,4 +1,11 @@
-import { loadIpnsAsJson, parseRawPages, removeNullAndUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "./util";
+import {
+    loadIpfsFileAsJson,
+    loadIpnsAsJson,
+    parseRawPages,
+    removeNullAndUndefinedValuesRecursively,
+    shortifyCid,
+    throwWithErrorCode
+} from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
 import {
@@ -272,6 +279,15 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
     async updateOnce() {
         const log = Logger("plebbit-js:comment:update");
+        if (this.cid && !this.ipnsName) {
+            // User may have attempted to call plebbit.createComment({cid}).update
+            // plebbit-js should be able to retrieve ipnsName from the IPFS file
+            const commentIpfs: CommentIpfsType = await loadIpfsFileAsJson(this.cid, this.plebbit);
+            this._initProps({ ...commentIpfs, cid: this.cid });
+            assert(this.ipnsName);
+            this.emit("update", this);
+        }
+
         let res: CommentUpdate | undefined;
         try {
             this._setUpdatingState("fetching-ipns");
@@ -312,8 +328,6 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     }
 
     async update() {
-        if (typeof this.ipnsName !== "string") throwWithErrorCode("ERR_COMMENT_UPDATE_MISSING_IPNS_NAME");
-
         if (this._updateInterval) return; // Do nothing if it's already updating
         this._updateState("updating");
         this.updateOnce();

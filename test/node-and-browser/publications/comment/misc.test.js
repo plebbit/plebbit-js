@@ -17,10 +17,10 @@ const stringify = require("safe-stable-stringify");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-let plebbit;
 const subplebbitAddress = signers[0].address;
 
 describe("createComment", async () => {
+    let plebbit;
     before(async () => {
         plebbit = await mockPlebbit();
     });
@@ -109,7 +109,41 @@ describe("createComment", async () => {
     });
 });
 
-describe.skip(`comment.update`, async () => {
+describe(`comment.update`, async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
+
+    it(`Comment instance can retrieve ipnsName from just cid`, async () => {
+        const comment = await publishRandomPost(subplebbitAddress, plebbit, {}, false); // Full comment instance with all props except CommentUpdate
+        expect(comment.shortCid).to.be.a("string").with.length(12);
+        expect(comment.author.shortAddress).to.be.a("string").with.length(12);
+
+        const recreatedComment = await plebbit.createComment({ cid: comment.cid });
+        recreatedComment._updateIntervalMs = 300;
+        expect(recreatedComment.cid).to.equal(comment.cid);
+        expect(recreatedComment.shortCid).to.equal(comment.shortCid);
+
+        let eventNum = 0;
+        recreatedComment.on("update", (_) => {
+            if (eventNum === 0) {
+                // This is the update where Comment props are loaded (postCid, title, content, etc)
+                expect(recreatedComment.cid).to.equal(comment.cid);
+                expect(recreatedComment.shortCid).to.equal(comment.shortCid);
+                expect(recreatedComment.author).to.deep.equal(comment.author);
+            } else if (eventNum === 1) {
+                // The update where CommentUpdate props are loaded
+                expect(recreatedComment.updatedAt).to.be.a("number");
+                recreatedComment.removeAllListeners("update");
+            }
+            eventNum++;
+        });
+
+        recreatedComment.update();
+
+        await waitUntil(() => eventNum >= 2, { timeout: 20000 });
+    });
     it(`comment.update() is working as expected after calling comment.stop()`);
 });
 
