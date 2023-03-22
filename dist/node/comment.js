@@ -232,33 +232,43 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, res, e_1, errMsg, commentInstance, signatureValidity, errMsg;
+            var log, commentIpfs, res, e_1, errMsg, commentInstance, signatureValidity, errMsg;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:comment:update");
-                        _a.label = 1;
+                        if (!(this.cid && !this.ipnsName)) return [3 /*break*/, 2];
+                        // User may have attempted to call plebbit.createComment({cid}).update
+                        // plebbit-js should be able to retrieve ipnsName from the IPFS file
+                        this._setUpdatingState("fetching-ipfs");
+                        return [4 /*yield*/, (0, util_1.loadIpfsFileAsJson)(this.cid, this.plebbit)];
                     case 1:
-                        _a.trys.push([1, 3, , 4]);
+                        commentIpfs = _a.sent();
+                        this._initProps(__assign(__assign({}, commentIpfs), { cid: this.cid }));
+                        (0, assert_1.default)(this.ipnsName);
+                        this.emit("update", this);
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 4, , 5]);
                         this._setUpdatingState("fetching-ipns");
                         return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.plebbit, function (ipns, cid) { return _this._setUpdatingState("fetching-ipfs"); })];
-                    case 2:
-                        res = _a.sent();
-                        return [3 /*break*/, 4];
                     case 3:
+                        res = _a.sent();
+                        return [3 /*break*/, 5];
+                    case 4:
                         e_1 = _a.sent();
                         this._setUpdatingState("failed");
                         errMsg = "Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error: ").concat(e_1);
                         log.error(errMsg);
                         this.emit("error", errMsg);
                         return [2 /*return*/];
-                    case 4:
-                        if (!(res && this.updatedAt !== res.updatedAt)) return [3 /*break*/, 7];
+                    case 5:
+                        if (!(res && this.updatedAt !== res.updatedAt)) return [3 /*break*/, 8];
                         log("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
                         commentInstance = lodash_1.default.pick(this, ["cid", "signature"]);
                         return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(res, { address: this.subplebbitAddress }, commentInstance, this.plebbit)];
-                    case 5:
+                    case 6:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid) {
                             this._setUpdatingState("failed");
@@ -269,19 +279,19 @@ var Comment = /** @class */ (function (_super) {
                         }
                         this._setUpdatingState("succeeded");
                         return [4 /*yield*/, this._initCommentUpdate(res)];
-                    case 6:
+                    case 7:
                         _a.sent();
                         this.emit("update", this);
-                        return [3 /*break*/, 9];
-                    case 7:
-                        if (!res) return [3 /*break*/, 9];
+                        return [3 /*break*/, 10];
+                    case 8:
+                        if (!res) return [3 /*break*/, 10];
                         log.trace("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
                         this._setUpdatingState("succeeded");
                         return [4 /*yield*/, this._initCommentUpdate(res)];
-                    case 8:
+                    case 9:
                         _a.sent();
-                        _a.label = 9;
-                    case 9: return [2 /*return*/];
+                        _a.label = 10;
+                    case 10: return [2 /*return*/];
                 }
             });
         });
@@ -293,8 +303,6 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype.update = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                if (typeof this.ipnsName !== "string")
-                    (0, util_1.throwWithErrorCode)("ERR_COMMENT_UPDATE_MISSING_IPNS_NAME");
                 if (this._updateInterval)
                     return [2 /*return*/]; // Do nothing if it's already updating
                 this._updateState("updating");
