@@ -282,6 +282,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         if (this.cid && !this.ipnsName) {
             // User may have attempted to call plebbit.createComment({cid}).update
             // plebbit-js should be able to retrieve ipnsName from the IPFS file
+            this._setUpdatingState("fetching-ipfs");
             const commentIpfs: CommentIpfsType = await loadIpfsFileAsJson(this.cid, this.plebbit);
             this._initProps({ ...commentIpfs, cid: this.cid });
             assert(this.ipnsName);
