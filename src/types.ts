@@ -595,6 +595,11 @@ export interface SubplebbitEvents {
 
     error: (errMsg: string) => void;
 
+    // State changes
+    statechange: (newState: Subplebbit["state"]) => void;
+    updatingstatechange: (newState: Subplebbit["updatingState"]) => void;
+    startedstatechange: (newState: Subplebbit["startedState"]) => void;
+
     update: (updatedSubplebbit: Subplebbit) => void;
 }
 

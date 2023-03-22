@@ -101,6 +101,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     signature: SignatureType; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
     rules?: string[];
 
+    // Only for Subplebbit instance
+    state: "stopped" | "updating" | "started";
+    startedState: "stopped" | "fetching-ipns" | "publishing-ipns" | "failed" | "succeeded"; // TODO
+    updatingState: "stopped" | "resolving-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
     plebbit: Plebbit;
     dbHandler?: DbHandlerPublicAPI;
 
@@ -126,7 +130,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._challengeToSolution = {}; // Map challenge ID to its solution
         this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
         this._challengeToPublicKey = {}; // Map out challenge request id to their signers
-
+        this._setState("stopped");
+        this._setUpdatingState("stopped");
         this._sync = false;
 
         // these functions might get separated from their `this` when used
@@ -336,8 +341,24 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         return this;
     }
 
+    private _setState(newState: Subplebbit["state"]) {
+        this.state = newState;
+        this.emit("statechange", this.state);
+    }
+
+    private _setUpdatingState(newState: Subplebbit["updatingState"]) {
+        this.updatingState = newState;
+        this.emit("updatingstatechange", this.updatingState);
+    }
+
+    private _setStartedState(newState: Subplebbit["startedState"]) {
+        this.startedState = newState;
+        this.emit("startedstatechange", this.startedState);
+    }
+
     private async updateOnce() {
         const log = Logger("plebbit-js:subplebbit:update");
+        this._setState("updating");
 
         if (this.dbHandler) {
             // Local sub
@@ -345,14 +366,17 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             if (deterministicStringify(this.toJSONInternal()) !== deterministicStringify(subState)) {
                 log(`Remote Subplebbit received a new update. Will emit an update event`);
+                this._setUpdatingState("succeeded");
                 await this.initSubplebbit(subState);
                 this.emit("update", this);
             }
         } else {
+            this._setUpdatingState("resolving-address");
             if (this.plebbit.resolver.isDomain(this.address))
                 try {
                     await this.assertDomainResolvesCorrectly(this.address);
                 } catch (e) {
+                    this._setUpdatingState("failed");
                     const updateError = errcode(e, e.code, { details: `subplebbit.update: ${e.details}` });
                     log.error(updateError);
                     this.emit("error", updateError.toString());
@@ -363,8 +387,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             let subplebbitIpns: SubplebbitIpfsType;
 
             try {
-                subplebbitIpns = await loadIpnsAsJson(ipnsAddress, this.plebbit);
+                subplebbitIpns = await loadIpnsAsJson(ipnsAddress, this.plebbit, () => this._setUpdatingState("fetching-ipfs"));
             } catch (e) {
+                this._setUpdatingState("failed");
                 log.error(`Failed to load subplebbit IPNS, error:`, e);
                 this.emit("error", e);
                 return;
@@ -373,10 +398,15 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             if (!updateValidity.valid) {
                 log.error(`Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
                 this.emit("error", `Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
+                this._setUpdatingState("failed");
             } else if (this.updatedAt !== subplebbitIpns.updatedAt) {
                 await this.initSubplebbit(subplebbitIpns);
+                this._setUpdatingState("succeeded");
                 log(`Remote Subplebbit received a new update. Will emit an update event`);
                 this.emit("update", this);
+            } else {
+                log.trace("Remote subplebbit received a new update with no new information");
+                this._setUpdatingState("succeeded");
             }
         }
     }
@@ -390,20 +420,21 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 setTimeout(updateLoop, this._updateIntervalMs);
             }
         };
-        this.updateOnce().then(() => {
-            this._updateInterval = setTimeout(updateLoop.bind(this), this._updateIntervalMs);
-        });
+        this.updateOnce().then(() => (this._updateInterval = setTimeout(updateLoop.bind(this), this._updateIntervalMs)));
     }
 
     async stop() {
         this._updateInterval = clearInterval(this._updateInterval);
+        this._setUpdatingState("stopped");
         if (this._sync) {
             await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic, this.handleChallengeExchange);
             await this.dbHandler.rollbackAllTransactions();
             await this.dbHandler.unlockSubStart();
             this._sync = false;
             this._syncInterval = clearInterval(this._syncInterval);
+            this._setStartedState("stopped");
         }
+        this._setState("stopped");
     }
 
     private async _validateLocalSignature(newSignature: SignatureType, record: Omit<SubplebbitIpfsType, "signature">) {
@@ -1166,14 +1197,19 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:subplebbit:sync");
         await this._switchDbIfNeeded();
-        await this._mergeInstanceStateWithDbState({});
+        this._setState("started");
 
         try {
+            await this._mergeInstanceStateWithDbState({});
             this._ipfsNodeIpnsKeyNames = (await this.plebbit.ipfsClient.key.list()).map((key) => key.name);
             await this._listenToIncomingRequests();
+            this._setStartedState("publishing-ipns");
             await this._updateCommentsThatNeedToBeUpdated();
             await this.updateSubplebbitIpnsIfNeeded();
+            this._setStartedState("succeeded");
         } catch (e) {
+            this._setStartedState("failed");
+            this.emit("error", e);
             log.error(`Failed to sync due to error,`, e);
         }
     }
