@@ -49,7 +49,6 @@ import {
     getPublicKeyFromPrivateKey
 } from "./signer/util";
 import { AUTHOR_EDIT_FIELDS, MOD_EDIT_FIELDS } from "./comment-edit";
-import errcode from "err-code";
 import { messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
 import { nativeFunctions } from "./runtime/node/util";
