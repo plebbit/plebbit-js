@@ -15,6 +15,7 @@ import {
 } from "./signer/constants";
 import { Subplebbit } from "./subplebbit";
 import Publication from "./publication";
+import { PlebbitError } from "./plebbit-error";
 
 export type ProtocolVersion = "1.0.0";
 
@@ -593,7 +594,7 @@ export interface SubplebbitEvents {
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType) => void;
 
-    error: (errMsg: string) => void;
+    error: (error: PlebbitError) => void;
 
     // State changes
     statechange: (newState: Subplebbit["state"]) => void;
@@ -608,7 +609,7 @@ export interface PublicationEvents {
     challenge: (challenge: DecryptedChallengeMessageType) => void;
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType, decryptedComment?: Comment) => void; // Should we include the updated publication instance here? not sure
-    error: (errorMsg: string) => void;
+    error: (error: PlebbitError) => void;
     publishingstatechange: (newState: Publication["publishingState"]) => void;
     statechange: (newState: Publication["state"]) => void;
 
@@ -623,5 +624,5 @@ export interface PlebbitEvents {
     resolvedsubplebbitipns: (ipns: string, cid: string) => void; // Emitted when IPNS is resolved to a CID
     fetchedcid: (cid: string, content: string) => void; // Emitted when a CID is fetched with its file content
     fetchedipns: (ipns: string, content: string) => void; // Emitted when an IPNS is fetched with its file content
-    error: (errorMsg: string) => void;
+    error: (error: PlebbitError) => void;
 }

@@ -73,6 +73,7 @@ import assert from "assert";
 import version from "./version";
 import { SignatureType, SignerType } from "./signer/constants";
 import { TypedEmitter } from "tiny-typed-emitter";
+import { PlebbitError } from "./plebbit-error";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
@@ -314,10 +315,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const log = Logger("plebbit-js:subplebbit:edit");
 
         if (newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address) {
-            this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch((err) => {
-                const editError = errcode(err, err.code, { details: `subplebbit.edit: ${err.details}` });
-                log.error(editError);
-                this.emit("error", editError.toString());
+            this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch((err: PlebbitError) => {
+                log.error(err);
+                this.emit("error", err);
             });
             log(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
             await this._updateDbInternalState(lodash.pick(newSubplebbitOptions, "address"));
@@ -378,9 +378,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                     await this.assertDomainResolvesCorrectly(this.address);
                 } catch (e) {
                     this._setUpdatingState("failed");
-                    const updateError = errcode(e, e.code, { details: `subplebbit.update: ${e.details}` });
-                    log.error(updateError);
-                    this.emit("error", updateError.toString());
+                    log.error(e);
+                    this.emit("error", e);
                     return;
                 }
 
@@ -397,9 +396,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             }
             const updateValidity = await verifySubplebbit(subplebbitIpns, this.plebbit);
             if (!updateValidity.valid) {
-                log.error(`Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
-                this.emit("error", `Subplebbit update's signature is invalid. Error is '${updateValidity.reason}'`);
                 this._setUpdatingState("failed");
+                const error = new PlebbitError("ERR_SIGNATURE_IS_INVALID", {signatureValidity: updateValidity, subplebbitIpns})
+                this.emit("error", error);
             } else if (this.updatedAt !== subplebbitIpns.updatedAt) {
                 await this.initSubplebbit(subplebbitIpns);
                 this._setUpdatingState("succeeded");
@@ -1018,10 +1017,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 uint8ArrayFromString(deterministicStringify(challengeVerification))
             );
 
-            const err = errcode(Error(messages.ERR_SIGNATURE_IS_INVALID), messages[messages.ERR_SIGNATURE_IS_INVALID], {
-                details: `subplebbit.handleChallengeExchange: Failed to verify ${msgParsed.type}, Failed verification reason: ${validation.reason}`
-            });
-            this.emit("error", err.toString());
+            const err = new PlebbitError("ERR_SIGNATURE_IS_INVALID", { pubsubMsg: msgParsed, signatureValidity: validation });
+            this.emit("error", err);
             throw err;
         }
     }

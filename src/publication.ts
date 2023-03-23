@@ -27,6 +27,7 @@ import { throwWithErrorCode, timestamp } from "./util";
 import { SignatureType } from "./signer/constants";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { Comment } from "./comment";
+import { PlebbitError } from "./plebbit-error";
 
 class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     subplebbitAddress: string;
@@ -103,9 +104,12 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         if (msgParsed?.type === "CHALLENGE") {
             const challengeMsgValidity = await verifyChallengeMessage(msgParsed);
             if (!challengeMsgValidity.valid) {
-                const errMsg = `Received a CHALLENGEMESSAGE with invalid signature. Failed verification reason: ${challengeMsgValidity.reason}`;
-                log.error(errMsg);
-                this.emit("error", errMsg);
+                const error = new PlebbitError("ERR_SIGNATURE_IS_INVALID", {
+                    pubsubMsg: msgParsed,
+                    signatureValidity: challengeMsgValidity
+                });
+                log.error(error);
+                this.emit("error", error);
                 return;
             }
 
@@ -121,10 +125,13 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         } else if (msgParsed?.type === "CHALLENGEVERIFICATION") {
             const signatureValidation = await verifyChallengeVerification(msgParsed);
             if (!signatureValidation.valid) {
-                const errMsg = `Received a CHALLENGEVERIFICATIONMESSAGE with invalid signature. Failed verification reason: ${signatureValidation.reason}`;
-                log.error(errMsg);
-                this.emit("error", errMsg);
+                const error = new PlebbitError("ERR_SIGNATURE_IS_INVALID", {
+                    signatureValidity: signatureValidation,
+                    pubsubMsg: msgParsed
+                });
                 this._updatePublishingState("failed");
+                log.error(error);
+                this.emit("error", error);
                 return;
             }
             let decryptedPublication: CommentIpfsWithCid | undefined;

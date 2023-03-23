@@ -27,6 +27,7 @@ import { Plebbit } from "./plebbit";
 import lodash from "lodash";
 import { verifyComment, verifyCommentUpdate } from "./signer/signatures";
 import assert from "assert";
+import { PlebbitError } from "./plebbit-error";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
@@ -295,9 +296,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             res = await loadIpnsAsJson(this.ipnsName, this.plebbit, (ipns, cid) => this._setUpdatingState("fetching-ipfs"));
         } catch (e) {
             this._setUpdatingState("failed");
-            const errMsg = `Failed to load comment (${this.cid}) IPNS (${this.ipnsName}) due to error: ${e}`;
-            log.error(errMsg);
-            this.emit("error", errMsg);
+            log.error(e);
+            this.emit("error", e);
             return;
         }
 
@@ -308,9 +308,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             const signatureValidity = await verifyCommentUpdate(res, { address: this.subplebbitAddress }, commentInstance, this.plebbit);
             if (!signatureValidity.valid) {
                 this._setUpdatingState("failed");
-                const errMsg = `Comment (${this.cid}) IPNS (${this.ipnsName}) signature is invalid due to '${signatureValidity.reason}'`;
-                log.error(errMsg);
-                this.emit("error", errMsg);
+                const err = new PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity, commentUpdate: res });
+                log.error(err);
+                this.emit("error", err);
                 return;
             }
             this._setUpdatingState("succeeded");
