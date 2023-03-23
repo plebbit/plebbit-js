@@ -90,7 +90,7 @@ var Post = /** @class */ (function (_super) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 if (typeof this.title !== "string")
-                    (0, util_1.throwWithErrorCode)("ERR_PUBLICATION_MISSING_FIELD", "".concat(this.getType(), ".publish: title (").concat(this.title, ") should be a string"));
+                    (0, util_1.throwWithErrorCode)("ERR_PUBLICATION_MISSING_FIELD", { type: this.getType(), title: this.title });
                 return [2 /*return*/, _super.prototype.publish.call(this)];
             });
         });

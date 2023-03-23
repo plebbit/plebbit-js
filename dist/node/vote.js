@@ -102,7 +102,7 @@ var Vote = /** @class */ (function (_super) {
                     case 1:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)
-                            (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", "vote.publish: Failed to publish vote (".concat(this.vote, ") on comment (").concat(this.commentCid, ") due to invalid signature. Reason=").concat(signatureValidity.reason));
+                            (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", { signatureValidity: signatureValidity });
                         return [2 /*return*/];
                 }
             });
@@ -114,9 +114,9 @@ var Vote = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         if (![-1, 0, 1].includes(this.vote))
-                            (0, util_1.throwWithErrorCode)("ERR_PUBLICATION_MISSING_FIELD", "Vote.vote (".concat(this.vote, ") can only be -1, 0, or 1"));
+                            (0, util_1.throwWithErrorCode)("ERR_PUBLICATION_MISSING_FIELD", { vote: this.vote });
                         if (!is_ipfs_1.default.cid(this.commentCid))
-                            (0, util_1.throwWithErrorCode)("ERR_CID_IS_INVALID", "Vote.publish: commentCid (".concat(this.commentCid, ") is invalid as a CID"));
+                            (0, util_1.throwWithErrorCode)("ERR_CID_IS_INVALID", { commentCid: this.commentCid });
                         return [4 /*yield*/, this._validateSignature()];
                     case 1:
                         _a.sent();

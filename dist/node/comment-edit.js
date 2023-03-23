@@ -149,7 +149,7 @@ var CommentEdit = /** @class */ (function (_super) {
                     case 1:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)
-                            (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", "commentEdit.publish: Failed to publish due to invalid signature. Reason=".concat(signatureValidity.reason));
+                            (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", { signatureValidity: signatureValidity });
                         return [2 /*return*/];
                 }
             });
@@ -162,7 +162,7 @@ var CommentEdit = /** @class */ (function (_super) {
                     case 0:
                         // TODO if publishing with content,reason, deleted, verify that publisher is original author
                         if (!is_ipfs_1.default.cid(this.commentCid))
-                            (0, util_1.throwWithErrorCode)("ERR_CID_IS_INVALID", "commentEdit.publish: commentCid (".concat(this.commentCid, ") is invalid as a CID"));
+                            (0, util_1.throwWithErrorCode)("ERR_CID_IS_INVALID", { commentCid: this.commentCid });
                         return [4 /*yield*/, this._validateSignature()];
                     case 1:
                         _a.sent();

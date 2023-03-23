@@ -73,6 +73,7 @@ var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var lodash_1 = __importDefault(require("lodash"));
 var signatures_1 = require("./signer/signatures");
 var assert_1 = __importDefault(require("assert"));
+var plebbit_error_1 = require("./plebbit-error");
 var DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 var Comment = /** @class */ (function (_super) {
     __extends(Comment, _super);
@@ -232,7 +233,7 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, commentIpfs, res, e_1, errMsg, commentInstance, signatureValidity, errMsg;
+            var log, commentIpfs, res, e_1, commentInstance, signatureValidity, err;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -259,9 +260,8 @@ var Comment = /** @class */ (function (_super) {
                     case 4:
                         e_1 = _a.sent();
                         this._setUpdatingState("failed");
-                        errMsg = "Failed to load comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") due to error: ").concat(e_1);
-                        log.error(errMsg);
-                        this.emit("error", errMsg);
+                        log.error(e_1);
+                        this.emit("error", e_1);
                         return [2 /*return*/];
                     case 5:
                         if (!(res && this.updatedAt !== res.updatedAt)) return [3 /*break*/, 8];
@@ -272,9 +272,9 @@ var Comment = /** @class */ (function (_super) {
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid) {
                             this._setUpdatingState("failed");
-                            errMsg = "Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") signature is invalid due to '").concat(signatureValidity.reason, "'");
-                            log.error(errMsg);
-                            this.emit("error", errMsg);
+                            err = new plebbit_error_1.PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity: signatureValidity, commentUpdate: res });
+                            log.error(err);
+                            this.emit("error", err);
                             return [2 /*return*/];
                         }
                         this._setUpdatingState("succeeded");
@@ -326,7 +326,7 @@ var Comment = /** @class */ (function (_super) {
                     case 1:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)
-                            (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", "comment.publish: Failed to publish due to invalid signature. Reason=".concat(signatureValidity.reason));
+                            (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", { signatureValidity: signatureValidity });
                         return [2 /*return*/];
                 }
             });

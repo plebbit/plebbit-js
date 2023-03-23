@@ -18,7 +18,7 @@ export declare function oldScore(comment: Pick<CommentWithCommentUpdate, "timest
 export declare function removeNullAndUndefinedValues<T extends Object>(obj: T): T;
 export declare function removeNullAndUndefinedValuesRecursively<T>(obj: T): T;
 export declare function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T>;
-export declare function throwWithErrorCode(code: keyof typeof messages, details?: string): void;
+export declare function throwWithErrorCode(code: keyof typeof messages, details?: {}): void;
 export declare function parsePageIpfs(pageIpfs: PageIpfs, subplebbit: Pages["_subplebbit"]): Promise<PageType>;
 export declare function parsePagesIpfs(pagesRaw: PagesTypeIpfs, subplebbit: Pages["_subplebbit"]): Promise<PagesType>;
 export declare const parseJsonStrings: (obj: any) => any;

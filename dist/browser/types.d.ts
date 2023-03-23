@@ -8,6 +8,7 @@ import { Comment } from "./comment";
 import { CommentEditSignedPropertyNamesUnion, CommentSignedPropertyNamesUnion, Encrypted, SignatureType, SignerType, VoteSignedPropertyNamesUnion } from "./signer/constants";
 import { Subplebbit } from "./subplebbit";
 import Publication from "./publication";
+import { PlebbitError } from "./plebbit-error";
 export declare type ProtocolVersion = "1.0.0";
 export declare type ChainProvider = {
     url: string;
@@ -472,7 +473,10 @@ export interface SubplebbitEvents {
     challengemessage: (challenge: DecryptedChallengeMessageType) => void;
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType) => void;
-    error: (errMsg: string) => void;
+    error: (error: PlebbitError) => void;
+    statechange: (newState: Subplebbit["state"]) => void;
+    updatingstatechange: (newState: Subplebbit["updatingState"]) => void;
+    startedstatechange: (newState: Subplebbit["startedState"]) => void;
     update: (updatedSubplebbit: Subplebbit) => void;
 }
 export interface PublicationEvents {
@@ -480,7 +484,7 @@ export interface PublicationEvents {
     challenge: (challenge: DecryptedChallengeMessageType) => void;
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType, decryptedComment?: Comment) => void;
-    error: (errorMsg: string) => void;
+    error: (error: PlebbitError) => void;
     publishingstatechange: (newState: Publication["publishingState"]) => void;
     statechange: (newState: Publication["state"]) => void;
     update: (updatedInstance: Comment) => void;
@@ -492,6 +496,6 @@ export interface PlebbitEvents {
     resolvedsubplebbitipns: (ipns: string, cid: string) => void;
     fetchedcid: (cid: string, content: string) => void;
     fetchedipns: (ipns: string, content: string) => void;
-    error: (errorMsg: string) => void;
+    error: (error: PlebbitError) => void;
 }
 export {};
