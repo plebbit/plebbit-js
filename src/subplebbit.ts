@@ -84,7 +84,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     roles?: { [authorAddress: string]: SubplebbitRole };
     lastPostCid?: string;
     posts: Pages;
-    pubsubTopic: string;
+    pubsubTopic?: string;
     challengeTypes?: ChallengeType[];
     stats?: SubplebbitStats;
     features?: SubplebbitFeatures;
@@ -396,7 +396,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const updateValidity = await verifySubplebbit(subplebbitIpns, this.plebbit);
             if (!updateValidity.valid) {
                 this._setUpdatingState("failed");
-                const error = new PlebbitError("ERR_SIGNATURE_IS_INVALID", {signatureValidity: updateValidity, subplebbitIpns})
+                const error = new PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity: updateValidity, subplebbitIpns });
                 this.emit("error", error);
             } else if (this.updatedAt !== subplebbitIpns.updatedAt) {
                 await this.initSubplebbit(subplebbitIpns);
@@ -422,11 +422,15 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this.updateOnce().then(() => (this._updateInterval = setTimeout(updateLoop.bind(this), this._updateIntervalMs)));
     }
 
+    private pubsubTopicWithfallback() {
+        return this.pubsubTopic || this.address;
+    }
+
     async stop() {
         this._updateInterval = clearInterval(this._updateInterval);
         this._setUpdatingState("stopped");
         if (this._sync) {
-            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic, this.handleChallengeExchange);
+            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             await this.dbHandler.rollbackAllTransactions();
             await this.dbHandler.unlockSubStart();
             this._sync = false;
@@ -809,7 +813,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await Promise.all([
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
                 this.plebbit.pubsubIpfsClient.pubsub.publish(
-                    this.pubsubTopic,
+                    this.pubsubTopicWithfallback(),
                     uint8ArrayFromString(deterministicStringify(challengeVerification))
                 )
             ]);
@@ -860,7 +864,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await Promise.all([
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
                 this.plebbit.pubsubIpfsClient.pubsub.publish(
-                    this.pubsubTopic,
+                    this.pubsubTopicWithfallback(),
                     uint8ArrayFromString(deterministicStringify(challengeVerification))
                 )
             ]);
@@ -896,7 +900,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await Promise.all([
                 this.dbHandler.insertChallenge(challengeMessage.toJSONForDb(challengeTypes), undefined),
                 this.plebbit.pubsubIpfsClient.pubsub.publish(
-                    this.pubsubTopic,
+                    this.pubsubTopicWithfallback(),
                     uint8ArrayFromString(deterministicStringify(challengeMessage))
                 )
             ]);
@@ -948,7 +952,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await Promise.all([
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
                 this.plebbit.pubsubIpfsClient.pubsub.publish(
-                    this.pubsubTopic,
+                    this.pubsubTopicWithfallback(),
                     uint8ArrayFromString(deterministicStringify(challengeVerification))
                 )
             ]);
@@ -982,7 +986,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await Promise.all([
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
                 this.plebbit.pubsubIpfsClient.pubsub.publish(
-                    this.pubsubTopic,
+                    this.pubsubTopicWithfallback(),
                     uint8ArrayFromString(deterministicStringify(challengeVerification))
                 )
             ]);
@@ -1012,7 +1016,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             });
 
             await this.plebbit.pubsubIpfsClient.pubsub.publish(
-                this.pubsubTopic,
+                this.pubsubTopicWithfallback(),
                 uint8ArrayFromString(deterministicStringify(challengeVerification))
             );
 
@@ -1123,10 +1127,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const log = Logger("plebbit-js:subplebbit:sync");
         // Make sure subplebbit listens to pubsub topic
         const subscribedTopics = await this.plebbit.pubsubIpfsClient.pubsub.ls();
-        if (!subscribedTopics.includes(this.pubsubTopic)) {
-            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopic, this.handleChallengeExchange); // Make sure it's not hanging
-            await this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopic, this.handleChallengeExchange);
-            log(`Waiting for publications on pubsub topic (${this.pubsubTopic})`);
+        if (!subscribedTopics.includes(this.pubsubTopicWithfallback())) {
+            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange); // Make sure it's not hanging
+            await this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
+            log(`Waiting for publications on pubsub topic (${this.pubsubTopicWithfallback()})`);
         }
     }
 
@@ -1143,7 +1147,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     }
 
     private async _switchDbIfNeeded() {
-        const log = Logger("plebbit-js:subplebbit:sync");
+        const log = Logger("plebbit-js:subplebbit:_switchDbIfNeeded");
 
         // Will check if address has been changed, and if so connect to the new db with the new address
         const internalState = await this._getDbInternalState(false);
@@ -1206,7 +1210,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this._setStartedState("succeeded");
         } catch (e) {
             this._setStartedState("failed");
-            this.emit("error", e);
             log.error(`Failed to sync due to error,`, e);
         }
     }

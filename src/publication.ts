@@ -161,7 +161,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 { ...msgParsed, publication: decryptedPublication },
                 this instanceof Comment && decryptedPublication ? this : undefined
             );
-            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange);
+            await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
         }
     }
 
@@ -192,7 +192,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             signature: await signChallengeAnswer(toSignAnswer, this.pubsubMessageSigner)
         });
         await this.plebbit.pubsubIpfsClient.pubsub.publish(
-            this.subplebbit.pubsubTopic,
+            this._pubsubTopicWithfallback(),
             uint8ArrayFromString(JSON.stringify(this._challengeAnswer))
         );
         this._updatePublishingState("waiting-challenge-verification");
@@ -213,9 +213,6 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     private _validateSubFields() {
         if (typeof this.subplebbit?.encryption?.publicKey !== "string")
             throwWithErrorCode("ERR_SUBPLEBBIT_MISSING_FIELD", { subplebbitPublicKey: this.subplebbit?.encryption?.publicKey });
-
-        if (typeof this.subplebbit.pubsubTopic !== "string")
-            throwWithErrorCode("ERR_SUBPLEBBIT_MISSING_FIELD", { subplebbitPubsubTopic: this.subplebbit?.pubsubTopic });
     }
 
     private _updatePublishingState(newState: Publication["publishingState"]) {
@@ -253,6 +250,10 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         if (this.plebbit.ipfsClient) this.plebbit.on("resolvedsubplebbitipns", fetchingSubIpfs);
     }
 
+    private _pubsubTopicWithfallback() {
+        return this.subplebbit.pubsubTopic || this.subplebbit.address;
+    }
+
     async publish() {
         const log = Logger("plebbit-js:publication:publish");
         this._updateState("publishing");
@@ -267,7 +268,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
         this._validateSubFields();
 
-        await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange);
+        await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
 
         this.pubsubMessageSigner = await this.plebbit.createSigner();
 
@@ -295,10 +296,10 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
         await Promise.all([
             this.plebbit.pubsubIpfsClient.pubsub.publish(
-                this.subplebbit.pubsubTopic,
+                this._pubsubTopicWithfallback(),
                 uint8ArrayFromString(JSON.stringify(this._challengeRequest))
             ),
-            this.plebbit.pubsubIpfsClient.pubsub.subscribe(this.subplebbit.pubsubTopic, this.handleChallengeExchange)
+            this.plebbit.pubsubIpfsClient.pubsub.subscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)
         ]);
         this._updatePublishingState("waiting-challenge");
         log(`Sent a challenge request (${this._challengeRequest.challengeRequestId})`);

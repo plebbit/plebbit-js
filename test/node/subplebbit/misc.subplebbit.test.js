@@ -128,3 +128,29 @@ describe(`Create a sub with basic auth urls`, async () => {
         await sub.stop();
     });
 });
+
+describe(`subplebbit.pubsubTopic`, async () => {
+    let subplebbit, plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        subplebbit = await createMockSub({}, plebbit);
+    });
+
+    after(async () => {
+        await subplebbit.stop();
+    });
+
+    it(`subplebbit.pubsubTopic is defaulted to address when start() is called`, async () => {
+        expect(subplebbit.pubsubTopic).to.be.undefined;
+        await subplebbit.start();
+        expect(subplebbit.pubsubTopic).to.equal(subplebbit.address);
+    });
+    it(`Publications can be published to a sub with pubsubTopic=undefined`, async () => {
+        await subplebbit.edit({ pubsubTopic: undefined });
+        expect(subplebbit.pubsubTopic).to.be.undefined;
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        expect(subplebbit.pubsubTopic).to.be.undefined;
+
+        await publishRandomPost(subplebbit.address, plebbit, {});
+    });
+});
