@@ -151,6 +151,7 @@ describe(`subplebbit.pubsubTopic`, async () => {
         await new Promise((resolve) => subplebbit.once("update", resolve));
         expect(subplebbit.pubsubTopic).to.be.undefined;
 
-        await publishRandomPost(subplebbit.address, plebbit, {});
+        const post = await publishRandomPost(subplebbit.address, plebbit, {});
+        expect(post.subplebbit.pubsubTopic).to.be.undefined;
     });
 });
