@@ -340,6 +340,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
     stop() {
         this._updateInterval = clearTimeout(this._updateInterval);
+        this._setUpdatingState("stopped");
+        this._updateState("stopped");
     }
 
     private async _validateSignature() {
