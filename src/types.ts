@@ -621,7 +621,7 @@ export interface PublicationEvents {
 export interface PlebbitEvents {
     resolvedsubplebbitaddress: (subplebbitAddress: string, resolvedSubplebbitAddress: string) => void; // Emitted when subplebbit address (domain) is resolved to an IPNS
     resolvedauthoraddress: (authorAddress: string, resolvedAuthorAddress: string) => void; // Emitted when author address is resolved to an IPNS
-    resolvedsubplebbitipns: (ipns: string, cid: string) => void; // Emitted when IPNS is resolved to a CID
+    resolvedipns: (ipns: string, cid: string) => void; // Emitted when IPNS is resolved to a CID
     fetchedcid: (cid: string, content: string) => void; // Emitted when a CID is fetched with its file content
     fetchedipns: (ipns: string, content: string) => void; // Emitted when an IPNS is fetched with its file content
     error: (error: PlebbitError) => void;

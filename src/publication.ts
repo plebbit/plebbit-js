@@ -242,12 +242,12 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             assert(resolvedAddress);
             if (ipns === resolvedAddress) {
                 this._updatePublishingState("fetching-subplebbit-ipfs");
-                this.plebbit.removeListener("resolvedsubplebbitipns", fetchingSubIpfs);
+                this.plebbit.removeListener("resolvedipns", fetchingSubIpfs);
             }
         }).bind(this);
 
         // insert condition here
-        if (this.plebbit.ipfsClient) this.plebbit.on("resolvedsubplebbitipns", fetchingSubIpfs);
+        if (this.plebbit.ipfsClient) this.plebbit.on("resolvedipns", fetchingSubIpfs);
     }
 
     private _pubsubTopicWithfallback() {

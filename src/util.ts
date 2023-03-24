@@ -121,7 +121,7 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit, callbackAft
             error = e;
         }
         if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS", { ipns, error });
-        plebbit.emit("resolvedsubplebbitipns", ipns, cid);
+        plebbit.emit("resolvedipns", ipns, cid);
         if (callbackAfterResolve) callbackAfterResolve(ipns, cid);
         return loadIpfsFileAsJson(cid, plebbit);
     }
