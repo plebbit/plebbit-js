@@ -7,6 +7,7 @@ export class PlebbitError extends Error {
     details: {}; // Used to hold key-value of related props. Could be cid of a comment that failed to update
     constructor(code: keyof typeof messages, details: {}) {
         super(messages[code]);
+        this.name = this.constructor.name;
         this.code = code;
         this.message = messages[code];
         this.details = details;
