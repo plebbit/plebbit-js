@@ -115,6 +115,16 @@ describe(`comment.update`, async () => {
         plebbit = await mockPlebbit();
     });
 
+    it(`comment.stop() stops new update loops from running`, async () => {
+        const comment = await publishRandomPost(subplebbitAddress, plebbit, {}, false); // Full comment instance with all props except CommentUpdate
+        await comment.update();
+        await new Promise((resolve) => comment.once("update", resolve));
+        await comment.stop();
+        comment.updateOnce = () => expect.fail(`updateOnce should not be called after stopping`);
+        comment._retryLoadingCommentUpdate = () => expect.fail(`_retryLoadingCommentUpdate  should not be called after stopping`);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+    });
+
     it(`Comment instance can retrieve ipnsName from just cid`, async () => {
         const comment = await publishRandomPost(subplebbitAddress, plebbit, {}, false); // Full comment instance with all props except CommentUpdate
         expect(comment.shortCid).to.be.a("string").with.length(12);
@@ -143,6 +153,7 @@ describe(`comment.update`, async () => {
         recreatedComment.update();
 
         await waitUntil(() => eventNum >= 2, { timeout: 20000 });
+        await recreatedComment.stop();
     });
     it(`comment.update() is working as expected after calling comment.stop()`);
 });
@@ -197,7 +208,7 @@ describe(`comment.state`, async () => {
         await comment.update();
         expect(comment.state).to.equal("updating");
         expect(receivedStateChange).to.be.true;
-        comment.stop();
+        await comment.stop();
     });
 });
 
@@ -214,7 +225,25 @@ describe("comment.updatingState", async () => {
 
     it(`updating states is in correct order upon updating a comment with IPFS client`, async () => {
         const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
-        const expectedStates = ["fetching-ipns", "fetching-ipfs", "succeeded"];
+        const expectedStates = ["fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
+        const recordedStates = [];
+        mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+        await mockPost.update();
+
+        await new Promise((resolve) => mockPost.once("update", resolve));
+        await mockPost.stop();
+
+        expect(recordedStates.slice(recordedStates.length - 4)).to.deep.equal(expectedStates);
+        expect(plebbit.eventNames()).to.deep.equal([]); // Make sure events has been unsubscribed from
+    });
+
+    it(`updating states is in correct order upon updating a comment with gateway`, async () => {
+        const gatewayPlebbit = await mockPlebbit();
+        gatewayPlebbit.ipfsHttpClientOptions = gatewayPlebbit.ipfsClient = undefined;
+
+        const mockPost = await publishRandomPost(subplebbitAddress, gatewayPlebbit, {}, false);
+        const expectedStates = ["fetching-ipns", "succeeded", "stopped"];
         const recordedStates = [];
         mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
@@ -224,24 +253,6 @@ describe("comment.updatingState", async () => {
         await mockPost.stop();
 
         expect(recordedStates.slice(recordedStates.length - 3)).to.deep.equal(expectedStates);
-        expect(plebbit.eventNames()).to.deep.equal([]); // Make sure events has been unsubscribed from
-    });
-
-    it(`updating states is in correct order upon updating a comment with gateway`, async () => {
-        const gatewayPlebbit = await mockPlebbit();
-        gatewayPlebbit.ipfsHttpClientOptions = gatewayPlebbit.ipfsClient = undefined;
-
-        const mockPost = await publishRandomPost(subplebbitAddress, gatewayPlebbit, {}, false);
-        const expectedStates = ["fetching-ipns", "succeeded"];
-        const recordedStates = [];
-        mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
-
-        await mockPost.update();
-
-        await new Promise((resolve) => mockPost.once("update", resolve));
-        await mockPost.stop();
-
-        expect(recordedStates.slice(recordedStates.length - 2)).to.deep.equal(expectedStates);
         expect(gatewayPlebbit.eventNames()).to.deep.equal([]); // Make sure events has been unsubscribed from
     });
 });

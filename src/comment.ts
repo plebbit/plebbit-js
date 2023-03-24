@@ -1,3 +1,4 @@
+import retry, { RetryOperation } from "retry";
 import {
     loadIpfsFileAsJson,
     loadIpnsAsJson,
@@ -24,7 +25,7 @@ import {
 
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "./plebbit";
-import lodash from "lodash";
+import lodash, { reject } from "lodash";
 import { verifyComment, verifyCommentUpdate } from "./signer/signatures";
 import assert from "assert";
 import { PlebbitError } from "./plebbit-error";
@@ -69,13 +70,15 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
     // private
     private _updateInterval?: any;
+    private _isUpdating: boolean;
     private _updateIntervalMs: number;
     private _rawCommentUpdate?: CommentUpdate;
+    private _loadingOperation: RetryOperation;
 
     constructor(props: CommentType, plebbit: Plebbit) {
         super(props, plebbit);
         this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
-
+        this._isUpdating = false;
         this._setUpdatingState("stopped");
         // these functions might get separated from their `this` when used
         this.publish = this.publish.bind(this);
@@ -278,28 +281,53 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.updatedAt = newUpdatedAt;
     }
 
+    private async _retryLoadingCommentIpfs(log: Logger): Promise<CommentIpfsType> {
+        return new Promise((resolve) => {
+            this._loadingOperation.attempt(async (curAttempt) => {
+                this._setUpdatingState("fetching-ipfs");
+                log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
+                try {
+                    resolve(await loadIpfsFileAsJson(this.cid, this.plebbit));
+                } catch (e) {
+                    this._setUpdatingState("failed");
+                    log.error(e);
+                    reject(e);
+                    this._loadingOperation.retry(e);
+                }
+            });
+        });
+    }
+
+    private async _retryLoadingCommentUpdate(log: Logger): Promise<CommentUpdate> {
+        return new Promise((resolve) => {
+            this._loadingOperation.attempt(async (curAttempt) => {
+                this._setUpdatingState("fetching-ipns");
+                log.trace(`Retrying to load comment ipns (${this.ipnsName}) for the ${curAttempt}th time`);
+                try {
+                    resolve(await loadIpnsAsJson(this.ipnsName, this.plebbit, () => this._setUpdatingState("fetching-ipfs")));
+                } catch (e) {
+                    this._setUpdatingState("failed");
+                    log.error(e);
+                    reject(e);
+                    this._loadingOperation.retry(e);
+                }
+            });
+        });
+    }
+
     async updateOnce() {
         const log = Logger("plebbit-js:comment:update");
+        this._loadingOperation = retry.operation({ forever: true, factor: 2 });
         if (this.cid && !this.ipnsName) {
             // User may have attempted to call plebbit.createComment({cid}).update
             // plebbit-js should be able to retrieve ipnsName from the IPFS file
-            this._setUpdatingState("fetching-ipfs");
-            const commentIpfs: CommentIpfsType = await loadIpfsFileAsJson(this.cid, this.plebbit);
+            const commentIpfs: CommentIpfsType = await this._retryLoadingCommentIpfs(log); // Will keep retrying to load until comment.stop() is called
             this._initProps({ ...commentIpfs, cid: this.cid });
             assert(this.ipnsName);
             this.emit("update", this);
         }
 
-        let res: CommentUpdate | undefined;
-        try {
-            this._setUpdatingState("fetching-ipns");
-            res = await loadIpnsAsJson(this.ipnsName, this.plebbit, (ipns, cid) => this._setUpdatingState("fetching-ipfs"));
-        } catch (e) {
-            this._setUpdatingState("failed");
-            log.error(e);
-            this.emit("error", e);
-            return;
-        }
+        const res = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
 
         if (res && this.updatedAt !== res.updatedAt) {
             log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
@@ -330,18 +358,20 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
     async update() {
         if (this._updateInterval) return; // Do nothing if it's already updating
+        this._isUpdating = true;
         this._updateState("updating");
         const updateLoop = (async () => {
-            if (this._updateInterval)
-                this.updateOnce().finally(() => (this._updateInterval = setTimeout(updateLoop, this._updateIntervalMs)));
+            if (this._isUpdating) this.updateOnce().finally(() => (this._updateInterval = setTimeout(updateLoop, this._updateIntervalMs)));
         }).bind(this);
-        this.updateOnce().finally(() => (this._updateInterval = setTimeout(updateLoop, this._updateIntervalMs)));
+        updateLoop();
     }
 
-    stop() {
+    async stop() {
+        this._loadingOperation?.stop();
         this._updateInterval = clearTimeout(this._updateInterval);
         this._setUpdatingState("stopped");
         this._updateState("stopped");
+        this._isUpdating = false;
     }
 
     private async _validateSignature() {
