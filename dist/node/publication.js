@@ -287,12 +287,12 @@ var Publication = /** @class */ (function (_super) {
             (0, assert_1.default)(resolvedAddress);
             if (ipns === resolvedAddress) {
                 _this._updatePublishingState("fetching-subplebbit-ipfs");
-                _this.plebbit.removeListener("resolvedsubplebbitipns", fetchingSubIpfs);
+                _this.plebbit.removeListener("resolvedipns", fetchingSubIpfs);
             }
         }).bind(this);
         // insert condition here
         if (this.plebbit.ipfsClient)
-            this.plebbit.on("resolvedsubplebbitipns", fetchingSubIpfs);
+            this.plebbit.on("resolvedipns", fetchingSubIpfs);
     };
     Publication.prototype._pubsubTopicWithfallback = function () {
         return this.subplebbit.pubsubTopic || this.subplebbit.address;
@@ -360,3 +360,4 @@ var Publication = /** @class */ (function (_super) {
     return Publication;
 }(tiny_typed_emitter_1.TypedEmitter));
 exports.default = Publication;
+//# sourceMappingURL=publication.js.map

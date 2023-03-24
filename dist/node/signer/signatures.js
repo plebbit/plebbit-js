@@ -568,3 +568,4 @@ function verifyPage(page, plebbit, subplebbit, parentCommentCid) {
     });
 }
 exports.verifyPage = verifyPage;
+//# sourceMappingURL=signatures.js.map

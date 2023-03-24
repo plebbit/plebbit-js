@@ -493,7 +493,7 @@ export interface PublicationEvents {
 export interface PlebbitEvents {
     resolvedsubplebbitaddress: (subplebbitAddress: string, resolvedSubplebbitAddress: string) => void;
     resolvedauthoraddress: (authorAddress: string, resolvedAuthorAddress: string) => void;
-    resolvedsubplebbitipns: (ipns: string, cid: string) => void;
+    resolvedipns: (ipns: string, cid: string) => void;
     fetchedcid: (cid: string, content: string) => void;
     fetchedipns: (ipns: string, content: string) => void;
     error: (error: PlebbitError) => void;

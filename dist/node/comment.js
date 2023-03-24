@@ -25,6 +25,29 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -66,11 +89,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Comment = void 0;
+var retry_1 = __importDefault(require("retry"));
 var util_1 = require("./util");
 var publication_1 = __importDefault(require("./publication"));
 var pages_1 = require("./pages");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
-var lodash_1 = __importDefault(require("lodash"));
+var lodash_1 = __importStar(require("lodash"));
 var signatures_1 = require("./signer/signatures");
 var assert_1 = __importDefault(require("assert"));
 var plebbit_error_1 = require("./plebbit-error");
@@ -80,6 +104,7 @@ var Comment = /** @class */ (function (_super) {
     function Comment(props, plebbit) {
         var _this = _super.call(this, props, plebbit) || this;
         _this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
+        _this._isUpdating = false;
         _this._setUpdatingState("stopped");
         // these functions might get separated from their `this` when used
         _this.publish = _this.publish.bind(_this);
@@ -231,44 +256,101 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype.setUpdatedAt = function (newUpdatedAt) {
         this.updatedAt = newUpdatedAt;
     };
+    Comment.prototype._retryLoadingCommentIpfs = function (log) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return __generator(this, function (_a) {
+                return [2 /*return*/, new Promise(function (resolve) {
+                        _this._loadingOperation.attempt(function (curAttempt) { return __awaiter(_this, void 0, void 0, function () {
+                            var _a, e_1;
+                            return __generator(this, function (_b) {
+                                switch (_b.label) {
+                                    case 0:
+                                        this._setUpdatingState("fetching-ipfs");
+                                        log.trace("Retrying to load comment ipfs (".concat(this.cid, ") for the ").concat(curAttempt, "th time"));
+                                        _b.label = 1;
+                                    case 1:
+                                        _b.trys.push([1, 3, , 4]);
+                                        _a = resolve;
+                                        return [4 /*yield*/, (0, util_1.loadIpfsFileAsJson)(this.cid, this.plebbit)];
+                                    case 2:
+                                        _a.apply(void 0, [_b.sent()]);
+                                        return [3 /*break*/, 4];
+                                    case 3:
+                                        e_1 = _b.sent();
+                                        this._setUpdatingState("failed");
+                                        log.error(e_1);
+                                        (0, lodash_1.reject)(e_1);
+                                        this._loadingOperation.retry(e_1);
+                                        return [3 /*break*/, 4];
+                                    case 4: return [2 /*return*/];
+                                }
+                            });
+                        }); });
+                    })];
+            });
+        });
+    };
+    Comment.prototype._retryLoadingCommentUpdate = function (log) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return __generator(this, function (_a) {
+                return [2 /*return*/, new Promise(function (resolve) {
+                        _this._loadingOperation.attempt(function (curAttempt) { return __awaiter(_this, void 0, void 0, function () {
+                            var _a, e_2;
+                            var _this = this;
+                            return __generator(this, function (_b) {
+                                switch (_b.label) {
+                                    case 0:
+                                        this._setUpdatingState("fetching-ipns");
+                                        log.trace("Retrying to load comment ipns (".concat(this.ipnsName, ") for the ").concat(curAttempt, "th time"));
+                                        _b.label = 1;
+                                    case 1:
+                                        _b.trys.push([1, 3, , 4]);
+                                        _a = resolve;
+                                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.plebbit, function () { return _this._setUpdatingState("fetching-ipfs"); })];
+                                    case 2:
+                                        _a.apply(void 0, [_b.sent()]);
+                                        return [3 /*break*/, 4];
+                                    case 3:
+                                        e_2 = _b.sent();
+                                        this._setUpdatingState("failed");
+                                        log.error(e_2);
+                                        (0, lodash_1.reject)(e_2);
+                                        this._loadingOperation.retry(e_2);
+                                        return [3 /*break*/, 4];
+                                    case 4: return [2 /*return*/];
+                                }
+                            });
+                        }); });
+                    })];
+            });
+        });
+    };
     Comment.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, commentIpfs, res, e_1, commentInstance, signatureValidity, err;
-            var _this = this;
+            var log, commentIpfs, res, commentInstance, signatureValidity, err;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:comment:update");
+                        this._loadingOperation = retry_1.default.operation({ forever: true, factor: 2 });
                         if (!(this.cid && !this.ipnsName)) return [3 /*break*/, 2];
-                        // User may have attempted to call plebbit.createComment({cid}).update
-                        // plebbit-js should be able to retrieve ipnsName from the IPFS file
-                        this._setUpdatingState("fetching-ipfs");
-                        return [4 /*yield*/, (0, util_1.loadIpfsFileAsJson)(this.cid, this.plebbit)];
+                        return [4 /*yield*/, this._retryLoadingCommentIpfs(log)];
                     case 1:
                         commentIpfs = _a.sent();
                         this._initProps(__assign(__assign({}, commentIpfs), { cid: this.cid }));
                         (0, assert_1.default)(this.ipnsName);
                         this.emit("update", this);
                         _a.label = 2;
-                    case 2:
-                        _a.trys.push([2, 4, , 5]);
-                        this._setUpdatingState("fetching-ipns");
-                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.plebbit, function (ipns, cid) { return _this._setUpdatingState("fetching-ipfs"); })];
+                    case 2: return [4 /*yield*/, this._retryLoadingCommentUpdate(log)];
                     case 3:
                         res = _a.sent();
-                        return [3 /*break*/, 5];
-                    case 4:
-                        e_1 = _a.sent();
-                        this._setUpdatingState("failed");
-                        log.error(e_1);
-                        this.emit("error", e_1);
-                        return [2 /*return*/];
-                    case 5:
-                        if (!(res && this.updatedAt !== res.updatedAt)) return [3 /*break*/, 8];
+                        if (!(res && this.updatedAt !== res.updatedAt)) return [3 /*break*/, 6];
                         log("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
                         commentInstance = lodash_1.default.pick(this, ["cid", "signature"]);
                         return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(res, { address: this.subplebbitAddress }, commentInstance, this.plebbit)];
-                    case 6:
+                    case 4:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid) {
                             this._setUpdatingState("failed");
@@ -279,19 +361,19 @@ var Comment = /** @class */ (function (_super) {
                         }
                         this._setUpdatingState("succeeded");
                         return [4 /*yield*/, this._initCommentUpdate(res)];
-                    case 7:
+                    case 5:
                         _a.sent();
                         this.emit("update", this);
-                        return [3 /*break*/, 10];
-                    case 8:
-                        if (!res) return [3 /*break*/, 10];
+                        return [3 /*break*/, 8];
+                    case 6:
+                        if (!res) return [3 /*break*/, 8];
                         log.trace("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
                         this._setUpdatingState("succeeded");
                         return [4 /*yield*/, this._initCommentUpdate(res)];
-                    case 9:
+                    case 7:
                         _a.sent();
-                        _a.label = 10;
-                    case 10: return [2 /*return*/];
+                        _a.label = 8;
+                    case 8: return [2 /*return*/];
                 }
             });
         });
@@ -302,18 +384,38 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.update = function () {
         return __awaiter(this, void 0, void 0, function () {
+            var updateLoop;
+            var _this = this;
             return __generator(this, function (_a) {
                 if (this._updateInterval)
                     return [2 /*return*/]; // Do nothing if it's already updating
+                this._isUpdating = true;
                 this._updateState("updating");
-                this.updateOnce();
-                this._updateInterval = setInterval(this.updateOnce.bind(this), this._updateIntervalMs);
+                updateLoop = (function () { return __awaiter(_this, void 0, void 0, function () {
+                    var _this = this;
+                    return __generator(this, function (_a) {
+                        if (this._isUpdating)
+                            this.updateOnce().finally(function () { return (_this._updateInterval = setTimeout(updateLoop, _this._updateIntervalMs)); });
+                        return [2 /*return*/];
+                    });
+                }); }).bind(this);
+                updateLoop();
                 return [2 /*return*/];
             });
         });
     };
     Comment.prototype.stop = function () {
-        this._updateInterval = clearInterval(this._updateInterval);
+        var _a;
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_b) {
+                (_a = this._loadingOperation) === null || _a === void 0 ? void 0 : _a.stop();
+                this._updateInterval = clearTimeout(this._updateInterval);
+                this._setUpdatingState("stopped");
+                this._updateState("stopped");
+                this._isUpdating = false;
+                return [2 /*return*/];
+            });
+        });
     };
     Comment.prototype._validateSignature = function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -347,3 +449,4 @@ var Comment = /** @class */ (function (_super) {
     return Comment;
 }(publication_1.default));
 exports.Comment = Comment;
+//# sourceMappingURL=comment.js.map

@@ -86,3 +86,4 @@ var Plebbit = function Plebbit(plebbitOptions) {
 Plebbit.setNativeFunctions = util_1.setNativeFunctions;
 Plebbit.nativeFunctions = { node: native_functions_1.default, browser: native_functions_2.default };
 module.exports = Plebbit;
+//# sourceMappingURL=index.js.map

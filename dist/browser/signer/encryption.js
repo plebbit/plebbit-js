@@ -205,3 +205,4 @@ var decryptEd25519AesGcm = function (encrypted, privateKeyBase64, publicKeyBase6
     });
 }); };
 exports.decryptEd25519AesGcm = decryptEd25519AesGcm;
+//# sourceMappingURL=encryption.js.map

@@ -173,3 +173,4 @@ var getPeerIdFromPublicKey = function (publicKeyBase64) { return __awaiter(void 
     });
 }); };
 exports.getPeerIdFromPublicKey = getPeerIdFromPublicKey;
+//# sourceMappingURL=util.js.map

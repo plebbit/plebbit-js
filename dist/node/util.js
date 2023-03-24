@@ -226,7 +226,7 @@ function loadIpnsAsJson(ipns, plebbit, callbackAfterResolve) {
                 case 6:
                     if (typeof cid !== "string")
                         throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS", { ipns: ipns, error: error });
-                    plebbit.emit("resolvedsubplebbitipns", ipns, cid);
+                    plebbit.emit("resolvedipns", ipns, cid);
                     if (callbackAfterResolve)
                         callbackAfterResolve(ipns, cid);
                     return [2 /*return*/, loadIpfsFileAsJson(cid, plebbit)];
@@ -482,3 +482,4 @@ function shortifyCid(cid) {
     return cid.slice(2).slice(0, 12);
 }
 exports.shortifyCid = shortifyCid;
+//# sourceMappingURL=util.js.map

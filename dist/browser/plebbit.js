@@ -451,3 +451,4 @@ var Plebbit = /** @class */ (function (_super) {
     return Plebbit;
 }(tiny_typed_emitter_1.TypedEmitter));
 exports.Plebbit = Plebbit;
+//# sourceMappingURL=plebbit.js.map

@@ -96,3 +96,4 @@ var IpfsHttpClient = /** @class */ (function () {
 }());
 var create = function () { return new IpfsHttpClient(); };
 exports.create = create;
+//# sourceMappingURL=mock-ipfs-client.js.map

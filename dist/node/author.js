@@ -47,3 +47,4 @@ var Author = /** @class */ (function () {
     return Author;
 }());
 exports.default = Author;
+//# sourceMappingURL=author.js.map

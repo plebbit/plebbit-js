@@ -32,8 +32,10 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     reason?: string;
     updatingState: "stopped" | "resolving-author-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
     private _updateInterval?;
+    private _isUpdating;
     private _updateIntervalMs;
     private _rawCommentUpdate?;
+    private _loadingOperation;
     constructor(props: CommentType, plebbit: Plebbit);
     _initProps(props: CommentType): void;
     _initCommentUpdate(props: CommentUpdate): Promise<void>;
@@ -57,10 +59,12 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     setPreviousCid(newPreviousCid?: string): void;
     setDepth(newDepth: number): void;
     setUpdatedAt(newUpdatedAt: number): void;
+    private _retryLoadingCommentIpfs;
+    private _retryLoadingCommentUpdate;
     updateOnce(): Promise<void>;
     private _setUpdatingState;
     update(): Promise<void>;
-    stop(): void;
+    stop(): Promise<void>;
     private _validateSignature;
     publish(): Promise<void>;
 }

@@ -105,3 +105,4 @@ var createSigner = function (createSignerOptions) {
     });
 };
 exports.createSigner = createSigner;
+//# sourceMappingURL=index.js.map
