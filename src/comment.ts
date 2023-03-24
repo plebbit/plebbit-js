@@ -331,12 +331,15 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     async update() {
         if (this._updateInterval) return; // Do nothing if it's already updating
         this._updateState("updating");
-        this.updateOnce();
-        this._updateInterval = setInterval(this.updateOnce.bind(this), this._updateIntervalMs);
+        const updateLoop = (async () => {
+            if (this._updateInterval)
+                this.updateOnce().finally(() => (this._updateInterval = setTimeout(updateLoop, this._updateIntervalMs)));
+        }).bind(this);
+        this.updateOnce().finally(() => (this._updateInterval = setTimeout(updateLoop, this._updateIntervalMs)));
     }
 
     stop() {
-        this._updateInterval = clearInterval(this._updateInterval);
+        this._updateInterval = clearTimeout(this._updateInterval);
     }
 
     private async _validateSignature() {

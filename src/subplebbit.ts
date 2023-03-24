@@ -413,13 +413,11 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     async update() {
         if (this._updateInterval || this._sync) return; // No need to do anything if subplebbit is already updating
 
-        const updateLoop = async () => {
-            if (this._updateInterval) {
-                await this.updateOnce();
-                setTimeout(updateLoop, this._updateIntervalMs);
-            }
-        };
-        this.updateOnce().then(() => (this._updateInterval = setTimeout(updateLoop.bind(this), this._updateIntervalMs)));
+        const updateLoop = (async () => {
+            if (this._updateInterval) this.updateOnce().finally(() => setTimeout(updateLoop, this._updateIntervalMs));
+        }).bind(this);
+
+        this.updateOnce().finally(() => (this._updateInterval = setTimeout(updateLoop, this._updateIntervalMs)));
     }
 
     private pubsubTopicWithfallback() {
@@ -427,7 +425,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     }
 
     async stop() {
-        this._updateInterval = clearInterval(this._updateInterval);
+        this._updateInterval = clearTimeout(this._updateInterval);
         this._setUpdatingState("stopped");
         if (this._sync) {
             await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
