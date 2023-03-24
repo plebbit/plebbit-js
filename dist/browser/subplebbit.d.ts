@@ -13,7 +13,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     };
     lastPostCid?: string;
     posts: Pages;
-    pubsubTopic: string;
+    pubsubTopic?: string;
     challengeTypes?: ChallengeType[];
     stats?: SubplebbitStats;
     features?: SubplebbitFeatures;
@@ -29,6 +29,9 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     protocolVersion: ProtocolVersion;
     signature: SignatureType;
     rules?: string[];
+    state: "stopped" | "updating" | "started";
+    startedState: "stopped" | "fetching-ipns" | "publishing-ipns" | "failed" | "succeeded";
+    updatingState: "stopped" | "resolving-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
     plebbit: Plebbit;
     dbHandler?: DbHandlerPublicAPI;
     private _challengeToSolution;
@@ -59,8 +62,12 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     prePublish(): Promise<void>;
     private assertDomainResolvesCorrectly;
     edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit>;
+    private _setState;
+    private _setUpdatingState;
+    private _setStartedState;
     private updateOnce;
     update(): Promise<void>;
+    private pubsubTopicWithfallback;
     stop(): Promise<void>;
     private _validateLocalSignature;
     private updateSubplebbitIpnsIfNeeded;

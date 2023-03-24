@@ -41,7 +41,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Pages = void 0;
 var util_1 = require("./util");
-var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var signatures_1 = require("./signer/signatures");
 var lodash_1 = __importDefault(require("lodash"));
 var assert_1 = __importDefault(require("assert"));
@@ -58,10 +57,7 @@ var Pages = /** @class */ (function () {
             var pageIpfs, signatureValidity;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        if (!is_ipfs_1.default.cid(pageCid))
-                            (0, util_1.throwWithErrorCode)("ERR_CID_IS_INVALID", "getPage: cid (".concat(pageCid, ") is invalid as a CID"));
-                        return [4 /*yield*/, (0, util_1.loadIpfsFileAsJson)(pageCid, this._subplebbit.plebbit)];
+                    case 0: return [4 /*yield*/, (0, util_1.loadIpfsFileAsJson)(pageCid, this._subplebbit.plebbit)];
                     case 1:
                         pageIpfs = _a.sent();
                         return [4 /*yield*/, (0, signatures_1.verifyPage)(pageIpfs, this._subplebbit.plebbit, this._subplebbit, this._parentCid)];

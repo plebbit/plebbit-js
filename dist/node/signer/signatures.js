@@ -130,7 +130,7 @@ function _validateAuthorIpns(author, signer, plebbit) {
                 case 2:
                     derivedAddress = _a.sent();
                     if (derivedAddress !== author.address)
-                        (0, util_2.throwWithErrorCode)("ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER", "author.address=".concat(author.address, ", signer.address=").concat(derivedAddress));
+                        (0, util_2.throwWithErrorCode)("ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER", { authorAddress: author.address, signerAddress: derivedAddress });
                     _a.label = 3;
                 case 3: return [2 /*return*/];
             }

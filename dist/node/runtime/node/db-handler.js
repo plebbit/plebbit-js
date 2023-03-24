@@ -1323,7 +1323,7 @@ var DbHandler = /** @class */ (function () {
                     case 3:
                         e_1 = _a.sent();
                         if (e_1.message === "Lock file is already being held")
-                            (0, util_1.throwWithErrorCode)("ERR_SUB_ALREADY_STARTED", "subAddress=".concat(subAddress));
+                            (0, util_1.throwWithErrorCode)("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: subAddress });
                         else {
                             log("Error while trying to lock start of sub (".concat(subAddress, "): ").concat(e_1));
                             throw e_1;
@@ -1422,7 +1422,7 @@ var DbHandler = /** @class */ (function () {
                     case 3:
                         e_3 = _a.sent();
                         if (e_3.message === "Lock file is already being held")
-                            (0, util_1.throwWithErrorCode)("ERR_SUB_CREATION_LOCKED", "subAddress=".concat(subAddress));
+                            (0, util_1.throwWithErrorCode)("ERR_SUB_CREATION_LOCKED", { subplebbitAddress: subAddress });
                         else {
                             log("Error while trying to lock creation of sub (".concat(subAddress, "): ").concat(e_3));
                             throw e_3;
@@ -1522,7 +1522,7 @@ var DbHandler = /** @class */ (function () {
                     case 3:
                         e_5 = _a.sent();
                         if (e_5.message === "Lock file is already being held")
-                            (0, util_1.throwWithErrorCode)("ERR_SUB_STATE_LOCKED", "subAddress=".concat(subAddress));
+                            (0, util_1.throwWithErrorCode)("ERR_SUB_STATE_LOCKED", { subplebbitAddress: subAddress });
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/];
                 }

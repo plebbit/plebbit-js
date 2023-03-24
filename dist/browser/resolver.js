@@ -76,7 +76,7 @@ var Resolver = /** @class */ (function () {
             this.cachedChainProviders[chainTicker] = new ethers_1.ethers.providers.JsonRpcProvider({ url: this.chainProviders[chainTicker].url }, this.chainProviders[chainTicker].chainId);
             return this.cachedChainProviders[chainTicker];
         }
-        (0, util_1.throwWithErrorCode)("ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER", JSON.stringify({ chainTicker: chainTicker }));
+        (0, util_1.throwWithErrorCode)("ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER", { chainTicker: chainTicker });
     };
     Resolver.prototype._resolveEnsTxtRecord = function (ensName, txtRecordName) {
         return __awaiter(this, void 0, void 0, function () {
@@ -93,12 +93,12 @@ var Resolver = /** @class */ (function () {
                     case 1:
                         resolver = _a.sent();
                         if (!resolver)
-                            (0, util_1.throwWithErrorCode)("ERR_ENS_RESOLVER_NOT_FOUND", "ensName: ".concat(ensName, ", chainProvider: ").concat(chainProvider));
+                            (0, util_1.throwWithErrorCode)("ERR_ENS_RESOLVER_NOT_FOUND", { ensName: ensName, chainProvider: chainProvider });
                         return [4 /*yield*/, resolver.getText(txtRecordName)];
                     case 2:
                         txtRecordResult = _a.sent();
                         if (!txtRecordResult)
-                            (0, util_1.throwWithErrorCode)("ERR_ENS_TXT_RECORD_NOT_FOUND", "ensName: ".concat(ensName, ", txtRecordName: ").concat(txtRecordName, ", chainProvider: ").concat(chainProvider));
+                            (0, util_1.throwWithErrorCode)("ERR_ENS_TXT_RECORD_NOT_FOUND", { ensName: ensName, txtRecordName: txtRecordName, chainProvider: chainProvider });
                         log.trace("Resolved text record name (".concat(txtRecordName, ") of ENS (").concat(ensName, ") to ").concat(txtRecordResult));
                         this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // Expire memory ENS cache after an hour
                         return [2 /*return*/, txtRecordResult];

@@ -321,7 +321,7 @@ var nativeFunctions = {
                 case 1:
                     res = _b.sent();
                     if (res.status !== 200)
-                        (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_IMPORT_IPFS_KEY", JSON.stringify({ url: url, status: res.status, statusText: res.statusText, ipnsKeyName: ipnsKeyName }));
+                        (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_IMPORT_IPFS_KEY", { url: url, status: res.status, statusText: res.statusText, ipnsKeyName: ipnsKeyName });
                     return [4 /*yield*/, res.json()];
                 case 2:
                     resJson = _b.sent();

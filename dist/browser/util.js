@@ -53,12 +53,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parseJsonStrings = exports.parsePagesIpfs = exports.parsePageIpfs = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.fetchCid = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var util_1 = require("./runtime/browser/util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
-var errors_1 = require("./errors");
-var err_code_1 = __importDefault(require("err-code"));
 var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
 var lodash_1 = __importDefault(require("lodash"));
 var assert_1 = __importDefault(require("assert"));
 var pages_1 = require("./pages");
+var plebbit_error_1 = require("./plebbit-error");
 //This is temp. TODO replace this with accurate mapping
 exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -88,9 +87,9 @@ function fetchWithLimit(url, options) {
                 case 4:
                     e_1 = _d.sent();
                     if (e_1.message.includes("over limit"))
-                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", JSON.stringify({ url: url, downloadLimit: DOWNLOAD_LIMIT_BYTES }));
+                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url: url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
                     else
-                        throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", JSON.stringify({ url: url, status: res === null || res === void 0 ? void 0 : res.status, statusText: res === null || res === void 0 ? void 0 : res.statusText }));
+                        throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", { url: url, status: res === null || res === void 0 ? void 0 : res.status, statusText: res === null || res === void 0 ? void 0 : res.statusText });
                     return [3 /*break*/, 5];
                 case 5:
                     if (!(((_b = res === null || res === void 0 ? void 0 : res.body) === null || _b === void 0 ? void 0 : _b.getReader) !== undefined)) return [3 /*break*/, 9];
@@ -110,7 +109,7 @@ function fetchWithLimit(url, options) {
                     if (done || !value)
                         return [3 /*break*/, 8];
                     if (value.length + totalBytesRead > DOWNLOAD_LIMIT_BYTES)
-                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", "fetch: url (".concat(url, ") points to a file larger than download limit (").concat(DOWNLOAD_LIMIT_BYTES, ") bytes"));
+                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url: url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
                     totalBytesRead += value.length;
                     return [3 /*break*/, 6];
                 case 8: return [2 /*return*/, [resText, res]];
@@ -139,7 +138,7 @@ function fetchCid(cid, plebbit, catOptions) {
                     if (res.status === 200)
                         fileContent = resText;
                     else
-                        throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", JSON.stringify({ url: url, status: res.status, statusText: res.statusText }));
+                        throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", { url: url, status: res.status, statusText: res.statusText });
                     return [3 /*break*/, 7];
                 case 2:
                     error = void 0;
@@ -156,15 +155,15 @@ function fetchCid(cid, plebbit, catOptions) {
                     return [3 /*break*/, 6];
                 case 6:
                     if (typeof fileContent !== "string")
-                        throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_GENERIC", JSON.stringify({ cid: cid, error: error, options: catOptions }));
+                        throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_GENERIC", { cid: cid, error: error, options: catOptions });
                     _c.label = 7;
                 case 7: return [4 /*yield*/, ipfs_only_hash_1.default.of(fileContent)];
                 case 8:
                     calculatedCid = _c.sent();
                     if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
-                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", JSON.stringify({ cid: cid, downloadLimit: DOWNLOAD_LIMIT_BYTES }));
+                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid: cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
                     if (calculatedCid !== cid)
-                        throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", JSON.stringify({ calculatedCid: calculatedCid, cid: cid }));
+                        throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid: calculatedCid, cid: cid });
                     plebbit.emit("fetchedcid", cid, fileContent);
                     return [2 /*return*/, fileContent];
             }
@@ -194,7 +193,7 @@ function loadIpnsAsJson(ipns, plebbit, callbackAfterResolve) {
             switch (_c.label) {
                 case 0:
                     if (typeof ipns !== "string")
-                        throwWithErrorCode("ERR_IPNS_IS_INVALID", JSON.stringify({ ipns: ipns }));
+                        throwWithErrorCode("ERR_IPNS_IS_INVALID", { ipns: ipns });
                     if (!!plebbit.ipfsClient) return [3 /*break*/, 2];
                     url = "".concat(plebbit.ipfsGatewayUrl, "/ipns/").concat(ipns);
                     return [4 /*yield*/, fetchWithLimit(url, {
@@ -209,7 +208,7 @@ function loadIpnsAsJson(ipns, plebbit, callbackAfterResolve) {
                         return [2 /*return*/, JSON.parse(resText)];
                     }
                     else
-                        throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", JSON.stringify({ url: url, status: res.status, statusText: res.statusText }));
+                        throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", { url: url, status: res.status, statusText: res.statusText });
                     return [3 /*break*/, 7];
                 case 2:
                     cid = void 0, error = void 0;
@@ -226,7 +225,7 @@ function loadIpnsAsJson(ipns, plebbit, callbackAfterResolve) {
                     return [3 /*break*/, 6];
                 case 6:
                     if (typeof cid !== "string")
-                        throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS", JSON.stringify({ ipns: ipns, error: error }));
+                        throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS", { ipns: ipns, error: error });
                     plebbit.emit("resolvedsubplebbitipns", ipns, cid);
                     if (callbackAfterResolve)
                         callbackAfterResolve(ipns, cid);
@@ -323,11 +322,7 @@ function removeKeysWithUndefinedValues(object) {
 }
 exports.removeKeysWithUndefinedValues = removeKeysWithUndefinedValues;
 function throwWithErrorCode(code, details) {
-    var error = (0, err_code_1.default)(Error(errors_1.messages[code]), errors_1.messages[errors_1.messages[code]], {
-        details: details
-    });
-    error.toString = function () { return "".concat(error.constructor.name, ": ").concat(code, ": ").concat(error.message, ": ").concat(JSON.stringify(details)); };
-    throw error;
+    throw new plebbit_error_1.PlebbitError(code, details);
 }
 exports.throwWithErrorCode = throwWithErrorCode;
 function parsePageIpfs(pageIpfs, subplebbit) {

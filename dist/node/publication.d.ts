@@ -30,6 +30,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     private _updatePublishingState;
     protected _updateState(newState: Publication["state"]): void;
     private _setPublishingStateUpdaters;
+    private _pubsubTopicWithfallback;
     publish(): Promise<void>;
 }
 export default Publication;

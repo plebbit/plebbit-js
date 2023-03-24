@@ -171,7 +171,7 @@ var Plebbit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
-                            (0, util_2.throwWithErrorCode)("ERR_INVALID_SUBPLEBBIT_ADDRESS", "getSubplebbit: subplebbitAddress (".concat(subplebbitAddress, ") can't be used to get a subplebbit"));
+                            (0, util_2.throwWithErrorCode)("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress: subplebbitAddress });
                         return [4 /*yield*/, this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
                     case 1:
                         resolvedSubplebbitAddress = _a.sent();
@@ -182,7 +182,7 @@ var Plebbit = /** @class */ (function (_super) {
                     case 3:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)
-                            (0, util_2.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", "getSubplebbit: Failed verification reason: ".concat(signatureValidity.reason));
+                            (0, util_2.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", { signatureValidity: signatureValidity });
                         subplebbit = new subplebbit_1.Subplebbit(this);
                         return [4 /*yield*/, subplebbit.initSubplebbit(subplebbitJson)];
                     case 4:
@@ -207,7 +207,7 @@ var Plebbit = /** @class */ (function (_super) {
                     case 2:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)
-                            (0, util_2.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", "getComment (".concat(cid, "): Failed verification reason: ").concat(signatureValidity.reason));
+                            (0, util_2.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", { cid: cid, signatureValidity: signatureValidity });
                         return [2 /*return*/, this.createComment(__assign(__assign({}, commentJson), { cid: cid }))];
                 }
             });
@@ -309,9 +309,9 @@ var Plebbit = /** @class */ (function (_super) {
                                 switch (_a.label) {
                                     case 0:
                                         if (!canRunSub)
-                                            throw Error("missing nativeFunctions required to create a subplebbit");
+                                            (0, util_2.throwWithErrorCode)("ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS", { canRunSub: canRunSub, dataPath: this.dataPath });
                                         if (canRunSub && !this.dataPath)
-                                            (0, util_2.throwWithErrorCode)("ERR_DATA_PATH_IS_NOT_DEFINED", "createSubplebbit: canRunSub=".concat(canRunSub, ", plebbitOptions.dataPath=").concat(this.dataPath));
+                                            (0, util_2.throwWithErrorCode)("ERR_DATA_PATH_IS_NOT_DEFINED", { canRunSub: canRunSub, dataPath: this.dataPath });
                                         subplebbit = new subplebbit_1.Subplebbit(this);
                                         return [4 /*yield*/, subplebbit.initSubplebbit(options)];
                                     case 1:
