@@ -291,7 +291,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 } catch (e) {
                     this._setUpdatingState("failed");
                     log.error(e);
-                    reject(e);
+                    this.emit("error", e);
                     this._loadingOperation.retry(e);
                 }
             });
@@ -308,8 +308,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 } catch (e) {
                     this._setUpdatingState("failed");
                     log.error(e);
-                    reject(e);
                     this._loadingOperation.retry(e);
+                    this.emit("error", e);
                 }
             });
         });
