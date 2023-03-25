@@ -73,6 +73,7 @@ import version from "./version";
 import { SignatureType, SignerType } from "./signer/constants";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { PlebbitError } from "./plebbit-error";
+import retry, { RetryOperation } from "retry";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
@@ -123,6 +124,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private _sync: boolean;
     private _ipfsNodeIpnsKeyNames: string[];
     private _subplebbitUpdateTrigger: boolean;
+    private _loadingOperation: RetryOperation;
 
     constructor(plebbit: Plebbit) {
         super();
@@ -356,6 +358,23 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this.emit("startedstatechange", this.startedState);
     }
 
+    private async _retryLoadingSubplebbitIpns(log: Logger, subplebbitIpnsAddress: string): Promise<SubplebbitIpfsType> {
+        return new Promise((resolve) => {
+            this._loadingOperation.attempt(async (curAttempt) => {
+                this._setUpdatingState("fetching-ipns");
+                log.trace(`Retrying to load subplebbit ipns (${subplebbitIpnsAddress}) for the ${curAttempt}th time`);
+                try {
+                    resolve(await loadIpnsAsJson(subplebbitIpnsAddress, this.plebbit, () => this._setUpdatingState("fetching-ipfs")));
+                } catch (e) {
+                    this._setUpdatingState("failed");
+                    log.error(String(e));
+                    this.emit("error", e);
+                    this._loadingOperation.retry(e);
+                }
+            });
+        });
+    }
+
     private async updateOnce() {
         const log = Logger("plebbit-js:subplebbit:update");
         this._setState("updating");
@@ -383,16 +402,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 }
 
             const ipnsAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
-            let subplebbitIpns: SubplebbitIpfsType;
+            this._loadingOperation = retry.operation({ forever: true, factor: 2 });
 
-            try {
-                subplebbitIpns = await loadIpnsAsJson(ipnsAddress, this.plebbit, () => this._setUpdatingState("fetching-ipfs"));
-            } catch (e) {
-                this._setUpdatingState("failed");
-                log.error(`Failed to load subplebbit IPNS, error:`, e);
-                this.emit("error", e);
-                return;
-            }
+            const subplebbitIpns = await this._retryLoadingSubplebbitIpns(log, ipnsAddress);
+
             const updateValidity = await verifySubplebbit(subplebbitIpns, this.plebbit);
             if (!updateValidity.valid) {
                 this._setUpdatingState("failed");
@@ -426,6 +439,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     async stop() {
         this._updateInterval = clearTimeout(this._updateInterval);
+        this._loadingOperation?.stop();
         this._setUpdatingState("stopped");
         if (this._sync) {
             await this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
