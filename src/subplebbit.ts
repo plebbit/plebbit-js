@@ -315,7 +315,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         if (newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address) {
             this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch((err: PlebbitError) => {
-                log.error(err);
+                log.error(err.toString());
                 this.emit("error", err);
             });
             log(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
@@ -377,7 +377,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                     await this.assertDomainResolvesCorrectly(this.address);
                 } catch (e) {
                     this._setUpdatingState("failed");
-                    log.error(e);
+                    log.error(String(e));
                     this.emit("error", e);
                     return;
                 }
@@ -1042,7 +1042,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             }
         } catch (e) {
             e.message = `failed process captcha for challenge request id (${msgParsed?.challengeRequestId}): ${e.message}`;
-            log.error(`(${msgParsed?.challengeRequestId}): `, e);
+            log.error(`(${msgParsed?.challengeRequestId}): `, String(e));
             if (msgParsed?.challengeRequestId) await this.dbHandler.rollbackTransaction(msgParsed?.challengeRequestId);
         }
     }

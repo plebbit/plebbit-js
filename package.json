@@ -68,6 +68,7 @@
         "sqlite3": "5.1.2",
         "tiny-typed-emitter": "2.1.0",
         "tinycache": "1.1.2",
+        "ts-custom-error": "3.3.1",
         "tunnel": "0.0.6",
         "uuid": "9.0.0"
     },

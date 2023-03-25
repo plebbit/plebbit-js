@@ -108,7 +108,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                     pubsubMsg: msgParsed,
                     signatureValidity: challengeMsgValidity
                 });
-                log.error(error);
+                log.error(error.toString());
                 this.emit("error", error);
                 return;
             }
@@ -130,7 +130,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                     pubsubMsg: msgParsed
                 });
                 this._updatePublishingState("failed");
-                log.error(error);
+                log.error(error.toString());
                 this.emit("error", error);
                 return;
             }

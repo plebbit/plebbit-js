@@ -290,7 +290,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                     resolve(await loadIpfsFileAsJson(this.cid, this.plebbit));
                 } catch (e) {
                     this._setUpdatingState("failed");
-                    log.error(e);
+                    log.error(String(e));
                     this.emit("error", e);
                     this._loadingOperation.retry(e);
                 }
@@ -307,7 +307,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                     resolve(await loadIpnsAsJson(this.ipnsName, this.plebbit, () => this._setUpdatingState("fetching-ipfs")));
                 } catch (e) {
                     this._setUpdatingState("failed");
-                    log.error(e);
+                    log.error(String(e));
                     this._loadingOperation.retry(e);
                     this.emit("error", e);
                 }
@@ -337,7 +337,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             if (!signatureValidity.valid) {
                 this._setUpdatingState("failed");
                 const err = new PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity, commentUpdate: res });
-                log.error(err);
+                log.error(err.toString());
                 this.emit("error", err);
                 return;
             }
