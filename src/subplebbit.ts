@@ -38,7 +38,8 @@ import {
     SubplebbitSuggested,
     SubplebbitType,
     VoteType,
-    SubplebbitEvents
+    SubplebbitEvents,
+    SubplebbitSettings
 } from "./types";
 import { Comment } from "./comment";
 import Post from "./post";
@@ -51,7 +52,7 @@ import {
 import { AUTHOR_EDIT_FIELDS, MOD_EDIT_FIELDS } from "./comment-edit";
 import { messages } from "./errors";
 import Logger from "@plebbit/plebbit-logger";
-import { nativeFunctions } from "./runtime/node/util";
+import { getThumbnailUrlOfLink, nativeFunctions } from "./runtime/node/util";
 import env from "./version";
 import lodash from "lodash";
 import {
@@ -101,6 +102,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
     signature: SignatureType; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
     rules?: string[];
+    settings?: SubplebbitSettings;
 
     // Only for Subplebbit instance
     state: "stopped" | "updating" | "started";
@@ -169,6 +171,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this.rules = mergedProps.rules;
         this.flairs = mergedProps.flairs;
         this.signature = mergedProps.signature;
+        this.settings = mergedProps.settings;
         this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
         if (!this.signer && mergedProps.signer) this.signer = new Signer(mergedProps.signer);
 
@@ -223,7 +226,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             ...this.toJSON(),
             posts: this.posts?.toJSON(),
             signer: this.signer ? lodash.pick(this.signer, ["privateKey", "type", "address"]) : undefined,
-            _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
+            _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger,
+            settings: this.settings
         };
     }
 
@@ -755,6 +759,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             }
 
             const commentToInsert = await this.plebbit.createComment(publication);
+
+            if (commentToInsert.link && this.settings?.fetchThumbnailUrls)
+                commentToInsert.thumbnailUrl = await getThumbnailUrlOfLink(commentToInsert.link, this.settings.fetchThumbnailUrlsProxyUrl);
 
             const ipfsSigner = await this.plebbit.createSigner();
             ipfsSigner.ipnsKeyName = ipnsKeyName;

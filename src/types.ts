@@ -299,7 +299,7 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
     posts?: PagesTypeJson;
 }
 
-export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shortAddress"> {
+export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shortAddress" | "settings"> {
     posts?: PagesTypeIpfs;
 }
 
@@ -329,7 +329,13 @@ export interface SubplebbitEditOptions {
     suggested?: SubplebbitSuggested;
     flairs?: Record<FlairOwner, Flair[]>; // list of post/author flairs authors and mods can choose from
     address?: string;
+    settings?: SubplebbitSettings;
 }
+
+export type SubplebbitSettings = {
+    fetchThumbnailUrls?: boolean;
+    fetchThumbnailUrlsProxyUrl?: string;
+};
 
 export type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
 
