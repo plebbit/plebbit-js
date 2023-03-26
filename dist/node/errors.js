@@ -70,3 +70,4 @@ var messages;
     messages["ERR_SUB_ALREADY_STARTED"] = "Subplebbit already started";
     messages["ERR_FAILED_TO_IMPORT_IPFS_KEY"] = "Subplebbit failed to import IPFS key";
 })(messages = exports.messages || (exports.messages = {}));
+//# sourceMappingURL=errors.js.map

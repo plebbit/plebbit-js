@@ -8,3 +8,4 @@ exports.default = {
     PROTOCOL_VERSION: protocolVersion,
     USER_AGENT: "/plebbit-js:".concat(plebbitJsVersion, "/")
 };
+//# sourceMappingURL=version.js.map

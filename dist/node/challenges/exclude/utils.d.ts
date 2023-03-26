@@ -1,0 +1,10 @@
+declare const testScore: (excludeScore: any, authorScore: any) => boolean;
+declare const testFirstCommentTimestamp: (excludeTime: any, authorFirstCommentTimestamp: any) => boolean;
+declare const isVote: (publication: any) => any;
+declare const isReply: (publication: any) => boolean;
+declare const isPost: (publication: any) => boolean;
+declare const testVote: (excludeVote: any, publication: any) => boolean;
+declare const testReply: (excludeReply: any, publication: any) => boolean;
+declare const testPost: (excludePost: any, publication: any) => boolean;
+declare const testRole: (excludeRole: any, authorAddress: any, subplebbitRoles: any) => boolean;
+export { isVote, isReply, isPost, testVote, testReply, testPost, testScore, testFirstCommentTimestamp, testRole };

@@ -515,21 +515,15 @@ var Subplebbit = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 if (this._updateInterval || this._sync)
                     return [2 /*return*/]; // No need to do anything if subplebbit is already updating
-                updateLoop = function () { return __awaiter(_this, void 0, void 0, function () {
+                updateLoop = (function () { return __awaiter(_this, void 0, void 0, function () {
+                    var _this = this;
                     return __generator(this, function (_a) {
-                        switch (_a.label) {
-                            case 0:
-                                if (!this._updateInterval) return [3 /*break*/, 2];
-                                return [4 /*yield*/, this.updateOnce()];
-                            case 1:
-                                _a.sent();
-                                setTimeout(updateLoop, this._updateIntervalMs);
-                                _a.label = 2;
-                            case 2: return [2 /*return*/];
-                        }
+                        if (this._updateInterval)
+                            this.updateOnce().finally(function () { return setTimeout(updateLoop, _this._updateIntervalMs); });
+                        return [2 /*return*/];
                     });
-                }); };
-                this.updateOnce().then(function () { return (_this._updateInterval = setTimeout(updateLoop.bind(_this), _this._updateIntervalMs)); });
+                }); }).bind(this);
+                this.updateOnce().finally(function () { return (_this._updateInterval = setTimeout(updateLoop, _this._updateIntervalMs)); });
                 return [2 /*return*/];
             });
         });
@@ -542,7 +536,7 @@ var Subplebbit = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        this._updateInterval = clearInterval(this._updateInterval);
+                        this._updateInterval = clearTimeout(this._updateInterval);
                         this._setUpdatingState("stopped");
                         if (!this._sync) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange)];
@@ -1774,3 +1768,4 @@ var Subplebbit = /** @class */ (function (_super) {
     return Subplebbit;
 }(tiny_typed_emitter_1.TypedEmitter));
 exports.Subplebbit = Subplebbit;
+//# sourceMappingURL=subplebbit.js.map

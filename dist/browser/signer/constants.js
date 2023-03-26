@@ -100,3 +100,4 @@ exports.ChallengeVerificationMessageSignedPropertyNames = [
     "challengeErrors",
     "timestamp"
 ];
+//# sourceMappingURL=constants.js.map

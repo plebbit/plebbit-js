@@ -98,3 +98,4 @@ var Post = /** @class */ (function (_super) {
     return Post;
 }(comment_1.Comment));
 exports.default = Post;
+//# sourceMappingURL=post.js.map

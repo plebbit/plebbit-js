@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -35,19 +58,22 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getPeerIdFromPublicKey = exports.getPeerIdFromPrivateKey = exports.getPublicKeyFromPrivateKey = exports.getIpfsKeyFromPrivateKey = exports.getPlebbitAddressFromPublicKey = exports.getPlebbitAddressFromPrivateKey = exports.generatePrivateKey = void 0;
 // NOTE: Ed25519PublicKey, Ed25519PrivateKey are not public apis, could break when upgrading libp2p-crypto
-var _a = require('libp2p-crypto/src/keys/ed25519-class'), Ed25519PublicKey = _a.Ed25519PublicKey, Ed25519PrivateKey = _a.Ed25519PrivateKey;
-var PeerId = require("peer-id");
-var ed = require('@noble/ed25519');
-var uint8ArrayFromString = require('uint8arrays/from-string').fromString;
-var uint8ArrayToString = require('uint8arrays/to-string').toString;
+var ed25519_class_1 = require("libp2p-crypto/src/keys/ed25519-class");
+var peer_id_1 = __importDefault(require("peer-id"));
+var ed = __importStar(require("@noble/ed25519"));
+var from_string_1 = require("uint8arrays/from-string");
+var to_string_1 = require("uint8arrays/to-string");
 var generatePrivateKey = function () { return __awaiter(void 0, void 0, void 0, function () {
     var privateKeyBuffer, privateKeyBase64;
     return __generator(this, function (_a) {
         privateKeyBuffer = ed.utils.randomPrivateKey();
-        privateKeyBase64 = uint8ArrayToString(privateKeyBuffer, 'base64');
+        privateKeyBase64 = (0, to_string_1.toString)(privateKeyBuffer, 'base64');
         return [2 /*return*/, privateKeyBase64];
     });
 }); };
@@ -84,7 +110,7 @@ var getIpfsKeyFromPrivateKey = function (privateKeyBase64) { return __awaiter(vo
                 if (!privateKeyBase64 || typeof privateKeyBase64 !== 'string')
                     throw Error("getIpfsKeyFromPrivateKey privateKeyBase64 not a string");
                 try {
-                    privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, 'base64');
+                    privateKeyBuffer = (0, from_string_1.fromString)(privateKeyBase64, 'base64');
                 }
                 catch (e) {
                     e.message = "getIpfsKeyFromPrivateKey privateKeyBase64 invalid: ".concat(e.message);
@@ -100,7 +126,7 @@ var getIpfsKeyFromPrivateKey = function (privateKeyBase64) { return __awaiter(vo
                 privateAndPublicKeyBuffer = new Uint8Array(64);
                 privateAndPublicKeyBuffer.set(privateKeyBuffer);
                 privateAndPublicKeyBuffer.set(publicKeyBuffer, 32);
-                ed25519PrivateKeyInstance = new Ed25519PrivateKey(privateAndPublicKeyBuffer, publicKeyBuffer);
+                ed25519PrivateKeyInstance = new ed25519_class_1.Ed25519PrivateKey(privateAndPublicKeyBuffer, publicKeyBuffer);
                 // the "ipfs key" adds a suffix, then the private key, then the public key, it is not the raw private key
                 return [2 /*return*/, ed25519PrivateKeyInstance.bytes];
         }
@@ -115,7 +141,7 @@ var getPublicKeyFromPrivateKey = function (privateKeyBase64) { return __awaiter(
                 if (!privateKeyBase64 || typeof privateKeyBase64 !== 'string')
                     throw Error("getPublicKeyFromPrivateKey privateKeyBase64 not a string");
                 try {
-                    privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, 'base64');
+                    privateKeyBuffer = (0, from_string_1.fromString)(privateKeyBase64, 'base64');
                 }
                 catch (e) {
                     e.message = "getPublicKeyFromPrivateKey privateKeyBase64 invalid: ".concat(e.message);
@@ -126,7 +152,7 @@ var getPublicKeyFromPrivateKey = function (privateKeyBase64) { return __awaiter(
                 return [4 /*yield*/, ed.getPublicKey(privateKeyBuffer)];
             case 1:
                 publicKeyBuffer = _a.sent();
-                return [2 /*return*/, uint8ArrayToString(publicKeyBuffer, 'base64')];
+                return [2 /*return*/, (0, to_string_1.toString)(publicKeyBuffer, 'base64')];
         }
     });
 }); };
@@ -140,7 +166,7 @@ var getPeerIdFromPrivateKey = function (privateKeyBase64) { return __awaiter(voi
             ];
             case 1:
                 ipfsKey = _a.sent();
-                return [4 /*yield*/, PeerId.createFromPrivKey(ipfsKey)];
+                return [4 /*yield*/, peer_id_1.default.createFromPrivKey(ipfsKey)];
             case 2:
                 peerId = _a.sent();
                 return [2 /*return*/, peerId];
@@ -156,7 +182,7 @@ var getPeerIdFromPublicKey = function (publicKeyBase64) { return __awaiter(void 
                 if (!publicKeyBase64 || typeof publicKeyBase64 !== 'string')
                     throw Error("getPeerIdFromPublicKey publicKeyBase64 '".concat(publicKeyBase64, "' not a string"));
                 try {
-                    publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, 'base64');
+                    publicKeyBuffer = (0, from_string_1.fromString)(publicKeyBase64, 'base64');
                 }
                 catch (e) {
                     e.message = "getPeerIdFromPublicKey publicKeyBase64 invalid: ".concat(e.message);
@@ -164,8 +190,8 @@ var getPeerIdFromPublicKey = function (publicKeyBase64) { return __awaiter(void 
                 }
                 if (publicKeyBuffer.length !== 32)
                     throw Error("getPeerIdFromPublicKey publicKeyBase64 '".concat(publicKeyBase64, "' ed25519 public key length not 32 bytes (").concat(publicKeyBuffer.length, " bytes)"));
-                ed25519PublicKeyInstance = new Ed25519PublicKey(publicKeyBuffer);
-                return [4 /*yield*/, PeerId.createFromPubKey(ed25519PublicKeyInstance.bytes)];
+                ed25519PublicKeyInstance = new ed25519_class_1.Ed25519PublicKey(publicKeyBuffer);
+                return [4 /*yield*/, peer_id_1.default.createFromPubKey(ed25519PublicKeyInstance.bytes)];
             case 1:
                 peerId = _a.sent();
                 return [2 /*return*/, peerId];
@@ -173,3 +199,4 @@ var getPeerIdFromPublicKey = function (publicKeyBase64) { return __awaiter(void 
     });
 }); };
 exports.getPeerIdFromPublicKey = getPeerIdFromPublicKey;
+//# sourceMappingURL=util.js.map

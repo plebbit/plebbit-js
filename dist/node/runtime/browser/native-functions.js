@@ -189,3 +189,4 @@ var nativeFunctions = {
     }); }
 };
 exports.default = nativeFunctions;
+//# sourceMappingURL=native-functions.js.map
