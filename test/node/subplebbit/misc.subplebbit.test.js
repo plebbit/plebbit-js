@@ -1,5 +1,6 @@
 const Plebbit = require("../../../dist/node");
 const { mockPlebbit, publishRandomPost, createMockSub } = require("../../../dist/node/test/test-util");
+const signers = require("../../fixtures/signers");
 const path = require("path");
 const fs = require("fs");
 const { default: waitUntil } = require("async-wait-until");
@@ -153,5 +154,172 @@ describe(`subplebbit.pubsubTopic`, async () => {
 
         const post = await publishRandomPost(subplebbit.address, plebbit, {});
         expect(post.subplebbit.pubsubTopic).to.be.undefined;
+    });
+});
+
+describe(`subplebbit.state`, async () => {
+    let plebbit, subplebbit;
+    before(async () => {
+        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        subplebbit = await createMockSub({}, plebbit);
+    });
+
+    after(async () => {
+        await subplebbit.stop();
+    });
+
+    it(`subplebbit.state defaults to "stopped" if not updating or started`, async () => {
+        expect(subplebbit.state).to.equal("stopped");
+    });
+
+    it(`subplebbit.state = started if calling start()`, async () => {
+        let eventFired = false;
+        subplebbit.on("statechange", (newState) => {
+            if (newState === "started") eventFired = true;
+        });
+        await subplebbit.start();
+        expect(subplebbit.state).to.equal("started");
+        await waitUntil(() => eventFired);
+    });
+
+    it(`subplebbit.state = stopped after calling stop()`, async () => {
+        let eventFired = false;
+        subplebbit.once("statechange", (newState) => {
+            expect(newState).to.equal("stopped");
+            eventFired = true;
+        });
+        await subplebbit.stop();
+        expect(subplebbit.state).to.equal("stopped");
+        await waitUntil(() => eventFired);
+    });
+
+    it(`subplebbit.state = updating after calling update()`, async () => {
+        let eventFired = false;
+        subplebbit.once("statechange", (newState) => {
+            expect(newState).to.equal("updating");
+            eventFired = true;
+        });
+        await subplebbit.update();
+        expect(subplebbit.state).to.equal("updating");
+        await waitUntil(() => eventFired);
+    });
+
+    it(`subplebbit.state = started after calling start() after update()`, async () => {
+        let eventFired = false;
+        subplebbit.on("statechange", (newState) => {
+            if (newState === "started") eventFired = true;
+        });
+        await subplebbit.start();
+        expect(subplebbit.state).to.equal("started");
+        await waitUntil(() => eventFired);
+    });
+});
+
+describe(`subplebbit.startedState`, async () => {
+    let plebbit, subplebbit;
+    before(async () => {
+        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        subplebbit = await createMockSub({}, plebbit);
+    });
+
+    after(async () => {
+        await subplebbit.stop();
+    });
+
+    it(`subplebbit.startedState defaults to stopped`, async () => {
+        expect(subplebbit.startedState).to.equal("stopped");
+    });
+
+    it(`subplebbit.startedState is in correct order up to publishing a new IPNS`, async () => {
+        const expectedStates = ["publishing-ipns", "succeeded"];
+        const recordedStates = [];
+        subplebbit.on("startedstatechange", (newState) => recordedStates.push(newState));
+
+        await subplebbit.start();
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await new Promise((resolve) => subplebbit.once("startedstatechange", (newState) => newState === "succeeded" && resolve()));
+        expect(recordedStates).to.deep.equal(expectedStates);
+        expect(plebbit.eventNames()).to.deep.equal(["error"]);
+    });
+
+    it(`subplebbit.startedState = error if a failure occurs`, async () => {
+        await new Promise((resolve) => {
+            subplebbit.on("startedstatechange", (newState) => newState === "failed" && resolve());
+            subplebbit.plebbit.ipfsClient = undefined; // Should cause a failure
+        });
+    });
+});
+
+describe(`subplebbit.updatingState`, async () => {
+    it(`subplebbit.updatingState defaults to stopped`, async () => {
+        const plebbit = await mockPlebbit();
+        const subplebbit = await plebbit.getSubplebbit(signers[0].address);
+        expect(subplebbit.updatingState).to.equal("stopped");
+    });
+
+    it(`subplebbit.updatingState is in correct order upon updating with IPFS client`, async () => {
+        const plebbit = await mockPlebbit();
+        const subplebbit = await plebbit.getSubplebbit(signers[0].address);
+        const recordedStates = [];
+        const expectedStates = ["resolving-address", "fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
+        subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+        //@ts-ignore
+        subplebbit._updateIntervalMs = 300;
+
+        await subplebbit.update();
+
+        publishRandomPost(subplebbit.address, plebbit, {}, false); // To force trigger an update
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await subplebbit.stop();
+
+        expect(recordedStates.slice(recordedStates.length - 5)).to.deep.equal(expectedStates);
+        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
+    });
+
+    it(`updating states is in correct order upon updating with gateway`, async () => {
+        const gatewayPlebbit = await mockPlebbit();
+        gatewayPlebbit.ipfsHttpClientOptions = gatewayPlebbit.ipfsClient = undefined;
+
+        const subplebbit = await gatewayPlebbit.getSubplebbit(signers[0].address);
+
+        const expectedStates = ["resolving-address", "fetching-ipns", "succeeded", "stopped"];
+        const recordedStates = [];
+        subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+        //@ts-ignore
+        subplebbit._updateIntervalMs = 500;
+
+        await subplebbit.update();
+
+        publishRandomPost(subplebbit.address, gatewayPlebbit, {}, false); // To force trigger an update
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await subplebbit.stop();
+
+        expect(recordedStates.slice(recordedStates.length - 4)).to.deep.equal(expectedStates);
+        expect(gatewayPlebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
+    });
+
+    it(`subplebbit.updatingState emits 'succceeded' when a new update from local sub is retrieved`, async () => {
+        const plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        const localSub = await plebbit.createSubplebbit({ address: signers[0].address });
+        const expectedStates = [ "succeeded", "stopped"];
+        const recordedStates = [];
+
+
+        localSub.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+        //@ts-ignore
+        localSub._updateIntervalMs = 500;
+
+        await localSub.update();
+
+        publishRandomPost(localSub.address, plebbit, {}, false);
+
+        await new Promise(resolve => localSub.once("update", resolve));
+        await localSub.stop();
+
+        expect(recordedStates).to.deep.equal(expectedStates);
+        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 });
