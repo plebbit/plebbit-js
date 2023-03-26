@@ -104,7 +104,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     // Only for Subplebbit instance
     state: "stopped" | "updating" | "started";
-    startedState: "stopped" | "fetching-ipns" | "publishing-ipns" | "failed" | "succeeded"; // TODO
+    startedState: "stopped" | "fetching-ipns" | "publishing-ipns" | "failed" | "succeeded";
     updatingState: "stopped" | "resolving-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
     plebbit: Plebbit;
     dbHandler?: DbHandlerPublicAPI;
@@ -133,6 +133,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
         this._challengeToPublicKey = {}; // Map out challenge request id to their signers
         this._setState("stopped");
+        this._setStartedState("stopped");
         this._setUpdatingState("stopped");
         this._sync = false;
 
@@ -377,7 +378,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private async updateOnce() {
         const log = Logger("plebbit-js:subplebbit:update");
-        this._setState("updating");
 
         if (this.dbHandler) {
             // Local sub
@@ -426,6 +426,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     async update() {
         if (this._updateInterval || this._sync) return; // No need to do anything if subplebbit is already updating
 
+        this._setState("updating");
         const updateLoop = (async () => {
             if (this._updateInterval) this.updateOnce().finally(() => setTimeout(updateLoop, this._updateIntervalMs));
         }).bind(this);
@@ -1210,7 +1211,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:subplebbit:sync");
         await this._switchDbIfNeeded();
-        this._setState("started");
 
         try {
             await this._mergeInstanceStateWithDbState({});
@@ -1280,6 +1280,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this._listenToIncomingRequests();
         this._subplebbitUpdateTrigger = true;
         await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
+
+        this._setState("started");
 
         this.syncIpnsWithDb()
             .then(() => this._syncLoop(this._syncIntervalMs))
