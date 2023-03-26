@@ -488,6 +488,7 @@ function mockPlebbit(dataPath) {
                         });
                     }); };
                     plebbit.pubsubIpfsClient = (0, mock_ipfs_client_1.create)();
+                    plebbit.on("error", function () { });
                     return [2 /*return*/, plebbit];
             }
         });

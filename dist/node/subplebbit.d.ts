@@ -47,6 +47,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private _sync;
     private _ipfsNodeIpnsKeyNames;
     private _subplebbitUpdateTrigger;
+    private _loadingOperation;
     constructor(plebbit: Plebbit);
     initSubplebbit(newProps: InternalSubplebbitType | SubplebbitEditOptions | SubplebbitIpfsType): Promise<void>;
     private setAddress;
@@ -65,6 +66,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private _setState;
     private _setUpdatingState;
     private _setStartedState;
+    private _retryLoadingSubplebbitIpns;
     private updateOnce;
     update(): Promise<void>;
     private pubsubTopicWithfallback;

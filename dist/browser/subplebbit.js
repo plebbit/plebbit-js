@@ -98,6 +98,7 @@ var assert_1 = __importDefault(require("assert"));
 var version_2 = __importDefault(require("./version"));
 var tiny_typed_emitter_1 = require("tiny-typed-emitter");
 var plebbit_error_1 = require("./plebbit-error");
+var retry_1 = __importDefault(require("retry"));
 var DEFAULT_UPDATE_INTERVAL_MS = 60000;
 var DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
 var Subplebbit = /** @class */ (function (_super) {
@@ -109,6 +110,7 @@ var Subplebbit = /** @class */ (function (_super) {
         _this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
         _this._challengeToPublicKey = {}; // Map out challenge request id to their signers
         _this._setState("stopped");
+        _this._setStartedState("stopped");
         _this._setUpdatingState("stopped");
         _this._sync = false;
         // these functions might get separated from their `this` when used
@@ -382,7 +384,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:edit");
                         if (!(newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address)) return [3 /*break*/, 4];
                         this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch(function (err) {
-                            log.error(err);
+                            log.error(err.toString());
                             _this.emit("error", err);
                         });
                         log("Attempting to edit subplebbit.address from ".concat(this.address, " to ").concat(newSubplebbitOptions.address));
@@ -427,15 +429,49 @@ var Subplebbit = /** @class */ (function (_super) {
         this.startedState = newState;
         this.emit("startedstatechange", this.startedState);
     };
+    Subplebbit.prototype._retryLoadingSubplebbitIpns = function (log, subplebbitIpnsAddress) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return __generator(this, function (_a) {
+                return [2 /*return*/, new Promise(function (resolve) {
+                        _this._loadingOperation.attempt(function (curAttempt) { return __awaiter(_this, void 0, void 0, function () {
+                            var _a, e_1;
+                            var _this = this;
+                            return __generator(this, function (_b) {
+                                switch (_b.label) {
+                                    case 0:
+                                        this._setUpdatingState("fetching-ipns");
+                                        log.trace("Retrying to load subplebbit ipns (".concat(subplebbitIpnsAddress, ") for the ").concat(curAttempt, "th time"));
+                                        _b.label = 1;
+                                    case 1:
+                                        _b.trys.push([1, 3, , 4]);
+                                        _a = resolve;
+                                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(subplebbitIpnsAddress, this.plebbit, function () { return _this._setUpdatingState("fetching-ipfs"); })];
+                                    case 2:
+                                        _a.apply(void 0, [_b.sent()]);
+                                        return [3 /*break*/, 4];
+                                    case 3:
+                                        e_1 = _b.sent();
+                                        this._setUpdatingState("failed");
+                                        log.error(String(e_1));
+                                        this.emit("error", e_1);
+                                        this._loadingOperation.retry(e_1);
+                                        return [3 /*break*/, 4];
+                                    case 4: return [2 /*return*/];
+                                }
+                            });
+                        }); });
+                    })];
+            });
+        });
+    };
     Subplebbit.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, subState, e_1, ipnsAddress, subplebbitIpns, e_2, updateValidity, error;
-            var _this = this;
+            var log, subState, e_2, ipnsAddress, subplebbitIpns, updateValidity, error;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:update");
-                        this._setState("updating");
                         if (!this.dbHandler) return [3 /*break*/, 4];
                         return [4 /*yield*/, this._getDbInternalState(false)];
                     case 1:
@@ -448,7 +484,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _a.sent();
                         this.emit("update", this);
                         _a.label = 3;
-                    case 3: return [3 /*break*/, 18];
+                    case 3: return [3 /*break*/, 15];
                     case 4:
                         this._setUpdatingState("resolving-address");
                         if (!this.plebbit.resolver.isDomain(this.address)) return [3 /*break*/, 8];
@@ -460,50 +496,40 @@ var Subplebbit = /** @class */ (function (_super) {
                         _a.sent();
                         return [3 /*break*/, 8];
                     case 7:
-                        e_1 = _a.sent();
+                        e_2 = _a.sent();
                         this._setUpdatingState("failed");
-                        log.error(e_1);
-                        this.emit("error", e_1);
+                        log.error(String(e_2));
+                        this.emit("error", e_2);
                         return [2 /*return*/];
                     case 8: return [4 /*yield*/, this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address)];
                     case 9:
                         ipnsAddress = _a.sent();
-                        subplebbitIpns = void 0;
-                        _a.label = 10;
+                        this._loadingOperation = retry_1.default.operation({ forever: true, factor: 2 });
+                        return [4 /*yield*/, this._retryLoadingSubplebbitIpns(log, ipnsAddress)];
                     case 10:
-                        _a.trys.push([10, 12, , 13]);
-                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(ipnsAddress, this.plebbit, function () { return _this._setUpdatingState("fetching-ipfs"); })];
-                    case 11:
                         subplebbitIpns = _a.sent();
-                        return [3 /*break*/, 13];
-                    case 12:
-                        e_2 = _a.sent();
-                        this._setUpdatingState("failed");
-                        log.error("Failed to load subplebbit IPNS, error:", e_2);
-                        this.emit("error", e_2);
-                        return [2 /*return*/];
-                    case 13: return [4 /*yield*/, (0, signatures_1.verifySubplebbit)(subplebbitIpns, this.plebbit)];
-                    case 14:
+                        return [4 /*yield*/, (0, signatures_1.verifySubplebbit)(subplebbitIpns, this.plebbit)];
+                    case 11:
                         updateValidity = _a.sent();
-                        if (!!updateValidity.valid) return [3 /*break*/, 15];
+                        if (!!updateValidity.valid) return [3 /*break*/, 12];
                         this._setUpdatingState("failed");
                         error = new plebbit_error_1.PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity: updateValidity, subplebbitIpns: subplebbitIpns });
                         this.emit("error", error);
-                        return [3 /*break*/, 18];
-                    case 15:
-                        if (!(this.updatedAt !== subplebbitIpns.updatedAt)) return [3 /*break*/, 17];
+                        return [3 /*break*/, 15];
+                    case 12:
+                        if (!(this.updatedAt !== subplebbitIpns.updatedAt)) return [3 /*break*/, 14];
                         return [4 /*yield*/, this.initSubplebbit(subplebbitIpns)];
-                    case 16:
+                    case 13:
                         _a.sent();
                         this._setUpdatingState("succeeded");
                         log("Remote Subplebbit received a new update. Will emit an update event");
                         this.emit("update", this);
-                        return [3 /*break*/, 18];
-                    case 17:
+                        return [3 /*break*/, 15];
+                    case 14:
                         log.trace("Remote subplebbit received a new update with no new information");
                         this._setUpdatingState("succeeded");
-                        _a.label = 18;
-                    case 18: return [2 /*return*/];
+                        _a.label = 15;
+                    case 15: return [2 /*return*/];
                 }
             });
         });
@@ -515,6 +541,7 @@ var Subplebbit = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 if (this._updateInterval || this._sync)
                     return [2 /*return*/]; // No need to do anything if subplebbit is already updating
+                this._setState("updating");
                 updateLoop = (function () { return __awaiter(_this, void 0, void 0, function () {
                     var _this = this;
                     return __generator(this, function (_a) {
@@ -532,26 +559,28 @@ var Subplebbit = /** @class */ (function (_super) {
         return this.pubsubTopic || this.address;
     };
     Subplebbit.prototype.stop = function () {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         this._updateInterval = clearTimeout(this._updateInterval);
+                        (_a = this._loadingOperation) === null || _a === void 0 ? void 0 : _a.stop();
                         this._setUpdatingState("stopped");
                         if (!this._sync) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange)];
                     case 1:
-                        _a.sent();
+                        _b.sent();
                         return [4 /*yield*/, this.dbHandler.rollbackAllTransactions()];
                     case 2:
-                        _a.sent();
+                        _b.sent();
                         return [4 /*yield*/, this.dbHandler.unlockSubStart()];
                     case 3:
-                        _a.sent();
+                        _b.sent();
                         this._sync = false;
                         this._syncInterval = clearInterval(this._syncInterval);
                         this._setStartedState("stopped");
-                        _a.label = 4;
+                        _b.label = 4;
                     case 4:
                         this._setState("stopped");
                         return [2 /*return*/];
@@ -1294,7 +1323,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 8:
                         e_3 = _a.sent();
                         e_3.message = "failed process captcha for challenge request id (".concat(msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId, "): ").concat(e_3.message);
-                        log.error("(".concat(msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId, "): "), e_3);
+                        log.error("(".concat(msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId, "): "), String(e_3));
                         if (!(msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId)) return [3 /*break*/, 10];
                         return [4 /*yield*/, this.dbHandler.rollbackTransaction(msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId)];
                     case 9:
@@ -1585,7 +1614,6 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this._switchDbIfNeeded()];
                     case 1:
                         _b.sent();
-                        this._setState("started");
                         _b.label = 2;
                     case 2:
                         _b.trys.push([2, 8, , 9]);
@@ -1722,6 +1750,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger })];
                     case 10:
                         _b.sent();
+                        this._setState("started");
                         this.syncIpnsWithDb()
                             .then(function () { return _this._syncLoop(_this._syncIntervalMs); })
                             .catch(function (reason) {

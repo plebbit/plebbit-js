@@ -151,7 +151,7 @@ var Publication = /** @class */ (function (_super) {
                                 pubsubMsg: msgParsed,
                                 signatureValidity: challengeMsgValidity
                             });
-                            log.error(error);
+                            log.error(error.toString());
                             this.emit("error", error);
                             return [2 /*return*/];
                         }
@@ -175,7 +175,7 @@ var Publication = /** @class */ (function (_super) {
                                 pubsubMsg: msgParsed
                             });
                             this._updatePublishingState("failed");
-                            log.error(error);
+                            log.error(error.toString());
                             this.emit("error", error);
                             return [2 /*return*/];
                         }
