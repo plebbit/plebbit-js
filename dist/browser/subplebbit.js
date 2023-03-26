@@ -155,6 +155,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this.rules = mergedProps.rules;
                         this.flairs = mergedProps.flairs;
                         this.signature = mergedProps.signature;
+                        this.settings = mergedProps.settings;
                         this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
                         if (!this.signer && mergedProps.signer)
                             this.signer = new signer_1.Signer(mergedProps.signer);
@@ -241,7 +242,7 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.toJSONInternal = function () {
         var _a;
-        return __assign(__assign({}, this.toJSON()), { posts: (_a = this.posts) === null || _a === void 0 ? void 0 : _a.toJSON(), signer: this.signer ? lodash_1.default.pick(this.signer, ["privateKey", "type", "address"]) : undefined, _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
+        return __assign(__assign({}, this.toJSON()), { posts: (_a = this.posts) === null || _a === void 0 ? void 0 : _a.toJSON(), signer: this.signer ? lodash_1.default.pick(this.signer, ["privateKey", "type", "address"]) : undefined, _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger, settings: this.settings });
     };
     Subplebbit.prototype.toJSON = function () {
         var _a;
@@ -788,11 +789,11 @@ var Subplebbit = /** @class */ (function (_super) {
         return !this.isPublicationVote(publication) && publication.hasOwnProperty("commentCid");
     };
     Subplebbit.prototype.storePublicationIfValid = function (publication, challengeRequestId) {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function () {
-            var log, authorModEdits, msg, forbiddenAuthorFields, parentCid, parent_1, parentFlags, isParentDeleted, postFlags, isPostDeleted, forbiddenCommentFields_1, validRes, ipnsKeyName, commentToInsert, ipfsSigner, _d, _e, _f, _g, trx, _h, _j, file, trx, _k, commentsUnderParent, parent_2, file;
-            return __generator(this, function (_l) {
-                switch (_l.label) {
+            var log, authorModEdits, msg, forbiddenAuthorFields, parentCid, parent_1, parentFlags, isParentDeleted, postFlags, isPostDeleted, forbiddenCommentFields_1, validRes, ipnsKeyName, commentToInsert, _e, ipfsSigner, _f, _g, _h, _j, trx, _k, _l, file, trx, _m, commentsUnderParent, parent_2, file;
+            return __generator(this, function (_o) {
+                switch (_o.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:handleChallengeExchange:storePublicationIfValid");
                         delete this._challengeToSolution[challengeRequestId];
@@ -810,7 +811,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         if (!((_a = publication === null || publication === void 0 ? void 0 : publication.author) === null || _a === void 0 ? void 0 : _a.address)) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.dbHandler.queryAuthorModEdits(publication.author.address)];
                     case 1:
-                        authorModEdits = _l.sent();
+                        authorModEdits = _o.sent();
                         if (typeof authorModEdits.banExpiresAt === "number" && authorModEdits.banExpiresAt > (0, util_1.timestamp)()) {
                             log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_AUTHOR_IS_BANNED);
                             return [2 /*return*/, errors_1.messages.ERR_AUTHOR_IS_BANNED];
@@ -838,35 +839,35 @@ var Subplebbit = /** @class */ (function (_super) {
                         }
                         return [4 /*yield*/, this.dbHandler.queryComment(parentCid)];
                     case 4:
-                        parent_1 = _l.sent();
+                        parent_1 = _o.sent();
                         if (!parent_1) {
                             log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST);
                             return [2 /*return*/, errors_1.messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST];
                         }
                         return [4 /*yield*/, this.dbHandler.queryCommentFlags(parentCid)];
                     case 5:
-                        parentFlags = _l.sent();
+                        parentFlags = _o.sent();
                         if (parentFlags.removed && !this.isPublicationCommentEdit(publication)) {
                             log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED);
                             return [2 /*return*/, errors_1.messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED];
                         }
                         return [4 /*yield*/, this.dbHandler.queryAuthorEditDeleted(parentCid)];
                     case 6:
-                        isParentDeleted = _l.sent();
+                        isParentDeleted = _o.sent();
                         if (isParentDeleted && !this.isPublicationCommentEdit(publication)) {
                             log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
                             return [2 /*return*/, errors_1.messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED];
                         }
                         return [4 /*yield*/, this.dbHandler.queryCommentFlags(parent_1.postCid)];
                     case 7:
-                        postFlags = _l.sent();
+                        postFlags = _o.sent();
                         if (postFlags.removed && !this.isPublicationCommentEdit(publication)) {
                             log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED);
                             return [2 /*return*/, errors_1.messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED];
                         }
                         return [4 /*yield*/, this.dbHandler.queryAuthorEditDeleted(parent_1.postCid)];
                     case 8:
-                        isPostDeleted = _l.sent();
+                        isPostDeleted = _o.sent();
                         if (isPostDeleted && !this.isPublicationCommentEdit(publication)) {
                             log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
                             return [2 /*return*/, errors_1.messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED];
@@ -879,7 +880,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT);
                             return [2 /*return*/, errors_1.messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT];
                         }
-                        _l.label = 9;
+                        _o.label = 9;
                     case 9:
                         if (!this.isPublicationVote(publication)) return [3 /*break*/, 10];
                         return [2 /*return*/, this.handleVote(publication, challengeRequestId)];
@@ -887,7 +888,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         if (!this.isPublicationCommentEdit(publication)) return [3 /*break*/, 11];
                         return [2 /*return*/, this.handleCommentEdit(publication, challengeRequestId)];
                     case 11:
-                        if (!this.isPublicationComment(publication)) return [3 /*break*/, 31];
+                        if (!this.isPublicationComment(publication)) return [3 /*break*/, 33];
                         forbiddenCommentFields_1 = [
                             "cid",
                             "signer",
@@ -915,7 +916,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         }
                         return [4 /*yield*/, (0, signatures_1.verifyComment)(publication, this.plebbit, false)];
                     case 12:
-                        validRes = _l.sent();
+                        validRes = _o.sent();
                         if (!validRes.valid) {
                             log("(".concat(challengeRequestId, "): "), validRes.reason);
                             return [2 /*return*/, validRes.reason];
@@ -923,79 +924,85 @@ var Subplebbit = /** @class */ (function (_super) {
                         ipnsKeyName = (0, js_sha256_1.sha256)((0, safe_stable_stringify_1.stringify)(publication));
                         return [4 /*yield*/, this.dbHandler.querySigner(ipnsKeyName)];
                     case 13:
-                        if (_l.sent()) {
+                        if (_o.sent()) {
                             log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_DUPLICATE_COMMENT);
                             return [2 /*return*/, errors_1.messages.ERR_DUPLICATE_COMMENT];
                         }
                         return [4 /*yield*/, this.plebbit.createComment(publication)];
                     case 14:
-                        commentToInsert = _l.sent();
-                        return [4 /*yield*/, this.plebbit.createSigner()];
+                        commentToInsert = _o.sent();
+                        if (!(commentToInsert.link && ((_b = this.settings) === null || _b === void 0 ? void 0 : _b.fetchThumbnailUrls))) return [3 /*break*/, 16];
+                        _e = commentToInsert;
+                        return [4 /*yield*/, (0, util_3.getThumbnailUrlOfLink)(commentToInsert.link, this.settings.fetchThumbnailUrlsProxyUrl)];
                     case 15:
-                        ipfsSigner = _l.sent();
+                        _e.thumbnailUrl = _o.sent();
+                        _o.label = 16;
+                    case 16: return [4 /*yield*/, this.plebbit.createSigner()];
+                    case 17:
+                        ipfsSigner = _o.sent();
                         ipfsSigner.ipnsKeyName = ipnsKeyName;
                         return [4 /*yield*/, this.dbHandler.insertSigner(ipfsSigner.toJSONSignersTableRow(), undefined)];
-                    case 16:
-                        _l.sent();
-                        _d = ipfsSigner;
-                        _e = Uint8Array.bind;
-                        return [4 /*yield*/, (0, util_2.getIpfsKeyFromPrivateKey)(ipfsSigner.privateKey)];
-                    case 17:
-                        _d.ipfsKey = new (_e.apply(Uint8Array, [void 0, _l.sent()]))();
-                        _g = (_f = commentToInsert).setCommentIpnsKey;
-                        return [4 /*yield*/, util_3.nativeFunctions.importSignerIntoIpfsNode(ipfsSigner.ipnsKeyName, ipfsSigner.ipfsKey, this.plebbit)];
                     case 18:
-                        _g.apply(_f, [_l.sent()]);
-                        if (!(commentToInsert instanceof post_1.default)) return [3 /*break*/, 24];
-                        return [4 /*yield*/, this.dbHandler.createTransaction(challengeRequestId)];
+                        _o.sent();
+                        _f = ipfsSigner;
+                        _g = Uint8Array.bind;
+                        return [4 /*yield*/, (0, util_2.getIpfsKeyFromPrivateKey)(ipfsSigner.privateKey)];
                     case 19:
-                        trx = _l.sent();
-                        _j = (_h = commentToInsert).setPreviousCid;
-                        return [4 /*yield*/, this.dbHandler.queryLatestPostCid(trx)];
+                        _f.ipfsKey = new (_g.apply(Uint8Array, [void 0, _o.sent()]))();
+                        _j = (_h = commentToInsert).setCommentIpnsKey;
+                        return [4 /*yield*/, util_3.nativeFunctions.importSignerIntoIpfsNode(ipfsSigner.ipnsKeyName, ipfsSigner.ipfsKey, this.plebbit)];
                     case 20:
-                        _j.apply(_h, [(_b = (_l.sent())) === null || _b === void 0 ? void 0 : _b.cid]);
-                        return [4 /*yield*/, this.dbHandler.commitTransaction(challengeRequestId)];
+                        _j.apply(_h, [_o.sent()]);
+                        if (!(commentToInsert instanceof post_1.default)) return [3 /*break*/, 26];
+                        return [4 /*yield*/, this.dbHandler.createTransaction(challengeRequestId)];
                     case 21:
-                        _l.sent();
+                        trx = _o.sent();
+                        _l = (_k = commentToInsert).setPreviousCid;
+                        return [4 /*yield*/, this.dbHandler.queryLatestPostCid(trx)];
+                    case 22:
+                        _l.apply(_k, [(_c = (_o.sent())) === null || _c === void 0 ? void 0 : _c.cid]);
+                        return [4 /*yield*/, this.dbHandler.commitTransaction(challengeRequestId)];
+                    case 23:
+                        _o.sent();
                         commentToInsert.setDepth(0);
                         return [4 /*yield*/, this.plebbit.ipfsClient.add((0, safe_stable_stringify_1.stringify)(commentToInsert.toJSONIpfs()))];
-                    case 22:
-                        file = _l.sent();
+                    case 24:
+                        file = _o.sent();
                         commentToInsert.setPostCid(file.path);
                         commentToInsert.setCid(file.path);
                         return [4 /*yield*/, this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(challengeRequestId))];
-                    case 23:
-                        _l.sent();
-                        log("(".concat(challengeRequestId, "): "), "New post with cid ".concat(commentToInsert.cid, " has been inserted into DB"));
-                        return [3 /*break*/, 30];
-                    case 24:
-                        if (!(commentToInsert instanceof comment_1.Comment)) return [3 /*break*/, 30];
-                        return [4 /*yield*/, this.dbHandler.createTransaction(challengeRequestId)];
                     case 25:
-                        trx = _l.sent();
+                        _o.sent();
+                        log("(".concat(challengeRequestId, "): "), "New post with cid ".concat(commentToInsert.cid, " has been inserted into DB"));
+                        return [3 /*break*/, 32];
+                    case 26:
+                        if (!(commentToInsert instanceof comment_1.Comment)) return [3 /*break*/, 32];
+                        return [4 /*yield*/, this.dbHandler.createTransaction(challengeRequestId)];
+                    case 27:
+                        trx = _o.sent();
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.queryCommentsUnderComment(commentToInsert.parentCid, trx),
                                 this.dbHandler.queryComment(commentToInsert.parentCid, trx)
                             ])];
-                    case 26:
-                        _k = _l.sent(), commentsUnderParent = _k[0], parent_2 = _k[1];
+                    case 28:
+                        _m = _o.sent(), commentsUnderParent = _m[0], parent_2 = _m[1];
                         return [4 /*yield*/, this.dbHandler.commitTransaction(challengeRequestId)];
-                    case 27:
-                        _l.sent();
-                        commentToInsert.setPreviousCid((_c = commentsUnderParent[0]) === null || _c === void 0 ? void 0 : _c.cid);
+                    case 29:
+                        _o.sent();
+                        commentToInsert.setPreviousCid((_d = commentsUnderParent[0]) === null || _d === void 0 ? void 0 : _d.cid);
                         commentToInsert.setDepth(parent_2.depth + 1);
                         commentToInsert.setPostCid(parent_2.postCid);
                         return [4 /*yield*/, this.plebbit.ipfsClient.add((0, safe_stable_stringify_1.stringify)(commentToInsert.toJSONIpfs()))];
-                    case 28:
-                        file = _l.sent();
+                    case 30:
+                        file = _o.sent();
                         commentToInsert.setCid(file.path);
                         return [4 /*yield*/, this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(challengeRequestId))];
-                    case 29:
-                        _l.sent();
+                    case 31:
+                        _o.sent();
                         log("(".concat(challengeRequestId, "): "), "New comment with cid ".concat(commentToInsert.cid, " has been inserted into DB"));
-                        _l.label = 30;
-                    case 30: return [2 /*return*/, commentToInsert.toJSONAfterChallengeVerification()];
-                    case 31: return [2 /*return*/];
+                        _o.label = 32;
+                    case 32: return [2 /*return*/, commentToInsert.toJSONAfterChallengeVerification()];
+                    case 33: return [2 /*return*/];
                 }
             });
         });

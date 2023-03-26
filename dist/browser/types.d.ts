@@ -258,7 +258,7 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
     protocolVersion: ProtocolVersion;
     posts?: PagesTypeJson;
 }
-export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shortAddress"> {
+export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shortAddress" | "settings"> {
     posts?: PagesTypeIpfs;
 }
 export interface InternalSubplebbitType extends Omit<SubplebbitType, "shortAddress"> {
@@ -287,7 +287,12 @@ export interface SubplebbitEditOptions {
     suggested?: SubplebbitSuggested;
     flairs?: Record<FlairOwner, Flair[]>;
     address?: string;
+    settings?: SubplebbitSettings;
 }
+export declare type SubplebbitSettings = {
+    fetchThumbnailUrls?: boolean;
+    fetchThumbnailUrlsProxyUrl?: string;
+};
 export declare type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
 export declare type PostSortName = "hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll";
 export declare type ReplySortName = "topAll" | "new" | "old" | "controversialAll";

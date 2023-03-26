@@ -2,7 +2,7 @@ import { ChallengeAnswerMessage } from "./challenge";
 import { Signer } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
-import { ChallengeType, DbHandlerPublicAPI, DecryptedChallengeAnswerMessageType, DecryptedChallengeRequestMessageType, Flair, FlairOwner, InternalSubplebbitType, ProtocolVersion, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitIpfsType, SubplebbitStats, SubplebbitRole, SubplebbitSuggested, SubplebbitType, SubplebbitEvents } from "./types";
+import { ChallengeType, DbHandlerPublicAPI, DecryptedChallengeAnswerMessageType, DecryptedChallengeRequestMessageType, Flair, FlairOwner, InternalSubplebbitType, ProtocolVersion, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitIpfsType, SubplebbitStats, SubplebbitRole, SubplebbitSuggested, SubplebbitType, SubplebbitEvents, SubplebbitSettings } from "./types";
 import { SignatureType } from "./signer/constants";
 import { TypedEmitter } from "tiny-typed-emitter";
 export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
@@ -29,6 +29,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     protocolVersion: ProtocolVersion;
     signature: SignatureType;
     rules?: string[];
+    settings?: SubplebbitSettings;
     state: "stopped" | "updating" | "started";
     startedState: "stopped" | "fetching-ipns" | "publishing-ipns" | "failed" | "succeeded";
     updatingState: "stopped" | "resolving-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";

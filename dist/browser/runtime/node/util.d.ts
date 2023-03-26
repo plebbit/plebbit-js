@@ -9,6 +9,7 @@ export declare const getDefaultDataPath: () => string;
 export declare const getDefaultSubplebbitDbConfig: (subplebbit: Pick<Subplebbit, "address"> & {
     plebbit: Pick<Plebbit, "dataPath">;
 }) => Promise<Knex.Config<any>>;
+export declare function getThumbnailUrlOfLink(url: string, proxyHttpUrl?: string): Promise<string>;
 export declare const nativeFunctions: NativeFunctions;
 export declare const setNativeFunctions: (newNativeFunctions: Partial<NativeFunctions>) => void;
 declare const _default: {
