@@ -1,6 +1,7 @@
 const Plebbit = require("../../../dist/node");
 const { mockPlebbit, publishRandomPost, createMockSub } = require("../../../dist/node/test/test-util");
 const signers = require("../../fixtures/signers");
+const { getThumbnailUrlOfLink } = require("../../../dist/node/runtime/node/util");
 const path = require("path");
 const fs = require("fs");
 const { default: waitUntil } = require("async-wait-until");
@@ -303,9 +304,8 @@ describe(`subplebbit.updatingState`, async () => {
     it(`subplebbit.updatingState emits 'succceeded' when a new update from local sub is retrieved`, async () => {
         const plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
         const localSub = await plebbit.createSubplebbit({ address: signers[0].address });
-        const expectedStates = [ "succeeded", "stopped"];
+        const expectedStates = ["succeeded", "stopped"];
         const recordedStates = [];
-
 
         localSub.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
@@ -316,10 +316,38 @@ describe(`subplebbit.updatingState`, async () => {
 
         publishRandomPost(localSub.address, plebbit, {}, false);
 
-        await new Promise(resolve => localSub.once("update", resolve));
+        await new Promise((resolve) => localSub.once("update", resolve));
         await localSub.stop();
 
         expect(recordedStates).to.deep.equal(expectedStates);
         expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
+    });
+});
+
+describe(`Generation of thumbnail urls`, async () => {
+    it(`Generates thumbnail url for youtube video correctly`, async () => {
+        const url = "https://www.youtube.com/watch?v=TLysAkFM4cA";
+        const expectedThumbnailUrl = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
+        const thumbnailUrl = await getThumbnailUrlOfLink(url);
+        expect(thumbnailUrl).to.equal(expectedThumbnailUrl);
+    });
+
+    it(`comment.thumbnailUrl is populated by subplebbit in challengeVerification`, async () => {
+        const link = "https://www.youtube.com/watch?v=TLysAkFM4cA";
+        const plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        const sub = await createMockSub({}, plebbit);
+        await sub.edit({ settings: { fetchThumbnailUrls: true } });
+        expect(sub.settings.fetchThumbnailUrls).to.be.true;
+
+        await sub.start();
+
+        await new Promise((resolve) => sub.once("update", resolve));
+
+        expect(sub.settings.fetchThumbnailUrls).to.be.true;
+
+        const post = await publishRandomPost(sub.address, plebbit, { link }, false);
+        expect(post.link).to.equal(link);
+        await sub.stop();
+        expect(post.thumbnailUrl).to.equal("https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg");
     });
 });
