@@ -274,8 +274,6 @@ export async function verifyComment(
     plebbit: Plebbit,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
-    assert(!comment["updatedAt"], "This function should be used for comments with no CommentUpdate. Use verifyCommentWithUpdate instead");
-
     const validation = await _verifyPublicationWithAuthor(comment, plebbit, overrideAuthorAddressIfInvalid);
     if (!validation.valid) return validation;
     if (validation.newAddress) comment.author.address = validation.newAddress;

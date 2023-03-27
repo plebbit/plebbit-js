@@ -50,6 +50,7 @@
         "ethers": "5.7.2",
         "file-type": "16.5.4",
         "form-data": "4.0.0",
+        "hpagent": "1.2.0",
         "ipfs-http-client": "56.0.3",
         "ipfs-only-hash": "4.0.0",
         "is-ipfs": "6.0.2",
@@ -60,7 +61,7 @@
         "libp2p-crypto": "0.21.2",
         "limiter": "2.1.0",
         "lodash-es": "4.17.21",
-        "open-graph-scraper": "5.2.2",
+        "open-graph-scraper": "5.2.3",
         "peer-id": "0.16.0",
         "proper-lockfile": "github:plebbit/node-proper-lockfile",
         "retry": "0.13.1",
@@ -69,7 +70,7 @@
         "sqlite3": "5.1.2",
         "tiny-typed-emitter": "2.1.0",
         "tinycache": "1.1.2",
-        "tunnel": "0.0.6",
+        "ts-custom-error": "3.3.1",
         "uuid": "9.0.0"
     },
     "devDependencies": {

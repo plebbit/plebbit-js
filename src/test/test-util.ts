@@ -291,6 +291,7 @@ export async function mockPlebbit(dataPath?: string) {
     };
 
     plebbit.pubsubIpfsClient = createMockIpfsClient();
+    plebbit.on("error", () => {});
     return plebbit;
 }
 

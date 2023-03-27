@@ -1,13 +1,12 @@
 import { messages } from "./errors";
-
-export class PlebbitError extends Error {
+import { CustomError } from "ts-custom-error";
+export class PlebbitError extends CustomError {
     code: keyof typeof messages;
     message: string;
     stack?: string;
     details: {}; // Used to hold key-value of related props. Could be cid of a comment that failed to update
-    constructor(code: keyof typeof messages, details: {}) {
+    constructor(code: keyof typeof messages, details?: {}) {
         super(messages[code]);
-        this.name = this.constructor.name;
         this.code = code;
         this.message = messages[code];
         this.details = details;

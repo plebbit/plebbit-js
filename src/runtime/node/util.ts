@@ -7,6 +7,8 @@ import assert from "assert";
 import { Knex } from "knex";
 import { Plebbit } from "../../plebbit";
 import { parseJsonStrings } from "../../util";
+import scraper from "open-graph-scraper";
+import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
 
 export const mkdir = fs.mkdir;
 
@@ -33,6 +35,25 @@ export const getDefaultSubplebbitDbConfig = async (
         }
     };
 };
+
+export async function getThumbnailUrlOfLink(url: string, proxyHttpUrl?: string): Promise<string> {
+    const imageFileExtensions = [".png", ".jpg", ".webp", ".jpeg"];
+    for (const extension of imageFileExtensions) if (url.endsWith(extension)) return url;
+
+    const options = { url };
+    if (proxyHttpUrl) {
+        const httpAgent = new HttpProxyAgent({ proxy: proxyHttpUrl });
+        const httpsAgent = new HttpsProxyAgent({ proxy: proxyHttpUrl });
+        options["agent"] = { https: httpsAgent, http: httpAgent };
+    }
+    const res = await scraper(options);
+
+    if (res.error) return undefined;
+
+    if (typeof res.result.ogImage === "string") return res.result.ogImage;
+    else if (res.result.ogImage["url"]) return res.result.ogImage["url"];
+    else return undefined;
+}
 
 export const nativeFunctions: NativeFunctions = nodeNativeFunctions;
 export const setNativeFunctions = (newNativeFunctions: Partial<NativeFunctions>) => {

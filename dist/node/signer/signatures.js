@@ -397,9 +397,7 @@ function verifyComment(comment, plebbit, overrideAuthorAddressIfInvalid) {
         var validation;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0:
-                    (0, assert_1.default)(!comment["updatedAt"], "This function should be used for comments with no CommentUpdate. Use verifyCommentWithUpdate instead");
-                    return [4 /*yield*/, _verifyPublicationWithAuthor(comment, plebbit, overrideAuthorAddressIfInvalid)];
+                case 0: return [4 /*yield*/, _verifyPublicationWithAuthor(comment, plebbit, overrideAuthorAddressIfInvalid)];
                 case 1:
                     validation = _a.sent();
                     if (!validation.valid)

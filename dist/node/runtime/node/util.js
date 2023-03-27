@@ -39,12 +39,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setNativeFunctions = exports.nativeFunctions = exports.getDefaultSubplebbitDbConfig = exports.getDefaultDataPath = exports.mkdir = void 0;
+exports.setNativeFunctions = exports.nativeFunctions = exports.getThumbnailUrlOfLink = exports.getDefaultSubplebbitDbConfig = exports.getDefaultDataPath = exports.mkdir = void 0;
 var fs_1 = require("fs");
 var native_functions_1 = __importDefault(require("./native-functions"));
 var path_1 = __importDefault(require("path"));
 var assert_1 = __importDefault(require("assert"));
 var util_1 = require("../../util");
+var open_graph_scraper_1 = __importDefault(require("open-graph-scraper"));
+var hpagent_1 = require("hpagent");
 exports.mkdir = fs_1.promises.mkdir;
 var getDefaultDataPath = function () { return path_1.default.join(process.cwd(), ".plebbit"); };
 exports.getDefaultDataPath = getDefaultDataPath;
@@ -74,6 +76,41 @@ var getDefaultSubplebbitDbConfig = function (subplebbit) { return __awaiter(void
     });
 }); };
 exports.getDefaultSubplebbitDbConfig = getDefaultSubplebbitDbConfig;
+function getThumbnailUrlOfLink(url, proxyHttpUrl) {
+    return __awaiter(this, void 0, void 0, function () {
+        var imageFileExtensions, _i, imageFileExtensions_1, extension, options, httpAgent, httpsAgent, res;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    imageFileExtensions = [".png", ".jpg", ".webp", ".jpeg"];
+                    for (_i = 0, imageFileExtensions_1 = imageFileExtensions; _i < imageFileExtensions_1.length; _i++) {
+                        extension = imageFileExtensions_1[_i];
+                        if (url.endsWith(extension))
+                            return [2 /*return*/, url];
+                    }
+                    options = { url: url };
+                    if (proxyHttpUrl) {
+                        httpAgent = new hpagent_1.HttpProxyAgent({ proxy: proxyHttpUrl });
+                        httpsAgent = new hpagent_1.HttpsProxyAgent({ proxy: proxyHttpUrl });
+                        options["agent"] = { https: httpsAgent, http: httpAgent };
+                    }
+                    return [4 /*yield*/, (0, open_graph_scraper_1.default)(options)];
+                case 1:
+                    res = _a.sent();
+                    if (res.error)
+                        return [2 /*return*/, undefined];
+                    if (typeof res.result.ogImage === "string")
+                        return [2 /*return*/, res.result.ogImage];
+                    else if (res.result.ogImage["url"])
+                        return [2 /*return*/, res.result.ogImage["url"]];
+                    else
+                        return [2 /*return*/, undefined];
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.getThumbnailUrlOfLink = getThumbnailUrlOfLink;
 exports.nativeFunctions = native_functions_1.default;
 var setNativeFunctions = function (newNativeFunctions) {
     if (!newNativeFunctions)

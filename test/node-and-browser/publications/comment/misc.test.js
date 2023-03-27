@@ -162,7 +162,7 @@ describe(`commentUpdate.replyCount`, async () => {
     let plebbit, post, reply;
     before(async () => {
         plebbit = await mockPlebbit();
-        post = await publishRandomPost(subplebbitAddress, plebbit);
+        post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await post.update();
         await new Promise((resolve) => post.once("update", resolve));
         expect(post.replyCount).to.equal(0);
@@ -235,7 +235,7 @@ describe("comment.updatingState", async () => {
         await mockPost.stop();
 
         expect(recordedStates.slice(recordedStates.length - 4)).to.deep.equal(expectedStates);
-        expect(plebbit.eventNames()).to.deep.equal([]); // Make sure events has been unsubscribed from
+        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
     it(`updating states is in correct order upon updating a comment with gateway`, async () => {
@@ -253,6 +253,6 @@ describe("comment.updatingState", async () => {
         await mockPost.stop();
 
         expect(recordedStates.slice(recordedStates.length - 3)).to.deep.equal(expectedStates);
-        expect(gatewayPlebbit.eventNames()).to.deep.equal([]); // Make sure events has been unsubscribed from
+        expect(gatewayPlebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 });

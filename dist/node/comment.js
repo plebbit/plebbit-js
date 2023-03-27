@@ -25,29 +25,6 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -94,7 +71,7 @@ var util_1 = require("./util");
 var publication_1 = __importDefault(require("./publication"));
 var pages_1 = require("./pages");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
-var lodash_1 = __importStar(require("lodash"));
+var lodash_1 = __importDefault(require("lodash"));
 var signatures_1 = require("./signer/signatures");
 var assert_1 = __importDefault(require("assert"));
 var plebbit_error_1 = require("./plebbit-error");
@@ -279,8 +256,8 @@ var Comment = /** @class */ (function (_super) {
                                     case 3:
                                         e_1 = _b.sent();
                                         this._setUpdatingState("failed");
-                                        log.error(e_1);
-                                        (0, lodash_1.reject)(e_1);
+                                        log.error(String(e_1));
+                                        this.emit("error", e_1);
                                         this._loadingOperation.retry(e_1);
                                         return [3 /*break*/, 4];
                                     case 4: return [2 /*return*/];
@@ -315,9 +292,9 @@ var Comment = /** @class */ (function (_super) {
                                     case 3:
                                         e_2 = _b.sent();
                                         this._setUpdatingState("failed");
-                                        log.error(e_2);
-                                        (0, lodash_1.reject)(e_2);
+                                        log.error(String(e_2));
                                         this._loadingOperation.retry(e_2);
+                                        this.emit("error", e_2);
                                         return [3 /*break*/, 4];
                                     case 4: return [2 /*return*/];
                                 }
@@ -355,7 +332,7 @@ var Comment = /** @class */ (function (_super) {
                         if (!signatureValidity.valid) {
                             this._setUpdatingState("failed");
                             err = new plebbit_error_1.PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity: signatureValidity, commentUpdate: res });
-                            log.error(err);
+                            log.error(err.toString());
                             this.emit("error", err);
                             return [2 /*return*/];
                         }

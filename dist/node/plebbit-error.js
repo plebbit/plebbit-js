@@ -17,11 +17,11 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PlebbitError = void 0;
 var errors_1 = require("./errors");
+var ts_custom_error_1 = require("ts-custom-error");
 var PlebbitError = /** @class */ (function (_super) {
     __extends(PlebbitError, _super);
     function PlebbitError(code, details) {
         var _this = _super.call(this, errors_1.messages[code]) || this;
-        _this.name = _this.constructor.name;
         _this.code = code;
         _this.message = errors_1.messages[code];
         _this.details = details;
@@ -39,6 +39,6 @@ var PlebbitError = /** @class */ (function (_super) {
         };
     };
     return PlebbitError;
-}(Error));
+}(ts_custom_error_1.CustomError));
 exports.PlebbitError = PlebbitError;
 //# sourceMappingURL=plebbit-error.js.map
