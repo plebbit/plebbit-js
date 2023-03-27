@@ -90,6 +90,10 @@ PlebbitClients {
   pubsubClients: {[pubsubClientUrl: string]: PubsubClient}
   chainProviders: {[chainProviderUrl: string]: ChainProvider}
 }
+
+Plebbit {
+  clients: PlebbitClients
+}
 ```
 
 #### Events
