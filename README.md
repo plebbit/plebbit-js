@@ -443,9 +443,9 @@ An object which may have the following keys:
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| ipfsGatewayUrl | `string` or `undefined` | `'https://cloudflare-ipfs.com'` | Optional URL of an IPFS gateway |
-| ipfsHttpClientOptions | `string` or `IpfsHttpClientOptions` or `undefined` | `undefined` | Optional URL of an IPFS API or [IpfsHttpClientOptions](https://www.npmjs.com/package/ipfs-http-client#options), `'http://localhost:5001/api/v0'` to use a local IPFS node |
-| pubsubHttpClientOptions | `string` or `IpfsHttpClientOptions` or `undefined` | `'https://pubsubprovider.xyz/api/v0'` | Optional URL or [IpfsHttpClientOptions](https://www.npmjs.com/package/ipfs-http-client#options) used for pubsub publishing when `ipfsHttpClientOptions` isn't available, like in the browser |
+| ipfsGatewayUrls | `strings[]` or `undefined` | `['https://cloudflare-ipfs.com']` | Optional URLs of IPFS gateways |
+| ipfsHttpClientsOptions | `(string \| IpfsHttpClientOptions)[]` or `undefined` | `undefined` | Optional URLs of IPFS APIs or [IpfsHttpClientOptions](https://www.npmjs.com/package/ipfs-http-client#options), `'http://localhost:5001/api/v0'` to use a local IPFS node |
+| pubsubHttpClientsOptions | `(string \| IpfsHttpClientOptions)[]` or `undefined` | `['https://pubsubprovider.xyz/api/v0']` | Optional URLs or [IpfsHttpClientOptions](https://www.npmjs.com/package/ipfs-http-client#options) used for pubsub publishing when `ipfsHttpClientOptions` isn't available, like in the browser |
 | dataPath | `string`  or `undefined` | .plebbit folder in the current working directory | (Node only) Optional folder path to create/resume the user and subplebbit databases |
 | chainProviders | `{[chainTicker: string]: ChainProvider}` or `undefined` | default providers for supported chains | Optional provider RPC URLs and chain IDs |
 | resolveAuthorAddresses | `boolean`  or `undefined` | `true` | Optionally disable resolving crypto domain author addresses, which can be done lazily later to save time |
@@ -456,7 +456,7 @@ An object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| url | `string` | URL of the provider RPC |
+| urls | `string[]` | URL of the provider RPC |
 | chainId | `number` | ID of the EVM chain if any |
 
 #### Returns
@@ -470,8 +470,8 @@ An object which may have the following keys:
 ```js
 const Plebbit = require('@plebbit/plebbit-js')
 const options = {
-  ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
-  ipfsApiUrl: 'http://localhost:5001',
+  ipfsGatewayUrls: ['https://cloudflare-ipfs.com'],
+  ipfsHttpClientsOptions: ['http://localhost:5001/api/v0'],
   dataPath: __dirname
 }
 const plebbit = await Plebbit(options) // should be independent instance, not singleton
@@ -660,8 +660,8 @@ An object which may have the following keys:
 ```js
 const Plebbit = require('@plebbit/plebbit-js')
 const plebbitOptions = {
-  ipfsGatewayUrl: 'https://cloudflare-ipfs.com',
-  ipfsApiUrl: 'http://localhost:5001',
+  ipfsGatewayUrls: ['https://cloudflare-ipfs.com'],
+  ipfsHttpClientsOptions: ['http://localhost:5001/api/v0'],
   dataPath: __dirname
 }
 const plebbit = await Plebbit(plebbitOptions)
