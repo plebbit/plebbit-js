@@ -1347,38 +1347,21 @@ var DbHandler = /** @class */ (function () {
                         log.trace("Attempting to unlock the start of sub (".concat(subAddress, ")"));
                         lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".start.lock"));
                         subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-                        if (!fs_1.default.existsSync(lockfilePath))
+                        if (!fs_1.default.existsSync(lockfilePath) || !fs_1.default.existsSync(subDbPath))
                             return [2 /*return*/];
                         _a.label = 1;
                     case 1:
-                        _a.trys.push([1, 3, , 11]);
+                        _a.trys.push([1, 3, , 4]);
                         return [4 /*yield*/, lockfile.unlock(subDbPath, { lockfilePath: lockfilePath })];
                     case 2:
                         _a.sent();
                         log("Unlocked start of sub (".concat(subAddress, ")"));
-                        return [3 /*break*/, 11];
+                        return [3 /*break*/, 4];
                     case 3:
                         e_2 = _a.sent();
-                        if (!(e_2.code === "ENOENT")) return [3 /*break*/, 6];
-                        if (!fs_1.default.existsSync(lockfilePath)) return [3 /*break*/, 5];
-                        return [4 /*yield*/, fs_1.default.promises.rmdir(lockfilePath)];
-                    case 4:
-                        _a.sent();
-                        _a.label = 5;
-                    case 5: return [3 /*break*/, 10];
-                    case 6:
-                        if (!(e_2.message === "Lock is not acquired/owned by you")) return [3 /*break*/, 9];
-                        if (!fs_1.default.existsSync(lockfilePath)) return [3 /*break*/, 8];
-                        return [4 /*yield*/, fs_1.default.promises.rmdir(lockfilePath)];
-                    case 7:
-                        _a.sent(); // Forcefully delete the lock
-                        _a.label = 8;
-                    case 8: return [3 /*break*/, 10];
-                    case 9:
                         log("Error while trying to unlock start of sub (".concat(subAddress, "): ").concat(e_2));
                         throw e_2;
-                    case 10: return [3 /*break*/, 11];
-                    case 11: return [2 /*return*/];
+                    case 4: return [2 /*return*/];
                 }
             });
         });

@@ -1717,19 +1717,16 @@ var Subplebbit = /** @class */ (function (_super) {
                             (0, util_1.throwWithErrorCode)("ERR_SUB_SIGNER_NOT_DEFINED");
                         if (!this.plebbit.ipfsClient)
                             (0, util_1.throwWithErrorCode)("ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE", { ipfsHttpClientOptions: this.plebbit.ipfsHttpClientOptions });
-                        return [4 /*yield*/, this.initDbHandlerIfNeeded()];
-                    case 1:
-                        _b.sent();
                         return [4 /*yield*/, this.dbHandler.lockSubStart()];
-                    case 2:
+                    case 1:
                         _b.sent(); // Will throw if sub is locked already
                         this._sync = true;
                         return [4 /*yield*/, this.dbHandler.initDbIfNeeded()];
-                    case 3:
+                    case 2:
                         _b.sent();
                         // Import subplebbit keys onto ipfs node
                         return [4 /*yield*/, this._importSignerIntoIpfsIfNeeded({ ipnsKeyName: this.signer.ipnsKeyName, privateKey: this.signer.privateKey })];
-                    case 4:
+                    case 3:
                         // Import subplebbit keys onto ipfs node
                         _b.sent();
                         if (!this.provideCaptchaCallback) {
@@ -1737,27 +1734,27 @@ var Subplebbit = /** @class */ (function (_super) {
                             this.provideCaptchaCallback = this.defaultProvideCaptcha;
                             this.validateCaptchaAnswerCallback = this.defaultValidateCaptcha;
                         }
-                        if (!(typeof this.pubsubTopic !== "string")) return [3 /*break*/, 6];
+                        if (!(typeof this.pubsubTopic !== "string")) return [3 /*break*/, 5];
                         this.pubsubTopic = lodash_1.default.clone(this.address);
                         log("Defaulted subplebbit (".concat(this.address, ") pubsub topic to ").concat(this.pubsubTopic, " since sub owner hasn't provided any"));
                         return [4 /*yield*/, this._updateDbInternalState(lodash_1.default.pick(this, "pubsubTopic"))];
-                    case 5:
+                    case 4:
                         _b.sent();
-                        _b.label = 6;
-                    case 6:
-                        if (!(typeof this.createdAt !== "number")) return [3 /*break*/, 8];
+                        _b.label = 5;
+                    case 5:
+                        if (!(typeof this.createdAt !== "number")) return [3 /*break*/, 7];
                         this.createdAt = (0, util_1.timestamp)();
                         log("Subplebbit (".concat(this.address, ") createdAt has been set to ").concat(this.createdAt));
                         return [4 /*yield*/, this._updateDbInternalState(lodash_1.default.pick(this, "createdAt"))];
-                    case 7:
+                    case 6:
                         _b.sent();
-                        _b.label = 8;
-                    case 8: return [4 /*yield*/, this._listenToIncomingRequests()];
-                    case 9:
+                        _b.label = 7;
+                    case 7: return [4 /*yield*/, this._listenToIncomingRequests()];
+                    case 8:
                         _b.sent();
                         this._subplebbitUpdateTrigger = true;
                         return [4 /*yield*/, this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger })];
-                    case 10:
+                    case 9:
                         _b.sent();
                         this._setState("started");
                         this.syncIpnsWithDb()
