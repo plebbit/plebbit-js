@@ -13,6 +13,7 @@ export enum messages {
 
     // Plebbit errors
     ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS = "missing nativeFunctions required to create a subplebbit",
+    ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE = "Can't run a subplebbit with plebbit.ipfsHttpClientOptions undefined",
 
     // Fetch errors
     ERR_FAILED_TO_FETCH_HTTP_GENERIC = "Failed to fetch via HTTP",
