@@ -1261,7 +1261,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         if (!this.plebbit.ipfsClient)
             throwWithErrorCode("ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE", { ipfsHttpClientOptions: this.plebbit.ipfsHttpClientOptions });
 
-        await this.initDbHandlerIfNeeded();
         await this.dbHandler.lockSubStart(); // Will throw if sub is locked already
         this._sync = true;
         await this.dbHandler.initDbIfNeeded();

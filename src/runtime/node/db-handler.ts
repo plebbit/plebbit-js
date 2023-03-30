@@ -872,14 +872,8 @@ export class DbHandler {
             await lockfile.unlock(subDbPath, { lockfilePath });
             log(`Unlocked start of sub (${subAddress})`);
         } catch (e) {
-            if (e.code === "ENOENT") {
-                if (fs.existsSync(lockfilePath)) await fs.promises.rmdir(lockfilePath);
-            } else if (e.message === "Lock is not acquired/owned by you") {
-                if (fs.existsSync(lockfilePath)) await fs.promises.rmdir(lockfilePath); // Forcefully delete the lock
-            } else {
-                log(`Error while trying to unlock start of sub (${subAddress}): ${e}`);
-                throw e;
-            }
+            log(`Error while trying to unlock start of sub (${subAddress}): ${e}`);
+            throw e;
         }
     }
 
