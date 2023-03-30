@@ -866,7 +866,7 @@ export class DbHandler {
 
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-        if (!fs.existsSync(lockfilePath)) return;
+        if (!fs.existsSync(lockfilePath) || !fs.existsSync(subDbPath)) return;
 
         try {
             await lockfile.unlock(subDbPath, { lockfilePath });
