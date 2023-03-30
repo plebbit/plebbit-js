@@ -10,10 +10,13 @@ import {
     CreatePublicationOptions,
     CreateSubplebbitOptions,
     CreateVoteOptions,
+    GatewayClient,
+    IpfsClient,
     NativeFunctions,
     PlebbitEvents,
     PlebbitOptions,
     PostType,
+    PubsubClient,
     SubplebbitIpfsType,
     SubplebbitType,
     VotePubsubMessage,
@@ -35,40 +38,68 @@ import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
 import lodash from "lodash";
 import { signComment, signCommentEdit, signVote } from "./signer/signatures";
-import { Options } from "ipfs-http-client";
+import { Options as IpfsHttpClientOptions } from "ipfs-http-client";
 import { Buffer } from "buffer";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions, SignerType } from "./signer/constants";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
-    ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
-    pubsubIpfsClient: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">;
+    clients: {
+        ipfsGateways: { [ipfsGatewayUrl: string]: GatewayClient };
+        ipfsClients: { [ipfsClientUrl: string]: IpfsClient };
+        pubsubClients: { [pubsubClientUrl: string]: PubsubClient };
+        chainProviders: { [chainProviderUrl: string]: ChainProvider };
+    };
     resolver: Resolver;
     _memCache: TinyCache;
-    ipfsGatewayUrl: string;
-    ipfsHttpClientOptions?: Options;
-    pubsubHttpClientOptions: Options;
+    ipfsHttpClientOptions?: IpfsHttpClientOptions[];
+    pubsubHttpClientOptions: IpfsHttpClientOptions[];
     dataPath?: string;
-    chainProviders?: { [chainTicker: string]: ChainProvider };
     resolveAuthorAddresses?: boolean;
 
     constructor(options: PlebbitOptions = {}) {
         super();
+        //@ts-expect-error
+        this.clients = {};
         this.ipfsHttpClientOptions =
-            typeof options.ipfsHttpClientOptions === "string"
-                ? this._parseUrlToOption(options.ipfsHttpClientOptions)
-                : options.ipfsHttpClientOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        this.ipfsClient = this.ipfsHttpClientOptions ? nativeFunctions.createIpfsClient(this.ipfsHttpClientOptions) : undefined;
+            Array.isArray(options.ipfsHttpClientOptions) && typeof options.ipfsHttpClientOptions[0] === "string"
+                ? this._parseUrlToOption(<string[]>options.ipfsHttpClientOptions)
+                : <IpfsHttpClientOptions[] | undefined>options.ipfsHttpClientOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
 
         this.pubsubHttpClientOptions =
-            typeof options.pubsubHttpClientOptions === "string"
-                ? this._parseUrlToOption(options.pubsubHttpClientOptions)
-                : options.pubsubHttpClientOptions || { url: "https://pubsubprovider.xyz/api/v0" };
-        this.pubsubIpfsClient = options.pubsubHttpClientOptions
-            ? nativeFunctions.createIpfsClient(this.pubsubHttpClientOptions)
-            : this.ipfsClient
-            ? this.ipfsClient
-            : nativeFunctions.createIpfsClient(this.pubsubHttpClientOptions);
+            Array.isArray(options.pubsubHttpClientOptions) && typeof options.pubsubHttpClientOptions[0] === "string"
+                ? this._parseUrlToOption(<string[]>options.pubsubHttpClientOptions)
+                : <IpfsHttpClientOptions[]>options.pubsubHttpClientOptions || [{ url: "https://pubsubprovider.xyz/api/v0" }];
+
+        this._initIpfsClients();
+        this._initPubsubClients();
+        this._initResolver(options);
+
+        // this.ipfsClient = this.ipfsHttpClientOptions ? nativeFunctions.createIpfsClient(this.ipfsHttpClientOptions) : undefined;
+
+        // this.pubsubIpfsClient = options.pubsubHttpClientOptions
+        //     ? nativeFunctions.createIpfsClient(this.pubsubHttpClientOptions)
+        //     : this.ipfsClient
+        //     ? this.ipfsClient
+        //     : nativeFunctions.createIpfsClient(this.pubsubHttpClientOptions);
+
+        this.dataPath = options.dataPath || getDefaultDataPath();
+    }
+
+    private _initIpfsClients() {
+        for (const [key, value] of Object.entries(this.ipfsHttpClientOptions)) {
+            this.clients.ipfsClients = {
+                ...this.clients.ipfsClients,
+                [key]: { _client: nativeFunctions.createIpfsClient(value), _clientOptions: value }
+            };
+        }
+    }
+
+    private _initPubsubClients(){
+
+    }
+
+    private _initResolver(options: PlebbitOptions) {
         this.chainProviders = options.chainProviders || {
             avax: {
                 url: "https://api.avax.network/ext/bc/C/rpc",
@@ -85,34 +116,37 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             plebbit: { _memCache: this._memCache, resolveAuthorAddresses: this.resolveAuthorAddresses, emit: this.emit.bind(this) },
             chainProviders: this.chainProviders
         });
-        this.dataPath = options.dataPath || getDefaultDataPath();
     }
 
-    private _parseUrlToOption(urlString: string): { url: string; headers: Options["headers"] } {
-        const url = new URL(urlString);
-        const authorization =
-            url.username && url.password ? "Basic " + Buffer.from(`${url.username}:${url.password}`).toString("base64") : undefined;
-        return {
-            url: authorization ? url.origin + url.pathname : urlString,
-            ...(authorization ? { headers: { authorization, origin: "http://localhost" } } : undefined)
-        };
+    private _parseUrlToOption(urlStrings: string[]): IpfsHttpClientOptions[] {
+        const parsed = [];
+        for (const urlString of urlStrings) {
+            const url = new URL(urlString);
+            const authorization =
+                url.username && url.password ? "Basic " + Buffer.from(`${url.username}:${url.password}`).toString("base64") : undefined;
+            parsed.push({
+                url: authorization ? url.origin + url.pathname : urlString,
+                ...(authorization ? { headers: { authorization, origin: "http://localhost" } } : undefined)
+            });
+        }
+        return parsed;
     }
 
     async _init(options: PlebbitOptions) {
         const log = Logger("plebbit-js:plebbit:_init");
 
         if (this.dataPath) await mkdir(this.dataPath, { recursive: true });
-        if (options["ipfsGatewayUrl"]) this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
+        if (options.ipfsGatewayUrls) this.ipfsGatewayUrl = options.ipfsGatewayUrls;
         else {
             try {
-                let gatewayFromNode = await this.ipfsClient.config.get("Addresses.Gateway");
+                let gatewayFromNode = await this._defaultIpfsClient()._client.config.get("Addresses.Gateway");
                 if (Array.isArray(gatewayFromNode)) gatewayFromNode = gatewayFromNode[0];
 
                 const splits = gatewayFromNode.toString().split("/");
-                this.ipfsGatewayUrl = `http://${splits[2]}:${splits[4]}`;
+                this.ipfsGatewayUrl = [`http://${splits[2]}:${splits[4]}`];
                 log.trace(`plebbit.ipfsGatewayUrl retrieved from IPFS node: ${this.ipfsGatewayUrl}`);
             } catch (e) {
-                this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
+                this.ipfsGatewayUrl = ["https://cloudflare-ipfs.com"]; // TODO add more default 
                 log(e, `\nFailed to retrieve gateway url from ipfs node, will default to ${this.ipfsGatewayUrl}`);
             }
         }
@@ -281,5 +315,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async fetchCid(cid: string) {
         return fetchCid(cid, this);
+    }
+
+    _defaultIpfsClient(): IpfsClient {
+        return Object.values(this.clients.ipfsClients)[0];
+    }
+
+    _defaultPubsubClient(): PubsubClient {
+        return Object.values(this.clients.pubsubClients)[0];
     }
 }

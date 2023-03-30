@@ -1,4 +1,5 @@
-import { CID, IPFSHTTPClient, Options } from "ipfs-http-client";
+import { CID, IPFSHTTPClient, Options as IpfsHttpClientOptions } from "ipfs-http-client";
+import { PeersResult } from "ipfs-core-types/src/swarm/index";
 import { DbHandler } from "./runtime/node/db-handler";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
@@ -19,11 +20,11 @@ import { PlebbitError } from "./plebbit-error";
 
 export type ProtocolVersion = "1.0.0";
 
-export type ChainProvider = { url: string; chainId: number };
+export type ChainProvider = { url: string[]; chainId: number };
 export interface PlebbitOptions {
-    ipfsGatewayUrl?: string;
-    ipfsHttpClientOptions?: Options | string;
-    pubsubHttpClientOptions?: Options | string;
+    ipfsGatewayUrls?: string[];
+    ipfsHttpClientOptions?: (IpfsHttpClientOptions | string)[];
+    pubsubHttpClientOptions?: (IpfsHttpClientOptions | string)[];
     dataPath?: string;
     chainProviders?: { [chainTicker: string]: ChainProvider };
     resolveAuthorAddresses?: boolean;
@@ -484,7 +485,7 @@ export type NativeFunctions = {
     listSubplebbits: (dataPath: string) => Promise<string[]>;
     createDbHandler: (subplebbit: DbHandler["_subplebbit"]) => DbHandlerPublicAPI;
     fetch: typeof fetch;
-    createIpfsClient: (options: Options) => IpfsHttpClientPublicAPI;
+    createIpfsClient: (options: IpfsHttpClientOptions) => IpfsHttpClientPublicAPI;
     createImageCaptcha: (...p: Parameters<typeof createCaptcha>) => Promise<{ image: string; text: string }>;
     // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
     importSignerIntoIpfsNode: (ipnsKeyName: string, ipfsKey: Uint8Array, plebbit: Plebbit) => Promise<{ Id: string; Name: string }>;
@@ -631,4 +632,70 @@ export interface PlebbitEvents {
     fetchedcid: (cid: string, content: string) => void; // Emitted when a CID is fetched with its file content
     fetchedipns: (ipns: string, content: string) => void; // Emitted when an IPNS is fetched with its file content
     error: (error: PlebbitError) => void;
+}
+
+// Plebbit types here
+
+export interface IpfsStats {
+    totalIn: number; // IPFS stats https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-stats-bw
+    totalOut: number;
+    rateIn: number;
+    rateOut: number;
+    succeededIpfsCount: number;
+    failedIpfsCount: number;
+    succeededIpfsAverageTime: number;
+    succeededIpfsMedianTime: number;
+    succeededIpnsCount: number;
+    failedIpnsCount: number;
+    succeededIpnsAverageTime: number;
+    succeededIpnsMedianTime: number;
+}
+
+export interface IpfsSubplebbitStats {
+    stats: IpfsStats;
+    sessionStats: IpfsStats; // session means in the last 1h
+}
+
+export interface GatewayClient {
+    stats: IpfsStats;
+    sessionStats: IpfsStats; // session means in the last 1h
+    subplebbitStats: { [subplebbitAddress: string]: IpfsSubplebbitStats };
+}
+
+export interface PubsubStats {
+    totalIn: number; // IPFS stats https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-stats-bw
+    totalOut: number;
+    rateIn: number;
+    rateOut: number;
+    succeededChallengeRequestMessageCount: number;
+    failedChallengeRequestMessageCount: number;
+    succeededChallengeRequestMessageAverageTime: number;
+    succeededChallengeRequestMessageMedianTime: number;
+    succeededChallengeAnswerMessageCount: number;
+    failedChallengeAnswerMessageCount: number;
+    succeededChallengeAnswerMessageAverageTime: number;
+    succeededChallengeAnswerMessageMedianTime: number;
+}
+
+export interface PubsubSubplebbitStats {
+    stats: PubsubStats;
+    sessionStats: PubsubStats; // session means in the last 1h
+}
+
+export interface IpfsClient {
+    peers: PeersResult[];
+    stats: IpfsStats;
+    sessionStats: IpfsStats; // session means in the last 1h
+    subplebbitStats: { [subplebbitAddress: string]: IpfsSubplebbitStats };
+    _client: IpfsHttpClientPublicAPI; // Private API, shouldn't be used by consumers
+    _clientOptions?: IpfsHttpClientOptions;
+}
+
+export interface PubsubClient {
+    peers: PeersResult[]; // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
+    stats: PubsubStats;
+    sessionStats: PubsubStats;
+    subplebbitStats: { [subplebbitAddress: string]: PubsubSubplebbitStats };
+    _client: IpfsHttpClientPublicAPI; // Private API, shouldn't be used by consumers
+    _clientOptions?: IpfsHttpClientOptions;
 }

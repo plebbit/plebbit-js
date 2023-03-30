@@ -12,7 +12,6 @@ import {
 import { nativeFunctions } from "./runtime/node/util";
 import isIPFS from "is-ipfs";
 import { messages } from "./errors";
-import errcode from "err-code";
 import Hash from "ipfs-only-hash";
 import lodash from "lodash";
 import assert from "assert";
@@ -71,15 +70,16 @@ export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { len
     if (!isIPFS.cid(cid) && isIPFS.path(cid)) cid = cid.split("/")[2];
     if (!isIPFS.cid(cid)) throwWithErrorCode("ERR_CID_IS_INVALID", `fetchCid: (${cid}) is invalid as a CID`);
     let fileContent: string | undefined;
-    if (!plebbit.ipfsClient) {
+    const ipfsClient = plebbit._defaultIpfsClient();
+    if (!ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
-        const [resText, res] = await fetchWithLimit(url, { headers: plebbit.ipfsHttpClientOptions?.headers, cache: "force-cache" });
+        const [resText, res] = await fetchWithLimit(url, { headers: ipfsClient._clientOptions?.headers, cache: "force-cache" });
         if (res.status === 200) fileContent = resText;
         else throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", { url, status: res.status, statusText: res.statusText });
     } else {
         let error;
         try {
-            fileContent = await plebbit.ipfsClient.cat(cid, catOptions); // Limit is 1mb files
+            fileContent = await ipfsClient._client.cat(cid, catOptions); // Limit is 1mb files
         } catch (e) {
             error = e;
         }
@@ -102,10 +102,11 @@ export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit) {
 
 export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit, callbackAfterResolve?: (ipns: string, cid: string) => void) {
     if (typeof ipns !== "string") throwWithErrorCode("ERR_IPNS_IS_INVALID", { ipns });
-    if (!plebbit.ipfsClient) {
+    const ipfsClient = plebbit._defaultIpfsClient();
+    if (!ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
         const [resText, res] = await fetchWithLimit(url, {
-            headers: plebbit.ipfsHttpClientOptions?.headers,
+            headers: ipfsClient?._clientOptions?.headers,
             cache: "no-store",
             size: DOWNLOAD_LIMIT_BYTES
         });
@@ -116,7 +117,7 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit, callbackAft
     } else {
         let cid: string | undefined, error;
         try {
-            cid = await plebbit.ipfsClient.name.resolve(ipns);
+            cid = await ipfsClient._client.name.resolve(ipns);
         } catch (e) {
             error = e;
         }

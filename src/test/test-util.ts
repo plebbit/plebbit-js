@@ -276,8 +276,8 @@ export async function startSubplebbits(props: {
 
 export async function mockPlebbit(dataPath?: string) {
     const plebbit = await PlebbitIndex({
-        ipfsHttpClientOptions: "http://localhost:15001/api/v0",
-        pubsubHttpClientOptions: `http://localhost:15002/api/v0`,
+        ipfsHttpClientOptions: ["http://localhost:15001/api/v0"],
+        pubsubHttpClientOptions: [`http://localhost:15002/api/v0`],
         dataPath
     });
 
