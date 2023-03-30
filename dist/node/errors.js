@@ -16,6 +16,7 @@ var messages;
     messages["ERR_IPNS_IS_INVALID"] = "IPNS is invalid";
     // Plebbit errors
     messages["ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS"] = "missing nativeFunctions required to create a subplebbit";
+    messages["ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE"] = "Can't run a subplebbit with plebbit.ipfsHttpClientOptions undefined";
     // Fetch errors
     messages["ERR_FAILED_TO_FETCH_HTTP_GENERIC"] = "Failed to fetch via HTTP";
     messages["ERR_FAILED_TO_FETCH_IPFS_GENERIC"] = "Failed to fetch a file via IPFS";
