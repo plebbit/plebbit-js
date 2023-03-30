@@ -1715,6 +1715,8 @@ var Subplebbit = /** @class */ (function (_super) {
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:start");
                         if (!((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address))
                             (0, util_1.throwWithErrorCode)("ERR_SUB_SIGNER_NOT_DEFINED");
+                        if (!this.plebbit.ipfsClient)
+                            (0, util_1.throwWithErrorCode)("ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE", { ipfsHttpClientOptions: this.plebbit.ipfsHttpClientOptions });
                         return [4 /*yield*/, this.initDbHandlerIfNeeded()];
                     case 1:
                         _b.sent();

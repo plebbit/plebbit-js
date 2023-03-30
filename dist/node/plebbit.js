@@ -312,8 +312,6 @@ var Plebbit = /** @class */ (function (_super) {
                                             (0, util_2.throwWithErrorCode)("ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS", { canRunSub: canRunSub, dataPath: this.dataPath });
                                         if (!this.dataPath)
                                             (0, util_2.throwWithErrorCode)("ERR_DATA_PATH_IS_NOT_DEFINED", { canRunSub: canRunSub, dataPath: this.dataPath });
-                                        if (!this.ipfsClient)
-                                            (0, util_2.throwWithErrorCode)("ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE", { ipfsHttpClientOptions: this.ipfsHttpClientOptions });
                                         subplebbit = new subplebbit_1.Subplebbit(this);
                                         return [4 /*yield*/, subplebbit.initSubplebbit(options)];
                                     case 1:
