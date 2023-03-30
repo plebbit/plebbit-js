@@ -63,7 +63,7 @@
         "lodash-es": "4.17.21",
         "open-graph-scraper": "5.2.3",
         "peer-id": "0.16.0",
-        "proper-lockfile": "4.1.2",
+        "proper-lockfile": "github:plebbit/node-proper-lockfile",
         "retry": "0.13.1",
         "safe-stable-stringify": "2.4.1",
         "skia-canvas": "1.0.0",
