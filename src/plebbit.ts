@@ -205,8 +205,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const localSub = async () => {
             if (!canRunSub) throwWithErrorCode("ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS", { canRunSub, dataPath: this.dataPath });
             if (!this.dataPath) throwWithErrorCode("ERR_DATA_PATH_IS_NOT_DEFINED", { canRunSub, dataPath: this.dataPath });
-            if (!this.ipfsClient)
-                throwWithErrorCode("ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE", { ipfsHttpClientOptions: this.ipfsHttpClientOptions });
 
             const subplebbit = new Subplebbit(this);
             await subplebbit.initSubplebbit(options);
