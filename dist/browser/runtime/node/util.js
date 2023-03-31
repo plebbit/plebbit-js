@@ -88,7 +88,7 @@ function getThumbnailUrlOfLink(url, proxyHttpUrl) {
                         if (url.endsWith(extension))
                             return [2 /*return*/, url];
                     }
-                    options = { url: url };
+                    options = { url: url, downloadLimit: 2000000 };
                     if (proxyHttpUrl) {
                         httpAgent = new hpagent_1.HttpProxyAgent({ proxy: proxyHttpUrl });
                         httpsAgent = new hpagent_1.HttpsProxyAgent({ proxy: proxyHttpUrl });
