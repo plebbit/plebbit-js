@@ -307,8 +307,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async assertDomainResolvesCorrectly(domain: string) {
         if (this.plebbit.resolver.isDomain(domain)) {
             const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(domain);
-            const derivedAddress = await getPlebbitAddressFromPublicKey(this.encryption.publicKey);
-            if (resolvedAddress !== derivedAddress)
+            if (resolvedAddress !== this.signer.address)
                 throwWithErrorCode("ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS", {
                     subplebbitAddress: this.address,
                     resolvedAddress,
@@ -395,15 +394,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             }
         } else {
             this._setUpdatingState("resolving-address");
-            if (this.plebbit.resolver.isDomain(this.address))
-                try {
-                    await this.assertDomainResolvesCorrectly(this.address);
-                } catch (e) {
-                    this._setUpdatingState("failed");
-                    log.error(String(e));
-                    this.emit("error", e);
-                    return;
-                }
 
             const ipnsAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
             this._loadingOperation = retry.operation({ forever: true, factor: 2 });
