@@ -16,9 +16,11 @@ export enum messages {
     ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE = "Can't run a subplebbit with plebbit.ipfsHttpClientOptions undefined",
 
     // Fetch errors
-    ERR_FAILED_TO_FETCH_HTTP_GENERIC = "Failed to fetch via HTTP",
-    ERR_FAILED_TO_FETCH_IPFS_GENERIC = "Failed to fetch a file via IPFS",
-    ERR_FAILED_TO_RESOLVE_IPNS = "Failed to fetch IPNS",
+    ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY = "Failed to fetch IPFS file via gateway",
+    ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS = "Failed to fetch an IPFS via IPFS P2P",
+    ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY = "Failed to fetch IPNS through gateway",
+    ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS = "Failed to resolve IPNS through IPFS P2P",
+    ERR_FAILED_TO_FETCH_GENERIC = "Failed to fetch",
     ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit",
     ERR_CALCULATED_CID_DOES_NOT_MATCH = "The CID calculated from loaded content does not match the provided CID",
 
