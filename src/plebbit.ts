@@ -113,7 +113,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 log.trace(`plebbit.ipfsGatewayUrl retrieved from IPFS node: ${this.ipfsGatewayUrl}`);
             } catch (e) {
                 this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
-                log(e, `\nFailed to retrieve gateway url from ipfs node, will default to ${this.ipfsGatewayUrl}`);
+                log(`Failed to retrieve gateway url from ipfs node, will default to ${this.ipfsGatewayUrl}`);
             }
         }
     }
