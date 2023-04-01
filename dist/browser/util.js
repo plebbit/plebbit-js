@@ -71,7 +71,7 @@ var DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 function fetchWithLimit(url, options) {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function () {
-        var res, e_1, totalBytesRead, reader, decoder, resText, _c, done, value;
+        var res, e_1, errorCode, totalBytesRead, reader, decoder, resText, _c, done, value;
         return __generator(this, function (_d) {
             switch (_d.label) {
                 case 0:
@@ -80,16 +80,22 @@ function fetchWithLimit(url, options) {
                 case 1:
                     //@ts-expect-error
                     res = _d.sent();
+                    if (res.status !== 200)
+                        throw Error("Failed to fetch");
                     if (!(((_a = res === null || res === void 0 ? void 0 : res.body) === null || _a === void 0 ? void 0 : _a.getReader) === undefined)) return [3 /*break*/, 3];
                     return [4 /*yield*/, res.text()];
-                case 2: return [2 /*return*/, [_d.sent(), res]];
+                case 2: return [2 /*return*/, _d.sent()];
                 case 3: return [3 /*break*/, 5];
                 case 4:
                     e_1 = _d.sent();
                     if (e_1.message.includes("over limit"))
                         throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url: url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-                    else
-                        throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", { url: url, status: res === null || res === void 0 ? void 0 : res.status, statusText: res === null || res === void 0 ? void 0 : res.statusText });
+                    errorCode = url.includes("/ipfs/")
+                        ? "ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"
+                        : url.includes("/ipns/")
+                            ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
+                            : "ERR_FAILED_TO_FETCH_GENERIC";
+                    throwWithErrorCode(errorCode, { url: url, status: res === null || res === void 0 ? void 0 : res.status, statusText: res === null || res === void 0 ? void 0 : res.statusText });
                     return [3 /*break*/, 5];
                 case 5:
                     if (!(((_b = res === null || res === void 0 ? void 0 : res.body) === null || _b === void 0 ? void 0 : _b.getReader) !== undefined)) return [3 /*break*/, 9];
@@ -112,7 +118,7 @@ function fetchWithLimit(url, options) {
                         throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url: url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
                     totalBytesRead += value.length;
                     return [3 /*break*/, 6];
-                case 8: return [2 /*return*/, [resText, res]];
+                case 8: return [2 /*return*/, resText];
                 case 9: return [2 /*return*/];
             }
         });
@@ -122,9 +128,9 @@ function fetchCid(cid, plebbit, catOptions) {
     var _a;
     if (catOptions === void 0) { catOptions = { length: DOWNLOAD_LIMIT_BYTES }; }
     return __awaiter(this, void 0, void 0, function () {
-        var fileContent, url, _b, resText, res, error, e_2, calculatedCid;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        var fileContent, url, error, e_2, calculatedCid;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     if (!is_ipfs_1.default.cid(cid) && is_ipfs_1.default.path(cid))
                         cid = cid.split("/")[2];
@@ -134,32 +140,28 @@ function fetchCid(cid, plebbit, catOptions) {
                     url = "".concat(plebbit.ipfsGatewayUrl, "/ipfs/").concat(cid);
                     return [4 /*yield*/, fetchWithLimit(url, { headers: (_a = plebbit.ipfsHttpClientOptions) === null || _a === void 0 ? void 0 : _a.headers, cache: "force-cache" })];
                 case 1:
-                    _b = _c.sent(), resText = _b[0], res = _b[1];
-                    if (res.status === 200)
-                        fileContent = resText;
-                    else
-                        throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", { url: url, status: res.status, statusText: res.statusText });
+                    fileContent = _b.sent();
                     return [3 /*break*/, 7];
                 case 2:
                     error = void 0;
-                    _c.label = 3;
+                    _b.label = 3;
                 case 3:
-                    _c.trys.push([3, 5, , 6]);
+                    _b.trys.push([3, 5, , 6]);
                     return [4 /*yield*/, plebbit.ipfsClient.cat(cid, catOptions)];
                 case 4:
-                    fileContent = _c.sent(); // Limit is 1mb files
+                    fileContent = _b.sent(); // Limit is 1mb files
                     return [3 /*break*/, 6];
                 case 5:
-                    e_2 = _c.sent();
+                    e_2 = _b.sent();
                     error = e_2;
                     return [3 /*break*/, 6];
                 case 6:
                     if (typeof fileContent !== "string")
-                        throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_GENERIC", { cid: cid, error: error, options: catOptions });
-                    _c.label = 7;
+                        throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid: cid, error: error, options: catOptions });
+                    _b.label = 7;
                 case 7: return [4 /*yield*/, ipfs_only_hash_1.default.of(fileContent)];
                 case 8:
-                    calculatedCid = _c.sent();
+                    calculatedCid = _b.sent();
                     if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
                         throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid: cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
                     if (calculatedCid !== cid)
@@ -188,9 +190,9 @@ exports.loadIpfsFileAsJson = loadIpfsFileAsJson;
 function loadIpnsAsJson(ipns, plebbit, callbackAfterResolve) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var url, _b, resText, res, cid, error, e_3;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        var url, resText, cid, error, e_3;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     if (typeof ipns !== "string")
                         throwWithErrorCode("ERR_IPNS_IS_INVALID", { ipns: ipns });
@@ -202,35 +204,29 @@ function loadIpnsAsJson(ipns, plebbit, callbackAfterResolve) {
                             size: DOWNLOAD_LIMIT_BYTES
                         })];
                 case 1:
-                    _b = _c.sent(), resText = _b[0], res = _b[1];
-                    if (res.status === 200) {
-                        plebbit.emit("fetchedipns", ipns, resText);
-                        return [2 /*return*/, JSON.parse(resText)];
-                    }
-                    else
-                        throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", { url: url, status: res.status, statusText: res.statusText });
-                    return [3 /*break*/, 7];
+                    resText = _b.sent();
+                    plebbit.emit("fetchedipns", ipns, resText);
+                    return [2 /*return*/, JSON.parse(resText)];
                 case 2:
                     cid = void 0, error = void 0;
-                    _c.label = 3;
+                    _b.label = 3;
                 case 3:
-                    _c.trys.push([3, 5, , 6]);
+                    _b.trys.push([3, 5, , 6]);
                     return [4 /*yield*/, plebbit.ipfsClient.name.resolve(ipns)];
                 case 4:
-                    cid = _c.sent();
+                    cid = _b.sent();
                     return [3 /*break*/, 6];
                 case 5:
-                    e_3 = _c.sent();
+                    e_3 = _b.sent();
                     error = e_3;
                     return [3 /*break*/, 6];
                 case 6:
                     if (typeof cid !== "string")
-                        throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS", { ipns: ipns, error: error });
+                        throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns: ipns, error: error });
                     plebbit.emit("resolvedipns", ipns, cid);
                     if (callbackAfterResolve)
                         callbackAfterResolve(ipns, cid);
                     return [2 /*return*/, loadIpfsFileAsJson(cid, plebbit)];
-                case 7: return [2 /*return*/];
             }
         });
     });

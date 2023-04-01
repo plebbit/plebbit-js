@@ -157,7 +157,7 @@ var Plebbit = /** @class */ (function (_super) {
                     case 5:
                         e_1 = _a.sent();
                         this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
-                        log(e_1, "\nFailed to retrieve gateway url from ipfs node, will default to ".concat(this.ipfsGatewayUrl));
+                        log("Failed to retrieve gateway url from ipfs node, will default to ".concat(this.ipfsGatewayUrl));
                         return [3 /*break*/, 6];
                     case 6: return [2 /*return*/];
                 }

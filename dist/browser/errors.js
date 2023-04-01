@@ -18,9 +18,11 @@ var messages;
     messages["ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS"] = "missing nativeFunctions required to create a subplebbit";
     messages["ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE"] = "Can't run a subplebbit with plebbit.ipfsHttpClientOptions undefined";
     // Fetch errors
-    messages["ERR_FAILED_TO_FETCH_HTTP_GENERIC"] = "Failed to fetch via HTTP";
-    messages["ERR_FAILED_TO_FETCH_IPFS_GENERIC"] = "Failed to fetch a file via IPFS";
-    messages["ERR_FAILED_TO_RESOLVE_IPNS"] = "Failed to fetch IPNS";
+    messages["ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"] = "Failed to fetch IPFS file via gateway";
+    messages["ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS"] = "Failed to fetch an IPFS via IPFS P2P";
+    messages["ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"] = "Failed to fetch IPNS through gateway";
+    messages["ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS"] = "Failed to resolve IPNS through IPFS P2P";
+    messages["ERR_FAILED_TO_FETCH_GENERIC"] = "Failed to fetch";
     messages["ERR_OVER_DOWNLOAD_LIMIT"] = "The file size is larger than download limit";
     messages["ERR_CALCULATED_CID_DOES_NOT_MATCH"] = "The CID calculated from loaded content does not match the provided CID";
     // Sign errors
