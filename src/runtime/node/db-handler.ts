@@ -866,20 +866,14 @@ export class DbHandler {
 
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-        if (!fs.existsSync(lockfilePath)) return;
+        if (!fs.existsSync(lockfilePath) || !fs.existsSync(subDbPath)) return;
 
         try {
             await lockfile.unlock(subDbPath, { lockfilePath });
             log(`Unlocked start of sub (${subAddress})`);
         } catch (e) {
-            if (e.code === "ENOENT") {
-                if (fs.existsSync(lockfilePath)) await fs.promises.rmdir(lockfilePath);
-            } else if (e.message === "Lock is not acquired/owned by you") {
-                if (fs.existsSync(lockfilePath)) await fs.promises.rmdir(lockfilePath); // Forcefully delete the lock
-            } else {
-                log(`Error while trying to unlock start of sub (${subAddress}): ${e}`);
-                throw e;
-            }
+            log(`Error while trying to unlock start of sub (${subAddress}): ${e}`);
+            throw e;
         }
     }
 

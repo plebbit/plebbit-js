@@ -29,17 +29,24 @@ export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
 });
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
-async function fetchWithLimit(url: string, options?): Promise<[resText: string, response: Response]> {
+async function fetchWithLimit(url: string, options?): Promise<string> {
     // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
     let res: Response;
     try {
         //@ts-expect-error
         res = await nativeFunctions.fetch(url, { ...options, size: DOWNLOAD_LIMIT_BYTES });
+        if (res.status !== 200) throw Error("Failed to fetch");
         // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
-        if (res?.body?.getReader === undefined) return [await res.text(), res];
+        if (res?.body?.getReader === undefined) return await res.text();
     } catch (e) {
         if (e.message.includes("over limit")) throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-        else throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", { url, status: res?.status, statusText: res?.statusText });
+        const errorCode = url.includes("/ipfs/")
+            ? "ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"
+            : url.includes("/ipns/")
+            ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
+            : "ERR_FAILED_TO_FETCH_GENERIC";
+        throwWithErrorCode(errorCode, { url, status: res?.status, statusText: res?.statusText });
+
         // If error is not related to size limit, then throw it again
     }
 
@@ -62,7 +69,7 @@ async function fetchWithLimit(url: string, options?): Promise<[resText: string, 
                 throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
             totalBytesRead += value.length;
         }
-        return [resText, res];
+        return resText;
     }
 }
 
@@ -73,9 +80,7 @@ export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { len
     const ipfsClient = plebbit._defaultIpfsClient();
     if (!ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
-        const [resText, res] = await fetchWithLimit(url, { headers: ipfsClient._clientOptions?.headers, cache: "force-cache" });
-        if (res.status === 200) fileContent = resText;
-        else throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", { url, status: res.status, statusText: res.statusText });
+        fileContent = await fetchWithLimit(url, { headers: plebbit.ipfsHttpClientOptions?.headers, cache: "force-cache" });
     } else {
         let error;
         try {
@@ -84,7 +89,7 @@ export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { len
             error = e;
         }
 
-        if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_GENERIC", { cid, error, options: catOptions });
+        if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid, error, options: catOptions });
     }
 
     const calculatedCid: string = await Hash.of(fileContent);
@@ -105,15 +110,13 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit, callbackAft
     const ipfsClient = plebbit._defaultIpfsClient();
     if (!ipfsClient) {
         const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
-        const [resText, res] = await fetchWithLimit(url, {
-            headers: ipfsClient?._clientOptions?.headers,
+        const resText = await fetchWithLimit(url, {
+            headers: plebbit.ipfsHttpClientOptions?.headers,
             cache: "no-store",
             size: DOWNLOAD_LIMIT_BYTES
         });
-        if (res.status === 200) {
-            plebbit.emit("fetchedipns", ipns, resText);
-            return JSON.parse(resText);
-        } else throwWithErrorCode("ERR_FAILED_TO_FETCH_HTTP_GENERIC", { url, status: res.status, statusText: res.statusText });
+        plebbit.emit("fetchedipns", ipns, resText);
+        return JSON.parse(resText);
     } else {
         let cid: string | undefined, error;
         try {
@@ -121,7 +124,7 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit, callbackAft
         } catch (e) {
             error = e;
         }
-        if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS", { ipns, error });
+        if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns, error });
         plebbit.emit("resolvedipns", ipns, cid);
         if (callbackAfterResolve) callbackAfterResolve(ipns, cid);
         return loadIpfsFileAsJson(cid, plebbit);

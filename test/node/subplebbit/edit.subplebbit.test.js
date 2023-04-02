@@ -4,6 +4,8 @@ const { timestamp } = require("../../../dist/node/util");
 const lodash = require("lodash");
 const { default: waitUntil } = require("async-wait-until");
 const stringify = require("safe-stable-stringify");
+const fs = require("fs");
+const path = require("path");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
@@ -65,8 +67,8 @@ describe(`subplebbit.edit`, async () => {
 
     it(`Start locks are moved to the new address`, async () => {
         // Check for locks
-        expect(await subplebbit.dbHandler.isSubStartLocked(subplebbit.signer.address)).to.be.false;
-        expect(await subplebbit.dbHandler.isSubStartLocked(ethAddress)).to.be.true;
+        expect(fs.existsSync(path.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.signer.address))).to.be.false;
+        expect(fs.existsSync(path.join(subplebbit.plebbit.dataPath, "subplebbits", ethAddress))).to.be.true;
     });
 
     it(`Can load a subplebbit with ENS domain as address`, async () => {

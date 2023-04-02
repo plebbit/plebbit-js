@@ -163,10 +163,7 @@ export class SortHandler {
 
         const rawPosts = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
 
-        if (rawPosts.length === 0) {
-            log(`Subplebbit (${this.subplebbit.address}) has no posts to generate Pages`);
-            return undefined;
-        }
+        if (rawPosts.length === 0) return undefined;
 
         const sortResults = await Promise.all(
             Object.keys(POSTS_SORT_TYPES).map((sortName: PostSortName) => this.sortComments(rawPosts, sortName, pageOptions))

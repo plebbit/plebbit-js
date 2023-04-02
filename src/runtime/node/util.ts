@@ -40,7 +40,7 @@ export async function getThumbnailUrlOfLink(url: string, proxyHttpUrl?: string):
     const imageFileExtensions = [".png", ".jpg", ".webp", ".jpeg"];
     for (const extension of imageFileExtensions) if (url.endsWith(extension)) return url;
 
-    const options = { url };
+    const options = { url, downloadLimit: 2000000 };
     if (proxyHttpUrl) {
         const httpAgent = new HttpProxyAgent({ proxy: proxyHttpUrl });
         const httpsAgent = new HttpsProxyAgent({ proxy: proxyHttpUrl });

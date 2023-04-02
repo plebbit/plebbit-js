@@ -61,7 +61,7 @@ PubsubSubplebbitStats {
 }
 
 IpfsClient {
-  peers.length: Peer[] // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
+  peers: Peer[] // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
   stats: IpfsStats
   sessionStats: IpfsStats // session means in the last 1h
   subplebbitStats: {[subplebbitAddress: string]: IpfsSubplebbitStats}
@@ -74,7 +74,7 @@ GatewayClient {
 }
 
 PubsubClient {
-  peers.length: Peer[] // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
+  peers: Peer[] // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
   stats: PubsubStats
   sessionStats: PubsubStats
   subplebbitStats: {[subplebbitAddress: string]: PubsubSubplebbitStats}

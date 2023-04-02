@@ -261,7 +261,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         const localSub = async () => {
             if (!canRunSub) throwWithErrorCode("ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS", { canRunSub, dataPath: this.dataPath });
-            if (canRunSub && !this.dataPath) throwWithErrorCode("ERR_DATA_PATH_IS_NOT_DEFINED", { canRunSub, dataPath: this.dataPath });
+            if (!this.dataPath) throwWithErrorCode("ERR_DATA_PATH_IS_NOT_DEFINED", { canRunSub, dataPath: this.dataPath });
 
             const subplebbit = new Subplebbit(this);
             await subplebbit.initSubplebbit(options);

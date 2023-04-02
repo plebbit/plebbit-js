@@ -303,10 +303,8 @@ var SortHandler = /** @class */ (function () {
                         return [4 /*yield*/, this.subplebbit.dbHandler.queryCommentsForPages(pageOptions)];
                     case 1:
                         rawPosts = _a.sent();
-                        if (rawPosts.length === 0) {
-                            log("Subplebbit (".concat(this.subplebbit.address, ") has no posts to generate Pages"));
+                        if (rawPosts.length === 0)
                             return [2 /*return*/, undefined];
-                        }
                         return [4 /*yield*/, Promise.all(Object.keys(exports.POSTS_SORT_TYPES).map(function (sortName) { return _this.sortComments(rawPosts, sortName, pageOptions); }))];
                     case 2:
                         sortResults = _a.sent();

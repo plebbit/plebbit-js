@@ -157,7 +157,7 @@ var Plebbit = /** @class */ (function (_super) {
                     case 5:
                         e_1 = _a.sent();
                         this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
-                        log(e_1, "\nFailed to retrieve gateway url from ipfs node, will default to ".concat(this.ipfsGatewayUrl));
+                        log("Failed to retrieve gateway url from ipfs node, will default to ".concat(this.ipfsGatewayUrl));
                         return [3 /*break*/, 6];
                     case 6: return [2 /*return*/];
                 }
@@ -310,7 +310,7 @@ var Plebbit = /** @class */ (function (_super) {
                                     case 0:
                                         if (!canRunSub)
                                             (0, util_2.throwWithErrorCode)("ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS", { canRunSub: canRunSub, dataPath: this.dataPath });
-                                        if (canRunSub && !this.dataPath)
+                                        if (!this.dataPath)
                                             (0, util_2.throwWithErrorCode)("ERR_DATA_PATH_IS_NOT_DEFINED", { canRunSub: canRunSub, dataPath: this.dataPath });
                                         subplebbit = new subplebbit_1.Subplebbit(this);
                                         return [4 /*yield*/, subplebbit.initSubplebbit(options)];
