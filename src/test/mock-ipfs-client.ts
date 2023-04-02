@@ -40,7 +40,8 @@ class IpfsHttpClient {
             },
             ls: async () => {
                 return this.subscriptions.map((sub) => sub.topic);
-            }
+            },
+            peers: async () => []
         };
     }
 }

@@ -48,7 +48,8 @@ const nativeFunctions: NativeFunctions = {
                 subscribe: ipfsClient.pubsub.subscribe,
                 unsubscribe: ipfsClient.pubsub.unsubscribe,
                 publish: ipfsClient.pubsub.publish,
-                ls: ipfsClient.pubsub.ls
+                ls: ipfsClient.pubsub.ls,
+                peers: ipfsClient.pubsub.peers
             },
             name: {
                 publish: ipfsClient.name.publish,
@@ -62,7 +63,8 @@ const nativeFunctions: NativeFunctions = {
                 rm: ipfsClient.key.rm
             },
             pin: { rm: ipfsClient.pin.rm },
-            block: { rm: blockRm }
+            block: { rm: blockRm },
+            swarm: { peers: ipfsClient.swarm.peers }
         };
     },
     importSignerIntoIpfsNode: async () => {

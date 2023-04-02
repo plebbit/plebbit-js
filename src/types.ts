@@ -471,7 +471,7 @@ export type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHandler>>;
 export type IpfsHttpClientPublicAPI = {
     add: IPFSHTTPClient["add"];
     cat: (...p: Parameters<IPFSHTTPClient["cat"]>) => Promise<string | undefined>;
-    pubsub: Pick<IPFSHTTPClient["pubsub"], "subscribe" | "unsubscribe" | "publish" | "ls">;
+    pubsub: Pick<IPFSHTTPClient["pubsub"], "subscribe" | "unsubscribe" | "publish" | "ls" | "peers">;
     name: {
         resolve: (...p: Parameters<IPFSHTTPClient["name"]["resolve"]>) => Promise<string | undefined>;
         publish: IPFSHTTPClient["name"]["publish"];
@@ -480,6 +480,7 @@ export type IpfsHttpClientPublicAPI = {
     key: Pick<IPFSHTTPClient["key"], "list" | "rm">;
     pin: Pick<IPFSHTTPClient["pin"], "rm">;
     block: { rm: (...p: Parameters<IPFSHTTPClient["block"]["rm"]>) => Promise<{ cid: CID; error?: Error }[]> };
+    swarm: Pick<IPFSHTTPClient["swarm"], "peers">;
 };
 export type NativeFunctions = {
     listSubplebbits: (dataPath: string) => Promise<string[]>;
@@ -656,12 +657,6 @@ export interface IpfsSubplebbitStats {
     sessionStats: IpfsStats; // session means in the last 1h
 }
 
-export interface GatewayClient {
-    stats: IpfsStats;
-    sessionStats: IpfsStats; // session means in the last 1h
-    subplebbitStats: { [subplebbitAddress: string]: IpfsSubplebbitStats };
-}
-
 export interface PubsubStats {
     totalIn: number; // IPFS stats https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-stats-bw
     totalOut: number;
@@ -683,19 +678,25 @@ export interface PubsubSubplebbitStats {
 }
 
 export interface IpfsClient {
-    peers: PeersResult[];
-    stats: IpfsStats;
-    sessionStats: IpfsStats; // session means in the last 1h
-    subplebbitStats: { [subplebbitAddress: string]: IpfsSubplebbitStats };
+    peers: () => Promise<PeersResult[]>; // https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
+    stats?: undefined; // Should be defined, will change later
+    sessionStats?: undefined; // Should be defined, will change later
+    subplebbitStats?: undefined; // Should be defined, will change later
     _client: IpfsHttpClientPublicAPI; // Private API, shouldn't be used by consumers
-    _clientOptions?: IpfsHttpClientOptions;
+    _clientOptions: IpfsHttpClientOptions;
 }
 
 export interface PubsubClient {
-    peers: PeersResult[]; // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
-    stats: PubsubStats;
-    sessionStats: PubsubStats;
-    subplebbitStats: { [subplebbitAddress: string]: PubsubSubplebbitStats };
-    _client: IpfsHttpClientPublicAPI; // Private API, shouldn't be used by consumers
+    peers: () => Promise<string[]>; // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-pubsub-peers
+    stats?: undefined; // Should be defined, will change later
+    sessionStats?: undefined; // Should be defined, will change later
+    subplebbitStats?: undefined; // Should be defined, will change later
+    _client: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">; // Private API, shouldn't be used by consumers
     _clientOptions?: IpfsHttpClientOptions;
+}
+
+export interface GatewayClient {
+    stats?: IpfsStats; // Should be defined, will change later
+    sessionStats?: IpfsStats; // Should be defined, will change later. session means in the last 1h
+    subplebbitStats?: { [subplebbitAddress: string]: IpfsSubplebbitStats }; // Should be defined, will change later
 }

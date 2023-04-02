@@ -87,16 +87,30 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private _initIpfsClients() {
-        for (const [key, value] of Object.entries(this.ipfsHttpClientOptions)) {
-            this.clients.ipfsClients = {
-                ...this.clients.ipfsClients,
-                [key]: { _client: nativeFunctions.createIpfsClient(value), _clientOptions: value }
+        for (const clientOptions of this.ipfsHttpClientOptions) {
+            if (!this.clients.ipfsClients) this.clients.ipfsClients = {};
+            const ipfsClient = nativeFunctions.createIpfsClient(clientOptions);
+            this.clients.ipfsClients[<string>clientOptions.url] = {
+                _client: ipfsClient,
+                _clientOptions: clientOptions,
+                peers: ipfsClient.swarm.peers
             };
         }
     }
 
-    private _initPubsubClients(){
-
+    private _initPubsubClients() {
+        for (const clientOptions of this.pubsubHttpClientOptions) {
+            if (!this.clients.pubsubClients) this.clients.pubsubClients = {};
+            const ipfsClient = nativeFunctions.createIpfsClient(clientOptions);
+            this.clients.pubsubClients[<string>clientOptions.url] = {
+                _client: ipfsClient,
+                _clientOptions: clientOptions,
+                peers: async () => {
+                    const topics = await ipfsClient.pubsub.ls();
+                    return lodash.uniq(lodash.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic)))));
+                }
+            };
+        }
     }
 
     private _initResolver(options: PlebbitOptions) {
@@ -135,21 +149,30 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     async _init(options: PlebbitOptions) {
         const log = Logger("plebbit-js:plebbit:_init");
 
+        // If user did not provide ipfsGatewayUrls
+        const fallbackGateways = lodash.shuffle([
+            "https://cloudflare-ipfs.com",
+            "https://ipfs.io",
+            "https://gateway.pinata.cloud",
+            "https://cf-ipfs.com",
+            "https://via0.com"
+        ]);
         if (this.dataPath) await mkdir(this.dataPath, { recursive: true });
-        if (options.ipfsGatewayUrls) this.ipfsGatewayUrl = options.ipfsGatewayUrls;
-        else {
-            try {
-                let gatewayFromNode = await this._defaultIpfsClient()._client.config.get("Addresses.Gateway");
-                if (Array.isArray(gatewayFromNode)) gatewayFromNode = gatewayFromNode[0];
-
-                const splits = gatewayFromNode.toString().split("/");
-                this.ipfsGatewayUrl = [`http://${splits[2]}:${splits[4]}`];
-                log.trace(`plebbit.ipfsGatewayUrl retrieved from IPFS node: ${this.ipfsGatewayUrl}`);
-            } catch (e) {
-                this.ipfsGatewayUrl = ["https://cloudflare-ipfs.com"]; // TODO add more default 
-                log(e, `\nFailed to retrieve gateway url from ipfs node, will default to ${this.ipfsGatewayUrl}`);
+        if (options.ipfsGatewayUrls) for (const gatewayUrl of options.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
+        else if (this.clients.ipfsClients) {
+            for (const ipfsClient of Object.values(this.clients.ipfsClients)) {
+                try {
+                    let gatewayFromNode = await ipfsClient._client.config.get("Addresses.Gateway");
+                    if (Array.isArray(gatewayFromNode)) gatewayFromNode = gatewayFromNode[0];
+                    const splits = gatewayFromNode.toString().split("/");
+                    const ipfsGatewayUrl = `http://${splits[2]}:${splits[4]}`;
+                    log.trace(`plebbit.ipfsGatewayUrl (${ipfsGatewayUrl}) retrieved from IPFS node (${ipfsClient._clientOptions.url})`);
+                    this.clients.ipfsGateways[ipfsGatewayUrl] = {};
+                } catch (e) {
+                    log(`Failed to retrieve gateway url from ipfs node (${ipfsClient._clientOptions.url})`);
+                }
             }
-        }
+        } else for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
     }
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
