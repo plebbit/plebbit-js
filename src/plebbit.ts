@@ -12,7 +12,6 @@ import {
     CreateVoteOptions,
     GatewayClient,
     IpfsClient,
-    NativeFunctions,
     PlebbitEvents,
     PlebbitOptions,
     PostType,
@@ -70,7 +69,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         this.pubsubHttpClientOptions =
             Array.isArray(options.pubsubHttpClientOptions) && typeof options.pubsubHttpClientOptions[0] === "string"
                 ? this._parseUrlToOption(<string[]>options.pubsubHttpClientOptions)
-                : <IpfsHttpClientOptions[]>options.pubsubHttpClientOptions || [{ url: "https://pubsubprovider.xyz/api/v0" }];
+                : <IpfsHttpClientOptions[]>options.pubsubHttpClientOptions ||
+                  this.ipfsHttpClientOptions || [{ url: "https://pubsubprovider.xyz/api/v0" }];
 
         this._initIpfsClients();
         this._initPubsubClients();
@@ -88,8 +88,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private _initIpfsClients() {
+        this.clients.ipfsClients = {};
         for (const clientOptions of this.ipfsHttpClientOptions) {
-            if (!this.clients.ipfsClients) this.clients.ipfsClients = {};
             const ipfsClient = nativeFunctions.createIpfsClient(clientOptions);
             this.clients.ipfsClients[<string>clientOptions.url] = {
                 _client: ipfsClient,
@@ -100,9 +100,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private _initPubsubClients() {
+        this.clients.pubsubClients = {};
         for (const clientOptions of this.pubsubHttpClientOptions) {
-            if (!this.clients.pubsubClients) this.clients.pubsubClients = {};
-            const ipfsClient = nativeFunctions.createIpfsClient(clientOptions);
+            const ipfsClient =
+                this.clients.ipfsClients[<string>clientOptions.url]?._client || nativeFunctions.createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs
             this.clients.pubsubClients[<string>clientOptions.url] = {
                 _client: ipfsClient,
                 _clientOptions: clientOptions,
@@ -161,6 +162,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             "https://via0.com"
         ]);
         if (this.dataPath) await mkdir(this.dataPath, { recursive: true });
+        this.clients.ipfsGateways = {};
         if (options.ipfsGatewayUrls) for (const gatewayUrl of options.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
         else if (this.clients.ipfsClients) {
             for (const ipfsClient of Object.values(this.clients.ipfsClients)) {
