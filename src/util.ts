@@ -17,6 +17,7 @@ import lodash from "lodash";
 import assert from "assert";
 import { Pages } from "./pages";
 import { PlebbitError } from "./plebbit-error";
+import pLimit from "p-limit";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -73,14 +74,51 @@ async function fetchWithLimit(url: string, options?): Promise<string> {
     }
 }
 
+function _raceToSuccess(promises: Promise<string>[]): Promise<string> {
+    return new Promise((resolve) => promises.forEach((promise) => promise.then(resolve)));
+}
+
+async function fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string }, plebbit: Plebbit): Promise<string> {
+    assert(loadOpts.cid || loadOpts.ipns);
+
+    const path = loadOpts.cid ? `/ipfs/${loadOpts.cid}` : `/ipns/${loadOpts.ipns}`;
+
+    const fetchWithGateway = async (gateway: string) => {
+        const url = `${gateway}${path}`;
+        const timeBefore = Date.now();
+        const type = loadOpts.cid ? "cid" : "ipns";
+        try {
+            const resText = await fetchWithLimit(url, { cache: loadOpts.cid ? "force-cache" : "no-store" });
+            const timeElapsedMs = Date.now() - timeBefore;
+            await plebbit.clients.ipfsGateways[gateway].stats.recordSuccess(type, timeElapsedMs); // TODO add success
+            return resText;
+        } catch (e) {
+            await plebbit.clients.ipfsGateways[gateway].stats.recordFailure(type); // TODO add failure
+            throw e;
+        }
+    };
+
+    // TODO test potential errors here
+    const queueLimit = pLimit(3);
+
+    const gatewayFetches = Object.keys(plebbit.clients.ipfsGateways).map((gateway) => queueLimit(() => fetchWithGateway(gateway))); // Will be likely 5 promises, p-limit will limit to 3
+
+    const res = await _raceToSuccess(gatewayFetches);
+    assert(typeof res === "string");
+    return res;
+}
+
 export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { length: DOWNLOAD_LIMIT_BYTES }): Promise<string> {
     if (!isIPFS.cid(cid) && isIPFS.path(cid)) cid = cid.split("/")[2];
     if (!isIPFS.cid(cid)) throwWithErrorCode("ERR_CID_IS_INVALID", `fetchCid: (${cid}) is invalid as a CID`);
     let fileContent: string | undefined;
     const ipfsClient = plebbit._defaultIpfsClient();
     if (!ipfsClient) {
-        const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
-        fileContent = await fetchWithLimit(url, { headers: plebbit.ipfsHttpClientOptions?.headers, cache: "force-cache" });
+        fileContent = await fetchFromMultipleGateways({ cid }, plebbit);
+        const calculatedCid: string = await Hash.of(fileContent);
+        if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
+            throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
+        if (calculatedCid !== cid) throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid, cid });
     } else {
         let error;
         try {
@@ -91,11 +129,6 @@ export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { len
 
         if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid, error, options: catOptions });
     }
-
-    const calculatedCid: string = await Hash.of(fileContent);
-    if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
-        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-    if (calculatedCid !== cid) throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid, cid });
 
     plebbit.emit("fetchedcid", cid, fileContent);
     return fileContent;
@@ -109,12 +142,7 @@ export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit, callbackAft
     if (typeof ipns !== "string") throwWithErrorCode("ERR_IPNS_IS_INVALID", { ipns });
     const ipfsClient = plebbit._defaultIpfsClient();
     if (!ipfsClient) {
-        const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
-        const resText = await fetchWithLimit(url, {
-            headers: plebbit.ipfsHttpClientOptions?.headers,
-            cache: "no-store",
-            size: DOWNLOAD_LIMIT_BYTES
-        });
+        const resText = await fetchFromMultipleGateways({ ipns }, plebbit);
         plebbit.emit("fetchedipns", ipns, resText);
         return JSON.parse(resText);
     } else {

@@ -62,6 +62,7 @@
         "limiter": "2.1.0",
         "lodash-es": "4.17.21",
         "open-graph-scraper": "5.2.3",
+        "p-limit": "4.0.0",
         "peer-id": "0.16.0",
         "proper-lockfile": "github:plebbit/node-proper-lockfile",
         "retry": "0.13.1",
