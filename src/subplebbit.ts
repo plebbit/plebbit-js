@@ -1262,7 +1262,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const log = Logger("plebbit-js:subplebbit:start");
 
         if (!this.signer?.address) throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED");
-        if (!this.plebbit.ipfsClient)
+        if (!this.plebbit._defaultIpfsClient())
             throwWithErrorCode("ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE", { ipfsHttpClientOptions: this.plebbit.ipfsHttpClientOptions });
 
         await this.dbHandler.lockSubStart(); // Will throw if sub is locked already
