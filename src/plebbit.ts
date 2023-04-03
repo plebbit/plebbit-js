@@ -56,6 +56,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     pubsubHttpClientOptions: IpfsHttpClientOptions[];
     dataPath?: string;
     resolveAuthorAddresses?: boolean;
+    chainProviders: { [chainTicker: string]: ChainProvider };
 
     constructor(options: PlebbitOptions = {}) {
         super();
@@ -116,18 +117,20 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     private _initResolver(options: PlebbitOptions) {
         this.chainProviders = options.chainProviders || {
             avax: {
-                url: "https://api.avax.network/ext/bc/C/rpc",
+                url: ["https://api.avax.network/ext/bc/C/rpc"],
                 chainId: 43114
             },
             matic: {
-                url: "https://polygon-rpc.com",
+                url: ["https://polygon-rpc.com"],
                 chainId: 137
             }
         };
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         this._memCache = new TinyCache();
         this.resolver = new Resolver({
-            plebbit: { _memCache: this._memCache, resolveAuthorAddresses: this.resolveAuthorAddresses, emit: this.emit.bind(this) },
+            _memCache: this._memCache,
+            resolveAuthorAddresses: this.resolveAuthorAddresses,
+            emit: this.emit.bind(this),
             chainProviders: this.chainProviders
         });
     }
