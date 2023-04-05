@@ -64,6 +64,17 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     constructor(options: PlebbitOptions = {}) {
         super();
+        const acceptedOptions: (keyof PlebbitOptions)[] = [
+            "chainProviders",
+            "dataPath",
+            "ipfsGatewayUrls",
+            "ipfsHttpClientOptions",
+            "pubsubHttpClientOptions",
+            "resolveAuthorAddresses"
+        ];
+        for (const option of Object.keys(options))
+            if (!acceptedOptions.includes(<keyof PlebbitOptions>option)) throwWithErrorCode("ERR_PLEBBIT_OPTION_NOT_ACCEPTED", { option });
+
         //@ts-expect-error
         this.clients = {};
         this.ipfsHttpClientOptions =
