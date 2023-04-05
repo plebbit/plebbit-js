@@ -88,6 +88,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private _initIpfsClients() {
+        if (!this.ipfsHttpClientOptions) return;
         this.clients.ipfsClients = {};
         for (const clientOptions of this.ipfsHttpClientOptions) {
             const ipfsClient = nativeFunctions.createIpfsClient(clientOptions);
