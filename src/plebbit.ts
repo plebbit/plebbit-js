@@ -348,6 +348,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     _defaultIpfsClient(): IpfsClient {
+        if (!this.clients.ipfsClients) return undefined;
         return Object.values(this.clients.ipfsClients)[0];
     }
 
