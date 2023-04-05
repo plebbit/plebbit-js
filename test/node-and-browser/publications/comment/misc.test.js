@@ -6,7 +6,8 @@ const {
     publishRandomPost,
     publishRandomReply,
     publishWithExpectedResult,
-    loadAllPages
+    loadAllPages,
+    mockGatewayPlebbit
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 
@@ -239,9 +240,7 @@ describe("comment.updatingState", async () => {
     });
 
     it(`updating states is in correct order upon updating a comment with gateway`, async () => {
-        const gatewayPlebbit = await mockPlebbit();
-        gatewayPlebbit.ipfsHttpClientOptions = gatewayPlebbit.ipfsClient = undefined;
-
+        const gatewayPlebbit = await mockGatewayPlebbit();
         const mockPost = await publishRandomPost(subplebbitAddress, gatewayPlebbit, {}, false);
         const expectedStates = ["fetching-ipns", "succeeded", "stopped"];
         const recordedStates = [];

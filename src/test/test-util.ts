@@ -301,6 +301,14 @@ export async function mockRemotePlebbit() {
     return plebbit;
 }
 
+export async function mockGatewayPlebbit() {
+    // Keep only pubsub and gateway
+    const plebbit = await mockRemotePlebbit();
+    delete plebbit.clients.ipfsClients;
+    delete plebbit.ipfsHttpClientOptions;
+    return plebbit;
+}
+
 export async function publishRandomReply(
     parentComment: Comment,
     plebbit: Plebbit,
