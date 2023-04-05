@@ -5,8 +5,7 @@ const { loadIpfsFileAsJson } = require("../../dist/node/util");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { messages } = require("../../dist/node/errors");
-const { mockPlebbit, publishRandomPost, loadAllPages } = require("../../dist/node/test/test-util");
-const { Buffer } = require("buffer");
+const { mockPlebbit, loadAllPages } = require("../../dist/node/test/test-util");
 const { default: Author } = require("../../dist/node/author");
 const stringify = require("safe-stable-stringify");
 chai.use(chaiAsPromised);
@@ -25,8 +24,9 @@ describe("plebbit (node and browser)", async () => {
     });
     describe("plebbit with default options (cloudflare and pubsubprovider)", async () => {
         it("has default plebbit options", async () => {
-            expect(plebbit.ipfsGatewayUrl).to.equal("https://cloudflare-ipfs.com");
-            expect(plebbit.pubsubHttpClientOptions.url).to.equal("https://pubsubprovider.xyz/api/v0");
+            expect(Object.keys(plebbit.clients.ipfsGateways)).to.deep.equal(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
+            expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
+            expect(plebbit.pubsubHttpClientOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
             expect(plebbit.pubsubHttpClientOptions.headers?.authorization).to.be.undefined;
 
             // no dataPath in browser
@@ -40,13 +40,16 @@ describe("plebbit (node and browser)", async () => {
 
     describe("Plebbit options set up correctly", async () => {
         it("Only ipfsHttpClientOptions is provided", async () => {
-            const options = { ipfsHttpClientOptions: "http://localhost:15001/api/v0" };
+            const url = "http://localhost:15001/api/v0";
+            const options = { ipfsHttpClientOptions: [url] };
             const testPlebbit = await Plebbit(options);
-            expect(testPlebbit.ipfsClient).to.exist;
-            expect(testPlebbit.pubsubIpfsClient).to.exist;
-            expect(testPlebbit.ipfsClient).to.equal(testPlebbit.ipfsClient);
-            expect(testPlebbit.ipfsGatewayUrl).to.equal("http://127.0.0.1:18080");
-            expect(testPlebbit.pubsubHttpClientOptions.url).to.equal("https://pubsubprovider.xyz/api/v0");
+            expect(testPlebbit.clients.ipfsClients[url]).to.exist;
+            expect(testPlebbit.clients.pubsubClients[url]).to.exist;
+            expect(testPlebbit.clients.ipfsClients[url]._client).to.deep.equal(testPlebbit.clients.pubsubClients[url]._client);
+            expect(Object.keys(testPlebbit.clients.ipfsGateways)).to.deep.equal(["http://127.0.0.1:18080"]);
+            expect(Object.keys(testPlebbit.clients.ipfsClients)).to.deep.equal([url]);
+
+            expect(Object.keys(testPlebbit.clients.pubsubClients)).to.deep.equal([url]);
         });
     });
 
@@ -161,14 +164,21 @@ if (!globalThis["navigator"]?.userAgent?.includes("Firefox"))
     describe("Authentication in ipfsHttpClientOptions and PubsubHttpClientOptions", async () => {
         it(`Authorization credentials are generated correctly`, async () => {
             const plebbit = await Plebbit({
-                ipfsHttpClientOptions: "http://user:password@localhost:15001/api/v0",
-                pubsubHttpClientOptions: "http://user:password@localhost:15002/api/v0"
+                ipfsHttpClientOptions: ["http://user:password@localhost:15001/api/v0"],
+                pubsubHttpClientOptions: ["http://user:password@localhost:15002/api/v0"]
             });
-            const expectedCred = "Basic dXNlcjpwYXNzd29yZA==";
-            expect(plebbit.ipfsHttpClientOptions.url).to.equal("http://localhost:15001/api/v0");
-            expect(plebbit.pubsubHttpClientOptions.url).to.equal("http://localhost:15002/api/v0");
 
-            expect(plebbit.ipfsHttpClientOptions.headers.authorization).to.equal(expectedCred);
-            expect(plebbit.pubsubHttpClientOptions.headers.authorization).to.equal(expectedCred);
+            expect(Object.keys(plebbit.clients.ipfsClients)).to.deep.equal(["http://localhost:15001/api/v0"]);
+            expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal(["http://localhost:15002/api/v0"]);
+
+            const expectedCred = "Basic dXNlcjpwYXNzd29yZA==";
+            const ipfsCalcOptions = plebbit.clients.ipfsClients["http://localhost:15001/api/v0"]._clientOptions;
+            const pubsubCalcOptions = plebbit.clients.pubsubClients["http://localhost:15002/api/v0"]._clientOptions;
+
+            expect(ipfsCalcOptions.url).to.equal("http://localhost:15001/api/v0");
+            expect(pubsubCalcOptions.url).to.equal("http://localhost:15002/api/v0");
+
+            expect(ipfsCalcOptions.headers.authorization).to.equal(expectedCred);
+            expect(pubsubCalcOptions.headers.authorization).to.equal(expectedCred);
         });
     });
