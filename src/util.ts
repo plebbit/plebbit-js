@@ -74,7 +74,7 @@ async function fetchWithLimit(url: string, options?): Promise<string> {
     }
 }
 
-function _raceToSuccess(promises: Promise<string>[]): Promise<string> {
+function _firstResolve(promises: Promise<string>[]): Promise<string> {
     return new Promise((resolve) => promises.forEach((promise) => promise.then(resolve)));
 }
 
@@ -82,6 +82,8 @@ async function fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string
     assert(loadOpts.cid || loadOpts.ipns);
 
     const path = loadOpts.cid ? `/ipfs/${loadOpts.cid}` : `/ipns/${loadOpts.ipns}`;
+
+    const errors = [];
 
     const fetchWithGateway = async (gateway: string) => {
         const url = `${gateway}${path}`;
@@ -94,6 +96,7 @@ async function fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string
             return resText;
         } catch (e) {
             await plebbit.stats.recordGatewayFailure(gateway, type);
+            errors.push(e);
             throw e;
         }
     };
@@ -103,9 +106,9 @@ async function fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string
 
     const gatewayFetches = Object.keys(plebbit.clients.ipfsGateways).map((gateway) => queueLimit(() => fetchWithGateway(gateway))); // Will be likely 5 promises, p-limit will limit to 3
 
-    const res = await _raceToSuccess(gatewayFetches);
-    assert(typeof res === "string");
-    return res;
+    const res = await Promise.race([_firstResolve(gatewayFetches), Promise.allSettled(gatewayFetches)]);
+    if (typeof res === "string") return res;
+    else throw errors[0];
 }
 
 export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { length: DOWNLOAD_LIMIT_BYTES }): Promise<string> {
@@ -115,10 +118,6 @@ export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { len
     const ipfsClient = plebbit._defaultIpfsClient();
     if (!ipfsClient) {
         fileContent = await fetchFromMultipleGateways({ cid }, plebbit);
-        const calculatedCid: string = await Hash.of(fileContent);
-        if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
-            throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-        if (calculatedCid !== cid) throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid, cid });
     } else {
         let error;
         try {
@@ -129,6 +128,11 @@ export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { len
 
         if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid, error, options: catOptions });
     }
+
+    const calculatedCid: string = await Hash.of(fileContent);
+    if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
+        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
+    if (calculatedCid !== cid) throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid, cid });
 
     plebbit.emit("fetchedcid", cid, fileContent);
     return fileContent;
