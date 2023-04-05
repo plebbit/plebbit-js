@@ -18,7 +18,7 @@ export default class Stats {
         const curAverage: number = (await this._cache.getItem(averageKey)) || 0;
         const curCount: number = (await this._cache.getItem(countKey)) || 0;
 
-        const newAverage = curAverage + (curCount === 0 ? timeElapsedMs : timeElapsedMs / curCount);
+        const newAverage = curAverage + (timeElapsedMs - curAverage) / (curCount + 1);
         const newCount = curCount + 1;
 
         await Promise.all([this._cache.setItem(averageKey, newAverage), this._cache.setItem(countKey, newCount)]);
