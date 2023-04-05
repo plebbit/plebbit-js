@@ -24,7 +24,7 @@ describe("plebbit (node and browser)", async () => {
     });
     describe("plebbit with default options (cloudflare and pubsubprovider)", async () => {
         it("has default plebbit options", async () => {
-            expect(Object.keys(plebbit.clients.ipfsGateways)).to.deep.equal(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
+            expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://cloudflare-ipfs.com", "https://ipfs.io"].sort());
             expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
             expect(plebbit.pubsubHttpClientOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
             expect(plebbit.pubsubHttpClientOptions.headers?.authorization).to.be.undefined;
