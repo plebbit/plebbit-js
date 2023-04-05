@@ -152,10 +152,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const log = Logger("plebbit-js:plebbit:_init");
 
         // If user did not provide ipfsGatewayUrls
-        const fallbackGateways = lodash.shuffle([
-            "https://cloudflare-ipfs.com",
-            "https://ipfs.io",
-        ]);
+        const fallbackGateways = lodash.shuffle(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
         if (this.dataPath) await mkdir(this.dataPath, { recursive: true });
         this.clients.ipfsGateways = {};
         if (options.ipfsGatewayUrls) for (const gatewayUrl of options.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
