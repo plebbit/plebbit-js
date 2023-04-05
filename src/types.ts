@@ -700,3 +700,14 @@ export interface GatewayClient {
     sessionStats?: IpfsStats; // Should be defined, will change later. session means in the last 1h
     subplebbitStats?: { [subplebbitAddress: string]: IpfsSubplebbitStats }; // Should be defined, will change later
 }
+
+// Cache interface, will be used to set up general cache using localforage (for browser) or key-v SQLite (Node)
+export interface CacheInterface {
+    init: () => Promise<void>;
+    getItem: (key: string) => Promise<any>;
+    setItem: (key: string, value: any) => Promise<void>;
+    removeItem: (key: string) => Promise<boolean>;
+    clear: () => Promise<void>;
+    keys: () => Promise<string[]>;
+
+}

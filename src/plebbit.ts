@@ -1,4 +1,5 @@
 import {
+    CacheInterface,
     ChainProvider,
     CommentEditType,
     CommentIpfsType,
@@ -41,6 +42,8 @@ import { Options as IpfsHttpClientOptions } from "ipfs-http-client";
 import { Buffer } from "buffer";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions, SignerType } from "./signer/constants";
+import Stats from "./stats";
+import Cache from "./runtime/node/cache";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
@@ -56,6 +59,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     dataPath?: string;
     resolveAuthorAddresses?: boolean;
     chainProviders: { [chainTicker: string]: ChainProvider };
+    private _cache: CacheInterface;
+    stats: Stats;
 
     constructor(options: PlebbitOptions = {}) {
         super();
@@ -75,14 +80,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         this._initIpfsClients();
         this._initPubsubClients();
         this._initResolver(options);
-
-        // this.ipfsClient = this.ipfsHttpClientOptions ? nativeFunctions.createIpfsClient(this.ipfsHttpClientOptions) : undefined;
-
-        // this.pubsubIpfsClient = options.pubsubHttpClientOptions
-        //     ? nativeFunctions.createIpfsClient(this.pubsubHttpClientOptions)
-        //     : this.ipfsClient
-        //     ? this.ipfsClient
-        //     : nativeFunctions.createIpfsClient(this.pubsubHttpClientOptions);
 
         this.dataPath = options.dataPath || getDefaultDataPath();
     }
@@ -104,7 +101,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         this.clients.pubsubClients = {};
         for (const clientOptions of this.pubsubHttpClientOptions) {
             const ipfsClient =
-                this.clients.ipfsClients[<string>clientOptions.url]?._client || nativeFunctions.createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs
+                this.clients.ipfsClients?.[<string>clientOptions.url]?._client || nativeFunctions.createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs
             this.clients.pubsubClients[<string>clientOptions.url] = {
                 _client: ipfsClient,
                 _clientOptions: clientOptions,
@@ -158,9 +155,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const fallbackGateways = lodash.shuffle([
             "https://cloudflare-ipfs.com",
             "https://ipfs.io",
-            "https://gateway.pinata.cloud",
-            "https://cf-ipfs.com",
-            "https://via0.com"
         ]);
         if (this.dataPath) await mkdir(this.dataPath, { recursive: true });
         this.clients.ipfsGateways = {};
@@ -179,6 +173,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 }
             }
         } else for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
+
+        // Init cache
+        this._cache = new Cache(this);
+        await this._cache.init();
+
+        // Init stats
+        this.stats = new Stats(this._cache);
     }
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {

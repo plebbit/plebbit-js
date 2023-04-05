@@ -90,10 +90,10 @@ async function fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string
         try {
             const resText = await fetchWithLimit(url, { cache: loadOpts.cid ? "force-cache" : "no-store" });
             const timeElapsedMs = Date.now() - timeBefore;
-            await plebbit.clients.ipfsGateways[gateway].stats.recordSuccess(type, timeElapsedMs); // TODO add success
+            await plebbit.stats.recordGatewaySuccess(gateway, type, timeElapsedMs);
             return resText;
         } catch (e) {
-            await plebbit.clients.ipfsGateways[gateway].stats.recordFailure(type); // TODO add failure
+            await plebbit.stats.recordGatewayFailure(gateway, type);
             throw e;
         }
     };
