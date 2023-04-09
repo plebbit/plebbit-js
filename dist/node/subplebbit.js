@@ -1718,7 +1718,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             this.validateCaptchaAnswerCallback = this.defaultValidateCaptcha;
                         }
                         if (!(typeof this.pubsubTopic !== "string")) return [3 /*break*/, 5];
-                        this.pubsubTopic = lodash_1.default.clone(this.address);
+                        this.pubsubTopic = lodash_1.default.clone(this.signer.address);
                         log("Defaulted subplebbit (".concat(this.address, ") pubsub topic to ").concat(this.pubsubTopic, " since sub owner hasn't provided any"));
                         return [4 /*yield*/, this._updateDbInternalState(lodash_1.default.pick(this, "pubsubTopic"))];
                     case 4:
