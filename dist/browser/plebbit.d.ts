@@ -28,8 +28,8 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     };
     resolver: Resolver;
     _memCache: TinyCache;
-    ipfsHttpClientOptions?: IpfsHttpClientOptions[];
-    pubsubHttpClientOptions: IpfsHttpClientOptions[];
+    ipfsHttpClientsOptions?: IpfsHttpClientOptions[];
+    pubsubHttpClientsOptions: IpfsHttpClientOptions[];
     dataPath?: string;
     resolveAuthorAddresses?: boolean;
     chainProviders: {

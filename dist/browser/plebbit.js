@@ -95,8 +95,8 @@ var Plebbit = /** @class */ (function (_super) {
             "chainProviders",
             "dataPath",
             "ipfsGatewayUrls",
-            "ipfsHttpClientOptions",
-            "pubsubHttpClientOptions",
+            "ipfsHttpClientsOptions",
+            "pubsubHttpClientsOptions",
             "resolveAuthorAddresses"
         ];
         for (var _i = 0, _a = Object.keys(options); _i < _a.length; _i++) {
@@ -106,15 +106,15 @@ var Plebbit = /** @class */ (function (_super) {
         }
         //@ts-expect-error
         _this.clients = {};
-        _this.ipfsHttpClientOptions =
-            Array.isArray(options.ipfsHttpClientOptions) && typeof options.ipfsHttpClientOptions[0] === "string"
-                ? _this._parseUrlToOption(options.ipfsHttpClientOptions)
-                : options.ipfsHttpClientOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        _this.pubsubHttpClientOptions =
-            Array.isArray(options.pubsubHttpClientOptions) && typeof options.pubsubHttpClientOptions[0] === "string"
-                ? _this._parseUrlToOption(options.pubsubHttpClientOptions)
-                : options.pubsubHttpClientOptions ||
-                    _this.ipfsHttpClientOptions || [{ url: "https://pubsubprovider.xyz/api/v0" }];
+        _this.ipfsHttpClientsOptions =
+            Array.isArray(options.ipfsHttpClientsOptions) && typeof options.ipfsHttpClientsOptions[0] === "string"
+                ? _this._parseUrlToOption(options.ipfsHttpClientsOptions)
+                : options.ipfsHttpClientsOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
+        _this.pubsubHttpClientsOptions =
+            Array.isArray(options.pubsubHttpClientsOptions) && typeof options.pubsubHttpClientsOptions[0] === "string"
+                ? _this._parseUrlToOption(options.pubsubHttpClientsOptions)
+                : options.pubsubHttpClientsOptions ||
+                    _this.ipfsHttpClientsOptions || [{ url: "https://pubsubprovider.xyz/api/v0" }];
         _this._initIpfsClients();
         _this._initPubsubClients();
         _this._initResolver(options);
@@ -122,10 +122,10 @@ var Plebbit = /** @class */ (function (_super) {
         return _this;
     }
     Plebbit.prototype._initIpfsClients = function () {
-        if (!this.ipfsHttpClientOptions)
+        if (!this.ipfsHttpClientsOptions)
             return;
         this.clients.ipfsClients = {};
-        for (var _i = 0, _a = this.ipfsHttpClientOptions; _i < _a.length; _i++) {
+        for (var _i = 0, _a = this.ipfsHttpClientsOptions; _i < _a.length; _i++) {
             var clientOptions = _a[_i];
             var ipfsClient = util_1.nativeFunctions.createIpfsClient(clientOptions);
             this.clients.ipfsClients[clientOptions.url] = {
@@ -161,7 +161,7 @@ var Plebbit = /** @class */ (function (_super) {
             };
         };
         var this_1 = this;
-        for (var _i = 0, _c = this.pubsubHttpClientOptions; _i < _c.length; _i++) {
+        for (var _i = 0, _c = this.pubsubHttpClientsOptions; _i < _c.length; _i++) {
             var clientOptions = _c[_i];
             _loop_1(clientOptions);
         }
