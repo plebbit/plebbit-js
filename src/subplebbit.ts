@@ -498,7 +498,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         const file = await this.plebbit._defaultIpfsClient()._client.add(deterministicStringify({ ...newIpns, signature }));
         const publishRes = await this.plebbit._defaultIpfsClient()._client.name.publish(file.path, {
-            lifetime: "72h", // TODO decide on optimal time later
             key: this.signer.ipnsKeyName,
             allowOffline: Boolean(process.env["TESTING"])
         });
@@ -1102,7 +1101,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this._importSignerIntoIpfsIfNeeded(signerRaw);
         const file = await this.plebbit._defaultIpfsClient()._client.add(deterministicStringify(options));
         await this.plebbit._defaultIpfsClient()._client.name.publish(file.path, {
-            lifetime: "72h",
             key: signerRaw.ipnsKeyName,
             allowOffline: Boolean(process.env["TESTING"])
         });
@@ -1223,9 +1221,15 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         for (const depthKey of depthsKeySorted) await Promise.all(commentsGroupedByDepth[depthKey].map(this._updateComment.bind(this)));
     }
 
+    private async _checkLockFreshness() {
+        assert.equal(await this.dbHandler.isSubStartLocked(), true);
+        assert.equal(await this.dbHandler.isSubStartLocked(this.address), true);
+    }
+
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:subplebbit:sync");
         await this._switchDbIfNeeded();
+        await this._checkLockFreshness();
 
         try {
             await this._mergeInstanceStateWithDbState({});
