@@ -59,7 +59,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     dataPath?: string;
     resolveAuthorAddresses?: boolean;
     chainProviders: { [chainTicker: string]: ChainProvider };
-    private _cache: CacheInterface;
+    _cache: CacheInterface;
     stats: Stats;
 
     constructor(options: PlebbitOptions = {}) {
@@ -187,7 +187,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         await this._cache.init();
 
         // Init stats
-        this.stats = new Stats(this._cache);
+        this.stats = new Stats({ _cache: this._cache, clients: this.clients });
     }
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {

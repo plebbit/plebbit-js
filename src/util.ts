@@ -85,10 +85,11 @@ async function fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string
 
     const errors = [];
 
+    const type = loadOpts.cid ? "cid" : "ipns";
+
     const fetchWithGateway = async (gateway: string) => {
         const url = `${gateway}${path}`;
         const timeBefore = Date.now();
-        const type = loadOpts.cid ? "cid" : "ipns";
         try {
             const resText = await fetchWithLimit(url, { cache: loadOpts.cid ? "force-cache" : "no-store" });
             const timeElapsedMs = Date.now() - timeBefore;
@@ -104,8 +105,10 @@ async function fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string
     // TODO test potential errors here
     const queueLimit = pLimit(3);
 
-    const gatewayFetches = Object.keys(plebbit.clients.ipfsGateways).map((gateway) => queueLimit(() => fetchWithGateway(gateway))); // Will be likely 5 promises, p-limit will limit to 3
-
+    // Will be likely 5 promises, p-limit will limit to 3
+    const gatewayFetches = (await plebbit.stats.sortGatewaysAccordingToScore(type)).map((gateway) =>
+        queueLimit(() => fetchWithGateway(gateway))
+    );
     const res = await Promise.race([_firstResolve(gatewayFetches), Promise.allSettled(gatewayFetches)]);
     if (typeof res === "string") return res;
     else throw errors[0];
