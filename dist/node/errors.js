@@ -17,6 +17,7 @@ var messages;
     // Plebbit errors
     messages["ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS"] = "missing nativeFunctions required to create a subplebbit";
     messages["ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE"] = "Can't run a subplebbit with plebbit.ipfsHttpClientOptions undefined";
+    messages["ERR_PLEBBIT_OPTION_NOT_ACCEPTED"] = "Option is not accepted on Plebbit constructor";
     // Fetch errors
     messages["ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"] = "Failed to fetch IPFS file via gateway";
     messages["ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS"] = "Failed to fetch an IPFS via IPFS P2P";

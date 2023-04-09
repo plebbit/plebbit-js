@@ -89,7 +89,10 @@ var IpfsHttpClient = /** @class */ (function () {
                 return __generator(this, function (_a) {
                     return [2 /*return*/, this.subscriptions.map(function (sub) { return sub.topic; })];
                 });
-            }); }
+            }); },
+            peers: function () { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                return [2 /*return*/, []];
+            }); }); }
         };
     }
     return IpfsHttpClient;

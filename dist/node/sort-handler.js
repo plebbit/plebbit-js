@@ -215,7 +215,7 @@ var SortHandler = /** @class */ (function () {
                         pageIpfs = (0, util_1.removeNullAndUndefinedValuesRecursively)({ nextCid: cids[i + 1], comments: chunksWithReplies[i] });
                         _a = cids;
                         _b = i;
-                        return [4 /*yield*/, this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(pageIpfs))];
+                        return [4 /*yield*/, this.subplebbit.plebbit._defaultIpfsClient()._client.add(JSON.stringify(pageIpfs))];
                     case 3:
                         _a[_b] = (_c.sent()).path;
                         listOfPage[i] = pageIpfs;

@@ -1,4 +1,4 @@
-import { ChainProvider, CommentEditType, CommentIpfsType, CommentPubsubMessage, CommentType, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateSubplebbitOptions, CreateVoteOptions, NativeFunctions, PlebbitEvents, PlebbitOptions, SubplebbitIpfsType, SubplebbitType, VotePubsubMessage, VoteType } from "./types";
+import { CacheInterface, ChainProvider, CommentEditType, CommentIpfsType, CommentPubsubMessage, CommentType, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateSubplebbitOptions, CreateVoteOptions, GatewayClient, IpfsClient, PlebbitEvents, PlebbitOptions, PubsubClient, SubplebbitIpfsType, SubplebbitType, VotePubsubMessage, VoteType } from "./types";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
@@ -7,23 +7,40 @@ import { Signer } from "./signer";
 import { Resolver } from "./resolver";
 import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
-import { Options } from "ipfs-http-client";
+import { Options as IpfsHttpClientOptions } from "ipfs-http-client";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions } from "./signer/constants";
+import Stats from "./stats";
 export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
-    ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
-    pubsubIpfsClient: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">;
+    clients: {
+        ipfsGateways: {
+            [ipfsGatewayUrl: string]: GatewayClient;
+        };
+        ipfsClients: {
+            [ipfsClientUrl: string]: IpfsClient;
+        };
+        pubsubClients: {
+            [pubsubClientUrl: string]: PubsubClient;
+        };
+        chainProviders: {
+            [chainProviderUrl: string]: ChainProvider;
+        };
+    };
     resolver: Resolver;
     _memCache: TinyCache;
-    ipfsGatewayUrl: string;
-    ipfsHttpClientOptions?: Options;
-    pubsubHttpClientOptions: Options;
+    ipfsHttpClientOptions?: IpfsHttpClientOptions[];
+    pubsubHttpClientOptions: IpfsHttpClientOptions[];
     dataPath?: string;
-    chainProviders?: {
+    resolveAuthorAddresses?: boolean;
+    chainProviders: {
         [chainTicker: string]: ChainProvider;
     };
-    resolveAuthorAddresses?: boolean;
+    _cache: CacheInterface;
+    stats: Stats;
     constructor(options?: PlebbitOptions);
+    private _initIpfsClients;
+    private _initPubsubClients;
+    private _initResolver;
     private _parseUrlToOption;
     _init(options: PlebbitOptions): Promise<void>;
     getSubplebbit(subplebbitAddress: string): Promise<Subplebbit>;
@@ -38,4 +55,6 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     createSigner(createSignerOptions?: CreateSignerOptions): Promise<Signer>;
     listSubplebbits(): Promise<string[]>;
     fetchCid(cid: string): Promise<string>;
+    _defaultIpfsClient(): IpfsClient;
+    _defaultPubsubClient(): PubsubClient;
 }

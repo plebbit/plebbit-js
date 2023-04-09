@@ -84,82 +84,182 @@ var lodash_1 = __importDefault(require("lodash"));
 var signatures_1 = require("./signer/signatures");
 var buffer_1 = require("buffer");
 var tiny_typed_emitter_1 = require("tiny-typed-emitter");
+var stats_1 = __importDefault(require("./stats"));
+var cache_1 = __importDefault(require("./runtime/node/cache"));
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
     function Plebbit(options) {
         if (options === void 0) { options = {}; }
         var _this = _super.call(this) || this;
+        var acceptedOptions = [
+            "chainProviders",
+            "dataPath",
+            "ipfsGatewayUrls",
+            "ipfsHttpClientOptions",
+            "pubsubHttpClientOptions",
+            "resolveAuthorAddresses"
+        ];
+        for (var _i = 0, _a = Object.keys(options); _i < _a.length; _i++) {
+            var option = _a[_i];
+            if (!acceptedOptions.includes(option))
+                (0, util_2.throwWithErrorCode)("ERR_PLEBBIT_OPTION_NOT_ACCEPTED", { option: option });
+        }
+        //@ts-expect-error
+        _this.clients = {};
         _this.ipfsHttpClientOptions =
-            typeof options.ipfsHttpClientOptions === "string"
+            Array.isArray(options.ipfsHttpClientOptions) && typeof options.ipfsHttpClientOptions[0] === "string"
                 ? _this._parseUrlToOption(options.ipfsHttpClientOptions)
                 : options.ipfsHttpClientOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        _this.ipfsClient = _this.ipfsHttpClientOptions ? util_1.nativeFunctions.createIpfsClient(_this.ipfsHttpClientOptions) : undefined;
         _this.pubsubHttpClientOptions =
-            typeof options.pubsubHttpClientOptions === "string"
+            Array.isArray(options.pubsubHttpClientOptions) && typeof options.pubsubHttpClientOptions[0] === "string"
                 ? _this._parseUrlToOption(options.pubsubHttpClientOptions)
-                : options.pubsubHttpClientOptions || { url: "https://pubsubprovider.xyz/api/v0" };
-        _this.pubsubIpfsClient = options.pubsubHttpClientOptions
-            ? util_1.nativeFunctions.createIpfsClient(_this.pubsubHttpClientOptions)
-            : _this.ipfsClient
-                ? _this.ipfsClient
-                : util_1.nativeFunctions.createIpfsClient(_this.pubsubHttpClientOptions);
-        _this.chainProviders = options.chainProviders || {
-            avax: {
-                url: "https://api.avax.network/ext/bc/C/rpc",
-                chainId: 43114
-            },
-            matic: {
-                url: "https://polygon-rpc.com",
-                chainId: 137
-            }
-        };
-        _this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
-        _this._memCache = new tinycache_1.default();
-        _this.resolver = new resolver_1.Resolver({
-            plebbit: { _memCache: _this._memCache, resolveAuthorAddresses: _this.resolveAuthorAddresses, emit: _this.emit.bind(_this) },
-            chainProviders: _this.chainProviders
-        });
+                : options.pubsubHttpClientOptions ||
+                    _this.ipfsHttpClientOptions || [{ url: "https://pubsubprovider.xyz/api/v0" }];
+        _this._initIpfsClients();
+        _this._initPubsubClients();
+        _this._initResolver(options);
         _this.dataPath = options.dataPath || (0, util_1.getDefaultDataPath)();
         return _this;
     }
-    Plebbit.prototype._parseUrlToOption = function (urlString) {
-        var url = new URL(urlString);
-        var authorization = url.username && url.password ? "Basic " + buffer_1.Buffer.from("".concat(url.username, ":").concat(url.password)).toString("base64") : undefined;
-        return __assign({ url: authorization ? url.origin + url.pathname : urlString }, (authorization ? { headers: { authorization: authorization, origin: "http://localhost" } } : undefined));
+    Plebbit.prototype._initIpfsClients = function () {
+        if (!this.ipfsHttpClientOptions)
+            return;
+        this.clients.ipfsClients = {};
+        for (var _i = 0, _a = this.ipfsHttpClientOptions; _i < _a.length; _i++) {
+            var clientOptions = _a[_i];
+            var ipfsClient = util_1.nativeFunctions.createIpfsClient(clientOptions);
+            this.clients.ipfsClients[clientOptions.url] = {
+                _client: ipfsClient,
+                _clientOptions: clientOptions,
+                peers: ipfsClient.swarm.peers
+            };
+        }
+    };
+    Plebbit.prototype._initPubsubClients = function () {
+        var _this = this;
+        var _a, _b;
+        this.clients.pubsubClients = {};
+        var _loop_1 = function (clientOptions) {
+            var ipfsClient = ((_b = (_a = this_1.clients.ipfsClients) === null || _a === void 0 ? void 0 : _a[clientOptions.url]) === null || _b === void 0 ? void 0 : _b._client) || util_1.nativeFunctions.createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs
+            this_1.clients.pubsubClients[clientOptions.url] = {
+                _client: ipfsClient,
+                _clientOptions: clientOptions,
+                peers: function () { return __awaiter(_this, void 0, void 0, function () {
+                    var topics, _a, _b, _c, _d;
+                    return __generator(this, function (_e) {
+                        switch (_e.label) {
+                            case 0: return [4 /*yield*/, ipfsClient.pubsub.ls()];
+                            case 1:
+                                topics = _e.sent();
+                                _b = (_a = lodash_1.default).uniq;
+                                _d = (_c = lodash_1.default).flattenDeep;
+                                return [4 /*yield*/, Promise.all(topics.map(function (topic) { return ipfsClient.pubsub.peers(topic); }))];
+                            case 2: return [2 /*return*/, _b.apply(_a, [_d.apply(_c, [_e.sent()])])];
+                        }
+                    });
+                }); }
+            };
+        };
+        var this_1 = this;
+        for (var _i = 0, _c = this.pubsubHttpClientOptions; _i < _c.length; _i++) {
+            var clientOptions = _c[_i];
+            _loop_1(clientOptions);
+        }
+    };
+    Plebbit.prototype._initResolver = function (options) {
+        this.chainProviders = options.chainProviders || {
+            avax: {
+                url: ["https://api.avax.network/ext/bc/C/rpc"],
+                chainId: 43114
+            },
+            matic: {
+                url: ["https://polygon-rpc.com"],
+                chainId: 137
+            }
+        };
+        this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
+        this._memCache = new tinycache_1.default();
+        this.resolver = new resolver_1.Resolver({
+            _memCache: this._memCache,
+            resolveAuthorAddresses: this.resolveAuthorAddresses,
+            emit: this.emit.bind(this),
+            chainProviders: this.chainProviders
+        });
+    };
+    Plebbit.prototype._parseUrlToOption = function (urlStrings) {
+        var parsed = [];
+        for (var _i = 0, urlStrings_1 = urlStrings; _i < urlStrings_1.length; _i++) {
+            var urlString = urlStrings_1[_i];
+            var url = new URL(urlString);
+            var authorization = url.username && url.password ? "Basic " + buffer_1.Buffer.from("".concat(url.username, ":").concat(url.password)).toString("base64") : undefined;
+            parsed.push(__assign({ url: authorization ? url.origin + url.pathname : urlString }, (authorization ? { headers: { authorization: authorization, origin: "http://localhost" } } : undefined)));
+        }
+        return parsed;
     };
     Plebbit.prototype._init = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, gatewayFromNode, splits, e_1;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var log, fallbackGateways, _i, _a, gatewayUrl, _b, _c, ipfsClient, gatewayFromNode, splits, ipfsGatewayUrl, e_1, _d, fallbackGateways_1, gatewayUrl;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:_init");
+                        fallbackGateways = lodash_1.default.shuffle(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
                         if (!this.dataPath) return [3 /*break*/, 2];
                         return [4 /*yield*/, (0, util_1.mkdir)(this.dataPath, { recursive: true })];
                     case 1:
-                        _a.sent();
-                        _a.label = 2;
+                        _e.sent();
+                        _e.label = 2;
                     case 2:
-                        if (!options["ipfsGatewayUrl"]) return [3 /*break*/, 3];
-                        this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
-                        return [3 /*break*/, 6];
+                        this.clients.ipfsGateways = {};
+                        if (!options.ipfsGatewayUrls) return [3 /*break*/, 3];
+                        for (_i = 0, _a = options.ipfsGatewayUrls; _i < _a.length; _i++) {
+                            gatewayUrl = _a[_i];
+                            this.clients.ipfsGateways[gatewayUrl] = {};
+                        }
+                        return [3 /*break*/, 11];
                     case 3:
-                        _a.trys.push([3, 5, , 6]);
-                        return [4 /*yield*/, this.ipfsClient.config.get("Addresses.Gateway")];
+                        if (!this.clients.ipfsClients) return [3 /*break*/, 10];
+                        _b = 0, _c = Object.values(this.clients.ipfsClients);
+                        _e.label = 4;
                     case 4:
-                        gatewayFromNode = _a.sent();
+                        if (!(_b < _c.length)) return [3 /*break*/, 9];
+                        ipfsClient = _c[_b];
+                        _e.label = 5;
+                    case 5:
+                        _e.trys.push([5, 7, , 8]);
+                        return [4 /*yield*/, ipfsClient._client.config.get("Addresses.Gateway")];
+                    case 6:
+                        gatewayFromNode = _e.sent();
                         if (Array.isArray(gatewayFromNode))
                             gatewayFromNode = gatewayFromNode[0];
                         splits = gatewayFromNode.toString().split("/");
-                        this.ipfsGatewayUrl = "http://".concat(splits[2], ":").concat(splits[4]);
-                        log.trace("plebbit.ipfsGatewayUrl retrieved from IPFS node: ".concat(this.ipfsGatewayUrl));
-                        return [3 /*break*/, 6];
-                    case 5:
-                        e_1 = _a.sent();
-                        this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
-                        log("Failed to retrieve gateway url from ipfs node, will default to ".concat(this.ipfsGatewayUrl));
-                        return [3 /*break*/, 6];
-                    case 6: return [2 /*return*/];
+                        ipfsGatewayUrl = "http://".concat(splits[2], ":").concat(splits[4]);
+                        log.trace("plebbit.ipfsGatewayUrl (".concat(ipfsGatewayUrl, ") retrieved from IPFS node (").concat(ipfsClient._clientOptions.url, ")"));
+                        this.clients.ipfsGateways[ipfsGatewayUrl] = {};
+                        return [3 /*break*/, 8];
+                    case 7:
+                        e_1 = _e.sent();
+                        log("Failed to retrieve gateway url from ipfs node (".concat(ipfsClient._clientOptions.url, ")"));
+                        return [3 /*break*/, 8];
+                    case 8:
+                        _b++;
+                        return [3 /*break*/, 4];
+                    case 9: return [3 /*break*/, 11];
+                    case 10:
+                        for (_d = 0, fallbackGateways_1 = fallbackGateways; _d < fallbackGateways_1.length; _d++) {
+                            gatewayUrl = fallbackGateways_1[_d];
+                            this.clients.ipfsGateways[gatewayUrl] = {};
+                        }
+                        _e.label = 11;
+                    case 11:
+                        // Init cache
+                        this._cache = new cache_1.default(this);
+                        return [4 /*yield*/, this._cache.init()];
+                    case 12:
+                        _e.sent();
+                        // Init stats
+                        this.stats = new stats_1.default({ _cache: this._cache, clients: this.clients });
+                        return [2 /*return*/];
                 }
             });
         });
@@ -447,6 +547,14 @@ var Plebbit = /** @class */ (function (_super) {
                 return [2 /*return*/, (0, util_2.fetchCid)(cid, this)];
             });
         });
+    };
+    Plebbit.prototype._defaultIpfsClient = function () {
+        if (!this.clients.ipfsClients)
+            return undefined;
+        return Object.values(this.clients.ipfsClients)[0];
+    };
+    Plebbit.prototype._defaultPubsubClient = function () {
+        return Object.values(this.clients.pubsubClients)[0];
     };
     return Plebbit;
 }(tiny_typed_emitter_1.TypedEmitter));

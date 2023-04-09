@@ -50,7 +50,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createMockSub = exports.waitTillCommentIsInParentPages = exports.findCommentInPage = exports.publishWithExpectedResult = exports.publishVote = exports.publishRandomPost = exports.publishRandomReply = exports.mockRemotePlebbit = exports.mockPlebbit = exports.startSubplebbits = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
+exports.createMockSub = exports.waitTillCommentIsInParentPages = exports.findCommentInPage = exports.publishWithExpectedResult = exports.publishVote = exports.publishRandomPost = exports.publishRandomReply = exports.mockGatewayPlebbit = exports.mockRemotePlebbit = exports.mockPlebbit = exports.startSubplebbits = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
 var util_1 = require("../util");
 var comment_1 = require("../comment");
 var index_1 = __importDefault(require("../index"));
@@ -468,8 +468,8 @@ function mockPlebbit(dataPath) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, (0, index_1.default)({
-                        ipfsHttpClientOptions: "http://localhost:15001/api/v0",
-                        pubsubHttpClientOptions: "http://localhost:15002/api/v0",
+                        ipfsHttpClientOptions: ["http://localhost:15001/api/v0"],
+                        pubsubHttpClientOptions: ["http://localhost:15002/api/v0"],
                         dataPath: dataPath
                     })];
                 case 1:
@@ -487,7 +487,7 @@ function mockPlebbit(dataPath) {
                             return [2 /*return*/];
                         });
                     }); };
-                    plebbit.pubsubIpfsClient = (0, mock_ipfs_client_1.create)();
+                    plebbit.clients.pubsubClients["http://localhost:15002/api/v0"]._client = (0, mock_ipfs_client_1.create)();
                     plebbit.on("error", function () { });
                     return [2 /*return*/, plebbit];
             }
@@ -510,6 +510,22 @@ function mockRemotePlebbit() {
     });
 }
 exports.mockRemotePlebbit = mockRemotePlebbit;
+function mockGatewayPlebbit() {
+    return __awaiter(this, void 0, void 0, function () {
+        var plebbit;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, mockRemotePlebbit()];
+                case 1:
+                    plebbit = _a.sent();
+                    delete plebbit.clients.ipfsClients;
+                    delete plebbit.ipfsHttpClientOptions;
+                    return [2 /*return*/, plebbit];
+            }
+        });
+    });
+}
+exports.mockGatewayPlebbit = mockGatewayPlebbit;
 function publishRandomReply(parentComment, plebbit, commentProps, verifyCommentPropsInParentPages) {
     if (verifyCommentPropsInParentPages === void 0) { verifyCommentPropsInParentPages = true; }
     return __awaiter(this, void 0, void 0, function () {

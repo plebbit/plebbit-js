@@ -97,6 +97,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private _mergeInstanceStateWithDbState;
     private _switchDbIfNeeded;
     private _updateCommentsThatNeedToBeUpdated;
+    private _checkLockFreshness;
     private syncIpnsWithDb;
     private _updateDbInternalState;
     private _syncLoop;
