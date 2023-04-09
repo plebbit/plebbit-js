@@ -1610,25 +1610,6 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Subplebbit.prototype._checkLockFreshness = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var _a, _b, _c, _d;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
-                    case 0:
-                        _b = (_a = assert_1.default).equal;
-                        return [4 /*yield*/, this.dbHandler.isSubStartLocked()];
-                    case 1:
-                        _b.apply(_a, [_e.sent(), true, "Lock file has not been updated"]);
-                        _d = (_c = assert_1.default).equal;
-                        return [4 /*yield*/, this.dbHandler.isSubStartLocked(this.address)];
-                    case 2:
-                        _d.apply(_c, [_e.sent(), true, "Lock file has not been updated"]);
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
     Subplebbit.prototype.syncIpnsWithDb = function () {
         return __awaiter(this, void 0, void 0, function () {
             var log, _a, e_3;
@@ -1639,37 +1620,34 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this._switchDbIfNeeded()];
                     case 1:
                         _b.sent();
-                        return [4 /*yield*/, this._checkLockFreshness()];
+                        _b.label = 2;
                     case 2:
-                        _b.sent();
-                        _b.label = 3;
-                    case 3:
-                        _b.trys.push([3, 9, , 10]);
+                        _b.trys.push([2, 8, , 9]);
                         return [4 /*yield*/, this._mergeInstanceStateWithDbState({})];
-                    case 4:
+                    case 3:
                         _b.sent();
                         _a = this;
                         return [4 /*yield*/, this.plebbit._defaultIpfsClient()._client.key.list()];
-                    case 5:
+                    case 4:
                         _a._ipfsNodeIpnsKeyNames = (_b.sent()).map(function (key) { return key.name; });
                         return [4 /*yield*/, this._listenToIncomingRequests()];
-                    case 6:
+                    case 5:
                         _b.sent();
                         this._setStartedState("publishing-ipns");
                         return [4 /*yield*/, this._updateCommentsThatNeedToBeUpdated()];
-                    case 7:
+                    case 6:
                         _b.sent();
                         return [4 /*yield*/, this.updateSubplebbitIpnsIfNeeded()];
-                    case 8:
+                    case 7:
                         _b.sent();
                         this._setStartedState("succeeded");
-                        return [3 /*break*/, 10];
-                    case 9:
+                        return [3 /*break*/, 9];
+                    case 8:
                         e_3 = _b.sent();
                         this._setStartedState("failed");
                         log.error("Failed to sync due to error,", e_3);
-                        return [3 /*break*/, 10];
-                    case 10: return [2 /*return*/];
+                        return [3 /*break*/, 9];
+                    case 9: return [2 /*return*/];
                 }
             });
         });

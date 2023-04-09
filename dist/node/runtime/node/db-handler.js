@@ -1369,7 +1369,7 @@ var DbHandler = /** @class */ (function () {
             return __generator(this, function (_a) {
                 lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".start.lock"));
                 subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-                return [2 /*return*/, lockfile.check(subDbPath, { lockfilePath: lockfilePath, realpath: false })];
+                return [2 /*return*/, lockfile.check(subDbPath, { lockfilePath: lockfilePath, realpath: false, stale: 30000 })];
             });
         });
     };
