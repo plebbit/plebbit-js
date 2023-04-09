@@ -14,8 +14,8 @@ describe("plebbit", () => {
     });
 
     it("has default plebbit options", async () => {
-        expect(plebbit.ipfsGatewayUrl).to.equal("https://cloudflare-ipfs.com");
-        expect(plebbit.pubsubHttpClientOptions.url).to.equal("https://pubsubprovider.xyz/api/v0");
+        expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://cloudflare-ipfs.com", "https://ipfs.io"].sort());
+        expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
         expect(plebbit.dataPath).to.match(/\.plebbit$/);
     });
 

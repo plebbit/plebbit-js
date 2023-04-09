@@ -14,6 +14,7 @@ export enum messages {
     // Plebbit errors
     ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS = "missing nativeFunctions required to create a subplebbit",
     ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE = "Can't run a subplebbit with plebbit.ipfsHttpClientOptions undefined",
+    ERR_PLEBBIT_OPTION_NOT_ACCEPTED = "Option is not accepted on Plebbit constructor",
 
     // Fetch errors
     ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY = "Failed to fetch IPFS file via gateway",

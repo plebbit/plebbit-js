@@ -7,46 +7,44 @@ import lodash from "lodash";
 import { throwWithErrorCode } from "./util";
 
 export class Resolver {
-    chainProviders: { [chainTicker: string]: ChainProvider };
     private cachedChainProviders: { [chainTicker: string]: ethers.providers.BaseProvider };
-    private plebbit: Pick<Plebbit, "_memCache" | "resolveAuthorAddresses" | "emit">;
+    private plebbit: Pick<Plebbit, "_memCache" | "resolveAuthorAddresses" | "emit" | "chainProviders">;
 
-    constructor(options: { plebbit: Resolver["plebbit"]; chainProviders: { [chainTicker: string]: ChainProvider } }) {
-        this.chainProviders = options.chainProviders;
+    constructor(plebbit: Resolver["plebbit"]) {
         this.cachedChainProviders = {};
-        this.plebbit = options.plebbit;
+        this.plebbit = plebbit;
     }
 
     toJSON() {
-        return { chainProviders: this.chainProviders };
+        return undefined;
     }
 
     toString() {
-        return JSON.stringify(this.toJSON());
+        return undefined;
     }
 
     // cache the chain providers because only 1 should be running at the same time
     _getChainProvider(chainTicker: string) {
         assert(chainTicker && typeof chainTicker === "string", `invalid chainTicker '${chainTicker}'`);
-        assert(this.chainProviders, `invalid chainProviders '${this.chainProviders}'`);
+        assert(this.plebbit.chainProviders, `invalid chainProviders '${this.plebbit.chainProviders}'`);
         if (this.cachedChainProviders[chainTicker]) {
             return this.cachedChainProviders[chainTicker];
         }
         if (chainTicker === "eth") {
             // if using eth, use ethers' default provider unless another provider is specified
-            if (!this.chainProviders["eth"] || this.chainProviders["eth"]?.url?.match(/DefaultProvider/i)) {
+            if (!this.plebbit.chainProviders["eth"] || this.plebbit.chainProviders["eth"]?.[0]?.url?.match(/DefaultProvider/i)) {
                 this.cachedChainProviders["eth"] = ethers.getDefaultProvider();
                 return this.cachedChainProviders["eth"];
             }
         }
-        if (this.chainProviders[chainTicker]) {
+        if (this.plebbit.chainProviders[chainTicker]) {
             this.cachedChainProviders[chainTicker] = new ethers.providers.JsonRpcProvider(
-                { url: this.chainProviders[chainTicker].url },
-                this.chainProviders[chainTicker].chainId
+                { url: this.plebbit.chainProviders[chainTicker][0].url },
+                this.plebbit.chainProviders[chainTicker].chainId
             );
             return this.cachedChainProviders[chainTicker];
         }
-        throwWithErrorCode("ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER", { chainTicker });
+        throwWithErrorCode("ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER", { chainTicker, chainProviders: this.plebbit.chainProviders });
     }
 
     async _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string> {

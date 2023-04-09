@@ -46,37 +46,36 @@ var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var lodash_1 = __importDefault(require("lodash"));
 var util_1 = require("./util");
 var Resolver = /** @class */ (function () {
-    function Resolver(options) {
-        this.chainProviders = options.chainProviders;
+    function Resolver(plebbit) {
         this.cachedChainProviders = {};
-        this.plebbit = options.plebbit;
+        this.plebbit = plebbit;
     }
     Resolver.prototype.toJSON = function () {
-        return { chainProviders: this.chainProviders };
+        return undefined;
     };
     Resolver.prototype.toString = function () {
-        return JSON.stringify(this.toJSON());
+        return undefined;
     };
     // cache the chain providers because only 1 should be running at the same time
     Resolver.prototype._getChainProvider = function (chainTicker) {
-        var _a, _b;
+        var _a, _b, _c;
         (0, assert_1.default)(chainTicker && typeof chainTicker === "string", "invalid chainTicker '".concat(chainTicker, "'"));
-        (0, assert_1.default)(this.chainProviders, "invalid chainProviders '".concat(this.chainProviders, "'"));
+        (0, assert_1.default)(this.plebbit.chainProviders, "invalid chainProviders '".concat(this.plebbit.chainProviders, "'"));
         if (this.cachedChainProviders[chainTicker]) {
             return this.cachedChainProviders[chainTicker];
         }
         if (chainTicker === "eth") {
             // if using eth, use ethers' default provider unless another provider is specified
-            if (!this.chainProviders["eth"] || ((_b = (_a = this.chainProviders["eth"]) === null || _a === void 0 ? void 0 : _a.url) === null || _b === void 0 ? void 0 : _b.match(/DefaultProvider/i))) {
+            if (!this.plebbit.chainProviders["eth"] || ((_c = (_b = (_a = this.plebbit.chainProviders["eth"]) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.url) === null || _c === void 0 ? void 0 : _c.match(/DefaultProvider/i))) {
                 this.cachedChainProviders["eth"] = ethers_1.ethers.getDefaultProvider();
                 return this.cachedChainProviders["eth"];
             }
         }
-        if (this.chainProviders[chainTicker]) {
-            this.cachedChainProviders[chainTicker] = new ethers_1.ethers.providers.JsonRpcProvider({ url: this.chainProviders[chainTicker].url }, this.chainProviders[chainTicker].chainId);
+        if (this.plebbit.chainProviders[chainTicker]) {
+            this.cachedChainProviders[chainTicker] = new ethers_1.ethers.providers.JsonRpcProvider({ url: this.plebbit.chainProviders[chainTicker][0].url }, this.plebbit.chainProviders[chainTicker].chainId);
             return this.cachedChainProviders[chainTicker];
         }
-        (0, util_1.throwWithErrorCode)("ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER", { chainTicker: chainTicker });
+        (0, util_1.throwWithErrorCode)("ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER", { chainTicker: chainTicker, chainProviders: this.plebbit.chainProviders });
     };
     Resolver.prototype._resolveEnsTxtRecord = function (ensName, txtRecordName) {
         return __awaiter(this, void 0, void 0, function () {

@@ -1,4 +1,5 @@
 import {
+    CacheInterface,
     ChainProvider,
     CommentEditType,
     CommentIpfsType,
@@ -10,10 +11,12 @@ import {
     CreatePublicationOptions,
     CreateSubplebbitOptions,
     CreateVoteOptions,
-    NativeFunctions,
+    GatewayClient,
+    IpfsClient,
     PlebbitEvents,
     PlebbitOptions,
     PostType,
+    PubsubClient,
     SubplebbitIpfsType,
     SubplebbitType,
     VotePubsubMessage,
@@ -35,87 +38,156 @@ import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
 import lodash from "lodash";
 import { signComment, signCommentEdit, signVote } from "./signer/signatures";
-import { Options } from "ipfs-http-client";
+import { Options as IpfsHttpClientOptions } from "ipfs-http-client";
 import { Buffer } from "buffer";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions, SignerType } from "./signer/constants";
+import Stats from "./stats";
+import Cache from "./runtime/node/cache";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
-    ipfsClient?: ReturnType<NativeFunctions["createIpfsClient"]>;
-    pubsubIpfsClient: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">;
+    clients: {
+        ipfsGateways: { [ipfsGatewayUrl: string]: GatewayClient };
+        ipfsClients: { [ipfsClientUrl: string]: IpfsClient };
+        pubsubClients: { [pubsubClientUrl: string]: PubsubClient };
+        chainProviders: { [chainProviderUrl: string]: ChainProvider };
+    };
     resolver: Resolver;
     _memCache: TinyCache;
-    ipfsGatewayUrl: string;
-    ipfsHttpClientOptions?: Options;
-    pubsubHttpClientOptions: Options;
+    ipfsHttpClientOptions?: IpfsHttpClientOptions[];
+    pubsubHttpClientOptions: IpfsHttpClientOptions[];
     dataPath?: string;
-    chainProviders?: { [chainTicker: string]: ChainProvider };
     resolveAuthorAddresses?: boolean;
+    chainProviders: { [chainTicker: string]: ChainProvider };
+    _cache: CacheInterface;
+    stats: Stats;
 
     constructor(options: PlebbitOptions = {}) {
         super();
+        const acceptedOptions: (keyof PlebbitOptions)[] = [
+            "chainProviders",
+            "dataPath",
+            "ipfsGatewayUrls",
+            "ipfsHttpClientOptions",
+            "pubsubHttpClientOptions",
+            "resolveAuthorAddresses"
+        ];
+        for (const option of Object.keys(options))
+            if (!acceptedOptions.includes(<keyof PlebbitOptions>option)) throwWithErrorCode("ERR_PLEBBIT_OPTION_NOT_ACCEPTED", { option });
+
+        //@ts-expect-error
+        this.clients = {};
         this.ipfsHttpClientOptions =
-            typeof options.ipfsHttpClientOptions === "string"
-                ? this._parseUrlToOption(options.ipfsHttpClientOptions)
-                : options.ipfsHttpClientOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        this.ipfsClient = this.ipfsHttpClientOptions ? nativeFunctions.createIpfsClient(this.ipfsHttpClientOptions) : undefined;
+            Array.isArray(options.ipfsHttpClientOptions) && typeof options.ipfsHttpClientOptions[0] === "string"
+                ? this._parseUrlToOption(<string[]>options.ipfsHttpClientOptions)
+                : <IpfsHttpClientOptions[] | undefined>options.ipfsHttpClientOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
 
         this.pubsubHttpClientOptions =
-            typeof options.pubsubHttpClientOptions === "string"
-                ? this._parseUrlToOption(options.pubsubHttpClientOptions)
-                : options.pubsubHttpClientOptions || { url: "https://pubsubprovider.xyz/api/v0" };
-        this.pubsubIpfsClient = options.pubsubHttpClientOptions
-            ? nativeFunctions.createIpfsClient(this.pubsubHttpClientOptions)
-            : this.ipfsClient
-            ? this.ipfsClient
-            : nativeFunctions.createIpfsClient(this.pubsubHttpClientOptions);
+            Array.isArray(options.pubsubHttpClientOptions) && typeof options.pubsubHttpClientOptions[0] === "string"
+                ? this._parseUrlToOption(<string[]>options.pubsubHttpClientOptions)
+                : <IpfsHttpClientOptions[]>options.pubsubHttpClientOptions ||
+                  this.ipfsHttpClientOptions || [{ url: "https://pubsubprovider.xyz/api/v0" }];
+
+        this._initIpfsClients();
+        this._initPubsubClients();
+        this._initResolver(options);
+
+        this.dataPath = options.dataPath || getDefaultDataPath();
+    }
+
+    private _initIpfsClients() {
+        if (!this.ipfsHttpClientOptions) return;
+        this.clients.ipfsClients = {};
+        for (const clientOptions of this.ipfsHttpClientOptions) {
+            const ipfsClient = nativeFunctions.createIpfsClient(clientOptions);
+            this.clients.ipfsClients[<string>clientOptions.url] = {
+                _client: ipfsClient,
+                _clientOptions: clientOptions,
+                peers: ipfsClient.swarm.peers
+            };
+        }
+    }
+
+    private _initPubsubClients() {
+        this.clients.pubsubClients = {};
+        for (const clientOptions of this.pubsubHttpClientOptions) {
+            const ipfsClient =
+                this.clients.ipfsClients?.[<string>clientOptions.url]?._client || nativeFunctions.createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs
+            this.clients.pubsubClients[<string>clientOptions.url] = {
+                _client: ipfsClient,
+                _clientOptions: clientOptions,
+                peers: async () => {
+                    const topics = await ipfsClient.pubsub.ls();
+                    return lodash.uniq(lodash.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic)))));
+                }
+            };
+        }
+    }
+
+    private _initResolver(options: PlebbitOptions) {
         this.chainProviders = options.chainProviders || {
             avax: {
-                url: "https://api.avax.network/ext/bc/C/rpc",
+                url: ["https://api.avax.network/ext/bc/C/rpc"],
                 chainId: 43114
             },
             matic: {
-                url: "https://polygon-rpc.com",
+                url: ["https://polygon-rpc.com"],
                 chainId: 137
             }
         };
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         this._memCache = new TinyCache();
         this.resolver = new Resolver({
-            plebbit: { _memCache: this._memCache, resolveAuthorAddresses: this.resolveAuthorAddresses, emit: this.emit.bind(this) },
+            _memCache: this._memCache,
+            resolveAuthorAddresses: this.resolveAuthorAddresses,
+            emit: this.emit.bind(this),
             chainProviders: this.chainProviders
         });
-        this.dataPath = options.dataPath || getDefaultDataPath();
     }
 
-    private _parseUrlToOption(urlString: string): { url: string; headers: Options["headers"] } {
-        const url = new URL(urlString);
-        const authorization =
-            url.username && url.password ? "Basic " + Buffer.from(`${url.username}:${url.password}`).toString("base64") : undefined;
-        return {
-            url: authorization ? url.origin + url.pathname : urlString,
-            ...(authorization ? { headers: { authorization, origin: "http://localhost" } } : undefined)
-        };
+    private _parseUrlToOption(urlStrings: string[]): IpfsHttpClientOptions[] {
+        const parsed = [];
+        for (const urlString of urlStrings) {
+            const url = new URL(urlString);
+            const authorization =
+                url.username && url.password ? "Basic " + Buffer.from(`${url.username}:${url.password}`).toString("base64") : undefined;
+            parsed.push({
+                url: authorization ? url.origin + url.pathname : urlString,
+                ...(authorization ? { headers: { authorization, origin: "http://localhost" } } : undefined)
+            });
+        }
+        return parsed;
     }
 
     async _init(options: PlebbitOptions) {
         const log = Logger("plebbit-js:plebbit:_init");
 
+        // If user did not provide ipfsGatewayUrls
+        const fallbackGateways = lodash.shuffle(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
         if (this.dataPath) await mkdir(this.dataPath, { recursive: true });
-        if (options["ipfsGatewayUrl"]) this.ipfsGatewayUrl = options["ipfsGatewayUrl"];
-        else {
-            try {
-                let gatewayFromNode = await this.ipfsClient.config.get("Addresses.Gateway");
-                if (Array.isArray(gatewayFromNode)) gatewayFromNode = gatewayFromNode[0];
-
-                const splits = gatewayFromNode.toString().split("/");
-                this.ipfsGatewayUrl = `http://${splits[2]}:${splits[4]}`;
-                log.trace(`plebbit.ipfsGatewayUrl retrieved from IPFS node: ${this.ipfsGatewayUrl}`);
-            } catch (e) {
-                this.ipfsGatewayUrl = "https://cloudflare-ipfs.com";
-                log(`Failed to retrieve gateway url from ipfs node, will default to ${this.ipfsGatewayUrl}`);
+        this.clients.ipfsGateways = {};
+        if (options.ipfsGatewayUrls) for (const gatewayUrl of options.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
+        else if (this.clients.ipfsClients) {
+            for (const ipfsClient of Object.values(this.clients.ipfsClients)) {
+                try {
+                    let gatewayFromNode = await ipfsClient._client.config.get("Addresses.Gateway");
+                    if (Array.isArray(gatewayFromNode)) gatewayFromNode = gatewayFromNode[0];
+                    const splits = gatewayFromNode.toString().split("/");
+                    const ipfsGatewayUrl = `http://${splits[2]}:${splits[4]}`;
+                    log.trace(`plebbit.ipfsGatewayUrl (${ipfsGatewayUrl}) retrieved from IPFS node (${ipfsClient._clientOptions.url})`);
+                    this.clients.ipfsGateways[ipfsGatewayUrl] = {};
+                } catch (e) {
+                    log(`Failed to retrieve gateway url from ipfs node (${ipfsClient._clientOptions.url})`);
+                }
             }
-        }
+        } else for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
+
+        // Init cache
+        this._cache = new Cache(this);
+        await this._cache.init();
+
+        // Init stats
+        this.stats = new Stats({ _cache: this._cache, clients: this.clients });
     }
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
@@ -281,5 +353,14 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async fetchCid(cid: string) {
         return fetchCid(cid, this);
+    }
+
+    _defaultIpfsClient(): IpfsClient {
+        if (!this.clients.ipfsClients) return undefined;
+        return Object.values(this.clients.ipfsClients)[0];
+    }
+
+    _defaultPubsubClient(): PubsubClient {
+        return Object.values(this.clients.pubsubClients)[0];
     }
 }

@@ -46,7 +46,7 @@ describe(`verify pages`, async () => {
         );
         expect(commentWithDomainAddressIndex).to.be.greaterThanOrEqual(0);
 
-        const tempPlebbit = await Plebbit(plebbit);
+        const tempPlebbit = await mockPlebbit();
 
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === invalidPage.comments[commentWithDomainAddressIndex].comment.author.address

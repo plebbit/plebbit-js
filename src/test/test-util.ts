@@ -276,8 +276,8 @@ export async function startSubplebbits(props: {
 
 export async function mockPlebbit(dataPath?: string) {
     const plebbit = await PlebbitIndex({
-        ipfsHttpClientOptions: "http://localhost:15001/api/v0",
-        pubsubHttpClientOptions: `http://localhost:15002/api/v0`,
+        ipfsHttpClientOptions: ["http://localhost:15001/api/v0"],
+        pubsubHttpClientOptions: [`http://localhost:15002/api/v0`],
         dataPath
     });
 
@@ -290,7 +290,7 @@ export async function mockPlebbit(dataPath?: string) {
         else if (textRecord === "subplebbit-address") throw Error(`${ensName} has no subplebbit-address`);
     };
 
-    plebbit.pubsubIpfsClient = createMockIpfsClient();
+    plebbit.clients.pubsubClients["http://localhost:15002/api/v0"]._client = createMockIpfsClient();
     plebbit.on("error", () => {});
     return plebbit;
 }
@@ -298,6 +298,14 @@ export async function mockPlebbit(dataPath?: string) {
 export async function mockRemotePlebbit() {
     const plebbit = await mockPlebbit();
     plebbit._canRunSub = () => false;
+    return plebbit;
+}
+
+export async function mockGatewayPlebbit() {
+    // Keep only pubsub and gateway
+    const plebbit = await mockRemotePlebbit();
+    delete plebbit.clients.ipfsClients;
+    delete plebbit.ipfsHttpClientOptions;
     return plebbit;
 }
 

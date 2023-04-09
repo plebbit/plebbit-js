@@ -204,7 +204,9 @@ var Publication = /** @class */ (function (_super) {
                         _e.label = 9;
                     case 9:
                         this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication }), this instanceof comment_1.Comment && decryptedPublication ? this : undefined);
-                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
+                        return [4 /*yield*/, this.plebbit
+                                ._defaultPubsubClient()
+                                ._client.pubsub.unsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
                     case 10:
                         _e.sent();
                         _e.label = 11;
@@ -244,7 +246,9 @@ var Publication = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signatures_1.signChallengeAnswer)(toSignAnswer, this.pubsubMessageSigner)];
                     case 2:
                         _a._challengeAnswer = new (_b.apply(challenge_1.ChallengeAnswerMessage, [void 0, __assign.apply(void 0, _c.concat([(_d.signature = _e.sent(), _d)]))]))();
-                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.publish(this._pubsubTopicWithfallback(), (0, from_string_1.fromString)(JSON.stringify(this._challengeAnswer)))];
+                        return [4 /*yield*/, this.plebbit
+                                ._defaultPubsubClient()
+                                ._client.pubsub.publish(this._pubsubTopicWithfallback(), (0, from_string_1.fromString)(JSON.stringify(this._challengeAnswer)))];
                     case 3:
                         _e.sent();
                         this._updatePublishingState("waiting-challenge-verification");
@@ -297,7 +301,7 @@ var Publication = /** @class */ (function (_super) {
             }
         }).bind(this);
         // insert condition here
-        if (this.plebbit.ipfsClient)
+        if (this.plebbit._defaultIpfsClient())
             this.plebbit.on("resolvedipns", fetchingSubIpfs);
     };
     Publication.prototype._pubsubTopicWithfallback = function () {
@@ -322,7 +326,7 @@ var Publication = /** @class */ (function (_super) {
                         _a.subplebbit = _g.sent();
                         this._updatePublishingState("publishing-challenge-request");
                         this._validateSubFields();
-                        return [4 /*yield*/, this.plebbit.pubsubIpfsClient.pubsub.unsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
+                        return [4 /*yield*/, this.plebbit._defaultPubsubClient()._client.pubsub.unsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
                     case 2:
                         _g.sent();
                         _b = this;
@@ -350,8 +354,10 @@ var Publication = /** @class */ (function (_super) {
                         _c._challengeRequest = new (_d.apply(challenge_1.ChallengeRequestMessage, [void 0, __assign.apply(void 0, _e.concat([(_f.signature = _g.sent(), _f)]))]))();
                         log.trace("Attempting to publish ".concat(this.getType(), " with options"), options);
                         return [4 /*yield*/, Promise.all([
-                                this.plebbit.pubsubIpfsClient.pubsub.publish(this._pubsubTopicWithfallback(), (0, from_string_1.fromString)(JSON.stringify(this._challengeRequest))),
-                                this.plebbit.pubsubIpfsClient.pubsub.subscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)
+                                this.plebbit
+                                    ._defaultPubsubClient()
+                                    ._client.pubsub.publish(this._pubsubTopicWithfallback(), (0, from_string_1.fromString)(JSON.stringify(this._challengeRequest))),
+                                this.plebbit._defaultPubsubClient()._client.pubsub.subscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)
                             ])];
                     case 6:
                         _g.sent();

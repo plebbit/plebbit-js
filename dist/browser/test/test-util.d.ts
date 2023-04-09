@@ -20,6 +20,7 @@ export declare function startSubplebbits(props: {
 }): Promise<void>;
 export declare function mockPlebbit(dataPath?: string): Promise<Plebbit>;
 export declare function mockRemotePlebbit(): Promise<Plebbit>;
+export declare function mockGatewayPlebbit(): Promise<Plebbit>;
 export declare function publishRandomReply(parentComment: Comment, plebbit: Plebbit, commentProps: Partial<CreateCommentOptions>, verifyCommentPropsInParentPages?: boolean): Promise<Comment>;
 export declare function publishRandomPost(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<PostType>, verifyCommentPropsInParentPages?: boolean): Promise<Post>;
 export declare function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbit: Plebbit, voteProps?: Partial<VoteType>): Promise<Vote>;

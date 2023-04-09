@@ -17,6 +17,7 @@ import lodash from "lodash";
 import assert from "assert";
 import { Pages } from "./pages";
 import { PlebbitError } from "./plebbit-error";
+import pLimit from "p-limit";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -73,17 +74,57 @@ async function fetchWithLimit(url: string, options?): Promise<string> {
     }
 }
 
+function _firstResolve(promises: Promise<string>[]): Promise<string> {
+    return new Promise((resolve) => promises.forEach((promise) => promise.then(resolve)));
+}
+
+async function fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string }, plebbit: Plebbit): Promise<string> {
+    assert(loadOpts.cid || loadOpts.ipns);
+
+    const path = loadOpts.cid ? `/ipfs/${loadOpts.cid}` : `/ipns/${loadOpts.ipns}`;
+
+    const errors = [];
+
+    const type = loadOpts.cid ? "cid" : "ipns";
+
+    const fetchWithGateway = async (gateway: string) => {
+        const url = `${gateway}${path}`;
+        const timeBefore = Date.now();
+        try {
+            const resText = await fetchWithLimit(url, { cache: loadOpts.cid ? "force-cache" : "no-store" });
+            const timeElapsedMs = Date.now() - timeBefore;
+            await plebbit.stats.recordGatewaySuccess(gateway, type, timeElapsedMs);
+            return resText;
+        } catch (e) {
+            await plebbit.stats.recordGatewayFailure(gateway, type);
+            errors.push(e);
+            throw e;
+        }
+    };
+
+    // TODO test potential errors here
+    const queueLimit = pLimit(3);
+
+    // Will be likely 5 promises, p-limit will limit to 3
+    const gatewayFetches = (await plebbit.stats.sortGatewaysAccordingToScore(type)).map((gateway) =>
+        queueLimit(() => fetchWithGateway(gateway))
+    );
+    const res = await Promise.race([_firstResolve(gatewayFetches), Promise.allSettled(gatewayFetches)]);
+    if (typeof res === "string") return res;
+    else throw errors[0];
+}
+
 export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { length: DOWNLOAD_LIMIT_BYTES }): Promise<string> {
     if (!isIPFS.cid(cid) && isIPFS.path(cid)) cid = cid.split("/")[2];
     if (!isIPFS.cid(cid)) throwWithErrorCode("ERR_CID_IS_INVALID", `fetchCid: (${cid}) is invalid as a CID`);
     let fileContent: string | undefined;
-    if (!plebbit.ipfsClient) {
-        const url = `${plebbit.ipfsGatewayUrl}/ipfs/${cid}`;
-        fileContent = await fetchWithLimit(url, { headers: plebbit.ipfsHttpClientOptions?.headers, cache: "force-cache" });
+    const ipfsClient = plebbit._defaultIpfsClient();
+    if (!ipfsClient) {
+        fileContent = await fetchFromMultipleGateways({ cid }, plebbit);
     } else {
         let error;
         try {
-            fileContent = await plebbit.ipfsClient.cat(cid, catOptions); // Limit is 1mb files
+            fileContent = await ipfsClient._client.cat(cid, catOptions); // Limit is 1mb files
         } catch (e) {
             error = e;
         }
@@ -106,19 +147,15 @@ export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit) {
 
 export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit, callbackAfterResolve?: (ipns: string, cid: string) => void) {
     if (typeof ipns !== "string") throwWithErrorCode("ERR_IPNS_IS_INVALID", { ipns });
-    if (!plebbit.ipfsClient) {
-        const url = `${plebbit.ipfsGatewayUrl}/ipns/${ipns}`;
-        const resText = await fetchWithLimit(url, {
-            headers: plebbit.ipfsHttpClientOptions?.headers,
-            cache: "no-store",
-            size: DOWNLOAD_LIMIT_BYTES
-        });
+    const ipfsClient = plebbit._defaultIpfsClient();
+    if (!ipfsClient) {
+        const resText = await fetchFromMultipleGateways({ ipns }, plebbit);
         plebbit.emit("fetchedipns", ipns, resText);
         return JSON.parse(resText);
     } else {
         let cid: string | undefined, error;
         try {
-            cid = await plebbit.ipfsClient.name.resolve(ipns);
+            cid = await ipfsClient._client.name.resolve(ipns);
         } catch (e) {
             error = e;
         }

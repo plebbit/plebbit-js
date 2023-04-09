@@ -85,7 +85,7 @@ export class SortHandler {
         );
         for (let i = chunksWithReplies.length - 1; i >= 0; i--) {
             const pageIpfs: PageIpfs = removeNullAndUndefinedValuesRecursively({ nextCid: cids[i + 1], comments: chunksWithReplies[i] });
-            cids[i] = (await this.subplebbit.plebbit.ipfsClient.add(JSON.stringify(pageIpfs))).path;
+            cids[i] = (await this.subplebbit.plebbit._defaultIpfsClient()._client.add(JSON.stringify(pageIpfs))).path;
             listOfPage[i] = pageIpfs;
         }
 

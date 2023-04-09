@@ -1,4 +1,5 @@
-import { CID, IPFSHTTPClient, Options } from "ipfs-http-client";
+import { CID, IPFSHTTPClient, Options as IpfsHttpClientOptions } from "ipfs-http-client";
+import { PeersResult } from "ipfs-core-types/src/swarm/index";
 import { DbHandler } from "./runtime/node/db-handler";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
@@ -19,11 +20,11 @@ import { PlebbitError } from "./plebbit-error";
 
 export type ProtocolVersion = "1.0.0";
 
-export type ChainProvider = { url: string; chainId: number };
+export type ChainProvider = { url: string[]; chainId: number };
 export interface PlebbitOptions {
-    ipfsGatewayUrl?: string;
-    ipfsHttpClientOptions?: Options | string;
-    pubsubHttpClientOptions?: Options | string;
+    ipfsGatewayUrls?: string[];
+    ipfsHttpClientOptions?: (IpfsHttpClientOptions | string)[];
+    pubsubHttpClientOptions?: (IpfsHttpClientOptions | string)[];
     dataPath?: string;
     chainProviders?: { [chainTicker: string]: ChainProvider };
     resolveAuthorAddresses?: boolean;
@@ -470,7 +471,7 @@ export type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHandler>>;
 export type IpfsHttpClientPublicAPI = {
     add: IPFSHTTPClient["add"];
     cat: (...p: Parameters<IPFSHTTPClient["cat"]>) => Promise<string | undefined>;
-    pubsub: Pick<IPFSHTTPClient["pubsub"], "subscribe" | "unsubscribe" | "publish" | "ls">;
+    pubsub: Pick<IPFSHTTPClient["pubsub"], "subscribe" | "unsubscribe" | "publish" | "ls" | "peers">;
     name: {
         resolve: (...p: Parameters<IPFSHTTPClient["name"]["resolve"]>) => Promise<string | undefined>;
         publish: IPFSHTTPClient["name"]["publish"];
@@ -479,12 +480,13 @@ export type IpfsHttpClientPublicAPI = {
     key: Pick<IPFSHTTPClient["key"], "list" | "rm">;
     pin: Pick<IPFSHTTPClient["pin"], "rm">;
     block: { rm: (...p: Parameters<IPFSHTTPClient["block"]["rm"]>) => Promise<{ cid: CID; error?: Error }[]> };
+    swarm: Pick<IPFSHTTPClient["swarm"], "peers">;
 };
 export type NativeFunctions = {
     listSubplebbits: (dataPath: string) => Promise<string[]>;
     createDbHandler: (subplebbit: DbHandler["_subplebbit"]) => DbHandlerPublicAPI;
     fetch: typeof fetch;
-    createIpfsClient: (options: Options) => IpfsHttpClientPublicAPI;
+    createIpfsClient: (options: IpfsHttpClientOptions) => IpfsHttpClientPublicAPI;
     createImageCaptcha: (...p: Parameters<typeof createCaptcha>) => Promise<{ image: string; text: string }>;
     // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
     importSignerIntoIpfsNode: (ipnsKeyName: string, ipfsKey: Uint8Array, plebbit: Plebbit) => Promise<{ Id: string; Name: string }>;
@@ -631,4 +633,81 @@ export interface PlebbitEvents {
     fetchedcid: (cid: string, content: string) => void; // Emitted when a CID is fetched with its file content
     fetchedipns: (ipns: string, content: string) => void; // Emitted when an IPNS is fetched with its file content
     error: (error: PlebbitError) => void;
+}
+
+// Plebbit types here
+
+export interface IpfsStats {
+    totalIn: number; // IPFS stats https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-stats-bw
+    totalOut: number;
+    rateIn: number;
+    rateOut: number;
+    succeededIpfsCount: number;
+    failedIpfsCount: number;
+    succeededIpfsAverageTime: number;
+    succeededIpfsMedianTime: number;
+    succeededIpnsCount: number;
+    failedIpnsCount: number;
+    succeededIpnsAverageTime: number;
+    succeededIpnsMedianTime: number;
+}
+
+export interface IpfsSubplebbitStats {
+    stats: IpfsStats;
+    sessionStats: IpfsStats; // session means in the last 1h
+}
+
+export interface PubsubStats {
+    totalIn: number; // IPFS stats https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-stats-bw
+    totalOut: number;
+    rateIn: number;
+    rateOut: number;
+    succeededChallengeRequestMessageCount: number;
+    failedChallengeRequestMessageCount: number;
+    succeededChallengeRequestMessageAverageTime: number;
+    succeededChallengeRequestMessageMedianTime: number;
+    succeededChallengeAnswerMessageCount: number;
+    failedChallengeAnswerMessageCount: number;
+    succeededChallengeAnswerMessageAverageTime: number;
+    succeededChallengeAnswerMessageMedianTime: number;
+}
+
+export interface PubsubSubplebbitStats {
+    stats: PubsubStats;
+    sessionStats: PubsubStats; // session means in the last 1h
+}
+
+export interface IpfsClient {
+    peers: () => Promise<PeersResult[]>; // https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
+    stats?: undefined; // Should be defined, will change later
+    sessionStats?: undefined; // Should be defined, will change later
+    subplebbitStats?: undefined; // Should be defined, will change later
+    _client: IpfsHttpClientPublicAPI; // Private API, shouldn't be used by consumers
+    _clientOptions: IpfsHttpClientOptions;
+}
+
+export interface PubsubClient {
+    peers: () => Promise<string[]>; // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-pubsub-peers
+    stats?: undefined; // Should be defined, will change later
+    sessionStats?: undefined; // Should be defined, will change later
+    subplebbitStats?: undefined; // Should be defined, will change later
+    _client: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">; // Private API, shouldn't be used by consumers
+    _clientOptions?: IpfsHttpClientOptions;
+}
+
+export interface GatewayClient {
+    stats?: IpfsStats; // Should be defined, will change later
+    sessionStats?: IpfsStats; // Should be defined, will change later. session means in the last 1h
+    subplebbitStats?: { [subplebbitAddress: string]: IpfsSubplebbitStats }; // Should be defined, will change later
+}
+
+// Cache interface, will be used to set up general cache using localforage (for browser) or key-v SQLite (Node)
+export interface CacheInterface {
+    init: () => Promise<void>;
+    getItem: (key: string) => Promise<any>;
+    setItem: (key: string, value: any) => Promise<void>;
+    removeItem: (key: string) => Promise<boolean>;
+    clear: () => Promise<void>;
+    keys: () => Promise<string[]>;
+
 }

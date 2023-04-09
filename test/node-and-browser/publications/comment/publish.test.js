@@ -8,7 +8,8 @@ const {
     publishRandomPost,
     mockPlebbit,
     publishVote,
-    findCommentInPage
+    findCommentInPage,
+    mockGatewayPlebbit
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 const chai = require("chai");
@@ -268,8 +269,7 @@ describe(`comment.publishingState`, async () => {
     });
 
     it(`publishing states is in correct order upon publishing a comment with gateway`, async () => {
-        const gatewayPlebbit = await mockPlebbit();
-        gatewayPlebbit.ipfsHttpClientOptions = gatewayPlebbit.ipfsClient = undefined;
+        const gatewayPlebbit = await mockGatewayPlebbit();
         const expectedStates = [
             "resolving-subplebbit-address",
             "fetching-subplebbit-ipns",

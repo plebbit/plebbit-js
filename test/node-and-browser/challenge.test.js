@@ -118,7 +118,7 @@ describe(`Validation of pubsub messages`, async () => {
 
     it(`Sub responds with error to a ChallengeRequest that can't be decrypted`, async () => {
         const tempPlebbit = await mockPlebbit();
-        tempPlebbit.pubsubIpfsClient.pubsub.publish = () => undefined;
+        tempPlebbit._defaultPubsubClient()._client.pubsub.publish = () => undefined;
         const comment = await generateMockPost(signers[0].address, tempPlebbit);
         await comment.publish(); // comment._challengeRequest should be defined now, although it hasn't been published
 
@@ -130,10 +130,9 @@ describe(`Validation of pubsub messages`, async () => {
 
         comment._challengeRequest.signature = await signChallengeRequest(comment._challengeRequest, comment.pubsubMessageSigner);
 
-        await plebbit.pubsubIpfsClient.pubsub.publish(
-            comment.subplebbit.pubsubTopic,
-            fromString(JSON.stringify(comment._challengeRequest))
-        );
+        await plebbit
+            ._defaultPubsubClient()
+            ._client.pubsub.publish(comment.subplebbit.pubsubTopic, fromString(JSON.stringify(comment._challengeRequest)));
 
         await new Promise((resolve) => {
             comment.once("challengeverification", (verificationMsg) => {
@@ -151,7 +150,7 @@ describe(`Validation of pubsub messages`, async () => {
         comment.removeAllListeners("challenge");
 
         comment.once("challenge", async (challengeMsg) => {
-            tempPlebbit.pubsubIpfsClient.pubsub.publish = () => undefined;
+            tempPlebbit._defaultPubsubClient()._client.pubsub.publish = () => undefined;
 
             await comment.publishChallengeAnswers([]);
             // comment._challengeAnswer should be defined now
@@ -161,21 +160,11 @@ describe(`Validation of pubsub messages`, async () => {
                 signers[5].publicKey // Use a public key that cannot be decrypted for the sub
             );
             comment._challengeAnswer.signature = await signChallengeAnswer(comment._challengeAnswer, comment.pubsubMessageSigner);
-            await plebbit.pubsubIpfsClient.pubsub.publish(
-                comment.subplebbit.pubsubTopic,
-                fromString(JSON.stringify(comment._challengeAnswer))
-            );
+            await plebbit
+                ._defaultPubsubClient()
+                ._client.pubsub.publish(comment.subplebbit.pubsubTopic, fromString(JSON.stringify(comment._challengeAnswer)));
         });
 
-        await comment.publish();
-
-        await new Promise((resolve) => {
-            comment.once("challengeverification", (verificationMsg) => {
-                expect(verificationMsg.challengeSuccess).to.be.false;
-                expect(verificationMsg.reason).to.equal(messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);
-                expect(verificationMsg.publication).to.be.undefined;
-                resolve();
-            });
-        });
+        await publishWithExpectedResult(comment, false, messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);
     });
 });

@@ -136,7 +136,7 @@ describe("plebbit.getSubplebbit", async () => {
     });
 
     it("can load subplebbit with ENS domain via plebbit.getSubplebbit", async () => {
-        const tempPlebbit = await Plebbit(plebbit);
+        const tempPlebbit = await mockPlebbit();
 
         tempPlebbit.resolver.resolveSubplebbitAddressIfNeeded = async (address) =>
             address === ensSubplebbitAddress ? ensSubplebbitSigner.address : address;
@@ -146,7 +146,7 @@ describe("plebbit.getSubplebbit", async () => {
     });
 
     it(`A subplebbit with ENS domain for address can also be loaded from its IPNS`, async () => {
-        const tempPlebbit = await Plebbit(plebbit);
+        const tempPlebbit = await mockPlebbit();
         tempPlebbit.resolver.resolveSubplebbitAddressIfNeeded = async (address) =>
             address === ensSubplebbitAddress ? ensSubplebbitSigner.address : address;
 

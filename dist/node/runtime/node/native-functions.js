@@ -280,7 +280,8 @@ var nativeFunctions = {
                 subscribe: ipfsClient.pubsub.subscribe,
                 unsubscribe: ipfsClient.pubsub.unsubscribe,
                 publish: ipfsClient.pubsub.publish,
-                ls: ipfsClient.pubsub.ls
+                ls: ipfsClient.pubsub.ls,
+                peers: ipfsClient.pubsub.peers
             },
             name: {
                 publish: ipfsClient.name.publish,
@@ -294,14 +295,15 @@ var nativeFunctions = {
                 rm: ipfsClient.key.rm
             },
             pin: { rm: ipfsClient.pin.rm },
-            block: { rm: blockRm }
+            block: { rm: blockRm },
+            swarm: { peers: ipfsClient.swarm.peers }
         };
     },
     importSignerIntoIpfsNode: function (ipnsKeyName, ipfsKey, plebbit) { return __awaiter(void 0, void 0, void 0, function () {
         var data, nodeUrl, url, res, resJson;
-        var _a;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var _a, _b, _c;
+        return __generator(this, function (_d) {
+            switch (_d.label) {
                 case 0:
                     data = new form_data_1.default();
                     if (typeof ipnsKeyName !== "string")
@@ -309,22 +311,22 @@ var nativeFunctions = {
                     if (!ipfsKey || ((_a = ipfsKey.constructor) === null || _a === void 0 ? void 0 : _a.name) !== "Uint8Array" || ipfsKey.byteLength <= 0)
                         throw Error("ipfsKey needs to be defined before importing key into IPFS node");
                     data.append("file", Buffer.from(ipfsKey));
-                    nodeUrl = plebbit.ipfsHttpClientOptions.url;
+                    nodeUrl = (_b = plebbit.ipfsHttpClientOptions[0]) === null || _b === void 0 ? void 0 : _b.url;
                     if (!nodeUrl)
                         throw Error("Can't figure out ipfs node URL from ipfsHttpClientOptions (".concat(JSON.stringify(plebbit.ipfsHttpClientOptions)));
                     url = "".concat(nodeUrl, "/key/import?arg=").concat(ipnsKeyName, "&ipns-base=b58mh");
                     return [4 /*yield*/, nativeFunctions.fetch(url, {
                             method: "POST",
                             body: data,
-                            headers: plebbit.ipfsHttpClientOptions.headers
+                            headers: (_c = plebbit.ipfsHttpClientOptions[0]) === null || _c === void 0 ? void 0 : _c.headers // We're assuming that only IPFS one client will be used
                         })];
                 case 1:
-                    res = _b.sent();
+                    res = _d.sent();
                     if (res.status !== 200)
                         (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_IMPORT_IPFS_KEY", { url: url, status: res.status, statusText: res.statusText, ipnsKeyName: ipnsKeyName });
                     return [4 /*yield*/, res.json()];
                 case 2:
-                    resJson = _b.sent();
+                    resJson = _d.sent();
                     return [2 /*return*/, resJson];
             }
         });
