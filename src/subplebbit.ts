@@ -1266,7 +1266,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
 
         if (typeof this.pubsubTopic !== "string") {
-            this.pubsubTopic = lodash.clone(this.address);
+            this.pubsubTopic = lodash.clone(this.signer.address);
             log(`Defaulted subplebbit (${this.address}) pubsub topic to ${this.pubsubTopic} since sub owner hasn't provided any`);
             await this._updateDbInternalState(lodash.pick(this, "pubsubTopic"));
         }

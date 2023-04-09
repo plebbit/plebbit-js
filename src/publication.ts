@@ -28,6 +28,7 @@ import { SignatureType } from "./signer/constants";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { Comment } from "./comment";
 import { PlebbitError } from "./plebbit-error";
+import { getPlebbitAddressFromPublicKey } from "./signer/util";
 
 class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     subplebbitAddress: string;
@@ -100,6 +101,8 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         const log = Logger("plebbit-js:publication:handleChallengeExchange");
 
         const msgParsed: ChallengeMessageType | ChallengeVerificationMessageType = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
+        const msgSignerAddress = await getPlebbitAddressFromPublicKey(msgParsed.signature.publicKey);
+        if (msgSignerAddress !== this._pubsubTopicWithfallback()) return; // Process only responses from sub
         if (msgParsed?.challengeRequestId !== this._challengeRequest.challengeRequestId) return; // Process only this publication's challenge
         if (msgParsed?.type === "CHALLENGE") {
             const challengeMsgValidity = await verifyChallengeMessage(msgParsed);
