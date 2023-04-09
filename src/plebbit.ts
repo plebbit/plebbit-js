@@ -183,7 +183,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         } else for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
 
         // Init cache
-        this._cache = new Cache(this);
+        this._cache = new Cache({ dataPath: this.dataPath });
         await this._cache.init();
 
         // Init stats

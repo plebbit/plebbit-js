@@ -3,10 +3,14 @@ import { CacheInterface } from "../../types";
 import { Plebbit } from "../../plebbit";
 
 export default class Cache implements CacheInterface {
-    private _plebbit: Plebbit;
+    private _plebbit: Pick<Plebbit, "dataPath">;
     private _store: LocalForage;
-    constructor(plebbit: Plebbit) {
+    constructor(plebbit: Cache["_plebbit"]) {
         this._plebbit = plebbit;
+    }
+
+    toJSON() {
+        return undefined;
     }
 
     async init() {

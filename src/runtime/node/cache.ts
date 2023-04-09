@@ -5,10 +5,14 @@ import fs from "fs";
 import Keyv from "keyv";
 
 export default class Cache implements CacheInterface {
-    private _plebbit: Plebbit;
+    private _plebbit: Pick<Plebbit, "dataPath">;
     private _keyv: Keyv;
-    constructor(plebbit: Plebbit) {
+    constructor(plebbit: Cache["_plebbit"]) {
         this._plebbit = plebbit;
+    }
+
+    toJSON() {
+        return undefined;
     }
 
     async init() {
