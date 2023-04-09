@@ -167,7 +167,7 @@ describe(`Comment with author.address as domain`, async () => {
         plebbit = await mockPlebbit();
     });
     it(`verifyComment corrects author.address(domain) if it resolves to a different author (overrideAuthorAddressIfInvalid=true)`, async () => {
-        const tempPlebbit = await Plebbit(plebbit);
+        const tempPlebbit = await mockPlebbit();
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "testDomain.eth" ? fixtureComment.author.address : authorAddress;
         const commentWithInvalidDomain = lodash.cloneDeep(fixtureComment);
@@ -185,7 +185,7 @@ describe(`Comment with author.address as domain`, async () => {
     });
     it(`Comment with CommentUpdate json, with invalid author domain address will be corrected to derived address (overrideAuthorAddressIfInvalid=false)`, async () => {
         const comment = lodash.cloneDeep(require("../../fixtures/signatures/comment/valid_comment_author_address_as_domain.json"));
-        const tempPlebbit = await Plebbit(plebbit);
+        const tempPlebbit = await mockPlebbit();
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress; // This would invalidate the fixture author address. Should be corrected
 
@@ -197,7 +197,7 @@ describe(`Comment with author.address as domain`, async () => {
 
     it(`Comment signature will be invalidated if comment.author.address (domain) points to different address (overrideAuthorAddressIfInvalid=true)`, async () => {
         const comment = lodash.cloneDeep(require("../../fixtures/signatures/comment/valid_comment_author_address_as_domain.json"));
-        const tempPlebbit = await Plebbit(plebbit);
+        const tempPlebbit = await mockPlebbit();
         tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress; // This would invalidate the fixture author address. Should be corrected
 

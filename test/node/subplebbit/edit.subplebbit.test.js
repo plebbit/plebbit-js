@@ -243,7 +243,7 @@ describe(`Edit misc`, async () => {
         plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
     });
     it(`Can edit subplebbit.address to a new domain if subplebbit-address record does not exist or does not match signer.address`, async () => {
-        const customPlebbit = await Plebbit(plebbit);
+        const customPlebbit = await mockPlebbit();
         customPlebbit.resolver.resolveSubplebbitAddressIfNeeded = (subDomain) => {
             subDomain === "no-sub-address.eth" ? undefined : subDomain === "different-signer.eth" ? signers[0].address : subDomain;
         };
