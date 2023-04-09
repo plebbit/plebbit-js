@@ -842,11 +842,7 @@ export class DbHandler {
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
 
         try {
-            await lockfile.lock(subDbPath, {
-                lockfilePath,
-                realpath: false,
-                onCompromised: () => {}
-            });
+            await lockfile.lock(subDbPath, { lockfilePath });
             log(`Locked the start of subplebbit (${subAddress}) successfully`);
         } catch (e) {
             if (e.message === "Lock file is already being held")
