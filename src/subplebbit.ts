@@ -438,7 +438,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._loadingOperation?.stop();
         this._setUpdatingState("stopped");
         if (this._sync) {
-            await this.plebbit._defaultPubsubClient()._client.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
+            await this.plebbit
+                ._defaultPubsubClient()
+                ._client.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             await this.dbHandler.rollbackAllTransactions();
             await this.dbHandler.unlockSubStart();
             this._sync = false;
@@ -495,13 +497,15 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         );
 
         const file = await this.plebbit._defaultIpfsClient()._client.add(deterministicStringify({ ...newIpns, signature }));
-        await this.plebbit._defaultIpfsClient()._client.name.publish(file.path, {
+        const publishRes = await this.plebbit._defaultIpfsClient()._client.name.publish(file.path, {
             lifetime: "72h", // TODO decide on optimal time later
             key: this.signer.ipnsKeyName,
-            allowOffline: true
+            allowOffline: Boolean(process.env["TESTING"])
         });
         this.emit("update", this);
-        log(`Published a new IPNS record for sub(${this.address})`);
+        log(
+            `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${this.updatedAt})`
+        );
     }
 
     private async handleCommentEdit(commentEditRaw: CommentEditPubsubMessage, challengeRequestId: string): Promise<string | undefined> {
@@ -1100,7 +1104,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this.plebbit._defaultIpfsClient()._client.name.publish(file.path, {
             lifetime: "72h",
             key: signerRaw.ipnsKeyName,
-            allowOffline: true
+            allowOffline: Boolean(process.env["TESTING"])
         });
     }
 
