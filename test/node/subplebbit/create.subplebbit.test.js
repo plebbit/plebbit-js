@@ -74,8 +74,8 @@ describe(`plebbit.createSubplebbit`, async () => {
 
     it(`createSubplebbit on online IPFS node doesn't take more than 10s`, async () => {
         const onlinePlebbit = await Plebbit({
-            ipfsHttpClientOptions: "http://localhost:15003/api/v0",
-            pubsubHttpClientOptions: `http://localhost:15003/api/v0`,
+            ipfsHttpClientsOptions: "http://localhost:15003/api/v0",
+            pubsubHttpClientsOptions: `http://localhost:15003/api/v0`,
             dataPath: globalThis["window"]?.plebbitDataPath
         });
         onlinePlebbit.resolver = plebbit.resolver;

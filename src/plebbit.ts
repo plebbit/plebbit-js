@@ -54,8 +54,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     };
     resolver: Resolver;
     _memCache: TinyCache;
-    ipfsHttpClientOptions?: IpfsHttpClientOptions[];
-    pubsubHttpClientOptions: IpfsHttpClientOptions[];
+    ipfsHttpClientsOptions?: IpfsHttpClientOptions[];
+    pubsubHttpClientsOptions: IpfsHttpClientOptions[];
     dataPath?: string;
     resolveAuthorAddresses?: boolean;
     chainProviders: { [chainTicker: string]: ChainProvider };
@@ -68,8 +68,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             "chainProviders",
             "dataPath",
             "ipfsGatewayUrls",
-            "ipfsHttpClientOptions",
-            "pubsubHttpClientOptions",
+            "ipfsHttpClientsOptions",
+            "pubsubHttpClientsOptions",
             "resolveAuthorAddresses"
         ];
         for (const option of Object.keys(options))
@@ -77,16 +77,16 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         //@ts-expect-error
         this.clients = {};
-        this.ipfsHttpClientOptions =
-            Array.isArray(options.ipfsHttpClientOptions) && typeof options.ipfsHttpClientOptions[0] === "string"
-                ? this._parseUrlToOption(<string[]>options.ipfsHttpClientOptions)
-                : <IpfsHttpClientOptions[] | undefined>options.ipfsHttpClientOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
+        this.ipfsHttpClientsOptions =
+            Array.isArray(options.ipfsHttpClientsOptions) && typeof options.ipfsHttpClientsOptions[0] === "string"
+                ? this._parseUrlToOption(<string[]>options.ipfsHttpClientsOptions)
+                : <IpfsHttpClientOptions[] | undefined>options.ipfsHttpClientsOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
 
-        this.pubsubHttpClientOptions =
-            Array.isArray(options.pubsubHttpClientOptions) && typeof options.pubsubHttpClientOptions[0] === "string"
-                ? this._parseUrlToOption(<string[]>options.pubsubHttpClientOptions)
-                : <IpfsHttpClientOptions[]>options.pubsubHttpClientOptions ||
-                  this.ipfsHttpClientOptions || [{ url: "https://pubsubprovider.xyz/api/v0" }];
+        this.pubsubHttpClientsOptions =
+            Array.isArray(options.pubsubHttpClientsOptions) && typeof options.pubsubHttpClientsOptions[0] === "string"
+                ? this._parseUrlToOption(<string[]>options.pubsubHttpClientsOptions)
+                : <IpfsHttpClientOptions[]>options.pubsubHttpClientsOptions ||
+                  this.ipfsHttpClientsOptions || [{ url: "https://pubsubprovider.xyz/api/v0" }];
 
         this._initIpfsClients();
         this._initPubsubClients();
@@ -96,9 +96,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private _initIpfsClients() {
-        if (!this.ipfsHttpClientOptions) return;
+        if (!this.ipfsHttpClientsOptions) return;
         this.clients.ipfsClients = {};
-        for (const clientOptions of this.ipfsHttpClientOptions) {
+        for (const clientOptions of this.ipfsHttpClientsOptions) {
             const ipfsClient = nativeFunctions.createIpfsClient(clientOptions);
             this.clients.ipfsClients[<string>clientOptions.url] = {
                 _client: ipfsClient,
@@ -110,7 +110,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     private _initPubsubClients() {
         this.clients.pubsubClients = {};
-        for (const clientOptions of this.pubsubHttpClientOptions) {
+        for (const clientOptions of this.pubsubHttpClientsOptions) {
             const ipfsClient =
                 this.clients.ipfsClients?.[<string>clientOptions.url]?._client || nativeFunctions.createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs
             this.clients.pubsubClients[<string>clientOptions.url] = {

@@ -276,8 +276,8 @@ export async function startSubplebbits(props: {
 
 export async function mockPlebbit(dataPath?: string) {
     const plebbit = await PlebbitIndex({
-        ipfsHttpClientOptions: ["http://localhost:15001/api/v0"],
-        pubsubHttpClientOptions: [`http://localhost:15002/api/v0`],
+        ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
+        pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`],
         dataPath
     });
 
@@ -305,7 +305,7 @@ export async function mockGatewayPlebbit() {
     // Keep only pubsub and gateway
     const plebbit = await mockRemotePlebbit();
     delete plebbit.clients.ipfsClients;
-    delete plebbit.ipfsHttpClientOptions;
+    delete plebbit.ipfsHttpClientsOptions;
     return plebbit;
 }
 

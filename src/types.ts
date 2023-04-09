@@ -23,8 +23,8 @@ export type ProtocolVersion = "1.0.0";
 export type ChainProvider = { url: string[]; chainId: number };
 export interface PlebbitOptions {
     ipfsGatewayUrls?: string[];
-    ipfsHttpClientOptions?: (IpfsHttpClientOptions | string)[];
-    pubsubHttpClientOptions?: (IpfsHttpClientOptions | string)[];
+    ipfsHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
+    pubsubHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
     dataPath?: string;
     chainProviders?: { [chainTicker: string]: ChainProvider };
     resolveAuthorAddresses?: boolean;
@@ -709,5 +709,4 @@ export interface CacheInterface {
     removeItem: (key: string) => Promise<boolean>;
     clear: () => Promise<void>;
     keys: () => Promise<string[]>;
-
 }

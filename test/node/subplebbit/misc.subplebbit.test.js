@@ -90,13 +90,13 @@ describe(`Create a sub with basic auth urls`, async () => {
         const headers = {
             authorization: "Basic " + Buffer.from("username" + ":" + "password").toString("base64")
         };
-        const ipfsHttpClientOptions = [
+        const ipfsHttpClientsOptions = [
             {
                 url: "http://localhost:15001/api/v0",
                 headers
             }
         ];
-        const pubsubHttpClientOptions = [
+        const pubsubHttpClientsOptions = [
             {
                 url: "http://localhost:15002/api/v0",
                 headers
@@ -104,8 +104,8 @@ describe(`Create a sub with basic auth urls`, async () => {
         ];
 
         const plebbitOptions = {
-            ipfsHttpClientOptions,
-            pubsubHttpClientOptions,
+            ipfsHttpClientsOptions,
+            pubsubHttpClientsOptions,
             dataPath: globalThis["window"]?.plebbitDataPath
         };
 
@@ -118,11 +118,11 @@ describe(`Create a sub with basic auth urls`, async () => {
     });
 
     it(`Can publish a post with user@password for both ipfs and pubsub http client`, async () => {
-        const ipfsHttpClientOptions = [`http://user:password@localhost:15001/api/v0`];
-        const pubsubHttpClientOptions = [`http://user:password@localhost:15002/api/v0`];
+        const ipfsHttpClientsOptions = [`http://user:password@localhost:15001/api/v0`];
+        const pubsubHttpClientsOptions = [`http://user:password@localhost:15002/api/v0`];
         const plebbitOptions = {
-            ipfsHttpClientOptions,
-            pubsubHttpClientOptions,
+            ipfsHttpClientsOptions,
+            pubsubHttpClientsOptions,
             dataPath: globalThis["window"]?.plebbitDataPath
         };
 

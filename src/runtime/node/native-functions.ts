@@ -137,14 +137,14 @@ const nativeFunctions: NativeFunctions = {
             throw Error("ipfsKey needs to be defined before importing key into IPFS node");
 
         data.append("file", Buffer.from(ipfsKey));
-        const nodeUrl = plebbit.ipfsHttpClientOptions[0]?.url;
+        const nodeUrl = plebbit.ipfsHttpClientsOptions[0]?.url;
         if (!nodeUrl)
-            throw Error(`Can't figure out ipfs node URL from ipfsHttpClientOptions (${JSON.stringify(plebbit.ipfsHttpClientOptions)}`);
+            throw Error(`Can't figure out ipfs node URL from ipfsHttpClientOptions (${JSON.stringify(plebbit.ipfsHttpClientsOptions)}`);
         const url = `${nodeUrl}/key/import?arg=${ipnsKeyName}&ipns-base=b58mh`;
         const res = await nativeFunctions.fetch(url, {
             method: "POST",
             body: data,
-            headers: <Record<string, string>>plebbit.ipfsHttpClientOptions[0]?.headers // We're assuming that only IPFS one client will be used
+            headers: <Record<string, string>>plebbit.ipfsHttpClientsOptions[0]?.headers // We're assuming that only IPFS one client will be used
         });
 
         if (res.status !== 200)

@@ -28,8 +28,8 @@ describe("plebbit options (node and browser)", async () => {
                 ["https://cloudflare-ipfs.com", "https://ipfs.io"].sort()
             );
             expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
-            expect(plebbit.pubsubHttpClientOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
-            expect(plebbit.pubsubHttpClientOptions.headers?.authorization).to.be.undefined;
+            expect(plebbit.pubsubHttpClientsOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
+            expect(plebbit.pubsubHttpClientsOptions.headers?.authorization).to.be.undefined;
 
             // no dataPath in browser
             if (typeof window === "undefined") {
@@ -41,9 +41,9 @@ describe("plebbit options (node and browser)", async () => {
     });
 
     describe("Plebbit options set up correctly", async () => {
-        it("Only ipfsHttpClientOptions is provided", async () => {
+        it("Only ipfsHttpClientsOptions is provided", async () => {
             const url = "http://localhost:15001/api/v0";
-            const options = { ipfsHttpClientOptions: [url] };
+            const options = { ipfsHttpClientsOptions: [url] };
             const testPlebbit = await Plebbit(options);
             expect(testPlebbit.clients.ipfsClients[url]).to.exist;
             expect(testPlebbit.clients.pubsubClients[url]).to.exist;
@@ -167,11 +167,11 @@ describe("plebbit.fetchCid", async () => {
 
 // Skip for firefox since we can't disable CORS on Firefox
 if (!globalThis["navigator"]?.userAgent?.includes("Firefox"))
-    describe("Authentication in ipfsHttpClientOptions and PubsubHttpClientOptions", async () => {
+    describe("Authentication in ipfsHttpClientsOptions and PubsubHttpClientsOptions", async () => {
         it(`Authorization credentials are generated correctly`, async () => {
             const plebbit = await Plebbit({
-                ipfsHttpClientOptions: ["http://user:password@localhost:15001/api/v0"],
-                pubsubHttpClientOptions: ["http://user:password@localhost:15002/api/v0"]
+                ipfsHttpClientsOptions: ["http://user:password@localhost:15001/api/v0"],
+                pubsubHttpClientsOptions: ["http://user:password@localhost:15002/api/v0"]
             });
 
             expect(Object.keys(plebbit.clients.ipfsClients)).to.deep.equal(["http://localhost:15001/api/v0"]);
