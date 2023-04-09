@@ -311,14 +311,14 @@ var nativeFunctions = {
                     if (!ipfsKey || ((_a = ipfsKey.constructor) === null || _a === void 0 ? void 0 : _a.name) !== "Uint8Array" || ipfsKey.byteLength <= 0)
                         throw Error("ipfsKey needs to be defined before importing key into IPFS node");
                     data.append("file", Buffer.from(ipfsKey));
-                    nodeUrl = (_b = plebbit.ipfsHttpClientOptions[0]) === null || _b === void 0 ? void 0 : _b.url;
+                    nodeUrl = (_b = plebbit.ipfsHttpClientsOptions[0]) === null || _b === void 0 ? void 0 : _b.url;
                     if (!nodeUrl)
-                        throw Error("Can't figure out ipfs node URL from ipfsHttpClientOptions (".concat(JSON.stringify(plebbit.ipfsHttpClientOptions)));
+                        throw Error("Can't figure out ipfs node URL from ipfsHttpClientOptions (".concat(JSON.stringify(plebbit.ipfsHttpClientsOptions)));
                     url = "".concat(nodeUrl, "/key/import?arg=").concat(ipnsKeyName, "&ipns-base=b58mh");
                     return [4 /*yield*/, nativeFunctions.fetch(url, {
                             method: "POST",
                             body: data,
-                            headers: (_c = plebbit.ipfsHttpClientOptions[0]) === null || _c === void 0 ? void 0 : _c.headers // We're assuming that only IPFS one client will be used
+                            headers: (_c = plebbit.ipfsHttpClientsOptions[0]) === null || _c === void 0 ? void 0 : _c.headers // We're assuming that only IPFS one client will be used
                         })];
                 case 1:
                     res = _d.sent();

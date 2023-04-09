@@ -17,8 +17,8 @@ export declare type ChainProvider = {
 };
 export interface PlebbitOptions {
     ipfsGatewayUrls?: string[];
-    ipfsHttpClientOptions?: (IpfsHttpClientOptions | string)[];
-    pubsubHttpClientOptions?: (IpfsHttpClientOptions | string)[];
+    ipfsHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
+    pubsubHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
     dataPath?: string;
     chainProviders?: {
         [chainTicker: string]: ChainProvider;
