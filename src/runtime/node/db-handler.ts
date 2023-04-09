@@ -876,7 +876,7 @@ export class DbHandler {
     async isSubStartLocked(subAddress = this._subplebbit.address) {
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-        return lockfile.check(subDbPath, { lockfilePath, realpath: false });
+        return lockfile.check(subDbPath, { lockfilePath, realpath: false, stale: 30000 });
     }
 
     // Creation lock
