@@ -1222,8 +1222,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     }
 
     private async _checkLockFreshness() {
+        assert.equal(this.dbHandler.subAddress(), this.address, "Db handler needs to have same address as subplebbit");
         assert.equal(await this.dbHandler.isSubStartLocked(), true, "Lock file has not been updated");
-        assert.equal(await this.dbHandler.isSubStartLocked(this.address), true, "Lock file has not been updated");
     }
 
     private async syncIpnsWithDb() {
