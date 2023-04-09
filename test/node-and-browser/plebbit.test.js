@@ -17,14 +17,16 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 
 const subplebbitSigner = signers[0];
 
-describe("plebbit (node and browser)", async () => {
+describe("plebbit options (node and browser)", async () => {
     let plebbit;
     before(async () => {
         plebbit = await Plebbit();
     });
     describe("plebbit with default options (cloudflare and pubsubprovider)", async () => {
         it("has default plebbit options", async () => {
-            expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://cloudflare-ipfs.com", "https://ipfs.io"].sort());
+            expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(
+                ["https://cloudflare-ipfs.com", "https://ipfs.io"].sort()
+            );
             expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
             expect(plebbit.pubsubHttpClientOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
             expect(plebbit.pubsubHttpClientOptions.headers?.authorization).to.be.undefined;
@@ -52,110 +54,114 @@ describe("plebbit (node and browser)", async () => {
             expect(Object.keys(testPlebbit.clients.pubsubClients)).to.deep.equal([url]);
         });
     });
+});
 
-    describe("plebbit.createSigner", async () => {
-        let plebbit, signer;
-        const isBase64 = (testString) => /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}))?$/gm.test(testString);
-        before(async () => {
-            plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
-            signer = await plebbit.createSigner();
-        });
+describe("plebbit.createSigner", async () => {
+    let plebbit, signer;
+    const isBase64 = (testString) => /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}))?$/gm.test(testString);
+    before(async () => {
+        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        signer = await plebbit.createSigner();
+    });
 
-        it("without private key argument", async () => {
-            expect(signer).not.to.equal(undefined);
-            expect(isBase64(signer.privateKey)).to.be.true;
-            expect(isBase64(signer.publicKey)).to.be.true;
-            expect(signer.address).to.match(/^12D3KooW/);
-            expect(signer.type).to.equal("ed25519");
-        });
+    it("without private key argument", async () => {
+        expect(signer).not.to.equal(undefined);
+        expect(isBase64(signer.privateKey)).to.be.true;
+        expect(isBase64(signer.publicKey)).to.be.true;
+        expect(signer.address).to.match(/^12D3KooW/);
+        expect(signer.type).to.equal("ed25519");
+    });
 
-        it("with private key argument", async () => {
-            const signer = await plebbit.createSigner({ privateKey: fixtureSigner.privateKey, type: "ed25519" });
-            expect(signer).not.to.equal(undefined);
-            expect(signer.privateKey).to.equal(fixtureSigner.privateKey);
-            expect(signer.publicKey).to.equal(fixtureSigner.publicKey);
-            expect(signer.address).to.equal(fixtureSigner.address);
-            expect(signer.type).to.equal("ed25519");
-        });
+    it("with private key argument", async () => {
+        const signer = await plebbit.createSigner({ privateKey: fixtureSigner.privateKey, type: "ed25519" });
+        expect(signer).not.to.equal(undefined);
+        expect(signer.privateKey).to.equal(fixtureSigner.privateKey);
+        expect(signer.publicKey).to.equal(fixtureSigner.publicKey);
+        expect(signer.address).to.equal(fixtureSigner.address);
+        expect(signer.type).to.equal("ed25519");
+    });
 
-        it("generate same signer twice", async () => {
-            const signer2 = await plebbit.createSigner({ privateKey: signer.privateKey, type: signer.type });
-            expect(signer.privateKey).to.equal(signer2.privateKey);
-            expect(signer.publicKey).to.equal(signer2.publicKey);
-            expect(signer.address).to.equal(signer2.address);
-            expect(signer.type).to.equal(signer2.type);
+    it("generate same signer twice", async () => {
+        const signer2 = await plebbit.createSigner({ privateKey: signer.privateKey, type: signer.type });
+        expect(signer.privateKey).to.equal(signer2.privateKey);
+        expect(signer.publicKey).to.equal(signer2.publicKey);
+        expect(signer.address).to.equal(signer2.address);
+        expect(signer.type).to.equal(signer2.type);
+    });
+});
+
+describe("plebbit.getComment", async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+    });
+    it("post props are loaded correctly", async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
+        expect(subplebbit.lastPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
+        const expectedPostProps = await loadIpfsFileAsJson(subplebbit.lastPostCid, plebbit);
+        expectedPostProps.cid = subplebbit.lastPostCid;
+        expectedPostProps.author = new Author(expectedPostProps.author);
+        const loadedPost = await plebbit.getComment(subplebbit.lastPostCid);
+        for (const key of Object.keys(expectedPostProps)) expect(stringify(expectedPostProps[key])).to.equal(stringify(loadedPost[key]));
+    });
+
+    it("comment props are loaded correctly", async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
+        const newComments = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
+        const comment = newComments.filter((comment) => comment.replyCount > 0)[0]?.replies?.pages?.topAll?.comments[0];
+        expect(comment).to.exist;
+        const expectedCommentProps = await loadIpfsFileAsJson(comment.cid, plebbit);
+        expect(expectedCommentProps.postCid).to.be.a("string");
+        expect(expectedCommentProps.postCid).to.equal(expectedCommentProps.parentCid);
+        expect(expectedCommentProps.protocolVersion).to.be.a("string");
+        expect(expectedCommentProps.ipnsName).to.be.a("string");
+        expect(expectedCommentProps.depth).to.equal(1);
+        expect(expectedCommentProps.subplebbitAddress).to.equal(subplebbit.address);
+        expect(expectedCommentProps.timestamp).to.be.a("number");
+        expect(expectedCommentProps.signature).to.be.a("object");
+        expect(expectedCommentProps.author).to.be.a("object");
+        expect(expectedCommentProps.author.address).to.be.a("string");
+        expect(expectedCommentProps.protocolVersion).to.be.a("string");
+        expectedCommentProps.cid = comment.cid;
+        expectedCommentProps.author = new Author(expectedCommentProps.author);
+
+        const loadedComment = await plebbit.getComment(comment.cid);
+        expect(loadedComment.constructor.name).to.equal("Comment");
+        for (const key of Object.keys(expectedCommentProps))
+            expect(stringify(expectedCommentProps[key])).to.equal(stringify(loadedComment[key]));
+    });
+});
+
+describe("plebbit.fetchCid", async () => {
+    let plebbit, gatewayPlebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+        gatewayPlebbit = await Plebbit({
+            ipfsGatewayUrls: ["http://127.0.0.1:18080"]
         });
     });
 
-    describe("plebbit.getComment", async () => {
-        let plebbit;
-        before(async () => {
-            plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
-        });
-        it("post props are loaded correctly", async () => {
-            const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
-            expect(subplebbit.lastPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
-            const expectedPostProps = await loadIpfsFileAsJson(subplebbit.lastPostCid, plebbit);
-            expectedPostProps.cid = subplebbit.lastPostCid;
-            expectedPostProps.author = new Author(expectedPostProps.author);
-            const loadedPost = await plebbit.getComment(subplebbit.lastPostCid);
-            for (const key of Object.keys(expectedPostProps))
-                expect(stringify(expectedPostProps[key])).to.equal(stringify(loadedPost[key]));
-        });
-
-        it("comment props are loaded correctly", async () => {
-            const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
-            const newComments = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
-            const comment = newComments.filter((comment) => comment.replyCount > 0)[0]?.replies?.pages?.topAll?.comments[0];
-            expect(comment).to.exist;
-            const expectedCommentProps = await loadIpfsFileAsJson(comment.cid, plebbit);
-            expect(expectedCommentProps.postCid).to.be.a("string");
-            expect(expectedCommentProps.postCid).to.equal(expectedCommentProps.parentCid);
-            expect(expectedCommentProps.protocolVersion).to.be.a("string");
-            expect(expectedCommentProps.ipnsName).to.be.a("string");
-            expect(expectedCommentProps.depth).to.equal(1);
-            expect(expectedCommentProps.subplebbitAddress).to.equal(subplebbit.address);
-            expect(expectedCommentProps.timestamp).to.be.a("number");
-            expect(expectedCommentProps.signature).to.be.a("object");
-            expect(expectedCommentProps.author).to.be.a("object");
-            expect(expectedCommentProps.author.address).to.be.a("string");
-            expect(expectedCommentProps.protocolVersion).to.be.a("string");
-            expectedCommentProps.cid = comment.cid;
-            expectedCommentProps.author = new Author(expectedCommentProps.author);
-
-            const loadedComment = await plebbit.getComment(comment.cid);
-            expect(loadedComment.constructor.name).to.equal("Comment");
-            for (const key of Object.keys(expectedCommentProps))
-                expect(stringify(expectedCommentProps[key])).to.equal(stringify(loadedComment[key]));
-        });
+    it(`Can fetch a cid correctly`, async () => {
+        const fileString = "Hello plebs";
+        const cid = (await plebbit._defaultIpfsClient()._client.add(fileString)).path;
+        const contentFromFetchCid = await plebbit.fetchCid(cid);
+        expect(contentFromFetchCid).to.equal(fileString);
+        const contentFromGatewayFetchCid = await gatewayPlebbit.fetchCid(cid);
+        expect(contentFromGatewayFetchCid).to.equal(fileString);
     });
 
-    describe("plebbit.fetchCid", async () => {
-        const plebbit = await mockPlebbit();
-        const gatewayPlebbit = await Plebbit({
-            ipfsGatewayUrl: "http://127.0.0.1:18080"
-        });
+    it(`Throws an error if malicious gateway modifies content of file`, async () => {
+        const [fileString1, fileString2] = ["Hello plebs", "Hello plebs 2"];
+        const cids = (await Promise.all([fileString1, fileString2].map((file) => plebbit._defaultIpfsClient()._client.add(file)))).map(
+            (res) => res.path
+        );
 
-        it(`Can fetch a cid correctly`, async () => {
-            const fileString = "Hello plebs";
-            const cid = (await plebbit.ipfsClient.add(fileString)).path;
-            const contentFromFetchCid = await plebbit.fetchCid(cid);
-            expect(contentFromFetchCid).to.equal(fileString);
-            const contentFromGatewayFetchCid = await gatewayPlebbit.fetchCid(cid);
-            expect(contentFromGatewayFetchCid).to.equal(fileString);
-        });
+        const plebbitWithMaliciousGateway = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:33415"] });
+        const fileString1FromGateway = await plebbitWithMaliciousGateway.fetchCid(cids[0]);
+        expect(fileString1).to.equal(fileString1FromGateway);
 
-        it(`Throws an error if malicious gateway modifies content of file`, async () => {
-            const [fileString1, fileString2] = ["Hello plebs", "Hello plebs 2"];
-            const cids = (await Promise.all([fileString1, fileString2].map((file) => plebbit.ipfsClient.add(file)))).map((res) => res.path);
-
-            const plebbitWithMaliciousGateway = await Plebbit({ ipfsGatewayUrl: "http://127.0.0.1:33415" });
-            const fileString1FromGateway = await plebbitWithMaliciousGateway.fetchCid(cids[0]);
-            expect(fileString1).to.equal(fileString1FromGateway);
-
-            // The following line should throw since the malicious gateway would send a content that differs from original content
-            await assert.isRejected(plebbitWithMaliciousGateway.fetchCid(cids[1]), messages.ERR_GENERATED_CID_DOES_NOT_MATCH);
-        });
+        // The following line should throw since the malicious gateway would send a content that differs from original content
+        await assert.isRejected(plebbitWithMaliciousGateway.fetchCid(cids[1]), messages.ERR_GENERATED_CID_DOES_NOT_MATCH);
     });
 });
 

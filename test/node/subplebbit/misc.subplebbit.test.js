@@ -1,5 +1,5 @@
 const Plebbit = require("../../../dist/node");
-const { mockPlebbit, publishRandomPost, createMockSub } = require("../../../dist/node/test/test-util");
+const { mockPlebbit, publishRandomPost, createMockSub, mockGatewayPlebbit } = require("../../../dist/node/test/test-util");
 const signers = require("../../fixtures/signers");
 const { getThumbnailUrlOfLink } = require("../../../dist/node/runtime/node/util");
 const path = require("path");
@@ -55,7 +55,7 @@ describe(`subplebbit.delete`, async () => {
     });
 
     it(`Deleted sub ipfs keys are not listed in ipfs node`, async () => {
-        const ipfsKeys = await plebbit.ipfsClient.key.list();
+        const ipfsKeys = await plebbit._defaultIpfsClient()._client.key.list();
         const subKeyExists = ipfsKeys.some((key) => key.name === sub.ipnsKeyName);
         expect(subKeyExists).to.be.false;
     });
@@ -90,14 +90,18 @@ describe(`Create a sub with basic auth urls`, async () => {
         const headers = {
             authorization: "Basic " + Buffer.from("username" + ":" + "password").toString("base64")
         };
-        const ipfsHttpClientOptions = {
-            url: "http://localhost:15001/api/v0",
-            headers
-        };
-        const pubsubHttpClientOptions = {
-            url: "http://localhost:15002/api/v0",
-            headers
-        };
+        const ipfsHttpClientOptions = [
+            {
+                url: "http://localhost:15001/api/v0",
+                headers
+            }
+        ];
+        const pubsubHttpClientOptions = [
+            {
+                url: "http://localhost:15002/api/v0",
+                headers
+            }
+        ];
 
         const plebbitOptions = {
             ipfsHttpClientOptions,
@@ -114,8 +118,8 @@ describe(`Create a sub with basic auth urls`, async () => {
     });
 
     it(`Can publish a post with user@password for both ipfs and pubsub http client`, async () => {
-        const ipfsHttpClientOptions = `http://user:password@localhost:15001/api/v0`;
-        const pubsubHttpClientOptions = `http://user:password@localhost:15002/api/v0`;
+        const ipfsHttpClientOptions = [`http://user:password@localhost:15001/api/v0`];
+        const pubsubHttpClientOptions = [`http://user:password@localhost:15002/api/v0`];
         const plebbitOptions = {
             ipfsHttpClientOptions,
             pubsubHttpClientOptions,
@@ -246,7 +250,7 @@ describe(`subplebbit.startedState`, async () => {
     it(`subplebbit.startedState = error if a failure occurs`, async () => {
         await new Promise((resolve) => {
             subplebbit.on("startedstatechange", (newState) => newState === "failed" && resolve());
-            subplebbit.plebbit.ipfsClient = undefined; // Should cause a failure
+            subplebbit.plebbit.clients.ipfsClients = undefined; // Should cause a failure
         });
     });
 });
@@ -279,8 +283,7 @@ describe(`subplebbit.updatingState`, async () => {
     });
 
     it(`updating states is in correct order upon updating with gateway`, async () => {
-        const gatewayPlebbit = await mockPlebbit();
-        gatewayPlebbit.ipfsHttpClientOptions = gatewayPlebbit.ipfsClient = undefined;
+        const gatewayPlebbit = await mockGatewayPlebbit();
 
         const subplebbit = await gatewayPlebbit.getSubplebbit(signers[0].address);
 
