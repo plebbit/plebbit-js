@@ -1311,11 +1311,7 @@ var DbHandler = /** @class */ (function () {
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, lockfile.lock(subDbPath, {
-                                lockfilePath: lockfilePath,
-                                realpath: false,
-                                onCompromised: function () { }
-                            })];
+                        return [4 /*yield*/, lockfile.lock(subDbPath, { lockfilePath: lockfilePath })];
                     case 2:
                         _a.sent();
                         log("Locked the start of subplebbit (".concat(subAddress, ") successfully"));

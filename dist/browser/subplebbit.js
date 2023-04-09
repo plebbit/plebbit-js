@@ -1619,11 +1619,11 @@ var Subplebbit = /** @class */ (function (_super) {
                         _b = (_a = assert_1.default).equal;
                         return [4 /*yield*/, this.dbHandler.isSubStartLocked()];
                     case 1:
-                        _b.apply(_a, [_e.sent(), true]);
+                        _b.apply(_a, [_e.sent(), true, "Lock file has not been updated"]);
                         _d = (_c = assert_1.default).equal;
                         return [4 /*yield*/, this.dbHandler.isSubStartLocked(this.address)];
                     case 2:
-                        _d.apply(_c, [_e.sent(), true]);
+                        _d.apply(_c, [_e.sent(), true, "Lock file has not been updated"]);
                         return [2 /*return*/];
                 }
             });
