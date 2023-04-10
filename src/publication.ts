@@ -217,6 +217,11 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     private _validateSubFields() {
         if (typeof this.subplebbit?.encryption?.publicKey !== "string")
             throwWithErrorCode("ERR_SUBPLEBBIT_MISSING_FIELD", { subplebbitPublicKey: this.subplebbit?.encryption?.publicKey });
+        if (typeof this._pubsubTopicWithfallback() !== "string")
+            throwWithErrorCode("ERR_SUBPLEBBIT_MISSING_FIELD", {
+                pubsubTopic: this.subplebbit?.pubsubTopic,
+                address: this.subplebbit?.address
+            });
     }
 
     private _updatePublishingState(newState: Publication["publishingState"]) {
