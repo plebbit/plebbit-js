@@ -53,6 +53,9 @@ var Cache = /** @class */ (function () {
     function Cache(plebbit) {
         this._plebbit = plebbit;
     }
+    Cache.prototype.toJSON = function () {
+        return undefined;
+    };
     Cache.prototype.init = function () {
         return __awaiter(this, void 0, void 0, function () {
             var dbPath, dbConfig;

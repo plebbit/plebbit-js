@@ -1,9 +1,9 @@
 import { CacheInterface } from "../../types";
-import { Plebbit } from "../../plebbit";
 export default class Cache implements CacheInterface {
     private _plebbit;
     private _store;
-    constructor(plebbit: Plebbit);
+    constructor(plebbit: Cache["_plebbit"]);
+    toJSON(): any;
     init(): Promise<void>;
     getItem(key: string): Promise<any>;
     setItem(key: string, value: any): Promise<void>;

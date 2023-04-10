@@ -253,7 +253,7 @@ var Plebbit = /** @class */ (function (_super) {
                         _e.label = 11;
                     case 11:
                         // Init cache
-                        this._cache = new cache_1.default(this);
+                        this._cache = new cache_1.default({ dataPath: this.dataPath });
                         return [4 /*yield*/, this._cache.init()];
                     case 12:
                         _e.sent();
