@@ -67,8 +67,6 @@ var getDefaultSubplebbitDbConfig = function (subplebbit) { return __awaiter(void
                         useNullAsDefault: true,
                         acquireConnectionTimeout: 120000,
                         postProcessResponse: function (result, queryContext) {
-                            // TODO: add special case for raw results
-                            // (depends on dialect)
                             return (0, util_1.parseJsonStrings)(result);
                         }
                     }];

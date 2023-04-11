@@ -269,9 +269,14 @@ var Publication = /** @class */ (function (_super) {
             (0, util_1.throwWithErrorCode)("ERR_PUBLICATION_MISSING_FIELD", { type: this.getType(), subplebbitAddress: this.subplebbitAddress });
     };
     Publication.prototype._validateSubFields = function () {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e, _f;
         if (typeof ((_b = (_a = this.subplebbit) === null || _a === void 0 ? void 0 : _a.encryption) === null || _b === void 0 ? void 0 : _b.publicKey) !== "string")
             (0, util_1.throwWithErrorCode)("ERR_SUBPLEBBIT_MISSING_FIELD", { subplebbitPublicKey: (_d = (_c = this.subplebbit) === null || _c === void 0 ? void 0 : _c.encryption) === null || _d === void 0 ? void 0 : _d.publicKey });
+        if (typeof this._pubsubTopicWithfallback() !== "string")
+            (0, util_1.throwWithErrorCode)("ERR_SUBPLEBBIT_MISSING_FIELD", {
+                pubsubTopic: (_e = this.subplebbit) === null || _e === void 0 ? void 0 : _e.pubsubTopic,
+                address: (_f = this.subplebbit) === null || _f === void 0 ? void 0 : _f.address
+            });
     };
     Publication.prototype._updatePublishingState = function (newState) {
         this.publishingState = newState;

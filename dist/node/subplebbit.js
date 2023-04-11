@@ -1748,12 +1748,10 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 6:
                         _b.sent();
                         _b.label = 7;
-                    case 7: return [4 /*yield*/, this._listenToIncomingRequests()];
-                    case 8:
-                        _b.sent();
+                    case 7:
                         this._subplebbitUpdateTrigger = true;
                         return [4 /*yield*/, this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger })];
-                    case 9:
+                    case 8:
                         _b.sent();
                         this._setState("started");
                         this.syncIpnsWithDb()
