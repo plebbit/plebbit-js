@@ -1292,7 +1292,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await this._updateDbInternalState(lodash.pick(this, "createdAt"));
         }
 
-        await this._listenToIncomingRequests();
         this._subplebbitUpdateTrigger = true;
         await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
 

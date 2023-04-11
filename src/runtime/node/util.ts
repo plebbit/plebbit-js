@@ -29,8 +29,6 @@ export const getDefaultSubplebbitDbConfig = async (
         useNullAsDefault: true,
         acquireConnectionTimeout: 120000,
         postProcessResponse: (result, queryContext) => {
-            // TODO: add special case for raw results
-            // (depends on dialect)
             return parseJsonStrings(result);
         }
     };
