@@ -111,6 +111,7 @@ export class DbHandler {
     }
 
     async destoryConnection() {
+        if (this.isDbInMemory()) return;
         await this._knex?.destroy();
     }
     async createTransaction(transactionId: string): Promise<Transaction> {
