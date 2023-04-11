@@ -106,8 +106,12 @@ export class DbHandler {
         return res;
     }
 
+    async initDestroyedConnection() {
+        this._knex.initialize();
+    }
+
     async destoryConnection() {
-        if (this._knex) await this._knex.destroy();
+        await this._knex?.destroy();
     }
     async createTransaction(transactionId: string): Promise<Transaction> {
         assert(!this._currentTrxs[transactionId]);
@@ -341,9 +345,10 @@ export class DbHandler {
     async createTablesIfNeeded() {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded");
 
-        let dbVersion = await this.getDbVersion();
-        log.trace(`db version: ${dbVersion}`);
-        const needToMigrate = dbVersion !== env.DB_VERSION;
+        const priorDbVersion = await this.getDbVersion();
+
+        log.trace(`current db version: ${priorDbVersion}`);
+        const needToMigrate = priorDbVersion !== env.DB_VERSION;
         const createTableFunctions = [
             this._createCommentsTable,
             this._createCommentUpdatesTable,
@@ -380,8 +385,8 @@ export class DbHandler {
             await this._knex.raw("PRAGMA foreign_keys = ON");
             await this._knex.raw(`PRAGMA user_version = ${env.DB_VERSION}`);
         }
-        dbVersion = await this.getDbVersion();
-        assert.equal(dbVersion, env.DB_VERSION);
+        const newDbVersion = await this.getDbVersion();
+        assert.equal(newDbVersion, env.DB_VERSION);
         this._createdTables = true;
     }
 
@@ -952,7 +957,6 @@ export class DbHandler {
                 retries: 5,
                 onCompromised: () => {}
             });
-            log.trace(`Locked the state of subplebbit (${subAddress}) successfully`);
         } catch (e) {
             if (e.message === "Lock file is already being held")
                 throwWithErrorCode("ERR_SUB_STATE_LOCKED", { subplebbitAddress: subAddress });
@@ -963,14 +967,11 @@ export class DbHandler {
         if (subAddress === this._subplebbit.address && this.isDbInMemory()) return;
 
         const log = Logger("plebbit-js:lock:unlockSubState");
-        log.trace(`Attempting to unlock the state of sub (${subAddress})`);
 
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
         if (!fs.existsSync(lockfilePath)) return;
         await lockfile.unlock(subDbPath, { lockfilePath, realpath: false });
-
-        log.trace(`Unlocked state of sub (${subAddress})`);
     }
 
     // Misc functions

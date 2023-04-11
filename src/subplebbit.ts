@@ -303,6 +303,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
 
         await this.dbHandler.unlockSubCreation();
+        await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
     }
 
     private async assertDomainResolvesCorrectly(domain: string) {
@@ -320,6 +321,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     async edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit> {
         const log = Logger("plebbit-js:subplebbit:edit");
 
+        await this.dbHandler.initDestroyedConnection();
         if (newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address) {
             this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch((err: PlebbitError) => {
                 log.error(err.toString());
@@ -344,6 +346,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this.initSubplebbit(newSubProps);
 
         log(`Subplebbit (${this.address}) props (${Object.keys(newSubplebbitOptions)}) has been edited`);
+
+        if (!this._sync) await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
 
         return this;
     }
@@ -447,6 +451,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this._syncInterval = clearInterval(this._syncInterval);
             this._setStartedState("stopped");
         }
+        if (this.dbHandler) await this.dbHandler.destoryConnection();
+
         this._setState("stopped");
     }
 
@@ -1242,7 +1248,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async _updateDbInternalState(props: Partial<InternalSubplebbitType>) {
         if (Object.keys(props).length === 0) return;
         await this.dbHandler.lockSubState();
-        const internalStateBefore: SubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
+        const internalStateBefore: InternalSubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
         await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], {
             ...internalStateBefore,
             ...props
@@ -1266,6 +1272,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         if (!this.signer?.address) throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED");
         if (!this.plebbit._defaultIpfsClient())
             throwWithErrorCode("ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE", { ipfsHttpClientOptions: this.plebbit.ipfsHttpClientsOptions });
+
+        await this.dbHandler.initDestroyedConnection();
 
         await this.dbHandler.lockSubStart(); // Will throw if sub is locked already
         this._sync = true;
