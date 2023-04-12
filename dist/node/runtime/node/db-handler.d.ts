@@ -19,6 +19,7 @@ export declare class DbHandler {
     keyvSet(key: string, value: any, ttl?: number): Promise<true>;
     keyvDelete(key: string | string[]): Promise<boolean>;
     keyvHas(key: string): Promise<boolean>;
+    initDestroyedConnection(): Promise<void>;
     destoryConnection(): Promise<void>;
     createTransaction(transactionId: string): Promise<Transaction>;
     commitTransaction(transactionId: string): Promise<void>;

@@ -345,6 +345,9 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 10: return [4 /*yield*/, this.dbHandler.unlockSubCreation()];
                     case 11:
                         _a.sent();
+                        return [4 /*yield*/, this.dbHandler.destoryConnection()];
+                    case 12:
+                        _a.sent(); // Need to destory connection so process wouldn't hang
                         return [2 /*return*/];
                 }
             });
@@ -380,14 +383,17 @@ var Subplebbit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:edit");
-                        if (!(newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address)) return [3 /*break*/, 4];
+                        return [4 /*yield*/, this.dbHandler.initDestroyedConnection()];
+                    case 1:
+                        _a.sent();
+                        if (!(newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address)) return [3 /*break*/, 5];
                         this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch(function (err) {
                             log.error(err.toString());
                             _this.emit("error", err);
                         });
                         log("Attempting to edit subplebbit.address from ".concat(this.address, " to ").concat(newSubplebbitOptions.address));
                         return [4 /*yield*/, this._updateDbInternalState(lodash_1.default.pick(newSubplebbitOptions, "address"))];
-                    case 1:
+                    case 2:
                         _a.sent();
                         return [4 /*yield*/, this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                                 address: newSubplebbitOptions.address,
@@ -395,22 +401,28 @@ var Subplebbit = /** @class */ (function (_super) {
                                     dataPath: this.plebbit.dataPath
                                 }
                             })];
-                    case 2:
-                        _a.sent();
-                        return [4 /*yield*/, this._switchDbIfNeeded()];
                     case 3:
                         _a.sent();
-                        _a.label = 4;
+                        return [4 /*yield*/, this._switchDbIfNeeded()];
                     case 4:
+                        _a.sent();
+                        _a.label = 5;
+                    case 5:
                         newSubProps = __assign(__assign({}, lodash_1.default.omit(newSubplebbitOptions, "address")), { _subplebbitUpdateTrigger: true });
                         return [4 /*yield*/, this._updateDbInternalState(newSubProps)];
-                    case 5:
-                        _a.sent();
-                        return [4 /*yield*/, this.initSubplebbit(newSubProps)];
                     case 6:
                         _a.sent();
+                        return [4 /*yield*/, this.initSubplebbit(newSubProps)];
+                    case 7:
+                        _a.sent();
                         log("Subplebbit (".concat(this.address, ") props (").concat(Object.keys(newSubplebbitOptions), ") has been edited"));
-                        return [2 /*return*/, this];
+                        if (!!this._sync) return [3 /*break*/, 9];
+                        return [4 /*yield*/, this.dbHandler.destoryConnection()];
+                    case 8:
+                        _a.sent(); // Need to destory connection so process wouldn't hang
+                        _a.label = 9;
+                    case 9: // Need to destory connection so process wouldn't hang
+                    return [2 /*return*/, this];
                 }
             });
         });
@@ -568,6 +580,12 @@ var Subplebbit = /** @class */ (function (_super) {
                         this._setStartedState("stopped");
                         _b.label = 4;
                     case 4:
+                        if (!this.dbHandler) return [3 /*break*/, 6];
+                        return [4 /*yield*/, this.dbHandler.destoryConnection()];
+                    case 5:
+                        _b.sent();
+                        _b.label = 6;
+                    case 6:
                         this._setState("stopped");
                         return [2 /*return*/];
                 }
@@ -1716,16 +1734,19 @@ var Subplebbit = /** @class */ (function (_super) {
                             (0, util_1.throwWithErrorCode)("ERR_SUB_SIGNER_NOT_DEFINED");
                         if (!this.plebbit._defaultIpfsClient())
                             (0, util_1.throwWithErrorCode)("ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE", { ipfsHttpClientOptions: this.plebbit.ipfsHttpClientsOptions });
-                        return [4 /*yield*/, this.dbHandler.lockSubStart()];
+                        return [4 /*yield*/, this.dbHandler.initDestroyedConnection()];
                     case 1:
+                        _b.sent();
+                        return [4 /*yield*/, this.dbHandler.lockSubStart()];
+                    case 2:
                         _b.sent(); // Will throw if sub is locked already
                         this._sync = true;
                         return [4 /*yield*/, this.dbHandler.initDbIfNeeded()];
-                    case 2:
+                    case 3:
                         _b.sent();
                         // Import subplebbit keys onto ipfs node
                         return [4 /*yield*/, this._importSignerIntoIpfsIfNeeded({ ipnsKeyName: this.signer.ipnsKeyName, privateKey: this.signer.privateKey })];
-                    case 3:
+                    case 4:
                         // Import subplebbit keys onto ipfs node
                         _b.sent();
                         if (!this.provideCaptchaCallback) {
@@ -1733,25 +1754,25 @@ var Subplebbit = /** @class */ (function (_super) {
                             this.provideCaptchaCallback = this.defaultProvideCaptcha;
                             this.validateCaptchaAnswerCallback = this.defaultValidateCaptcha;
                         }
-                        if (!(typeof this.pubsubTopic !== "string")) return [3 /*break*/, 5];
+                        if (!(typeof this.pubsubTopic !== "string")) return [3 /*break*/, 6];
                         this.pubsubTopic = lodash_1.default.clone(this.signer.address);
                         log("Defaulted subplebbit (".concat(this.address, ") pubsub topic to ").concat(this.pubsubTopic, " since sub owner hasn't provided any"));
                         return [4 /*yield*/, this._updateDbInternalState(lodash_1.default.pick(this, "pubsubTopic"))];
-                    case 4:
-                        _b.sent();
-                        _b.label = 5;
                     case 5:
-                        if (!(typeof this.createdAt !== "number")) return [3 /*break*/, 7];
+                        _b.sent();
+                        _b.label = 6;
+                    case 6:
+                        if (!(typeof this.createdAt !== "number")) return [3 /*break*/, 8];
                         this.createdAt = (0, util_1.timestamp)();
                         log("Subplebbit (".concat(this.address, ") createdAt has been set to ").concat(this.createdAt));
                         return [4 /*yield*/, this._updateDbInternalState(lodash_1.default.pick(this, "createdAt"))];
-                    case 6:
-                        _b.sent();
-                        _b.label = 7;
                     case 7:
+                        _b.sent();
+                        _b.label = 8;
+                    case 8:
                         this._subplebbitUpdateTrigger = true;
                         return [4 /*yield*/, this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger })];
-                    case 8:
+                    case 9:
                         _b.sent();
                         this._setState("started");
                         this.syncIpnsWithDb()
