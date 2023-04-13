@@ -1,6 +1,13 @@
 const Plebbit = require("../../../dist/node");
-const { mockPlebbit, publishRandomPost, createMockSub, mockGatewayPlebbit } = require("../../../dist/node/test/test-util");
+const {
+    mockPlebbit,
+    publishRandomPost,
+    createMockSub,
+    mockGatewayPlebbit,
+    publishRandomReply
+} = require("../../../dist/node/test/test-util");
 const signers = require("../../fixtures/signers");
+const { loadIpnsAsJson } = require("../../../dist/node/util");
 const { getThumbnailUrlOfLink } = require("../../../dist/node/runtime/node/util");
 const path = require("path");
 const fs = require("fs");
@@ -352,5 +359,57 @@ describe(`Generation of thumbnail urls`, async () => {
         expect(post.link).to.equal(link);
         await sub.stop();
         expect(post.thumbnailUrl).to.equal("https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg");
+    });
+});
+
+describe(`Migration to a new IPFS repo`, async () => {
+    let subAddress;
+    let plebbitDifferentIpfs;
+    before(async () => {
+        const plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        const sub = await createMockSub({}, plebbit);
+        await sub.start();
+        await new Promise((resolve) => sub.once("update", resolve));
+        const post = await publishRandomPost(sub.address, plebbit, {}, true);
+        await publishRandomReply(post, plebbit, {}, true);
+
+        await sub.stop();
+
+        plebbitDifferentIpfs = await mockPlebbit({
+            dataPath: globalThis["window"]?.plebbitDataPath,
+            ipfsHttpClientsOptions: ["http://localhost:15004/api/v0"]
+        }); // Different IPFS repo
+
+        const subDifferentIpfs = await createMockSub({ address: sub.address }, plebbitDifferentIpfs);
+        await subDifferentIpfs.start();
+        await new Promise((resolve) => subDifferentIpfs.once("update", resolve));
+        subAddress = subDifferentIpfs.address;
+    });
+    it(`Subplebbit IPNS is republished`, async () => {
+        const subLoaded = await plebbitDifferentIpfs.getSubplebbit(subAddress);
+        expect(subLoaded).to.be.a("object");
+        expect(subLoaded.posts).to.be.a("object");
+        // If we can load the subplebbit IPNS that means it has been republished by the new IPFS repo
+    });
+
+    it(`Posts' IPFS are repinned`, async () => {
+        const subLoaded = await plebbitDifferentIpfs.getSubplebbit(subAddress);
+        const postFromPage = subLoaded.posts.pages.hot.comments[0];
+        const postIpfs = JSON.parse(await plebbitDifferentIpfs.fetchCid(postFromPage.cid));
+        expect(postIpfs.subplebbitAddress).to.equal(subAddress); // Make sure it was loaded correctly
+    });
+
+    it(`Comments' IPFS are repinned`, async () => {
+        const subLoaded = await plebbitDifferentIpfs.getSubplebbit(subAddress);
+        const postFromPage = subLoaded.posts.pages.hot.comments[0];
+        const commentIpfs = JSON.parse(await plebbitDifferentIpfs.fetchCid(postFromPage.replies.pages.topAll.comments[0].cid));
+        expect(commentIpfs.subplebbitAddress).to.equal(subAddress); // Make sure it was loaded correctly
+    });
+    it(`Comments' CommentUpdate are republished`, async () => {
+        const subLoaded = await plebbitDifferentIpfs.getSubplebbit(subAddress);
+        const postFromPage = subLoaded.posts.pages.hot.comments[0];
+
+        const ipnsLoaded = await loadIpnsAsJson(postFromPage.ipnsName, plebbitDifferentIpfs);
+        expect(ipnsLoaded.cid).to.equal(postFromPage.cid); // Make sure it was loaded correctly
     });
 });
