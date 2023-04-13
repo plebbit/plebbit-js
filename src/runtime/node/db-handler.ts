@@ -511,6 +511,15 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("authorAddress", authorAddresses);
     }
 
+    async queryAllCommentsCid(trx?: Transaction): Promise<string[]> {
+        const res = await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid");
+        return res.map((row) => row.cid);
+    }
+
+    async queryCommentsByCids(cids: string[], trx?: Transaction) {
+        return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("cid", cids);
+    }
+
     async queryParents(rootComment: Pick<CommentsTableRow, "cid" | "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]> {
         const parents: CommentsTableRow[] = [];
         let curParentCid = rootComment.parentCid;

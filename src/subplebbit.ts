@@ -8,6 +8,7 @@ import { decrypt, encrypt, Signer } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
+import Hash from "ipfs-only-hash";
 
 import {
     AuthorTypeWithCommentUpdate,
@@ -1227,6 +1228,35 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         for (const depthKey of depthsKeySorted) await Promise.all(commentsGroupedByDepth[depthKey].map(this._updateComment.bind(this)));
     }
 
+    private async _repinCommentsIPFSIfNeeded() {
+        const log = Logger("plebbit-js:subplebbit:sync");
+        const dbCommentsCids = await this.dbHandler.queryAllCommentsCid();
+        const pinnedCids = (await this.plebbit._defaultIpfsClient()._client.pin.ls()).map((cid) => cid.cid.toString());
+
+        const unpinnedCommentsCids = lodash.difference(dbCommentsCids, pinnedCids);
+
+        if (unpinnedCommentsCids.length === 0) return;
+
+        log.trace(`There are ${unpinnedCommentsCids.length} comments that need to be repinned`);
+
+        const unpinnedComments = await Promise.all(
+            (await this.dbHandler.queryCommentsByCids(unpinnedCommentsCids)).map((dbRes) => this.plebbit.createComment(dbRes))
+        );
+
+        await Promise.all(
+            unpinnedComments.map(async (comment) => {
+                const commentIpfsContent = deterministicStringify(comment.toJSONIpfs());
+                const contentHash: string = await Hash.of(commentIpfsContent);
+
+                assert.equal(contentHash, comment.cid);
+
+                await this.plebbit._defaultIpfsClient()._client.add(commentIpfsContent, { pin: true });
+            })
+        );
+
+        log(`${unpinnedComments.length} comments' IPFS have been repinned`);
+    }
+
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:subplebbit:sync");
         await this._switchDbIfNeeded();
@@ -1236,7 +1266,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this._ipfsNodeIpnsKeyNames = (await this.plebbit._defaultIpfsClient()._client.key.list()).map((key) => key.name);
             await this._listenToIncomingRequests();
             this._setStartedState("publishing-ipns");
-            await this._updateCommentsThatNeedToBeUpdated();
+            await Promise.all([this._updateCommentsThatNeedToBeUpdated(), this._repinCommentsIPFSIfNeeded()]);
             await this.updateSubplebbitIpnsIfNeeded();
             this._setStartedState("succeeded");
         } catch (e) {

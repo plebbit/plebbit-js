@@ -1,5 +1,6 @@
 import { CID, IPFSHTTPClient, Options as IpfsHttpClientOptions } from "ipfs-http-client";
 import { PeersResult } from "ipfs-core-types/src/swarm/index";
+import { LsResult } from "ipfs-core-types/src/pin/index";
 import { DbHandler } from "./runtime/node/db-handler";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
@@ -478,7 +479,7 @@ export type IpfsHttpClientPublicAPI = {
     };
     config: Pick<IPFSHTTPClient["config"], "get">;
     key: Pick<IPFSHTTPClient["key"], "list" | "rm">;
-    pin: Pick<IPFSHTTPClient["pin"], "rm">;
+    pin: Pick<IPFSHTTPClient["pin"], "rm"> & { ls: (...p: Parameters<IPFSHTTPClient["pin"]["ls"]>) => Promise<LsResult[]> };
     block: { rm: (...p: Parameters<IPFSHTTPClient["block"]["rm"]>) => Promise<{ cid: CID; error?: Error }[]> };
     swarm: Pick<IPFSHTTPClient["swarm"], "peers">;
 };

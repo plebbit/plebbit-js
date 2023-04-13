@@ -196,7 +196,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             ...this.toJSONPubsubMessagePublication(),
             previousCid: this.previousCid,
             ipnsName: this.ipnsName,
-            postCid: this.postCid,
+            postCid: this.depth === 0 ? undefined : this.postCid,
             depth: this.depth,
             thumbnailUrl: this.thumbnailUrl
         };
