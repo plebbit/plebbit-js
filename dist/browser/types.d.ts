@@ -1,5 +1,6 @@
 import { CID, IPFSHTTPClient, Options as IpfsHttpClientOptions } from "ipfs-http-client";
 import { PeersResult } from "ipfs-core-types/src/swarm/index";
+import { LsResult } from "ipfs-core-types/src/pin/index";
 import { DbHandler } from "./runtime/browser/db-handler";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
@@ -341,7 +342,7 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     shortCid?: string;
     ipnsName?: string;
 }
-export interface CommentWithCommentUpdate extends Omit<CommentType, "replyCount" | "downvoteCount" | "upvoteCount" | "replies" | "updatedAt" | "original" | "cid" | "postCid" | "depth" | "ipnsKeyName" | "signer">, Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth">>, Omit<CommentUpdate, "author" | "replies"> {
+export interface CommentWithCommentUpdate extends Omit<CommentType, "replyCount" | "downvoteCount" | "upvoteCount" | "replies" | "updatedAt" | "original" | "cid" | "shortCid" | "postCid" | "depth" | "ipnsKeyName" | "signer">, Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth" | "shortCid">>, Omit<CommentUpdate, "author" | "replies"> {
     replies?: PagesTypeJson;
 }
 export interface CommentIpfsType extends Omit<CreateCommentOptions, "signer" | "timestamp" | "author">, PublicationType, Pick<CommentType, "previousCid" | "postCid" | "thumbnailUrl">, Pick<Required<CommentType>, "depth" | "ipnsName"> {
@@ -382,7 +383,9 @@ export declare type IpfsHttpClientPublicAPI = {
     };
     config: Pick<IPFSHTTPClient["config"], "get">;
     key: Pick<IPFSHTTPClient["key"], "list" | "rm">;
-    pin: Pick<IPFSHTTPClient["pin"], "rm">;
+    pin: Pick<IPFSHTTPClient["pin"], "rm"> & {
+        ls: (...p: Parameters<IPFSHTTPClient["pin"]["ls"]>) => Promise<LsResult[]>;
+    };
     block: {
         rm: (...p: Parameters<IPFSHTTPClient["block"]["rm"]>) => Promise<{
             cid: CID;

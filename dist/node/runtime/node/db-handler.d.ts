@@ -57,6 +57,8 @@ export declare class DbHandler {
     }[]>;
     queryStoredCommentUpdate(comment: Pick<CommentsTableRow, "cid">, trx?: any): Promise<CommentUpdatesRow | undefined>;
     queryCommentsOfAuthor(authorAddresses: string | string[], trx?: Transaction): Promise<CommentsTableRow[]>;
+    queryAllCommentsCid(trx?: Transaction): Promise<string[]>;
+    queryCommentsByCids(cids: string[], trx?: Transaction): Promise<CommentsTableRow[]>;
     queryParents(rootComment: Pick<CommentsTableRow, "cid" | "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]>;
     queryCommentsToBeUpdated(opts: {
         minimumUpdatedAt: number;

@@ -877,6 +877,26 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
+    DbHandler.prototype.queryAllCommentsCid = function (trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            var res;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).select("cid")];
+                    case 1:
+                        res = _a.sent();
+                        return [2 /*return*/, res.map(function (row) { return row.cid; })];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.queryCommentsByCids = function (cids, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("cid", cids)];
+            });
+        });
+    };
     DbHandler.prototype.queryParents = function (rootComment, trx) {
         return __awaiter(this, void 0, void 0, function () {
             var parents, curParentCid, parent_1;

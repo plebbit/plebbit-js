@@ -206,7 +206,7 @@ function _mockSubplebbitPlebbit(signers, dataPath) {
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, mockPlebbit(dataPath)];
+                case 0: return [4 /*yield*/, mockPlebbit({ dataPath: dataPath })];
                 case 1:
                     plebbit = _a.sent();
                     plebbit.resolver._resolveEnsTxtRecord = function (ensName, textRecord) { return __awaiter(_this, void 0, void 0, function () {
@@ -461,17 +461,13 @@ function startSubplebbits(props) {
     });
 }
 exports.startSubplebbits = startSubplebbits;
-function mockPlebbit(dataPath) {
+function mockPlebbit(plebbitOptions) {
     return __awaiter(this, void 0, void 0, function () {
         var plebbit;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, (0, index_1.default)({
-                        ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
-                        pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"],
-                        dataPath: dataPath
-                    })];
+                case 0: return [4 /*yield*/, (0, index_1.default)(__assign({ ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"], pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] }, plebbitOptions))];
                 case 1:
                     plebbit = _a.sent();
                     plebbit.resolver._resolveEnsTxtRecord = function (ensName, textRecord) { return __awaiter(_this, void 0, void 0, function () {

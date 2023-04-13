@@ -4,7 +4,7 @@ import { Plebbit } from "../plebbit";
 import Vote from "../vote";
 import { Pages } from "../pages";
 import { Subplebbit } from "../subplebbit";
-import { CreateCommentOptions, CreateSubplebbitOptions, PostType, VoteType } from "../types";
+import { CreateCommentOptions, CreateSubplebbitOptions, PlebbitOptions, PostType, VoteType } from "../types";
 import { SignerType } from "../signer/constants";
 import Publication from "../publication";
 export declare function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, randomTimestamp?: boolean, postProps?: Partial<CreateCommentOptions | PostType>): Promise<Post>;
@@ -18,7 +18,7 @@ export declare function startSubplebbits(props: {
     votesPerCommentToPublish: number;
     numOfCommentsToPublish: number;
 }): Promise<void>;
-export declare function mockPlebbit(dataPath?: string): Promise<Plebbit>;
+export declare function mockPlebbit(plebbitOptions?: PlebbitOptions): Promise<Plebbit>;
 export declare function mockRemotePlebbit(): Promise<Plebbit>;
 export declare function mockGatewayPlebbit(): Promise<Plebbit>;
 export declare function publishRandomReply(parentComment: Comment, plebbit: Plebbit, commentProps: Partial<CreateCommentOptions>, verifyCommentPropsInParentPages?: boolean): Promise<Comment>;

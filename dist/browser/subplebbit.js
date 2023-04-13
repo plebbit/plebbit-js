@@ -83,6 +83,7 @@ var sort_handler_1 = require("./sort-handler");
 var util_1 = require("./util");
 var signer_1 = require("./signer");
 var safe_stable_stringify_1 = require("safe-stable-stringify");
+var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
 var comment_1 = require("./comment");
 var post_1 = __importDefault(require("./post"));
 var util_2 = require("./signer/util");
@@ -1628,6 +1629,54 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
+    Subplebbit.prototype._repinCommentsIPFSIfNeeded = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var log, dbCommentsCids, pinnedCids, unpinnedCommentsCids, unpinnedComments, _a, _b;
+            var _this = this;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:sync");
+                        return [4 /*yield*/, this.dbHandler.queryAllCommentsCid()];
+                    case 1:
+                        dbCommentsCids = _c.sent();
+                        return [4 /*yield*/, this.plebbit._defaultIpfsClient()._client.pin.ls()];
+                    case 2:
+                        pinnedCids = (_c.sent()).map(function (cid) { return cid.cid.toString(); });
+                        unpinnedCommentsCids = lodash_1.default.difference(dbCommentsCids, pinnedCids);
+                        if (unpinnedCommentsCids.length === 0)
+                            return [2 /*return*/];
+                        log.trace("There are ".concat(unpinnedCommentsCids.length, " comments that need to be repinned"));
+                        _b = (_a = Promise).all;
+                        return [4 /*yield*/, this.dbHandler.queryCommentsByCids(unpinnedCommentsCids)];
+                    case 3: return [4 /*yield*/, _b.apply(_a, [(_c.sent()).map(function (dbRes) { return _this.plebbit.createComment(dbRes); })])];
+                    case 4:
+                        unpinnedComments = _c.sent();
+                        return [4 /*yield*/, Promise.all(unpinnedComments.map(function (comment) { return __awaiter(_this, void 0, void 0, function () {
+                                var commentIpfsContent, contentHash;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            commentIpfsContent = (0, safe_stable_stringify_1.stringify)(comment.toJSONIpfs());
+                                            return [4 /*yield*/, ipfs_only_hash_1.default.of(commentIpfsContent)];
+                                        case 1:
+                                            contentHash = _a.sent();
+                                            assert_1.default.equal(contentHash, comment.cid);
+                                            return [4 /*yield*/, this.plebbit._defaultIpfsClient()._client.add(commentIpfsContent, { pin: true })];
+                                        case 2:
+                                            _a.sent();
+                                            return [2 /*return*/];
+                                    }
+                                });
+                            }); }))];
+                    case 5:
+                        _c.sent();
+                        log("".concat(unpinnedComments.length, " comments' IPFS have been repinned"));
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     Subplebbit.prototype.syncIpnsWithDb = function () {
         return __awaiter(this, void 0, void 0, function () {
             var log, _a, e_3;
@@ -1652,7 +1701,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 5:
                         _b.sent();
                         this._setStartedState("publishing-ipns");
-                        return [4 /*yield*/, this._updateCommentsThatNeedToBeUpdated()];
+                        return [4 /*yield*/, Promise.all([this._updateCommentsThatNeedToBeUpdated(), this._repinCommentsIPFSIfNeeded()])];
                     case 6:
                         _b.sent();
                         return [4 /*yield*/, this.updateSubplebbitIpnsIfNeeded()];

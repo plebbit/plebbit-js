@@ -162,7 +162,7 @@ var Comment = /** @class */ (function (_super) {
             ? __assign(__assign({}, this.toJSONAfterChallengeVerification()), { shortCid: this.shortCid }) : this.toJSONPubsubMessagePublication();
         return __assign(__assign({}, base), (typeof this.updatedAt === "number"
             ? {
-                author: this.author.toJSONIpfsWithCommentUpdate(),
+                author: this.author.toJSON(),
                 original: this.original,
                 upvoteCount: this.upvoteCount,
                 downvoteCount: this.downvoteCount,
@@ -193,7 +193,7 @@ var Comment = /** @class */ (function (_super) {
             throw Error("comment.ipnsName should be defined before calling toJSONIpfs");
         if (typeof this.depth !== "number")
             throw Error("comment.depth should be defined before calling toJSONIpfs");
-        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl });
+        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.depth === 0 ? undefined : this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl });
     };
     Comment.prototype.toJSONPubsubMessagePublication = function () {
         return __assign(__assign({}, _super.prototype.toJSONPubsubMessagePublication.call(this)), { content: this.content, parentCid: this.parentCid, flair: this.flair, spoiler: this.spoiler, link: this.link, title: this.title });
@@ -208,8 +208,8 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.toJSONMerged = function () {
         var _a;
-        (0, assert_1.default)(this.ipnsName && typeof this.updatedAt === "number" && this.original);
-        return __assign(__assign({}, this.toJSONAfterChallengeVerification()), { author: this.author.toJSONIpfsWithCommentUpdate(), original: this.original, upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replyCount: this.replyCount, updatedAt: this.updatedAt, deleted: this.deleted, pinned: this.pinned, locked: this.locked, removed: this.removed, reason: this.reason, edit: this.edit, protocolVersion: this.protocolVersion, spoiler: this.spoiler, flair: this.flair, replies: (_a = this.replies) === null || _a === void 0 ? void 0 : _a.toJSON() });
+        (0, assert_1.default)(this.ipnsName && typeof this.updatedAt === "number" && this.original && this.shortCid);
+        return __assign(__assign({}, this.toJSONAfterChallengeVerification()), { shortCid: this.shortCid, author: this.author.toJSON(), original: this.original, upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replyCount: this.replyCount, updatedAt: this.updatedAt, deleted: this.deleted, pinned: this.pinned, locked: this.locked, removed: this.removed, reason: this.reason, edit: this.edit, protocolVersion: this.protocolVersion, spoiler: this.spoiler, flair: this.flair, replies: (_a = this.replies) === null || _a === void 0 ? void 0 : _a.toJSON() });
     };
     Comment.prototype.setCommentIpnsKey = function (ipnsKey) {
         // Contains name and id
