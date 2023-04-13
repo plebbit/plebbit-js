@@ -19,7 +19,7 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 describe(`plebbit.createSubplebbit`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
 
     const _createAndValidateSubArsg = async (subArgs) => {
@@ -130,7 +130,7 @@ describe(`plebbit.createSubplebbit`, async () => {
 describe("Create lock", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
     it(`Fail to create subplebbit if create lock is present`, async () => {
         const subSigner = await plebbit.createSigner();

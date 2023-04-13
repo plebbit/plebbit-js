@@ -6,7 +6,7 @@ import PlebbitIndex from "../index";
 import Vote from "../vote";
 import { Pages } from "../pages";
 import { Subplebbit } from "../subplebbit";
-import { CreateCommentOptions, CreateSubplebbitOptions, PostType, VoteType } from "../types";
+import { CreateCommentOptions, CreateSubplebbitOptions, PlebbitOptions, PostType, VoteType } from "../types";
 import isIPFS from "is-ipfs";
 import waitUntil from "async-wait-until";
 import assert from "assert";
@@ -122,7 +122,7 @@ export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promi
 }
 
 async function _mockSubplebbitPlebbit(signers: SignerType[], dataPath: string) {
-    const plebbit = await mockPlebbit(dataPath);
+    const plebbit = await mockPlebbit({dataPath});
 
     plebbit.resolver._resolveEnsTxtRecord = async (ensName: string, textRecord: string) => {
         if (ensName === "plebbit.eth" && textRecord === "subplebbit-address") return signers[3].address;
@@ -274,11 +274,11 @@ export async function startSubplebbits(props: {
     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 }
 
-export async function mockPlebbit(dataPath?: string) {
+export async function mockPlebbit(plebbitOptions?: PlebbitOptions) {
     const plebbit = await PlebbitIndex({
         ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
         pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`],
-        dataPath
+        ...plebbitOptions
     });
 
     plebbit.resolver._resolveEnsTxtRecord = async (ensName: string, textRecord: string) => {

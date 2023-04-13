@@ -16,7 +16,7 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 describe("plebbit.listSubplebbits", async () => {
     let plebbit, subSigner;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
         subSigner = await plebbit.createSigner();
     });
 
@@ -41,7 +41,7 @@ describe("plebbit.listSubplebbits", async () => {
 describe(`subplebbit.delete`, async () => {
     let plebbit, sub;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
         sub = await plebbit.createSubplebbit();
     });
 
@@ -69,7 +69,7 @@ describe(`subplebbit.delete`, async () => {
 describe(`subplebbit.lastPostCid`, async () => {
     let plebbit, sub;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
         sub = await createMockSub({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
@@ -138,7 +138,7 @@ describe(`Create a sub with basic auth urls`, async () => {
 describe(`subplebbit.pubsubTopic`, async () => {
     let subplebbit, plebbit;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
         subplebbit = await createMockSub({}, plebbit);
     });
 
@@ -165,7 +165,7 @@ describe(`subplebbit.pubsubTopic`, async () => {
 describe(`subplebbit.state`, async () => {
     let plebbit, subplebbit;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
         subplebbit = await createMockSub({}, plebbit);
     });
 
@@ -223,7 +223,7 @@ describe(`subplebbit.state`, async () => {
 describe(`subplebbit.startedState`, async () => {
     let plebbit, subplebbit;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
         subplebbit = await createMockSub({}, plebbit);
     });
 
@@ -305,7 +305,7 @@ describe(`subplebbit.updatingState`, async () => {
     });
 
     it(`subplebbit.updatingState emits 'succceeded' when a new update from local sub is retrieved`, async () => {
-        const plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        const plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
         const localSub = await plebbit.createSubplebbit({ address: signers[0].address });
         const expectedStates = ["succeeded", "stopped"];
         const recordedStates = [];
@@ -337,7 +337,7 @@ describe(`Generation of thumbnail urls`, async () => {
 
     it(`comment.thumbnailUrl is populated by subplebbit in challengeVerification`, async () => {
         const link = "https://www.youtube.com/watch?v=TLysAkFM4cA";
-        const plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        const plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
         const sub = await createMockSub({}, plebbit);
         await sub.edit({ settings: { fetchThumbnailUrls: true } });
         expect(sub.settings.fetchThumbnailUrls).to.be.true;

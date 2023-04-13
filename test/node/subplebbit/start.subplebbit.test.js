@@ -15,7 +15,7 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 describe(`subplebbit.start`, async () => {
     let plebbit, subplebbit;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
         subplebbit = await createMockSub({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
@@ -60,7 +60,7 @@ describe(`subplebbit.start`, async () => {
 describe(`Start lock`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
     it(`subplebbit.start throws if sub is already started (same Subplebbit instance)`, async () => {
         const subplebbit = await plebbit.createSubplebbit();

@@ -20,7 +20,7 @@ describe("plebbit", () => {
     });
 
     it(`plebbit.listSubplebbits() lists subplebbits correctly`, async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
         const newSubplebbit = await plebbit.createSubplebbit({
             signer: await plebbit.createSigner()
         });

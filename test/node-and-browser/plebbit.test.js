@@ -60,7 +60,7 @@ describe("plebbit.createSigner", async () => {
     let plebbit, signer;
     const isBase64 = (testString) => /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}))?$/gm.test(testString);
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
         signer = await plebbit.createSigner();
     });
 
@@ -93,7 +93,7 @@ describe("plebbit.createSigner", async () => {
 describe("plebbit.getComment", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
     it("post props are loaded correctly", async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);

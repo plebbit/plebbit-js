@@ -21,7 +21,7 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 describe(`subplebbit.edit`, async () => {
     let plebbit, subplebbit, postToPublishAfterEdit, ethAddress;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
         subplebbit = await createMockSub({}, plebbit);
         ethAddress = `test-edit-${timestamp()}.eth`;
         const originalPlebbit = await mockPlebbit();
@@ -109,7 +109,7 @@ describe(`subplebbit.edit`, async () => {
 describe(`Concurrency with subplebbit.edit`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
 
     it("Two unstarted local sub instances can receive each other updates with subplebbit.update and edit", async () => {
@@ -137,7 +137,7 @@ describe(`Concurrency with subplebbit.edit`, async () => {
         { address: `address-eth-${v4()}-2.eth`, rules: ["rule 1", "rule 2"] }
     ].map((editArgs) =>
         it(`edit subplebbit with multiple subplebbit instances running (${Object.keys(editArgs)})`, async () => {
-            const plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+            const plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
             // create subplebbit
             const subplebbitTitle = "subplebbit title" + timestamp();
             const subplebbit = await plebbit.createSubplebbit({ title: subplebbitTitle });
@@ -208,7 +208,7 @@ describe(`Concurrency with subplebbit.edit`, async () => {
     );
 
     it(`Can edit a local sub address, then start it`, async () => {
-        const customPlebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        const customPlebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
         const signer = await customPlebbit.createSigner();
         const domain = `edit-before-start-${timestamp()}.eth`;
 
@@ -240,7 +240,7 @@ describe(`Concurrency with subplebbit.edit`, async () => {
 describe(`Edit misc`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
     it(`Can edit subplebbit.address to a new domain if subplebbit-address record does not exist or does not match signer.address`, async () => {
         const customPlebbit = await mockPlebbit();
