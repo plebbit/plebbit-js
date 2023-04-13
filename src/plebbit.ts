@@ -127,11 +127,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     private _initResolver(options: PlebbitOptions) {
         this.chainProviders = options.chainProviders || {
             avax: {
-                url: ["https://api.avax.network/ext/bc/C/rpc"],
+                urls: ["https://api.avax.network/ext/bc/C/rpc"],
                 chainId: 43114
             },
             matic: {
-                url: ["https://polygon-rpc.com"],
+                urls: ["https://polygon-rpc.com"],
                 chainId: 137
             }
         };

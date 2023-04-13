@@ -20,7 +20,7 @@ import { PlebbitError } from "./plebbit-error";
 
 export type ProtocolVersion = "1.0.0";
 
-export type ChainProvider = { url: string[]; chainId: number };
+export type ChainProvider = { urls: string[]; chainId: number };
 export interface PlebbitOptions {
     ipfsGatewayUrls?: string[];
     ipfsHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
@@ -692,7 +692,7 @@ export interface PubsubClient {
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
     _client: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">; // Private API, shouldn't be used by consumers
-    _clientOptions?: IpfsHttpClientOptions;
+    _clientOptions: IpfsHttpClientOptions;
 }
 
 export interface GatewayClient {

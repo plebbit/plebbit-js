@@ -32,14 +32,15 @@ export class Resolver {
         }
         if (chainTicker === "eth") {
             // if using eth, use ethers' default provider unless another provider is specified
-            if (!this.plebbit.chainProviders["eth"] || this.plebbit.chainProviders["eth"]?.[0]?.url?.match(/DefaultProvider/i)) {
+
+            if (!this.plebbit.chainProviders["eth"] || this.plebbit.chainProviders["eth"]?.urls?.[0]?.match(/DefaultProvider/i)) {
                 this.cachedChainProviders["eth"] = ethers.getDefaultProvider();
                 return this.cachedChainProviders["eth"];
             }
         }
         if (this.plebbit.chainProviders[chainTicker]) {
             this.cachedChainProviders[chainTicker] = new ethers.providers.JsonRpcProvider(
-                { url: this.plebbit.chainProviders[chainTicker][0].url },
+                { url: this.plebbit.chainProviders[chainTicker].urls[0] },
                 this.plebbit.chainProviders[chainTicker].chainId
             );
             return this.cachedChainProviders[chainTicker];
