@@ -418,12 +418,13 @@ export interface CommentWithCommentUpdate
             | "updatedAt"
             | "original"
             | "cid"
+            | "shortCid"
             | "postCid"
             | "depth"
             | "ipnsKeyName"
             | "signer"
         >,
-        Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth">>,
+        Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth" | "shortCid">>,
         Omit<CommentUpdate, "author" | "replies"> {
     replies?: PagesTypeJson;
 }

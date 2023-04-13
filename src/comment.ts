@@ -155,7 +155,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             ...base,
             ...(typeof this.updatedAt === "number"
                 ? {
-                      author: this.author.toJSONIpfsWithCommentUpdate(),
+                      author: this.author.toJSON(),
                       original: this.original,
                       upvoteCount: this.upvoteCount,
                       downvoteCount: this.downvoteCount,
@@ -232,10 +232,11 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     }
 
     toJSONMerged(): CommentWithCommentUpdate {
-        assert(this.ipnsName && typeof this.updatedAt === "number" && this.original);
+        assert(this.ipnsName && typeof this.updatedAt === "number" && this.original && this.shortCid);
         return {
             ...this.toJSONAfterChallengeVerification(),
-            author: this.author.toJSONIpfsWithCommentUpdate(),
+            shortCid: this.shortCid,
+            author: this.author.toJSON(),
             original: this.original,
             upvoteCount: this.upvoteCount,
             downvoteCount: this.downvoteCount,
