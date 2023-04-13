@@ -66,13 +66,13 @@ var Resolver = /** @class */ (function () {
         }
         if (chainTicker === "eth") {
             // if using eth, use ethers' default provider unless another provider is specified
-            if (!this.plebbit.chainProviders["eth"] || ((_c = (_b = (_a = this.plebbit.chainProviders["eth"]) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.url) === null || _c === void 0 ? void 0 : _c.match(/DefaultProvider/i))) {
+            if (!this.plebbit.chainProviders["eth"] || ((_c = (_b = (_a = this.plebbit.chainProviders["eth"]) === null || _a === void 0 ? void 0 : _a.urls) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.match(/DefaultProvider/i))) {
                 this.cachedChainProviders["eth"] = ethers_1.ethers.getDefaultProvider();
                 return this.cachedChainProviders["eth"];
             }
         }
         if (this.plebbit.chainProviders[chainTicker]) {
-            this.cachedChainProviders[chainTicker] = new ethers_1.ethers.providers.JsonRpcProvider({ url: this.plebbit.chainProviders[chainTicker][0].url }, this.plebbit.chainProviders[chainTicker].chainId);
+            this.cachedChainProviders[chainTicker] = new ethers_1.ethers.providers.JsonRpcProvider({ url: this.plebbit.chainProviders[chainTicker].urls[0] }, this.plebbit.chainProviders[chainTicker].chainId);
             return this.cachedChainProviders[chainTicker];
         }
         (0, util_1.throwWithErrorCode)("ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER", { chainTicker: chainTicker, chainProviders: this.plebbit.chainProviders });

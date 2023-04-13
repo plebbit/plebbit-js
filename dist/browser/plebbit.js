@@ -169,11 +169,11 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype._initResolver = function (options) {
         this.chainProviders = options.chainProviders || {
             avax: {
-                url: ["https://api.avax.network/ext/bc/C/rpc"],
+                urls: ["https://api.avax.network/ext/bc/C/rpc"],
                 chainId: 43114
             },
             matic: {
-                url: ["https://polygon-rpc.com"],
+                urls: ["https://polygon-rpc.com"],
                 chainId: 137
             }
         };
