@@ -12,7 +12,7 @@ import Publication from "./publication";
 import { PlebbitError } from "./plebbit-error";
 export declare type ProtocolVersion = "1.0.0";
 export declare type ChainProvider = {
-    url: string[];
+    urls: string[];
     chainId: number;
 };
 export interface PlebbitOptions {
@@ -555,7 +555,7 @@ export interface PubsubClient {
     sessionStats?: undefined;
     subplebbitStats?: undefined;
     _client: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">;
-    _clientOptions?: IpfsHttpClientOptions;
+    _clientOptions: IpfsHttpClientOptions;
 }
 export interface GatewayClient {
     stats?: IpfsStats;
