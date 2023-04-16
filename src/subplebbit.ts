@@ -11,7 +11,6 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 import Hash from "ipfs-only-hash";
 
 import {
-    AuthorTypeWithCommentUpdate,
     ChallengeAnswerMessageType,
     ChallengeMessageType,
     ChallengeRequestMessageType,
@@ -76,6 +75,7 @@ import { SignatureType, SignerType } from "./signer/constants";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { PlebbitError } from "./plebbit-error";
 import retry, { RetryOperation } from "retry";
+import Author from "./author";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
@@ -649,9 +649,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             return msg;
         }
 
-        const forbiddenAuthorFields: (keyof AuthorTypeWithCommentUpdate)[] = ["subplebbit"];
+        const forbiddenAuthorFields: (keyof Author)[] = ["subplebbit", "shortAddress"];
 
-        if (Object.keys(publication.author).some((key: keyof AuthorTypeWithCommentUpdate) => forbiddenAuthorFields.includes(key))) {
+        if (Object.keys(publication.author).some((key: keyof Author) => forbiddenAuthorFields.includes(key))) {
             log(`(${challengeRequestId}): `, messages.ERR_FORBIDDEN_AUTHOR_FIELD);
             return messages.ERR_FORBIDDEN_AUTHOR_FIELD;
         }

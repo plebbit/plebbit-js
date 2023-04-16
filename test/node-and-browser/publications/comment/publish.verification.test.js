@@ -110,9 +110,11 @@ describe("Posts with forbidden author fields are rejected", async () => {
     before(async () => {
         plebbit = await mockPlebbit();
     });
-    // TODO redo this
     const forbiddenFieldsWithValue = [
-        { subplebbit: { lastCommentCid: "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs", postScore: 0, replyScore: 0, banExpiresAt: 0 } }
+        {
+            subplebbit: { lastCommentCid: "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs", postScore: 0, replyScore: 0, banExpiresAt: 0 },
+            shortAddress: "12345"
+        }
     ];
 
     forbiddenFieldsWithValue.map((forbiddenType) =>
