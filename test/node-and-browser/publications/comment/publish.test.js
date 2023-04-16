@@ -93,6 +93,11 @@ describe("publishing posts", async () => {
         const postInPage = await findCommentInPage(post.cid, sub.posts.pageCids.new, sub.posts);
         expect(postInPage.author.wallets).to.deep.equal(wallets);
     });
+
+    it(`Can publish a comment that was created author.shortAddress manually defined`, async () => {
+        const post = await generateMockPost(subplebbitAddress, plebbit, false, { author: { shortAddress: "12345" } });
+        await publishWithExpectedResult(post, true);
+    });
 });
 
 describe(`commentUpdate.author.subplebbit`, async () => {
