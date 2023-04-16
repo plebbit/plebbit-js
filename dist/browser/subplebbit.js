@@ -825,7 +825,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         log("(".concat(challengeRequestId, "): "), msg);
                         return [2 /*return*/, msg];
                     case 3:
-                        forbiddenAuthorFields = ["subplebbit"];
+                        forbiddenAuthorFields = ["subplebbit", "shortAddress"];
                         if (Object.keys(publication.author).some(function (key) { return forbiddenAuthorFields.includes(key); })) {
                             log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_FORBIDDEN_AUTHOR_FIELD);
                             return [2 /*return*/, errors_1.messages.ERR_FORBIDDEN_AUTHOR_FIELD];

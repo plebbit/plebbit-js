@@ -320,7 +320,7 @@ var Plebbit = /** @class */ (function (_super) {
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
-                        clonedOptions = lodash_1.default.clone(pubOptions);
+                        clonedOptions = lodash_1.default.cloneDeep(pubOptions);
                         if (!clonedOptions.timestamp) {
                             clonedOptions.timestamp = (0, util_2.timestamp)();
                             log.trace("User hasn't provided a timestamp, defaulting to (".concat(clonedOptions.timestamp, ")"));
@@ -336,6 +336,7 @@ var Plebbit = /** @class */ (function (_super) {
                             clonedOptions.author = __assign(__assign({}, clonedOptions.author), { address: clonedOptions.signer.address });
                             log("author.address was not provided, will define it to signer.address (".concat(clonedOptions.author.address, ")"));
                         }
+                        delete clonedOptions.author["shortAddress"]; // Forcefully delete shortAddress so it won't be a part of the signature
                         return [2 /*return*/, clonedOptions];
                 }
             });
