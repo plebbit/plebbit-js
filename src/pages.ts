@@ -12,7 +12,6 @@ import {
     PostSortName,
     ReplySortName
 } from "./types";
-import isIPFS from "is-ipfs";
 import { verifyPage } from "./signer/signatures";
 import lodash from "lodash";
 import assert from "assert";

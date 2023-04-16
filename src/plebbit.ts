@@ -215,7 +215,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private async _initMissingFields(pubOptions: CreatePublicationOptions & { signer: CreateCommentOptions["signer"] }, log: Logger) {
-        const clonedOptions = lodash.clone(pubOptions);
+        const clonedOptions = lodash.cloneDeep(pubOptions); // Clone to avoid modifying actual arguments provided by users
         if (!clonedOptions.timestamp) {
             clonedOptions.timestamp = timestamp();
             log.trace(`User hasn't provided a timestamp, defaulting to (${clonedOptions.timestamp})`);
@@ -227,6 +227,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             clonedOptions.author = { ...clonedOptions.author, address: (<SignerType>clonedOptions.signer).address };
             log(`author.address was not provided, will define it to signer.address (${clonedOptions.author.address})`);
         }
+        delete clonedOptions.author["shortAddress"]; // Forcefully delete shortAddress so it won't be a part of the signature
         return clonedOptions;
     }
 
