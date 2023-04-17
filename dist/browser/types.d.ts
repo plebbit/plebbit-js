@@ -383,7 +383,7 @@ export declare type IpfsHttpClientPublicAPI = {
     };
     config: Pick<IPFSHTTPClient["config"], "get">;
     key: Pick<IPFSHTTPClient["key"], "list" | "rm">;
-    pin: Pick<IPFSHTTPClient["pin"], "rm"> & {
+    pin: Pick<IPFSHTTPClient["pin"], "rm" | "addAll" | "add"> & {
         ls: (...p: Parameters<IPFSHTTPClient["pin"]["ls"]>) => Promise<LsResult[]>;
     };
     block: {
