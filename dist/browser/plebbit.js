@@ -91,6 +91,7 @@ var Plebbit = /** @class */ (function (_super) {
     function Plebbit(options) {
         if (options === void 0) { options = {}; }
         var _this = _super.call(this) || this;
+        _this._pubsubSubscriptions = {};
         var acceptedOptions = [
             "chainProviders",
             "dataPath",
@@ -546,6 +547,41 @@ var Plebbit = /** @class */ (function (_super) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, (0, util_2.fetchCid)(cid, this)];
+            });
+        });
+    };
+    // Used to pre-subscribe so publishing on pubsub would be faster
+    Plebbit.prototype.pubsubSubscribe = function (subplebbitAddress) {
+        return __awaiter(this, void 0, void 0, function () {
+            var handler;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (this._pubsubSubscriptions[subplebbitAddress])
+                            return [2 /*return*/];
+                        handler = function () { };
+                        return [4 /*yield*/, this._defaultPubsubClient()._client.pubsub.subscribe(subplebbitAddress, handler)];
+                    case 1:
+                        _a.sent();
+                        this._pubsubSubscriptions[subplebbitAddress] = handler;
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Plebbit.prototype.pubsubUnsubscribe = function (subplebbitAddress) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!this._pubsubSubscriptions[subplebbitAddress])
+                            return [2 /*return*/];
+                        return [4 /*yield*/, this._defaultPubsubClient()._client.pubsub.unsubscribe(subplebbitAddress, this._pubsubSubscriptions[subplebbitAddress])];
+                    case 1:
+                        _a.sent();
+                        delete this._pubsubSubscriptions[subplebbitAddress];
+                        return [2 /*return*/];
+                }
             });
         });
     };
