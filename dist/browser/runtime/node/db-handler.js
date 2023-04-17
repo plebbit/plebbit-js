@@ -920,9 +920,9 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.queryCommentsToBeUpdated = function (opts, trx) {
+    DbHandler.prototype.queryCommentsToBeUpdated = function (ipnsKeyNames, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var criteriaOneTwoThree, lastUpdatedAtWithBuffer, restCriteria, comments, parents, _a, _b, authorComments, uniqComments;
+            var criteriaOneTwoThree, lastUpdatedAtWithBuffer, criteriaFour, comments, parents, _a, _b, authorComments, uniqComments;
             var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
@@ -930,8 +930,7 @@ var DbHandler = /** @class */ (function () {
                             .select("".concat(TABLES.COMMENTS, ".*"))
                             .leftJoin(TABLES.COMMENT_UPDATES, "".concat(TABLES.COMMENTS, ".cid"), "".concat(TABLES.COMMENT_UPDATES, ".cid"))
                             .whereNull("".concat(TABLES.COMMENT_UPDATES, ".updatedAt"))
-                            .orWhere("".concat(TABLES.COMMENT_UPDATES, ".updatedAt"), "<=", opts.minimumUpdatedAt)
-                            .orWhereNotIn("ipnsKeyName", opts.ipnsKeyNames)];
+                            .orWhereNotIn("ipnsKeyName", ipnsKeyNames)];
                     case 1:
                         criteriaOneTwoThree = _c.sent();
                         lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
@@ -952,8 +951,8 @@ var DbHandler = /** @class */ (function () {
                                 .orHaving("editLastInsertedAt", ">=", lastUpdatedAtWithBuffer)
                                 .orHaving("childCommentLastInsertedAt", ">=", lastUpdatedAtWithBuffer)];
                     case 2:
-                        restCriteria = _c.sent();
-                        comments = lodash_1.default.uniqBy(__spreadArray(__spreadArray([], criteriaOneTwoThree, true), restCriteria, true), function (comment) { return comment.cid; });
+                        criteriaFour = _c.sent();
+                        comments = lodash_1.default.uniqBy(__spreadArray(__spreadArray([], criteriaOneTwoThree, true), criteriaFour, true), function (comment) { return comment.cid; });
                         _b = (_a = lodash_1.default).flattenDeep;
                         return [4 /*yield*/, Promise.all(comments.filter(function (comment) { return comment.parentCid; }).map(function (comment) { return _this.queryParents(comment, trx); }))];
                     case 3:
