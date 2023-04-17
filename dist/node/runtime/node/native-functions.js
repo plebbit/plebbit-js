@@ -312,7 +312,7 @@ var nativeFunctions = {
                 list: ipfsClient.key.list,
                 rm: ipfsClient.key.rm
             },
-            pin: { rm: ipfsClient.pin.rm, ls: pinls },
+            pin: { rm: ipfsClient.pin.rm, ls: pinls, addAll: ipfsClient.pin.addAll, add: ipfsClient.pin.add },
             block: { rm: blockRm },
             swarm: { peers: ipfsClient.swarm.peers }
         };
