@@ -44,6 +44,7 @@ import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions, SignerType } from "./signer/constants";
 import Stats from "./stats";
 import Cache from "./runtime/node/cache";
+import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
@@ -62,8 +63,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     _cache: CacheInterface;
     stats: Stats;
 
+    private _pubsubSubscriptions: Record<string, MessageHandlerFn>;
+
     constructor(options: PlebbitOptions = {}) {
         super();
+        this._pubsubSubscriptions = {};
         const acceptedOptions: (keyof PlebbitOptions)[] = [
             "chainProviders",
             "dataPath",
@@ -354,6 +358,20 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async fetchCid(cid: string) {
         return fetchCid(cid, this);
+    }
+
+    // Used to pre-subscribe so publishing on pubsub would be faster
+    async pubsubSubscribe(subplebbitAddress: string) {
+        if (this._pubsubSubscriptions[subplebbitAddress]) return;
+        const handler = () => {};
+        await this._defaultPubsubClient()._client.pubsub.subscribe(subplebbitAddress, handler);
+        this._pubsubSubscriptions[subplebbitAddress] = handler;
+    }
+
+    async pubsubUnsubscribe(subplebbitAddress: string) {
+        if (!this._pubsubSubscriptions[subplebbitAddress]) return;
+        await this._defaultPubsubClient()._client.pubsub.unsubscribe(subplebbitAddress, this._pubsubSubscriptions[subplebbitAddress]);
+        delete this._pubsubSubscriptions[subplebbitAddress];
     }
 
     _defaultIpfsClient(): IpfsClient {
