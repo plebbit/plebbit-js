@@ -11,48 +11,51 @@ const stringify = require("safe-stable-stringify");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-const subplebbitAddress = signers[0].address;
-
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const subplebbitSigner = signers[0];
 
-describe("plebbit options (node and browser)", async () => {
-    let plebbit;
-    before(async () => {
-        plebbit = await Plebbit();
-    });
-    describe("plebbit with default options (cloudflare and pubsubprovider)", async () => {
-        it("has default plebbit options", async () => {
-            expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(
-                ["https://cloudflare-ipfs.com", "https://ipfs.io"].sort()
-            );
-            expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
-            expect(plebbit.pubsubHttpClientsOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
-            expect(plebbit.pubsubHttpClientsOptions.headers?.authorization).to.be.undefined;
+describe("Plebbit options", async () => {
+    it("Plebbit() uses correct default plebbit options", async () => {
+        const defaultPlebbit = await Plebbit();
+        expect(Object.keys(defaultPlebbit.clients.ipfsGateways).sort()).to.deep.equal(
+            ["https://cloudflare-ipfs.com", "https://ipfs.io"].sort()
+        );
+        expect(Object.keys(defaultPlebbit.clients.pubsubClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
+        expect(defaultPlebbit.pubsubHttpClientsOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
+        expect(defaultPlebbit.pubsubHttpClientsOptions.headers?.authorization).to.be.undefined;
 
-            // no dataPath in browser
-            if (typeof window === "undefined") {
-                expect(plebbit.dataPath).to.match(/\.plebbit$/);
-            } else {
-                expect(plebbit.dataPath).to.equal(undefined);
-            }
-        });
+        // no dataPath in browser
+        if (typeof window === "undefined") {
+            expect(defaultPlebbit.dataPath).to.match(/\.plebbit$/);
+        } else {
+            expect(defaultPlebbit.dataPath).to.equal(undefined);
+        }
     });
 
-    describe("Plebbit options set up correctly", async () => {
-        it("Only ipfsHttpClientsOptions is provided", async () => {
-            const url = "http://localhost:15001/api/v0";
-            const options = { ipfsHttpClientsOptions: [url] };
-            const testPlebbit = await Plebbit(options);
-            expect(testPlebbit.clients.ipfsClients[url]).to.exist;
-            expect(testPlebbit.clients.pubsubClients[url]).to.exist;
-            expect(testPlebbit.clients.ipfsClients[url]._client).to.deep.equal(testPlebbit.clients.pubsubClients[url]._client);
-            expect(Object.keys(testPlebbit.clients.ipfsGateways)).to.deep.equal(["http://127.0.0.1:18080"]);
-            expect(Object.keys(testPlebbit.clients.ipfsClients)).to.deep.equal([url]);
+    it("Plebbit Options is set up correctly when only ipfsHttpClientsOptions is provided", async () => {
+        const url = "http://localhost:15001/api/v0";
+        const options = { ipfsHttpClientsOptions: [url] };
+        const testPlebbit = await Plebbit(options);
+        expect(testPlebbit.clients.ipfsClients[url]).to.exist;
+        expect(testPlebbit.clients.pubsubClients[url]).to.exist;
+        expect(testPlebbit.clients.ipfsClients[url]._client).to.deep.equal(testPlebbit.clients.pubsubClients[url]._client);
+        expect(Object.keys(testPlebbit.clients.ipfsGateways)).to.deep.equal(["http://127.0.0.1:18080"]);
+        expect(Object.keys(testPlebbit.clients.ipfsClients)).to.deep.equal([url]);
 
-            expect(Object.keys(testPlebbit.clients.pubsubClients)).to.deep.equal([url]);
-        });
+        expect(Object.keys(testPlebbit.clients.pubsubClients)).to.deep.equal([url]);
+    });
+
+    it(`Plebbit({ipfsHttpClientOptions}) uses specified node even if ipfs node is down`, async () => {
+        const url = "http://localhost:12323/api/v0"; // Should be offline
+        const plebbit = await Plebbit({ ipfsHttpClientsOptions: [url] });
+
+        expect(Object.keys(plebbit.clients.ipfsGateways)).to.deep.equal([]);
+        expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal([url]);
+        expect(Object.keys(plebbit.clients.ipfsClients)).to.deep.equal([url]);
+
+        expect(plebbit.pubsubHttpClientsOptions).to.deep.equal([{ url }]);
+        expect(plebbit.ipfsHttpClientsOptions).to.deep.equal([{ url }]);
     });
 });
 
