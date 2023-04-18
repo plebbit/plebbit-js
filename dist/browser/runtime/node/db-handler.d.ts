@@ -60,10 +60,7 @@ export declare class DbHandler {
     queryAllCommentsCid(trx?: Transaction): Promise<string[]>;
     queryCommentsByCids(cids: string[], trx?: Transaction): Promise<CommentsTableRow[]>;
     queryParents(rootComment: Pick<CommentsTableRow, "cid" | "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]>;
-    queryCommentsToBeUpdated(opts: {
-        minimumUpdatedAt: number;
-        ipnsKeyNames: string[];
-    }, trx?: Transaction): Promise<CommentsTableRow[]>;
+    queryCommentsToBeUpdated(ipnsKeyNames: string[], trx?: Transaction): Promise<CommentsTableRow[]>;
     querySubplebbitStats(trx?: Transaction): Promise<SubplebbitStats>;
     queryCommentsUnderComment(parentCid: string | null, trx?: Transaction): Promise<CommentsTableRow[]>;
     queryComment(cid: string, trx?: Transaction): Promise<CommentsTableRow | undefined>;

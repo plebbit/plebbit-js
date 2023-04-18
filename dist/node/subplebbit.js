@@ -1588,19 +1588,15 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype._updateCommentsThatNeedToBeUpdated = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, minimumUpdatedAt, trx, commentsToUpdate, commentsGroupedByDepth, depthsKeySorted, _i, depthsKeySorted_1, depthKey;
+            var log, trx, commentsToUpdate, commentsGroupedByDepth, depthsKeySorted, _i, depthsKeySorted_1, depthKey;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:_updateCommentsThatNeedToBeUpdated");
-                        minimumUpdatedAt = (0, util_1.timestamp)() - 71 * 60 * 60;
                         return [4 /*yield*/, this.dbHandler.createTransaction("_updateCommentsThatNeedToBeUpdated")];
                     case 1:
                         trx = _a.sent();
-                        return [4 /*yield*/, this.dbHandler.queryCommentsToBeUpdated({
-                                minimumUpdatedAt: minimumUpdatedAt,
-                                ipnsKeyNames: this._ipfsNodeIpnsKeyNames
-                            }, trx)];
+                        return [4 /*yield*/, this.dbHandler.queryCommentsToBeUpdated(this._ipfsNodeIpnsKeyNames, trx)];
                     case 2:
                         commentsToUpdate = _a.sent();
                         return [4 /*yield*/, this.dbHandler.commitTransaction("_updateCommentsThatNeedToBeUpdated")];
