@@ -1388,7 +1388,7 @@ await comment.publish()
 
 | Type | Description |
 | -------- | -------- |
-| `'stopped' \| 'resolving-author-address' \| 'fetching-ipns' \| 'fetching-ipfs' \| 'failed' \| 'succeeded'` | The `Comment.updatingState` property |
+| `'stopped' \| 'resolving-author-address' \| 'fetching-comment-ipfs' \| 'fetching-update-ipns' \| 'fetching-update-ipfs' \| 'failed' \| 'succeeded'` | The `Comment.updatingState` property |
 
 ### `publishingstatechange`
 
