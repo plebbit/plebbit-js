@@ -480,7 +480,12 @@ export type IpfsHttpClientPublicAPI = {
     };
     config: Pick<IPFSHTTPClient["config"], "get">;
     key: Pick<IPFSHTTPClient["key"], "list" | "rm">;
-    pin: Pick<IPFSHTTPClient["pin"], "rm"> & { ls: (...p: Parameters<IPFSHTTPClient["pin"]["ls"]>) => Promise<LsResult[]> };
+    pin: {
+        rm: IPFSHTTPClient["pin"]["rm"];
+        addAll: (...p: Parameters<IPFSHTTPClient["pin"]["addAll"]>) => Promise<CID[]>;
+        ls: (...p: Parameters<IPFSHTTPClient["pin"]["ls"]>) => Promise<LsResult[]>;
+    };
+
     block: { rm: (...p: Parameters<IPFSHTTPClient["block"]["rm"]>) => Promise<{ cid: CID; error?: Error }[]> };
     swarm: Pick<IPFSHTTPClient["swarm"], "peers">;
 };

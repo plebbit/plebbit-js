@@ -1193,16 +1193,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private async _updateCommentsThatNeedToBeUpdated() {
         const log = Logger(`plebbit-js:subplebbit:_updateCommentsThatNeedToBeUpdated`);
-        const minimumUpdatedAt = timestamp() - 71 * 60 * 60; // Make sure a comment gets updated every 71 hours at least
 
         const trx = await this.dbHandler.createTransaction("_updateCommentsThatNeedToBeUpdated");
-        const commentsToUpdate = await this.dbHandler!.queryCommentsToBeUpdated(
-            {
-                minimumUpdatedAt,
-                ipnsKeyNames: this._ipfsNodeIpnsKeyNames
-            },
-            trx
-        );
+        const commentsToUpdate = await this.dbHandler!.queryCommentsToBeUpdated(this._ipfsNodeIpnsKeyNames, trx);
         await this.dbHandler.commitTransaction("_updateCommentsThatNeedToBeUpdated");
         if (commentsToUpdate.length === 0) return;
 

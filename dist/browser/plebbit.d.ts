@@ -37,6 +37,7 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     };
     _cache: CacheInterface;
     stats: Stats;
+    private _pubsubSubscriptions;
     constructor(options?: PlebbitOptions);
     private _initIpfsClients;
     private _initPubsubClients;
@@ -55,6 +56,8 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     createSigner(createSignerOptions?: CreateSignerOptions): Promise<Signer>;
     listSubplebbits(): Promise<string[]>;
     fetchCid(cid: string): Promise<string>;
+    pubsubSubscribe(subplebbitAddress: string): Promise<void>;
+    pubsubUnsubscribe(subplebbitAddress: string): Promise<void>;
     _defaultIpfsClient(): IpfsClient;
     _defaultPubsubClient(): PubsubClient;
 }

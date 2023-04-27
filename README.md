@@ -456,7 +456,7 @@ An object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| urls | `string[]` | URL of the provider RPC |
+| urls | `string[]` | URLs of the provider RPCs |
 | chainId | `number` | ID of the EVM chain if any |
 
 #### Returns
