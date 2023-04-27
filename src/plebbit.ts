@@ -26,7 +26,7 @@ import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util"
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
-import { fetchCid, loadIpfsFileAsJson, loadIpnsAsJson, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
+import { removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
 import Vote from "./vote";
 import { createSigner, Signer, verifyComment, verifySubplebbit } from "./signer";
 import { Resolver } from "./resolver";
@@ -44,6 +44,8 @@ import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions, SignerType } from "./signer/constants";
 import Stats from "./stats";
 import Cache from "./runtime/node/cache";
+import Publication from "./publication";
+import { ClientsManager } from "./client";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
@@ -61,6 +63,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     chainProviders: { [chainTicker: string]: ChainProvider };
     _cache: CacheInterface;
     stats: Stats;
+    _clientsManager: ClientsManager;
 
     constructor(options: PlebbitOptions = {}) {
         super();
@@ -91,6 +94,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         this._initIpfsClients();
         this._initPubsubClients();
         this._initResolver(options);
+
+        this._clientsManager = new ClientsManager(this);
 
         this.dataPath = options.dataPath || getDefaultDataPath();
     }
@@ -140,7 +145,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         this.resolver = new Resolver({
             _memCache: this._memCache,
             resolveAuthorAddresses: this.resolveAuthorAddresses,
-            emit: this.emit.bind(this),
             chainProviders: this.chainProviders
         });
     }
@@ -193,8 +197,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
             throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
-        const resolvedSubplebbitAddress = await this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
-        const subplebbitJson: SubplebbitIpfsType = await loadIpnsAsJson(resolvedSubplebbitAddress, this);
+        const resolvedSubplebbitAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
+        const subplebbitJson: SubplebbitIpfsType = JSON.parse(await this._clientsManager.fetchIpns(resolvedSubplebbitAddress));
         const signatureValidity = await verifySubplebbit(subplebbitJson, this);
 
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
@@ -207,7 +211,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async getComment(cid: string): Promise<Comment | Post> {
         if (!isIPFS.cid(cid)) throwWithErrorCode("ERR_CID_IS_INVALID", `getComment: cid (${cid}) is invalid as a CID`);
-        const commentJson: CommentIpfsType = await loadIpfsFileAsJson(cid, this);
+        const commentJson: CommentIpfsType = JSON.parse(await this.fetchCid(cid));
         const signatureValidity = await verifyComment(commentJson, this, true);
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { cid, signatureValidity });
 
@@ -353,15 +357,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     async fetchCid(cid: string) {
-        return fetchCid(cid, this);
-    }
-
-    _defaultIpfsClient(): IpfsClient {
-        if (!this.clients.ipfsClients) return undefined;
-        return Object.values(this.clients.ipfsClients)[0];
-    }
-
-    _defaultPubsubClient(): PubsubClient {
-        return Object.values(this.clients.pubsubClients)[0];
+        return this._clientsManager.fetchCid(cid);
     }
 }

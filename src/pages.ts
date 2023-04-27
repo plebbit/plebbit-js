@@ -1,4 +1,4 @@
-import { loadIpfsFileAsJson, parsePageIpfs } from "./util";
+import { parsePageIpfs } from "./util";
 import { Subplebbit } from "./subplebbit";
 
 import {
@@ -34,7 +34,7 @@ export class Pages implements PagesType {
     }
 
     async getPage(pageCid: string): Promise<PageType> {
-        const pageIpfs: PageIpfs = await loadIpfsFileAsJson(pageCid, this._subplebbit.plebbit);
+        const pageIpfs: PageIpfs = JSON.parse(await this._subplebbit.plebbit.fetchCid(pageCid));
         const signatureValidity = await verifyPage(pageIpfs, this._subplebbit.plebbit, this._subplebbit, this._parentCid);
         if (!signatureValidity.valid) throw Error(signatureValidity.reason);
 

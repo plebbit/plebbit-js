@@ -3,7 +3,7 @@ import { sha256 } from "js-sha256";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
 import { SortHandler } from "./sort-handler";
-import { loadIpnsAsJson, parseRawPages, removeKeysWithUndefinedValues, shortifyAddress, throwWithErrorCode, timestamp } from "./util";
+import { parseRawPages, removeKeysWithUndefinedValues, shortifyAddress, throwWithErrorCode, timestamp } from "./util";
 import { decrypt, encrypt, Signer } from "./signer";
 import { Pages } from "./pages";
 import { Plebbit } from "./plebbit";
@@ -76,6 +76,7 @@ import { TypedEmitter } from "tiny-typed-emitter";
 import { PlebbitError } from "./plebbit-error";
 import retry, { RetryOperation } from "retry";
 import Author from "./author";
+import { SubplebbitClientsManager } from "./client";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
@@ -111,6 +112,21 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     updatingState: "stopped" | "resolving-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
     plebbit: Plebbit;
     dbHandler?: DbHandlerPublicAPI;
+    clients: {
+        ipfsGateways: { [ipfsGatewayUrl: string]: { state: "stopped" | "fetching-ipfs" | "fetching-ipns" } };
+        ipfsClients: { [ipfsClientUrl: string]: { state: "stopped" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs" } };
+        pubsubClients: {
+            [pubsubClientUrl: string]: {
+                state:
+                    | "stopped"
+                    | "waiting-challenge-requests"
+                    | "publishing-challenge"
+                    | "waiting-challenge-answers"
+                    | "publishing-challenge-verification";
+            };
+        };
+        chainProviders: { [chainProviderUrl: string]: { state: "stopped" | "resolving-subplebbit-address" | "resolving-author-address" } };
+    };
 
     // private
 
@@ -128,6 +144,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private _ipfsNodeIpnsKeyNames: string[];
     private _subplebbitUpdateTrigger: boolean;
     private _loadingOperation: RetryOperation;
+    _clientsManager: SubplebbitClientsManager;
 
     constructor(plebbit: Plebbit) {
         super();
@@ -151,6 +168,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         this._syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS;
         this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
+
+        this._clientsManager = new SubplebbitClientsManager(this);
+        this.clients = this._clientsManager.clients;
     }
 
     async initSubplebbit(newProps: InternalSubplebbitType | SubplebbitEditOptions | SubplebbitIpfsType) {
@@ -206,7 +226,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 }
             });
             await this.dbHandler.initDbConfigIfNeeded();
-            this.sortHandler = new SortHandler(lodash.pick(this, ["address", "plebbit", "dbHandler", "encryption"]));
+            this.sortHandler = new SortHandler(lodash.pick(this, ["address", "plebbit", "dbHandler", "encryption", "_clientsManager"]));
         }
     }
 
@@ -272,7 +292,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async _importSignerIntoIpfsIfNeeded(signer: Required<Pick<SignerType, "ipnsKeyName" | "privateKey">>) {
         assert(signer.ipnsKeyName);
         if (!this._ipfsNodeIpnsKeyNames)
-            this._ipfsNodeIpnsKeyNames = (await this.plebbit._defaultIpfsClient()._client.key.list()).map((key) => key.name);
+            this._ipfsNodeIpnsKeyNames = (await this._clientsManager.getCurrentIpfs()._client.key.list()).map((key) => key.name);
 
         const keyExistsInNode = this._ipfsNodeIpnsKeyNames.some((key) => key === signer.ipnsKeyName);
         if (!keyExistsInNode) {
@@ -309,7 +329,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private async assertDomainResolvesCorrectly(domain: string) {
         if (this.plebbit.resolver.isDomain(domain)) {
-            const resolvedAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(domain);
+            const resolvedAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(domain);
             if (resolvedAddress !== this.signer.address)
                 throwWithErrorCode("ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS", {
                     subplebbitAddress: this.address,
@@ -371,10 +391,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async _retryLoadingSubplebbitIpns(log: Logger, subplebbitIpnsAddress: string): Promise<SubplebbitIpfsType> {
         return new Promise((resolve) => {
             this._loadingOperation.attempt(async (curAttempt) => {
-                this._setUpdatingState("fetching-ipns");
                 log.trace(`Retrying to load subplebbit ipns (${subplebbitIpnsAddress}) for the ${curAttempt}th time`);
                 try {
-                    resolve(await loadIpnsAsJson(subplebbitIpnsAddress, this.plebbit, () => this._setUpdatingState("fetching-ipfs")));
+                    const update = await this._clientsManager.fetchSubplebbit(subplebbitIpnsAddress);
+                    resolve(update);
                 } catch (e) {
                     this._setUpdatingState("failed");
                     log.error(String(e));
@@ -401,7 +421,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         } else {
             this._setUpdatingState("resolving-address");
 
-            const ipnsAddress = await this.plebbit.resolver.resolveSubplebbitAddressIfNeeded(this.address);
+            const ipnsAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(this.address);
             this._loadingOperation = retry.operation({ forever: true, factor: 2 });
 
             const subplebbitIpns = await this._retryLoadingSubplebbitIpns(log, ipnsAddress);
@@ -443,8 +463,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._loadingOperation?.stop();
         this._setUpdatingState("stopped");
         if (this._sync) {
-            await this.plebbit
-                ._defaultPubsubClient()
+            await this._clientsManager
+                .getCurrentPubsub()
                 ._client.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             await this.dbHandler.rollbackAllTransactions();
             await this.dbHandler.unlockSubStart();
@@ -482,7 +502,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this.sortHandler.generateSubplebbitPosts()
         ]);
 
-        const statsCid = (await this.plebbit._defaultIpfsClient()._client.add(deterministicStringify(stats))).path;
+        const statsCid = (await this._clientsManager.getCurrentIpfs()._client.add(deterministicStringify(stats))).path;
 
         await this._mergeInstanceStateWithDbState({});
 
@@ -503,8 +523,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             lodash.pick(this.toJSONInternal(), ["posts", "lastPostCid", "statsCid", "updatedAt", "signature", "_subplebbitUpdateTrigger"])
         );
 
-        const file = await this.plebbit._defaultIpfsClient()._client.add(deterministicStringify({ ...newIpns, signature }));
-        const publishRes = await this.plebbit._defaultIpfsClient()._client.name.publish(file.path, {
+        const file = await this._clientsManager.getCurrentIpfs()._client.add(deterministicStringify({ ...newIpns, signature }));
+        const publishRes = await this._clientsManager.getCurrentIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
             allowOffline: Boolean(process.env["TESTING"])
         });
@@ -777,7 +797,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 commentToInsert.setPreviousCid((await this.dbHandler.queryLatestPostCid(trx))?.cid);
                 await this.dbHandler.commitTransaction(challengeRequestId);
                 commentToInsert.setDepth(0);
-                const file = await this.plebbit._defaultIpfsClient()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
+                const file = await this._clientsManager.getCurrentIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setPostCid(file.path);
                 commentToInsert.setCid(file.path);
 
@@ -795,7 +815,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 commentToInsert.setPreviousCid(commentsUnderParent[0]?.cid);
                 commentToInsert.setDepth(parent.depth + 1);
                 commentToInsert.setPostCid(parent.postCid);
-                const file = await this.plebbit._defaultIpfsClient()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
+                const file = await this._clientsManager.getCurrentIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setCid(file.path);
                 await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(challengeRequestId));
 
@@ -833,12 +853,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             await Promise.all([
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
-                this.plebbit
-                    ._defaultPubsubClient()
-                    ._client.pubsub.publish(
-                        this.pubsubTopicWithfallback(),
-                        uint8ArrayFromString(deterministicStringify(challengeVerification))
-                    )
+                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), deterministicStringify(challengeVerification))
             ]);
         }
 
@@ -886,12 +901,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             await Promise.all([
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
-                this.plebbit
-                    ._defaultPubsubClient()
-                    ._client.pubsub.publish(
-                        this.pubsubTopicWithfallback(),
-                        uint8ArrayFromString(deterministicStringify(challengeVerification))
-                    )
+                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), deterministicStringify(challengeVerification))
             ]);
             log(
                 `(${request.challengeRequestId}): `,
@@ -924,9 +934,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const challengeTypes = providedChallenges.map((challenge) => challenge.type);
             await Promise.all([
                 this.dbHandler.insertChallenge(challengeMessage.toJSONForDb(challengeTypes), undefined),
-                this.plebbit
-                    ._defaultPubsubClient()
-                    ._client.pubsub.publish(this.pubsubTopicWithfallback(), uint8ArrayFromString(deterministicStringify(challengeMessage)))
+                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), deterministicStringify(challengeMessage))
             ]);
             log.trace(
                 `(${request.challengeRequestId}): `,
@@ -975,12 +983,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             await Promise.all([
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
-                this.plebbit
-                    ._defaultPubsubClient()
-                    ._client.pubsub.publish(
-                        this.pubsubTopicWithfallback(),
-                        uint8ArrayFromString(deterministicStringify(challengeVerification))
-                    )
+                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), deterministicStringify(challengeVerification))
             ]);
             log(
                 `(${challengeAnswer.challengeRequestId}): `,
@@ -1011,12 +1014,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             await Promise.all([
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
-                this.plebbit
-                    ._defaultPubsubClient()
-                    ._client.pubsub.publish(
-                        this.pubsubTopicWithfallback(),
-                        uint8ArrayFromString(deterministicStringify(challengeVerification))
-                    )
+                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), deterministicStringify(challengeVerification))
             ]);
             log(`(${challengeAnswer.challengeRequestId}): `, `Published ${challengeVerification.type} over pubsub:`, toSignVerification);
             this.emit("challengeverification", challengeVerification);
@@ -1043,12 +1041,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 signature: await signChallengeVerification(toSignVerification, this.signer)
             });
 
-            await this.plebbit
-                ._defaultPubsubClient()
-                ._client.pubsub.publish(
-                    this.pubsubTopicWithfallback(),
-                    uint8ArrayFromString(deterministicStringify(challengeVerification))
-                );
+            await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), deterministicStringify(challengeVerification));
 
             const err = new PlebbitError("ERR_SIGNATURE_IS_INVALID", { pubsubMsg: msgParsed, signatureValidity: validation });
             this.emit("error", err);
@@ -1106,8 +1099,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         if (!signerRaw) throw Error(`Comment ${dbComment.cid} IPNS signer is not stored in DB`);
         await this._importSignerIntoIpfsIfNeeded(signerRaw);
-        const file = await this.plebbit._defaultIpfsClient()._client.add(deterministicStringify(options));
-        await this.plebbit._defaultIpfsClient()._client.name.publish(file.path, {
+        const file = await this._clientsManager.getCurrentIpfs()._client.add(deterministicStringify(options));
+        await this._clientsManager.getCurrentIpfs()._client.name.publish(file.path, {
             key: signerRaw.ipnsKeyName,
             allowOffline: Boolean(process.env["TESTING"])
         });
@@ -1155,14 +1148,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async _listenToIncomingRequests() {
         const log = Logger("plebbit-js:subplebbit:sync");
         // Make sure subplebbit listens to pubsub topic
-        const subscribedTopics = await this.plebbit._defaultPubsubClient()._client.pubsub.ls();
+        const subscribedTopics = await this._clientsManager.getCurrentPubsub()._client.pubsub.ls();
         if (!subscribedTopics.includes(this.pubsubTopicWithfallback())) {
-            await this.plebbit
-                ._defaultPubsubClient()
-                ._client.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange); // Make sure it's not hanging
-            await this.plebbit
-                ._defaultPubsubClient()
-                ._client.pubsub.subscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
+            await this._clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange); // Make sure it's not hanging
+            await this._clientsManager.pubsubSubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             log(`Waiting for publications on pubsub topic (${this.pubsubTopicWithfallback()})`);
         }
     }
@@ -1231,7 +1220,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async _repinCommentsIPFSIfNeeded() {
         const log = Logger("plebbit-js:subplebbit:sync");
         const dbCommentsCids = await this.dbHandler.queryAllCommentsCid();
-        const pinnedCids = (await this.plebbit._defaultIpfsClient()._client.pin.ls()).map((cid) => cid.cid.toString());
+        const pinnedCids = (await this._clientsManager.getCurrentIpfs()._client.pin.ls()).map((cid) => cid.cid.toString());
 
         const unpinnedCommentsCids = lodash.difference(dbCommentsCids, pinnedCids);
 
@@ -1250,7 +1239,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
                 assert.equal(contentHash, comment.cid);
 
-                await this.plebbit._defaultIpfsClient()._client.add(commentIpfsContent, { pin: true });
+                await this._clientsManager.getCurrentIpfs()._client.add(commentIpfsContent, { pin: true });
             })
         );
 
@@ -1263,7 +1252,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         try {
             await this._mergeInstanceStateWithDbState({});
-            this._ipfsNodeIpnsKeyNames = (await this.plebbit._defaultIpfsClient()._client.key.list()).map((key) => key.name);
+            this._ipfsNodeIpnsKeyNames = (await this._clientsManager.getCurrentIpfs()._client.key.list()).map((key) => key.name);
             await this._listenToIncomingRequests();
             this._setStartedState("publishing-ipns");
             await Promise.all([this._updateCommentsThatNeedToBeUpdated(), this._repinCommentsIPFSIfNeeded()]);
@@ -1300,7 +1289,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const log = Logger("plebbit-js:subplebbit:start");
 
         if (!this.signer?.address) throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED");
-        if (!this.plebbit._defaultIpfsClient())
+        if (!this._clientsManager.getCurrentIpfs())
             throwWithErrorCode("ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE", { ipfsHttpClientOptions: this.plebbit.ipfsHttpClientsOptions });
 
         await this.dbHandler.initDestroyedConnection();
@@ -1348,7 +1337,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         if (typeof this.plebbit.dataPath !== "string")
             throwWithErrorCode("ERR_DATA_PATH_IS_NOT_DEFINED", { plebbitDataPath: this.plebbit.dataPath });
 
-        const ipfsClient = this.plebbit._defaultIpfsClient();
+        const ipfsClient = this._clientsManager.getCurrentIpfs();
         if (!ipfsClient) throw Error("Ipfs client is not defined");
 
         await nativeFunctions.deleteSubplebbit(this.address, this.plebbit.dataPath);

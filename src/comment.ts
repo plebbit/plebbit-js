@@ -1,12 +1,5 @@
 import retry, { RetryOperation } from "retry";
-import {
-    loadIpfsFileAsJson,
-    loadIpnsAsJson,
-    parseRawPages,
-    removeNullAndUndefinedValuesRecursively,
-    shortifyCid,
-    throwWithErrorCode
-} from "./util";
+import { parseRawPages, removeNullAndUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
 import {
@@ -25,21 +18,38 @@ import {
 
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "./plebbit";
-import lodash, { reject } from "lodash";
+import lodash from "lodash";
 import { verifyComment, verifyCommentUpdate } from "./signer/signatures";
 import assert from "assert";
 import { PlebbitError } from "./plebbit-error";
+import { CommentClientsManager } from "./client";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
 export class Comment extends Publication implements Omit<CommentType, "replies"> {
-    // public
+    // Only Comment props
+    shortCid?: string;
+
+    clients: Omit<Publication["clients"], "ipfsClients"> & {
+        ipfsClients: {
+            [ipfsClientUrl: string]: {
+                state:
+                    | "fetching-subplebbit-ipns"
+                    | "fetching-subplebbit-ipfs"
+                    | "fetching-ipfs"
+                    | "fetching-update-ipns"
+                    | "fetching-update-ipfs"
+                    | "stopped";
+            };
+        };
+    };
+
+    // public (CommentType)
     title?: string;
     link?: string;
     thumbnailUrl?: string;
     protocolVersion: ProtocolVersion;
     cid?: string;
-    shortCid?: string;
     parentCid?: string;
     content?: string;
     // Props that get defined after challengeverification
@@ -66,7 +76,14 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     reason?: string;
 
     // updating states
-    updatingState: "stopped" | "resolving-author-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
+    updatingState:
+        | "stopped"
+        | "resolving-author-address"
+        | "fetching-ipfs"
+        | "fetching-update-ipns"
+        | "fetching-update-ipfs"
+        | "failed"
+        | "succeeded";
 
     // private
     private _updateInterval?: any;
@@ -74,6 +91,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     private _updateIntervalMs: number;
     private _rawCommentUpdate?: CommentUpdate;
     private _loadingOperation: RetryOperation;
+    _clientsManager: CommentClientsManager;
 
     constructor(props: CommentType, plebbit: Plebbit) {
         super(props, plebbit);
@@ -84,6 +102,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.publish = this.publish.bind(this);
         this.update = this.update.bind(this);
         this.stop = this.stop.bind(this);
+
+        this._clientsManager = new CommentClientsManager(this);
     }
 
     _initProps(props: CommentType) {
@@ -285,10 +305,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     private async _retryLoadingCommentIpfs(log: Logger): Promise<CommentIpfsType> {
         return new Promise((resolve) => {
             this._loadingOperation.attempt(async (curAttempt) => {
-                this._setUpdatingState("fetching-ipfs");
                 log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
                 try {
-                    resolve(await loadIpfsFileAsJson(this.cid, this.plebbit));
+                    // TODO should inject this.clients here so gateway or ipfsClients states can be modified
+                    resolve(await this._clientsManager.fetchCommentCid(this.cid));
                 } catch (e) {
                     this._setUpdatingState("failed");
                     log.error(String(e));
@@ -302,10 +322,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     private async _retryLoadingCommentUpdate(log: Logger): Promise<CommentUpdate> {
         return new Promise((resolve) => {
             this._loadingOperation.attempt(async (curAttempt) => {
-                this._setUpdatingState("fetching-ipns");
                 log.trace(`Retrying to load comment ipns (${this.ipnsName}) for the ${curAttempt}th time`);
                 try {
-                    resolve(await loadIpnsAsJson(this.ipnsName, this.plebbit, () => this._setUpdatingState("fetching-ipfs")));
+                    const update: CommentUpdate = await this._clientsManager.fetchCommentUpdate(this.ipnsName);
+                    resolve(update);
                 } catch (e) {
                     this._setUpdatingState("failed");
                     log.error(String(e));
@@ -323,8 +343,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             // User may have attempted to call plebbit.createComment({cid}).update
             // plebbit-js should be able to retrieve ipnsName from the IPFS file
             const commentIpfs: CommentIpfsType = await this._retryLoadingCommentIpfs(log); // Will keep retrying to load until comment.stop() is called
+            assert(commentIpfs.ipnsName);
             this._initProps({ ...commentIpfs, cid: this.cid });
-            assert(this.ipnsName);
             this.emit("update", this);
         }
 

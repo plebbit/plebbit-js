@@ -8,7 +8,7 @@ import { throwWithErrorCode } from "./util";
 
 export class Resolver {
     private cachedChainProviders: { [chainTicker: string]: ethers.providers.BaseProvider };
-    private plebbit: Pick<Plebbit, "_memCache" | "resolveAuthorAddresses" | "emit" | "chainProviders">;
+    private plebbit: Pick<Plebbit, "_memCache" | "resolveAuthorAddresses" | "chainProviders">;
 
     constructor(plebbit: Resolver["plebbit"]) {
         this.cachedChainProviders = {};
@@ -51,9 +51,6 @@ export class Resolver {
     async _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string> {
         const log = Logger("plebbit-js:resolver:_resolveEnsTxtRecord");
 
-        const cachedResponse: string | undefined = this.plebbit._memCache.get(ensName + txtRecordName);
-        if (cachedResponse && typeof cachedResponse === "string") return cachedResponse;
-
         const chainProvider = this._getChainProvider("eth");
         const resolver = await chainProvider.getResolver(ensName);
         if (!resolver) throwWithErrorCode("ERR_ENS_RESOLVER_NOT_FOUND", { ensName, chainProvider });
@@ -62,29 +59,9 @@ export class Resolver {
 
         log.trace(`Resolved text record name (${txtRecordName}) of ENS (${ensName}) to ${txtRecordResult}`);
 
-        this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // Expire memory ENS cache after an hour
+        this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // TODO rewrite this
 
         return txtRecordResult;
-    }
-
-    async resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string> {
-        assert(typeof authorAddress === "string", "authorAddress needs to be a string to be resolved");
-        if (!this.plebbit.resolveAuthorAddresses) return authorAddress;
-        let resolved = lodash.clone(authorAddress);
-        if (authorAddress.endsWith(".eth")) resolved = await this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address");
-
-        this.plebbit.emit("resolvedauthoraddress", authorAddress, resolved);
-        return resolved;
-    }
-
-    async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string> {
-        assert(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
-        let resolvedSubplebbitAddress: string = lodash.clone(subplebbitAddress);
-        if (subplebbitAddress.endsWith(".eth"))
-            resolvedSubplebbitAddress = await this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address");
-
-        this.plebbit.emit("resolvedsubplebbitaddress", subplebbitAddress, resolvedSubplebbitAddress);
-        return resolvedSubplebbitAddress;
     }
 
     isDomain(address: string): boolean {

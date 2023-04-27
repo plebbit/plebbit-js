@@ -9,6 +9,15 @@ class Vote extends Publication implements VoteType {
     commentCid: string;
     vote: 1 | 0 | -1;
 
+    // Vote class only props
+    clients: Omit<Publication["clients"], "ipfsClients"> & {
+        ipfsClients: {
+            [ipfsClientUrl: string]: {
+                state: "stopped" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs";
+            };
+        };
+    };
+
     constructor(props: VoteType, plebbit: Plebbit) {
         super(props, plebbit);
         this.commentCid = props.commentCid;

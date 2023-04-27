@@ -179,7 +179,7 @@ const _verifyAuthor = async (
 
     if (plebbit.resolver.isDomain(publicationJson.author.address)) {
         if (!plebbit.resolveAuthorAddresses) return { valid: true }; // Skip domain validation if plebbit.resolveAuthorAddresses=false
-        const resolvedAuthorAddress = await plebbit.resolver.resolveAuthorAddressIfNeeded(publicationJson.author.address);
+        const resolvedAuthorAddress = await plebbit._clientsManager.resolveAuthorAddressIfNeeded(publicationJson.author.address);
         const derivedAddress = await getPlebbitAddressFromPublicKey(publicationJson.signature.publicKey);
         if (resolvedAuthorAddress !== derivedAddress) {
             // Means plebbit-author-address text record is resolving to another address (outdated?)
@@ -291,7 +291,7 @@ export async function verifySubplebbit(subplebbit: SubplebbitIpfsType, plebbit: 
     const signatureValidity = await _verifyPublicationSignature(subplebbit);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
 
-    const resolvedSubAddress = await plebbit.resolver.resolveSubplebbitAddressIfNeeded(subplebbit.address);
+    const resolvedSubAddress = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbit.address);
 
     const subPeerId = PeerId.createFromB58String(resolvedSubAddress);
     const signaturePeerId = await getPeerIdFromPublicKey(subplebbit.signature.publicKey);
@@ -315,7 +315,7 @@ export async function verifyCommentUpdate(
         return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
 
     const updateSignatureAddress: string = await getPlebbitAddressFromPublicKey(update.signature.publicKey);
-    const subplebbitResolvedAddress = await plebbit.resolver.resolveSubplebbitAddressIfNeeded(subplebbit.address);
+    const subplebbitResolvedAddress = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbit.address);
     if (updateSignatureAddress !== subplebbitResolvedAddress)
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT };
 
