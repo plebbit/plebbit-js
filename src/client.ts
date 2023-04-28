@@ -104,9 +104,13 @@ export class ClientsManager {
 
     async resolveIpnsToCidP2P(ipns: string): Promise<string> {
         const ipfsClient = this.getCurrentIpfs();
-        const cid = await ipfsClient._client.name.resolve(ipns);
-        if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns });
-        return cid;
+        try {
+            const cid = await ipfsClient._client.name.resolve(ipns);
+            if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns });
+            return cid;
+        } catch (error) {
+            throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns, error });
+        }
     }
 
     async fetchCidP2P(cid: string): Promise<string> {
