@@ -114,7 +114,7 @@ describe("plebbit.getSubplebbit", async () => {
         plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
     it("Can load subplebbit via IPNS address", async () => {
-        const _subplebbitIpns = await loadIpnsAsJson(subplebbitSigner.address, plebbit);
+        const _subplebbitIpns = JSON.parse(await plebbit._clientsManager.fetchIpns(subplebbitSigner.address));
         expect(_subplebbitIpns.lastPostCid).to.be.a.string;
         expect(_subplebbitIpns.pubsubTopic).to.be.a.string;
         expect(_subplebbitIpns.address).to.be.a.string;

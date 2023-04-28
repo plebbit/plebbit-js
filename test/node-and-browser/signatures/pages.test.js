@@ -4,7 +4,6 @@ const { messages } = require("../../../dist/node/errors");
 const { expect } = require("chai");
 const signers = require("../../fixtures/signers");
 const lodash = require("lodash");
-const { loadIpfsFileAsJson } = require("../../../dist/node/util");
 
 const { mockPlebbit } = require("../../../dist/node/test/test-util");
 
@@ -27,7 +26,7 @@ describe(`verify pages`, async () => {
     });
 
     it(`Can validate page from live subplebbit`, async () => {
-        const page = await loadIpfsFileAsJson(subplebbit.posts.pageCids.new, plebbit);
+        const page = JSON.parse(await plebbit.fetchCid(subplebbit.posts.pageCids.new, plebbit));
         const pageVerification = await verifyPageJsonAlongWithObject(page, plebbit, subplebbit, undefined);
         expect(pageVerification).to.deep.equal({ valid: true });
     });
@@ -48,7 +47,7 @@ describe(`verify pages`, async () => {
 
         const tempPlebbit = await mockPlebbit();
 
-        tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
+        tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === invalidPage.comments[commentWithDomainAddressIndex].comment.author.address
                 ? signers[3].address
                 : authorAddress; // Resolve to wrong address intentionally. Correct address would be signers[6].address

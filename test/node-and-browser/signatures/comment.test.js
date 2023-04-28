@@ -168,7 +168,7 @@ describe(`Comment with author.address as domain`, async () => {
     });
     it(`verifyComment corrects author.address(domain) if it resolves to a different author (overrideAuthorAddressIfInvalid=true)`, async () => {
         const tempPlebbit = await mockPlebbit();
-        tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
+        tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "testDomain.eth" ? fixtureComment.author.address : authorAddress;
         const commentWithInvalidDomain = lodash.cloneDeep(fixtureComment);
         commentWithInvalidDomain.author.address = "testDomain.eth";
@@ -176,7 +176,7 @@ describe(`Comment with author.address as domain`, async () => {
             ...commentWithInvalidDomain,
             signature: await signComment(commentWithInvalidDomain, signers[1], tempPlebbit)
         };
-        tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
+        tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "testDomain.eth" ? signers[6].address : authorAddress; // testDomain.eth no longer points to the same author
 
         const verificaiton = await verifyComment(signedPublication, tempPlebbit, true);
@@ -186,7 +186,7 @@ describe(`Comment with author.address as domain`, async () => {
     it(`Comment with CommentUpdate json, with invalid author domain address will be corrected to derived address (overrideAuthorAddressIfInvalid=false)`, async () => {
         const comment = lodash.cloneDeep(require("../../fixtures/signatures/comment/valid_comment_author_address_as_domain.json"));
         const tempPlebbit = await mockPlebbit();
-        tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
+        tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress; // This would invalidate the fixture author address. Should be corrected
 
         const verification = await verifyComment(comment, tempPlebbit, true);
@@ -198,7 +198,7 @@ describe(`Comment with author.address as domain`, async () => {
     it(`Comment signature will be invalidated if comment.author.address (domain) points to different address (overrideAuthorAddressIfInvalid=true)`, async () => {
         const comment = lodash.cloneDeep(require("../../fixtures/signatures/comment/valid_comment_author_address_as_domain.json"));
         const tempPlebbit = await mockPlebbit();
-        tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
+        tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress; // This would invalidate the fixture author address. Should be corrected
 
         const verification = await verifyComment(comment, tempPlebbit, false);

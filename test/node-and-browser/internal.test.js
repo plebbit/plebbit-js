@@ -1,5 +1,5 @@
 const Plebbit = require("../../dist/node");
-const { loadIpfsFileAsJson, loadIpnsAsJson, parseJsonStrings } = require("../../dist/node/util");
+const { parseJsonStrings } = require("../../dist/node/util");
 const chai = require("chai");
 const fetch = require("node-fetch");
 const chaiAsPromised = require("chai-as-promised");
@@ -23,62 +23,36 @@ describe("Test util functions", async () => {
         it(`Test environment has no access to internet`, async () => {
             await assert.isRejected(fetch("https://ifconfig.me"));
         });
-    describe("loadIpfsAsJson", async () => {
-        it("Throws if provided with invalid cid", async () => {
-            const gibberishCid = "12345";
-
-            await assert.isRejected(loadIpfsFileAsJson(gibberishCid, plebbit), messages.ERR_CID_IS_INVALID);
-            await assert.isRejected(loadIpfsFileAsJson(gibberishCid, gatewayPlebbit), messages.ERR_CID_IS_INVALID);
-        });
-        it("Loads an ipfs file under 1mb as JSON correctly", async () => {
-            const jsonFileTest = { 123: "123" };
-            const cid = (await plebbit._defaultIpfsClient()._client.add(JSON.stringify(jsonFileTest))).path;
-            let jsonFileLoaded = await loadIpfsFileAsJson(cid, plebbit);
-            expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
-
-            jsonFileLoaded = await loadIpfsFileAsJson(cid, gatewayPlebbit);
-            expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
-        });
-
-        it("Throws an error when file to download is over 1mb for both loading via IPFS and gateway", async () => {
-            const twoMbObject = { testString: "x".repeat(2 * 1024 * 1024) };
-
-            const cid = (await plebbit._defaultIpfsClient()._client.add(JSON.stringify(twoMbObject))).path; // Cid of a file with over 1mb size
-
-            await assert.isRejected(loadIpfsFileAsJson(cid, plebbit), messages.ERR_OVER_DOWNLOAD_LIMIT);
-            await assert.isRejected(loadIpfsFileAsJson(cid, gatewayPlebbit), messages.ERR_OVER_DOWNLOAD_LIMIT);
-        });
-    });
 
     describe("loadIpnsAsJson", async () => {
         it("Throws if provided with invalid ipns", async () => {
             const gibberishIpns = "12345";
-            await assert.isRejected(loadIpnsAsJson(gibberishIpns, plebbit), messages.ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS); // Provide message here
-            await assert.isRejected(loadIpnsAsJson(gibberishIpns, gatewayPlebbit), messages.ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY); // Provide message here
+            await assert.isRejected(plebbit._clientsManager.fetchIpns(gibberishIpns), messages.ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS); // Provide message here
+            await assert.isRejected(gatewayPlebbit._clientsManager.fetchIpns(gibberishIpns), messages.ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY); // Provide message here
         });
         it("Loads an IPNS file as JSON correctly", async () => {
             const jsonFileTest = { 1234: "1234" };
-            const cid = (await plebbit._defaultIpfsClient()._client.add(JSON.stringify(jsonFileTest))).path;
-            const jsonFileAsIpns = await plebbit._defaultIpfsClient()._client.name.publish(cid, { allowOffline: true });
-            let jsonFileLoaded = await loadIpnsAsJson(jsonFileAsIpns.name, plebbit);
+            const cid = (await plebbit._clientsManager.getCurrentIpfs()._client.add(JSON.stringify(jsonFileTest))).path;
+            const jsonFileAsIpns = await plebbit._clientsManager.getCurrentIpfs()._client.name.publish(cid, { allowOffline: true });
+            let jsonFileLoaded = JSON.parse(await plebbit._clientsManager.fetchIpns(jsonFileAsIpns.name));
             expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
-            jsonFileLoaded = await loadIpnsAsJson(jsonFileAsIpns.name, gatewayPlebbit);
+            jsonFileLoaded = JSON.parse(await gatewayPlebbit._clientsManager.fetchIpns(jsonFileAsIpns.name));
             expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
         });
 
         it(`Throws an error when file to download is over 1mb and we're loading it via gateway`, async () => {
             const twoMbObject = { testString: "x".repeat(2 * 1024 * 1024) };
 
-            const cid = (await plebbit._defaultIpfsClient()._client.add(JSON.stringify(twoMbObject))).path; // Cid of a file with over 1mb size
+            const cid = (await plebbit._clientsManager.getCurrentIpfs()._client.add(JSON.stringify(twoMbObject))).path; // Cid of a file with over 1mb size
 
             const ipns = (
-                await plebbit._defaultIpfsClient()._client.name.publish(cid, {
+                await plebbit._clientsManager.getCurrentIpfs()._client.name.publish(cid, {
                     lifetime: "5m",
                     allowOffline: true
                 })
             ).name;
 
-            await assert.isRejected(loadIpnsAsJson(ipns, gatewayPlebbit), messages.ERR_OVER_DOWNLOAD_LIMIT);
+            await assert.isRejected(gatewayPlebbit._clientsManager.fetchIpns(ipns), messages.ERR_OVER_DOWNLOAD_LIMIT);
         });
     });
 });

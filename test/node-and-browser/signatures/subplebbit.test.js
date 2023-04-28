@@ -54,7 +54,7 @@ describe("Verify subplebbit", async () => {
     it(`Subplebbit with domain that does not match public key will get invalidated`, async () => {
         // plebbit.eth -> signers[3]
         const tempPlebbit = await mockPlebbit();
-        tempPlebbit.resolver.resolveSubplebbitAddressIfNeeded = (address) => (address === "plebbit.eth" ? signers[4].address : address);
+        tempPlebbit._clientsManager.resolveSubplebbitAddressIfNeeded = (address) => (address === "plebbit.eth" ? signers[4].address : address);
         const sub = await plebbit.getSubplebbit("plebbit.eth");
         const verification = await verifySubplebbit(sub.toJSONIpfs(), tempPlebbit);
         // Subplebbit posts will be invalid because the resolved address of sub will be used to validate posts

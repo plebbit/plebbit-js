@@ -226,7 +226,7 @@ describe("comment.updatingState", async () => {
 
     it(`updating states is in correct order upon updating a comment with IPFS client`, async () => {
         const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
-        const expectedStates = ["fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
+        const expectedStates = ["fetching-update-ipns", "fetching-update-ipfs", "succeeded", "stopped"];
         const recordedStates = [];
         mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
@@ -242,7 +242,7 @@ describe("comment.updatingState", async () => {
     it(`updating states is in correct order upon updating a comment with gateway`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit();
         const mockPost = await publishRandomPost(subplebbitAddress, gatewayPlebbit, {}, false);
-        const expectedStates = ["fetching-ipns", "succeeded", "stopped"];
+        const expectedStates = ["fetching-update-ipns", "succeeded", "stopped"];
         const recordedStates = [];
         mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
