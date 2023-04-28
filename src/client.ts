@@ -346,12 +346,10 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     async fetchCommentUpdate(ipnsName: string): Promise<CommentUpdate> {
-        //@ts-expect-error
         this._comment._setUpdatingState("fetching-update-ipns");
         if (this.curIpfsNodeUrl) {
             this.updateIpfsState("fetching-update-ipns");
             const updateCid = await this.resolveIpnsToCidP2P(ipnsName);
-            //@ts-expect-error
             this._comment._setUpdatingState("fetching-update-ipfs");
             this.updateIpfsState("fetching-update-ipfs");
             const commentUpdate: CommentUpdate = JSON.parse(await this.fetchCidP2P(updateCid));
@@ -365,7 +363,6 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     async fetchCommentCid(cid: string): Promise<CommentIpfsType> {
-        //@ts-expect-error
         this._comment._setUpdatingState("fetching-ipfs");
         if (this.curIpfsNodeUrl) {
             this.updateIpfsState("fetching-ipfs");

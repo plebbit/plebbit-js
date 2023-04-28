@@ -372,7 +372,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         }
     }
 
-    private _setUpdatingState(newState: Comment["updatingState"]) {
+     _setUpdatingState(newState: Comment["updatingState"]) {
         this.updatingState = newState;
         this.emit("updatingstatechange", this.updatingState);
     }
