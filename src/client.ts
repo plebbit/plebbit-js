@@ -12,6 +12,7 @@ import { Subplebbit } from "./subplebbit";
 import { verifySubplebbit } from "./signer";
 import lodash from "lodash";
 import { nativeFunctions } from "./runtime/node/util";
+import isIPFS from "is-ipfs";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -112,6 +113,9 @@ export class ClientsManager {
         const ipfsClient = this.getCurrentIpfs();
         const fileContent = await ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES }); // Limit is 1mb files
         if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid });
+        const calculatedCid: string = await Hash.of(fileContent);
+        if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
+            throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
         return fileContent;
     }
 
@@ -200,12 +204,12 @@ export class ClientsManager {
             const resolveCache: string | undefined = this._plebbit._memCache.get(subplebbitAddress + "subplebbit-address"); // TODO Should be rewritten
             if (typeof resolveCache === "string") return resolveCache;
 
-            this.clients.chainProviders["eth"].state = "resolving-subplebbit-address";
+            this.updateChainProviderState("resolving-subplebbit-address", "eth");
             try {
                 resolvedSubplebbitAddress = await this._plebbit.resolver._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address");
-                this.clients.chainProviders["eth"].state = "stopped";
+                this.updateChainProviderState("stopped", "eth");
             } catch (e) {
-                this.clients.chainProviders["eth"].state = "stopped";
+                this.updateChainProviderState("stopped", "eth");
                 throw e;
             }
         }
@@ -221,11 +225,12 @@ export class ClientsManager {
             const resolveCache: string | undefined = this._plebbit._memCache.get(authorAddress + "plebbit-author-address"); // TODO Should be rewritten
             if (typeof resolveCache === "string") return resolveCache;
 
-            this.clients.chainProviders["eth"].state = "resolving-author-address";
+            this.updateChainProviderState("resolving-author-address", "eth");
             try {
                 resolvedAuthorAddress = await this._plebbit.resolver._resolveEnsTxtRecord(authorAddress, "plebbit-author-address");
+                this.updateChainProviderState("stopped", "eth");
             } catch (e) {
-                this.clients.chainProviders["eth"].state = "stopped";
+                this.updateChainProviderState("stopped", "eth");
                 throw e;
             }
         }
@@ -246,6 +251,9 @@ export class ClientsManager {
     }
 
     async fetchCid(cid: string) {
+        let finalCid = lodash.clone(cid);
+        if (!isIPFS.cid(finalCid) && isIPFS.path(finalCid)) finalCid = finalCid.split("/")[2];
+        if (!isIPFS.cid(finalCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
         if (this.curIpfsNodeUrl) return this.fetchCidP2P(cid);
         else return this.fetchFromMultipleGateways({ cid });
     }
