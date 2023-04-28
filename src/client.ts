@@ -11,7 +11,7 @@ import Hash from "ipfs-only-hash";
 import { Subplebbit } from "./subplebbit";
 import { verifySubplebbit } from "./signer";
 import lodash from "lodash";
-import { Resolver } from "./resolver";
+import { nativeFunctions } from "./runtime/node/util";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -39,6 +39,7 @@ export class ClientsManager {
 
     getCurrentIpfs() {
         assert(this.curIpfsNodeUrl);
+        assert(this._plebbit.clients.ipfsClients[this.curIpfsNodeUrl]);
         return this._plebbit.clients.ipfsClients[this.curIpfsNodeUrl];
     }
 
@@ -160,25 +161,33 @@ export class ClientsManager {
         );
         const res = await Promise.race([_firstResolve(gatewayFetches), Promise.allSettled(gatewayFetches)]);
         if (typeof res === "string") return res;
-        else throw gatewayFetches[0];
+        //@ts-expect-error
+        else throw res[0].reason;
     }
 
     // State methods here
 
     updatePubsubState(newState: Publication["clients"]["pubsubClients"][0]["state"] | Subplebbit["clients"]["pubsubClients"][0]["state"]) {
-        this.clients["pubsubClients"][this.curPubsubNodeUrl].state = newState;
+        this.clients.pubsubClients[this.curPubsubNodeUrl].state = newState;
     }
 
     updateIpfsState(newState: Publication["clients"]["ipfsClients"][0]["state"] | Subplebbit["clients"]["ipfsClients"][0]["state"]) {
         assert(this.curIpfsNodeUrl);
-        this.clients["ipfsClients"][this.curIpfsNodeUrl].state = newState;
+        this.clients.ipfsClients[this.curIpfsNodeUrl].state = newState;
     }
 
     updateGatewayState(
         newState: Publication["clients"]["ipfsGateways"][0]["state"] | Subplebbit["clients"]["ipfsGateways"][0]["state"],
         gateway: string
     ) {
-        this.clients["ipfsGateways"][gateway].state = newState;
+        this.clients.ipfsGateways[gateway].state = newState;
+    }
+
+    updateChainProviderState(
+        newState: Publication["clients"]["chainProviders"][0]["state"] | Subplebbit["clients"]["chainProviders"][0]["state"],
+        chainTicker: string
+    ) {
+        this.clients.chainProviders[chainTicker].state = newState;
     }
 
     // Resolver methods here
@@ -282,6 +291,11 @@ export class PublicationClientsManager extends ClientsManager {
         this._publication.emit("clientschange");
     }
 
+    updateChainProviderState(newState: "stopped" | "resolving-subplebbit-address" | "resolving-author-address", chainTicker: string): void {
+        super.updateChainProviderState(newState, chainTicker);
+        this._publication.emit("clientschange");
+    }
+
     async fetchSubplebbitForPublishing(subplebbitAddress: string) {
         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
             throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
@@ -306,8 +320,7 @@ export class PublicationClientsManager extends ClientsManager {
 
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
 
-        //@ts-expect-error
-        return this._publication.plebbit.createSubplebbit(subJson);
+        return subJson;
     }
 }
 
@@ -316,8 +329,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     private _comment: Comment;
 
     constructor(comment: Comment) {
-        //@ts-expect-error
-        super(comment.plebbit);
+        super(comment);
         this._comment = comment;
     }
 
@@ -360,8 +372,7 @@ export class SubplebbitClientsManager extends ClientsManager {
     private _subplebbit: Subplebbit;
 
     constructor(subplebbit: Subplebbit) {
-        //@ts-expect-error
-        super(comment.plebbit);
+        super(subplebbit.plebbit);
         this._subplebbit = subplebbit;
     }
 
@@ -399,6 +410,11 @@ export class SubplebbitClientsManager extends ClientsManager {
         gateway: string
     ) {
         super.updateGatewayState(newState, gateway);
+        this._subplebbit.emit("clientschange");
+    }
+
+    updateChainProviderState(newState: "stopped" | "resolving-subplebbit-address" | "resolving-author-address", chainTicker: string): void {
+        super.updateChainProviderState(newState, chainTicker);
         this._subplebbit.emit("clientschange");
     }
 }

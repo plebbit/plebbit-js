@@ -99,7 +99,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         this._initPubsubClients();
         this._initResolver(options);
 
-        this._clientsManager = new ClientsManager(this);
 
         this.dataPath = options.dataPath || getDefaultDataPath();
     }
@@ -144,6 +143,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 chainId: 137
             }
         };
+        this.clients.chainProviders = this.chainProviders;
+        if (!this.clients.chainProviders["eth"]) this.clients.chainProviders["eth"] = { urls: ["DefaultProvider"], chainId: 1 };
+
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         this._memCache = new TinyCache();
         this.resolver = new Resolver({
@@ -196,6 +198,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         // Init stats
         this.stats = new Stats({ _cache: this._cache, clients: this.clients });
+        this._clientsManager = new ClientsManager(this);
     }
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
@@ -241,7 +244,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     private async _createCommentInstance(
         options: CreateCommentOptions | CommentIpfsType | CommentPubsubMessage | CommentWithCommentUpdate,
-        subplebbit?: Subplebbit
+        subplebbit?: SubplebbitIpfsType
     ) {
         options = options as CreateCommentOptions | CommentIpfsType | CommentPubsubMessage;
         const comment = options.parentCid ? new Comment(<CommentType>options, this) : new Post(<PostType>options, this);
@@ -361,7 +364,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     async fetchCid(cid: string) {
-        return fetchCid(cid, this);
+        return this._clientsManager.fetchCid(cid);
     }
 
     // Used to pre-subscribe so publishing on pubsub would be faster

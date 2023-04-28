@@ -122,7 +122,7 @@ export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promi
 }
 
 async function _mockSubplebbitPlebbit(signers: SignerType[], dataPath: string) {
-    const plebbit = await mockPlebbit({dataPath});
+    const plebbit = await mockPlebbit({ dataPath });
 
     plebbit.resolver._resolveEnsTxtRecord = async (ensName: string, textRecord: string) => {
         if (ensName === "plebbit.eth" && textRecord === "subplebbit-address") return signers[3].address;
@@ -306,6 +306,8 @@ export async function mockGatewayPlebbit() {
     const plebbit = await mockRemotePlebbit();
     delete plebbit.clients.ipfsClients;
     delete plebbit.ipfsHttpClientsOptions;
+    //@ts-expect-error
+    plebbit._clientsManager.curIpfsNodeUrl = undefined;
     return plebbit;
 }
 

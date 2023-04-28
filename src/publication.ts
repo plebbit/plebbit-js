@@ -85,7 +85,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
     // private
     protected plebbit: Plebbit;
-    protected subplebbit?: Subplebbit;
+    protected subplebbit?: SubplebbitIpfsType;
     protected pubsubMessageSigner: Signer;
     private _challengeAnswer: ChallengeAnswerMessage;
     private _challengeRequest: ChallengeRequestMessage;
