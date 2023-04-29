@@ -332,7 +332,7 @@ export class PublicationClientsManager extends ClientsManager {
         //@ts-expect-error
         const signatureValidity = await verifySubplebbit(subJson, this._publication.plebbit);
 
-        if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
+        if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity, subplebbitAddress, subJson });
 
         return subJson;
     }
