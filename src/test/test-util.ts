@@ -290,7 +290,7 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions) {
         else if (textRecord === "subplebbit-address") throw Error(`${ensName} has no subplebbit-address`);
     };
 
-    plebbit.clients.pubsubClients["http://localhost:15002/api/v0"]._client = createMockIpfsClient();
+    plebbit.clients.pubsubClients[Object.keys(plebbit.clients.pubsubClients)[0]]._client = createMockIpfsClient();
     plebbit.on("error", () => {});
     return plebbit;
 }
