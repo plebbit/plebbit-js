@@ -255,3 +255,277 @@ describe("comment.updatingState", async () => {
         expect(gatewayPlebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 });
+
+describe(`comment.clients`, async () => {
+    let plebbit, gatewayPlebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+        gatewayPlebbit = await mockGatewayPlebbit();
+    });
+
+    describe(`comment.clients.ipfsGateways`, async () => {
+        // All tests below use Plebbit instance that doesn't have ipfsClient
+        it(`comment.clients.ipfsGateways[url] is stopped by default`, async () => {
+            const mockPost = await generateMockPost(subplebbitAddress, gatewayPlebbit);
+            expect(Object.keys(mockPost.clients.ipfsGateways).length).to.equal(1);
+            expect(Object.values(mockPost.clients.ipfsGateways)[0].state).to.equal("stopped");
+        });
+
+        it(`Correct order of ipfsGateways state when updating a comment that was created with plebbit.createComment({cid})`, async () => {
+            const sub = await gatewayPlebbit.getSubplebbit(signers[0].address);
+
+            const mockPost = await gatewayPlebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
+
+            const expectedStates = ["fetching-ipfs", "stopped", "fetching-ipns", "stopped"];
+
+            const actualStates = [];
+
+            const gatewayUrl = Object.keys(mockPost.clients.ipfsGateways)[0];
+
+            let lastState;
+            mockPost.on("clientschange", () => {
+                if (mockPost.clients.ipfsGateways[gatewayUrl].state !== lastState) {
+                    actualStates.push(mockPost.clients.ipfsGateways[gatewayUrl].state);
+                    lastState = mockPost.clients.ipfsGateways[gatewayUrl].state;
+                }
+            });
+
+            await mockPost.update();
+            await new Promise((resolve) => mockPost.on("update", () => typeof mockPost.upvoteCount === "number" && resolve()));
+            await mockPost.stop();
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+
+        it(`Correct order of ipfsGateways state when updating a comment that was created with plebbit.getComment(cid)`, async () => {
+            const sub = await gatewayPlebbit.getSubplebbit(signers[0].address);
+
+            const mockPost = await gatewayPlebbit.getComment(sub.posts.pages.hot.comments[0].cid);
+
+            const expectedStates = ["fetching-ipns", "stopped"];
+
+            const actualStates = [];
+
+            const gatewayUrl = Object.keys(mockPost.clients.ipfsGateways)[0];
+
+            let lastState;
+            mockPost.on("clientschange", () => {
+                if (mockPost.clients.ipfsGateways[gatewayUrl].state !== lastState) {
+                    actualStates.push(mockPost.clients.ipfsGateways[gatewayUrl].state);
+                    lastState = mockPost.clients.ipfsGateways[gatewayUrl].state;
+                }
+            });
+
+            await mockPost.update();
+            await new Promise((resolve) => mockPost.once("update", resolve));
+            await mockPost.stop();
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+
+        it(`Correct order of ipfsGateways state when publishing a comment`, async () => {
+            const mockPost = await generateMockPost(signers[0].address, gatewayPlebbit);
+
+            const expectedStates = ["fetching-ipns", "stopped"];
+
+            const actualStates = [];
+
+            const gatewayUrl = Object.keys(mockPost.clients.ipfsGateways)[0];
+
+            let lastState;
+            mockPost.on("clientschange", () => {
+                if (mockPost.clients.ipfsGateways[gatewayUrl].state !== lastState) {
+                    actualStates.push(mockPost.clients.ipfsGateways[gatewayUrl].state);
+                    lastState = mockPost.clients.ipfsGateways[gatewayUrl].state;
+                }
+            });
+
+            await publishWithExpectedResult(mockPost, true);
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+    });
+
+    describe(`comment.clients.ipfsClients`, async () => {
+        it(`comment.clients.ipfsClients is undefined for gateway plebbit`, async () => {
+            const mockPost = await generateMockPost(subplebbitAddress, gatewayPlebbit);
+            expect(mockPost.clients.ipfsClients).to.be.undefined;
+        });
+
+        it(`comment.clients.ipfsClients[url] is stopped by default`, async () => {
+            const mockPost = await generateMockPost(subplebbitAddress, plebbit);
+            expect(Object.keys(mockPost.clients.ipfsClients).length).to.equal(1);
+            expect(Object.values(mockPost.clients.ipfsClients)[0].state).to.equal("stopped");
+        });
+
+        it(`Correct order of ipfsClients state when updating a comment that was created with plebbit.createComment({cid})`, async () => {
+            const sub = await plebbit.getSubplebbit(signers[0].address);
+
+            const mockPost = await plebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
+
+            const expectedStates = ["fetching-ipfs", "stopped", "fetching-update-ipns", "fetching-update-ipfs", "stopped"];
+
+            const actualStates = [];
+
+            const ipfsUrl = Object.keys(mockPost.clients.ipfsClients)[0];
+
+            let lastState;
+            mockPost.on("clientschange", () => {
+                if (mockPost.clients.ipfsClients[ipfsUrl].state !== lastState) {
+                    actualStates.push(mockPost.clients.ipfsClients[ipfsUrl].state);
+                    lastState = mockPost.clients.ipfsClients[ipfsUrl].state;
+                }
+            });
+
+            await mockPost.update();
+            await new Promise((resolve) => mockPost.on("update", () => typeof mockPost.upvoteCount === "number" && resolve()));
+            await mockPost.stop();
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+
+        it(`Correct order of ipfsClients state when updating a comment that was created with plebbit.getComment(cid)`, async () => {
+            const sub = await plebbit.getSubplebbit(signers[0].address);
+
+            const mockPost = await plebbit.getComment(sub.posts.pages.hot.comments[0].cid);
+
+            const expectedStates = ["fetching-update-ipns", "fetching-update-ipfs", "stopped"];
+
+            const actualStates = [];
+
+            const ipfsUrl = Object.keys(mockPost.clients.ipfsClients)[0];
+
+            let lastState;
+            mockPost.on("clientschange", () => {
+                if (mockPost.clients.ipfsClients[ipfsUrl].state !== lastState) {
+                    actualStates.push(mockPost.clients.ipfsClients[ipfsUrl].state);
+                    lastState = mockPost.clients.ipfsClients[ipfsUrl].state;
+                }
+            });
+
+            await mockPost.update();
+            await new Promise((resolve) => mockPost.once("update", resolve));
+            await mockPost.stop();
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+
+        it(`Correct order of ipfsClients state when publishing a comment`, async () => {
+            const mockPost = await generateMockPost(signers[0].address, plebbit);
+
+            const expectedStates = ["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "stopped"];
+
+            const actualStates = [];
+
+            const ipfsUrl = Object.keys(mockPost.clients.ipfsClients)[0];
+
+            let lastState;
+            mockPost.on("clientschange", () => {
+                if (mockPost.clients.ipfsClients[ipfsUrl].state !== lastState) {
+                    actualStates.push(mockPost.clients.ipfsClients[ipfsUrl].state);
+                    lastState = mockPost.clients.ipfsClients[ipfsUrl].state;
+                }
+            });
+
+            await publishWithExpectedResult(mockPost, true);
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+    });
+
+    describe(`comment.clients.pubsubClients`, async () => {
+        it(`comment.clients.pubsubClients[url].state is stopped by default`, async () => {
+            const mockPost = await generateMockPost(subplebbitAddress, plebbit);
+            expect(Object.keys(mockPost.clients.pubsubClients).length).to.equal(1);
+            expect(Object.values(mockPost.clients.pubsubClients)[0].state).to.equal("stopped");
+        });
+
+        it(`correct order of pubsubClients state when publishing a comment with a sub that skips challenge`, async () => {
+            const mockPost = await generateMockPost(signers[0].address, plebbit);
+
+            const expectedStates = ["stopped", "publishing-challenge-request", "waiting-challenge", "stopped"];
+
+            const actualStates = [];
+
+            const pubsubUrl = Object.keys(mockPost.clients.pubsubClients)[0];
+
+            let lastState;
+            mockPost.on("clientschange", () => {
+                if (mockPost.clients.pubsubClients[pubsubUrl].state !== lastState) {
+                    actualStates.push(mockPost.clients.pubsubClients[pubsubUrl].state);
+                    lastState = mockPost.clients.pubsubClients[pubsubUrl].state;
+                }
+            });
+
+            await publishWithExpectedResult(mockPost, true);
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+
+        it(`correct order of pubsubClients state when publishing a comment with a sub that requires challenge`, async () => {
+            const imageCaptchaSubplebbitAddress = signers[2].address;
+
+            const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+            mockPost.removeAllListeners();
+
+            const expectedStates = [
+                "stopped",
+                "publishing-challenge-request",
+                "waiting-challenge",
+                "waiting-challenge-answers",
+                "publishing-challenge-answers",
+                "waiting-challenge-verification",
+                "stopped"
+            ];
+
+            const actualStates = [];
+
+            const pubsubUrl = Object.keys(mockPost.clients.pubsubClients)[0];
+
+            let lastState;
+            mockPost.on("clientschange", () => {
+                if (mockPost.clients.pubsubClients[pubsubUrl].state !== lastState) {
+                    actualStates.push(mockPost.clients.pubsubClients[pubsubUrl].state);
+                    lastState = mockPost.clients.pubsubClients[pubsubUrl].state;
+                }
+            });
+
+            mockPost.once("challenge", async (challengeMsg) => {
+                expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
+                await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
+            });
+
+            await publishWithExpectedResult(mockPost, true);
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+    });
+
+    describe(`comment.clients.chainProviders`, async () => {
+        it(`comment.clients.chainProviders[url].state is stopped by default`, async () => {
+            const mockPost = await generateMockPost(subplebbitAddress, plebbit);
+            expect(Object.keys(mockPost.clients.chainProviders).length).to.equal(3);
+            expect(Object.values(mockPost.clients.chainProviders)[0].state).to.equal("stopped");
+        });
+
+        it(`correct order of chainProviders state when publishing a comment to a sub with a domain address`, async () => {
+            const mockPost = await generateMockPost("plebbit.eth", plebbit);
+
+            const expectedStates = ["resolving-subplebbit-address", "stopped"];
+
+            const actualStates = [];
+
+            let lastState;
+            mockPost.on("clientschange", () => {
+                if (mockPost.clients.chainProviders["eth"].state !== lastState) {
+                    actualStates.push(mockPost.clients.chainProviders["eth"].state);
+                    lastState = mockPost.clients.chainProviders["eth"].state;
+                }
+            });
+
+            await publishWithExpectedResult(mockPost, true);
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+    });
+});
