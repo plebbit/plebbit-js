@@ -196,14 +196,14 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 );
             }
 
+            await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
+            this._clientsManager.updatePubsubState("stopped");
             this.emit(
                 "challengeverification",
                 { ...msgParsed, publication: decryptedPublication },
                 this instanceof Comment && decryptedPublication ? this : undefined
             );
-
-            await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
-            this._clientsManager.updatePubsubState("stopped");
+            
         }
     }
 
