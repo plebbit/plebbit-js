@@ -7,7 +7,6 @@ const lodash = require("lodash");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
-const { loadIpnsAsJson } = require("../../dist/node/util");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const stringify = require("safe-stable-stringify");
@@ -138,8 +137,6 @@ describe("plebbit.getSubplebbit", async () => {
     it("can load subplebbit with ENS domain via plebbit.getSubplebbit", async () => {
         const tempPlebbit = await mockPlebbit();
 
-        tempPlebbit.resolver.resolveSubplebbitAddressIfNeeded = async (address) =>
-            address === ensSubplebbitAddress ? ensSubplebbitSigner.address : address;
         const subplebbit = await tempPlebbit.getSubplebbit(ensSubplebbitAddress);
         expect(subplebbit.address).to.equal(ensSubplebbitAddress);
         // I'd add more tests for subplebbit.title and subplebbit.description here but the ipfs node is offline, and won't be able to retrieve plebwhales.eth IPNS record
@@ -147,8 +144,6 @@ describe("plebbit.getSubplebbit", async () => {
 
     it(`A subplebbit with ENS domain for address can also be loaded from its IPNS`, async () => {
         const tempPlebbit = await mockPlebbit();
-        tempPlebbit.resolver.resolveSubplebbitAddressIfNeeded = async (address) =>
-            address === ensSubplebbitAddress ? ensSubplebbitSigner.address : address;
 
         const loadedSubplebbit = await tempPlebbit.getSubplebbit(ensSubplebbitSigner.address);
         expect(loadedSubplebbit.address).to.equal(ensSubplebbitAddress);

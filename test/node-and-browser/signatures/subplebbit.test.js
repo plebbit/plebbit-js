@@ -13,7 +13,6 @@ describe("Sign subplebbit", async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockPlebbit();
-        plebbit.resolver.resolveSubplebbitAddressIfNeeded = (address) => (address === "plebbit.eth" ? signers[3].address : address);
     });
     it(`Can sign and validate fixture subplebbit correctly`, async () => {
         const subFixture = lodash.cloneDeep(require("../../fixtures/valid_subplebbit.json"));
@@ -40,7 +39,6 @@ describe("Verify subplebbit", async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        plebbit.resolver.resolveSubplebbitAddressIfNeeded = (address) => (address === "plebbit.eth" ? signers[3].address : address);
     });
 
     it(`Can validate live subplebbit`, async () => {
