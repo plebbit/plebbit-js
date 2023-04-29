@@ -144,7 +144,7 @@ describe(`Concurrency with subplebbit.edit`, async () => {
             const subplebbit = await plebbit.createSubplebbit({ title: subplebbitTitle });
             const subplebbitSignerAddress = lodash.clone(subplebbit.address);
             if (editArgs.address)
-                plebbit._clientsManager.resolveSubplebbitAddressIfNeeded = async (subAddress) =>
+                plebbit.resolver._resolveEnsTxtRecord = async (subAddress, txtRecordName) =>
                     subAddress === editArgs.address ? subplebbitSignerAddress : subAddress;
 
             // subplebbit is updating
