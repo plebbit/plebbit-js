@@ -285,26 +285,28 @@ export class PublicationClientsManager extends ClientsManager {
 
     // State methods here
 
-    updatePubsubState(newState: Publication["clients"]["pubsubClients"][0]["state"] | Subplebbit["clients"]["pubsubClients"][0]["state"]) {
+    updatePubsubState(newState: Publication["clients"]["pubsubClients"][0]["state"]) {
         super.updatePubsubState(newState);
+        this._publication.clients.pubsubClients[this.curPubsubNodeUrl].state = newState;
+
         this._publication.emit("clientschange");
     }
 
-    updateIpfsState(newState: Publication["clients"]["ipfsClients"][0]["state"] | Subplebbit["clients"]["ipfsClients"][0]["state"]) {
+    updateIpfsState(newState: Publication["clients"]["ipfsClients"][0]["state"]) {
         super.updateIpfsState(newState);
+        this._publication.clients.ipfsClients[this.curIpfsNodeUrl].state = newState;
         this._publication.emit("clientschange");
     }
 
-    updateGatewayState(
-        newState: Publication["clients"]["ipfsGateways"][0]["state"] | Subplebbit["clients"]["ipfsGateways"][0]["state"],
-        gateway: string
-    ) {
+    updateGatewayState(newState: Publication["clients"]["ipfsGateways"][0]["state"], gateway: string) {
         super.updateGatewayState(newState, gateway);
+        this._publication.clients.ipfsGateways[gateway].state = newState;
         this._publication.emit("clientschange");
     }
 
-    updateChainProviderState(newState: "stopped" | "resolving-subplebbit-address" | "resolving-author-address", chainTicker: string): void {
+    updateChainProviderState(newState: Publication["clients"]["chainProviders"][0]["state"], chainTicker: string): void {
         super.updateChainProviderState(newState, chainTicker);
+        this._publication.clients.chainProviders[chainTicker].state = newState;
         this._publication.emit("clientschange");
     }
 
@@ -404,26 +406,28 @@ export class SubplebbitClientsManager extends ClientsManager {
         }
     }
 
-    updatePubsubState(newState: Publication["clients"]["pubsubClients"][0]["state"] | Subplebbit["clients"]["pubsubClients"][0]["state"]) {
+    updatePubsubState(newState: Subplebbit["clients"]["pubsubClients"][0]["state"]) {
         super.updatePubsubState(newState);
+        this._subplebbit.clients.pubsubClients[this.curPubsubNodeUrl].state = newState;
         this._subplebbit.emit("clientschange");
     }
 
-    updateIpfsState(newState: Publication["clients"]["ipfsClients"][0]["state"] | Subplebbit["clients"]["ipfsClients"][0]["state"]) {
+    updateIpfsState(newState: Subplebbit["clients"]["ipfsClients"][0]["state"]) {
         super.updateIpfsState(newState);
+        this._subplebbit.clients.ipfsClients[this.curIpfsNodeUrl].state = newState;
         this._subplebbit.emit("clientschange");
     }
 
-    updateGatewayState(
-        newState: Publication["clients"]["ipfsGateways"][0]["state"] | Subplebbit["clients"]["ipfsGateways"][0]["state"],
-        gateway: string
-    ) {
+    updateGatewayState(newState: Subplebbit["clients"]["ipfsGateways"][0]["state"], gateway: string) {
         super.updateGatewayState(newState, gateway);
+        this._subplebbit.clients.ipfsGateways[gateway].state = newState;
+
         this._subplebbit.emit("clientschange");
     }
 
-    updateChainProviderState(newState: "stopped" | "resolving-subplebbit-address" | "resolving-author-address", chainTicker: string): void {
+    updateChainProviderState(newState: Subplebbit["clients"]["chainProviders"][0]["state"], chainTicker: string): void {
         super.updateChainProviderState(newState, chainTicker);
+        this._subplebbit.clients.chainProviders[chainTicker].state = newState;
         this._subplebbit.emit("clientschange");
     }
 }
