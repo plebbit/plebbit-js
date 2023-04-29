@@ -3,7 +3,7 @@ import Publication from "./publication";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { Plebbit } from "./plebbit";
 import { Comment } from "./comment";
-import { throwWithErrorCode } from "./util";
+import { throwWithErrorCode, timestamp } from "./util";
 import assert from "assert";
 import { CommentIpfsType, CommentUpdate, SubplebbitIpfsType } from "./types";
 import pLimit from "p-limit";
@@ -13,6 +13,7 @@ import { verifySubplebbit } from "./signer";
 import lodash from "lodash";
 import { nativeFunctions } from "./runtime/node/util";
 import isIPFS from "is-ipfs";
+import Logger from "@plebbit/plebbit-logger";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -202,11 +203,18 @@ export class ClientsManager {
 
     async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string) {
         assert(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
+        const log = Logger("plebbit-js:plebbit:resolver:resolveSubplebbitAddressIfNeeded");
         let resolvedSubplebbitAddress: string = lodash.clone(subplebbitAddress);
-
+        const txtRecordName = "subplebbit-address";
         if (subplebbitAddress.endsWith(".eth")) {
-            const resolveCache: string | undefined = this._plebbit._memCache.get(subplebbitAddress + "subplebbit-address"); // TODO Should be rewritten
-            if (typeof resolveCache === "string") return resolveCache;
+            const resolveCache: string | undefined = await this._plebbit._cache.getItem(`${subplebbitAddress}_${txtRecordName}`); // TODO Should be rewritten
+            if (typeof resolveCache === "string") {
+                const resolvedTimestamp: number = await this._plebbit._cache.getItem(`${subplebbitAddress}_${txtRecordName}_timestamp`);
+                assert(typeof resolvedTimestamp === "number");
+                const shouldResolveAgain = timestamp() - resolvedTimestamp > 86400; // Only resolve again if last time was over a day
+                if (!shouldResolveAgain) return resolveCache;
+                log(`Cache of ENS (${subplebbitAddress}) txt record name (${txtRecordName}) is stale. Invalidating the cache...`);
+            }
 
             this.updateChainProviderState("resolving-subplebbit-address", "eth");
             try {
@@ -224,14 +232,23 @@ export class ClientsManager {
     async resolveAuthorAddressIfNeeded(authorAddress: string) {
         assert(typeof authorAddress === "string", "subplebbitAddress needs to be a string to be resolved");
         let resolvedAuthorAddress: string = lodash.clone(authorAddress);
+        const log = Logger("plebbit-js:plebbit:resolver:resolveAuthorAddressIfNeeded");
 
+
+        const txtRecordName = `plebbit-author-address`;
         if (authorAddress.endsWith(".eth")) {
-            const resolveCache: string | undefined = this._plebbit._memCache.get(authorAddress + "plebbit-author-address"); // TODO Should be rewritten
-            if (typeof resolveCache === "string") return resolveCache;
+            const resolveCache: string | undefined = await this._plebbit._cache.getItem(`${authorAddress}_${txtRecordName}`);
+            if (typeof resolveCache === "string") {
+                const resolvedTimestamp: number = await this._plebbit._cache.getItem(`${authorAddress}_${txtRecordName}_timestamp`);
+                assert(typeof resolvedTimestamp === "number");
+                const shouldResolveAgain = timestamp() - resolvedTimestamp > 86400; // Only resolve again if last time was over a day
+                if (!shouldResolveAgain) return resolveCache;
+                log(`Cache of ENS (${authorAddress}) txt record name (${txtRecordName}) is stale. Invalidating the cache...`);
+            }
 
             this.updateChainProviderState("resolving-author-address", "eth");
             try {
-                resolvedAuthorAddress = await this._plebbit.resolver._resolveEnsTxtRecord(authorAddress, "plebbit-author-address");
+                resolvedAuthorAddress = await this._plebbit.resolver._resolveEnsTxtRecord(authorAddress, txtRecordName);
                 this.updateChainProviderState("stopped", "eth");
             } catch (e) {
                 this.updateChainProviderState("stopped", "eth");

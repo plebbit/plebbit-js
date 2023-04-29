@@ -45,7 +45,6 @@ import { CreateSignerOptions, SignerType } from "./signer/constants";
 import Stats from "./stats";
 import Cache from "./runtime/node/cache";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
-import Publication from "./publication";
 import { ClientsManager } from "./client";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
@@ -56,7 +55,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
     };
     resolver: Resolver;
-    _memCache: TinyCache;
     ipfsHttpClientsOptions?: IpfsHttpClientOptions[];
     pubsubHttpClientsOptions: IpfsHttpClientOptions[];
     dataPath?: string;
@@ -98,7 +96,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         this._initIpfsClients();
         this._initPubsubClients();
         this._initResolver(options);
-
 
         this.dataPath = options.dataPath || getDefaultDataPath();
     }
@@ -147,9 +144,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (!this.clients.chainProviders["eth"]) this.clients.chainProviders["eth"] = { urls: ["DefaultProvider"], chainId: 1 };
 
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
-        this._memCache = new TinyCache();
         this.resolver = new Resolver({
-            _memCache: this._memCache,
+            _cache: this._cache,
             resolveAuthorAddresses: this.resolveAuthorAddresses,
             chainProviders: this.chainProviders
         });

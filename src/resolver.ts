@@ -4,11 +4,11 @@ import { ChainProvider } from "./types";
 import assert from "assert";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
-import { throwWithErrorCode } from "./util";
+import { throwWithErrorCode, timestamp } from "./util";
 
 export class Resolver {
     private cachedChainProviders: { [chainTicker: string]: ethers.providers.BaseProvider };
-    private plebbit: Pick<Plebbit, "_memCache" | "resolveAuthorAddresses" | "chainProviders">;
+    private plebbit: Pick<Plebbit, "resolveAuthorAddresses" | "chainProviders" | "_cache">;
 
     constructor(plebbit: Resolver["plebbit"]) {
         this.cachedChainProviders = {};
@@ -59,7 +59,8 @@ export class Resolver {
 
         log.trace(`Resolved text record name (${txtRecordName}) of ENS (${ensName}) to ${txtRecordResult}`);
 
-        this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // TODO rewrite this
+        this.plebbit._cache.setItem(`${ensName}_${txtRecordName}`, txtRecordResult);
+        this.plebbit._cache.setItem(`${ensName}_${txtRecordName}_timestamp`, timestamp());
 
         return txtRecordResult;
     }
