@@ -55,7 +55,7 @@ export type PageOptions = {
     pageSize: number;
 };
 
-type PageGenerationRes = Record<Partial<PostSortName | ReplySortName>, { pages: PageIpfs[]; cids: string[] }>;
+type PageGenerationRes = Partial<Record<PostSortName | ReplySortName, { pages: PageIpfs[]; cids: string[] }>>;
 
 export class SortHandler {
     subplebbit: Pick<Subplebbit, "dbHandler" | "plebbit" | "address" | "encryption" | "_clientsManager">;
@@ -89,7 +89,7 @@ export class SortHandler {
             listOfPage[i] = pageIpfs;
         }
 
-        return Object.fromEntries([[sortName, { pages: listOfPage, cids }]]);
+        return { [sortName]: { pages: listOfPage, cids } };
     }
 
     // Resolves to sortedComments
