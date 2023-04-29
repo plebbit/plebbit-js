@@ -1,6 +1,7 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const messages = require("../../dist/node/errors");
+const { messages } = require("../../dist/node/errors");
+
 const { mockPlebbit, publishRandomPost, mockRemotePlebbit } = require("../../dist/node/test/test-util");
 
 const lodash = require("lodash");
@@ -10,6 +11,7 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const stringify = require("safe-stable-stringify");
+const { verifySubplebbit } = require("../../dist/node/signer");
 
 const subplebbitAddress = signers[0].address;
 
@@ -147,5 +149,16 @@ describe("plebbit.getSubplebbit", async () => {
 
         const loadedSubplebbit = await tempPlebbit.getSubplebbit(ensSubplebbitSigner.address);
         expect(loadedSubplebbit.address).to.equal(ensSubplebbitAddress);
+    });
+
+    it(`plebbit.getSubplebbit() throws an error if fetched subplebbit has invalid signature`, async () => {
+        const tempPlebbit = await mockPlebbit();
+
+        const subJson = JSON.parse(await tempPlebbit._clientsManager.fetchIpns(subplebbitAddress));
+        subJson.updatedAt += 1; // Should invalidate the signature
+        expect(await verifySubplebbit(subJson, tempPlebbit)).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
+
+        tempPlebbit._clientsManager.fetchIpns = () => JSON.stringify(subJson);
+        await assert.isRejected(tempPlebbit.getSubplebbit(subplebbitAddress), messages.ERR_SIGNATURE_IS_INVALID);
     });
 });
