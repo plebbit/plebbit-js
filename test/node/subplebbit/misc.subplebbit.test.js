@@ -412,3 +412,149 @@ describe(`Migration to a new IPFS repo`, async () => {
         expect(ipnsLoaded.cid).to.equal(postFromPage.cid); // Make sure it was loaded correctly
     });
 });
+
+describe(`subplebbit.clients (Local)`, async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
+
+    describe(`subplebbit.clients.ipfsClients`, async () => {
+        it(`subplebbit.clients.ipfsClients[url] is stopped by default`, async () => {
+            const mockSub = await createMockSub({}, plebbit);
+            expect(Object.keys(mockSub.clients.ipfsClients).length).to.equal(1);
+            expect(Object.values(mockSub.clients.ipfsClients)[0].state).to.equal("stopped");
+        });
+
+        it(`subplebbit.clients.ipfsClients.state is publishing-ipns before publishing a new IPNS`, async () => {
+            const sub = await createMockSub({}, plebbit);
+
+            let publishStateTime;
+            let updateTime;
+
+            const ipfsUrl = Object.keys(sub.clients.ipfsClients)[0];
+
+            sub.on("clientschange", () => {
+                if (sub.clients.ipfsClients[ipfsUrl].state === "publishing-ipns") publishStateTime = Date.now();
+            });
+
+            sub.once("update", () => (updateTime = Date.now()));
+
+            await sub.start();
+            await new Promise((resolve) => sub.once("update", resolve));
+            await sub.stop();
+
+            expect(publishStateTime).to.be.a("number");
+            expect(updateTime).to.be.a("number");
+            expect(publishStateTime).to.be.lessThan(updateTime);
+        });
+    });
+
+    describe(`comment.clients.pubsubClients`, async () => {
+        it(`subplebbit.clients.pubsubClients[url].state is stopped by default`, async () => {
+            const mockSub = await createMockSub({}, plebbit);
+            expect(Object.keys(mockSub.clients.pubsubClients).length).to.equal(1);
+            expect(Object.values(mockSub.clients.pubsubClients)[0].state).to.equal("stopped");
+        });
+
+        it(`correct order of pubsubClients state when receiving a comment while skipping challenge`, async () => {
+            const mockSub = await createMockSub({}, plebbit);
+
+            const expectedStates = ["waiting-challenge-requests", "publishing-challenge-verification", "waiting-challenge-requests"];
+
+            const actualStates = [];
+
+            const pubsubUrl = Object.keys(mockSub.clients.pubsubClients)[0];
+
+            let lastState;
+            mockSub.on("clientschange", () => {
+                if (mockSub.clients.pubsubClients[pubsubUrl].state !== lastState) {
+                    actualStates.push(mockSub.clients.pubsubClients[pubsubUrl].state);
+                    lastState = mockSub.clients.pubsubClients[pubsubUrl].state;
+                }
+            });
+
+            await mockSub.start();
+
+            await new Promise((resolve) => mockSub.once("update", resolve));
+
+            await publishRandomPost(mockSub.address, plebbit, {}, false);
+
+            await new Promise((resolve) => mockSub.once("challengeverification", resolve));
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+
+        it(`Correct order of pubsubClients when receiving a comment while mandating challenge`, async () => {
+            const mockSub = await plebbit.createSubplebbit({});
+
+            mockSub.setValidateCaptchaAnswerCallback(async (challengeAnswerMessage) => {
+                return [true, undefined];
+            });
+
+            const expectedStates = [
+                "waiting-challenge-requests",
+                "publishing-challenge",
+                "waiting-challenge-answers",
+                "publishing-challenge-verification",
+                "waiting-challenge-requests"
+            ];
+
+            const actualStates = [];
+
+            const pubsubUrl = Object.keys(mockSub.clients.pubsubClients)[0];
+
+            let lastState;
+            mockSub.on("clientschange", () => {
+                if (mockSub.clients.pubsubClients[pubsubUrl].state !== lastState) {
+                    actualStates.push(mockSub.clients.pubsubClients[pubsubUrl].state);
+                    lastState = mockSub.clients.pubsubClients[pubsubUrl].state;
+                }
+            });
+
+            await mockSub.start();
+
+            await new Promise((resolve) => mockSub.once("update", resolve));
+
+            publishRandomPost(mockSub.address, plebbit, {}, false);
+
+            await new Promise((resolve) => mockSub.once("challengeverification", resolve));
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+    });
+
+    describe(`subplebbit.clients.chainProviders`, async () => {
+        it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
+            const mockSub = await createMockSub({}, plebbit);
+            expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(3);
+            expect(Object.values(mockSub.clients.chainProviders)[0].state).to.equal("stopped");
+        });
+
+        it(`correct order of chainProviders state when receiving a comment with a domain for author.address`, async () => {
+            const mockSub = await createMockSub({}, plebbit);
+
+            const expectedStates = ["stopped", "resolving-author-address", "stopped"];
+
+            const actualStates = [];
+
+            let lastState;
+            mockSub.on("clientschange", () => {
+                if (mockSub.clients.chainProviders["eth"].state !== lastState) {
+                    actualStates.push(mockSub.clients.chainProviders["eth"].state);
+                    lastState = mockSub.clients.chainProviders["eth"].state;
+                }
+            });
+
+            await mockSub.start();
+
+            await new Promise((resolve) => mockSub.once("update", resolve));
+
+            publishRandomPost(mockSub.address, plebbit, { author: { address: "plebbit.eth" }, signer: signers[6] });
+
+            await new Promise((resolve) => mockSub.once("challengeverification", resolve));
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+    });
+});
