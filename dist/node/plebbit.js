@@ -74,7 +74,6 @@ var util_2 = require("./util");
 var vote_1 = __importDefault(require("./vote"));
 var signer_1 = require("./signer");
 var resolver_1 = require("./resolver");
-var tinycache_1 = __importDefault(require("tinycache"));
 var comment_edit_1 = require("./comment-edit");
 var util_3 = require("./signer/util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
@@ -86,6 +85,7 @@ var buffer_1 = require("buffer");
 var tiny_typed_emitter_1 = require("tiny-typed-emitter");
 var stats_1 = __importDefault(require("./stats"));
 var cache_1 = __importDefault(require("./runtime/node/cache"));
+var client_1 = require("./client");
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
     function Plebbit(options) {
@@ -178,12 +178,13 @@ var Plebbit = /** @class */ (function (_super) {
                 chainId: 137
             }
         };
+        this.clients.chainProviders = this.chainProviders;
+        if (!this.clients.chainProviders["eth"])
+            this.clients.chainProviders["eth"] = { urls: ["DefaultProvider"], chainId: 1 };
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
-        this._memCache = new tinycache_1.default();
         this.resolver = new resolver_1.Resolver({
-            _memCache: this._memCache,
+            _cache: this._cache,
             resolveAuthorAddresses: this.resolveAuthorAddresses,
-            emit: this.emit.bind(this),
             chainProviders: this.chainProviders
         });
     };
@@ -260,6 +261,7 @@ var Plebbit = /** @class */ (function (_super) {
                         _e.sent();
                         // Init stats
                         this.stats = new stats_1.default({ _cache: this._cache, clients: this.clients });
+                        this._clientsManager = new client_1.ClientsManager(this);
                         return [2 /*return*/];
                 }
             });
@@ -267,27 +269,28 @@ var Plebbit = /** @class */ (function (_super) {
     };
     Plebbit.prototype.getSubplebbit = function (subplebbitAddress) {
         return __awaiter(this, void 0, void 0, function () {
-            var resolvedSubplebbitAddress, subplebbitJson, signatureValidity, subplebbit;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var resolvedSubplebbitAddress, subplebbitJson, _a, _b, signatureValidity, subplebbit;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
                             (0, util_2.throwWithErrorCode)("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress: subplebbitAddress });
-                        return [4 /*yield*/, this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
+                        return [4 /*yield*/, this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
                     case 1:
-                        resolvedSubplebbitAddress = _a.sent();
-                        return [4 /*yield*/, (0, util_2.loadIpnsAsJson)(resolvedSubplebbitAddress, this)];
+                        resolvedSubplebbitAddress = _c.sent();
+                        _b = (_a = JSON).parse;
+                        return [4 /*yield*/, this._clientsManager.fetchIpns(resolvedSubplebbitAddress)];
                     case 2:
-                        subplebbitJson = _a.sent();
-                        return [4 /*yield*/, (0, signer_1.verifySubplebbit)(subplebbitJson, this)];
+                        subplebbitJson = _b.apply(_a, [_c.sent()]);
+                        return [4 /*yield*/, (0, signer_1.verifySubplebbit)(subplebbitJson, this.resolveAuthorAddresses, this._clientsManager)];
                     case 3:
-                        signatureValidity = _a.sent();
+                        signatureValidity = _c.sent();
                         if (!signatureValidity.valid)
                             (0, util_2.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", { signatureValidity: signatureValidity });
                         subplebbit = new subplebbit_1.Subplebbit(this);
                         return [4 /*yield*/, subplebbit.initSubplebbit(subplebbitJson)];
                     case 4:
-                        _a.sent();
+                        _c.sent();
                         return [2 /*return*/, subplebbit];
                 }
             });
@@ -295,18 +298,19 @@ var Plebbit = /** @class */ (function (_super) {
     };
     Plebbit.prototype.getComment = function (cid) {
         return __awaiter(this, void 0, void 0, function () {
-            var commentJson, signatureValidity;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var commentJson, _a, _b, signatureValidity;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         if (!is_ipfs_1.default.cid(cid))
                             (0, util_2.throwWithErrorCode)("ERR_CID_IS_INVALID", "getComment: cid (".concat(cid, ") is invalid as a CID"));
-                        return [4 /*yield*/, (0, util_2.loadIpfsFileAsJson)(cid, this)];
+                        _b = (_a = JSON).parse;
+                        return [4 /*yield*/, this.fetchCid(cid)];
                     case 1:
-                        commentJson = _a.sent();
-                        return [4 /*yield*/, (0, signer_1.verifyComment)(commentJson, this, true)];
+                        commentJson = _b.apply(_a, [_c.sent()]);
+                        return [4 /*yield*/, (0, signer_1.verifyComment)(commentJson, this.resolveAuthorAddresses, this._clientsManager, true)];
                     case 2:
-                        signatureValidity = _a.sent();
+                        signatureValidity = _c.sent();
                         if (!signatureValidity.valid)
                             (0, util_2.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", { cid: cid, signatureValidity: signatureValidity });
                         return [2 /*return*/, this.createComment(__assign(__assign({}, commentJson), { cid: cid }))];
@@ -546,7 +550,7 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.fetchCid = function (cid) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, (0, util_2.fetchCid)(cid, this)];
+                return [2 /*return*/, this._clientsManager.fetchCid(cid)];
             });
         });
     };
@@ -560,7 +564,7 @@ var Plebbit = /** @class */ (function (_super) {
                         if (this._pubsubSubscriptions[subplebbitAddress])
                             return [2 /*return*/];
                         handler = function () { };
-                        return [4 /*yield*/, this._defaultPubsubClient()._client.pubsub.subscribe(subplebbitAddress, handler)];
+                        return [4 /*yield*/, this._clientsManager.pubsubSubscribe(subplebbitAddress, handler)];
                     case 1:
                         _a.sent();
                         this._pubsubSubscriptions[subplebbitAddress] = handler;
@@ -576,7 +580,7 @@ var Plebbit = /** @class */ (function (_super) {
                     case 0:
                         if (!this._pubsubSubscriptions[subplebbitAddress])
                             return [2 /*return*/];
-                        return [4 /*yield*/, this._defaultPubsubClient()._client.pubsub.unsubscribe(subplebbitAddress, this._pubsubSubscriptions[subplebbitAddress])];
+                        return [4 /*yield*/, this._clientsManager.pubsubUnsubscribe(subplebbitAddress, this._pubsubSubscriptions[subplebbitAddress])];
                     case 1:
                         _a.sent();
                         delete this._pubsubSubscriptions[subplebbitAddress];
@@ -584,14 +588,6 @@ var Plebbit = /** @class */ (function (_super) {
                 }
             });
         });
-    };
-    Plebbit.prototype._defaultIpfsClient = function () {
-        if (!this.clients.ipfsClients)
-            return undefined;
-        return Object.values(this.clients.ipfsClients)[0];
-    };
-    Plebbit.prototype._defaultPubsubClient = function () {
-        return Object.values(this.clients.pubsubClients)[0];
     };
     return Plebbit;
 }(tiny_typed_emitter_1.TypedEmitter));

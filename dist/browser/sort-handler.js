@@ -178,9 +178,10 @@ var SortHandler = /** @class */ (function () {
     SortHandler.prototype.commentChunksToPages = function (chunks, sortName) {
         return __awaiter(this, void 0, void 0, function () {
             var listOfPage, cids, chunksWithReplies, i, pageIpfs, _a, _b;
+            var _c;
             var _this = this;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
                         (0, assert_1.default)(chunks.length > 0);
                         listOfPage = new Array(chunks.length);
@@ -207,23 +208,23 @@ var SortHandler = /** @class */ (function () {
                                 });
                             }); }))];
                     case 1:
-                        chunksWithReplies = _c.sent();
+                        chunksWithReplies = _d.sent();
                         i = chunksWithReplies.length - 1;
-                        _c.label = 2;
+                        _d.label = 2;
                     case 2:
                         if (!(i >= 0)) return [3 /*break*/, 5];
                         pageIpfs = (0, util_1.removeNullAndUndefinedValuesRecursively)({ nextCid: cids[i + 1], comments: chunksWithReplies[i] });
                         _a = cids;
                         _b = i;
-                        return [4 /*yield*/, this.subplebbit.plebbit._defaultIpfsClient()._client.add(JSON.stringify(pageIpfs))];
+                        return [4 /*yield*/, this.subplebbit._clientsManager.getCurrentIpfs()._client.add(JSON.stringify(pageIpfs))];
                     case 3:
-                        _a[_b] = (_c.sent()).path;
+                        _a[_b] = (_d.sent()).path;
                         listOfPage[i] = pageIpfs;
-                        _c.label = 4;
+                        _d.label = 4;
                     case 4:
                         i--;
                         return [3 /*break*/, 2];
-                    case 5: return [2 /*return*/, Object.fromEntries([[sortName, { pages: listOfPage, cids: cids }]])];
+                    case 5: return [2 /*return*/, (_c = {}, _c[sortName] = { pages: listOfPage, cids: cids }, _c)];
                 }
             });
         });

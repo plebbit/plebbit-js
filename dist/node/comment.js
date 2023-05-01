@@ -75,6 +75,7 @@ var lodash_1 = __importDefault(require("lodash"));
 var signatures_1 = require("./signer/signatures");
 var assert_1 = __importDefault(require("assert"));
 var plebbit_error_1 = require("./plebbit-error");
+var client_1 = require("./client");
 var DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 var Comment = /** @class */ (function (_super) {
     __extends(Comment, _super);
@@ -92,6 +93,8 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype._initProps = function (props) {
         // This function is called once at in the constructor
         _super.prototype._initProps.call(this, props);
+        if (!(this._clientsManager instanceof client_1.CommentClientsManager))
+            this._clientsManager = new client_1.CommentClientsManager(this);
         this.postCid = props.postCid;
         this.setCid(props.cid);
         this.parentCid = props.parentCid;
@@ -110,7 +113,8 @@ var Comment = /** @class */ (function (_super) {
         this.replies = new pages_1.Pages({
             pages: undefined,
             pageCids: undefined,
-            subplebbit: { address: this.subplebbitAddress, plebbit: this.plebbit },
+            subplebbit: { address: this.subplebbitAddress, plebbit: this._plebbit },
+            clientManager: this._clientsManager,
             pagesIpfs: undefined,
             parentCid: this.cid
         });
@@ -145,7 +149,10 @@ var Comment = /** @class */ (function (_super) {
                         this.author.flair = ((_h = (_g = props.author) === null || _g === void 0 ? void 0 : _g.subplebbit) === null || _h === void 0 ? void 0 : _h.flair) || ((_k = (_j = props.edit) === null || _j === void 0 ? void 0 : _j.author) === null || _k === void 0 ? void 0 : _k.flair) || ((_l = this.author) === null || _l === void 0 ? void 0 : _l.flair);
                         (0, assert_1.default)(this.cid);
                         _m = this;
-                        return [4 /*yield*/, (0, util_1.parseRawPages)(props.replies, this.cid, { address: this.subplebbitAddress, plebbit: this.plebbit })];
+                        return [4 /*yield*/, (0, util_1.parseRawPages)(props.replies, this.cid, {
+                                address: this.subplebbitAddress,
+                                plebbit: this._plebbit
+                            }, this._clientsManager)];
                     case 1:
                         _m.replies = _o.sent();
                         return [2 /*return*/];
@@ -243,14 +250,15 @@ var Comment = /** @class */ (function (_super) {
                             return __generator(this, function (_b) {
                                 switch (_b.label) {
                                     case 0:
-                                        this._setUpdatingState("fetching-ipfs");
                                         log.trace("Retrying to load comment ipfs (".concat(this.cid, ") for the ").concat(curAttempt, "th time"));
                                         _b.label = 1;
                                     case 1:
                                         _b.trys.push([1, 3, , 4]);
+                                        // TODO should inject this.clients here so gateway or ipfsClients states can be modified
                                         _a = resolve;
-                                        return [4 /*yield*/, (0, util_1.loadIpfsFileAsJson)(this.cid, this.plebbit)];
+                                        return [4 /*yield*/, this._clientsManager.fetchCommentCid(this.cid)];
                                     case 2:
+                                        // TODO should inject this.clients here so gateway or ipfsClients states can be modified
                                         _a.apply(void 0, [_b.sent()]);
                                         return [3 /*break*/, 4];
                                     case 3:
@@ -274,23 +282,21 @@ var Comment = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve) {
                         _this._loadingOperation.attempt(function (curAttempt) { return __awaiter(_this, void 0, void 0, function () {
-                            var _a, e_2;
-                            var _this = this;
-                            return __generator(this, function (_b) {
-                                switch (_b.label) {
+                            var update, e_2;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
                                     case 0:
-                                        this._setUpdatingState("fetching-ipns");
                                         log.trace("Retrying to load comment ipns (".concat(this.ipnsName, ") for the ").concat(curAttempt, "th time"));
-                                        _b.label = 1;
+                                        _a.label = 1;
                                     case 1:
-                                        _b.trys.push([1, 3, , 4]);
-                                        _a = resolve;
-                                        return [4 /*yield*/, (0, util_1.loadIpnsAsJson)(this.ipnsName, this.plebbit, function () { return _this._setUpdatingState("fetching-ipfs"); })];
+                                        _a.trys.push([1, 3, , 4]);
+                                        return [4 /*yield*/, this._clientsManager.fetchCommentUpdate(this.ipnsName)];
                                     case 2:
-                                        _a.apply(void 0, [_b.sent()]);
+                                        update = _a.sent();
+                                        resolve(update);
                                         return [3 /*break*/, 4];
                                     case 3:
-                                        e_2 = _b.sent();
+                                        e_2 = _a.sent();
                                         this._setUpdatingState("failed");
                                         log.error(String(e_2));
                                         this._loadingOperation.retry(e_2);
@@ -316,8 +322,8 @@ var Comment = /** @class */ (function (_super) {
                         return [4 /*yield*/, this._retryLoadingCommentIpfs(log)];
                     case 1:
                         commentIpfs = _a.sent();
+                        (0, assert_1.default)(commentIpfs.ipnsName);
                         this._initProps(__assign(__assign({}, commentIpfs), { cid: this.cid }));
-                        (0, assert_1.default)(this.ipnsName);
                         this.emit("update", this);
                         _a.label = 2;
                     case 2: return [4 /*yield*/, this._retryLoadingCommentUpdate(log)];
@@ -326,7 +332,7 @@ var Comment = /** @class */ (function (_super) {
                         if (!(res && this.updatedAt !== res.updatedAt)) return [3 /*break*/, 6];
                         log("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
                         commentInstance = lodash_1.default.pick(this, ["cid", "signature"]);
-                        return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(res, { address: this.subplebbitAddress }, commentInstance, this.plebbit)];
+                        return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(res, this._plebbit.resolveAuthorAddresses, this._clientsManager, this.subplebbitAddress, commentInstance)];
                     case 4:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid) {
@@ -401,7 +407,7 @@ var Comment = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication()));
-                        return [4 /*yield*/, (0, signatures_1.verifyComment)(commentObj, this.plebbit, true)];
+                        return [4 /*yield*/, (0, signatures_1.verifyComment)(commentObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true)];
                     case 1:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)

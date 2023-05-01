@@ -1,6 +1,7 @@
 import { Plebbit } from "../plebbit";
-import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditPubsubMessage, CommentIpfsType, CommentPubsubMessage, CommentUpdate, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, PageIpfs, SubplebbitIpfsType, SubplebbitType, VotePubsubMessage } from "../types";
+import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditPubsubMessage, CommentIpfsType, CommentPubsubMessage, CommentUpdate, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, PageIpfs, SubplebbitIpfsType, VotePubsubMessage } from "../types";
 import { SignatureType, SignerType } from "./constants";
+import { ClientsManager } from "../client";
 interface ValidationResult {
     valid: boolean;
     reason?: string;
@@ -16,14 +17,14 @@ export declare function signChallengeRequest(request: Omit<ChallengeRequestMessa
 export declare function signChallengeMessage(challengeMessage: Omit<ChallengeMessageType, "signature">, signer: SignerType): Promise<SignatureType>;
 export declare function signChallengeAnswer(challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">, signer: SignerType): Promise<SignatureType>;
 export declare function signChallengeVerification(challengeVerification: Omit<ChallengeVerificationMessageType, "signature">, signer: SignerType): Promise<SignatureType>;
-export declare function verifyVote(vote: VotePubsubMessage, plebbit: Plebbit, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
-export declare function verifyCommentEdit(edit: CommentEditPubsubMessage, plebbit: Plebbit, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
-export declare function verifyComment(comment: CommentPubsubMessage | CommentIpfsType, plebbit: Plebbit, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
-export declare function verifySubplebbit(subplebbit: SubplebbitIpfsType, plebbit: Plebbit): Promise<ValidationResult>;
-export declare function verifyCommentUpdate(update: CommentUpdate, subplebbit: Pick<SubplebbitType, "address">, comment: Pick<CommentWithCommentUpdate, "signature" | "cid">, plebbit: Plebbit): Promise<ValidationResult>;
+export declare function verifyVote(vote: VotePubsubMessage, resolveAuthorAddresses: boolean, clientsManager: ClientsManager, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
+export declare function verifyCommentEdit(edit: CommentEditPubsubMessage, resolveAuthorAddresses: boolean, clientsManager: ClientsManager, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
+export declare function verifyComment(comment: CommentPubsubMessage | CommentIpfsType, resolveAuthorAddresses: boolean, clientsManager: ClientsManager, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
+export declare function verifySubplebbit(subplebbit: SubplebbitIpfsType, resolveAuthorAddresses: boolean, clientsManager: ClientsManager): Promise<ValidationResult>;
+export declare function verifyCommentUpdate(update: CommentUpdate, resolveAuthorAddresses: boolean, clientsManager: ClientsManager, subplebbitAddress: string, comment: Pick<CommentWithCommentUpdate, "signature" | "cid">): Promise<ValidationResult>;
 export declare function verifyChallengeRequest(request: ChallengeRequestMessageType): Promise<ValidationResult>;
 export declare function verifyChallengeMessage(challenge: ChallengeMessageType): Promise<ValidationResult>;
 export declare function verifyChallengeAnswer(answer: ChallengeAnswerMessageType): Promise<ValidationResult>;
 export declare function verifyChallengeVerification(verification: ChallengeVerificationMessageType): Promise<ValidationResult>;
-export declare function verifyPage(page: PageIpfs, plebbit: Plebbit, subplebbit: Pick<SubplebbitType, "address">, parentCommentCid: string | undefined): Promise<ValidationResult>;
+export declare function verifyPage(page: PageIpfs, resolveAuthorAddresses: boolean, clientsManager: ClientsManager, subplebbitAddress: string, parentCommentCid: string | undefined): Promise<ValidationResult>;
 export {};

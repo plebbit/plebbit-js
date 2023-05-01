@@ -14,6 +14,13 @@ export declare class CommentEdit extends Publication implements CommentEditType 
     locked?: boolean;
     removed?: boolean;
     commentAuthor?: CommentAuthorEditOptions;
+    clients: Omit<Publication["clients"], "ipfsClients"> & {
+        ipfsClients: {
+            [ipfsClientUrl: string]: {
+                state: "stopped" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs";
+            };
+        };
+    };
     constructor(props: CommentEditType, plebbit: Plebbit);
     _initProps(props: CommentEditType): void;
     toJSONPubsubMessagePublication(): CommentEditPubsubMessage;

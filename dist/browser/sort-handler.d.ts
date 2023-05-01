@@ -9,12 +9,12 @@ export declare type PageOptions = {
     parentCid: string | null;
     pageSize: number;
 };
-declare type PageGenerationRes = Record<Partial<PostSortName | ReplySortName>, {
+declare type PageGenerationRes = Partial<Record<PostSortName | ReplySortName, {
     pages: PageIpfs[];
     cids: string[];
-}>;
+}>>;
 export declare class SortHandler {
-    subplebbit: Pick<Subplebbit, "dbHandler" | "plebbit" | "address" | "encryption">;
+    subplebbit: Pick<Subplebbit, "dbHandler" | "plebbit" | "address" | "encryption" | "_clientsManager">;
     constructor(subplebbit: SortHandler["subplebbit"]);
     private commentChunksToPages;
     sortComments(comments: {
