@@ -36,6 +36,10 @@ export class ClientsManager {
         }
     }
 
+    toJSON() {
+        return undefined;
+    }
+
     getCurrentPubsub() {
         return this._plebbit.clients.pubsubClients[this.curPubsubNodeUrl];
     }
@@ -230,8 +234,7 @@ export class ClientsManager {
                 this.updateChainProviderState("stopped", "eth");
                 throw e;
             }
-        }
-        else return resolvedSubplebbitAddress;
+        } else return resolvedSubplebbitAddress;
     }
 
     async resolveAuthorAddressIfNeeded(authorAddress: string) {
@@ -259,9 +262,7 @@ export class ClientsManager {
                 this.updateChainProviderState("stopped", "eth");
                 throw e;
             }
-        }
-        else return resolvedAuthorAddress;
-
+        } else return resolvedAuthorAddress;
     }
 
     // Convience methods for plebbit here
