@@ -47,12 +47,15 @@ describe(`subplebbit.start`, async () => {
         // There are cases where ipfs node can fail and be restarted
         // When that happens, the subscription to subplebbit.pubsubTopic will not be restored
         // The restoration of subscription should happen within the sync loop of Subplebbit
-        await subplebbit.plebbit
-            ._defaultPubsubClient()
+        await subplebbit.plebbit._clientsManager
+            .getCurrentPubsub()
             ._client.pubsub.unsubscribe(subplebbit.pubsubTopic, subplebbit.handleChallengeExchange);
-        await waitUntil(async () => (await subplebbit.plebbit._defaultPubsubClient()._client.pubsub.ls()).includes(subplebbit.address), {
-            timeout: 150000
-        });
+        await waitUntil(
+            async () => (await subplebbit.plebbit._clientsManager.getCurrentPubsub()._client.pubsub.ls()).includes(subplebbit.address),
+            {
+                timeout: 150000
+            }
+        );
         await publishRandomPost(subplebbit.address, plebbit, {}, false); // Should receive publication since subscription to pubsub topic has been restored
     });
 });

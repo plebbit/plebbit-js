@@ -9,6 +9,15 @@ class Vote extends Publication implements VoteType {
     commentCid: string;
     vote: 1 | 0 | -1;
 
+    // Vote class only props
+    clients: Omit<Publication["clients"], "ipfsClients"> & {
+        ipfsClients: {
+            [ipfsClientUrl: string]: {
+                state: "stopped" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs";
+            };
+        };
+    };
+
     constructor(props: VoteType, plebbit: Plebbit) {
         super(props, plebbit);
         this.commentCid = props.commentCid;
@@ -44,7 +53,7 @@ class Vote extends Publication implements VoteType {
 
     private async _validateSignature() {
         const voteObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringified here to simulate a message sent through IPNS/PUBSUB
-        const signatureValidity = await verifyVote(voteObj, this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
+        const signatureValidity = await verifyVote(voteObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }
 

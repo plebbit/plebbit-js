@@ -12,6 +12,7 @@ const lodash = require("lodash");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
+const { verifySubplebbit } = require("../../../../dist/node/signer");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -28,6 +29,21 @@ describe(`Client side verification`, async () => {
         const mockComment = await generateMockPost(subplebbitAddress, plebbit, false, { signer: signers[0] });
         mockComment.timestamp += 1; // Corrupts signature
         await assert.isRejected(mockComment.publish(), messages.ERR_SIGNATURE_IS_INVALID);
+    });
+
+    it(`.publish() throws if fetched subplebbit has an invalid signature`, async () => {
+        const customPlebbit = await mockPlebbit();
+        const subJson = JSON.parse(await customPlebbit._clientsManager.fetchIpns(subplebbitAddress));
+        subJson.updatedAt += 1; // should invalidate the signature
+        expect(await verifySubplebbit(subJson, customPlebbit.resolveAuthorAddresses, customPlebbit._clientsManager)).to.deep.equal({
+            valid: false,
+            reason: messages.ERR_SIGNATURE_IS_INVALID
+        });
+
+        const mockPost = await generateMockPost(subplebbitAddress, customPlebbit);
+        mockPost._clientsManager.fetchCidP2P = (address) => JSON.stringify(subJson);
+
+        await assert.isRejected(mockPost.publish(), messages.ERR_SIGNATURE_IS_INVALID);
     });
 });
 

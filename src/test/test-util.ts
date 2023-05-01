@@ -122,13 +122,12 @@ export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promi
 }
 
 async function _mockSubplebbitPlebbit(signers: SignerType[], dataPath: string) {
-    const plebbit = await mockPlebbit({dataPath});
+    const plebbit = await mockPlebbit({ dataPath });
 
     plebbit.resolver._resolveEnsTxtRecord = async (ensName: string, textRecord: string) => {
         if (ensName === "plebbit.eth" && textRecord === "subplebbit-address") return signers[3].address;
         else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address") return signers[6].address;
-        else if (ensName === "testgibbreish.eth" && textRecord === "plebbit-author-address") return undefined;
-        else if (textRecord === "subplebbit-address") throw Error(`${ensName} has no subplebbit-address`);
+        else return undefined;
     };
 
     return plebbit;
@@ -278,6 +277,7 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions) {
     const plebbit = await PlebbitIndex({
         ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
         pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`],
+        resolveAuthorAddresses: true,
         ...plebbitOptions
     });
 
@@ -285,12 +285,10 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions) {
         if (ensName === "plebbit.eth" && textRecord === "subplebbit-address") return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo";
         else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address")
             return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y";
-        else if (ensName === "testgibbreish.eth" && textRecord === "plebbit-author-address")
-            throw new Error(`Domain (${ensName}) has no plebbit-author-address`);
-        else if (textRecord === "subplebbit-address") throw Error(`${ensName} has no subplebbit-address`);
+        else return undefined;
     };
 
-    plebbit.clients.pubsubClients["http://localhost:15002/api/v0"]._client = createMockIpfsClient();
+    plebbit.clients.pubsubClients[Object.keys(plebbit.clients.pubsubClients)[0]]._client = createMockIpfsClient();
     plebbit.on("error", () => {});
     return plebbit;
 }
@@ -306,6 +304,8 @@ export async function mockGatewayPlebbit() {
     const plebbit = await mockRemotePlebbit();
     delete plebbit.clients.ipfsClients;
     delete plebbit.ipfsHttpClientsOptions;
+    //@ts-expect-error
+    plebbit._clientsManager.curIpfsNodeUrl = undefined;
     return plebbit;
 }
 

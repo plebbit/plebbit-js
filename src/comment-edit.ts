@@ -57,6 +57,15 @@ export class CommentEdit extends Publication implements CommentEditType {
     removed?: boolean;
     commentAuthor?: CommentAuthorEditOptions;
 
+    // CommentEdit class only props
+    clients: Omit<Publication["clients"], "ipfsClients"> & {
+        ipfsClients: {
+            [ipfsClientUrl: string]: {
+                state: "stopped" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs";
+            };
+        };
+    };
+
     constructor(props: CommentEditType, plebbit: Plebbit) {
         super(props, plebbit);
 
@@ -113,7 +122,7 @@ export class CommentEdit extends Publication implements CommentEditType {
 
     private async _validateSignature() {
         const editObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication()));
-        const signatureValidity = await verifyCommentEdit(editObj, this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
+        const signatureValidity = await verifyCommentEdit(editObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }
 

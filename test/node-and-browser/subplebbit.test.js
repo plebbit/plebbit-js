@@ -1,16 +1,17 @@
 const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
-const messages = require("../../dist/node/errors");
-const { mockPlebbit, publishRandomPost, mockRemotePlebbit } = require("../../dist/node/test/test-util");
+const { messages } = require("../../dist/node/errors");
+
+const { mockPlebbit, publishRandomPost, mockRemotePlebbit, mockGatewayPlebbit } = require("../../dist/node/test/test-util");
 
 const lodash = require("lodash");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
-const { loadIpnsAsJson } = require("../../dist/node/util");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const stringify = require("safe-stable-stringify");
+const { verifySubplebbit } = require("../../dist/node/signer");
 
 const subplebbitAddress = signers[0].address;
 
@@ -114,7 +115,7 @@ describe("plebbit.getSubplebbit", async () => {
         plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
     it("Can load subplebbit via IPNS address", async () => {
-        const _subplebbitIpns = await loadIpnsAsJson(subplebbitSigner.address, plebbit);
+        const _subplebbitIpns = JSON.parse(await plebbit._clientsManager.fetchIpns(subplebbitSigner.address));
         expect(_subplebbitIpns.lastPostCid).to.be.a.string;
         expect(_subplebbitIpns.pubsubTopic).to.be.a.string;
         expect(_subplebbitIpns.address).to.be.a.string;
@@ -138,8 +139,6 @@ describe("plebbit.getSubplebbit", async () => {
     it("can load subplebbit with ENS domain via plebbit.getSubplebbit", async () => {
         const tempPlebbit = await mockPlebbit();
 
-        tempPlebbit.resolver.resolveSubplebbitAddressIfNeeded = async (address) =>
-            address === ensSubplebbitAddress ? ensSubplebbitSigner.address : address;
         const subplebbit = await tempPlebbit.getSubplebbit(ensSubplebbitAddress);
         expect(subplebbit.address).to.equal(ensSubplebbitAddress);
         // I'd add more tests for subplebbit.title and subplebbit.description here but the ipfs node is offline, and won't be able to retrieve plebwhales.eth IPNS record
@@ -147,10 +146,185 @@ describe("plebbit.getSubplebbit", async () => {
 
     it(`A subplebbit with ENS domain for address can also be loaded from its IPNS`, async () => {
         const tempPlebbit = await mockPlebbit();
-        tempPlebbit.resolver.resolveSubplebbitAddressIfNeeded = async (address) =>
-            address === ensSubplebbitAddress ? ensSubplebbitSigner.address : address;
 
         const loadedSubplebbit = await tempPlebbit.getSubplebbit(ensSubplebbitSigner.address);
         expect(loadedSubplebbit.address).to.equal(ensSubplebbitAddress);
+    });
+
+    it(`plebbit.getSubplebbit() throws an error if fetched subplebbit has invalid signature`, async () => {
+        const tempPlebbit = await mockPlebbit();
+
+        const subJson = JSON.parse(await tempPlebbit._clientsManager.fetchIpns(subplebbitAddress));
+        subJson.updatedAt += 1; // Should invalidate the signature
+        expect(await verifySubplebbit(subJson, tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager)).to.deep.equal({
+            valid: false,
+            reason: messages.ERR_SIGNATURE_IS_INVALID
+        });
+
+        tempPlebbit._clientsManager.fetchIpns = () => JSON.stringify(subJson);
+        await assert.isRejected(tempPlebbit.getSubplebbit(subplebbitAddress), messages.ERR_SIGNATURE_IS_INVALID);
+    });
+});
+
+// These tests are for remote subs
+describe(`subplebbit.clients (Remote)`, async () => {
+    let plebbit, gatewayPlebbit, remotePlebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+        gatewayPlebbit = await mockGatewayPlebbit();
+        remotePlebbit = await mockRemotePlebbit();
+    });
+    describe(`subplebbit.clients.ipfsGateways`, async () => {
+        // All tests below use Plebbit instance that doesn't have ipfsClient
+        it(`subplebbit.clients.ipfsGateways[url] is stopped by default`, async () => {
+            const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
+            expect(Object.keys(mockSub.clients.ipfsGateways).length).to.equal(1);
+            expect(Object.values(mockSub.clients.ipfsGateways)[0].state).to.equal("stopped");
+        });
+
+        it(`Correct order of ipfsGateways state when updating a subplebbit that was created with plebbit.createSubplebbit({address})`, async () => {
+            const sub = await gatewayPlebbit.createSubplebbit({ address: signers[0].address });
+
+            const expectedStates = ["fetching-ipns", "stopped"];
+
+            const actualStates = [];
+
+            const gatewayUrl = Object.keys(sub.clients.ipfsGateways)[0];
+
+            let lastState;
+            sub.on("clientschange", () => {
+                if (sub.clients.ipfsGateways[gatewayUrl].state !== lastState) {
+                    actualStates.push(sub.clients.ipfsGateways[gatewayUrl].state);
+                    lastState = sub.clients.ipfsGateways[gatewayUrl].state;
+                }
+            });
+
+            await sub.update();
+            await new Promise((resolve) => sub.once("update", resolve));
+            await sub.stop();
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+
+        it(`Correct order of ipfsGateways state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
+            const sub = await gatewayPlebbit.getSubplebbit(signers[0].address);
+            await publishRandomPost(sub.address, plebbit, {}, false);
+            sub._updateIntervalMs = 2000;
+
+            const expectedStates = ["fetching-ipns", "stopped"];
+
+            const actualStates = [];
+
+            const gatewayUrl = Object.keys(sub.clients.ipfsGateways)[0];
+
+            let lastState;
+            sub.on("clientschange", () => {
+                if (sub.clients.ipfsGateways[gatewayUrl].state !== lastState) {
+                    actualStates.push(sub.clients.ipfsGateways[gatewayUrl].state);
+                    lastState = sub.clients.ipfsGateways[gatewayUrl].state;
+                }
+            });
+
+            sub.update();
+            await new Promise((resolve) => sub.once("update", resolve));
+            await sub.stop();
+
+            expect(actualStates.slice(0, 2)).to.deep.equal(expectedStates);
+        });
+    });
+
+    describe(`subplebbit.clients.ipfsClients`, async () => {
+        it(`subplebbit.clients.ipfsClients is undefined for gateway plebbit`, async () => {
+            const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
+            expect(mockSub.clients.ipfsClients).to.be.undefined;
+        });
+
+        it(`subplebbit.clients.ipfsClients[url] is stopped by default`, async () => {
+            const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
+            expect(Object.keys(mockSub.clients.ipfsClients).length).to.equal(1);
+            expect(Object.values(mockSub.clients.ipfsClients)[0].state).to.equal("stopped");
+        });
+
+        it(`Correct order of ipfsClients state when updating a sub that was created with plebbit.createSubplebbit({address})`, async () => {
+            const sub = await remotePlebbit.createSubplebbit({ address: signers[0].address });
+            sub._updateIntervalMs = 500;
+
+            const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
+
+            const actualStates = [];
+
+            const ipfsUrl = Object.keys(sub.clients.ipfsClients)[0];
+
+            let lastState;
+            sub.on("clientschange", () => {
+                if (sub.clients.ipfsClients[ipfsUrl].state !== lastState) {
+                    actualStates.push(sub.clients.ipfsClients[ipfsUrl].state);
+                    lastState = sub.clients.ipfsClients[ipfsUrl].state;
+                }
+            });
+
+            sub.update();
+            await new Promise((resolve) => sub.once("update", resolve));
+            await sub.stop();
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+
+        it(`Correct order of ipfsClients state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
+            const sub = await remotePlebbit.getSubplebbit(signers[0].address);
+            sub._updateIntervalMs = 500;
+            await publishRandomPost(sub.address, plebbit, {}, false);
+            const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
+
+            const actualStates = [];
+
+            const ipfsUrl = Object.keys(sub.clients.ipfsClients)[0];
+
+            let lastState;
+            sub.on("clientschange", () => {
+                if (sub.clients.ipfsClients[ipfsUrl].state !== lastState) {
+                    actualStates.push(sub.clients.ipfsClients[ipfsUrl].state);
+                    lastState = sub.clients.ipfsClients[ipfsUrl].state;
+                }
+            });
+
+            sub.update();
+            await new Promise((resolve) => sub.once("update", resolve));
+            await sub.stop();
+
+            expect(actualStates.slice(0, 3)).to.deep.equal(expectedStates);
+        });
+    });
+
+    describe(`subplebbit.clients.chainProviders`, async () => {
+        it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
+            const mockSub = await plebbit.getSubplebbit(signers[0].address);
+            expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(3);
+            expect(Object.values(mockSub.clients.chainProviders)[0].state).to.equal("stopped");
+        });
+
+        it(`Correct order of chainProviders state when updating a subplebbit that was created with plebbit.createSubplebbit({address})`, async () => {
+            const sub = await remotePlebbit.createSubplebbit({ address: "plebbit.eth" });
+
+            const expectedStates = ["resolving-subplebbit-address", "stopped"];
+
+            const actualStates = [];
+
+            let lastState;
+            sub.on("clientschange", () => {
+                if (sub.clients.chainProviders["eth"].state !== lastState) {
+                    actualStates.push(sub.clients.chainProviders["eth"].state);
+                    lastState = sub.clients.chainProviders["eth"].state;
+                }
+            });
+
+            sub.update();
+
+            await new Promise((resolve) => sub.once("update", resolve));
+
+            await sub.stop();
+
+            expect(actualStates.slice(0, 2)).to.deep.equal(expectedStates);
+        });
     });
 });

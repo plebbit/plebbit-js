@@ -4,7 +4,6 @@ const { messages } = require("../../../dist/node/errors");
 const { expect } = require("chai");
 const signers = require("../../fixtures/signers");
 const lodash = require("lodash");
-const { loadIpfsFileAsJson } = require("../../../dist/node/util");
 
 const { mockPlebbit } = require("../../../dist/node/test/test-util");
 
@@ -13,8 +12,14 @@ const subAddress = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR";
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const verifyPageJsonAlongWithObject = async (pageJson, plebbit, subplebbit, parentCid) => {
-    const pageObjRes = await verifyPage(JSON.parse(JSON.stringify(pageJson)), plebbit, subplebbit, parentCid);
-    const pageJsonRes = await verifyPage(pageJson, plebbit, subplebbit, parentCid);
+    const pageObjRes = await verifyPage(
+        JSON.parse(JSON.stringify(pageJson)),
+        plebbit.resolveAuthorAddresses,
+        plebbit._clientsManager,
+        subplebbit.address,
+        parentCid
+    );
+    const pageJsonRes = await verifyPage(pageJson, plebbit.resolveAuthorAddresses, plebbit._clientsManager, subplebbit.address, parentCid);
     expect(pageObjRes).to.deep.equal(pageJsonRes);
     return pageObjRes;
 };
@@ -27,7 +32,7 @@ describe(`verify pages`, async () => {
     });
 
     it(`Can validate page from live subplebbit`, async () => {
-        const page = await loadIpfsFileAsJson(subplebbit.posts.pageCids.new, plebbit);
+        const page = JSON.parse(await plebbit.fetchCid(subplebbit.posts.pageCids.new, plebbit));
         const pageVerification = await verifyPageJsonAlongWithObject(page, plebbit, subplebbit, undefined);
         expect(pageVerification).to.deep.equal({ valid: true });
     });
@@ -48,7 +53,7 @@ describe(`verify pages`, async () => {
 
         const tempPlebbit = await mockPlebbit();
 
-        tempPlebbit.resolver.resolveAuthorAddressIfNeeded = (authorAddress) =>
+        tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === invalidPage.comments[commentWithDomainAddressIndex].comment.author.address
                 ? signers[3].address
                 : authorAddress; // Resolve to wrong address intentionally. Correct address would be signers[6].address

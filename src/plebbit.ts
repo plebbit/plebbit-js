@@ -26,7 +26,7 @@ import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util"
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
-import { fetchCid, loadIpfsFileAsJson, loadIpnsAsJson, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
+import { removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
 import Vote from "./vote";
 import { createSigner, Signer, verifyComment, verifySubplebbit } from "./signer";
 import { Resolver } from "./resolver";
@@ -45,6 +45,7 @@ import { CreateSignerOptions, SignerType } from "./signer/constants";
 import Stats from "./stats";
 import Cache from "./runtime/node/cache";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
+import { ClientsManager } from "./client";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
@@ -54,7 +55,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
     };
     resolver: Resolver;
-    _memCache: TinyCache;
     ipfsHttpClientsOptions?: IpfsHttpClientOptions[];
     pubsubHttpClientsOptions: IpfsHttpClientOptions[];
     dataPath?: string;
@@ -64,6 +64,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     stats: Stats;
 
     private _pubsubSubscriptions: Record<string, MessageHandlerFn>;
+    _clientsManager: ClientsManager;
 
     constructor(options: PlebbitOptions = {}) {
         super();
@@ -139,12 +140,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 chainId: 137
             }
         };
+        this.clients.chainProviders = this.chainProviders;
+        if (!this.clients.chainProviders["eth"]) this.clients.chainProviders["eth"] = { urls: ["DefaultProvider"], chainId: 1 };
+
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
-        this._memCache = new TinyCache();
         this.resolver = new Resolver({
-            _memCache: this._memCache,
+            _cache: this._cache,
             resolveAuthorAddresses: this.resolveAuthorAddresses,
-            emit: this.emit.bind(this),
             chainProviders: this.chainProviders
         });
     }
@@ -192,14 +194,15 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         // Init stats
         this.stats = new Stats({ _cache: this._cache, clients: this.clients });
+        this._clientsManager = new ClientsManager(this);
     }
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
             throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
-        const resolvedSubplebbitAddress = await this.resolver.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
-        const subplebbitJson: SubplebbitIpfsType = await loadIpnsAsJson(resolvedSubplebbitAddress, this);
-        const signatureValidity = await verifySubplebbit(subplebbitJson, this);
+        const resolvedSubplebbitAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
+        const subplebbitJson: SubplebbitIpfsType = JSON.parse(await this._clientsManager.fetchIpns(resolvedSubplebbitAddress));
+        const signatureValidity = await verifySubplebbit(subplebbitJson, this.resolveAuthorAddresses, this._clientsManager);
 
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
 
@@ -211,8 +214,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async getComment(cid: string): Promise<Comment | Post> {
         if (!isIPFS.cid(cid)) throwWithErrorCode("ERR_CID_IS_INVALID", `getComment: cid (${cid}) is invalid as a CID`);
-        const commentJson: CommentIpfsType = await loadIpfsFileAsJson(cid, this);
-        const signatureValidity = await verifyComment(commentJson, this, true);
+        const commentJson: CommentIpfsType = JSON.parse(await this.fetchCid(cid));
+        const signatureValidity = await verifyComment(commentJson, this.resolveAuthorAddresses, this._clientsManager,true);
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { cid, signatureValidity });
 
         return this.createComment({ ...commentJson, cid });
@@ -237,7 +240,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     private async _createCommentInstance(
         options: CreateCommentOptions | CommentIpfsType | CommentPubsubMessage | CommentWithCommentUpdate,
-        subplebbit?: Subplebbit
+        subplebbit?: SubplebbitIpfsType
     ) {
         options = options as CreateCommentOptions | CommentIpfsType | CommentPubsubMessage;
         const comment = options.parentCid ? new Comment(<CommentType>options, this) : new Post(<PostType>options, this);
@@ -357,29 +360,20 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     async fetchCid(cid: string) {
-        return fetchCid(cid, this);
+        return this._clientsManager.fetchCid(cid);
     }
 
     // Used to pre-subscribe so publishing on pubsub would be faster
     async pubsubSubscribe(subplebbitAddress: string) {
         if (this._pubsubSubscriptions[subplebbitAddress]) return;
         const handler = () => {};
-        await this._defaultPubsubClient()._client.pubsub.subscribe(subplebbitAddress, handler);
+        await this._clientsManager.pubsubSubscribe(subplebbitAddress, handler);
         this._pubsubSubscriptions[subplebbitAddress] = handler;
     }
 
     async pubsubUnsubscribe(subplebbitAddress: string) {
         if (!this._pubsubSubscriptions[subplebbitAddress]) return;
-        await this._defaultPubsubClient()._client.pubsub.unsubscribe(subplebbitAddress, this._pubsubSubscriptions[subplebbitAddress]);
+        await this._clientsManager.pubsubUnsubscribe(subplebbitAddress, this._pubsubSubscriptions[subplebbitAddress]);
         delete this._pubsubSubscriptions[subplebbitAddress];
-    }
-
-    _defaultIpfsClient(): IpfsClient {
-        if (!this.clients.ipfsClients) return undefined;
-        return Object.values(this.clients.ipfsClients)[0];
-    }
-
-    _defaultPubsubClient(): PubsubClient {
-        return Object.values(this.clients.pubsubClients)[0];
     }
 }
