@@ -367,22 +367,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     async pubsubSubscribe(subplebbitAddress: string) {
         if (this._pubsubSubscriptions[subplebbitAddress]) return;
         const handler = () => {};
-        await this._defaultPubsubClient()._client.pubsub.subscribe(subplebbitAddress, handler);
+        await this._clientsManager.pubsubSubscribe(subplebbitAddress, handler);
         this._pubsubSubscriptions[subplebbitAddress] = handler;
     }
 
     async pubsubUnsubscribe(subplebbitAddress: string) {
         if (!this._pubsubSubscriptions[subplebbitAddress]) return;
-        await this._defaultPubsubClient()._client.pubsub.unsubscribe(subplebbitAddress, this._pubsubSubscriptions[subplebbitAddress]);
+        await this._clientsManager.pubsubUnsubscribe(subplebbitAddress, this._pubsubSubscriptions[subplebbitAddress]);
         delete this._pubsubSubscriptions[subplebbitAddress];
-    }
-
-    _defaultIpfsClient(): IpfsClient {
-        if (!this.clients.ipfsClients) return undefined;
-        return Object.values(this.clients.ipfsClients)[0];
-    }
-
-    _defaultPubsubClient(): PubsubClient {
-        return Object.values(this.clients.pubsubClients)[0];
     }
 }

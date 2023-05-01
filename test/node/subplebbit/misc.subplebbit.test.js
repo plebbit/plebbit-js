@@ -62,7 +62,7 @@ describe(`subplebbit.delete`, async () => {
     });
 
     it(`Deleted sub ipfs keys are not listed in ipfs node`, async () => {
-        const ipfsKeys = await plebbit._defaultIpfsClient()._client.key.list();
+        const ipfsKeys = await plebbit._clientsManager.getCurrentIpfs()._client.key.list();
         const subKeyExists = ipfsKeys.some((key) => key.name === sub.ipnsKeyName);
         expect(subKeyExists).to.be.false;
     });

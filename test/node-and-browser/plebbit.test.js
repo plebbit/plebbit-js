@@ -145,7 +145,7 @@ describe("plebbit.fetchCid", async () => {
 
     it(`Can fetch a cid correctly`, async () => {
         const fileString = "Hello plebs";
-        const cid = (await plebbit._defaultIpfsClient()._client.add(fileString)).path;
+        const cid = (await plebbit._clientsManager.getCurrentIpfs()._client.add(fileString)).path;
         const contentFromFetchCid = await plebbit.fetchCid(cid);
         expect(contentFromFetchCid).to.equal(fileString);
         const contentFromGatewayFetchCid = await gatewayPlebbit.fetchCid(cid);
@@ -154,9 +154,9 @@ describe("plebbit.fetchCid", async () => {
 
     it(`Throws an error if malicious gateway modifies content of file`, async () => {
         const [fileString1, fileString2] = ["Hello plebs", "Hello plebs 2"];
-        const cids = (await Promise.all([fileString1, fileString2].map((file) => plebbit._defaultIpfsClient()._client.add(file)))).map(
-            (res) => res.path
-        );
+        const cids = (
+            await Promise.all([fileString1, fileString2].map((file) => plebbit._clientsManager.getCurrentIpfs()._client.add(file)))
+        ).map((res) => res.path);
 
         const plebbitWithMaliciousGateway = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:33415"] });
         const fileString1FromGateway = await plebbitWithMaliciousGateway.fetchCid(cids[0]);
