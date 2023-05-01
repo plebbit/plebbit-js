@@ -14,6 +14,7 @@ import lodash from "lodash";
 import { nativeFunctions } from "./runtime/node/util";
 import isIPFS from "is-ipfs";
 import Logger from "@plebbit/plebbit-logger";
+import { PlebbitError } from "./plebbit-error";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -199,9 +200,13 @@ export class ClientsManager {
         this.clients.chainProviders[chainTicker].state = newState;
     }
 
+    handleError(e: PlebbitError) {
+        this._plebbit.emit("error", e);
+    }
+
     // Resolver methods here
 
-    async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string) {
+    async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | undefined> {
         assert(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
         const log = Logger("plebbit-js:plebbit:resolver:resolveSubplebbitAddressIfNeeded");
         let resolvedSubplebbitAddress: string = lodash.clone(subplebbitAddress);
@@ -220,20 +225,19 @@ export class ClientsManager {
             try {
                 resolvedSubplebbitAddress = await this._plebbit.resolver._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address");
                 this.updateChainProviderState("stopped", "eth");
+                return resolvedSubplebbitAddress;
             } catch (e) {
                 this.updateChainProviderState("stopped", "eth");
                 throw e;
             }
         }
-
-        return resolvedSubplebbitAddress;
+        else return resolvedSubplebbitAddress;
     }
 
     async resolveAuthorAddressIfNeeded(authorAddress: string) {
         assert(typeof authorAddress === "string", "subplebbitAddress needs to be a string to be resolved");
         let resolvedAuthorAddress: string = lodash.clone(authorAddress);
         const log = Logger("plebbit-js:plebbit:resolver:resolveAuthorAddressIfNeeded");
-
 
         const txtRecordName = `plebbit-author-address`;
         if (authorAddress.endsWith(".eth")) {
@@ -250,13 +254,14 @@ export class ClientsManager {
             try {
                 resolvedAuthorAddress = await this._plebbit.resolver._resolveEnsTxtRecord(authorAddress, txtRecordName);
                 this.updateChainProviderState("stopped", "eth");
+                return resolvedAuthorAddress;
             } catch (e) {
                 this.updateChainProviderState("stopped", "eth");
                 throw e;
             }
         }
+        else return resolvedAuthorAddress;
 
-        return resolvedAuthorAddress;
     }
 
     // Convience methods for plebbit here
@@ -285,8 +290,7 @@ export class PublicationClientsManager extends ClientsManager {
     _publication: Publication;
 
     constructor(publication: Publication) {
-        //@ts-expect-error
-        super(publication.plebbit);
+        super(publication._plebbit);
         this._publication = publication;
     }
 
@@ -327,27 +331,28 @@ export class PublicationClientsManager extends ClientsManager {
         this._publication.emit("clientschange");
     }
 
+    handleError(e: PlebbitError): void {
+        this._publication.emit("error", e);
+    }
+
     async fetchSubplebbitForPublishing(subplebbitAddress: string) {
         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
             throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
 
-        const subIpns = await this.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
+        const subIpns = await this.resolveSubplebbitAddressIfNeeded(subplebbitAddress); // Temporary. Should be retrying here
 
-        //@ts-expect-error
         this._publication._updatePublishingState("fetching-subplebbit-ipns");
         let subJson: SubplebbitIpfsType;
         if (this.curIpfsNodeUrl) {
             this.updateIpfsState("fetching-subplebbit-ipns");
             const subCid = await this.resolveIpnsToCidP2P(subIpns);
-            //@ts-expect-error
             this._publication._updatePublishingState("fetching-subplebbit-ipfs");
             this.updateIpfsState("fetching-subplebbit-ipfs");
             subJson = JSON.parse(await this.fetchCidP2P(subCid));
             this.updateIpfsState("stopped");
         } else subJson = JSON.parse(await this.fetchFromMultipleGateways({ ipns: subIpns }));
 
-        //@ts-expect-error
-        const signatureValidity = await verifySubplebbit(subJson, this._publication.plebbit);
+        const signatureValidity = await verifySubplebbit(subJson, this._publication._plebbit.resolveAuthorAddresses, this);
 
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity, subplebbitAddress, subJson });
 
@@ -408,11 +413,11 @@ export class SubplebbitClientsManager extends ClientsManager {
         //@ts-expect-error
         this._subplebbit._setUpdatingState("fetching-ipns");
         if (this.curIpfsNodeUrl) {
-            this.updateIpfsState("fetching-subplebbit-ipns");
+            this.updateIpfsState("fetching-ipns");
             const subplebbitCid = await this.resolveIpnsToCidP2P(ipnsName);
             //@ts-expect-error
             this._subplebbit._setUpdatingState("fetching-ipfs");
-            this.updateIpfsState("fetching-subplebbit-ipfs");
+            this.updateIpfsState("fetching-ipfs");
             const subplebbit: SubplebbitIpfsType = JSON.parse(await this.fetchCidP2P(subplebbitCid));
             this.updateIpfsState("stopped");
             return subplebbit;
@@ -446,5 +451,9 @@ export class SubplebbitClientsManager extends ClientsManager {
         super.updateChainProviderState(newState, chainTicker);
         this._subplebbit.clients.chainProviders[chainTicker].state = newState;
         this._subplebbit.emit("clientschange");
+    }
+
+    handleError(e: PlebbitError): void {
+        this._subplebbit.emit("error", e);
     }
 }

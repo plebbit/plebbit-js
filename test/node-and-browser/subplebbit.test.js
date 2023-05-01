@@ -156,7 +156,10 @@ describe("plebbit.getSubplebbit", async () => {
 
         const subJson = JSON.parse(await tempPlebbit._clientsManager.fetchIpns(subplebbitAddress));
         subJson.updatedAt += 1; // Should invalidate the signature
-        expect(await verifySubplebbit(subJson, tempPlebbit)).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
+        expect(await verifySubplebbit(subJson, tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager)).to.deep.equal({
+            valid: false,
+            reason: messages.ERR_SIGNATURE_IS_INVALID
+        });
 
         tempPlebbit._clientsManager.fetchIpns = () => JSON.stringify(subJson);
         await assert.isRejected(tempPlebbit.getSubplebbit(subplebbitAddress), messages.ERR_SIGNATURE_IS_INVALID);

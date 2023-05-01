@@ -13,6 +13,7 @@ import lodash from "lodash";
 import assert from "assert";
 import { Pages } from "./pages";
 import { PlebbitError } from "./plebbit-error";
+import { ClientsManager } from "./client";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -159,7 +160,8 @@ export const parseJsonStrings = (obj: any) => {
 export async function parseRawPages(
     replies: PagesTypeIpfs | PagesTypeJson | Pages | undefined,
     parentCid: string | undefined,
-    subplebbit: Pages["_subplebbit"]
+    subplebbit: Pages["_subplebbit"],
+    clientManager: ClientsManager
 ): Promise<Pages> {
     if (!replies)
         return new Pages({
@@ -167,7 +169,8 @@ export async function parseRawPages(
             pageCids: undefined,
             subplebbit: subplebbit,
             pagesIpfs: undefined,
-            parentCid: parentCid
+            parentCid: parentCid,
+            clientManager
         });
 
     if (replies instanceof Pages) return replies;
@@ -182,7 +185,8 @@ export async function parseRawPages(
             pageCids: parsedPages.pageCids,
             subplebbit: subplebbit,
             pagesIpfs: replies.pages,
-            parentCid: parentCid
+            parentCid: parentCid,
+            clientManager
         });
     } else {
         replies = replies as PagesTypeJson;
@@ -201,7 +205,8 @@ export async function parseRawPages(
             pageCids: replies.pageCids,
             subplebbit: subplebbit,
             pagesIpfs: undefined,
-            parentCid: parentCid
+            parentCid: parentCid,
+            clientManager
         });
     }
 }

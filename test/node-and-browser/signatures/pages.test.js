@@ -12,8 +12,14 @@ const subAddress = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR";
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const verifyPageJsonAlongWithObject = async (pageJson, plebbit, subplebbit, parentCid) => {
-    const pageObjRes = await verifyPage(JSON.parse(JSON.stringify(pageJson)), plebbit, subplebbit, parentCid);
-    const pageJsonRes = await verifyPage(pageJson, plebbit, subplebbit, parentCid);
+    const pageObjRes = await verifyPage(
+        JSON.parse(JSON.stringify(pageJson)),
+        plebbit.resolveAuthorAddresses,
+        plebbit._clientsManager,
+        subplebbit.address,
+        parentCid
+    );
+    const pageJsonRes = await verifyPage(pageJson, plebbit.resolveAuthorAddresses, plebbit._clientsManager, subplebbit.address, parentCid);
     expect(pageObjRes).to.deep.equal(pageJsonRes);
     return pageObjRes;
 };

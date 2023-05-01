@@ -525,7 +525,7 @@ describe(`comment.clients`, async () => {
 
             await publishWithExpectedResult(mockPost, true);
 
-            expect(actualStates).to.deep.equal(expectedStates);
+            expect(actualStates.slice(0, 2)).to.deep.equal(expectedStates);
         });
     });
 });

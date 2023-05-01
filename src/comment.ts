@@ -102,13 +102,12 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.publish = this.publish.bind(this);
         this.update = this.update.bind(this);
         this.stop = this.stop.bind(this);
-
-        this._clientsManager = new CommentClientsManager(this);
     }
 
     _initProps(props: CommentType) {
         // This function is called once at in the constructor
         super._initProps(props);
+        if (!(this._clientsManager instanceof CommentClientsManager)) this._clientsManager = new CommentClientsManager(this);
         this.postCid = props.postCid;
         this.setCid(props.cid);
         this.parentCid = props.parentCid;
@@ -127,7 +126,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.replies = new Pages({
             pages: undefined,
             pageCids: undefined,
-            subplebbit: { address: this.subplebbitAddress, plebbit: this.plebbit },
+            subplebbit: { address: this.subplebbitAddress, plebbit: this._plebbit },
+            clientManager: this._clientsManager,
             pagesIpfs: undefined,
             parentCid: this.cid
         });
@@ -160,7 +160,15 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.author.flair = props.author?.subplebbit?.flair || props.edit?.author?.flair || this.author?.flair;
 
         assert(this.cid);
-        this.replies = await parseRawPages(props.replies, this.cid, { address: this.subplebbitAddress, plebbit: this.plebbit });
+        this.replies = await parseRawPages(
+            props.replies,
+            this.cid,
+            {
+                address: this.subplebbitAddress,
+                plebbit: this._plebbit
+            },
+            this._clientsManager
+        );
     }
 
     getType(): PublicationTypeName {
@@ -354,7 +362,13 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
             //@ts-expect-error
             const commentInstance: Pick<CommentWithCommentUpdate, "cid" | "signature"> = lodash.pick(this, ["cid", "signature"]);
-            const signatureValidity = await verifyCommentUpdate(res, { address: this.subplebbitAddress }, commentInstance, this.plebbit);
+            const signatureValidity = await verifyCommentUpdate(
+                res,
+                this._plebbit.resolveAuthorAddresses,
+                this._clientsManager,
+                this.subplebbitAddress,
+                commentInstance
+            );
             if (!signatureValidity.valid) {
                 this._setUpdatingState("failed");
                 const err = new PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity, commentUpdate: res });
@@ -372,7 +386,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         }
     }
 
-     _setUpdatingState(newState: Comment["updatingState"]) {
+    _setUpdatingState(newState: Comment["updatingState"]) {
         this.updatingState = newState;
         this.emit("updatingstatechange", this.updatingState);
     }
@@ -397,7 +411,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
     private async _validateSignature() {
         const commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringify so it resembles messages from pubsub and IPNS
-        const signatureValidity = await verifyComment(commentObj, this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
+        const signatureValidity = await verifyComment(commentObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }
 

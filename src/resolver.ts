@@ -48,16 +48,16 @@ export class Resolver {
         throwWithErrorCode("ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER", { chainTicker, chainProviders: this.plebbit.chainProviders });
     }
 
-    async _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string> {
+    async _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string | undefined> {
         const log = Logger("plebbit-js:resolver:_resolveEnsTxtRecord");
 
         const chainProvider = this._getChainProvider("eth");
         const resolver = await chainProvider.getResolver(ensName);
         if (!resolver) throwWithErrorCode("ERR_ENS_RESOLVER_NOT_FOUND", { ensName, chainProvider });
         const txtRecordResult = await resolver.getText(txtRecordName);
-        if (!txtRecordResult) throwWithErrorCode("ERR_ENS_TXT_RECORD_NOT_FOUND", { ensName, txtRecordName, chainProvider });
+        if (!txtRecordResult) return undefined;
 
-        log.trace(`Resolved text record name (${txtRecordName}) of ENS (${ensName}) to ${txtRecordResult}`);
+        log(`Resolved text record name (${txtRecordName}) of ENS (${ensName}) to ${txtRecordResult}`);
 
         this.plebbit._cache.setItem(`${ensName}_${txtRecordName}`, txtRecordResult);
         this.plebbit._cache.setItem(`${ensName}_${txtRecordName}_timestamp`, timestamp());

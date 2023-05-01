@@ -1,6 +1,5 @@
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { sha256 } from "js-sha256";
-import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
 import { SortHandler } from "./sort-handler";
 import { parseRawPages, removeKeysWithUndefinedValues, shortifyAddress, throwWithErrorCode, timestamp } from "./util";
@@ -114,7 +113,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     dbHandler?: DbHandlerPublicAPI;
     clients: {
         ipfsGateways: { [ipfsGatewayUrl: string]: { state: "stopped" | "fetching-ipfs" | "fetching-ipns" } };
-        ipfsClients: { [ipfsClientUrl: string]: { state: "stopped" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs" } };
+        ipfsClients: { [ipfsClientUrl: string]: { state: "stopped" | "fetching-ipns" | "fetching-ipfs" | "publishing-ipns" } };
         pubsubClients: {
             [pubsubClientUrl: string]: {
                 state:
@@ -196,7 +195,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
         if (!this.signer && mergedProps.signer) this.signer = new Signer(mergedProps.signer);
 
-        this.posts = await parseRawPages(mergedProps.posts, undefined, this);
+        this.posts = await parseRawPages(mergedProps.posts, undefined, this, this._clientsManager);
     }
 
     private setAddress(newAddress: string) {
@@ -422,11 +421,12 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this._setUpdatingState("resolving-address");
 
             const ipnsAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(this.address);
+            if (!ipnsAddress) return; // Temporary. Should retry
             this._loadingOperation = retry.operation({ forever: true, factor: 2 });
 
             const subplebbitIpns = await this._retryLoadingSubplebbitIpns(log, ipnsAddress);
 
-            const updateValidity = await verifySubplebbit(subplebbitIpns, this.plebbit);
+            const updateValidity = await verifySubplebbit(subplebbitIpns, this.plebbit.resolveAuthorAddresses, this._clientsManager);
             if (!updateValidity.valid) {
                 this._setUpdatingState("failed");
                 const error = new PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity: updateValidity, subplebbitIpns });
@@ -471,6 +471,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this._sync = false;
             this._syncInterval = clearInterval(this._syncInterval);
             this._setStartedState("stopped");
+            this._clientsManager.updateIpfsState("stopped");
         }
         if (this.dbHandler) await this.dbHandler.destoryConnection();
 
@@ -479,7 +480,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private async _validateLocalSignature(newSignature: SignatureType, record: Omit<SubplebbitIpfsType, "signature">) {
         const ipnsRecord: SubplebbitIpfsType = JSON.parse(JSON.stringify({ ...record, signature: newSignature })); // stringify it so it would be of the same content as IPNS or pubsub
-        const signatureValidation = await verifySubplebbit(ipnsRecord, this.plebbit);
+        const signatureValidation = await verifySubplebbit(ipnsRecord, this.plebbit.resolveAuthorAddresses, this._clientsManager);
         assert.equal(
             signatureValidation.valid,
             true,
@@ -537,7 +538,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async handleCommentEdit(commentEditRaw: CommentEditPubsubMessage, challengeRequestId: string): Promise<string | undefined> {
         const log = Logger("plebbit-js:subplebbit:handleCommentEdit");
 
-        const validRes = await verifyCommentEdit(commentEditRaw, this.plebbit, false);
+        const validRes = await verifyCommentEdit(commentEditRaw, this.plebbit.resolveAuthorAddresses, this._clientsManager, false);
 
         if (!validRes.valid) {
             log(`(${challengeRequestId}): `, validRes.reason);
@@ -597,7 +598,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVoteProps.commentCid, newVoteProps.author.address);
 
-        const validRes = await verifyVote(newVoteProps, this.plebbit, false);
+        const validRes = await verifyVote(newVoteProps, this.plebbit.resolveAuthorAddresses, this._clientsManager, false);
         if (!validRes.valid) {
             log(`(${challengeRequestId}): `, validRes.reason);
             return validRes.reason;
@@ -764,7 +765,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 return messages.ERR_FORBIDDEN_COMMENT_FIELD;
             }
 
-            const validRes = await verifyComment(publication, this.plebbit, false);
+            const validRes = await verifyComment(publication, this.plebbit.resolveAuthorAddresses, this._clientsManager, false);
 
             if (!validRes.valid) {
                 log(`(${challengeRequestId}): `, validRes.reason);
@@ -1108,7 +1109,13 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private async _validateCommentUpdate(update: CommentUpdate, comment: Pick<CommentWithCommentUpdate, "cid" | "signature">) {
         const simUpdate = JSON.parse(deterministicStringify(update)); // We need to stringify the update, so it will have the same shape as if it were sent by pubsub or IPNS
-        const signatureValidity = await verifyCommentUpdate(simUpdate, this, comment, this.plebbit);
+        const signatureValidity = await verifyCommentUpdate(
+            simUpdate,
+            this.plebbit.resolveAuthorAddresses,
+            this._clientsManager,
+            this.address,
+            comment
+        );
         assert(signatureValidity.valid, `Comment Update signature is invalid. Reason (${signatureValidity.reason})`);
     }
 
@@ -1248,11 +1255,15 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this._ipfsNodeIpnsKeyNames = (await this._clientsManager.getCurrentIpfs()._client.key.list()).map((key) => key.name);
             await this._listenToIncomingRequests();
             this._setStartedState("publishing-ipns");
+            this._clientsManager.updateIpfsState("publishing-ipns");
             await Promise.all([this._updateCommentsThatNeedToBeUpdated(), this._repinCommentsIPFSIfNeeded()]);
             await this.updateSubplebbitIpnsIfNeeded();
             this._setStartedState("succeeded");
+            this._clientsManager.updateIpfsState("stopped");
         } catch (e) {
             this._setStartedState("failed");
+            this._clientsManager.updateIpfsState("stopped");
+
             log.error(`Failed to sync due to error,`, e);
         }
     }

@@ -7,7 +7,6 @@ const {
     publishRandomReply
 } = require("../../../dist/node/test/test-util");
 const signers = require("../../fixtures/signers");
-const { loadIpnsAsJson } = require("../../../dist/node/util");
 const { getThumbnailUrlOfLink } = require("../../../dist/node/runtime/node/util");
 const path = require("path");
 const fs = require("fs");

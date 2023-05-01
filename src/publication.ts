@@ -84,31 +84,32 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         | "succeeded";
 
     // private
-    protected plebbit: Plebbit;
     protected subplebbit?: SubplebbitIpfsType;
     protected pubsubMessageSigner: Signer;
     private _challengeAnswer: ChallengeAnswerMessage;
     private _challengeRequest: ChallengeRequestMessage;
     _clientsManager: PublicationClientsManager | CommentClientsManager;
+    _plebbit: Plebbit;
+
 
     constructor(props: PublicationType, plebbit: Plebbit) {
         super();
-        this.plebbit = plebbit;
+        this._plebbit = plebbit;
         this._updatePublishingState("stopped");
         this._updateState("stopped");
         this._initProps(props);
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
-        this.on("error", (...args) => this.plebbit.emit("error", ...args));
+        this.on("error", (...args) => this._plebbit.emit("error", ...args));
 
         // public method should be bound
         this.publishChallengeAnswers = this.publishChallengeAnswers.bind(this);
 
-        this._clientsManager = new PublicationClientsManager(this);
 
         this.clients = this._clientsManager.clients;
     }
 
     _initProps(props: PublicationType) {
+        this._clientsManager = new PublicationClientsManager(this);
         this.subplebbitAddress = props.subplebbitAddress;
         this.timestamp = props.timestamp;
         this.signer = this.signer || props["signer"];
@@ -116,9 +117,8 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         if (props.author) this.author = new Author(props.author);
         this.protocolVersion = props.protocolVersion;
     }
-    // TODO make this private/protected
 
-    getType(): PublicationTypeName {
+    protected getType(): PublicationTypeName {
         throw new Error(`Should be implemented by children of Publication`);
     }
 
@@ -203,7 +203,6 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 { ...msgParsed, publication: decryptedPublication },
                 this instanceof Comment && decryptedPublication ? this : undefined
             );
-            
         }
     }
 
@@ -260,7 +259,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             });
     }
 
-    private _updatePublishingState(newState: Publication["publishingState"]) {
+    _updatePublishingState(newState: Publication["publishingState"]) {
         this.publishingState = newState;
         this.emit("publishingstatechange", this.publishingState);
     }
@@ -290,7 +289,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
         await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
 
-        this.pubsubMessageSigner = await this.plebbit.createSigner();
+        this.pubsubMessageSigner = await this._plebbit.createSigner();
 
         const encryptedPublication = await encrypt(
             JSON.stringify(this.toJSONPubsubMessagePublication()),

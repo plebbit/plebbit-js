@@ -202,7 +202,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
         const resolvedSubplebbitAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
         const subplebbitJson: SubplebbitIpfsType = JSON.parse(await this._clientsManager.fetchIpns(resolvedSubplebbitAddress));
-        const signatureValidity = await verifySubplebbit(subplebbitJson, this);
+        const signatureValidity = await verifySubplebbit(subplebbitJson, this.resolveAuthorAddresses, this._clientsManager);
 
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
 
@@ -215,7 +215,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     async getComment(cid: string): Promise<Comment | Post> {
         if (!isIPFS.cid(cid)) throwWithErrorCode("ERR_CID_IS_INVALID", `getComment: cid (${cid}) is invalid as a CID`);
         const commentJson: CommentIpfsType = JSON.parse(await this.fetchCid(cid));
-        const signatureValidity = await verifyComment(commentJson, this, true);
+        const signatureValidity = await verifyComment(commentJson, this.resolveAuthorAddresses, this._clientsManager,true);
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { cid, signatureValidity });
 
         return this.createComment({ ...commentJson, cid });
