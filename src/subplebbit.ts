@@ -472,6 +472,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this._syncInterval = clearInterval(this._syncInterval);
             this._setStartedState("stopped");
             this._clientsManager.updateIpfsState("stopped");
+            this._clientsManager.updatePubsubState("stopped");
         }
         if (this.dbHandler) await this.dbHandler.destoryConnection();
 
@@ -900,6 +901,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 signature: await signChallengeVerification(toSignMsg, this.signer)
             });
 
+            this._clientsManager.updatePubsubState("publishing-challenge-verification");
+
             await Promise.all([
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
                 this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), deterministicStringify(challengeVerification))
@@ -909,6 +912,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 `Published ${challengeVerification.type} over pubsub: `,
                 lodash.omit(toSignMsg, ["encryptedPublication"])
             );
+            this._clientsManager.updatePubsubState("waiting-challenge-requests");
+
             this.emit("challengeverification", {
                 ...challengeVerification,
                 publication: typeof publicationOrReason === "string" ? undefined : publicationOrReason
@@ -932,6 +937,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 signature: await signChallengeMessage(toSignChallenge, this.signer)
             });
 
+            this._clientsManager.updatePubsubState("publishing-challenge");
+
             const challengeTypes = providedChallenges.map((challenge) => challenge.type);
             await Promise.all([
                 this.dbHandler.insertChallenge(challengeMessage.toJSONForDb(challengeTypes), undefined),
@@ -942,6 +949,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 `Published ${challengeMessage.type} over pubsub: `,
                 lodash.omit(toSignChallenge, ["encryptedChallenges"])
             );
+            this._clientsManager.updatePubsubState("waiting-challenge-answers");
             this.emit("challengemessage", { ...challengeMessage, challenges: providedChallenges });
         }
     }
@@ -982,6 +990,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 signature: await signChallengeVerification(toSignMsg, this.signer)
             });
 
+            this._clientsManager.updatePubsubState("publishing-challenge-verification");
+
             await Promise.all([
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
                 this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), deterministicStringify(challengeVerification))
@@ -991,6 +1001,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 `Published ${challengeVerification.type} over pubsub:`,
                 lodash.omit(toSignMsg, ["encryptedPublication"])
             );
+
+            this._clientsManager.updatePubsubState("waiting-challenge-requests");
+
             this.emit("challengeverification", {
                 ...challengeVerification,
                 publication: encryptedPublication ? <CommentIpfsWithCid>publicationOrReason : undefined
@@ -1013,11 +1026,15 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 signature: await signChallengeVerification(toSignVerification, this.signer)
             });
 
+            this._clientsManager.updatePubsubState("publishing-challenge-verification");
+
             await Promise.all([
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
                 this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), deterministicStringify(challengeVerification))
             ]);
             log(`(${challengeAnswer.challengeRequestId}): `, `Published ${challengeVerification.type} over pubsub:`, toSignVerification);
+            this._clientsManager.updatePubsubState("waiting-challenge-requests");
+
             this.emit("challengeverification", challengeVerification);
         }
     }
@@ -1159,6 +1176,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         if (!subscribedTopics.includes(this.pubsubTopicWithfallback())) {
             await this._clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange); // Make sure it's not hanging
             await this._clientsManager.pubsubSubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
+            this._clientsManager.updatePubsubState("waiting-challenge-requests");
             log(`Waiting for publications on pubsub topic (${this.pubsubTopicWithfallback()})`);
         }
     }
