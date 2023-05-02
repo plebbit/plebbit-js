@@ -487,12 +487,12 @@ function mockPlebbit(plebbitOptions) {
     });
 }
 exports.mockPlebbit = mockPlebbit;
-function mockRemotePlebbit() {
+function mockRemotePlebbit(plebbitOptions) {
     return __awaiter(this, void 0, void 0, function () {
         var plebbit;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, mockPlebbit()];
+                case 0: return [4 /*yield*/, mockPlebbit(plebbitOptions)];
                 case 1:
                     plebbit = _a.sent();
                     plebbit._canRunSub = function () { return false; };
@@ -502,12 +502,12 @@ function mockRemotePlebbit() {
     });
 }
 exports.mockRemotePlebbit = mockRemotePlebbit;
-function mockGatewayPlebbit() {
+function mockGatewayPlebbit(plebbitOptions) {
     return __awaiter(this, void 0, void 0, function () {
         var plebbit;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, mockRemotePlebbit()];
+                case 0: return [4 /*yield*/, mockRemotePlebbit(plebbitOptions)];
                 case 1:
                     plebbit = _a.sent();
                     delete plebbit.clients.ipfsClients;

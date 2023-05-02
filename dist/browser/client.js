@@ -171,7 +171,7 @@ var ClientsManager = /** @class */ (function () {
                             : url.includes("/ipns/")
                                 ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
                                 : "ERR_FAILED_TO_FETCH_GENERIC";
-                        (0, util_1.throwWithErrorCode)(errorCode, { url: url, status: res === null || res === void 0 ? void 0 : res.status, statusText: res === null || res === void 0 ? void 0 : res.statusText });
+                        (0, util_1.throwWithErrorCode)(errorCode, { url: url, status: res === null || res === void 0 ? void 0 : res.status, statusText: res === null || res === void 0 ? void 0 : res.statusText, error: e_1 });
                         return [3 /*break*/, 5];
                     case 5:
                         if (!(((_b = res === null || res === void 0 ? void 0 : res.body) === null || _b === void 0 ? void 0 : _b.getReader) !== undefined)) return [3 /*break*/, 9];
@@ -321,7 +321,10 @@ var ClientsManager = /** @class */ (function () {
                         return [4 /*yield*/, this._plebbit.stats.sortGatewaysAccordingToScore(type)];
                     case 1:
                         gatewayFetches = (_a.sent()).map(function (gateway) {
-                            return queueLimit(function () { return _this.fetchWithGateway(gateway, path); });
+                            try {
+                                return queueLimit(function () { return _this.fetchWithGateway(gateway, path); });
+                            }
+                            catch (_a) { }
                         });
                         return [4 /*yield*/, Promise.race([_firstResolve(gatewayFetches), Promise.allSettled(gatewayFetches)])];
                     case 2:
