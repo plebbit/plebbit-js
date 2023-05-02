@@ -101,7 +101,7 @@ describe("publishing comments", async () => {
     });
 
     it(`publish() can be caught if subplebbit failed to load`, async () => {
-        const downPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: ["http://127.0.0.1:28080", "http://127.0.0.1:28480"] });
+        const downPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:28080", "http://127.0.0.1:28480"] });
         const post = await generateMockPost(subplebbitAddress, downPlebbit);
 
         await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY);
