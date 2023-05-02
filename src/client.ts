@@ -80,7 +80,7 @@ export class ClientsManager {
                 : url.includes("/ipns/")
                 ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
                 : "ERR_FAILED_TO_FETCH_GENERIC";
-            throwWithErrorCode(errorCode, { url, status: res?.status, statusText: res?.statusText });
+            throwWithErrorCode(errorCode, { url, status: res?.status, statusText: res?.statusText, error: e });
 
             // If error is not related to size limit, then throw it again
         }
@@ -170,9 +170,11 @@ export class ClientsManager {
         const queueLimit = pLimit(3);
 
         // Will be likely 5 promises, p-limit will limit to 3
-        const gatewayFetches = (await this._plebbit.stats.sortGatewaysAccordingToScore(type)).map((gateway) =>
-            queueLimit(() => this.fetchWithGateway(gateway, path))
-        );
+        const gatewayFetches = (await this._plebbit.stats.sortGatewaysAccordingToScore(type)).map((gateway) => {
+            try {
+                return queueLimit(() => this.fetchWithGateway(gateway, path));
+            } catch {}
+        });
         const res = await Promise.race([_firstResolve(gatewayFetches), Promise.allSettled(gatewayFetches)]);
         if (typeof res === "string") return res;
         //@ts-expect-error

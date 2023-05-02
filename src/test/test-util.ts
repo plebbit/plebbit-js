@@ -293,15 +293,15 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions) {
     return plebbit;
 }
 
-export async function mockRemotePlebbit() {
-    const plebbit = await mockPlebbit();
+export async function mockRemotePlebbit(plebbitOptions?: PlebbitOptions) {
+    const plebbit = await mockPlebbit(plebbitOptions);
     plebbit._canRunSub = () => false;
     return plebbit;
 }
 
-export async function mockGatewayPlebbit() {
+export async function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions) {
     // Keep only pubsub and gateway
-    const plebbit = await mockRemotePlebbit();
+    const plebbit = await mockRemotePlebbit(plebbitOptions);
     delete plebbit.clients.ipfsClients;
     delete plebbit.ipfsHttpClientsOptions;
     //@ts-expect-error
