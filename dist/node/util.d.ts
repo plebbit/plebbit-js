@@ -1,13 +1,8 @@
-import { Plebbit } from "./plebbit";
 import { CommentWithCommentUpdate, OnlyDefinedProperties, PageIpfs, PagesType, PagesTypeIpfs, PagesTypeJson, PageType, Timeframe } from "./types";
 import { messages } from "./errors";
 import { Pages } from "./pages";
+import { ClientsManager } from "./client";
 export declare const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number>;
-export declare function fetchCid(cid: string, plebbit: Plebbit, catOptions?: {
-    length: number;
-}): Promise<string>;
-export declare function loadIpfsFileAsJson(cid: string, plebbit: Plebbit): Promise<any>;
-export declare function loadIpnsAsJson(ipns: string, plebbit: Plebbit, callbackAfterResolve?: (ipns: string, cid: string) => void): Promise<any>;
 export declare function timestamp(): number;
 export declare function replaceXWithY(obj: Object, x: any, y: any): any;
 export declare function hotScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">): number;
@@ -22,6 +17,6 @@ export declare function throwWithErrorCode(code: keyof typeof messages, details?
 export declare function parsePageIpfs(pageIpfs: PageIpfs, subplebbit: Pages["_subplebbit"]): Promise<PageType>;
 export declare function parsePagesIpfs(pagesRaw: PagesTypeIpfs, subplebbit: Pages["_subplebbit"]): Promise<PagesType>;
 export declare const parseJsonStrings: (obj: any) => any;
-export declare function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | Pages | undefined, parentCid: string | undefined, subplebbit: Pages["_subplebbit"]): Promise<Pages>;
+export declare function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | Pages | undefined, parentCid: string | undefined, subplebbit: Pages["_subplebbit"], clientManager: ClientsManager): Promise<Pages>;
 export declare function shortifyAddress(address: string): string;
 export declare function shortifyCid(cid: string): string;

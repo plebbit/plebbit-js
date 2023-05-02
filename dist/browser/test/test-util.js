@@ -215,10 +215,8 @@ function _mockSubplebbitPlebbit(signers, dataPath) {
                                 return [2 /*return*/, signers[3].address];
                             else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address")
                                 return [2 /*return*/, signers[6].address];
-                            else if (ensName === "testgibbreish.eth" && textRecord === "plebbit-author-address")
+                            else
                                 return [2 /*return*/, undefined];
-                            else if (textRecord === "subplebbit-address")
-                                throw Error("".concat(ensName, " has no subplebbit-address"));
                             return [2 /*return*/];
                         });
                     }); };
@@ -467,7 +465,7 @@ function mockPlebbit(plebbitOptions) {
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, (0, index_1.default)(__assign({ ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"], pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] }, plebbitOptions))];
+                case 0: return [4 /*yield*/, (0, index_1.default)(__assign({ ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"], pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"], resolveAuthorAddresses: true }, plebbitOptions))];
                 case 1:
                     plebbit = _a.sent();
                     plebbit.resolver._resolveEnsTxtRecord = function (ensName, textRecord) { return __awaiter(_this, void 0, void 0, function () {
@@ -476,14 +474,12 @@ function mockPlebbit(plebbitOptions) {
                                 return [2 /*return*/, "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"];
                             else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address")
                                 return [2 /*return*/, "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"];
-                            else if (ensName === "testgibbreish.eth" && textRecord === "plebbit-author-address")
-                                throw new Error("Domain (".concat(ensName, ") has no plebbit-author-address"));
-                            else if (textRecord === "subplebbit-address")
-                                throw Error("".concat(ensName, " has no subplebbit-address"));
+                            else
+                                return [2 /*return*/, undefined];
                             return [2 /*return*/];
                         });
                     }); };
-                    plebbit.clients.pubsubClients["http://localhost:15002/api/v0"]._client = (0, mock_ipfs_client_1.create)();
+                    plebbit.clients.pubsubClients[Object.keys(plebbit.clients.pubsubClients)[0]]._client = (0, mock_ipfs_client_1.create)();
                     plebbit.on("error", function () { });
                     return [2 /*return*/, plebbit];
             }
@@ -516,6 +512,8 @@ function mockGatewayPlebbit() {
                     plebbit = _a.sent();
                     delete plebbit.clients.ipfsClients;
                     delete plebbit.ipfsHttpClientsOptions;
+                    //@ts-expect-error
+                    plebbit._clientsManager.curIpfsNodeUrl = undefined;
                     return [2 /*return*/, plebbit];
             }
         });

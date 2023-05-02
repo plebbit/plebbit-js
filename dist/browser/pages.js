@@ -51,22 +51,25 @@ var Pages = /** @class */ (function () {
         this._subplebbit = props.subplebbit;
         this._parentCid = props.parentCid;
         this._pagesIpfs = props.pagesIpfs;
+        this._clientsManager = props.clientManager;
     }
     Pages.prototype.getPage = function (pageCid) {
         return __awaiter(this, void 0, void 0, function () {
-            var pageIpfs, signatureValidity;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, (0, util_1.loadIpfsFileAsJson)(pageCid, this._subplebbit.plebbit)];
+            var pageIpfs, _a, _b, signatureValidity;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        _b = (_a = JSON).parse;
+                        return [4 /*yield*/, this._subplebbit.plebbit.fetchCid(pageCid)];
                     case 1:
-                        pageIpfs = _a.sent();
-                        return [4 /*yield*/, (0, signatures_1.verifyPage)(pageIpfs, this._subplebbit.plebbit, this._subplebbit, this._parentCid)];
+                        pageIpfs = _b.apply(_a, [_c.sent()]);
+                        return [4 /*yield*/, (0, signatures_1.verifyPage)(pageIpfs, this._subplebbit.plebbit.resolveAuthorAddresses, this._clientsManager, this._subplebbit.address, this._parentCid)];
                     case 2:
-                        signatureValidity = _a.sent();
+                        signatureValidity = _c.sent();
                         if (!signatureValidity.valid)
                             throw Error(signatureValidity.reason);
                         return [4 /*yield*/, (0, util_1.parsePageIpfs)(pageIpfs, this._subplebbit)];
-                    case 3: return [2 /*return*/, _a.sent()];
+                    case 3: return [2 /*return*/, _c.sent()];
                 }
             });
         });

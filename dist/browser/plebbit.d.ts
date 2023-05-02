@@ -5,12 +5,12 @@ import { Subplebbit } from "./subplebbit";
 import Vote from "./vote";
 import { Signer } from "./signer";
 import { Resolver } from "./resolver";
-import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
 import { Options as IpfsHttpClientOptions } from "ipfs-http-client";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions } from "./signer/constants";
 import Stats from "./stats";
+import { ClientsManager } from "./client";
 export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
         ipfsGateways: {
@@ -27,7 +27,6 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
         };
     };
     resolver: Resolver;
-    _memCache: TinyCache;
     ipfsHttpClientsOptions?: IpfsHttpClientOptions[];
     pubsubHttpClientsOptions: IpfsHttpClientOptions[];
     dataPath?: string;
@@ -38,6 +37,7 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     _cache: CacheInterface;
     stats: Stats;
     private _pubsubSubscriptions;
+    _clientsManager: ClientsManager;
     constructor(options?: PlebbitOptions);
     private _initIpfsClients;
     private _initPubsubClients;
@@ -58,6 +58,4 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     fetchCid(cid: string): Promise<string>;
     pubsubSubscribe(subplebbitAddress: string): Promise<void>;
     pubsubUnsubscribe(subplebbitAddress: string): Promise<void>;
-    _defaultIpfsClient(): IpfsClient;
-    _defaultPubsubClient(): PubsubClient;
 }
