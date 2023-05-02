@@ -6,7 +6,7 @@ import { Comment } from "./comment";
 import { throwWithErrorCode, timestamp } from "./util";
 import assert from "assert";
 import { CommentIpfsType, CommentUpdate, SubplebbitIpfsType } from "./types";
-import pLimit from "p-limit";
+import PQueue from "p-queue";
 import Hash from "ipfs-only-hash";
 import { Subplebbit } from "./subplebbit";
 import { verifySubplebbit } from "./signer";
@@ -167,16 +167,19 @@ export class ClientsManager {
         const type = loadOpts.cid ? "cid" : "ipns";
 
         // TODO test potential errors here
-        const queueLimit = pLimit(3);
+        const queue = new PQueue({ concurrency: 3 });
 
-        // Will be likely 5 promises, p-limit will limit to 3
-        const gatewayFetches = (await this._plebbit.stats.sortGatewaysAccordingToScore(type)).map((gateway) => {
-            try {
-                return queueLimit(() => this.fetchWithGateway(gateway, path));
-            } catch {}
-        });
-        const res = await Promise.race([_firstResolve(gatewayFetches), Promise.allSettled(gatewayFetches)]);
-        if (typeof res === "string") return res;
+        // Will be likely 5 promises, p-queue will limit to 3
+        const gatewaysSorted = await this._plebbit.stats.sortGatewaysAccordingToScore(type);
+        const gatewayPromises = [];
+        for (const gatewayUrl of gatewaysSorted) {
+            gatewayPromises.push(queue.add(() => this.fetchWithGateway(gatewayUrl, path)));
+        }
+        const res = await Promise.race([_firstResolve(gatewayPromises), Promise.allSettled(gatewayPromises)]);
+        if (typeof res === "string") {
+            queue.clear();
+            return res;
+        }
         //@ts-expect-error
         else throw res[0].reason;
     }
