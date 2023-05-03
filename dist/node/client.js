@@ -69,7 +69,7 @@ exports.SubplebbitClientsManager = exports.CommentClientsManager = exports.Publi
 var from_string_1 = require("uint8arrays/from-string");
 var util_1 = require("./util");
 var assert_1 = __importDefault(require("assert"));
-var p_limit_1 = __importDefault(require("p-limit"));
+var p_queue_1 = __importDefault(require("p-queue"));
 var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
 var signer_1 = require("./signer");
 var lodash_1 = __importDefault(require("lodash"));
@@ -306,7 +306,7 @@ var ClientsManager = /** @class */ (function () {
     };
     ClientsManager.prototype.fetchFromMultipleGateways = function (loadOpts) {
         return __awaiter(this, void 0, void 0, function () {
-            var path, _firstResolve, type, queueLimit, gatewayFetches, res;
+            var path, _firstResolve, type, queue, gatewaysSorted, gatewayPromises, _loop_1, _i, gatewaysSorted_1, gatewayUrl, res;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -317,20 +317,25 @@ var ClientsManager = /** @class */ (function () {
                             return new Promise(function (resolve) { return promises.forEach(function (promise) { return promise.then(resolve); }); });
                         };
                         type = loadOpts.cid ? "cid" : "ipns";
-                        queueLimit = (0, p_limit_1.default)(3);
+                        queue = new p_queue_1.default({ concurrency: 3 });
                         return [4 /*yield*/, this._plebbit.stats.sortGatewaysAccordingToScore(type)];
                     case 1:
-                        gatewayFetches = (_a.sent()).map(function (gateway) {
-                            try {
-                                return queueLimit(function () { return _this.fetchWithGateway(gateway, path); });
-                            }
-                            catch (_a) { }
-                        });
-                        return [4 /*yield*/, Promise.race([_firstResolve(gatewayFetches), Promise.allSettled(gatewayFetches)])];
+                        gatewaysSorted = _a.sent();
+                        gatewayPromises = [];
+                        _loop_1 = function (gatewayUrl) {
+                            gatewayPromises.push(queue.add(function () { return _this.fetchWithGateway(gatewayUrl, path); }));
+                        };
+                        for (_i = 0, gatewaysSorted_1 = gatewaysSorted; _i < gatewaysSorted_1.length; _i++) {
+                            gatewayUrl = gatewaysSorted_1[_i];
+                            _loop_1(gatewayUrl);
+                        }
+                        return [4 /*yield*/, Promise.race([_firstResolve(gatewayPromises), Promise.allSettled(gatewayPromises)])];
                     case 2:
                         res = _a.sent();
-                        if (typeof res === "string")
+                        if (typeof res === "string") {
+                            queue.clear();
                             return [2 /*return*/, res];
+                        }
                         //@ts-expect-error
                         else
                             throw res[0].reason;
