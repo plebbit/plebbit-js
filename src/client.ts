@@ -172,9 +172,8 @@ export class ClientsManager {
         // Will be likely 5 promises, p-queue will limit to 3
         const gatewaysSorted = await this._plebbit.stats.sortGatewaysAccordingToScore(type);
         const gatewayPromises = [];
-        for (const gatewayUrl of gatewaysSorted) {
-            gatewayPromises.push(queue.add(() => this.fetchWithGateway(gatewayUrl, path)));
-        }
+        for (const gatewayUrl of gatewaysSorted) gatewayPromises.push(queue.add(() => this.fetchWithGateway(gatewayUrl, path)));
+
         const res = await Promise.race([_firstResolve(gatewayPromises), Promise.allSettled(gatewayPromises)]);
         if (typeof res === "string") {
             queue.clear();
