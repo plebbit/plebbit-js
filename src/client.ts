@@ -15,6 +15,7 @@ import isIPFS from "is-ipfs";
 import Logger from "@plebbit/plebbit-logger";
 import { PlebbitError } from "./plebbit-error";
 import pLimit from "p-limit";
+import { log } from "console";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -137,7 +138,11 @@ export class ClientsManager {
     }
 
     protected async fetchWithGateway(gateway: string, path: string): Promise<string | { error: PlebbitError }> {
+        const log = Logger("plebbit-js:plebbit:fetchWithGateway");
         const url = `${gateway}${path}`;
+
+        log.trace(`Fetching url (${url})`);
+
         const timeBefore = Date.now();
         const isCid = path.includes("/ipfs/"); // If false, then IPNS
         this.updateGatewayState(isCid ? "fetching-ipfs" : "fetching-ipns", gateway);
