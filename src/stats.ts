@@ -72,7 +72,10 @@ export default class Stats {
             const successCounts: number = (await this._plebbit._cache.getItem(this._getSuccessCountKey(gatewayUrl, type))) || 0;
             const successAverageMs: number = (await this._plebbit._cache.getItem(this._getSuccessAverageKey(gatewayUrl, type))) || 0;
 
-            const gatewayScore = Math.random(); // TODO implement actual formula here
+            // Thanks for @thisisnotph for their input on this formula
+            const gatewayScore =
+                (1 / (successAverageMs + 1) / (1 / (successAverageMs + 1) + 1 / 300)) * 0.3 +
+                ((successCounts + 0.288) / (failureCounts * 2 + successCounts + 1)) * 0.7;
 
             log.trace(`gateway (${gatewayUrl}) score is (${gatewayScore}) for type (${type})`);
             return score;

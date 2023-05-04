@@ -172,10 +172,15 @@ export class ClientsManager {
 
         const type = loadOpts.cid ? "cid" : "ipns";
 
-        // TODO test potential errors here
-        const queueLimit = pLimit(3);
-        // Will be likely 5 promises, p-queue will limit to 3
-        const gatewaysSorted = await this._plebbit.stats.sortGatewaysAccordingToScore(type);
+        const concurrencyLimit = 3;
+
+        const queueLimit = pLimit(concurrencyLimit);
+
+        // Only sort if we have more than 3 gateways
+        const gatewaysSorted =
+            Object.keys(this._plebbit.clients.ipfsGateways).length > concurrencyLimit
+                ? Object.keys(this._plebbit.clients.ipfsGateways)
+                : await this._plebbit.stats.sortGatewaysAccordingToScore(type);
 
         const gatewayPromises = gatewaysSorted.map((gateway) => queueLimit(() => this.fetchWithGateway(gateway, path)));
 
