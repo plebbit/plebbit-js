@@ -21,7 +21,9 @@ export declare class ClientsManager {
     resolveIpnsToCidP2P(ipns: string): Promise<string>;
     fetchCidP2P(cid: string): Promise<string>;
     private _verifyContentIsSameAsCid;
-    protected fetchWithGateway(gateway: string, path: string): Promise<string>;
+    protected fetchWithGateway(gateway: string, path: string): Promise<string | {
+        error: PlebbitError;
+    }>;
     fetchFromMultipleGateways(loadOpts: {
         cid?: string;
         ipns?: string;
