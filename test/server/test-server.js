@@ -118,6 +118,14 @@ const startIpfsNodes = async () => {
         else res.end("Unknown CID");
     }).listen(33415);
 
+    // Create an HTTP server that mocks an ipfs gateway, and returns 429 always to imitate cloudflare-ipfs
+    http.createServer((req, res) => {
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.statusCode = 429;
+        res.statusMessage = "Too Many Requests";
+        res.end();
+    }).listen(33416);
+
     require("./pubsub-mock-server");
 
     if (process.env["NO_SUBPLEBBITS"] !== "1")
