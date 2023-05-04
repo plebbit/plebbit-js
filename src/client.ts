@@ -6,7 +6,6 @@ import { Comment } from "./comment";
 import { throwWithErrorCode, timestamp } from "./util";
 import assert from "assert";
 import { CommentIpfsType, CommentUpdate, SubplebbitIpfsType } from "./types";
-import PQueue from "p-queue";
 import Hash from "ipfs-only-hash";
 import { Subplebbit } from "./subplebbit";
 import { verifySubplebbit } from "./signer";
