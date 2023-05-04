@@ -15,6 +15,7 @@ import { nativeFunctions } from "./runtime/node/util";
 import isIPFS from "is-ipfs";
 import Logger from "@plebbit/plebbit-logger";
 import { PlebbitError } from "./plebbit-error";
+import pLimit from "p-limit";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -136,7 +137,7 @@ export class ClientsManager {
         if (calculatedCid !== cid) throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid, cid });
     }
 
-    protected async fetchWithGateway(gateway: string, path: string) {
+    protected async fetchWithGateway(gateway: string, path: string): Promise<string | { error: PlebbitError }> {
         const url = `${gateway}${path}`;
         const timeBefore = Date.now();
         const isCid = path.includes("/ipfs/"); // If false, then IPNS
@@ -151,7 +152,7 @@ export class ClientsManager {
         } catch (e) {
             this.updateGatewayState("stopped", gateway);
             await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
-            throw e;
+            return { error: e };
         }
     }
 
@@ -160,27 +161,31 @@ export class ClientsManager {
 
         const path = loadOpts.cid ? `/ipfs/${loadOpts.cid}` : `/ipns/${loadOpts.ipns}`;
 
-        const _firstResolve = (promises: Promise<string>[]) => {
-            return new Promise<string>((resolve) => promises.forEach((promise) => promise.then(resolve)));
+        const _firstResolve = (promises: Promise<string | { error: PlebbitError }>[]) => {
+            return new Promise<string>((resolve) =>
+                promises.forEach((promise) =>
+                    promise.then((res) => {
+                        if (typeof res === "string") resolve(res);
+                    })
+                )
+            );
         };
 
         const type = loadOpts.cid ? "cid" : "ipns";
 
         // TODO test potential errors here
-        const queue = new PQueue({ concurrency: 3 });
-
+        const queueLimit = pLimit(3);
         // Will be likely 5 promises, p-queue will limit to 3
         const gatewaysSorted = await this._plebbit.stats.sortGatewaysAccordingToScore(type);
-        const gatewayPromises = [];
-        for (const gatewayUrl of gatewaysSorted) gatewayPromises.push(queue.add(() => this.fetchWithGateway(gatewayUrl, path)));
+
+        const gatewayPromises = gatewaysSorted.map((gateway) => queueLimit(() => this.fetchWithGateway(gateway, path)));
 
         const res = await Promise.race([_firstResolve(gatewayPromises), Promise.allSettled(gatewayPromises)]);
         if (typeof res === "string") {
-            queue.clear();
+            queueLimit.clearQueue();
             return res;
-        }
-        //@ts-expect-error
-        else throw res[0].reason;
+        } //@ts-expect-error
+        else throw res[0].value.error;
     }
 
     // State methods here
