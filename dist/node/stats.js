@@ -129,7 +129,8 @@ var Stats = /** @class */ (function () {
                                 return [4 /*yield*/, this._plebbit._cache.getItem(this._getSuccessAverageKey(gatewayUrl, type))];
                             case 3:
                                 successAverageMs = (_a.sent()) || 0;
-                                gatewayScore = Math.random();
+                                gatewayScore = (1 / (successAverageMs + 1) / (1 / (successAverageMs + 1) + 1 / 300)) * 0.3 +
+                                    ((successCounts + 0.288) / (failureCounts * 2 + successCounts + 1)) * 0.7;
                                 log.trace("gateway (".concat(gatewayUrl, ") score is (").concat(gatewayScore, ") for type (").concat(type, ")"));
                                 return [2 /*return*/, score];
                         }
