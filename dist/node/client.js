@@ -69,13 +69,13 @@ exports.SubplebbitClientsManager = exports.CommentClientsManager = exports.Publi
 var from_string_1 = require("uint8arrays/from-string");
 var util_1 = require("./util");
 var assert_1 = __importDefault(require("assert"));
-var p_queue_1 = __importDefault(require("p-queue"));
 var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
 var signer_1 = require("./signer");
 var lodash_1 = __importDefault(require("lodash"));
 var util_2 = require("./runtime/node/util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
+var p_limit_1 = __importDefault(require("p-limit"));
 var DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 var ClientsManager = /** @class */ (function () {
     function ClientsManager(plebbit) {
@@ -298,7 +298,7 @@ var ClientsManager = /** @class */ (function () {
                         return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns")];
                     case 7:
                         _a.sent();
-                        throw e_2;
+                        return [2 /*return*/, { error: e_2 }];
                     case 8: return [2 /*return*/];
                 }
             });
@@ -306,7 +306,7 @@ var ClientsManager = /** @class */ (function () {
     };
     ClientsManager.prototype.fetchFromMultipleGateways = function (loadOpts) {
         return __awaiter(this, void 0, void 0, function () {
-            var path, _firstResolve, type, queue, gatewaysSorted, gatewayPromises, _loop_1, _i, gatewaysSorted_1, gatewayUrl, res;
+            var path, _firstResolve, type, queueLimit, gatewaysSorted, gatewayPromises, res;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -314,31 +314,30 @@ var ClientsManager = /** @class */ (function () {
                         (0, assert_1.default)(loadOpts.cid || loadOpts.ipns);
                         path = loadOpts.cid ? "/ipfs/".concat(loadOpts.cid) : "/ipns/".concat(loadOpts.ipns);
                         _firstResolve = function (promises) {
-                            return new Promise(function (resolve) { return promises.forEach(function (promise) { return promise.then(resolve); }); });
+                            return new Promise(function (resolve) {
+                                return promises.forEach(function (promise) {
+                                    return promise.then(function (res) {
+                                        if (typeof res === "string")
+                                            resolve(res);
+                                    });
+                                });
+                            });
                         };
                         type = loadOpts.cid ? "cid" : "ipns";
-                        queue = new p_queue_1.default({ concurrency: 3 });
+                        queueLimit = (0, p_limit_1.default)(3);
                         return [4 /*yield*/, this._plebbit.stats.sortGatewaysAccordingToScore(type)];
                     case 1:
                         gatewaysSorted = _a.sent();
-                        gatewayPromises = [];
-                        _loop_1 = function (gatewayUrl) {
-                            gatewayPromises.push(queue.add(function () { return _this.fetchWithGateway(gatewayUrl, path); }));
-                        };
-                        for (_i = 0, gatewaysSorted_1 = gatewaysSorted; _i < gatewaysSorted_1.length; _i++) {
-                            gatewayUrl = gatewaysSorted_1[_i];
-                            _loop_1(gatewayUrl);
-                        }
+                        gatewayPromises = gatewaysSorted.map(function (gateway) { return queueLimit(function () { return _this.fetchWithGateway(gateway, path); }); });
                         return [4 /*yield*/, Promise.race([_firstResolve(gatewayPromises), Promise.allSettled(gatewayPromises)])];
                     case 2:
                         res = _a.sent();
                         if (typeof res === "string") {
-                            queue.clear();
+                            queueLimit.clearQueue();
                             return [2 /*return*/, res];
-                        }
-                        //@ts-expect-error
+                        } //@ts-expect-error
                         else
-                            throw res[0].reason;
+                            throw res[0].value.error;
                         return [2 /*return*/];
                 }
             });
