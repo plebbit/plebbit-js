@@ -183,7 +183,7 @@ export class ClientsManager {
 
         // Only sort if we have more than 3 gateways
         const gatewaysSorted =
-            Object.keys(this._plebbit.clients.ipfsGateways).length > concurrencyLimit
+            Object.keys(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit
                 ? Object.keys(this._plebbit.clients.ipfsGateways)
                 : await this._plebbit.stats.sortGatewaysAccordingToScore(type);
 
