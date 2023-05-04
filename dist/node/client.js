@@ -266,11 +266,13 @@ var ClientsManager = /** @class */ (function () {
     };
     ClientsManager.prototype.fetchWithGateway = function (gateway, path) {
         return __awaiter(this, void 0, void 0, function () {
-            var url, timeBefore, isCid, resText, timeElapsedMs, e_2;
+            var log, url, timeBefore, isCid, resText, timeElapsedMs, e_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:fetchWithGateway");
                         url = "".concat(gateway).concat(path);
+                        log.trace("Fetching url (".concat(url, ")"));
                         timeBefore = Date.now();
                         isCid = path.includes("/ipfs/");
                         this.updateGatewayState(isCid ? "fetching-ipfs" : "fetching-ipns", gateway);
@@ -306,10 +308,10 @@ var ClientsManager = /** @class */ (function () {
     };
     ClientsManager.prototype.fetchFromMultipleGateways = function (loadOpts) {
         return __awaiter(this, void 0, void 0, function () {
-            var path, _firstResolve, type, queueLimit, gatewaysSorted, gatewayPromises, res;
+            var path, _firstResolve, type, concurrencyLimit, queueLimit, gatewaysSorted, _a, gatewayPromises, res;
             var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         (0, assert_1.default)(loadOpts.cid || loadOpts.ipns);
                         path = loadOpts.cid ? "/ipfs/".concat(loadOpts.cid) : "/ipns/".concat(loadOpts.ipns);
@@ -324,14 +326,21 @@ var ClientsManager = /** @class */ (function () {
                             });
                         };
                         type = loadOpts.cid ? "cid" : "ipns";
-                        queueLimit = (0, p_limit_1.default)(3);
-                        return [4 /*yield*/, this._plebbit.stats.sortGatewaysAccordingToScore(type)];
-                    case 1:
-                        gatewaysSorted = _a.sent();
+                        concurrencyLimit = 3;
+                        queueLimit = (0, p_limit_1.default)(concurrencyLimit);
+                        if (!(Object.keys(this._plebbit.clients.ipfsGateways).length > concurrencyLimit)) return [3 /*break*/, 1];
+                        _a = Object.keys(this._plebbit.clients.ipfsGateways);
+                        return [3 /*break*/, 3];
+                    case 1: return [4 /*yield*/, this._plebbit.stats.sortGatewaysAccordingToScore(type)];
+                    case 2:
+                        _a = _b.sent();
+                        _b.label = 3;
+                    case 3:
+                        gatewaysSorted = _a;
                         gatewayPromises = gatewaysSorted.map(function (gateway) { return queueLimit(function () { return _this.fetchWithGateway(gateway, path); }); });
                         return [4 /*yield*/, Promise.race([_firstResolve(gatewayPromises), Promise.allSettled(gatewayPromises)])];
-                    case 2:
-                        res = _a.sent();
+                    case 4:
+                        res = _b.sent();
                         if (typeof res === "string") {
                             queueLimit.clearQueue();
                             return [2 /*return*/, res];
