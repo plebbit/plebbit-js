@@ -423,6 +423,12 @@ Encrypted {
   - [`pages.getPage(pageCid)`](#pagesgetpagepagecid)
   - `pages.pages`
   - `pages.pageCids`
+- Client API
+  - `client.state`
+  - `client.getPeers()`
+  - `client.getStats()`
+- [Client Events](#client-events)
+  - [`statechange`](#statechange-3)
 
 ## Plebbit API
 The plebbit API for reading and writing to and from subplebbits.
@@ -1445,4 +1451,31 @@ post.on('update', async updatedPost => {
   }
   console.log(replies)
 })
+```
+
+## Client Events
+The client events.
+
+### `statechange`
+
+> `Client.state` property changed.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `'stopped' \| 'resolving-author-address' \| 'fetching-ipfs' \| 'fetching-update-ipns' \| 'fetching-update-ipfs' \| 'resolving-subplebbit-address' \| 'fetching-subplebbit-ipns' \| 'fetching-subplebbit-ipfs' \| 'subscribing-pubsub' \| 'publishing-challenge-request' \| 'waiting-challenge' \| 'waiting-challenge-answers' \| 'publishing-challenge-answer' \| 'waiting-challenge-verification'` | The `Client.state` property |
+
+#### Example
+
+```js
+for (const clientType in comment.clients) {
+  const clientTypes = comment.clients[clientType]
+  for (const clientUrl in clientTypes) {
+    const client = clientTypes[clientUrl]
+    client.on('statechange', (state) => {
+      console.log('client state changed', state, client, clientType, clientUrl)
+    })
+  }
+}
 ```
