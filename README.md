@@ -428,7 +428,7 @@ Encrypted {
   - `client.getPeers()`
   - `client.getStats()`
 - [Client Events](#client-events)
-  - [`statechange`](#statechange-3)
+  - [`statechange`](#statechange-2)
 
 ## Plebbit API
 The plebbit API for reading and writing to and from subplebbits.
