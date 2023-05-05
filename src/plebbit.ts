@@ -95,7 +95,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         this._initIpfsClients();
         this._initPubsubClients();
-        this._initResolver(options);
 
         this.dataPath = options.dataPath || getDefaultDataPath();
     }
@@ -194,6 +193,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         // Init stats
         this.stats = new Stats({ _cache: this._cache, clients: this.clients });
+        // Init resolver
+        this._initResolver(options);
+        // Init clients manager
         this._clientsManager = new ClientsManager(this);
     }
 
@@ -215,7 +217,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     async getComment(cid: string): Promise<Comment | Post> {
         if (!isIPFS.cid(cid)) throwWithErrorCode("ERR_CID_IS_INVALID", `getComment: cid (${cid}) is invalid as a CID`);
         const commentJson: CommentIpfsType = JSON.parse(await this.fetchCid(cid));
-        const signatureValidity = await verifyComment(commentJson, this.resolveAuthorAddresses, this._clientsManager,true);
+        const signatureValidity = await verifyComment(commentJson, this.resolveAuthorAddresses, this._clientsManager, true);
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { cid, signatureValidity });
 
         return this.createComment({ ...commentJson, cid });
