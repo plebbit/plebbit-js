@@ -208,17 +208,26 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.destoryConnection = function () {
+    DbHandler.prototype.initDestroyedConnection = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                switch (_a.label) {
+                this._knex.initialize();
+                return [2 /*return*/];
+            });
+        });
+    };
+    DbHandler.prototype.destoryConnection = function () {
+        var _a;
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        if (!this._knex) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this._knex.destroy()];
+                        if (this.isDbInMemory())
+                            return [2 /*return*/];
+                        return [4 /*yield*/, ((_a = this._knex) === null || _a === void 0 ? void 0 : _a.destroy())];
                     case 1:
-                        _a.sent();
-                        _a.label = 2;
-                    case 2: return [2 /*return*/];
+                        _b.sent();
+                        return [2 /*return*/];
                 }
             });
         });
@@ -560,7 +569,7 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.createTablesIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, dbVersion, needToMigrate, createTableFunctions, tables;
+            var log, priorDbVersion, needToMigrate, createTableFunctions, tables, newDbVersion;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -568,9 +577,9 @@ var DbHandler = /** @class */ (function () {
                         log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:createTablesIfNeeded");
                         return [4 /*yield*/, this.getDbVersion()];
                     case 1:
-                        dbVersion = _a.sent();
-                        log.trace("db version: ".concat(dbVersion));
-                        needToMigrate = dbVersion !== version_1.default.DB_VERSION;
+                        priorDbVersion = _a.sent();
+                        log.trace("current db version: ".concat(priorDbVersion));
+                        needToMigrate = priorDbVersion !== version_1.default.DB_VERSION;
                         createTableFunctions = [
                             this._createCommentsTable,
                             this._createCommentUpdatesTable,
@@ -634,8 +643,8 @@ var DbHandler = /** @class */ (function () {
                         _a.label = 5;
                     case 5: return [4 /*yield*/, this.getDbVersion()];
                     case 6:
-                        dbVersion = _a.sent();
-                        assert_1.default.equal(dbVersion, version_1.default.DB_VERSION);
+                        newDbVersion = _a.sent();
+                        assert_1.default.equal(newDbVersion, version_1.default.DB_VERSION);
                         this._createdTables = true;
                         return [2 /*return*/];
                 }
@@ -868,6 +877,26 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
+    DbHandler.prototype.queryAllCommentsCid = function (trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            var res;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).select("cid")];
+                    case 1:
+                        res = _a.sent();
+                        return [2 /*return*/, res.map(function (row) { return row.cid; })];
+                }
+            });
+        });
+    };
+    DbHandler.prototype.queryCommentsByCids = function (cids, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("cid", cids)];
+            });
+        });
+    };
     DbHandler.prototype.queryParents = function (rootComment, trx) {
         return __awaiter(this, void 0, void 0, function () {
             var parents, curParentCid, parent_1;
@@ -891,9 +920,9 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.queryCommentsToBeUpdated = function (opts, trx) {
+    DbHandler.prototype.queryCommentsToBeUpdated = function (ipnsKeyNames, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var criteriaOneTwoThree, lastUpdatedAtWithBuffer, restCriteria, comments, parents, _a, _b, authorComments, uniqComments;
+            var criteriaOneTwoThree, lastUpdatedAtWithBuffer, criteriaFour, comments, parents, _a, _b, authorComments, uniqComments;
             var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
@@ -901,8 +930,7 @@ var DbHandler = /** @class */ (function () {
                             .select("".concat(TABLES.COMMENTS, ".*"))
                             .leftJoin(TABLES.COMMENT_UPDATES, "".concat(TABLES.COMMENTS, ".cid"), "".concat(TABLES.COMMENT_UPDATES, ".cid"))
                             .whereNull("".concat(TABLES.COMMENT_UPDATES, ".updatedAt"))
-                            .orWhere("".concat(TABLES.COMMENT_UPDATES, ".updatedAt"), "<=", opts.minimumUpdatedAt)
-                            .orWhereNotIn("ipnsKeyName", opts.ipnsKeyNames)];
+                            .orWhereNotIn("ipnsKeyName", ipnsKeyNames)];
                     case 1:
                         criteriaOneTwoThree = _c.sent();
                         lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
@@ -923,8 +951,8 @@ var DbHandler = /** @class */ (function () {
                                 .orHaving("editLastInsertedAt", ">=", lastUpdatedAtWithBuffer)
                                 .orHaving("childCommentLastInsertedAt", ">=", lastUpdatedAtWithBuffer)];
                     case 2:
-                        restCriteria = _c.sent();
-                        comments = lodash_1.default.uniqBy(__spreadArray(__spreadArray([], criteriaOneTwoThree, true), restCriteria, true), function (comment) { return comment.cid; });
+                        criteriaFour = _c.sent();
+                        comments = lodash_1.default.uniqBy(__spreadArray(__spreadArray([], criteriaOneTwoThree, true), criteriaFour, true), function (comment) { return comment.cid; });
                         _b = (_a = lodash_1.default).flattenDeep;
                         return [4 /*yield*/, Promise.all(comments.filter(function (comment) { return comment.parentCid; }).map(function (comment) { return _this.queryParents(comment, trx); }))];
                     case 3:
@@ -1499,7 +1527,6 @@ var DbHandler = /** @class */ (function () {
                             })];
                     case 2:
                         _a.sent();
-                        log.trace("Locked the state of subplebbit (".concat(subAddress, ") successfully"));
                         return [3 /*break*/, 4];
                     case 3:
                         e_5 = _a.sent();
@@ -1521,7 +1548,6 @@ var DbHandler = /** @class */ (function () {
                         if (subAddress === this._subplebbit.address && this.isDbInMemory())
                             return [2 /*return*/];
                         log = (0, plebbit_logger_1.default)("plebbit-js:lock:unlockSubState");
-                        log.trace("Attempting to unlock the state of sub (".concat(subAddress, ")"));
                         lockfilePath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", "".concat(subAddress, ".state.lock"));
                         subDbPath = path_1.default.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
                         if (!fs_1.default.existsSync(lockfilePath))
@@ -1529,7 +1555,6 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, lockfile.unlock(subDbPath, { lockfilePath: lockfilePath, realpath: false })];
                     case 1:
                         _a.sent();
-                        log.trace("Unlocked state of sub (".concat(subAddress, ")"));
                         return [2 /*return*/];
                 }
             });

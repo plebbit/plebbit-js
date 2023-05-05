@@ -28,7 +28,7 @@ describe.skip(`DB importing`, async () => {
     };
 
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
 
     after(async () => {
@@ -47,7 +47,7 @@ describe.skip("DB Migration", () => {
     let plebbit;
 
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
 
     databases.map((database) =>

@@ -1,5 +1,6 @@
 import { CID, IPFSHTTPClient, Options as IpfsHttpClientOptions } from "ipfs-http-client";
 import { PeersResult } from "ipfs-core-types/src/swarm/index";
+import { LsResult } from "ipfs-core-types/src/pin/index";
 import { DbHandler } from "./runtime/browser/db-handler";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
@@ -12,7 +13,7 @@ import Publication from "./publication";
 import { PlebbitError } from "./plebbit-error";
 export declare type ProtocolVersion = "1.0.0";
 export declare type ChainProvider = {
-    url: string[];
+    urls: string[];
     chainId: number;
 };
 export interface PlebbitOptions {
@@ -341,7 +342,7 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     shortCid?: string;
     ipnsName?: string;
 }
-export interface CommentWithCommentUpdate extends Omit<CommentType, "replyCount" | "downvoteCount" | "upvoteCount" | "replies" | "updatedAt" | "original" | "cid" | "postCid" | "depth" | "ipnsKeyName" | "signer">, Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth">>, Omit<CommentUpdate, "author" | "replies"> {
+export interface CommentWithCommentUpdate extends Omit<CommentType, "replyCount" | "downvoteCount" | "upvoteCount" | "replies" | "updatedAt" | "original" | "cid" | "shortCid" | "postCid" | "depth" | "ipnsKeyName" | "signer">, Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth" | "shortCid">>, Omit<CommentUpdate, "author" | "replies"> {
     replies?: PagesTypeJson;
 }
 export interface CommentIpfsType extends Omit<CreateCommentOptions, "signer" | "timestamp" | "author">, PublicationType, Pick<CommentType, "previousCid" | "postCid" | "thumbnailUrl">, Pick<Required<CommentType>, "depth" | "ipnsName"> {
@@ -382,7 +383,11 @@ export declare type IpfsHttpClientPublicAPI = {
     };
     config: Pick<IPFSHTTPClient["config"], "get">;
     key: Pick<IPFSHTTPClient["key"], "list" | "rm">;
-    pin: Pick<IPFSHTTPClient["pin"], "rm">;
+    pin: {
+        rm: IPFSHTTPClient["pin"]["rm"];
+        addAll: (...p: Parameters<IPFSHTTPClient["pin"]["addAll"]>) => Promise<CID[]>;
+        ls: (...p: Parameters<IPFSHTTPClient["pin"]["ls"]>) => Promise<LsResult[]>;
+    };
     block: {
         rm: (...p: Parameters<IPFSHTTPClient["block"]["rm"]>) => Promise<{
             cid: CID;
@@ -484,6 +489,7 @@ export interface SubplebbitEvents {
     statechange: (newState: Subplebbit["state"]) => void;
     updatingstatechange: (newState: Subplebbit["updatingState"]) => void;
     startedstatechange: (newState: Subplebbit["startedState"]) => void;
+    clientschange: () => void;
     update: (updatedSubplebbit: Subplebbit) => void;
 }
 export interface PublicationEvents {
@@ -494,15 +500,11 @@ export interface PublicationEvents {
     error: (error: PlebbitError) => void;
     publishingstatechange: (newState: Publication["publishingState"]) => void;
     statechange: (newState: Publication["state"]) => void;
+    clientschange: () => void;
     update: (updatedInstance: Comment) => void;
     updatingstatechange: (newState: Comment["updatingState"]) => void;
 }
 export interface PlebbitEvents {
-    resolvedsubplebbitaddress: (subplebbitAddress: string, resolvedSubplebbitAddress: string) => void;
-    resolvedauthoraddress: (authorAddress: string, resolvedAuthorAddress: string) => void;
-    resolvedipns: (ipns: string, cid: string) => void;
-    fetchedcid: (cid: string, content: string) => void;
-    fetchedipns: (ipns: string, content: string) => void;
     error: (error: PlebbitError) => void;
 }
 export interface IpfsStats {
@@ -555,7 +557,7 @@ export interface PubsubClient {
     sessionStats?: undefined;
     subplebbitStats?: undefined;
     _client: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">;
-    _clientOptions?: IpfsHttpClientOptions;
+    _clientOptions: IpfsHttpClientOptions;
 }
 export interface GatewayClient {
     stats?: IpfsStats;

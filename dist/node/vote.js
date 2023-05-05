@@ -98,7 +98,7 @@ var Vote = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         voteObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication()));
-                        return [4 /*yield*/, (0, signer_1.verifyVote)(voteObj, this.plebbit, true)];
+                        return [4 /*yield*/, (0, signer_1.verifyVote)(voteObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true)];
                     case 1:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)

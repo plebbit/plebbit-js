@@ -50,15 +50,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parseJsonStrings = exports.parsePagesIpfs = exports.parsePageIpfs = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.loadIpnsAsJson = exports.loadIpfsFileAsJson = exports.fetchCid = exports.TIMEFRAMES_TO_SECONDS = void 0;
-var util_1 = require("./runtime/node/util");
-var is_ipfs_1 = __importDefault(require("is-ipfs"));
-var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
+exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parseJsonStrings = exports.parsePagesIpfs = exports.parsePageIpfs = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var lodash_1 = __importDefault(require("lodash"));
 var assert_1 = __importDefault(require("assert"));
 var pages_1 = require("./pages");
 var plebbit_error_1 = require("./plebbit-error");
-var p_limit_1 = __importDefault(require("p-limit"));
 //This is temp. TODO replace this with accurate mapping
 exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -68,226 +64,6 @@ exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     YEAR: 60 * 60 * 24 * 7 * 4 * 12,
     ALL: Infinity
 });
-var DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
-function fetchWithLimit(url, options) {
-    var _a, _b;
-    return __awaiter(this, void 0, void 0, function () {
-        var res, e_1, errorCode, totalBytesRead, reader, decoder, resText, _c, done, value;
-        return __generator(this, function (_d) {
-            switch (_d.label) {
-                case 0:
-                    _d.trys.push([0, 4, , 5]);
-                    return [4 /*yield*/, util_1.nativeFunctions.fetch(url, __assign(__assign({}, options), { size: DOWNLOAD_LIMIT_BYTES }))];
-                case 1:
-                    //@ts-expect-error
-                    res = _d.sent();
-                    if (res.status !== 200)
-                        throw Error("Failed to fetch");
-                    if (!(((_a = res === null || res === void 0 ? void 0 : res.body) === null || _a === void 0 ? void 0 : _a.getReader) === undefined)) return [3 /*break*/, 3];
-                    return [4 /*yield*/, res.text()];
-                case 2: return [2 /*return*/, _d.sent()];
-                case 3: return [3 /*break*/, 5];
-                case 4:
-                    e_1 = _d.sent();
-                    if (e_1.message.includes("over limit"))
-                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url: url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-                    errorCode = url.includes("/ipfs/")
-                        ? "ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"
-                        : url.includes("/ipns/")
-                            ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
-                            : "ERR_FAILED_TO_FETCH_GENERIC";
-                    throwWithErrorCode(errorCode, { url: url, status: res === null || res === void 0 ? void 0 : res.status, statusText: res === null || res === void 0 ? void 0 : res.statusText });
-                    return [3 /*break*/, 5];
-                case 5:
-                    if (!(((_b = res === null || res === void 0 ? void 0 : res.body) === null || _b === void 0 ? void 0 : _b.getReader) !== undefined)) return [3 /*break*/, 9];
-                    totalBytesRead = 0;
-                    reader = res.body.getReader();
-                    decoder = new TextDecoder("utf-8");
-                    resText = "";
-                    _d.label = 6;
-                case 6:
-                    if (!true) return [3 /*break*/, 8];
-                    return [4 /*yield*/, reader.read()];
-                case 7:
-                    _c = _d.sent(), done = _c.done, value = _c.value;
-                    //@ts-ignore
-                    if (value)
-                        resText += decoder.decode(value);
-                    if (done || !value)
-                        return [3 /*break*/, 8];
-                    if (value.length + totalBytesRead > DOWNLOAD_LIMIT_BYTES)
-                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url: url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-                    totalBytesRead += value.length;
-                    return [3 /*break*/, 6];
-                case 8: return [2 /*return*/, resText];
-                case 9: return [2 /*return*/];
-            }
-        });
-    });
-}
-function _firstResolve(promises) {
-    return new Promise(function (resolve) { return promises.forEach(function (promise) { return promise.then(resolve); }); });
-}
-function fetchFromMultipleGateways(loadOpts, plebbit) {
-    return __awaiter(this, void 0, void 0, function () {
-        var path, errors, type, fetchWithGateway, queueLimit, gatewayFetches, res;
-        var _this = this;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    (0, assert_1.default)(loadOpts.cid || loadOpts.ipns);
-                    path = loadOpts.cid ? "/ipfs/".concat(loadOpts.cid) : "/ipns/".concat(loadOpts.ipns);
-                    errors = [];
-                    type = loadOpts.cid ? "cid" : "ipns";
-                    fetchWithGateway = function (gateway) { return __awaiter(_this, void 0, void 0, function () {
-                        var url, timeBefore, resText, timeElapsedMs, e_2;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    url = "".concat(gateway).concat(path);
-                                    timeBefore = Date.now();
-                                    _a.label = 1;
-                                case 1:
-                                    _a.trys.push([1, 4, , 6]);
-                                    return [4 /*yield*/, fetchWithLimit(url, { cache: loadOpts.cid ? "force-cache" : "no-store" })];
-                                case 2:
-                                    resText = _a.sent();
-                                    timeElapsedMs = Date.now() - timeBefore;
-                                    return [4 /*yield*/, plebbit.stats.recordGatewaySuccess(gateway, type, timeElapsedMs)];
-                                case 3:
-                                    _a.sent();
-                                    return [2 /*return*/, resText];
-                                case 4:
-                                    e_2 = _a.sent();
-                                    return [4 /*yield*/, plebbit.stats.recordGatewayFailure(gateway, type)];
-                                case 5:
-                                    _a.sent();
-                                    errors.push(e_2);
-                                    throw e_2;
-                                case 6: return [2 /*return*/];
-                            }
-                        });
-                    }); };
-                    queueLimit = (0, p_limit_1.default)(3);
-                    return [4 /*yield*/, plebbit.stats.sortGatewaysAccordingToScore(type)];
-                case 1:
-                    gatewayFetches = (_a.sent()).map(function (gateway) {
-                        return queueLimit(function () { return fetchWithGateway(gateway); });
-                    });
-                    return [4 /*yield*/, Promise.race([_firstResolve(gatewayFetches), Promise.allSettled(gatewayFetches)])];
-                case 2:
-                    res = _a.sent();
-                    if (typeof res === "string")
-                        return [2 /*return*/, res];
-                    else
-                        throw errors[0];
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-function fetchCid(cid, plebbit, catOptions) {
-    if (catOptions === void 0) { catOptions = { length: DOWNLOAD_LIMIT_BYTES }; }
-    return __awaiter(this, void 0, void 0, function () {
-        var fileContent, ipfsClient, error, e_3, calculatedCid;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    if (!is_ipfs_1.default.cid(cid) && is_ipfs_1.default.path(cid))
-                        cid = cid.split("/")[2];
-                    if (!is_ipfs_1.default.cid(cid))
-                        throwWithErrorCode("ERR_CID_IS_INVALID", "fetchCid: (".concat(cid, ") is invalid as a CID"));
-                    ipfsClient = plebbit._defaultIpfsClient();
-                    if (!!ipfsClient) return [3 /*break*/, 2];
-                    return [4 /*yield*/, fetchFromMultipleGateways({ cid: cid }, plebbit)];
-                case 1:
-                    fileContent = _a.sent();
-                    return [3 /*break*/, 7];
-                case 2:
-                    error = void 0;
-                    _a.label = 3;
-                case 3:
-                    _a.trys.push([3, 5, , 6]);
-                    return [4 /*yield*/, ipfsClient._client.cat(cid, catOptions)];
-                case 4:
-                    fileContent = _a.sent(); // Limit is 1mb files
-                    return [3 /*break*/, 6];
-                case 5:
-                    e_3 = _a.sent();
-                    error = e_3;
-                    return [3 /*break*/, 6];
-                case 6:
-                    if (typeof fileContent !== "string")
-                        throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid: cid, error: error, options: catOptions });
-                    _a.label = 7;
-                case 7: return [4 /*yield*/, ipfs_only_hash_1.default.of(fileContent)];
-                case 8:
-                    calculatedCid = _a.sent();
-                    if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
-                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid: cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-                    if (calculatedCid !== cid)
-                        throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid: calculatedCid, cid: cid });
-                    plebbit.emit("fetchedcid", cid, fileContent);
-                    return [2 /*return*/, fileContent];
-            }
-        });
-    });
-}
-exports.fetchCid = fetchCid;
-function loadIpfsFileAsJson(cid, plebbit) {
-    return __awaiter(this, void 0, void 0, function () {
-        var _a, _b;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
-                case 0:
-                    _b = (_a = JSON).parse;
-                    return [4 /*yield*/, fetchCid(cid, plebbit)];
-                case 1: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
-            }
-        });
-    });
-}
-exports.loadIpfsFileAsJson = loadIpfsFileAsJson;
-function loadIpnsAsJson(ipns, plebbit, callbackAfterResolve) {
-    return __awaiter(this, void 0, void 0, function () {
-        var ipfsClient, resText, cid, error, e_4;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    if (typeof ipns !== "string")
-                        throwWithErrorCode("ERR_IPNS_IS_INVALID", { ipns: ipns });
-                    ipfsClient = plebbit._defaultIpfsClient();
-                    if (!!ipfsClient) return [3 /*break*/, 2];
-                    return [4 /*yield*/, fetchFromMultipleGateways({ ipns: ipns }, plebbit)];
-                case 1:
-                    resText = _a.sent();
-                    plebbit.emit("fetchedipns", ipns, resText);
-                    return [2 /*return*/, JSON.parse(resText)];
-                case 2:
-                    cid = void 0, error = void 0;
-                    _a.label = 3;
-                case 3:
-                    _a.trys.push([3, 5, , 6]);
-                    return [4 /*yield*/, ipfsClient._client.name.resolve(ipns)];
-                case 4:
-                    cid = _a.sent();
-                    return [3 /*break*/, 6];
-                case 5:
-                    e_4 = _a.sent();
-                    error = e_4;
-                    return [3 /*break*/, 6];
-                case 6:
-                    if (typeof cid !== "string")
-                        throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns: ipns, error: error });
-                    plebbit.emit("resolvedipns", ipns, cid);
-                    if (callbackAfterResolve)
-                        callbackAfterResolve(ipns, cid);
-                    return [2 /*return*/, loadIpfsFileAsJson(cid, plebbit)];
-            }
-        });
-    });
-}
-exports.loadIpnsAsJson = loadIpnsAsJson;
 function timestamp() {
     return Math.round(Date.now() / 1000);
 }
@@ -457,7 +233,7 @@ var parseJsonStrings = function (obj) {
 };
 exports.parseJsonStrings = parseJsonStrings;
 // To use for both subplebbit.posts and comment.replies
-function parseRawPages(replies, parentCid, subplebbit) {
+function parseRawPages(replies, parentCid, subplebbit, clientManager) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
         var isIpfs, parsedPages, repliesClone, pageKeys, _i, pageKeys_1, key, _b;
@@ -470,7 +246,8 @@ function parseRawPages(replies, parentCid, subplebbit) {
                                 pageCids: undefined,
                                 subplebbit: subplebbit,
                                 pagesIpfs: undefined,
-                                parentCid: parentCid
+                                parentCid: parentCid,
+                                clientManager: clientManager
                             })];
                     if (replies instanceof pages_1.Pages)
                         return [2 /*return*/, replies];
@@ -485,7 +262,8 @@ function parseRawPages(replies, parentCid, subplebbit) {
                             pageCids: parsedPages.pageCids,
                             subplebbit: subplebbit,
                             pagesIpfs: replies.pages,
-                            parentCid: parentCid
+                            parentCid: parentCid,
+                            clientManager: clientManager
                         })];
                 case 2:
                     replies = replies;
@@ -511,7 +289,8 @@ function parseRawPages(replies, parentCid, subplebbit) {
                         pageCids: replies.pageCids,
                         subplebbit: subplebbit,
                         pagesIpfs: undefined,
-                        parentCid: parentCid
+                        parentCid: parentCid,
+                        clientManager: clientManager
                     })];
             }
         });

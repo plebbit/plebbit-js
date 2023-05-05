@@ -49,9 +49,7 @@ describe("challengerequest", async () => {
         const verificaiton = await verifyChallengeRequest(invalidSignature);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
 
-        await plebbit
-            ._defaultPubsubClient()
-            ._client.pubsub.publish(comment.subplebbit.pubsubTopic, fromString(JSON.stringify(invalidSignature)));
+        await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, JSON.stringify(invalidSignature));
 
         await new Promise(async (resolve) => {
             const subMethod = (pubsubMsg) => {
@@ -61,11 +59,11 @@ describe("challengerequest", async () => {
                     expect(msgParsed.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
                     expect(msgParsed.publication).to.be.undefined;
                     expect(msgParsed.encryptedPublication).to.be.undefined;
-                    plebbit._defaultPubsubClient()._client.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, subMethod);
+                    plebbit._clientsManager.pubsubUnsubscribe(comment.subplebbit.pubsubTopic, subMethod);
                     resolve();
                 }
             };
-            await plebbit._defaultPubsubClient()._client.pubsub.subscribe(comment.subplebbit.pubsubTopic, subMethod);
+            await plebbit._clientsManager.pubsubSubscribe(comment.subplebbit.pubsubTopic, subMethod);
         });
     });
 });
@@ -134,9 +132,7 @@ describe("challengeanswer", async () => {
 
         await new Promise(async (resolve) => {
             comment.once("challenge", async () => {
-                comment.plebbit
-                    ._defaultPubsubClient()
-                    ._client.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, comment.handleChallengeExchange);
+                await comment._plebbit._clientsManager.pubsubUnsubscribe(comment.subplebbit.pubsubTopic, comment.handleChallengeExchange);
                 const toSignAnswer = {
                     type: "CHALLENGEANSWER",
                     challengeRequestId: comment._challengeRequest.challengeRequestId,
@@ -158,9 +154,7 @@ describe("challengeanswer", async () => {
                     reason: messages.ERR_SIGNATURE_IS_INVALID
                 });
 
-                await plebbit
-                    ._defaultPubsubClient()
-                    ._client.pubsub.publish(comment.subplebbit.pubsubTopic, fromString(JSON.stringify(challengeAnswer)));
+                await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, JSON.stringify(challengeAnswer));
 
                 const subMethod = (pubsubMsg) => {
                     const msgParsed = JSON.parse(toString(pubsubMsg["data"]));
@@ -172,12 +166,12 @@ describe("challengeanswer", async () => {
                         expect(msgParsed.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
                         expect(msgParsed.publication).to.be.undefined;
                         expect(msgParsed.encryptedPublication).to.be.undefined;
-                        plebbit._defaultPubsubClient()._client.pubsub.unsubscribe(comment.subplebbit.pubsubTopic, subMethod);
+                        plebbit._clientsManager.pubsubUnsubscribe(comment.subplebbit.pubsubTopic, subMethod);
                         resolve();
                     }
                 };
 
-                await plebbit._defaultPubsubClient()._client.pubsub.subscribe(comment.subplebbit.pubsubTopic, subMethod);
+                await plebbit._clientsManager.pubsubSubscribe(comment.subplebbit.pubsubTopic, subMethod);
             });
         });
     });

@@ -13,6 +13,7 @@ const {
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 const chai = require("chai");
+const { messages } = require("../../../../dist/node/errors");
 const chaiAsPromised = require("chai-as-promised");
 const { default: waitUntil } = require("async-wait-until");
 chai.use(chaiAsPromised);
@@ -23,7 +24,7 @@ const imageCaptchaSubplebbitAddress = signers[2].address;
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-describe("publishing posts", async () => {
+describe("publishing comments", async () => {
     let plebbit;
 
     before(async () => {
@@ -92,6 +93,48 @@ describe("publishing posts", async () => {
         const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
         const postInPage = await findCommentInPage(post.cid, sub.posts.pageCids.new, sub.posts);
         expect(postInPage.author.wallets).to.deep.equal(wallets);
+    });
+
+    it(`Can publish a comment that was created author.shortAddress manually defined`, async () => {
+        const post = await generateMockPost(subplebbitAddress, plebbit, false, { author: { shortAddress: "12345" } });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`publish() can be caught if subplebbit failed to load`, async () => {
+        const downPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:28080", "http://127.0.0.1:28480"] });
+        const post = await generateMockPost(subplebbitAddress, downPlebbit);
+
+        await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY);
+    });
+
+    it(`comment.publish() can be caught if one of the gateways threw 429 status code`, async () => {
+        const subAddress = signers[7].address;
+        const gatewayPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: ["http://localhost:33416", "http://localhost:18080"] });
+        expect(Object.keys(gatewayPlebbit.clients.ipfsGateways)).to.deep.equal(["http://localhost:33416", "http://localhost:18080"]);
+
+        const post = await generateMockPost(subAddress, gatewayPlebbit);
+
+        await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY);
+    });
+
+    it(`Can publish a comment when all gateways are down except one`, async () => {
+        const gatewayPlebbit = await mockGatewayPlebbit({
+            ipfsGatewayUrls: [
+                "http://127.0.0.1:28080", // Not working
+                "http://127.0.0.1:28081", // Not working
+                "http://127.0.0.1:18083", // Working but does not have the ipns
+                "http://127.0.0.1:18080" // Working
+            ]
+        });
+
+        expect(Object.keys(gatewayPlebbit.clients.ipfsGateways)).to.deep.equal([
+            "http://127.0.0.1:28080",
+            "http://127.0.0.1:28081",
+            "http://127.0.0.1:18083",
+            "http://127.0.0.1:18080"
+        ]);
+        const post = await generateMockPost(subplebbitAddress, gatewayPlebbit);
+        await publishWithExpectedResult(post, true);
     });
 });
 

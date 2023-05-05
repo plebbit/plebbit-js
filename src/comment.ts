@@ -1,12 +1,5 @@
 import retry, { RetryOperation } from "retry";
-import {
-    loadIpfsFileAsJson,
-    loadIpnsAsJson,
-    parseRawPages,
-    removeNullAndUndefinedValuesRecursively,
-    shortifyCid,
-    throwWithErrorCode
-} from "./util";
+import { parseRawPages, removeNullAndUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "./util";
 import Publication from "./publication";
 import { Pages } from "./pages";
 import {
@@ -25,21 +18,38 @@ import {
 
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "./plebbit";
-import lodash, { reject } from "lodash";
+import lodash from "lodash";
 import { verifyComment, verifyCommentUpdate } from "./signer/signatures";
 import assert from "assert";
 import { PlebbitError } from "./plebbit-error";
+import { CommentClientsManager } from "./client";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
 export class Comment extends Publication implements Omit<CommentType, "replies"> {
-    // public
+    // Only Comment props
+    shortCid?: string;
+
+    clients: Omit<Publication["clients"], "ipfsClients"> & {
+        ipfsClients: {
+            [ipfsClientUrl: string]: {
+                state:
+                    | "fetching-subplebbit-ipns"
+                    | "fetching-subplebbit-ipfs"
+                    | "fetching-ipfs"
+                    | "fetching-update-ipns"
+                    | "fetching-update-ipfs"
+                    | "stopped";
+            };
+        };
+    };
+
+    // public (CommentType)
     title?: string;
     link?: string;
     thumbnailUrl?: string;
     protocolVersion: ProtocolVersion;
     cid?: string;
-    shortCid?: string;
     parentCid?: string;
     content?: string;
     // Props that get defined after challengeverification
@@ -66,7 +76,14 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     reason?: string;
 
     // updating states
-    updatingState: "stopped" | "resolving-author-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
+    updatingState:
+        | "stopped"
+        | "resolving-author-address"
+        | "fetching-ipfs"
+        | "fetching-update-ipns"
+        | "fetching-update-ipfs"
+        | "failed"
+        | "succeeded";
 
     // private
     private _updateInterval?: any;
@@ -74,6 +91,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     private _updateIntervalMs: number;
     private _rawCommentUpdate?: CommentUpdate;
     private _loadingOperation: RetryOperation;
+    _clientsManager: CommentClientsManager;
 
     constructor(props: CommentType, plebbit: Plebbit) {
         super(props, plebbit);
@@ -89,6 +107,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     _initProps(props: CommentType) {
         // This function is called once at in the constructor
         super._initProps(props);
+        if (!(this._clientsManager instanceof CommentClientsManager)) this._clientsManager = new CommentClientsManager(this);
         this.postCid = props.postCid;
         this.setCid(props.cid);
         this.parentCid = props.parentCid;
@@ -107,7 +126,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.replies = new Pages({
             pages: undefined,
             pageCids: undefined,
-            subplebbit: { address: this.subplebbitAddress, plebbit: this.plebbit },
+            subplebbit: { address: this.subplebbitAddress, plebbit: this._plebbit },
+            clientManager: this._clientsManager,
             pagesIpfs: undefined,
             parentCid: this.cid
         });
@@ -140,7 +160,15 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.author.flair = props.author?.subplebbit?.flair || props.edit?.author?.flair || this.author?.flair;
 
         assert(this.cid);
-        this.replies = await parseRawPages(props.replies, this.cid, { address: this.subplebbitAddress, plebbit: this.plebbit });
+        this.replies = await parseRawPages(
+            props.replies,
+            this.cid,
+            {
+                address: this.subplebbitAddress,
+                plebbit: this._plebbit
+            },
+            this._clientsManager
+        );
     }
 
     getType(): PublicationTypeName {
@@ -155,7 +183,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             ...base,
             ...(typeof this.updatedAt === "number"
                 ? {
-                      author: this.author.toJSONIpfsWithCommentUpdate(),
+                      author: this.author.toJSON(),
                       original: this.original,
                       upvoteCount: this.upvoteCount,
                       downvoteCount: this.downvoteCount,
@@ -196,7 +224,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             ...this.toJSONPubsubMessagePublication(),
             previousCid: this.previousCid,
             ipnsName: this.ipnsName,
-            postCid: this.postCid,
+            postCid: this.depth === 0 ? undefined : this.postCid,
             depth: this.depth,
             thumbnailUrl: this.thumbnailUrl
         };
@@ -232,10 +260,11 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     }
 
     toJSONMerged(): CommentWithCommentUpdate {
-        assert(this.ipnsName && typeof this.updatedAt === "number" && this.original);
+        assert(this.ipnsName && typeof this.updatedAt === "number" && this.original && this.shortCid);
         return {
             ...this.toJSONAfterChallengeVerification(),
-            author: this.author.toJSONIpfsWithCommentUpdate(),
+            shortCid: this.shortCid,
+            author: this.author.toJSON(),
             original: this.original,
             upvoteCount: this.upvoteCount,
             downvoteCount: this.downvoteCount,
@@ -284,10 +313,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     private async _retryLoadingCommentIpfs(log: Logger): Promise<CommentIpfsType> {
         return new Promise((resolve) => {
             this._loadingOperation.attempt(async (curAttempt) => {
-                this._setUpdatingState("fetching-ipfs");
                 log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
                 try {
-                    resolve(await loadIpfsFileAsJson(this.cid, this.plebbit));
+                    // TODO should inject this.clients here so gateway or ipfsClients states can be modified
+                    resolve(await this._clientsManager.fetchCommentCid(this.cid));
                 } catch (e) {
                     this._setUpdatingState("failed");
                     log.error(String(e));
@@ -301,10 +330,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     private async _retryLoadingCommentUpdate(log: Logger): Promise<CommentUpdate> {
         return new Promise((resolve) => {
             this._loadingOperation.attempt(async (curAttempt) => {
-                this._setUpdatingState("fetching-ipns");
                 log.trace(`Retrying to load comment ipns (${this.ipnsName}) for the ${curAttempt}th time`);
                 try {
-                    resolve(await loadIpnsAsJson(this.ipnsName, this.plebbit, () => this._setUpdatingState("fetching-ipfs")));
+                    const update: CommentUpdate = await this._clientsManager.fetchCommentUpdate(this.ipnsName);
+                    resolve(update);
                 } catch (e) {
                     this._setUpdatingState("failed");
                     log.error(String(e));
@@ -322,8 +351,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             // User may have attempted to call plebbit.createComment({cid}).update
             // plebbit-js should be able to retrieve ipnsName from the IPFS file
             const commentIpfs: CommentIpfsType = await this._retryLoadingCommentIpfs(log); // Will keep retrying to load until comment.stop() is called
+            assert(commentIpfs.ipnsName);
             this._initProps({ ...commentIpfs, cid: this.cid });
-            assert(this.ipnsName);
             this.emit("update", this);
         }
 
@@ -333,7 +362,13 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
             //@ts-expect-error
             const commentInstance: Pick<CommentWithCommentUpdate, "cid" | "signature"> = lodash.pick(this, ["cid", "signature"]);
-            const signatureValidity = await verifyCommentUpdate(res, { address: this.subplebbitAddress }, commentInstance, this.plebbit);
+            const signatureValidity = await verifyCommentUpdate(
+                res,
+                this._plebbit.resolveAuthorAddresses,
+                this._clientsManager,
+                this.subplebbitAddress,
+                commentInstance
+            );
             if (!signatureValidity.valid) {
                 this._setUpdatingState("failed");
                 const err = new PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity, commentUpdate: res });
@@ -351,7 +386,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         }
     }
 
-    private _setUpdatingState(newState: Comment["updatingState"]) {
+    _setUpdatingState(newState: Comment["updatingState"]) {
         this.updatingState = newState;
         this.emit("updatingstatechange", this.updatingState);
     }
@@ -376,7 +411,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
     private async _validateSignature() {
         const commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringify so it resembles messages from pubsub and IPNS
-        const signatureValidity = await verifyComment(commentObj, this.plebbit, true); // If author domain is not resolving to signer, then don't throw an error
+        const signatureValidity = await verifyComment(commentObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }
 

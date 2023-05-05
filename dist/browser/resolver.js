@@ -43,7 +43,6 @@ exports.Resolver = void 0;
 var ethers_1 = require("ethers");
 var assert_1 = __importDefault(require("assert"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
-var lodash_1 = __importDefault(require("lodash"));
 var util_1 = require("./util");
 var Resolver = /** @class */ (function () {
     function Resolver(plebbit) {
@@ -66,27 +65,24 @@ var Resolver = /** @class */ (function () {
         }
         if (chainTicker === "eth") {
             // if using eth, use ethers' default provider unless another provider is specified
-            if (!this.plebbit.chainProviders["eth"] || ((_c = (_b = (_a = this.plebbit.chainProviders["eth"]) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.url) === null || _c === void 0 ? void 0 : _c.match(/DefaultProvider/i))) {
+            if (!this.plebbit.chainProviders["eth"] || ((_c = (_b = (_a = this.plebbit.chainProviders["eth"]) === null || _a === void 0 ? void 0 : _a.urls) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.match(/DefaultProvider/i))) {
                 this.cachedChainProviders["eth"] = ethers_1.ethers.getDefaultProvider();
                 return this.cachedChainProviders["eth"];
             }
         }
         if (this.plebbit.chainProviders[chainTicker]) {
-            this.cachedChainProviders[chainTicker] = new ethers_1.ethers.providers.JsonRpcProvider({ url: this.plebbit.chainProviders[chainTicker][0].url }, this.plebbit.chainProviders[chainTicker].chainId);
+            this.cachedChainProviders[chainTicker] = new ethers_1.ethers.providers.JsonRpcProvider({ url: this.plebbit.chainProviders[chainTicker].urls[0] }, this.plebbit.chainProviders[chainTicker].chainId);
             return this.cachedChainProviders[chainTicker];
         }
         (0, util_1.throwWithErrorCode)("ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER", { chainTicker: chainTicker, chainProviders: this.plebbit.chainProviders });
     };
     Resolver.prototype._resolveEnsTxtRecord = function (ensName, txtRecordName) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, cachedResponse, chainProvider, resolver, txtRecordResult;
+            var log, chainProvider, resolver, txtRecordResult;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:resolver:_resolveEnsTxtRecord");
-                        cachedResponse = this.plebbit._memCache.get(ensName + txtRecordName);
-                        if (cachedResponse && typeof cachedResponse === "string")
-                            return [2 /*return*/, cachedResponse];
                         chainProvider = this._getChainProvider("eth");
                         return [4 /*yield*/, chainProvider.getResolver(ensName)];
                     case 1:
@@ -97,52 +93,11 @@ var Resolver = /** @class */ (function () {
                     case 2:
                         txtRecordResult = _a.sent();
                         if (!txtRecordResult)
-                            (0, util_1.throwWithErrorCode)("ERR_ENS_TXT_RECORD_NOT_FOUND", { ensName: ensName, txtRecordName: txtRecordName, chainProvider: chainProvider });
-                        log.trace("Resolved text record name (".concat(txtRecordName, ") of ENS (").concat(ensName, ") to ").concat(txtRecordResult));
-                        this.plebbit._memCache.put(ensName + txtRecordName, txtRecordResult, 3.6e6); // Expire memory ENS cache after an hour
+                            return [2 /*return*/, undefined];
+                        log("Resolved text record name (".concat(txtRecordName, ") of ENS (").concat(ensName, ") to ").concat(txtRecordResult));
+                        this.plebbit._cache.setItem("".concat(ensName, "_").concat(txtRecordName), txtRecordResult);
+                        this.plebbit._cache.setItem("".concat(ensName, "_").concat(txtRecordName, "_timestamp"), (0, util_1.timestamp)());
                         return [2 /*return*/, txtRecordResult];
-                }
-            });
-        });
-    };
-    Resolver.prototype.resolveAuthorAddressIfNeeded = function (authorAddress) {
-        return __awaiter(this, void 0, void 0, function () {
-            var resolved;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        (0, assert_1.default)(typeof authorAddress === "string", "authorAddress needs to be a string to be resolved");
-                        if (!this.plebbit.resolveAuthorAddresses)
-                            return [2 /*return*/, authorAddress];
-                        resolved = lodash_1.default.clone(authorAddress);
-                        if (!authorAddress.endsWith(".eth")) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this._resolveEnsTxtRecord(authorAddress, "plebbit-author-address")];
-                    case 1:
-                        resolved = _a.sent();
-                        _a.label = 2;
-                    case 2:
-                        this.plebbit.emit("resolvedauthoraddress", authorAddress, resolved);
-                        return [2 /*return*/, resolved];
-                }
-            });
-        });
-    };
-    Resolver.prototype.resolveSubplebbitAddressIfNeeded = function (subplebbitAddress) {
-        return __awaiter(this, void 0, void 0, function () {
-            var resolvedSubplebbitAddress;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        (0, assert_1.default)(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
-                        resolvedSubplebbitAddress = lodash_1.default.clone(subplebbitAddress);
-                        if (!subplebbitAddress.endsWith(".eth")) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address")];
-                    case 1:
-                        resolvedSubplebbitAddress = _a.sent();
-                        _a.label = 2;
-                    case 2:
-                        this.plebbit.emit("resolvedsubplebbitaddress", subplebbitAddress, resolvedSubplebbitAddress);
-                        return [2 /*return*/, resolvedSubplebbitAddress];
                 }
             });
         });

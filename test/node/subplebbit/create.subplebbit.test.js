@@ -19,7 +19,7 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 describe(`plebbit.createSubplebbit`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
 
     const _createAndValidateSubArsg = async (subArgs) => {
@@ -73,12 +73,11 @@ describe(`plebbit.createSubplebbit`, async () => {
     });
 
     it(`createSubplebbit on online IPFS node doesn't take more than 10s`, async () => {
-        const onlinePlebbit = await Plebbit({
-            ipfsHttpClientsOptions: "http://localhost:15003/api/v0",
-            pubsubHttpClientsOptions: `http://localhost:15003/api/v0`,
+        const onlinePlebbit = await mockPlebbit({
+            ipfsHttpClientsOptions: ["http://localhost:15003/api/v0"],
+            pubsubHttpClientsOptions: [`http://localhost:15003/api/v0`],
             dataPath: globalThis["window"]?.plebbitDataPath
         });
-        onlinePlebbit.resolver = plebbit.resolver;
         const startTime = timestamp();
         const title = `Test online plebbit`;
         const createdSub = await onlinePlebbit.createSubplebbit({ title: title });
@@ -130,7 +129,7 @@ describe(`plebbit.createSubplebbit`, async () => {
 describe("Create lock", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
     it(`Fail to create subplebbit if create lock is present`, async () => {
         const subSigner = await plebbit.createSigner();

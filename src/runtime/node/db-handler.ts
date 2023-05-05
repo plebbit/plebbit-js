@@ -511,6 +511,15 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("authorAddress", authorAddresses);
     }
 
+    async queryAllCommentsCid(trx?: Transaction): Promise<string[]> {
+        const res = await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid");
+        return res.map((row) => row.cid);
+    }
+
+    async queryCommentsByCids(cids: string[], trx?: Transaction) {
+        return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("cid", cids);
+    }
+
     async queryParents(rootComment: Pick<CommentsTableRow, "cid" | "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]> {
         const parents: CommentsTableRow[] = [];
         let curParentCid = rootComment.parentCid;
@@ -522,29 +531,25 @@ export class DbHandler {
         return parents;
     }
 
-    async queryCommentsToBeUpdated(
-        opts: { minimumUpdatedAt: number; ipnsKeyNames: string[] },
-        trx?: Transaction
-    ): Promise<CommentsTableRow[]> {
+    async queryCommentsToBeUpdated(ipnsKeyNames: string[], trx?: Transaction): Promise<CommentsTableRow[]> {
         // Criteria:
-        // 1 - IPNS about to expire (every 72h) OR
-        // 2 - Comment has no row in commentUpdates OR
-        // 3 - comment.ipnsKeyName is not part of /key/list of IPFS RPC API
-        // 4 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit
+        // 1 - Comment has no row in commentUpdates (has never published CommentUpdate) OR
+        // 2 - comment.ipnsKeyName is not part of /key/list of IPFS RPC API OR
+        // 3 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit OR
 
-        // After retrieving all comments with any of criteria above, also add their parents to the list
+        // 4 - Comments that new votes, CommentEdit or other comments were published under them
+
+        // After retrieving all comments with any of criteria above, also add their parents to the list to update
+
         // Also add all comments of each author to the list
 
-        // Add comments with no CommentUpdate
-
-        const criteriaOneTwoThree = await this._baseTransaction(trx)(TABLES.COMMENTS)
+        const criteriaOneTwoThree: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
             .leftJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
-            .orWhere(`${TABLES.COMMENT_UPDATES}.updatedAt`, "<=", opts.minimumUpdatedAt)
-            .orWhereNotIn("ipnsKeyName", opts.ipnsKeyNames);
+            .orWhereNotIn("ipnsKeyName", ipnsKeyNames);
         const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
-        const restCriteria: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
+        const criteriaFour: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .leftJoin(TABLES.VOTES, `${TABLES.COMMENTS}.cid`, `${TABLES.VOTES}.commentCid`)
@@ -561,15 +566,12 @@ export class DbHandler {
             .orHaving(`editLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`childCommentLastInsertedAt`, ">=", lastUpdatedAtWithBuffer);
 
-        const comments: CommentsTableRow[] = lodash.uniqBy([...criteriaOneTwoThree, ...restCriteria], (comment) => comment.cid);
+        const comments = lodash.uniqBy([...criteriaOneTwoThree, ...criteriaFour], (comment) => comment.cid);
 
-        const parents: CommentsTableRow[] = lodash.flattenDeep(
+        const parents = lodash.flattenDeep(
             await Promise.all(comments.filter((comment) => comment.parentCid).map((comment) => this.queryParents(comment, trx)))
         );
-        const authorComments: CommentsTableRow[] = await this.queryCommentsOfAuthor(
-            lodash.uniq(comments.map((comment) => comment.authorAddress)),
-            trx
-        );
+        const authorComments = await this.queryCommentsOfAuthor(lodash.uniq(comments.map((comment) => comment.authorAddress)), trx);
         const uniqComments = lodash.uniqBy([...comments, ...parents, ...authorComments], (comment) => comment.cid);
 
         return uniqComments;

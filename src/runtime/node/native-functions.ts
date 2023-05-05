@@ -104,6 +104,14 @@ const nativeFunctions: NativeFunctions = {
             return rmResults;
         };
 
+        const pinls = async (...args: Parameters<IpfsHttpClientPublicAPI["pin"]["ls"]>) => {
+            return all(ipfsClient.pin.ls(...args));
+        };
+
+        const pinAddAll = async (...args: Parameters<IpfsHttpClientPublicAPI["pin"]["addAll"]>) => {
+            return all(ipfsClient.pin.addAll(...args));
+        };
+
         return {
             add: ipfsClient.add,
             cat: cat,
@@ -125,7 +133,7 @@ const nativeFunctions: NativeFunctions = {
                 list: ipfsClient.key.list,
                 rm: ipfsClient.key.rm
             },
-            pin: { rm: ipfsClient.pin.rm },
+            pin: { rm: ipfsClient.pin.rm, ls: pinls, addAll: pinAddAll },
             block: { rm: blockRm },
             swarm: { peers: ipfsClient.swarm.peers }
         };

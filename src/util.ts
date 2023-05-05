@@ -1,4 +1,3 @@
-import { Plebbit } from "./plebbit";
 import {
     CommentWithCommentUpdate,
     OnlyDefinedProperties,
@@ -9,15 +8,12 @@ import {
     PageType,
     Timeframe
 } from "./types";
-import { nativeFunctions } from "./runtime/node/util";
-import isIPFS from "is-ipfs";
 import { messages } from "./errors";
-import Hash from "ipfs-only-hash";
 import lodash from "lodash";
 import assert from "assert";
 import { Pages } from "./pages";
 import { PlebbitError } from "./plebbit-error";
-import pLimit from "p-limit";
+import { ClientsManager } from "./client";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -28,143 +24,6 @@ export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
     YEAR: 60 * 60 * 24 * 7 * 4 * 12,
     ALL: Infinity
 });
-const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
-
-async function fetchWithLimit(url: string, options?): Promise<string> {
-    // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
-    let res: Response;
-    try {
-        //@ts-expect-error
-        res = await nativeFunctions.fetch(url, { ...options, size: DOWNLOAD_LIMIT_BYTES });
-        if (res.status !== 200) throw Error("Failed to fetch");
-        // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
-        if (res?.body?.getReader === undefined) return await res.text();
-    } catch (e) {
-        if (e.message.includes("over limit")) throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-        const errorCode = url.includes("/ipfs/")
-            ? "ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"
-            : url.includes("/ipns/")
-            ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
-            : "ERR_FAILED_TO_FETCH_GENERIC";
-        throwWithErrorCode(errorCode, { url, status: res?.status, statusText: res?.statusText });
-
-        // If error is not related to size limit, then throw it again
-    }
-
-    //@ts-ignore
-    if (res?.body?.getReader !== undefined) {
-        let totalBytesRead = 0;
-
-        // @ts-ignore
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-
-        let resText: string = "";
-
-        while (true) {
-            const { done, value } = await reader.read();
-            //@ts-ignore
-            if (value) resText += decoder.decode(value);
-            if (done || !value) break;
-            if (value.length + totalBytesRead > DOWNLOAD_LIMIT_BYTES)
-                throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-            totalBytesRead += value.length;
-        }
-        return resText;
-    }
-}
-
-function _firstResolve(promises: Promise<string>[]): Promise<string> {
-    return new Promise((resolve) => promises.forEach((promise) => promise.then(resolve)));
-}
-
-async function fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string }, plebbit: Plebbit): Promise<string> {
-    assert(loadOpts.cid || loadOpts.ipns);
-
-    const path = loadOpts.cid ? `/ipfs/${loadOpts.cid}` : `/ipns/${loadOpts.ipns}`;
-
-    const errors = [];
-
-    const type = loadOpts.cid ? "cid" : "ipns";
-
-    const fetchWithGateway = async (gateway: string) => {
-        const url = `${gateway}${path}`;
-        const timeBefore = Date.now();
-        try {
-            const resText = await fetchWithLimit(url, { cache: loadOpts.cid ? "force-cache" : "no-store" });
-            const timeElapsedMs = Date.now() - timeBefore;
-            await plebbit.stats.recordGatewaySuccess(gateway, type, timeElapsedMs);
-            return resText;
-        } catch (e) {
-            await plebbit.stats.recordGatewayFailure(gateway, type);
-            errors.push(e);
-            throw e;
-        }
-    };
-
-    // TODO test potential errors here
-    const queueLimit = pLimit(3);
-
-    // Will be likely 5 promises, p-limit will limit to 3
-    const gatewayFetches = (await plebbit.stats.sortGatewaysAccordingToScore(type)).map((gateway) =>
-        queueLimit(() => fetchWithGateway(gateway))
-    );
-    const res = await Promise.race([_firstResolve(gatewayFetches), Promise.allSettled(gatewayFetches)]);
-    if (typeof res === "string") return res;
-    else throw errors[0];
-}
-
-export async function fetchCid(cid: string, plebbit: Plebbit, catOptions = { length: DOWNLOAD_LIMIT_BYTES }): Promise<string> {
-    if (!isIPFS.cid(cid) && isIPFS.path(cid)) cid = cid.split("/")[2];
-    if (!isIPFS.cid(cid)) throwWithErrorCode("ERR_CID_IS_INVALID", `fetchCid: (${cid}) is invalid as a CID`);
-    let fileContent: string | undefined;
-    const ipfsClient = plebbit._defaultIpfsClient();
-    if (!ipfsClient) {
-        fileContent = await fetchFromMultipleGateways({ cid }, plebbit);
-    } else {
-        let error;
-        try {
-            fileContent = await ipfsClient._client.cat(cid, catOptions); // Limit is 1mb files
-        } catch (e) {
-            error = e;
-        }
-
-        if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid, error, options: catOptions });
-    }
-
-    const calculatedCid: string = await Hash.of(fileContent);
-    if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
-        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-    if (calculatedCid !== cid) throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid, cid });
-
-    plebbit.emit("fetchedcid", cid, fileContent);
-    return fileContent;
-}
-
-export async function loadIpfsFileAsJson(cid: string, plebbit: Plebbit) {
-    return JSON.parse(await fetchCid(cid, plebbit));
-}
-
-export async function loadIpnsAsJson(ipns: string, plebbit: Plebbit, callbackAfterResolve?: (ipns: string, cid: string) => void) {
-    if (typeof ipns !== "string") throwWithErrorCode("ERR_IPNS_IS_INVALID", { ipns });
-    const ipfsClient = plebbit._defaultIpfsClient();
-    if (!ipfsClient) {
-        const resText = await fetchFromMultipleGateways({ ipns }, plebbit);
-        plebbit.emit("fetchedipns", ipns, resText);
-        return JSON.parse(resText);
-    } else {
-        let cid: string | undefined, error;
-        try {
-            cid = await ipfsClient._client.name.resolve(ipns);
-        } catch (e) {
-            error = e;
-        }
-        if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns, error });
-        plebbit.emit("resolvedipns", ipns, cid);
-        if (callbackAfterResolve) callbackAfterResolve(ipns, cid);
-        return loadIpfsFileAsJson(cid, plebbit);
-    }
-}
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);
@@ -301,7 +160,8 @@ export const parseJsonStrings = (obj: any) => {
 export async function parseRawPages(
     replies: PagesTypeIpfs | PagesTypeJson | Pages | undefined,
     parentCid: string | undefined,
-    subplebbit: Pages["_subplebbit"]
+    subplebbit: Pages["_subplebbit"],
+    clientManager: ClientsManager
 ): Promise<Pages> {
     if (!replies)
         return new Pages({
@@ -309,7 +169,8 @@ export async function parseRawPages(
             pageCids: undefined,
             subplebbit: subplebbit,
             pagesIpfs: undefined,
-            parentCid: parentCid
+            parentCid: parentCid,
+            clientManager
         });
 
     if (replies instanceof Pages) return replies;
@@ -324,7 +185,8 @@ export async function parseRawPages(
             pageCids: parsedPages.pageCids,
             subplebbit: subplebbit,
             pagesIpfs: replies.pages,
-            parentCid: parentCid
+            parentCid: parentCid,
+            clientManager
         });
     } else {
         replies = replies as PagesTypeJson;
@@ -343,7 +205,8 @@ export async function parseRawPages(
             pageCids: replies.pageCids,
             subplebbit: subplebbit,
             pagesIpfs: undefined,
-            parentCid: parentCid
+            parentCid: parentCid,
+            clientManager
         });
     }
 }

@@ -17,6 +17,7 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 const testCommentFields = (comment) => {
     expect(comment.author.address).to.be.a("string");
     expect(comment.cid).to.be.a("string");
+    expect(comment.shortCid).to.be.a("string");
     if (!comment.link) expect(comment.content).to.be.a("string");
     expect(comment.depth).to.be.a("number");
 
@@ -42,6 +43,7 @@ const testCommentFields = (comment) => {
     expect(comment.author.subplebbit.replyScore).to.be.a("number");
     expect(comment.author.subplebbit.firstCommentTimestamp).to.be.a("number");
     expect(comment.author.subplebbit.lastCommentCid).to.be.a("string");
+    expect(comment.author.shortAddress).to.be.a("string");
 
     expect(comment.downvoteCount).to.be.a("number");
     expect(comment.upvoteCount).to.be.a("number");
@@ -124,6 +126,13 @@ describe("Test pages sorting", async () => {
     });
 
     describe("subplebbit.posts", async () => {
+        it(`Stringified subplebbit.posts still have all props`, async () => {
+            const stringifedPosts = JSON.parse(JSON.stringify(subplebbit)).posts.pages.hot;
+            for (const post of stringifedPosts.comments) {
+                testCommentFields(post);
+                if (post.replies) for (const reply of post.replies.pages.topAll.comments) testCommentFields(reply);
+            }
+        });
         it(`Newly published post appears in all subplebbit.posts.pageCids`, async () => {
             for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
                 const pageComments = await loadAllPages(pageCid, subplebbit.posts);
@@ -162,6 +171,15 @@ describe("Test pages sorting", async () => {
             posts = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
             expect(posts.length).to.be.greaterThan(0);
         });
+
+        it(`Stringified comment.replies still have all props`, async () => {
+            for (const post of posts) {
+                if (!post.replies.pages) continue;
+                const stringifiedReplies = JSON.parse(JSON.stringify(post.replies)).pages.topAll.comments;
+                for (const reply of stringifiedReplies) testCommentFields(reply);
+            }
+        });
+
         Object.keys(REPLIES_SORT_TYPES).map((sortName) =>
             it(`${sortName} pages under a comment are sorted correctly`, async () => await testRepliesSort(posts, sortName))
         );

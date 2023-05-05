@@ -462,7 +462,7 @@ An object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| urls | `string[]` | URL of the provider RPC |
+| urls | `string[]` | URLs of the provider RPCs |
 | chainId | `number` | ID of the EVM chain if any |
 
 #### Returns
@@ -1394,7 +1394,7 @@ await comment.publish()
 
 | Type | Description |
 | -------- | -------- |
-| `'stopped' \| 'resolving-author-address' \| 'fetching-ipns' \| 'fetching-ipfs' \| 'failed' \| 'succeeded'` | The `Comment.updatingState` property |
+| `'stopped' \| 'resolving-author-address' \| 'fetching-ipfs' \| 'fetching-update-ipns' \| 'fetching-update-ipfs' \| 'failed' \| 'succeeded'` | The `Comment.updatingState` property |
 
 ### `publishingstatechange`
 

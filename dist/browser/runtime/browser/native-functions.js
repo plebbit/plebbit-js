@@ -158,6 +158,30 @@ var nativeFunctions = {
                 });
             });
         };
+        var pinls = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return __awaiter(void 0, void 0, void 0, function () {
+                var _a;
+                return __generator(this, function (_b) {
+                    return [2 /*return*/, (0, it_all_1.default)((_a = ipfsClient.pin).ls.apply(_a, args))];
+                });
+            });
+        };
+        var pinAddAll = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return __awaiter(void 0, void 0, void 0, function () {
+                var _a;
+                return __generator(this, function (_b) {
+                    return [2 /*return*/, (0, it_all_1.default)((_a = ipfsClient.pin).addAll.apply(_a, args))];
+                });
+            });
+        };
         return {
             add: ipfsClient.add,
             cat: cat,
@@ -179,7 +203,7 @@ var nativeFunctions = {
                 list: ipfsClient.key.list,
                 rm: ipfsClient.key.rm
             },
-            pin: { rm: ipfsClient.pin.rm },
+            pin: { rm: ipfsClient.pin.rm, ls: pinls, addAll: pinAddAll },
             block: { rm: blockRm },
             swarm: { peers: ipfsClient.swarm.peers }
         };

@@ -145,7 +145,7 @@ var CommentEdit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         editObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication()));
-                        return [4 /*yield*/, (0, signatures_1.verifyCommentEdit)(editObj, this.plebbit, true)];
+                        return [4 /*yield*/, (0, signatures_1.verifyCommentEdit)(editObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true)];
                     case 1:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)

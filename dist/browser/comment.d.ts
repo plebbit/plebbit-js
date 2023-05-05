@@ -2,13 +2,21 @@ import Publication from "./publication";
 import { Pages } from "./pages";
 import { AuthorCommentEdit, CommentIpfsType, CommentIpfsWithCid, CommentPubsubMessage, CommentsTableRowInsert, CommentType, CommentUpdate, CommentWithCommentUpdate, Flair, ProtocolVersion, PublicationTypeName } from "./types";
 import { Plebbit } from "./plebbit";
+import { CommentClientsManager } from "./client";
 export declare class Comment extends Publication implements Omit<CommentType, "replies"> {
+    shortCid?: string;
+    clients: Omit<Publication["clients"], "ipfsClients"> & {
+        ipfsClients: {
+            [ipfsClientUrl: string]: {
+                state: "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs" | "fetching-ipfs" | "fetching-update-ipns" | "fetching-update-ipfs" | "stopped";
+            };
+        };
+    };
     title?: string;
     link?: string;
     thumbnailUrl?: string;
     protocolVersion: ProtocolVersion;
     cid?: string;
-    shortCid?: string;
     parentCid?: string;
     content?: string;
     ipnsKeyName?: string;
@@ -30,12 +38,13 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     locked?: boolean;
     removed?: boolean;
     reason?: string;
-    updatingState: "stopped" | "resolving-author-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
+    updatingState: "stopped" | "resolving-author-address" | "fetching-ipfs" | "fetching-update-ipns" | "fetching-update-ipfs" | "failed" | "succeeded";
     private _updateInterval?;
     private _isUpdating;
     private _updateIntervalMs;
     private _rawCommentUpdate?;
     private _loadingOperation;
+    _clientsManager: CommentClientsManager;
     constructor(props: CommentType, plebbit: Plebbit);
     _initProps(props: CommentType): void;
     _initCommentUpdate(props: CommentUpdate): Promise<void>;
@@ -62,7 +71,7 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     private _retryLoadingCommentIpfs;
     private _retryLoadingCommentUpdate;
     updateOnce(): Promise<void>;
-    private _setUpdatingState;
+    _setUpdatingState(newState: Comment["updatingState"]): void;
     update(): Promise<void>;
     stop(): Promise<void>;
     private _validateSignature;

@@ -6,8 +6,6 @@ export declare class Resolver {
     toJSON(): any;
     toString(): any;
     _getChainProvider(chainTicker: string): ethers.providers.BaseProvider;
-    _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string>;
-    resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string>;
-    resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string>;
+    _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string | undefined>;
     isDomain(address: string): boolean;
 }

@@ -15,7 +15,7 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 describe(`subplebbit.start`, async () => {
     let plebbit, subplebbit;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
         subplebbit = await createMockSub({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
@@ -47,12 +47,15 @@ describe(`subplebbit.start`, async () => {
         // There are cases where ipfs node can fail and be restarted
         // When that happens, the subscription to subplebbit.pubsubTopic will not be restored
         // The restoration of subscription should happen within the sync loop of Subplebbit
-        await subplebbit.plebbit
-            ._defaultPubsubClient()
+        await subplebbit.plebbit._clientsManager
+            .getCurrentPubsub()
             ._client.pubsub.unsubscribe(subplebbit.pubsubTopic, subplebbit.handleChallengeExchange);
-        await waitUntil(async () => (await subplebbit.plebbit._defaultPubsubClient()._client.pubsub.ls()).includes(subplebbit.address), {
-            timeout: 150000
-        });
+        await waitUntil(
+            async () => (await subplebbit.plebbit._clientsManager.getCurrentPubsub()._client.pubsub.ls()).includes(subplebbit.address),
+            {
+                timeout: 150000
+            }
+        );
         await publishRandomPost(subplebbit.address, plebbit, {}, false); // Should receive publication since subscription to pubsub topic has been restored
     });
 });
@@ -60,7 +63,7 @@ describe(`subplebbit.start`, async () => {
 describe(`Start lock`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit(globalThis["window"]?.plebbitDataPath);
+        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
     it(`subplebbit.start throws if sub is already started (same Subplebbit instance)`, async () => {
         const subplebbit = await plebbit.createSubplebbit();

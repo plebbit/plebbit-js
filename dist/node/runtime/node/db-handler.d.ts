@@ -19,6 +19,7 @@ export declare class DbHandler {
     keyvSet(key: string, value: any, ttl?: number): Promise<true>;
     keyvDelete(key: string | string[]): Promise<boolean>;
     keyvHas(key: string): Promise<boolean>;
+    initDestroyedConnection(): Promise<void>;
     destoryConnection(): Promise<void>;
     createTransaction(transactionId: string): Promise<Transaction>;
     commitTransaction(transactionId: string): Promise<void>;
@@ -56,11 +57,10 @@ export declare class DbHandler {
     }[]>;
     queryStoredCommentUpdate(comment: Pick<CommentsTableRow, "cid">, trx?: any): Promise<CommentUpdatesRow | undefined>;
     queryCommentsOfAuthor(authorAddresses: string | string[], trx?: Transaction): Promise<CommentsTableRow[]>;
+    queryAllCommentsCid(trx?: Transaction): Promise<string[]>;
+    queryCommentsByCids(cids: string[], trx?: Transaction): Promise<CommentsTableRow[]>;
     queryParents(rootComment: Pick<CommentsTableRow, "cid" | "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]>;
-    queryCommentsToBeUpdated(opts: {
-        minimumUpdatedAt: number;
-        ipnsKeyNames: string[];
-    }, trx?: Transaction): Promise<CommentsTableRow[]>;
+    queryCommentsToBeUpdated(ipnsKeyNames: string[], trx?: Transaction): Promise<CommentsTableRow[]>;
     querySubplebbitStats(trx?: Transaction): Promise<SubplebbitStats>;
     queryCommentsUnderComment(parentCid: string | null, trx?: Transaction): Promise<CommentsTableRow[]>;
     queryComment(cid: string, trx?: Transaction): Promise<CommentsTableRow | undefined>;

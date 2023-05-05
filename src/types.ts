@@ -1,5 +1,6 @@
 import { CID, IPFSHTTPClient, Options as IpfsHttpClientOptions } from "ipfs-http-client";
 import { PeersResult } from "ipfs-core-types/src/swarm/index";
+import { LsResult } from "ipfs-core-types/src/pin/index";
 import { DbHandler } from "./runtime/node/db-handler";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
@@ -20,7 +21,7 @@ import { PlebbitError } from "./plebbit-error";
 
 export type ProtocolVersion = "1.0.0";
 
-export type ChainProvider = { url: string[]; chainId: number };
+export type ChainProvider = { urls: string[]; chainId: number };
 export interface PlebbitOptions {
     ipfsGatewayUrls?: string[];
     ipfsHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
@@ -417,12 +418,13 @@ export interface CommentWithCommentUpdate
             | "updatedAt"
             | "original"
             | "cid"
+            | "shortCid"
             | "postCid"
             | "depth"
             | "ipnsKeyName"
             | "signer"
         >,
-        Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth">>,
+        Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth" | "shortCid">>,
         Omit<CommentUpdate, "author" | "replies"> {
     replies?: PagesTypeJson;
 }
@@ -478,7 +480,12 @@ export type IpfsHttpClientPublicAPI = {
     };
     config: Pick<IPFSHTTPClient["config"], "get">;
     key: Pick<IPFSHTTPClient["key"], "list" | "rm">;
-    pin: Pick<IPFSHTTPClient["pin"], "rm">;
+    pin: {
+        rm: IPFSHTTPClient["pin"]["rm"];
+        addAll: (...p: Parameters<IPFSHTTPClient["pin"]["addAll"]>) => Promise<CID[]>;
+        ls: (...p: Parameters<IPFSHTTPClient["pin"]["ls"]>) => Promise<LsResult[]>;
+    };
+
     block: { rm: (...p: Parameters<IPFSHTTPClient["block"]["rm"]>) => Promise<{ cid: CID; error?: Error }[]> };
     swarm: Pick<IPFSHTTPClient["swarm"], "peers">;
 };
@@ -608,6 +615,7 @@ export interface SubplebbitEvents {
     statechange: (newState: Subplebbit["state"]) => void;
     updatingstatechange: (newState: Subplebbit["updatingState"]) => void;
     startedstatechange: (newState: Subplebbit["startedState"]) => void;
+    clientschange: () => void;
 
     update: (updatedSubplebbit: Subplebbit) => void;
 }
@@ -618,8 +626,12 @@ export interface PublicationEvents {
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType, decryptedComment?: Comment) => void; // Should we include the updated publication instance here? not sure
     error: (error: PlebbitError) => void;
+
+    // State changes
     publishingstatechange: (newState: Publication["publishingState"]) => void;
     statechange: (newState: Publication["state"]) => void;
+    clientschange: () => void;
+
 
     // For comment only
     update: (updatedInstance: Comment) => void;
@@ -627,11 +639,11 @@ export interface PublicationEvents {
 }
 
 export interface PlebbitEvents {
-    resolvedsubplebbitaddress: (subplebbitAddress: string, resolvedSubplebbitAddress: string) => void; // Emitted when subplebbit address (domain) is resolved to an IPNS
-    resolvedauthoraddress: (authorAddress: string, resolvedAuthorAddress: string) => void; // Emitted when author address is resolved to an IPNS
-    resolvedipns: (ipns: string, cid: string) => void; // Emitted when IPNS is resolved to a CID
-    fetchedcid: (cid: string, content: string) => void; // Emitted when a CID is fetched with its file content
-    fetchedipns: (ipns: string, content: string) => void; // Emitted when an IPNS is fetched with its file content
+    // resolvedsubplebbitaddress: (subplebbitAddress: string, resolvedSubplebbitAddress: string) => void; // Emitted when subplebbit address (domain) is resolved to an IPNS
+    // resolvedauthoraddress: (authorAddress: string, resolvedAuthorAddress: string) => void; // Emitted when author address is resolved to an IPNS
+    // resolvedipns: (ipns: string, cid: string) => void; // Emitted when IPNS is resolved to a CID
+    // fetchedcid: (cid: string, content: string) => void; // Emitted when a CID is fetched with its file content
+    // fetchedipns: (ipns: string, content: string) => void; // Emitted when an IPNS is fetched with its file content
     error: (error: PlebbitError) => void;
 }
 
@@ -692,7 +704,7 @@ export interface PubsubClient {
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
     _client: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">; // Private API, shouldn't be used by consumers
-    _clientOptions?: IpfsHttpClientOptions;
+    _clientOptions: IpfsHttpClientOptions;
 }
 
 export interface GatewayClient {
