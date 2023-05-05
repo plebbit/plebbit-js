@@ -328,7 +328,7 @@ var ClientsManager = /** @class */ (function () {
                         type = loadOpts.cid ? "cid" : "ipns";
                         concurrencyLimit = 3;
                         queueLimit = (0, p_limit_1.default)(concurrencyLimit);
-                        if (!(Object.keys(this._plebbit.clients.ipfsGateways).length > concurrencyLimit)) return [3 /*break*/, 1];
+                        if (!(Object.keys(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit)) return [3 /*break*/, 1];
                         _a = Object.keys(this._plebbit.clients.ipfsGateways);
                         return [3 /*break*/, 3];
                     case 1: return [4 /*yield*/, this._plebbit.stats.sortGatewaysAccordingToScore(type)];

@@ -118,7 +118,6 @@ var Plebbit = /** @class */ (function (_super) {
                     _this.ipfsHttpClientsOptions || [{ url: "https://pubsubprovider.xyz/api/v0" }];
         _this._initIpfsClients();
         _this._initPubsubClients();
-        _this._initResolver(options);
         _this.dataPath = options.dataPath || (0, util_1.getDefaultDataPath)();
         return _this;
     }
@@ -261,6 +260,9 @@ var Plebbit = /** @class */ (function (_super) {
                         _e.sent();
                         // Init stats
                         this.stats = new stats_1.default({ _cache: this._cache, clients: this.clients });
+                        // Init resolver
+                        this._initResolver(options);
+                        // Init clients manager
                         this._clientsManager = new client_1.ClientsManager(this);
                         return [2 /*return*/];
                 }
