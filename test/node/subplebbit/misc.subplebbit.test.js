@@ -434,9 +434,10 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             const ipfsUrl = Object.keys(sub.clients.ipfsClients)[0];
 
-            sub.on("clientschange", () => {
-                if (sub.clients.ipfsClients[ipfsUrl].state === "publishing-ipns") publishStateTime = Date.now();
-            });
+            sub.clients.ipfsClients[ipfsUrl].on(
+                "statechange",
+                (newState) => newState === "publishing-ipns" && (publishStateTime = Date.now())
+            );
 
             sub.once("update", () => (updateTime = Date.now()));
 
@@ -460,19 +461,18 @@ describe(`subplebbit.clients (Local)`, async () => {
         it(`correct order of pubsubClients state when receiving a comment while skipping challenge`, async () => {
             const mockSub = await createMockSub({}, plebbit);
 
-            const expectedStates = ["waiting-challenge-requests", "publishing-challenge-verification", "waiting-challenge-requests"];
+            const expectedStates = [
+                "subscribing-pubsub",
+                "waiting-challenge-requests",
+                "publishing-challenge-verification",
+                "waiting-challenge-requests"
+            ];
 
             const actualStates = [];
 
             const pubsubUrl = Object.keys(mockSub.clients.pubsubClients)[0];
 
-            let lastState;
-            mockSub.on("clientschange", () => {
-                if (mockSub.clients.pubsubClients[pubsubUrl].state !== lastState) {
-                    actualStates.push(mockSub.clients.pubsubClients[pubsubUrl].state);
-                    lastState = mockSub.clients.pubsubClients[pubsubUrl].state;
-                }
-            });
+            mockSub.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates.push(newState));
 
             await mockSub.start();
 
@@ -493,6 +493,7 @@ describe(`subplebbit.clients (Local)`, async () => {
             });
 
             const expectedStates = [
+                "subscribing-pubsub",
                 "waiting-challenge-requests",
                 "publishing-challenge",
                 "waiting-challenge-answers",
@@ -504,13 +505,7 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             const pubsubUrl = Object.keys(mockSub.clients.pubsubClients)[0];
 
-            let lastState;
-            mockSub.on("clientschange", () => {
-                if (mockSub.clients.pubsubClients[pubsubUrl].state !== lastState) {
-                    actualStates.push(mockSub.clients.pubsubClients[pubsubUrl].state);
-                    lastState = mockSub.clients.pubsubClients[pubsubUrl].state;
-                }
-            });
+            mockSub.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates.push(newState));
 
             await mockSub.start();
 
@@ -534,17 +529,11 @@ describe(`subplebbit.clients (Local)`, async () => {
         it(`correct order of chainProviders state when receiving a comment with a domain for author.address`, async () => {
             const mockSub = await createMockSub({}, plebbit);
 
-            const expectedStates = ["stopped", "resolving-author-address", "stopped"];
+            const expectedStates = ["resolving-author-address", "stopped"];
 
             const actualStates = [];
 
-            let lastState;
-            mockSub.on("clientschange", () => {
-                if (mockSub.clients.chainProviders["eth"].state !== lastState) {
-                    actualStates.push(mockSub.clients.chainProviders["eth"].state);
-                    lastState = mockSub.clients.chainProviders["eth"].state;
-                }
-            });
+            mockSub.clients.chainProviders["eth"].on("statechange", (newState) => actualStates.push(newState));
 
             await mockSub.start();
 

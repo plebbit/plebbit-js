@@ -282,13 +282,7 @@ describe(`comment.clients`, async () => {
 
             const gatewayUrl = Object.keys(mockPost.clients.ipfsGateways)[0];
 
-            let lastState;
-            mockPost.on("clientschange", () => {
-                if (mockPost.clients.ipfsGateways[gatewayUrl].state !== lastState) {
-                    actualStates.push(mockPost.clients.ipfsGateways[gatewayUrl].state);
-                    lastState = mockPost.clients.ipfsGateways[gatewayUrl].state;
-                }
-            });
+            mockPost.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => actualStates.push(newState));
 
             await mockPost.update();
             await new Promise((resolve) => mockPost.on("update", () => typeof mockPost.upvoteCount === "number" && resolve()));
@@ -308,13 +302,7 @@ describe(`comment.clients`, async () => {
 
             const gatewayUrl = Object.keys(mockPost.clients.ipfsGateways)[0];
 
-            let lastState;
-            mockPost.on("clientschange", () => {
-                if (mockPost.clients.ipfsGateways[gatewayUrl].state !== lastState) {
-                    actualStates.push(mockPost.clients.ipfsGateways[gatewayUrl].state);
-                    lastState = mockPost.clients.ipfsGateways[gatewayUrl].state;
-                }
-            });
+            mockPost.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => actualStates.push(newState));
 
             await mockPost.update();
             await new Promise((resolve) => mockPost.once("update", resolve));
@@ -331,14 +319,7 @@ describe(`comment.clients`, async () => {
             const actualStates = [];
 
             const gatewayUrl = Object.keys(mockPost.clients.ipfsGateways)[0];
-
-            let lastState;
-            mockPost.on("clientschange", () => {
-                if (mockPost.clients.ipfsGateways[gatewayUrl].state !== lastState) {
-                    actualStates.push(mockPost.clients.ipfsGateways[gatewayUrl].state);
-                    lastState = mockPost.clients.ipfsGateways[gatewayUrl].state;
-                }
-            });
+            mockPost.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => actualStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -369,13 +350,7 @@ describe(`comment.clients`, async () => {
 
             const ipfsUrl = Object.keys(mockPost.clients.ipfsClients)[0];
 
-            let lastState;
-            mockPost.on("clientschange", () => {
-                if (mockPost.clients.ipfsClients[ipfsUrl].state !== lastState) {
-                    actualStates.push(mockPost.clients.ipfsClients[ipfsUrl].state);
-                    lastState = mockPost.clients.ipfsClients[ipfsUrl].state;
-                }
-            });
+            mockPost.clients.ipfsClients[ipfsUrl].on("statechange", (newState) => actualStates.push(newState));
 
             await mockPost.update();
             await new Promise((resolve) => mockPost.on("update", () => typeof mockPost.upvoteCount === "number" && resolve()));
@@ -395,13 +370,7 @@ describe(`comment.clients`, async () => {
 
             const ipfsUrl = Object.keys(mockPost.clients.ipfsClients)[0];
 
-            let lastState;
-            mockPost.on("clientschange", () => {
-                if (mockPost.clients.ipfsClients[ipfsUrl].state !== lastState) {
-                    actualStates.push(mockPost.clients.ipfsClients[ipfsUrl].state);
-                    lastState = mockPost.clients.ipfsClients[ipfsUrl].state;
-                }
-            });
+            mockPost.clients.ipfsClients[ipfsUrl].on("statechange", (newState) => actualStates.push(newState));
 
             await mockPost.update();
             await new Promise((resolve) => mockPost.once("update", resolve));
@@ -419,13 +388,7 @@ describe(`comment.clients`, async () => {
 
             const ipfsUrl = Object.keys(mockPost.clients.ipfsClients)[0];
 
-            let lastState;
-            mockPost.on("clientschange", () => {
-                if (mockPost.clients.ipfsClients[ipfsUrl].state !== lastState) {
-                    actualStates.push(mockPost.clients.ipfsClients[ipfsUrl].state);
-                    lastState = mockPost.clients.ipfsClients[ipfsUrl].state;
-                }
-            });
+            mockPost.clients.ipfsClients[ipfsUrl].on("statechange", (newState) => actualStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -443,19 +406,13 @@ describe(`comment.clients`, async () => {
         it(`correct order of pubsubClients state when publishing a comment with a sub that skips challenge`, async () => {
             const mockPost = await generateMockPost(signers[0].address, plebbit);
 
-            const expectedStates = ["stopped", "publishing-challenge-request", "waiting-challenge", "stopped"];
+            const expectedStates = ["publishing-challenge-request", "subscribing-pubsub", "waiting-challenge", "stopped"];
 
             const actualStates = [];
 
             const pubsubUrl = Object.keys(mockPost.clients.pubsubClients)[0];
 
-            let lastState;
-            mockPost.on("clientschange", () => {
-                if (mockPost.clients.pubsubClients[pubsubUrl].state !== lastState) {
-                    actualStates.push(mockPost.clients.pubsubClients[pubsubUrl].state);
-                    lastState = mockPost.clients.pubsubClients[pubsubUrl].state;
-                }
-            });
+            mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -469,8 +426,8 @@ describe(`comment.clients`, async () => {
             mockPost.removeAllListeners();
 
             const expectedStates = [
-                "stopped",
                 "publishing-challenge-request",
+                "subscribing-pubsub",
                 "waiting-challenge",
                 "waiting-challenge-answers",
                 "publishing-challenge-answers",
@@ -482,13 +439,7 @@ describe(`comment.clients`, async () => {
 
             const pubsubUrl = Object.keys(mockPost.clients.pubsubClients)[0];
 
-            let lastState;
-            mockPost.on("clientschange", () => {
-                if (mockPost.clients.pubsubClients[pubsubUrl].state !== lastState) {
-                    actualStates.push(mockPost.clients.pubsubClients[pubsubUrl].state);
-                    lastState = mockPost.clients.pubsubClients[pubsubUrl].state;
-                }
-            });
+            mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates.push(newState));
 
             mockPost.once("challenge", async (challengeMsg) => {
                 expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
@@ -515,13 +466,7 @@ describe(`comment.clients`, async () => {
 
             const actualStates = [];
 
-            let lastState;
-            mockPost.on("clientschange", () => {
-                if (mockPost.clients.chainProviders["eth"].state !== lastState) {
-                    actualStates.push(mockPost.clients.chainProviders["eth"].state);
-                    lastState = mockPost.clients.chainProviders["eth"].state;
-                }
-            });
+            mockPost.clients.chainProviders["eth"].on("statechange", (newState) => actualStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 

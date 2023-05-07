@@ -191,13 +191,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
             const gatewayUrl = Object.keys(sub.clients.ipfsGateways)[0];
 
-            let lastState;
-            sub.on("clientschange", () => {
-                if (sub.clients.ipfsGateways[gatewayUrl].state !== lastState) {
-                    actualStates.push(sub.clients.ipfsGateways[gatewayUrl].state);
-                    lastState = sub.clients.ipfsGateways[gatewayUrl].state;
-                }
-            });
+            sub.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => actualStates.push(newState));
 
             await sub.update();
             await new Promise((resolve) => sub.once("update", resolve));
@@ -217,13 +211,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
             const gatewayUrl = Object.keys(sub.clients.ipfsGateways)[0];
 
-            let lastState;
-            sub.on("clientschange", () => {
-                if (sub.clients.ipfsGateways[gatewayUrl].state !== lastState) {
-                    actualStates.push(sub.clients.ipfsGateways[gatewayUrl].state);
-                    lastState = sub.clients.ipfsGateways[gatewayUrl].state;
-                }
-            });
+            sub.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => actualStates.push(newState));
 
             sub.update();
             await new Promise((resolve) => sub.once("update", resolve));
@@ -255,13 +243,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
             const ipfsUrl = Object.keys(sub.clients.ipfsClients)[0];
 
-            let lastState;
-            sub.on("clientschange", () => {
-                if (sub.clients.ipfsClients[ipfsUrl].state !== lastState) {
-                    actualStates.push(sub.clients.ipfsClients[ipfsUrl].state);
-                    lastState = sub.clients.ipfsClients[ipfsUrl].state;
-                }
-            });
+            sub.clients.ipfsClients[ipfsUrl].on("statechange", (newState) => actualStates.push(newState));
 
             sub.update();
             await new Promise((resolve) => sub.once("update", resolve));
@@ -280,13 +262,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
             const ipfsUrl = Object.keys(sub.clients.ipfsClients)[0];
 
-            let lastState;
-            sub.on("clientschange", () => {
-                if (sub.clients.ipfsClients[ipfsUrl].state !== lastState) {
-                    actualStates.push(sub.clients.ipfsClients[ipfsUrl].state);
-                    lastState = sub.clients.ipfsClients[ipfsUrl].state;
-                }
-            });
+            sub.clients.ipfsClients[ipfsUrl].on("statechange", (newState) => actualStates.push(newState));
 
             sub.update();
             await new Promise((resolve) => sub.once("update", resolve));
@@ -310,13 +286,8 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
             const actualStates = [];
 
-            let lastState;
-            sub.on("clientschange", () => {
-                if (sub.clients.chainProviders["eth"].state !== lastState) {
-                    actualStates.push(sub.clients.chainProviders["eth"].state);
-                    lastState = sub.clients.chainProviders["eth"].state;
-                }
-            });
+            sub.clients.chainProviders["eth"].on("statechange", (newState) => actualStates.push(newState));
+
 
             sub.update();
 
