@@ -99,7 +99,7 @@ var version_2 = __importDefault(require("./version"));
 var tiny_typed_emitter_1 = require("tiny-typed-emitter");
 var plebbit_error_1 = require("./plebbit-error");
 var retry_1 = __importDefault(require("retry"));
-var client_1 = require("./client");
+var client_manager_1 = require("./clients/client-manager");
 var DEFAULT_UPDATE_INTERVAL_MS = 60000;
 var DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
 var Subplebbit = /** @class */ (function (_super) {
@@ -130,7 +130,7 @@ var Subplebbit = /** @class */ (function (_super) {
         });
         _this._syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS;
         _this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
-        _this._clientsManager = new client_1.SubplebbitClientsManager(_this);
+        _this._clientsManager = new client_manager_1.SubplebbitClientsManager(_this);
         _this.clients = _this._clientsManager.clients;
         return _this;
     }

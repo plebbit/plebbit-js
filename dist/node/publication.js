@@ -88,7 +88,7 @@ var tiny_typed_emitter_1 = require("tiny-typed-emitter");
 var comment_1 = require("./comment");
 var plebbit_error_1 = require("./plebbit-error");
 var util_2 = require("./signer/util");
-var client_1 = require("./client");
+var client_manager_1 = require("./clients/client-manager");
 var Publication = /** @class */ (function (_super) {
     __extends(Publication, _super);
     function Publication(props, plebbit) {
@@ -96,6 +96,7 @@ var Publication = /** @class */ (function (_super) {
         _this._plebbit = plebbit;
         _this._updatePublishingState("stopped");
         _this._updateState("stopped");
+        _this._initClients();
         _this._initProps(props);
         _this.handleChallengeExchange = _this.handleChallengeExchange.bind(_this);
         _this.on("error", function () {
@@ -108,11 +109,13 @@ var Publication = /** @class */ (function (_super) {
         });
         // public method should be bound
         _this.publishChallengeAnswers = _this.publishChallengeAnswers.bind(_this);
-        _this.clients = _this._clientsManager.clients;
         return _this;
     }
+    Publication.prototype._initClients = function () {
+        this._clientsManager = new client_manager_1.PublicationClientsManager(this);
+        this.clients = this._clientsManager.clients;
+    };
     Publication.prototype._initProps = function (props) {
-        this._clientsManager = new client_1.PublicationClientsManager(this);
         this.subplebbitAddress = props.subplebbitAddress;
         this.timestamp = props.timestamp;
         this.signer = this.signer || props["signer"];
@@ -334,12 +337,13 @@ var Publication = /** @class */ (function (_super) {
                     case 5:
                         _c._challengeRequest = new (_d.apply(challenge_1.ChallengeRequestMessage, [void 0, __assign.apply(void 0, _e.concat([(_f.signature = _g.sent(), _f)]))]))();
                         log.trace("Attempting to publish ".concat(this.getType(), " with options"), options);
-                        return [4 /*yield*/, Promise.all([
-                                this._clientsManager.publishChallengeRequest(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeRequest)),
-                                this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)
-                            ])];
+                        return [4 /*yield*/, this._clientsManager.publishChallengeRequest(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeRequest))];
                     case 6:
                         _g.sent();
+                        return [4 /*yield*/, this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
+                    case 7:
+                        _g.sent();
+                        this._clientsManager.updatePubsubState("waiting-challenge");
                         this._updatePublishingState("waiting-challenge");
                         log("Sent a challenge request (".concat(this._challengeRequest.challengeRequestId, ")"));
                         this.emit("challengerequest", __assign(__assign({}, this._challengeRequest), { publication: this.toJSONPubsubMessagePublication() }));

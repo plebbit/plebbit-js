@@ -4,32 +4,9 @@ import { ProtocolVersion, PublicationEvents, PublicationType, PublicationTypeNam
 import { Plebbit } from "./plebbit";
 import { SignatureType } from "./signer/constants";
 import { TypedEmitter } from "tiny-typed-emitter";
-import { CommentClientsManager, PublicationClientsManager } from "./client";
+import { CommentClientsManager, PublicationClientsManager } from "./clients/client-manager";
 declare class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
-    clients: {
-        ipfsGateways: {
-            [ipfsGatewayUrl: string]: {
-                state: "stopped" | "fetching-ipfs" | "fetching-ipns";
-            };
-        };
-        ipfsClients: {
-            [ipfsClientUrl: string]: {
-                state: "stopped" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs";
-            } | {
-                state: "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs" | "fetching-ipfs" | "fetching-update-ipns" | "fetching-update-ipfs" | "stopped";
-            };
-        };
-        pubsubClients: {
-            [pubsubClientUrl: string]: {
-                state: "stopped" | "publishing-challenge-request" | "waiting-challenge" | "waiting-challenge-answers" | "publishing-challenge-answers" | "waiting-challenge-verification";
-            };
-        };
-        chainProviders: {
-            [chainProviderUrl: string]: {
-                state: "stopped" | "resolving-subplebbit-address" | "resolving-author-address";
-            };
-        };
-    };
+    clients: PublicationClientsManager["clients"];
     subplebbitAddress: string;
     timestamp: number;
     signature: SignatureType;
@@ -45,6 +22,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     _clientsManager: PublicationClientsManager | CommentClientsManager;
     _plebbit: Plebbit;
     constructor(props: PublicationType, plebbit: Plebbit);
+    protected _initClients(): void;
     _initProps(props: PublicationType): void;
     protected getType(): PublicationTypeName;
     toJSONPubsubMessagePublication(): PublicationType;

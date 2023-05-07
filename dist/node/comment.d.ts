@@ -2,16 +2,10 @@ import Publication from "./publication";
 import { Pages } from "./pages";
 import { AuthorCommentEdit, CommentIpfsType, CommentIpfsWithCid, CommentPubsubMessage, CommentsTableRowInsert, CommentType, CommentUpdate, CommentWithCommentUpdate, Flair, ProtocolVersion, PublicationTypeName } from "./types";
 import { Plebbit } from "./plebbit";
-import { CommentClientsManager } from "./client";
+import { CommentClientsManager } from "./clients/client-manager";
 export declare class Comment extends Publication implements Omit<CommentType, "replies"> {
     shortCid?: string;
-    clients: Omit<Publication["clients"], "ipfsClients"> & {
-        ipfsClients: {
-            [ipfsClientUrl: string]: {
-                state: "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs" | "fetching-ipfs" | "fetching-update-ipns" | "fetching-update-ipfs" | "stopped";
-            };
-        };
-    };
+    clients: CommentClientsManager["clients"];
     title?: string;
     link?: string;
     thumbnailUrl?: string;
@@ -46,6 +40,7 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     private _loadingOperation;
     _clientsManager: CommentClientsManager;
     constructor(props: CommentType, plebbit: Plebbit);
+    _initClients(): void;
     _initProps(props: CommentType): void;
     _initCommentUpdate(props: CommentUpdate): Promise<void>;
     getType(): PublicationTypeName;

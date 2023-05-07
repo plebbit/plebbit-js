@@ -85,7 +85,7 @@ var buffer_1 = require("buffer");
 var tiny_typed_emitter_1 = require("tiny-typed-emitter");
 var stats_1 = __importDefault(require("./stats"));
 var cache_1 = __importDefault(require("./runtime/node/cache"));
-var client_1 = require("./client");
+var client_manager_1 = require("./clients/client-manager");
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
     function Plebbit(options) {
@@ -263,7 +263,7 @@ var Plebbit = /** @class */ (function (_super) {
                         // Init resolver
                         this._initResolver(options);
                         // Init clients manager
-                        this._clientsManager = new client_1.ClientsManager(this);
+                        this._clientsManager = new client_manager_1.ClientsManager(this);
                         return [2 /*return*/];
                 }
             });

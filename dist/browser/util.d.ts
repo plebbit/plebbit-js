@@ -1,7 +1,7 @@
 import { CommentWithCommentUpdate, OnlyDefinedProperties, PageIpfs, PagesType, PagesTypeIpfs, PagesTypeJson, PageType, Timeframe } from "./types";
 import { messages } from "./errors";
 import { Pages } from "./pages";
-import { ClientsManager } from "./client";
+import { ClientsManager } from "./clients/client-manager";
 export declare const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number>;
 export declare function timestamp(): number;
 export declare function replaceXWithY(obj: Object, x: any, y: any): any;

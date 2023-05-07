@@ -489,7 +489,6 @@ export interface SubplebbitEvents {
     statechange: (newState: Subplebbit["state"]) => void;
     updatingstatechange: (newState: Subplebbit["updatingState"]) => void;
     startedstatechange: (newState: Subplebbit["startedState"]) => void;
-    clientschange: () => void;
     update: (updatedSubplebbit: Subplebbit) => void;
 }
 export interface PublicationEvents {
@@ -500,12 +499,14 @@ export interface PublicationEvents {
     error: (error: PlebbitError) => void;
     publishingstatechange: (newState: Publication["publishingState"]) => void;
     statechange: (newState: Publication["state"]) => void;
-    clientschange: () => void;
     update: (updatedInstance: Comment) => void;
     updatingstatechange: (newState: Comment["updatingState"]) => void;
 }
 export interface PlebbitEvents {
     error: (error: PlebbitError) => void;
+}
+export interface GenericClientEvents<T extends string> {
+    statechange: (state: T) => void;
 }
 export interface IpfsStats {
     totalIn: number;

@@ -75,7 +75,7 @@ var lodash_1 = __importDefault(require("lodash"));
 var signatures_1 = require("./signer/signatures");
 var assert_1 = __importDefault(require("assert"));
 var plebbit_error_1 = require("./plebbit-error");
-var client_1 = require("./client");
+var client_manager_1 = require("./clients/client-manager");
 var DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 var Comment = /** @class */ (function (_super) {
     __extends(Comment, _super);
@@ -90,11 +90,13 @@ var Comment = /** @class */ (function (_super) {
         _this.stop = _this.stop.bind(_this);
         return _this;
     }
+    Comment.prototype._initClients = function () {
+        this._clientsManager = new client_manager_1.CommentClientsManager(this);
+        this.clients = this._clientsManager.clients;
+    };
     Comment.prototype._initProps = function (props) {
         // This function is called once at in the constructor
         _super.prototype._initProps.call(this, props);
-        if (!(this._clientsManager instanceof client_1.CommentClientsManager))
-            this._clientsManager = new client_1.CommentClientsManager(this);
         this.postCid = props.postCid;
         this.setCid(props.cid);
         this.parentCid = props.parentCid;

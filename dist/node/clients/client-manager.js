@@ -67,15 +67,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubplebbitClientsManager = exports.CommentClientsManager = exports.PublicationClientsManager = exports.ClientsManager = void 0;
 var from_string_1 = require("uint8arrays/from-string");
-var util_1 = require("./util");
+var util_1 = require("../util");
 var assert_1 = __importDefault(require("assert"));
 var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
-var signer_1 = require("./signer");
+var signer_1 = require("../signer");
 var lodash_1 = __importDefault(require("lodash"));
-var util_2 = require("./runtime/node/util");
+var util_2 = require("../runtime/node/util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var p_limit_1 = __importDefault(require("p-limit"));
+var ipfs_gateway_client_1 = require("./ipfs-gateway-client");
+var ipfs_client_1 = require("./ipfs-client");
+var pubsub_client_1 = require("./pubsub-client");
+var chain_provider_client_1 = require("./chain-provider-client");
 var DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 var ClientsManager = /** @class */ (function () {
     function ClientsManager(plebbit) {
@@ -85,17 +89,42 @@ var ClientsManager = /** @class */ (function () {
             this.curIpfsNodeUrl = Object.values(plebbit.clients.ipfsClients)[0]._clientOptions.url;
         //@ts-expect-error
         this.clients = {};
-        for (var _i = 0, _a = Object.keys(plebbit.clients); _i < _a.length; _i++) {
-            var clientKey = _a[_i];
-            this.clients[clientKey] = {};
-            for (var _b = 0, _c = Object.keys(plebbit.clients[clientKey]); _b < _c.length; _b++) {
-                var url = _c[_b];
-                this.clients[clientKey][url] = { state: "stopped" };
-            }
-        }
+        this._initIpfsGateways();
+        this._initIpfsClients();
+        this._initPubsubClients();
+        this._initChainProviders();
     }
     ClientsManager.prototype.toJSON = function () {
         return undefined;
+    };
+    ClientsManager.prototype._initIpfsGateways = function () {
+        var _a;
+        for (var _i = 0, _b = Object.keys(this._plebbit.clients.ipfsGateways); _i < _b.length; _i++) {
+            var gatewayUrl = _b[_i];
+            this.clients.ipfsGateways = __assign(__assign({}, this.clients.ipfsGateways), (_a = {}, _a[gatewayUrl] = new ipfs_gateway_client_1.GenericIpfsGatewayClient("stopped"), _a));
+        }
+    };
+    ClientsManager.prototype._initIpfsClients = function () {
+        var _a;
+        if (this._plebbit.clients.ipfsClients)
+            for (var _i = 0, _b = Object.keys(this._plebbit.clients.ipfsClients); _i < _b.length; _i++) {
+                var ipfsUrl = _b[_i];
+                this.clients.ipfsClients = __assign(__assign({}, this.clients.ipfsClients), (_a = {}, _a[ipfsUrl] = new ipfs_client_1.GenericIpfsClient("stopped"), _a));
+            }
+    };
+    ClientsManager.prototype._initPubsubClients = function () {
+        var _a;
+        for (var _i = 0, _b = Object.keys(this._plebbit.clients.pubsubClients); _i < _b.length; _i++) {
+            var pubsubUrl = _b[_i];
+            this.clients.pubsubClients = __assign(__assign({}, this.clients.pubsubClients), (_a = {}, _a[pubsubUrl] = new pubsub_client_1.GenericPubsubClient("stopped"), _a));
+        }
+    };
+    ClientsManager.prototype._initChainProviders = function () {
+        var _a;
+        for (var _i = 0, _b = Object.keys(this._plebbit.clients.chainProviders); _i < _b.length; _i++) {
+            var chainProviderUrl = _b[_i];
+            this.clients.chainProviders = __assign(__assign({}, this.clients.chainProviders), (_a = {}, _a[chainProviderUrl] = new chain_provider_client_1.GenericChainProviderClient("stopped"), _a));
+        }
     };
     ClientsManager.prototype.getCurrentPubsub = function () {
         return this._plebbit.clients.pubsubClients[this.curPubsubNodeUrl];
@@ -109,7 +138,9 @@ var ClientsManager = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getCurrentPubsub()._client.pubsub.subscribe(pubsubTopic, handler)];
+                    case 0:
+                        this.updatePubsubState("subscribing-pubsub");
+                        return [4 /*yield*/, this.getCurrentPubsub()._client.pubsub.subscribe(pubsubTopic, handler)];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -121,8 +152,11 @@ var ClientsManager = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getCurrentPubsub()._client.pubsub.unsubscribe(pubsubTopic, handler)];
+                    case 0: 
+                    // this.updatePubsubState("stopped"); // Not sure this line should be here
+                    return [4 /*yield*/, this.getCurrentPubsub()._client.pubsub.unsubscribe(pubsubTopic, handler)];
                     case 1:
+                        // this.updatePubsubState("stopped"); // Not sure this line should be here
                         _a.sent();
                         return [2 /*return*/];
                 }
@@ -355,16 +389,20 @@ var ClientsManager = /** @class */ (function () {
     // State methods here
     ClientsManager.prototype.updatePubsubState = function (newState) {
         this.clients.pubsubClients[this.curPubsubNodeUrl].state = newState;
+        this.clients.pubsubClients[this.curPubsubNodeUrl].emit("statechange", newState);
     };
     ClientsManager.prototype.updateIpfsState = function (newState) {
         (0, assert_1.default)(this.curIpfsNodeUrl);
         this.clients.ipfsClients[this.curIpfsNodeUrl].state = newState;
+        this.clients.ipfsClients[this.curIpfsNodeUrl].emit("statechange", newState);
     };
     ClientsManager.prototype.updateGatewayState = function (newState, gateway) {
         this.clients.ipfsGateways[gateway].state = newState;
+        this.clients.ipfsGateways[gateway].emit("statechange", newState);
     };
     ClientsManager.prototype.updateChainProviderState = function (newState, chainTicker) {
         this.clients.chainProviders[chainTicker].state = newState;
+        this.clients.chainProviders[chainTicker].emit("statechange", newState);
     };
     ClientsManager.prototype.handleError = function (e) {
         this._plebbit.emit("error", e);
@@ -505,6 +543,21 @@ var PublicationClientsManager = /** @class */ (function (_super) {
         _this._publication = publication;
         return _this;
     }
+    PublicationClientsManager.prototype._initIpfsClients = function () {
+        var _a;
+        if (this._plebbit.clients.ipfsClients)
+            for (var _i = 0, _b = Object.keys(this._plebbit.clients.ipfsClients); _i < _b.length; _i++) {
+                var ipfsUrl = _b[_i];
+                this.clients.ipfsClients = __assign(__assign({}, this.clients.ipfsClients), (_a = {}, _a[ipfsUrl] = new ipfs_client_1.PublicationIpfsClient("stopped"), _a));
+            }
+    };
+    PublicationClientsManager.prototype._initPubsubClients = function () {
+        var _a;
+        for (var _i = 0, _b = Object.keys(this._plebbit.clients.pubsubClients); _i < _b.length; _i++) {
+            var pubsubUrl = _b[_i];
+            this.clients.pubsubClients = __assign(__assign({}, this.clients.pubsubClients), (_a = {}, _a[pubsubUrl] = new pubsub_client_1.PublicationPubsubClient("stopped"), _a));
+        }
+    };
     PublicationClientsManager.prototype.publishChallengeRequest = function (pubsubTopic, data) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -512,7 +565,6 @@ var PublicationClientsManager = /** @class */ (function (_super) {
                     case 0: return [4 /*yield*/, this.pubsubPublish(pubsubTopic, data)];
                     case 1:
                         _a.sent();
-                        this.updatePubsubState("waiting-challenge");
                         return [2 /*return*/];
                 }
             });
@@ -530,27 +582,6 @@ var PublicationClientsManager = /** @class */ (function (_super) {
                 }
             });
         });
-    };
-    // State methods here
-    PublicationClientsManager.prototype.updatePubsubState = function (newState) {
-        _super.prototype.updatePubsubState.call(this, newState);
-        this._publication.clients.pubsubClients[this.curPubsubNodeUrl].state = newState;
-        this._publication.emit("clientschange");
-    };
-    PublicationClientsManager.prototype.updateIpfsState = function (newState) {
-        _super.prototype.updateIpfsState.call(this, newState);
-        this._publication.clients.ipfsClients[this.curIpfsNodeUrl].state = newState;
-        this._publication.emit("clientschange");
-    };
-    PublicationClientsManager.prototype.updateGatewayState = function (newState, gateway) {
-        _super.prototype.updateGatewayState.call(this, newState, gateway);
-        this._publication.clients.ipfsGateways[gateway].state = newState;
-        this._publication.emit("clientschange");
-    };
-    PublicationClientsManager.prototype.updateChainProviderState = function (newState, chainTicker) {
-        _super.prototype.updateChainProviderState.call(this, newState, chainTicker);
-        this._publication.clients.chainProviders[chainTicker].state = newState;
-        this._publication.emit("clientschange");
     };
     PublicationClientsManager.prototype.handleError = function (e) {
         this._publication.emit("error", e);
@@ -586,7 +617,7 @@ var PublicationClientsManager = /** @class */ (function (_super) {
                     case 5:
                         subJson = _d.apply(_c, [_e.sent()]);
                         _e.label = 6;
-                    case 6: return [4 /*yield*/, (0, signer_1.verifySubplebbit)(subJson, this._publication._plebbit.resolveAuthorAddresses, this)];
+                    case 6: return [4 /*yield*/, (0, signer_1.verifySubplebbit)(subJson, this._plebbit.resolveAuthorAddresses, this)];
                     case 7:
                         signatureValidity = _e.sent();
                         if (!signatureValidity.valid)
@@ -595,6 +626,13 @@ var PublicationClientsManager = /** @class */ (function (_super) {
                 }
             });
         });
+    };
+    PublicationClientsManager.prototype.updateIpfsState = function (newState) {
+        _super.prototype.updateIpfsState.call(this, newState);
+    };
+    PublicationClientsManager.prototype.updatePubsubState = function (newState) {
+        this.clients.pubsubClients[this.curPubsubNodeUrl].state = newState;
+        this.clients.pubsubClients[this.curPubsubNodeUrl].emit("statechange", newState);
     };
     return PublicationClientsManager;
 }(ClientsManager));
@@ -606,6 +644,14 @@ var CommentClientsManager = /** @class */ (function (_super) {
         _this._comment = comment;
         return _this;
     }
+    CommentClientsManager.prototype._initIpfsClients = function () {
+        var _a;
+        if (this._plebbit.clients.ipfsClients)
+            for (var _i = 0, _b = Object.keys(this._plebbit.clients.ipfsClients); _i < _b.length; _i++) {
+                var ipfsUrl = _b[_i];
+                this.clients.ipfsClients = __assign(__assign({}, this.clients.ipfsClients), (_a = {}, _a[ipfsUrl] = new ipfs_client_1.CommentIpfsClient("stopped"), _a));
+            }
+    };
     CommentClientsManager.prototype.fetchCommentUpdate = function (ipnsName) {
         return __awaiter(this, void 0, void 0, function () {
             var updateCid, commentUpdate, _a, _b, update, _c, _d;
@@ -661,6 +707,9 @@ var CommentClientsManager = /** @class */ (function (_super) {
             });
         });
     };
+    CommentClientsManager.prototype.updateIpfsState = function (newState) {
+        _super.prototype.updateIpfsState.call(this, newState);
+    };
     return CommentClientsManager;
 }(PublicationClientsManager));
 exports.CommentClientsManager = CommentClientsManager;
@@ -671,20 +720,33 @@ var SubplebbitClientsManager = /** @class */ (function (_super) {
         _this._subplebbit = subplebbit;
         return _this;
     }
+    SubplebbitClientsManager.prototype._initIpfsClients = function () {
+        var _a;
+        if (this._plebbit.clients.ipfsClients)
+            for (var _i = 0, _b = Object.keys(this._plebbit.clients.ipfsClients); _i < _b.length; _i++) {
+                var ipfsUrl = _b[_i];
+                this.clients.ipfsClients = __assign(__assign({}, this.clients.ipfsClients), (_a = {}, _a[ipfsUrl] = new ipfs_client_1.SubplebbitIpfsClient("stopped"), _a));
+            }
+    };
+    SubplebbitClientsManager.prototype._initPubsubClients = function () {
+        var _a;
+        for (var _i = 0, _b = Object.keys(this._plebbit.clients.pubsubClients); _i < _b.length; _i++) {
+            var pubsubUrl = _b[_i];
+            this.clients.pubsubClients = __assign(__assign({}, this.clients.pubsubClients), (_a = {}, _a[pubsubUrl] = new pubsub_client_1.SubplebbitPubsubClient("stopped"), _a));
+        }
+    };
     SubplebbitClientsManager.prototype.fetchSubplebbit = function (ipnsName) {
         return __awaiter(this, void 0, void 0, function () {
             var subplebbitCid, subplebbit, _a, _b, update, _c, _d;
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
-                        //@ts-expect-error
                         this._subplebbit._setUpdatingState("fetching-ipns");
                         if (!this.curIpfsNodeUrl) return [3 /*break*/, 3];
                         this.updateIpfsState("fetching-ipns");
                         return [4 /*yield*/, this.resolveIpnsToCidP2P(ipnsName)];
                     case 1:
                         subplebbitCid = _e.sent();
-                        //@ts-expect-error
                         this._subplebbit._setUpdatingState("fetching-ipfs");
                         this.updateIpfsState("fetching-ipfs");
                         _b = (_a = JSON).parse;
@@ -703,25 +765,11 @@ var SubplebbitClientsManager = /** @class */ (function (_super) {
             });
         });
     };
-    SubplebbitClientsManager.prototype.updatePubsubState = function (newState) {
-        _super.prototype.updatePubsubState.call(this, newState);
-        this._subplebbit.clients.pubsubClients[this.curPubsubNodeUrl].state = newState;
-        this._subplebbit.emit("clientschange");
-    };
     SubplebbitClientsManager.prototype.updateIpfsState = function (newState) {
         _super.prototype.updateIpfsState.call(this, newState);
-        this._subplebbit.clients.ipfsClients[this.curIpfsNodeUrl].state = newState;
-        this._subplebbit.emit("clientschange");
     };
-    SubplebbitClientsManager.prototype.updateGatewayState = function (newState, gateway) {
-        _super.prototype.updateGatewayState.call(this, newState, gateway);
-        this._subplebbit.clients.ipfsGateways[gateway].state = newState;
-        this._subplebbit.emit("clientschange");
-    };
-    SubplebbitClientsManager.prototype.updateChainProviderState = function (newState, chainTicker) {
-        _super.prototype.updateChainProviderState.call(this, newState, chainTicker);
-        this._subplebbit.clients.chainProviders[chainTicker].state = newState;
-        this._subplebbit.emit("clientschange");
+    SubplebbitClientsManager.prototype.updatePubsubState = function (newState) {
+        _super.prototype.updatePubsubState.call(this, newState);
     };
     SubplebbitClientsManager.prototype.handleError = function (e) {
         this._subplebbit.emit("error", e);
@@ -729,4 +777,4 @@ var SubplebbitClientsManager = /** @class */ (function (_super) {
     return SubplebbitClientsManager;
 }(ClientsManager));
 exports.SubplebbitClientsManager = SubplebbitClientsManager;
-//# sourceMappingURL=client.js.map
+//# sourceMappingURL=client-manager.js.map

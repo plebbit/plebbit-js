@@ -10,7 +10,7 @@ import { Options as IpfsHttpClientOptions } from "ipfs-http-client";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions } from "./signer/constants";
 import Stats from "./stats";
-import { ClientsManager } from "./client";
+import { ClientsManager } from "./clients/client-manager";
 export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
         ipfsGateways: {

@@ -5,7 +5,7 @@ import { Plebbit } from "./plebbit";
 import { ChallengeType, DbHandlerPublicAPI, DecryptedChallengeAnswerMessageType, DecryptedChallengeRequestMessageType, Flair, FlairOwner, InternalSubplebbitType, ProtocolVersion, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitIpfsType, SubplebbitStats, SubplebbitRole, SubplebbitSuggested, SubplebbitType, SubplebbitEvents, SubplebbitSettings } from "./types";
 import { SignatureType } from "./signer/constants";
 import { TypedEmitter } from "tiny-typed-emitter";
-import { SubplebbitClientsManager } from "./client";
+import { SubplebbitClientsManager } from "./clients/client-manager";
 export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
     title?: string;
     description?: string;
@@ -36,28 +36,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     updatingState: "stopped" | "resolving-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
     plebbit: Plebbit;
     dbHandler?: DbHandlerPublicAPI;
-    clients: {
-        ipfsGateways: {
-            [ipfsGatewayUrl: string]: {
-                state: "stopped" | "fetching-ipfs" | "fetching-ipns";
-            };
-        };
-        ipfsClients: {
-            [ipfsClientUrl: string]: {
-                state: "stopped" | "fetching-ipns" | "fetching-ipfs" | "publishing-ipns";
-            };
-        };
-        pubsubClients: {
-            [pubsubClientUrl: string]: {
-                state: "stopped" | "waiting-challenge-requests" | "publishing-challenge" | "waiting-challenge-answers" | "publishing-challenge-verification";
-            };
-        };
-        chainProviders: {
-            [chainProviderUrl: string]: {
-                state: "stopped" | "resolving-subplebbit-address" | "resolving-author-address";
-            };
-        };
-    };
+    clients: SubplebbitClientsManager["clients"];
     private _challengeToSolution;
     private _challengeToPublicKey;
     private _challengeToPublication;
@@ -88,9 +67,9 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     prePublish(): Promise<void>;
     private assertDomainResolvesCorrectly;
     edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit>;
-    private _setState;
-    private _setUpdatingState;
-    private _setStartedState;
+    _setState(newState: Subplebbit["state"]): void;
+    _setUpdatingState(newState: Subplebbit["updatingState"]): void;
+    _setStartedState(newState: Subplebbit["startedState"]): void;
     private _retryLoadingSubplebbitIpns;
     private updateOnce;
     update(): Promise<void>;

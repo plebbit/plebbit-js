@@ -1,7 +1,7 @@
 import { Plebbit } from "../plebbit";
 import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditPubsubMessage, CommentIpfsType, CommentPubsubMessage, CommentUpdate, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, PageIpfs, SubplebbitIpfsType, VotePubsubMessage } from "../types";
 import { SignatureType, SignerType } from "./constants";
-import { ClientsManager } from "../client";
+import { ClientsManager } from "../clients/client-manager";
 interface ValidationResult {
     valid: boolean;
     reason?: string;
