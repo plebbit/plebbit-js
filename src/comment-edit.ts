@@ -57,15 +57,6 @@ export class CommentEdit extends Publication implements CommentEditType {
     removed?: boolean;
     commentAuthor?: CommentAuthorEditOptions;
 
-    // CommentEdit class only props
-    clients: Omit<Publication["clients"], "ipfsClients"> & {
-        ipfsClients: {
-            [ipfsClientUrl: string]: {
-                state: "stopped" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs";
-            };
-        };
-    };
-
     constructor(props: CommentEditType, plebbit: Plebbit) {
         super(props, plebbit);
 

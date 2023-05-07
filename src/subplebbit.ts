@@ -75,7 +75,7 @@ import { TypedEmitter } from "tiny-typed-emitter";
 import { PlebbitError } from "./plebbit-error";
 import retry, { RetryOperation } from "retry";
 import Author from "./author";
-import { SubplebbitClientsManager } from "./client";
+import { SubplebbitClientsManager } from "./clients/client-manager";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000;
 const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
@@ -111,21 +111,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     updatingState: "stopped" | "resolving-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
     plebbit: Plebbit;
     dbHandler?: DbHandlerPublicAPI;
-    clients: {
-        ipfsGateways: { [ipfsGatewayUrl: string]: { state: "stopped" | "fetching-ipfs" | "fetching-ipns" } };
-        ipfsClients: { [ipfsClientUrl: string]: { state: "stopped" | "fetching-ipns" | "fetching-ipfs" | "publishing-ipns" } };
-        pubsubClients: {
-            [pubsubClientUrl: string]: {
-                state:
-                    | "stopped"
-                    | "waiting-challenge-requests"
-                    | "publishing-challenge"
-                    | "waiting-challenge-answers"
-                    | "publishing-challenge-verification";
-            };
-        };
-        chainProviders: { [chainProviderUrl: string]: { state: "stopped" | "resolving-subplebbit-address" | "resolving-author-address" } };
-    };
+    clients: SubplebbitClientsManager["clients"];
 
     // private
 
@@ -372,17 +358,17 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         return this;
     }
 
-    private _setState(newState: Subplebbit["state"]) {
+    _setState(newState: Subplebbit["state"]) {
         this.state = newState;
         this.emit("statechange", this.state);
     }
 
-    private _setUpdatingState(newState: Subplebbit["updatingState"]) {
+    _setUpdatingState(newState: Subplebbit["updatingState"]) {
         this.updatingState = newState;
         this.emit("updatingstatechange", this.updatingState);
     }
 
-    private _setStartedState(newState: Subplebbit["startedState"]) {
+    _setStartedState(newState: Subplebbit["startedState"]) {
         this.startedState = newState;
         this.emit("startedstatechange", this.startedState);
     }

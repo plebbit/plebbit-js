@@ -13,7 +13,7 @@ import lodash from "lodash";
 import assert from "assert";
 import { Pages } from "./pages";
 import { PlebbitError } from "./plebbit-error";
-import { ClientsManager } from "./client";
+import { ClientsManager } from "./clients/client-manager";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({

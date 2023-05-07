@@ -45,7 +45,7 @@ import { CreateSignerOptions, SignerType } from "./signer/constants";
 import Stats from "./stats";
 import Cache from "./runtime/node/cache";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
-import { ClientsManager } from "./client";
+import { ClientsManager } from "./clients/client-manager";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {

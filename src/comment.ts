@@ -22,7 +22,7 @@ import lodash from "lodash";
 import { verifyComment, verifyCommentUpdate } from "./signer/signatures";
 import assert from "assert";
 import { PlebbitError } from "./plebbit-error";
-import { CommentClientsManager } from "./client";
+import { CommentClientsManager } from "./clients/client-manager";
 
 const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 
@@ -30,19 +30,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     // Only Comment props
     shortCid?: string;
 
-    clients: Omit<Publication["clients"], "ipfsClients"> & {
-        ipfsClients: {
-            [ipfsClientUrl: string]: {
-                state:
-                    | "fetching-subplebbit-ipns"
-                    | "fetching-subplebbit-ipfs"
-                    | "fetching-ipfs"
-                    | "fetching-update-ipns"
-                    | "fetching-update-ipfs"
-                    | "stopped";
-            };
-        };
-    };
+    clients: CommentClientsManager["clients"];
 
     // public (CommentType)
     title?: string;
@@ -104,10 +92,14 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.stop = this.stop.bind(this);
     }
 
+    _initClients() {
+        this._clientsManager = new CommentClientsManager(this);
+        this.clients = this._clientsManager.clients;
+    }
+
     _initProps(props: CommentType) {
         // This function is called once at in the constructor
         super._initProps(props);
-        if (!(this._clientsManager instanceof CommentClientsManager)) this._clientsManager = new CommentClientsManager(this);
         this.postCid = props.postCid;
         this.setCid(props.cid);
         this.parentCid = props.parentCid;

@@ -615,7 +615,6 @@ export interface SubplebbitEvents {
     statechange: (newState: Subplebbit["state"]) => void;
     updatingstatechange: (newState: Subplebbit["updatingState"]) => void;
     startedstatechange: (newState: Subplebbit["startedState"]) => void;
-    clientschange: () => void;
 
     update: (updatedSubplebbit: Subplebbit) => void;
 }
@@ -630,8 +629,6 @@ export interface PublicationEvents {
     // State changes
     publishingstatechange: (newState: Publication["publishingState"]) => void;
     statechange: (newState: Publication["state"]) => void;
-    clientschange: () => void;
-
 
     // For comment only
     update: (updatedInstance: Comment) => void;
@@ -639,12 +636,11 @@ export interface PublicationEvents {
 }
 
 export interface PlebbitEvents {
-    // resolvedsubplebbitaddress: (subplebbitAddress: string, resolvedSubplebbitAddress: string) => void; // Emitted when subplebbit address (domain) is resolved to an IPNS
-    // resolvedauthoraddress: (authorAddress: string, resolvedAuthorAddress: string) => void; // Emitted when author address is resolved to an IPNS
-    // resolvedipns: (ipns: string, cid: string) => void; // Emitted when IPNS is resolved to a CID
-    // fetchedcid: (cid: string, content: string) => void; // Emitted when a CID is fetched with its file content
-    // fetchedipns: (ipns: string, content: string) => void; // Emitted when an IPNS is fetched with its file content
     error: (error: PlebbitError) => void;
+}
+
+export interface GenericClientEvents<T extends string> {
+    statechange: (state: T) => void;
 }
 
 // Plebbit types here

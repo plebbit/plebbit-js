@@ -15,7 +15,7 @@ import {
 import { verifyPage } from "./signer/signatures";
 import lodash from "lodash";
 import assert from "assert";
-import { ClientsManager } from "./client";
+import { ClientsManager } from "./clients/client-manager";
 
 export class Pages implements PagesType {
     pages: Partial<Record<PostSortName | ReplySortName, PageType>>;

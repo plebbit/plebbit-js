@@ -45,7 +45,7 @@ import {
     SubplebbitSignedPropertyNames,
     VoteSignedPropertyNames
 } from "./constants";
-import { ClientsManager } from "../client";
+import { ClientsManager } from "../clients/client-manager";
 
 interface ValidationResult {
     valid: boolean;
