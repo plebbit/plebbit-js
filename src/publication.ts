@@ -284,10 +284,10 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             ...toSignMsg,
             signature: await signChallengeRequest(toSignMsg, this.pubsubMessageSigner)
         });
-        log.trace(`Attempting to publish ${this.getType()} with options`, options);
+        log.trace(`Attempting to publish ${this.getType()} to pubsub topic (${this._pubsubTopicWithfallback()})`);
 
-        await this._clientsManager.publishChallengeRequest(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeRequest));
         await this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
+        await this._clientsManager.publishChallengeRequest(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeRequest));
         this._clientsManager.updatePubsubState("waiting-challenge");
 
         this._updatePublishingState("waiting-challenge");
