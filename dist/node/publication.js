@@ -336,11 +336,11 @@ var Publication = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signatures_1.signChallengeRequest)(toSignMsg, this.pubsubMessageSigner)];
                     case 5:
                         _c._challengeRequest = new (_d.apply(challenge_1.ChallengeRequestMessage, [void 0, __assign.apply(void 0, _e.concat([(_f.signature = _g.sent(), _f)]))]))();
-                        log.trace("Attempting to publish ".concat(this.getType(), " with options"), options);
-                        return [4 /*yield*/, this._clientsManager.publishChallengeRequest(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeRequest))];
+                        log.trace("Attempting to publish ".concat(this.getType(), " to pubsub topic (").concat(this._pubsubTopicWithfallback(), ")"));
+                        return [4 /*yield*/, this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
                     case 6:
                         _g.sent();
-                        return [4 /*yield*/, this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
+                        return [4 /*yield*/, this._clientsManager.publishChallengeRequest(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeRequest))];
                     case 7:
                         _g.sent();
                         this._clientsManager.updatePubsubState("waiting-challenge");
