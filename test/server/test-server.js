@@ -126,6 +126,13 @@ const startIpfsNodes = async () => {
         res.end();
     }).listen(33416);
 
+    // Create an HTTP server that takes 10s to respond
+    http.createServer(async (req, res) => {
+        await new Promise((resolve) => setTimeout(resolve, 10000));
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.end("Yes");
+    }).listen(33417);
+
     require("./pubsub-mock-server");
 
     if (process.env["NO_SUBPLEBBITS"] !== "1")

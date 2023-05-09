@@ -192,6 +192,19 @@ describe("plebbit.fetchCid", async () => {
         await assert.isRejected(plebbit.fetchCid(cid), messages.ERR_OVER_DOWNLOAD_LIMIT);
         await assert.isRejected(gatewayPlebbit.fetchCid(cid), messages.ERR_OVER_DOWNLOAD_LIMIT);
     });
+
+    it(`plebbit.fetchCid() resolves with the first gateway response`, async () => {
+        // Have two gateways, the first is a gateway that takes 10s to respond, and the second should be near instant
+        const multipleGatewayPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://localhost:33417", "http://127.0.0.1:18080"] });
+
+        const cid = "QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo"; // Cid from previous test
+
+        const timeBefore = Date.now();
+        const content = await multipleGatewayPlebbit.fetchCid(cid);
+        expect(content).to.be.a("string");
+        const timeItTookInMs = Date.now() - timeBefore;
+        expect(timeItTookInMs).to.be.lessThan(2000);
+    });
 });
 
 // Skip for firefox since we can't disable CORS on Firefox
