@@ -67,7 +67,26 @@ const testCommentFields = (comment) => {
     expect(comment.signer).to.be.undefined;
 };
 
-const testListOfSortedComments = (sortedComments, sortName) => {
+const activeScore = async (comment) => {
+    if (!comment.replies.pages) return comment.timestamp;
+    let maxTimestamp = comment.timestamp;
+
+    const updateMaxTimestamp = async (localComments) => {
+        for (const localComment of localComments) {
+            if (localComment.timestamp > maxTimestamp) maxTimestamp = localComment.timestamp;
+            if (localComment.replies.pages) {
+                const childrenComments = await loadAllPages(localComment.replies.pageCids.new, localComment.replies);
+                await updateMaxTimestamp(childrenComments);
+            }
+        }
+    };
+    const childrenComments = await loadAllPages(comment.replies.pageCids.new, comment.replies);
+
+    await updateMaxTimestamp(childrenComments);
+    return maxTimestamp;
+};
+
+const testListOfSortedComments = async (sortedComments, sortName) => {
     console.log(`Testing sort ${sortName}. There are ${sortedComments.length} comments under ${sortName}`);
 
     const currentTimeframe = Object.keys(TIMEFRAMES_TO_SECONDS).filter((timeframe) =>
@@ -91,8 +110,14 @@ const testListOfSortedComments = (sortedComments, sortName) => {
         if (sortedComments[j].pinned || sortedComments[j + 1].pinned) continue; // Ignore pinned posts as they don't follow regular sorting
 
         const sort = { ...POSTS_SORT_TYPES, ...REPLIES_SORT_TYPES }[sortName];
-        const scoreA = sort.score(sortedComments[j]);
-        const scoreB = sort.score(sortedComments[j + 1]);
+        let scoreA, scoreB;
+        if (sortName === "active") {
+            scoreA = await activeScore(sortedComments[j]);
+            scoreB = await activeScore(sortedComments[j + 1]);
+        } else {
+            scoreA = sort.score({ comment: sortedComments[j].toJSONIpfs(), update: sortedComments[j]._rawCommentUpdate });
+            scoreB = sort.score({ comment: sortedComments[j + 1].toJSONIpfs(), update: sortedComments[j + 1]._rawCommentUpdate });
+        }
         expect(scoreA).to.be.greaterThanOrEqual(scoreB);
     }
     console.log(`Passed tests for current sort ${sortName}`);
@@ -103,7 +128,7 @@ const testPostsSort = async (sortName) => {
 
     subCommentPages[sortName] = posts;
 
-    testListOfSortedComments(posts, sortName);
+    await testListOfSortedComments(posts, sortName);
     return posts;
 };
 
@@ -112,7 +137,7 @@ const testRepliesSort = async (parentComments, replySortName) => {
     for (const comment of commentsWithReplies) {
         expect(Object.keys(comment.replies.pageCids)).to.deep.equal(Object.keys(REPLIES_SORT_TYPES));
         const commentPages = await loadAllPages(comment.replies.pageCids[replySortName], comment.replies);
-        testListOfSortedComments(commentPages, replySortName);
+        await testListOfSortedComments(commentPages, replySortName);
         await testRepliesSort(commentPages, replySortName);
     }
 };
