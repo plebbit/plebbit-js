@@ -28,6 +28,7 @@ import lodash from "lodash";
 export const POSTS_SORT_TYPES: PostSort = {
     hot: { score: (...args) => hotScore(...args) },
     new: { score: (...args) => newScore(...args) },
+    active: { score: (...args) => undefined },
     topHour: { timeframe: "HOUR", score: (...args) => topScore(...args) },
     topDay: { timeframe: "DAY", score: (...args) => topScore(...args) },
     topWeek: { timeframe: "WEEK", score: (...args) => topScore(...args) },
@@ -102,20 +103,24 @@ export class SortHandler {
         const sortProps: SortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
         if (typeof sortProps.score !== "function") throw Error(`SortProps[${sortName}] is not defined`);
 
+        let activeScores: Record<string, number>;
+
+        if (sortName === "active") {
+            activeScores = {};
+            for (const comment of comments)
+                activeScores[comment.comment.cid] = await this.subplebbit.dbHandler.queryActiveScore(comment.comment);
+        }
+
         const scoreSort = (
             obj1: { comment: CommentsTableRow; update: CommentUpdatesRow },
             obj2: { comment: CommentsTableRow; update: CommentUpdatesRow }
         ) => {
-            const score1 = sortProps.score({
-                timestamp: obj1.comment.timestamp,
-                upvoteCount: obj1.update.upvoteCount,
-                downvoteCount: obj1.update.downvoteCount
-            });
-            const score2 = sortProps.score({
-                timestamp: obj2.comment.timestamp,
-                upvoteCount: obj2.update.upvoteCount,
-                downvoteCount: obj2.update.downvoteCount
-            });
+            if (activeScores) {
+                // Make exception for active sorting because it has a different mechanism for sorting
+                return activeScores[obj2.comment.cid] - activeScores[obj1.comment.cid];
+            }
+            const score1 = sortProps.score(obj1);
+            const score2 = sortProps.score(obj2);
             return score2 - score1;
         };
 

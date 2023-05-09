@@ -480,6 +480,24 @@ export class DbHandler {
         return children.length + lodash.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.comment.cid, trx))));
     }
 
+    async queryActiveScore(comment: Pick<CommentsTableRow, "cid" | "timestamp">, trx?: Transaction): Promise<number> {
+        let maxTimestamp = comment.timestamp;
+        // Note: active score will include deleted and removed comments
+
+        const updateMaxTimestamp = async (localComments: CommentsTableRow[]) => {
+            for (const commentChild of localComments) {
+                if (commentChild.timestamp > maxTimestamp) maxTimestamp = commentChild.timestamp;
+                const children = await this.queryCommentsUnderComment(commentChild.cid, trx);
+                if (children.length > 0) await updateMaxTimestamp(children);
+            }
+        };
+
+        const children = await this.queryCommentsUnderComment(comment.cid, trx);
+        if (children.length > 0) await updateMaxTimestamp(children);
+
+        return maxTimestamp;
+    }
+
     async queryCommentsForPages(
         options: Omit<PageOptions, "pageSize">,
         trx?: Transaction

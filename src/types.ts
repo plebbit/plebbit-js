@@ -355,11 +355,12 @@ export type PostSortName =
     | "controversialWeek"
     | "controversialMonth"
     | "controversialYear"
-    | "controversialAll";
+    | "controversialAll"
+    | "active";
 export type ReplySortName = "topAll" | "new" | "old" | "controversialAll";
 
 export type SortProps = {
-    score: (comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) => number;
+    score: (comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) => number;
     timeframe?: Timeframe;
 };
 

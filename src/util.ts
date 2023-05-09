@@ -1,5 +1,6 @@
 import {
-    CommentWithCommentUpdate,
+    CommentsTableRow,
+    CommentUpdatesRow,
     OnlyDefinedProperties,
     PageIpfs,
     PagesType,
@@ -43,43 +44,47 @@ export function replaceXWithY(obj: Object, x: any, y: any): any {
     return newObj;
 }
 
-export function hotScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
-    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number" && typeof comment.timestamp === "number");
+export function hotScore(comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) {
+    assert(
+        typeof comment.update.downvoteCount === "number" &&
+            typeof comment.update.upvoteCount === "number" &&
+            typeof comment.comment.timestamp === "number"
+    );
 
-    const score = comment.upvoteCount - comment.downvoteCount;
+    const score = comment.update.upvoteCount - comment.update.downvoteCount;
     const order = Math.log10(Math.max(score, 1));
     const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
-    const seconds = comment.timestamp - 1134028003;
+    const seconds = comment.comment.timestamp - 1134028003;
     return lodash.round(sign * order + seconds / 45000, 7);
 }
 
-export function controversialScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
-    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
+export function controversialScore(comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) {
+    assert(typeof comment.update.downvoteCount === "number" && typeof comment.update.upvoteCount === "number");
 
-    if (comment.downvoteCount <= 0 || comment.upvoteCount <= 0) return 0;
-    const magnitude = comment.upvoteCount + comment.downvoteCount;
+    if (comment.update.downvoteCount <= 0 || comment.update.upvoteCount <= 0) return 0;
+    const magnitude = comment.update.upvoteCount + comment.update.downvoteCount;
     const balance =
-        comment.upvoteCount > comment.downvoteCount
-            ? comment.downvoteCount / comment.upvoteCount
-            : comment.upvoteCount / comment.downvoteCount;
+        comment.update.upvoteCount > comment.update.downvoteCount
+            ? comment.update.downvoteCount / comment.update.upvoteCount
+            : comment.update.upvoteCount / comment.update.downvoteCount;
     return Math.pow(magnitude, balance);
 }
 
-export function topScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
-    assert(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
+export function topScore(comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) {
+    assert(typeof comment.update.downvoteCount === "number" && typeof comment.update.upvoteCount === "number");
 
-    return comment.upvoteCount - comment.downvoteCount;
+    return comment.update.upvoteCount - comment.update.downvoteCount;
 }
 
-export function newScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
-    assert(typeof comment.timestamp === "number");
-    return comment.timestamp;
+export function newScore(comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) {
+    assert(typeof comment.comment.timestamp === "number");
+    return comment.comment.timestamp;
 }
 
-export function oldScore(comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) {
-    assert(typeof comment.timestamp === "number");
+export function oldScore(comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) {
+    assert(typeof comment.comment.timestamp === "number");
 
-    return -comment.timestamp;
+    return -comment.comment.timestamp;
 }
 
 export function removeNullAndUndefinedValues<T extends Object>(obj: T): T {
