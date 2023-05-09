@@ -23,7 +23,7 @@ describe(`subplebbit.edit`, async () => {
     let plebbit, subplebbit, postToPublishAfterEdit, ethAddress;
     before(async () => {
         plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        subplebbit = await createMockSub({}, plebbit);
+        subplebbit = await createMockSub({}, plebbit, 1000);
         ethAddress = `test-edit-${timestamp()}.eth`;
         const originalPlebbit = await mockPlebbit();
         const subplebbitAddress = lodash.clone(subplebbit.address);
