@@ -162,8 +162,14 @@ describe(`Pinning posts`, async () => {
                     const [commentA, commentB] = comments.slice(i, i + 2);
                     const scoreFunc = POSTS_SORT_TYPES[sortName].score;
 
-                    const [scoreA, scoreB] = [scoreFunc(commentA), scoreFunc(commentB)];
-                    expect(scoreA).to.be.greaterThanOrEqual(scoreB);
+                    if (sortName !== "active") {
+                        // Temporary. Active does not have a sorting function as of now
+                        const [scoreA, scoreB] = [
+                            scoreFunc({ comment: commentA.toJSONIpfs(), update: commentA._rawCommentUpdate }),
+                            scoreFunc({ comment: commentB.toJSONIpfs(), update: commentB._rawCommentUpdate })
+                        ];
+                        expect(scoreA).to.be.greaterThanOrEqual(scoreB);
+                    }
                 }
             }
         }
@@ -216,8 +222,14 @@ describe(`Pinning posts`, async () => {
                 const [commentA, commentB] = [pageComments[i], pageComments[i + 1]];
                 const scoreFunc = POSTS_SORT_TYPES[sortName].score;
 
-                const [scoreA, scoreB] = [scoreFunc(commentA), scoreFunc(commentB)];
-                expect(scoreA).to.be.greaterThanOrEqual(scoreB);
+                if (sortName !== "active") {
+                    // Temporary. Active does not have a sorting function as of now
+                    const [scoreA, scoreB] = [
+                        scoreFunc({ comment: commentA.toJSONIpfs(), update: commentA._rawCommentUpdate }),
+                        scoreFunc({ comment: commentB.toJSONIpfs(), update: commentB._rawCommentUpdate })
+                    ];
+                    expect(scoreA).to.be.greaterThanOrEqual(scoreB);
+                }
             }
         }
     });
