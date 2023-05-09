@@ -841,6 +841,54 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
+    DbHandler.prototype.queryActiveScore = function (comment, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            var maxTimestamp, updateMaxTimestamp, children;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        maxTimestamp = comment.timestamp;
+                        updateMaxTimestamp = function (localComments) { return __awaiter(_this, void 0, void 0, function () {
+                            var _i, localComments_1, commentChild, children_1;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        _i = 0, localComments_1 = localComments;
+                                        _a.label = 1;
+                                    case 1:
+                                        if (!(_i < localComments_1.length)) return [3 /*break*/, 5];
+                                        commentChild = localComments_1[_i];
+                                        if (commentChild.timestamp > maxTimestamp)
+                                            maxTimestamp = commentChild.timestamp;
+                                        return [4 /*yield*/, this.queryCommentsUnderComment(commentChild.cid, trx)];
+                                    case 2:
+                                        children_1 = _a.sent();
+                                        if (!(children_1.length > 0)) return [3 /*break*/, 4];
+                                        return [4 /*yield*/, updateMaxTimestamp(children_1)];
+                                    case 3:
+                                        _a.sent();
+                                        _a.label = 4;
+                                    case 4:
+                                        _i++;
+                                        return [3 /*break*/, 1];
+                                    case 5: return [2 /*return*/];
+                                }
+                            });
+                        }); };
+                        return [4 /*yield*/, this.queryCommentsUnderComment(comment.cid, trx)];
+                    case 1:
+                        children = _a.sent();
+                        if (!(children.length > 0)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, updateMaxTimestamp(children)];
+                    case 2:
+                        _a.sent();
+                        _a.label = 3;
+                    case 3: return [2 /*return*/, maxTimestamp];
+                }
+            });
+        });
+    };
     DbHandler.prototype.queryCommentsForPages = function (options, trx) {
         return __awaiter(this, void 0, void 0, function () {
             var commentUpdateColumns, aliasSelect, commentsRaw, comments;

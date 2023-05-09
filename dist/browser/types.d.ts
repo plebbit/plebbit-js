@@ -296,10 +296,13 @@ export declare type SubplebbitSettings = {
     fetchThumbnailUrlsProxyUrl?: string;
 };
 export declare type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
-export declare type PostSortName = "hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll";
+export declare type PostSortName = "hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "active";
 export declare type ReplySortName = "topAll" | "new" | "old" | "controversialAll";
 export declare type SortProps = {
-    score: (comment: Pick<CommentWithCommentUpdate, "timestamp" | "upvoteCount" | "downvoteCount">) => number;
+    score: (comment: {
+        comment: CommentsTableRow;
+        update: CommentUpdatesRow;
+    }) => number;
     timeframe?: Timeframe;
 };
 export declare type PostSort = Record<PostSortName, SortProps>;

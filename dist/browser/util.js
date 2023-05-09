@@ -87,38 +87,40 @@ function replaceXWithY(obj, x, y) {
 }
 exports.replaceXWithY = replaceXWithY;
 function hotScore(comment) {
-    (0, assert_1.default)(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number" && typeof comment.timestamp === "number");
-    var score = comment.upvoteCount - comment.downvoteCount;
+    (0, assert_1.default)(typeof comment.update.downvoteCount === "number" &&
+        typeof comment.update.upvoteCount === "number" &&
+        typeof comment.comment.timestamp === "number");
+    var score = comment.update.upvoteCount - comment.update.downvoteCount;
     var order = Math.log10(Math.max(score, 1));
     var sign = score > 0 ? 1 : score < 0 ? -1 : 0;
-    var seconds = comment.timestamp - 1134028003;
+    var seconds = comment.comment.timestamp - 1134028003;
     return lodash_1.default.round(sign * order + seconds / 45000, 7);
 }
 exports.hotScore = hotScore;
 function controversialScore(comment) {
-    (0, assert_1.default)(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
-    if (comment.downvoteCount <= 0 || comment.upvoteCount <= 0)
+    (0, assert_1.default)(typeof comment.update.downvoteCount === "number" && typeof comment.update.upvoteCount === "number");
+    if (comment.update.downvoteCount <= 0 || comment.update.upvoteCount <= 0)
         return 0;
-    var magnitude = comment.upvoteCount + comment.downvoteCount;
-    var balance = comment.upvoteCount > comment.downvoteCount
-        ? comment.downvoteCount / comment.upvoteCount
-        : comment.upvoteCount / comment.downvoteCount;
+    var magnitude = comment.update.upvoteCount + comment.update.downvoteCount;
+    var balance = comment.update.upvoteCount > comment.update.downvoteCount
+        ? comment.update.downvoteCount / comment.update.upvoteCount
+        : comment.update.upvoteCount / comment.update.downvoteCount;
     return Math.pow(magnitude, balance);
 }
 exports.controversialScore = controversialScore;
 function topScore(comment) {
-    (0, assert_1.default)(typeof comment.downvoteCount === "number" && typeof comment.upvoteCount === "number");
-    return comment.upvoteCount - comment.downvoteCount;
+    (0, assert_1.default)(typeof comment.update.downvoteCount === "number" && typeof comment.update.upvoteCount === "number");
+    return comment.update.upvoteCount - comment.update.downvoteCount;
 }
 exports.topScore = topScore;
 function newScore(comment) {
-    (0, assert_1.default)(typeof comment.timestamp === "number");
-    return comment.timestamp;
+    (0, assert_1.default)(typeof comment.comment.timestamp === "number");
+    return comment.comment.timestamp;
 }
 exports.newScore = newScore;
 function oldScore(comment) {
-    (0, assert_1.default)(typeof comment.timestamp === "number");
-    return -comment.timestamp;
+    (0, assert_1.default)(typeof comment.comment.timestamp === "number");
+    return -comment.comment.timestamp;
 }
 exports.oldScore = oldScore;
 function removeNullAndUndefinedValues(obj) {

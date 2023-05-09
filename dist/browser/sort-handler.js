@@ -79,6 +79,13 @@ exports.POSTS_SORT_TYPES = {
             }
             return util_1.newScore.apply(void 0, args);
         } },
+    active: { score: function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return undefined;
+        } },
     topHour: { timeframe: "HOUR", score: function () {
             var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
@@ -232,26 +239,39 @@ var SortHandler = /** @class */ (function () {
     // Resolves to sortedComments
     SortHandler.prototype.sortComments = function (comments, sortName, options) {
         return __awaiter(this, void 0, void 0, function () {
-            var sortProps, scoreSort, pinnedComments, unpinnedComments, timestampLower_1, commentsSorted, commentsChunks, res, listOfPage, expectedNumOfPages;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var sortProps, activeScores, _i, comments_1, comment, _a, _b, scoreSort, pinnedComments, unpinnedComments, timestampLower_1, commentsSorted, commentsChunks, res, listOfPage, expectedNumOfPages;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         if (comments.length === 0)
                             return [2 /*return*/, undefined];
                         sortProps = exports.POSTS_SORT_TYPES[sortName] || exports.REPLIES_SORT_TYPES[sortName];
                         if (typeof sortProps.score !== "function")
                             throw Error("SortProps[".concat(sortName, "] is not defined"));
+                        if (!(sortName === "active")) return [3 /*break*/, 4];
+                        activeScores = {};
+                        _i = 0, comments_1 = comments;
+                        _c.label = 1;
+                    case 1:
+                        if (!(_i < comments_1.length)) return [3 /*break*/, 4];
+                        comment = comments_1[_i];
+                        _a = activeScores;
+                        _b = comment.comment.cid;
+                        return [4 /*yield*/, this.subplebbit.dbHandler.queryActiveScore(comment.comment)];
+                    case 2:
+                        _a[_b] = _c.sent();
+                        _c.label = 3;
+                    case 3:
+                        _i++;
+                        return [3 /*break*/, 1];
+                    case 4:
                         scoreSort = function (obj1, obj2) {
-                            var score1 = sortProps.score({
-                                timestamp: obj1.comment.timestamp,
-                                upvoteCount: obj1.update.upvoteCount,
-                                downvoteCount: obj1.update.downvoteCount
-                            });
-                            var score2 = sortProps.score({
-                                timestamp: obj2.comment.timestamp,
-                                upvoteCount: obj2.update.upvoteCount,
-                                downvoteCount: obj2.update.downvoteCount
-                            });
+                            if (activeScores) {
+                                // Make exception for active sorting because it has a different mechanism for sorting
+                                return activeScores[obj2.comment.cid] - activeScores[obj1.comment.cid];
+                            }
+                            var score1 = sortProps.score(obj1);
+                            var score2 = sortProps.score(obj2);
                             return score2 - score1;
                         };
                         pinnedComments = comments.filter(function (obj) { return obj.update.pinned === true; }).sort(scoreSort);
@@ -265,8 +285,8 @@ var SortHandler = /** @class */ (function () {
                             return [2 /*return*/, undefined];
                         commentsChunks = lodash_1.default.chunk(commentsSorted, options.pageSize);
                         return [4 /*yield*/, this.commentChunksToPages(commentsChunks, sortName)];
-                    case 1:
-                        res = _a.sent();
+                    case 5:
+                        res = _c.sent();
                         listOfPage = Object.values(res)[0].pages;
                         expectedNumOfPages = Math.ceil(commentsSorted.length / options.pageSize);
                         assert_1.default.equal(listOfPage.length, expectedNumOfPages, "Should generate ".concat(expectedNumOfPages, " pages for sort ").concat(sortName, " while it generated ").concat(listOfPage.length));

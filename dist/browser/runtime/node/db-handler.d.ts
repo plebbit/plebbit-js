@@ -51,6 +51,7 @@ export declare class DbHandler {
     getLastVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<VotesTableRow | undefined>;
     private _basePageQuery;
     queryReplyCount(commentCid: string, trx?: Transaction): Promise<number>;
+    queryActiveScore(comment: Pick<CommentsTableRow, "cid" | "timestamp">, trx?: Transaction): Promise<number>;
     queryCommentsForPages(options: Omit<PageOptions, "pageSize">, trx?: Transaction): Promise<{
         comment: CommentsTableRow;
         update: CommentUpdatesRow;
