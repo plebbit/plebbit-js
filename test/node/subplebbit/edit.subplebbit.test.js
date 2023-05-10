@@ -60,9 +60,10 @@ describe(`subplebbit.edit`, async () => {
 
     it(`Can edit a subplebbit to have ENS domain as address`, async () => {
         expect(subplebbit.posts.pages).to.not.deep.equal({});
+        const oldUpdatedAt = lodash.clone(subplebbit.updatedAt);
         await subplebbit.edit({ address: ethAddress });
         expect(subplebbit.address).to.equal(ethAddress);
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await waitUntil(() => subplebbit.updatedAt !== oldUpdatedAt, { timeout: 50000 });
         expect(subplebbit.address).to.equal(ethAddress);
     });
 
