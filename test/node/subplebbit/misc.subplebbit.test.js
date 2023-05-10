@@ -408,7 +408,9 @@ describe(`Migration to a new IPFS repo`, async () => {
         const subLoaded = await plebbitDifferentIpfs.getSubplebbit(subAddress);
         const postFromPage = subLoaded.posts.pages.hot.comments[0];
 
-        const ipnsLoaded = JSON.parse(await plebbitDifferentIpfs._clientsManager.fetchIpns(postFromPage.ipnsName, plebbitDifferentIpfs));
+        const ipnsLoaded = JSON.parse(
+            await plebbitDifferentIpfs._clientsManager.fetchSubplebbitIpns(postFromPage.ipnsName, plebbitDifferentIpfs)
+        );
         expect(ipnsLoaded.cid).to.equal(postFromPage.cid); // Make sure it was loaded correctly
     });
 });

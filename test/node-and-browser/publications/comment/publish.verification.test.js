@@ -33,7 +33,7 @@ describe(`Client side verification`, async () => {
 
     it(`.publish() throws if fetched subplebbit has an invalid signature`, async () => {
         const customPlebbit = await mockPlebbit();
-        const subJson = JSON.parse(await customPlebbit._clientsManager.fetchIpns(subplebbitAddress));
+        const subJson = JSON.parse(await customPlebbit._clientsManager.fetchSubplebbitIpns(subplebbitAddress));
         subJson.updatedAt += 1; // should invalidate the signature
         expect(await verifySubplebbit(subJson, customPlebbit.resolveAuthorAddresses, customPlebbit._clientsManager)).to.deep.equal({
             valid: false,
@@ -41,7 +41,7 @@ describe(`Client side verification`, async () => {
         });
 
         const mockPost = await generateMockPost(subplebbitAddress, customPlebbit);
-        mockPost._clientsManager.fetchCidP2P = (address) => JSON.stringify(subJson);
+        mockPost._clientsManager._fetchCidP2P = (address) => JSON.stringify(subJson);
 
         await assert.isRejected(mockPost.publish(), messages.ERR_SIGNATURE_IS_INVALID);
     });

@@ -27,16 +27,22 @@ describe("Test util functions", async () => {
     describe("loadIpnsAsJson", async () => {
         it("Throws if provided with invalid ipns", async () => {
             const gibberishIpns = "12345";
-            await assert.isRejected(plebbit._clientsManager.fetchIpns(gibberishIpns), messages.ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS); // Provide message here
-            await assert.isRejected(gatewayPlebbit._clientsManager.fetchIpns(gibberishIpns), messages.ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY); // Provide message here
+            await assert.isRejected(
+                plebbit._clientsManager.fetchSubplebbitIpns(gibberishIpns),
+                messages.ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS
+            ); // Provide message here
+            await assert.isRejected(
+                gatewayPlebbit._clientsManager.fetchSubplebbitIpns(gibberishIpns),
+                messages.ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY
+            ); // Provide message here
         });
         it("Loads an IPNS file as JSON correctly", async () => {
             const jsonFileTest = { 1234: "1234" };
             const cid = (await plebbit._clientsManager.getCurrentIpfs()._client.add(JSON.stringify(jsonFileTest))).path;
             const jsonFileAsIpns = await plebbit._clientsManager.getCurrentIpfs()._client.name.publish(cid, { allowOffline: true });
-            let jsonFileLoaded = JSON.parse(await plebbit._clientsManager.fetchIpns(jsonFileAsIpns.name));
+            let jsonFileLoaded = JSON.parse(await plebbit._clientsManager.fetchSubplebbitIpns(jsonFileAsIpns.name));
             expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
-            jsonFileLoaded = JSON.parse(await gatewayPlebbit._clientsManager.fetchIpns(jsonFileAsIpns.name));
+            jsonFileLoaded = JSON.parse(await gatewayPlebbit._clientsManager.fetchSubplebbitIpns(jsonFileAsIpns.name));
             expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
         });
 
@@ -52,7 +58,7 @@ describe("Test util functions", async () => {
                 })
             ).name;
 
-            await assert.isRejected(gatewayPlebbit._clientsManager.fetchIpns(ipns), messages.ERR_OVER_DOWNLOAD_LIMIT);
+            await assert.isRejected(gatewayPlebbit._clientsManager.fetchSubplebbitIpns(ipns), messages.ERR_OVER_DOWNLOAD_LIMIT);
         });
     });
 });

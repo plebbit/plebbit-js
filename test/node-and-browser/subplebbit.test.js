@@ -115,7 +115,7 @@ describe("plebbit.getSubplebbit", async () => {
         plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
     it("Can load subplebbit via IPNS address", async () => {
-        const _subplebbitIpns = JSON.parse(await plebbit._clientsManager.fetchIpns(subplebbitSigner.address));
+        const _subplebbitIpns = JSON.parse(await plebbit._clientsManager.fetchSubplebbitIpns(subplebbitSigner.address));
         expect(_subplebbitIpns.lastPostCid).to.be.a.string;
         expect(_subplebbitIpns.pubsubTopic).to.be.a.string;
         expect(_subplebbitIpns.address).to.be.a.string;
@@ -154,14 +154,14 @@ describe("plebbit.getSubplebbit", async () => {
     it(`plebbit.getSubplebbit() throws an error if fetched subplebbit has invalid signature`, async () => {
         const tempPlebbit = await mockPlebbit();
 
-        const subJson = JSON.parse(await tempPlebbit._clientsManager.fetchIpns(subplebbitAddress));
+        const subJson = JSON.parse(await tempPlebbit._clientsManager.fetchSubplebbitIpns(subplebbitAddress));
         subJson.updatedAt += 1; // Should invalidate the signature
         expect(await verifySubplebbit(subJson, tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager)).to.deep.equal({
             valid: false,
             reason: messages.ERR_SIGNATURE_IS_INVALID
         });
 
-        tempPlebbit._clientsManager.fetchIpns = () => JSON.stringify(subJson);
+        tempPlebbit._clientsManager.fetchSubplebbitIpns = () => JSON.stringify(subJson);
         await assert.isRejected(tempPlebbit.getSubplebbit(subplebbitAddress), messages.ERR_SIGNATURE_IS_INVALID);
     });
 });

@@ -276,7 +276,7 @@ describe(`comment.clients`, async () => {
 
             const mockPost = await gatewayPlebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
 
-            const expectedStates = ["fetching-ipfs", "stopped", "fetching-ipns", "stopped"];
+            const expectedStates = ["fetching-ipfs", "stopped", "fetching-update-ipns", "stopped"];
 
             const actualStates = [];
 
@@ -296,7 +296,7 @@ describe(`comment.clients`, async () => {
 
             const mockPost = await gatewayPlebbit.getComment(sub.posts.pages.hot.comments[0].cid);
 
-            const expectedStates = ["fetching-ipns", "stopped"];
+            const expectedStates = ["fetching-update-ipns", "stopped"];
 
             const actualStates = [];
 
@@ -314,7 +314,7 @@ describe(`comment.clients`, async () => {
         it(`Correct order of ipfsGateways state when publishing a comment`, async () => {
             const mockPost = await generateMockPost(signers[0].address, gatewayPlebbit);
 
-            const expectedStates = ["fetching-ipns", "stopped"];
+            const expectedStates = ["fetching-subplebbit-ipns", "stopped"];
 
             const actualStates = [];
 
