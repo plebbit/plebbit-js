@@ -15,13 +15,19 @@ import isIPFS from "is-ipfs";
 import Logger from "@plebbit/plebbit-logger";
 import { PlebbitError } from "../plebbit-error";
 import pLimit from "p-limit";
-import { GenericIpfsGatewayClient } from "./ipfs-gateway-client";
 import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client";
 import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client";
 import { GenericChainProviderClient } from "./chain-provider-client";
+import {
+    CommentIpfsGatewayClient,
+    GenericIpfsGatewayClient,
+    PublicationIpfsGatewayClient,
+    SubplebbitIpfsGatewayClient
+} from "./ipfs-gateway-client";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
+type LoadType = "subplebbit" | "comment-update" | "comment" | "generic-ipfs";
 export class ClientsManager {
     protected _plebbit: Plebbit;
     protected curPubsubNodeUrl: string; // The URL of the pubsub that is used currently
@@ -161,7 +167,7 @@ export class ClientsManager {
         }
     }
 
-    async fetchCidP2P(cid: string): Promise<string> {
+    protected async _fetchCidP2P(cid: string): Promise<string> {
         const ipfsClient = this.getCurrentIpfs();
         const fileContent = await ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES }); // Limit is 1mb files
         if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid });
@@ -178,7 +184,7 @@ export class ClientsManager {
         if (calculatedCid !== cid) throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid, cid });
     }
 
-    protected async fetchWithGateway(gateway: string, path: string): Promise<string | { error: PlebbitError }> {
+    protected async _fetchWithGateway(gateway: string, path: string, loadType: LoadType): Promise<string | { error: PlebbitError }> {
         const log = Logger("plebbit-js:plebbit:fetchWithGateway");
         const url = `${gateway}${path}`;
 
@@ -186,7 +192,20 @@ export class ClientsManager {
 
         const timeBefore = Date.now();
         const isCid = path.includes("/ipfs/"); // If false, then IPNS
-        this.updateGatewayState(isCid ? "fetching-ipfs" : "fetching-ipns", gateway);
+
+        // TODO this should to update to either fetching-subplebbit
+
+        const gatewayState =
+            loadType === "subplebbit"
+                ? this._getStatePriorToResolvingSubplebbitIpns()
+                : loadType === "comment-update"
+                ? "fetching-update-ipns"
+                : loadType === "comment" || loadType === "generic-ipfs"
+                ? "fetching-ipfs"
+                : undefined;
+
+        assert(gatewayState);
+        this.updateGatewayState(gatewayState, gateway);
         try {
             const resText = await this._fetchWithLimit(url, { cache: isCid ? "force-cache" : "no-store" });
             if (isCid) await this._verifyContentIsSameAsCid(resText, path.split("/ipfs/")[1]);
@@ -201,7 +220,7 @@ export class ClientsManager {
         }
     }
 
-    async fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string }): Promise<string> {
+    protected async fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string }, loadType: LoadType): Promise<string> {
         assert(loadOpts.cid || loadOpts.ipns);
 
         const path = loadOpts.cid ? `/ipfs/${loadOpts.cid}` : `/ipns/${loadOpts.ipns}`;
@@ -228,7 +247,7 @@ export class ClientsManager {
                 ? Object.keys(this._plebbit.clients.ipfsGateways)
                 : await this._plebbit.stats.sortGatewaysAccordingToScore(type);
 
-        const gatewayPromises = gatewaysSorted.map((gateway) => queueLimit(() => this.fetchWithGateway(gateway, path)));
+        const gatewayPromises = gatewaysSorted.map((gateway) => queueLimit(() => this._fetchWithGateway(gateway, path, loadType)));
 
         const res = await Promise.race([_firstResolve(gatewayPromises), Promise.allSettled(gatewayPromises)]);
         if (typeof res === "string") {
@@ -322,30 +341,37 @@ export class ClientsManager {
         } else return resolvedAuthorAddress;
     }
 
-    // Convience methods for plebbit here
-    // No need to update states
-
-    async fetchIpns(ipns: string) {
-        if (this.curIpfsNodeUrl) {
-            const subCid = await this.resolveIpnsToCidP2P(ipns);
-            return this.fetchCidP2P(subCid);
-        } else {
-            return this.fetchFromMultipleGateways({ ipns });
-        }
-    }
-
     async fetchCid(cid: string) {
         let finalCid = lodash.clone(cid);
         if (!isIPFS.cid(finalCid) && isIPFS.path(finalCid)) finalCid = finalCid.split("/")[2];
         if (!isIPFS.cid(finalCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
-        if (this.curIpfsNodeUrl) return this.fetchCidP2P(cid);
-        else return this.fetchFromMultipleGateways({ cid });
+        if (this.curIpfsNodeUrl) return this._fetchCidP2P(cid);
+        else return this.fetchFromMultipleGateways({ cid }, "generic-ipfs");
+    }
+
+    protected _getStatePriorToResolvingSubplebbitIpns(): "fetching-subplebbit-ipns" | "fetching-ipns" {
+        return "fetching-subplebbit-ipns";
+    }
+
+    protected _getStatePriorToResolvingSubplebbitIpfs(): "fetching-subplebbit-ipfs" | "fetching-ipfs" {
+        return "fetching-subplebbit-ipfs";
+    }
+
+    async fetchSubplebbitIpns(ipnsAddress: string): Promise<string> {
+        if (this.curIpfsNodeUrl) {
+            this.updateIpfsState(this._getStatePriorToResolvingSubplebbitIpns());
+            const subCid = await this.resolveIpnsToCidP2P(ipnsAddress);
+            this.updateIpfsState(this._getStatePriorToResolvingSubplebbitIpfs());
+            const content = await this._fetchCidP2P(subCid);
+            this.updateIpfsState("stopped");
+            return content;
+        } else return this.fetchFromMultipleGateways({ ipns: ipnsAddress }, "subplebbit");
     }
 }
 
 export class PublicationClientsManager extends ClientsManager {
     clients: {
-        ipfsGateways: { [ipfsGatewayUrl: string]: GenericIpfsGatewayClient };
+        ipfsGateways: { [ipfsGatewayUrl: string]: PublicationIpfsGatewayClient | CommentIpfsGatewayClient };
         ipfsClients: { [ipfsClientUrl: string]: PublicationIpfsClient | CommentIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: PublicationPubsubClient };
         chainProviders: { [chainProviderUrl: string]: GenericChainProviderClient };
@@ -395,9 +421,9 @@ export class PublicationClientsManager extends ClientsManager {
             const subCid = await this.resolveIpnsToCidP2P(subIpns);
             this._publication._updatePublishingState("fetching-subplebbit-ipfs");
             this.updateIpfsState("fetching-subplebbit-ipfs");
-            subJson = JSON.parse(await this.fetchCidP2P(subCid));
+            subJson = JSON.parse(await this._fetchCidP2P(subCid));
             this.updateIpfsState("stopped");
-        } else subJson = JSON.parse(await this.fetchFromMultipleGateways({ ipns: subIpns }));
+        } else subJson = JSON.parse(await this.fetchFromMultipleGateways({ ipns: subIpns }, "subplebbit"));
 
         const signatureValidity = await verifySubplebbit(subJson, this._plebbit.resolveAuthorAddresses, this);
 
@@ -414,11 +440,15 @@ export class PublicationClientsManager extends ClientsManager {
         this.clients.pubsubClients[this.curPubsubNodeUrl].state = newState;
         this.clients.pubsubClients[this.curPubsubNodeUrl].emit("statechange", newState);
     }
+
+    updateGatewayState(newState: PublicationIpfsGatewayClient["state"], gateway: string): void {
+        super.updateGatewayState(newState, gateway);
+    }
 }
 
 export class CommentClientsManager extends PublicationClientsManager {
     clients: {
-        ipfsGateways: { [ipfsGatewayUrl: string]: GenericIpfsGatewayClient };
+        ipfsGateways: { [ipfsGatewayUrl: string]: CommentIpfsGatewayClient };
         ipfsClients: { [ipfsClientUrl: string]: CommentIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: PublicationPubsubClient };
         chainProviders: { [chainProviderUrl: string]: GenericChainProviderClient };
@@ -443,12 +473,12 @@ export class CommentClientsManager extends PublicationClientsManager {
             const updateCid = await this.resolveIpnsToCidP2P(ipnsName);
             this._comment._setUpdatingState("fetching-update-ipfs");
             this.updateIpfsState("fetching-update-ipfs");
-            const commentUpdate: CommentUpdate = JSON.parse(await this.fetchCidP2P(updateCid));
+            const commentUpdate: CommentUpdate = JSON.parse(await this._fetchCidP2P(updateCid));
             this.updateIpfsState("stopped");
             return commentUpdate;
         } else {
             // States of gateways should be updated by fetchFromMultipleGateways
-            const update: CommentUpdate = JSON.parse(await this.fetchFromMultipleGateways({ ipns: ipnsName }));
+            const update: CommentUpdate = JSON.parse(await this.fetchFromMultipleGateways({ ipns: ipnsName }, "comment-update"));
             return update;
         }
     }
@@ -457,11 +487,11 @@ export class CommentClientsManager extends PublicationClientsManager {
         this._comment._setUpdatingState("fetching-ipfs");
         if (this.curIpfsNodeUrl) {
             this.updateIpfsState("fetching-ipfs");
-            const commentContent: CommentIpfsType = JSON.parse(await this.fetchCidP2P(cid));
+            const commentContent: CommentIpfsType = JSON.parse(await this._fetchCidP2P(cid));
             this.updateIpfsState("stopped");
             return commentContent;
         } else {
-            const commentContent: CommentIpfsType = JSON.parse(await this.fetchFromMultipleGateways({ cid }));
+            const commentContent: CommentIpfsType = JSON.parse(await this.fetchFromMultipleGateways({ cid }, "comment"));
             return commentContent;
         }
     }
@@ -473,7 +503,7 @@ export class CommentClientsManager extends PublicationClientsManager {
 
 export class SubplebbitClientsManager extends ClientsManager {
     clients: {
-        ipfsGateways: { [ipfsGatewayUrl: string]: GenericIpfsGatewayClient };
+        ipfsGateways: { [ipfsGatewayUrl: string]: SubplebbitIpfsGatewayClient };
         ipfsClients: { [ipfsClientUrl: string]: SubplebbitIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: SubplebbitPubsubClient };
         chainProviders: { [chainProviderUrl: string]: GenericChainProviderClient };
@@ -503,12 +533,12 @@ export class SubplebbitClientsManager extends ClientsManager {
             const subplebbitCid = await this.resolveIpnsToCidP2P(ipnsName);
             this._subplebbit._setUpdatingState("fetching-ipfs");
             this.updateIpfsState("fetching-ipfs");
-            const subplebbit: SubplebbitIpfsType = JSON.parse(await this.fetchCidP2P(subplebbitCid));
+            const subplebbit: SubplebbitIpfsType = JSON.parse(await this._fetchCidP2P(subplebbitCid));
             this.updateIpfsState("stopped");
             return subplebbit;
         } else {
             // States of gateways should be updated by fetchFromMultipleGateways
-            const update: SubplebbitIpfsType = JSON.parse(await this.fetchFromMultipleGateways({ ipns: ipnsName }));
+            const update: SubplebbitIpfsType = JSON.parse(await this.fetchFromMultipleGateways({ ipns: ipnsName }, "subplebbit"));
             return update;
         }
     }
@@ -521,7 +551,19 @@ export class SubplebbitClientsManager extends ClientsManager {
         super.updatePubsubState(newState);
     }
 
+    updateGatewayState(newState: CommentIpfsGatewayClient["state"], gateway: string): void {
+        super.updateGatewayState(newState, gateway);
+    }
+
     handleError(e: PlebbitError): void {
         this._subplebbit.emit("error", e);
+    }
+
+    protected _getStatePriorToResolvingSubplebbitIpns(): "fetching-subplebbit-ipns" | "fetching-ipns" {
+        return "fetching-ipns";
+    }
+
+    protected _getStatePriorToResolvingSubplebbitIpfs(): "fetching-subplebbit-ipfs" | "fetching-ipfs" {
+        return "fetching-ipfs";
     }
 }

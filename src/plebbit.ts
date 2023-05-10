@@ -203,7 +203,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
             throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
         const resolvedSubplebbitAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
-        const subplebbitJson: SubplebbitIpfsType = JSON.parse(await this._clientsManager.fetchIpns(resolvedSubplebbitAddress));
+        const subplebbitJson: SubplebbitIpfsType = JSON.parse(await this._clientsManager.fetchSubplebbitIpns(resolvedSubplebbitAddress));
         const signatureValidity = await verifySubplebbit(subplebbitJson, this.resolveAuthorAddresses, this._clientsManager);
 
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
