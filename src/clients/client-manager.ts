@@ -286,59 +286,48 @@ export class ClientsManager {
 
     // Resolver methods here
 
-    async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | undefined> {
-        assert(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
-        const log = Logger("plebbit-js:plebbit:resolver:resolveSubplebbitAddressIfNeeded");
-        let resolvedSubplebbitAddress: string = lodash.clone(subplebbitAddress);
-        const txtRecordName = "subplebbit-address";
-        if (subplebbitAddress.endsWith(".eth")) {
-            const resolveCache: string | undefined = await this._plebbit._cache.getItem(`${subplebbitAddress}_${txtRecordName}`); // TODO Should be rewritten
-            if (typeof resolveCache === "string") {
-                const resolvedTimestamp: number = await this._plebbit._cache.getItem(`${subplebbitAddress}_${txtRecordName}_timestamp`);
-                assert(typeof resolvedTimestamp === "number");
-                const shouldResolveAgain = timestamp() - resolvedTimestamp > 86400; // Only resolve again if last time was over a day
-                if (!shouldResolveAgain) return resolveCache;
-                log(`Cache of ENS (${subplebbitAddress}) txt record name (${txtRecordName}) is stale. Invalidating the cache...`);
-            }
+    private async _resolveEnsTextRecordWithCache(ens: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
+        const log = Logger("plebbit-js:plebbit:resolver:_resolveEnsTextRecord");
+        if (!ens.endsWith(".eth")) return ens;
+        const resolveCache: string | undefined = await this._plebbit._cache.getItem(`${ens}_${txtRecord}`); // TODO Should be rewritten
+        if (typeof resolveCache === "string") {
+            const resolvedTimestamp: number = await this._plebbit._cache.getItem(`${ens}_${txtRecord}_timestamp`);
+            assert(typeof resolvedTimestamp === "number");
+            const shouldResolveAgain = timestamp() - resolvedTimestamp > 86400; // Only resolve again if last time was over a day
+            if (!shouldResolveAgain) return resolveCache;
+            log(
+                `Cache of ENS (${ens}) txt record name (${txtRecord}) is stale. Returning stale result while resolving in background and updating cache`
+            );
+            this._resolveEnsTextRecord(ens, txtRecord);
+            return resolveCache;
+        } else return this._resolveEnsTextRecord(ens, txtRecord);
+    }
 
-            this.updateChainProviderState("resolving-subplebbit-address", "eth");
+    private async _resolveEnsTextRecord(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address") {
+        const timeouts = [0, 0, 100, 1000];
+        for (const timeout of timeouts) {
+            await new Promise((resolve) => setTimeout(resolve, timeout));
+            const newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
+            this.updateChainProviderState(newState, "eth");
             try {
-                resolvedSubplebbitAddress = await this._plebbit.resolver._resolveEnsTxtRecord(subplebbitAddress, "subplebbit-address");
+                const resolvedTxtRecord = await this._plebbit.resolver._resolveEnsTxtRecord(ens, txtRecordName);
                 this.updateChainProviderState("stopped", "eth");
-                return resolvedSubplebbitAddress;
+                return resolvedTxtRecord;
             } catch (e) {
                 this.updateChainProviderState("stopped", "eth");
-                throw e;
+                if (timeout === timeouts[timeouts.length - 1]) throw e;
             }
-        } else return resolvedSubplebbitAddress;
+        }
+    }
+
+    async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | undefined> {
+        assert(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
+        return this._resolveEnsTextRecordWithCache(subplebbitAddress, "subplebbit-address");
     }
 
     async resolveAuthorAddressIfNeeded(authorAddress: string) {
         assert(typeof authorAddress === "string", "subplebbitAddress needs to be a string to be resolved");
-        let resolvedAuthorAddress: string = lodash.clone(authorAddress);
-        const log = Logger("plebbit-js:plebbit:resolver:resolveAuthorAddressIfNeeded");
-
-        const txtRecordName = `plebbit-author-address`;
-        if (authorAddress.endsWith(".eth")) {
-            const resolveCache: string | undefined = await this._plebbit._cache.getItem(`${authorAddress}_${txtRecordName}`);
-            if (typeof resolveCache === "string") {
-                const resolvedTimestamp: number = await this._plebbit._cache.getItem(`${authorAddress}_${txtRecordName}_timestamp`);
-                assert(typeof resolvedTimestamp === "number");
-                const shouldResolveAgain = timestamp() - resolvedTimestamp > 86400; // Only resolve again if last time was over a day
-                if (!shouldResolveAgain) return resolveCache;
-                log(`Cache of ENS (${authorAddress}) txt record name (${txtRecordName}) is stale. Invalidating the cache...`);
-            }
-
-            this.updateChainProviderState("resolving-author-address", "eth");
-            try {
-                resolvedAuthorAddress = await this._plebbit.resolver._resolveEnsTxtRecord(authorAddress, txtRecordName);
-                this.updateChainProviderState("stopped", "eth");
-                return resolvedAuthorAddress;
-            } catch (e) {
-                this.updateChainProviderState("stopped", "eth");
-                throw e;
-            }
-        } else return resolvedAuthorAddress;
+        return this._resolveEnsTextRecordWithCache(authorAddress, "plebbit-author-address");
     }
 
     async fetchCid(cid: string) {
