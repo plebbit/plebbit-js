@@ -461,12 +461,7 @@ describe(`subplebbit.clients (Local)`, async () => {
         it(`correct order of pubsubClients state when receiving a comment while skipping challenge`, async () => {
             const mockSub = await createMockSub({}, plebbit);
 
-            const expectedStates = [
-                "subscribing-pubsub",
-                "waiting-challenge-requests",
-                "publishing-challenge-verification",
-                "waiting-challenge-requests"
-            ];
+            const expectedStates = ["waiting-challenge-requests", "publishing-challenge-verification", "waiting-challenge-requests"];
 
             const actualStates = [];
 
@@ -478,7 +473,7 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await new Promise((resolve) => mockSub.once("update", resolve));
 
-            await publishRandomPost(mockSub.address, plebbit, {}, false);
+            publishRandomPost(mockSub.address, plebbit, {}, false);
 
             await new Promise((resolve) => mockSub.once("challengeverification", resolve));
 
@@ -493,7 +488,6 @@ describe(`subplebbit.clients (Local)`, async () => {
             });
 
             const expectedStates = [
-                "subscribing-pubsub",
                 "waiting-challenge-requests",
                 "publishing-challenge",
                 "waiting-challenge-answers",
