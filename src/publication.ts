@@ -256,7 +256,6 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this._updatePublishingState("resolving-subplebbit-address");
         this.subplebbit = await this._clientsManager.fetchSubplebbitForPublishing(this.subplebbitAddress);
         this._updatePublishingState("publishing-challenge-request");
-        this._clientsManager.updatePubsubState("publishing-challenge-request");
 
         this._validateSubFields();
 
@@ -284,10 +283,22 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             ...toSignMsg,
             signature: await signChallengeRequest(toSignMsg, this.pubsubMessageSigner)
         });
-        log.trace(`Attempting to publish ${this.getType()} to pubsub topic (${this._pubsubTopicWithfallback()})`);
+        log.trace(
+            `Attempting to publish ${this.getType()} with challenge id (${
+                this._challengeRequest.challengeRequestId
+            }) to pubsub topic (${this._pubsubTopicWithfallback()})`
+        );
 
-        await this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
-        await this._clientsManager.publishChallengeRequest(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeRequest));
+        this._clientsManager.updatePubsubState("subscribing-pubsub");
+        try {
+            await this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
+            await this._clientsManager.publishChallengeRequest(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeRequest));
+        } catch (e) {
+            this._updatePublishingState("failed");
+            this._clientsManager.updatePubsubState("stopped");
+            this.emit("error", e);
+            throw e;
+        }
         this._clientsManager.updatePubsubState("waiting-challenge");
 
         this._updatePublishingState("waiting-challenge");

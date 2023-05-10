@@ -81,18 +81,28 @@ export class ClientsManager {
     }
 
     async pubsubSubscribe(pubsubTopic: string, handler: MessageHandlerFn) {
-        this.updatePubsubState("subscribing-pubsub");
-        await this.getCurrentPubsub()._client.pubsub.subscribe(pubsubTopic, handler);
+        try {
+            await this.getCurrentPubsub()._client.pubsub.subscribe(pubsubTopic, handler);
+        } catch (e) {
+            throwWithErrorCode("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic, pubsubNode: this.curPubsubNodeUrl, error: e });
+        }
     }
 
     async pubsubUnsubscribe(pubsubTopic: string, handler?: MessageHandlerFn) {
-        // this.updatePubsubState("stopped"); // Not sure this line should be here
-        await this.getCurrentPubsub()._client.pubsub.unsubscribe(pubsubTopic, handler);
+        try {
+            await this.getCurrentPubsub()._client.pubsub.unsubscribe(pubsubTopic, handler);
+        } catch (error) {
+            throwWithErrorCode("ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE", { pubsubTopic, pubsubNode: this.curPubsubNodeUrl, error });
+        }
     }
 
     async pubsubPublish(pubsubTopic: string, data: string) {
         const dataBinary = uint8ArrayFromString(data);
-        await this.getCurrentPubsub()._client.pubsub.publish(pubsubTopic, dataBinary);
+        try {
+            await this.getCurrentPubsub()._client.pubsub.publish(pubsubTopic, dataBinary);
+        } catch (error) {
+            throwWithErrorCode("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic, pubsubNode: this.curPubsubNodeUrl, error });
+        }
     }
 
     private async _fetchWithLimit(url: string, options?): Promise<string> {
@@ -359,6 +369,7 @@ export class PublicationClientsManager extends ClientsManager {
     }
 
     async publishChallengeRequest(pubsubTopic: string, data: string) {
+        this.updatePubsubState("publishing-challenge-request");
         await this.pubsubPublish(pubsubTopic, data);
     }
 
