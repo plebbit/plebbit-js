@@ -10,7 +10,7 @@ const {
     mockGatewayPlebbit
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
-
+const { messages } = require("../../../../dist/node/errors");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { default: waitUntil } = require("async-wait-until");
@@ -406,7 +406,7 @@ describe(`comment.clients`, async () => {
         it(`correct order of pubsubClients state when publishing a comment with a sub that skips challenge`, async () => {
             const mockPost = await generateMockPost(signers[0].address, plebbit);
 
-            const expectedStates = ["publishing-challenge-request", "subscribing-pubsub", "waiting-challenge", "stopped"];
+            const expectedStates = ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"];
 
             const actualStates = [];
 
@@ -426,8 +426,8 @@ describe(`comment.clients`, async () => {
             mockPost.removeAllListeners();
 
             const expectedStates = [
-                "publishing-challenge-request",
                 "subscribing-pubsub",
+                "publishing-challenge-request",
                 "waiting-challenge",
                 "waiting-challenge-answers",
                 "publishing-challenge-answers",
@@ -447,6 +447,27 @@ describe(`comment.clients`, async () => {
             });
 
             await publishWithExpectedResult(mockPost, true);
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+
+        it(`correct order of pubsubClients state when failing to publish a comment and the error is from the pubsub provider`, async () => {
+            const offlinePubsubUrl = ["http://localhost:13173"]; // Should be down
+            const offlinePubsubPlebbit = await Plebbit({
+                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                pubsubHttpClientsOptions: offlinePubsubUrl
+            });
+            offlinePubsubPlebbit.on("error", () => {});
+
+            const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
+
+            const expectedStates = ["subscribing-pubsub", "stopped"];
+
+            const actualStates = [];
+
+            mockPost.clients.pubsubClients[offlinePubsubUrl].on("statechange", (newState) => actualStates.push(newState));
+
+            await assert.isRejected(mockPost.publish(), messages.ERR_PUBSUB_FAILED_TO_SUBSCRIBE);
 
             expect(actualStates).to.deep.equal(expectedStates);
         });

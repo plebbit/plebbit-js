@@ -354,4 +354,19 @@ describe(`comment.publishingState`, async () => {
         expect(mockPost.publishingState).to.equal("failed");
         expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
+
+    it(`comment.publishingState = 'failed' if pubsub provider is down`, async () => {
+        const offlinePubsubUrl = "http://localhost:23425";
+        const offlinePubsubPlebbit = await Plebbit({
+            ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+            pubsubHttpClientsOptions: [offlinePubsubUrl]
+        });
+        offlinePubsubPlebbit.on("error", () => {});
+        const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
+
+        await assert.isRejected(mockPost.publish(), messages.ERR_PUBSUB_FAILED_TO_SUBSCRIBE);
+
+        expect(mockPost.publishingState).to.equal("failed");
+        expect(mockPost.clients.pubsubClients[offlinePubsubUrl].state).to.equal("stopped");
+    });
 });
