@@ -280,7 +280,7 @@ export class ClientsManager {
         this.clients.chainProviders[chainTicker].emit("statechange", newState);
     }
 
-    handleError(e: PlebbitError) {
+    emitError(e: PlebbitError) {
         this._plebbit.emit("error", e);
     }
 
@@ -304,9 +304,11 @@ export class ClientsManager {
     }
 
     private async _resolveEnsTextRecord(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address") {
+        const log = Logger("plebbit-js:plebbit:client-manager:_resolveEnsTextRecord");
         const timeouts = [0, 0, 100, 1000];
-        for (const timeout of timeouts) {
-            await new Promise((resolve) => setTimeout(resolve, timeout));
+        for (let i = 0; i < timeouts.length; i++) {
+            if (timeouts[i] !== 0) await new Promise((resolve) => setTimeout(resolve, timeouts[i]));
+            log(`Retrying to resolve ENS (${ens}) text record (${txtRecordName}) for the ${i}th time`);
             const newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
             this.updateChainProviderState(newState, "eth");
             try {
@@ -315,7 +317,10 @@ export class ClientsManager {
                 return resolvedTxtRecord;
             } catch (e) {
                 this.updateChainProviderState("stopped", "eth");
-                if (timeout === timeouts[timeouts.length - 1]) throw e;
+                if (i === timeouts.length - 1) {
+                    this.emitError(e);
+                    throw e;
+                }
             }
         }
     }
@@ -393,7 +398,7 @@ export class PublicationClientsManager extends ClientsManager {
         this.updatePubsubState("waiting-challenge-verification");
     }
 
-    handleError(e: PlebbitError): void {
+    emitError(e: PlebbitError): void {
         this._publication.emit("error", e);
     }
 
@@ -544,7 +549,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         super.updateGatewayState(newState, gateway);
     }
 
-    handleError(e: PlebbitError): void {
+    emitError(e: PlebbitError): void {
         this._subplebbit.emit("error", e);
     }
 
