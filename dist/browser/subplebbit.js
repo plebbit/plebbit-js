@@ -798,7 +798,7 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.storePublicationIfValid = function (publication, challengeRequestId) {
         var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function () {
-            var log, authorModEdits, msg, forbiddenAuthorFields, parentCid, parent_1, parentFlags, isParentDeleted, postFlags, isPostDeleted, forbiddenCommentFields_1, validRes, ipnsKeyName, commentToInsert, _e, ipfsSigner, _f, _g, _h, _j, trx, _k, _l, file, trx, _m, commentsUnderParent, parent_2, file;
+            var log, authorModEdits, msg, forbiddenAuthorFields, parentCid, parent_1, parentFlags, isParentDeleted, postFlags, isPostDeleted, forbiddenCommentFields_1, publicationKilobyteSize, validRes, ipnsKeyName, commentToInsert, _e, ipfsSigner, _f, _g, _h, _j, trx, _k, _l, file, trx, _m, commentsUnderParent, parent_2, file;
             return __generator(this, function (_o) {
                 switch (_o.label) {
                     case 0:
@@ -920,6 +920,11 @@ var Subplebbit = /** @class */ (function (_super) {
                         if (Object.keys(publication).some(function (key) { return forbiddenCommentFields_1.includes(key); })) {
                             log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_FORBIDDEN_COMMENT_FIELD);
                             return [2 /*return*/, errors_1.messages.ERR_FORBIDDEN_COMMENT_FIELD];
+                        }
+                        publicationKilobyteSize = Buffer.byteLength(JSON.stringify(publication)) / 1000;
+                        if (publicationKilobyteSize > 40) {
+                            log("(".concat(challengeRequestId, "): "), errors_1.messages.ERR_COMMENT_OVER_ALLOWED_SIZE);
+                            return [2 /*return*/, errors_1.messages.ERR_COMMENT_OVER_ALLOWED_SIZE];
                         }
                         return [4 /*yield*/, (0, signatures_1.verifyComment)(publication, this.plebbit.resolveAuthorAddresses, this._clientsManager, false)];
                     case 12:

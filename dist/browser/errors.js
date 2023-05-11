@@ -62,6 +62,7 @@ var messages;
     messages["ERR_DUPLICATE_COMMENT"] = "Comment is duplicated";
     messages["ERR_AUTHOR_ADDRESS_UNDEFINED"] = "author address is undefined";
     messages["ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG"] = "Subplebbit failed to decrypt the pubsub message";
+    messages["ERR_COMMENT_OVER_ALLOWED_SIZE"] = "Comment size is over the allowed size";
     // Resolver errors
     messages["ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER"] = "no chain provider options set for chain ticker";
     messages["ERR_ENS_RESOLVER_NOT_FOUND"] = "ENS resolver is not found";
