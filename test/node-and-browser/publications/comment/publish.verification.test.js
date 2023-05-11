@@ -77,6 +77,14 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
     it("Throws an error when publishing a duplicate post", async function () {
         await publishWithExpectedResult(post, false, messages.ERR_DUPLICATE_COMMENT);
     });
+
+    it(`Throws an error when comment is over size`, async () => {
+        const veryLongString = "Hello".repeat(10000);
+        const mockPost = await generateMockPost(signers[0].address, plebbit, false, { content: veryLongString });
+        // Size of post should be ~50kb now
+
+        await publishWithExpectedResult(mockPost, false, messages.ERR_COMMENT_OVER_ALLOWED_SIZE);
+    });
 });
 
 // TODO include tests for replies later. Not needed as of now
