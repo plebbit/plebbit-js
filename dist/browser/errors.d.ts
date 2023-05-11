@@ -60,5 +60,8 @@ export declare enum messages {
     ERR_SUB_STATE_LOCKED = "The internal state of the subplebbit in DB is locked",
     ERR_SUB_CREATION_LOCKED = "Subplebbit creation is locked",
     ERR_SUB_ALREADY_STARTED = "Subplebbit already started",
-    ERR_FAILED_TO_IMPORT_IPFS_KEY = "Subplebbit failed to import IPFS key"
+    ERR_FAILED_TO_IMPORT_IPFS_KEY = "Subplebbit failed to import IPFS key",
+    ERR_PUBSUB_FAILED_TO_SUBSCRIBE = "Failed to subscribe on pubsub",
+    ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE = "Failed to unsubscribe on pubsub",
+    ERR_PUBSUB_FAILED_TO_PUBLISH = "Failed to publish on pubsub"
 }

@@ -293,7 +293,7 @@ var Publication = /** @class */ (function (_super) {
     };
     Publication.prototype.publish = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, options, _a, _b, encryptedPublication, toSignMsg, _c, _d, _e;
+            var log, options, _a, _b, encryptedPublication, toSignMsg, _c, _d, _e, e_1;
             var _f;
             return __generator(this, function (_g) {
                 switch (_g.label) {
@@ -308,7 +308,6 @@ var Publication = /** @class */ (function (_super) {
                     case 1:
                         _a.subplebbit = _g.sent();
                         this._updatePublishingState("publishing-challenge-request");
-                        this._clientsManager.updatePubsubState("publishing-challenge-request");
                         this._validateSubFields();
                         return [4 /*yield*/, this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
                     case 2:
@@ -336,13 +335,25 @@ var Publication = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signatures_1.signChallengeRequest)(toSignMsg, this.pubsubMessageSigner)];
                     case 5:
                         _c._challengeRequest = new (_d.apply(challenge_1.ChallengeRequestMessage, [void 0, __assign.apply(void 0, _e.concat([(_f.signature = _g.sent(), _f)]))]))();
-                        log.trace("Attempting to publish ".concat(this.getType(), " to pubsub topic (").concat(this._pubsubTopicWithfallback(), ")"));
-                        return [4 /*yield*/, this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
+                        log.trace("Attempting to publish ".concat(this.getType(), " with challenge id (").concat(this._challengeRequest.challengeRequestId, ") to pubsub topic (").concat(this._pubsubTopicWithfallback(), ")"));
+                        this._clientsManager.updatePubsubState("subscribing-pubsub");
+                        _g.label = 6;
                     case 6:
-                        _g.sent();
-                        return [4 /*yield*/, this._clientsManager.publishChallengeRequest(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeRequest))];
+                        _g.trys.push([6, 9, , 10]);
+                        return [4 /*yield*/, this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
                     case 7:
                         _g.sent();
+                        return [4 /*yield*/, this._clientsManager.publishChallengeRequest(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeRequest))];
+                    case 8:
+                        _g.sent();
+                        return [3 /*break*/, 10];
+                    case 9:
+                        e_1 = _g.sent();
+                        this._updatePublishingState("failed");
+                        this._clientsManager.updatePubsubState("stopped");
+                        this.emit("error", e_1);
+                        throw e_1;
+                    case 10:
                         this._clientsManager.updatePubsubState("waiting-challenge");
                         this._updatePublishingState("waiting-challenge");
                         log("Sent a challenge request (".concat(this._challengeRequest.challengeRequestId, ")"));

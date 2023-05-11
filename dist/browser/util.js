@@ -50,7 +50,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parseJsonStrings = exports.parsePagesIpfs = exports.parsePageIpfs = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.delay = exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parseJsonStrings = exports.parsePagesIpfs = exports.parsePageIpfs = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var lodash_1 = __importDefault(require("lodash"));
 var assert_1 = __importDefault(require("assert"));
 var pages_1 = require("./pages");
@@ -315,4 +315,8 @@ function shortifyCid(cid) {
     return cid.slice(2).slice(0, 12);
 }
 exports.shortifyCid = shortifyCid;
+function delay(ms) {
+    return new Promise(function (resolve) { return setTimeout(resolve, ms); });
+}
+exports.delay = delay;
 //# sourceMappingURL=util.js.map
