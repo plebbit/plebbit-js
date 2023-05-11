@@ -281,7 +281,7 @@ var Plebbit = /** @class */ (function (_super) {
                     case 1:
                         resolvedSubplebbitAddress = _c.sent();
                         _b = (_a = JSON).parse;
-                        return [4 /*yield*/, this._clientsManager.fetchIpns(resolvedSubplebbitAddress)];
+                        return [4 /*yield*/, this._clientsManager.fetchSubplebbitIpns(resolvedSubplebbitAddress)];
                     case 2:
                         subplebbitJson = _b.apply(_a, [_c.sent()]);
                         return [4 /*yield*/, (0, signer_1.verifySubplebbit)(subplebbitJson, this.resolveAuthorAddresses, this._clientsManager)];

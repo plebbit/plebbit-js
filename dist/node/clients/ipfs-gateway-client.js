@@ -15,16 +15,48 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GenericIpfsGatewayClient = void 0;
+exports.SubplebbitIpfsGatewayClient = exports.CommentIpfsGatewayClient = exports.PublicationIpfsGatewayClient = exports.GenericIpfsGatewayClient = void 0;
 var tiny_typed_emitter_1 = require("tiny-typed-emitter");
-var GenericIpfsGatewayClient = /** @class */ (function (_super) {
-    __extends(GenericIpfsGatewayClient, _super);
-    function GenericIpfsGatewayClient(state) {
+// Client classes
+var BaseIpfsGateway = /** @class */ (function (_super) {
+    __extends(BaseIpfsGateway, _super);
+    function BaseIpfsGateway(state) {
         var _this = _super.call(this) || this;
         _this.state = state;
         return _this;
     }
-    return GenericIpfsGatewayClient;
+    return BaseIpfsGateway;
 }(tiny_typed_emitter_1.TypedEmitter));
+var GenericIpfsGatewayClient = /** @class */ (function (_super) {
+    __extends(GenericIpfsGatewayClient, _super);
+    function GenericIpfsGatewayClient() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return GenericIpfsGatewayClient;
+}(BaseIpfsGateway));
 exports.GenericIpfsGatewayClient = GenericIpfsGatewayClient;
+var PublicationIpfsGatewayClient = /** @class */ (function (_super) {
+    __extends(PublicationIpfsGatewayClient, _super);
+    function PublicationIpfsGatewayClient() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return PublicationIpfsGatewayClient;
+}(BaseIpfsGateway));
+exports.PublicationIpfsGatewayClient = PublicationIpfsGatewayClient;
+var CommentIpfsGatewayClient = /** @class */ (function (_super) {
+    __extends(CommentIpfsGatewayClient, _super);
+    function CommentIpfsGatewayClient() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return CommentIpfsGatewayClient;
+}(BaseIpfsGateway));
+exports.CommentIpfsGatewayClient = CommentIpfsGatewayClient;
+var SubplebbitIpfsGatewayClient = /** @class */ (function (_super) {
+    __extends(SubplebbitIpfsGatewayClient, _super);
+    function SubplebbitIpfsGatewayClient() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return SubplebbitIpfsGatewayClient;
+}(BaseIpfsGateway));
+exports.SubplebbitIpfsGatewayClient = SubplebbitIpfsGatewayClient;
 //# sourceMappingURL=ipfs-gateway-client.js.map

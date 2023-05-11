@@ -35,3 +35,4 @@ export declare const parseJsonStrings: (obj: any) => any;
 export declare function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | Pages | undefined, parentCid: string | undefined, subplebbit: Pages["_subplebbit"], clientManager: ClientsManager): Promise<Pages>;
 export declare function shortifyAddress(address: string): string;
 export declare function shortifyCid(cid: string): string;
+export declare function delay(ms: number): Promise<void>;

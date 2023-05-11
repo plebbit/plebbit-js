@@ -5,10 +5,11 @@ import { Comment } from "../comment";
 import { CommentIpfsType, CommentUpdate, SubplebbitIpfsType } from "../types";
 import { Subplebbit } from "../subplebbit";
 import { PlebbitError } from "../plebbit-error";
-import { GenericIpfsGatewayClient } from "./ipfs-gateway-client";
 import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client";
 import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client";
 import { GenericChainProviderClient } from "./chain-provider-client";
+import { CommentIpfsGatewayClient, GenericIpfsGatewayClient, PublicationIpfsGatewayClient, SubplebbitIpfsGatewayClient } from "./ipfs-gateway-client";
+declare type LoadType = "subplebbit" | "comment-update" | "comment" | "generic-ipfs";
 export declare class ClientsManager {
     protected _plebbit: Plebbit;
     protected curPubsubNodeUrl: string;
@@ -40,29 +41,33 @@ export declare class ClientsManager {
     pubsubPublish(pubsubTopic: string, data: string): Promise<void>;
     private _fetchWithLimit;
     resolveIpnsToCidP2P(ipns: string): Promise<string>;
-    fetchCidP2P(cid: string): Promise<string>;
+    protected _fetchCidP2P(cid: string): Promise<string>;
     private _verifyContentIsSameAsCid;
-    protected fetchWithGateway(gateway: string, path: string): Promise<string | {
+    protected _fetchWithGateway(gateway: string, path: string, loadType: LoadType): Promise<string | {
         error: PlebbitError;
     }>;
-    fetchFromMultipleGateways(loadOpts: {
+    protected fetchFromMultipleGateways(loadOpts: {
         cid?: string;
         ipns?: string;
-    }): Promise<string>;
+    }, loadType: LoadType): Promise<string>;
     updatePubsubState(newState: GenericPubsubClient["state"]): void;
     updateIpfsState(newState: GenericIpfsClient["state"]): void;
     updateGatewayState(newState: GenericIpfsGatewayClient["state"], gateway: string): void;
     updateChainProviderState(newState: GenericChainProviderClient["state"], chainTicker: string): void;
-    handleError(e: PlebbitError): void;
+    emitError(e: PlebbitError): void;
+    private _resolveEnsTextRecordWithCache;
+    private _resolveEnsTextRecord;
     resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | undefined>;
     resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string>;
-    fetchIpns(ipns: string): Promise<string>;
     fetchCid(cid: string): Promise<string>;
+    protected _getStatePriorToResolvingSubplebbitIpns(): "fetching-subplebbit-ipns" | "fetching-ipns";
+    protected _getStatePriorToResolvingSubplebbitIpfs(): "fetching-subplebbit-ipfs" | "fetching-ipfs";
+    fetchSubplebbitIpns(ipnsAddress: string): Promise<string>;
 }
 export declare class PublicationClientsManager extends ClientsManager {
     clients: {
         ipfsGateways: {
-            [ipfsGatewayUrl: string]: GenericIpfsGatewayClient;
+            [ipfsGatewayUrl: string]: PublicationIpfsGatewayClient | CommentIpfsGatewayClient;
         };
         ipfsClients: {
             [ipfsClientUrl: string]: PublicationIpfsClient | CommentIpfsClient;
@@ -80,15 +85,16 @@ export declare class PublicationClientsManager extends ClientsManager {
     protected _initPubsubClients(): void;
     publishChallengeRequest(pubsubTopic: string, data: string): Promise<void>;
     publishChallengeAnswer(pubsubTopic: string, data: string): Promise<void>;
-    handleError(e: PlebbitError): void;
+    emitError(e: PlebbitError): void;
     fetchSubplebbitForPublishing(subplebbitAddress: string): Promise<SubplebbitIpfsType>;
     updateIpfsState(newState: PublicationIpfsClient["state"] | CommentIpfsClient["state"]): void;
     updatePubsubState(newState: PublicationPubsubClient["state"]): void;
+    updateGatewayState(newState: PublicationIpfsGatewayClient["state"], gateway: string): void;
 }
 export declare class CommentClientsManager extends PublicationClientsManager {
     clients: {
         ipfsGateways: {
-            [ipfsGatewayUrl: string]: GenericIpfsGatewayClient;
+            [ipfsGatewayUrl: string]: CommentIpfsGatewayClient;
         };
         ipfsClients: {
             [ipfsClientUrl: string]: CommentIpfsClient;
@@ -110,7 +116,7 @@ export declare class CommentClientsManager extends PublicationClientsManager {
 export declare class SubplebbitClientsManager extends ClientsManager {
     clients: {
         ipfsGateways: {
-            [ipfsGatewayUrl: string]: GenericIpfsGatewayClient;
+            [ipfsGatewayUrl: string]: SubplebbitIpfsGatewayClient;
         };
         ipfsClients: {
             [ipfsClientUrl: string]: SubplebbitIpfsClient;
@@ -129,5 +135,9 @@ export declare class SubplebbitClientsManager extends ClientsManager {
     fetchSubplebbit(ipnsName: string): Promise<SubplebbitIpfsType>;
     updateIpfsState(newState: SubplebbitIpfsClient["state"]): void;
     updatePubsubState(newState: SubplebbitPubsubClient["state"]): void;
-    handleError(e: PlebbitError): void;
+    updateGatewayState(newState: CommentIpfsGatewayClient["state"], gateway: string): void;
+    emitError(e: PlebbitError): void;
+    protected _getStatePriorToResolvingSubplebbitIpns(): "fetching-subplebbit-ipns" | "fetching-ipns";
+    protected _getStatePriorToResolvingSubplebbitIpfs(): "fetching-subplebbit-ipfs" | "fetching-ipfs";
 }
+export {};
