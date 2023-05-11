@@ -752,6 +752,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 return messages.ERR_FORBIDDEN_COMMENT_FIELD;
             }
 
+            // Reject publications if their size is over 40kb
+            const publicationKilobyteSize = Buffer.byteLength(JSON.stringify(publication)) / 1000;
+
+            if (publicationKilobyteSize > 40) {
+                log(`(${challengeRequestId}): `, messages.ERR_COMMENT_OVER_ALLOWED_SIZE);
+                return messages.ERR_COMMENT_OVER_ALLOWED_SIZE;
+            }
+
             const validRes = await verifyComment(publication, this.plebbit.resolveAuthorAddresses, this._clientsManager, false);
 
             if (!validRes.valid) {

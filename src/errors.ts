@@ -65,6 +65,7 @@ export enum messages {
     ERR_DUPLICATE_COMMENT = "Comment is duplicated",
     ERR_AUTHOR_ADDRESS_UNDEFINED = "author address is undefined",
     ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG = "Subplebbit failed to decrypt the pubsub message",
+    ERR_COMMENT_OVER_ALLOWED_SIZE = "Comment size is over the allowed size",
 
     // Resolver errors
     ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER = "no chain provider options set for chain ticker",
