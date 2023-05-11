@@ -230,3 +230,7 @@ export function shortifyCid(cid: string): string {
     // Return first 12 characters
     return cid.slice(2).slice(0, 12);
 }
+
+export function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}

@@ -3,7 +3,7 @@ import Publication from "../publication";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { Plebbit } from "../plebbit";
 import { Comment } from "../comment";
-import { throwWithErrorCode, timestamp } from "../util";
+import { delay, throwWithErrorCode, timestamp } from "../util";
 import assert from "assert";
 import { CommentIpfsType, CommentUpdate, SubplebbitIpfsType } from "../types";
 import Hash from "ipfs-only-hash";
@@ -307,7 +307,7 @@ export class ClientsManager {
         const log = Logger("plebbit-js:plebbit:client-manager:_resolveEnsTextRecord");
         const timeouts = [0, 0, 100, 1000];
         for (let i = 0; i < timeouts.length; i++) {
-            if (timeouts[i] !== 0) await new Promise((resolve) => setTimeout(resolve, timeouts[i]));
+            if (timeouts[i] !== 0) await delay(timeouts[i]);
             log(`Retrying to resolve ENS (${ens}) text record (${txtRecordName}) for the ${i}th time`);
             const newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
             this.updateChainProviderState(newState, "eth");
