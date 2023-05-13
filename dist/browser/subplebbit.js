@@ -488,7 +488,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 1:
                         subState = _a.sent();
                         if (!((0, safe_stable_stringify_1.stringify)(this.toJSONInternal()) !== (0, safe_stable_stringify_1.stringify)(subState))) return [3 /*break*/, 3];
-                        log("Remote Subplebbit received a new update. Will emit an update event");
+                        log("Local Subplebbit received a new update. Will emit an update event");
                         this._setUpdatingState("succeeded");
                         return [4 /*yield*/, this.initSubplebbit(subState)];
                     case 2:

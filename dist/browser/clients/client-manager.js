@@ -441,7 +441,7 @@ var ClientsManager = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:resolver:_resolveEnsTextRecord");
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:client-manager:_resolveEnsTextRecordWithCache");
                         if (!ens.endsWith(".eth"))
                             return [2 /*return*/, ens];
                         return [4 /*yield*/, this._plebbit._cache.getItem("".concat(ens, "_").concat(txtRecord))];
@@ -452,10 +452,10 @@ var ClientsManager = /** @class */ (function () {
                     case 2:
                         resolvedTimestamp = _a.sent();
                         (0, assert_1.default)(typeof resolvedTimestamp === "number");
-                        shouldResolveAgain = (0, util_1.timestamp)() - resolvedTimestamp > 86400;
+                        shouldResolveAgain = (0, util_1.timestamp)() - resolvedTimestamp > 3600;
                         if (!shouldResolveAgain)
                             return [2 /*return*/, resolveCache];
-                        log("Cache of ENS (".concat(ens, ") txt record name (").concat(txtRecord, ") is stale. Returning stale result while resolving in background and updating cache"));
+                        log.trace("Cache of ENS (".concat(ens, ") txt record name (").concat(txtRecord, ") is stale. Returning stale result while resolving in background and updating cache"));
                         this._resolveEnsTextRecord(ens, txtRecord);
                         return [2 /*return*/, resolveCache];
                     case 3: return [2 /*return*/, this._resolveEnsTextRecord(ens, txtRecord)];
@@ -481,7 +481,7 @@ var ClientsManager = /** @class */ (function () {
                         _a.sent();
                         _a.label = 3;
                     case 3:
-                        log("Retrying to resolve ENS (".concat(ens, ") text record (").concat(txtRecordName, ") for the ").concat(i, "th time"));
+                        log.trace("Retrying to resolve ENS (".concat(ens, ") text record (").concat(txtRecordName, ") for the ").concat(i, "th time"));
                         newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
                         this.updateChainProviderState(newState, "eth");
                         _a.label = 4;
