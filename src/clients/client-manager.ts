@@ -286,21 +286,24 @@ export class ClientsManager {
 
     // Resolver methods here
 
-    private async _resolveEnsTextRecordWithCache(ens: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
-        const log = Logger("plebbit-js:plebbit:client-manager:_resolveEnsTextRecordWithCache");
-        if (!ens.endsWith(".eth")) return ens;
+    private async _getCachedEns(
+        ens: string,
+        txtRecord: "subplebbit-address" | "plebbit-author-address"
+    ): Promise<{ stale: boolean; resolveCache: string | undefined } | undefined> {
         const resolveCache: string | undefined = await this._plebbit._cache.getItem(`${ens}_${txtRecord}`);
         if (typeof resolveCache === "string") {
             const resolvedTimestamp: number = await this._plebbit._cache.getItem(`${ens}_${txtRecord}_timestamp`);
             assert(typeof resolvedTimestamp === "number");
-            const shouldResolveAgain = timestamp() - resolvedTimestamp > 3600; // Only resolve again if cache was stored over an hour ago
-            if (!shouldResolveAgain) return resolveCache;
-            log.trace(
-                `Cache of ENS (${ens}) txt record name (${txtRecord}) is stale. Returning stale result while resolving in background and updating cache`
-            );
-            this._resolveEnsTextRecord(ens, txtRecord);
-            return resolveCache;
-        } else return this._resolveEnsTextRecord(ens, txtRecord);
+            const stale = timestamp() - resolvedTimestamp > 3600; // Only resolve again if cache was stored over an hour ago
+            return { stale, resolveCache };
+        }
+        return undefined;
+    }
+
+    private async _resolveEnsTextRecordWithCache(ens: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
+        if (!ens.endsWith(".eth")) return ens;
+
+        return this._resolveEnsTextRecord(ens, txtRecord);
     }
 
     private async _resolveEnsTextRecord(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address") {
@@ -308,6 +311,8 @@ export class ClientsManager {
         const timeouts = [0, 0, 100, 1000];
         for (let i = 0; i < timeouts.length; i++) {
             if (timeouts[i] !== 0) await delay(timeouts[i]);
+            const cacheEns = await this._getCachedEns(ens, txtRecordName);
+            if (cacheEns && !cacheEns.stale) return cacheEns.resolveCache;
             log.trace(`Retrying to resolve ENS (${ens}) text record (${txtRecordName}) for the ${i}th time`);
             const newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
             this.updateChainProviderState(newState, "eth");

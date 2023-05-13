@@ -288,6 +288,9 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions) {
         else return undefined;
     };
 
+    //@ts-expect-error
+    plebbit._clientsManager._getCachedEns = () => undefined;
+
     plebbit.clients.pubsubClients[Object.keys(plebbit.clients.pubsubClients)[0]]._client = createMockIpfsClient();
     plebbit.on("error", () => {});
     return plebbit;
