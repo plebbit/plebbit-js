@@ -287,15 +287,15 @@ export class ClientsManager {
     // Resolver methods here
 
     private async _resolveEnsTextRecordWithCache(ens: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
-        const log = Logger("plebbit-js:plebbit:resolver:_resolveEnsTextRecord");
+        const log = Logger("plebbit-js:plebbit:client-manager:_resolveEnsTextRecordWithCache");
         if (!ens.endsWith(".eth")) return ens;
-        const resolveCache: string | undefined = await this._plebbit._cache.getItem(`${ens}_${txtRecord}`); // TODO Should be rewritten
+        const resolveCache: string | undefined = await this._plebbit._cache.getItem(`${ens}_${txtRecord}`);
         if (typeof resolveCache === "string") {
             const resolvedTimestamp: number = await this._plebbit._cache.getItem(`${ens}_${txtRecord}_timestamp`);
             assert(typeof resolvedTimestamp === "number");
-            const shouldResolveAgain = timestamp() - resolvedTimestamp > 86400; // Only resolve again if last time was over a day
+            const shouldResolveAgain = timestamp() - resolvedTimestamp > 3600; // Only resolve again if cache was stored over an hour ago
             if (!shouldResolveAgain) return resolveCache;
-            log(
+            log.trace(
                 `Cache of ENS (${ens}) txt record name (${txtRecord}) is stale. Returning stale result while resolving in background and updating cache`
             );
             this._resolveEnsTextRecord(ens, txtRecord);
@@ -308,7 +308,7 @@ export class ClientsManager {
         const timeouts = [0, 0, 100, 1000];
         for (let i = 0; i < timeouts.length; i++) {
             if (timeouts[i] !== 0) await delay(timeouts[i]);
-            log(`Retrying to resolve ENS (${ens}) text record (${txtRecordName}) for the ${i}th time`);
+            log.trace(`Retrying to resolve ENS (${ens}) text record (${txtRecordName}) for the ${i}th time`);
             const newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
             this.updateChainProviderState(newState, "eth");
             try {
