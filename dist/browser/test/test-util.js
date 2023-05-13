@@ -479,6 +479,8 @@ function mockPlebbit(plebbitOptions) {
                             return [2 /*return*/];
                         });
                     }); };
+                    //@ts-expect-error
+                    plebbit._clientsManager._getCachedEns = function () { return undefined; };
                     plebbit.clients.pubsubClients[Object.keys(plebbit.clients.pubsubClients)[0]]._client = (0, mock_ipfs_client_1.create)();
                     plebbit.on("error", function () { });
                     return [2 /*return*/, plebbit];

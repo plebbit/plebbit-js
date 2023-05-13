@@ -435,16 +435,12 @@ var ClientsManager = /** @class */ (function () {
         this._plebbit.emit("error", e);
     };
     // Resolver methods here
-    ClientsManager.prototype._resolveEnsTextRecordWithCache = function (ens, txtRecord) {
+    ClientsManager.prototype._getCachedEns = function (ens, txtRecord) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, resolveCache, resolvedTimestamp, shouldResolveAgain;
+            var resolveCache, resolvedTimestamp, stale;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:client-manager:_resolveEnsTextRecordWithCache");
-                        if (!ens.endsWith(".eth"))
-                            return [2 /*return*/, ens];
-                        return [4 /*yield*/, this._plebbit._cache.getItem("".concat(ens, "_").concat(txtRecord))];
+                    case 0: return [4 /*yield*/, this._plebbit._cache.getItem("".concat(ens, "_").concat(txtRecord))];
                     case 1:
                         resolveCache = _a.sent();
                         if (!(typeof resolveCache === "string")) return [3 /*break*/, 3];
@@ -452,20 +448,25 @@ var ClientsManager = /** @class */ (function () {
                     case 2:
                         resolvedTimestamp = _a.sent();
                         (0, assert_1.default)(typeof resolvedTimestamp === "number");
-                        shouldResolveAgain = (0, util_1.timestamp)() - resolvedTimestamp > 3600;
-                        if (!shouldResolveAgain)
-                            return [2 /*return*/, resolveCache];
-                        log.trace("Cache of ENS (".concat(ens, ") txt record name (").concat(txtRecord, ") is stale. Returning stale result while resolving in background and updating cache"));
-                        this._resolveEnsTextRecord(ens, txtRecord);
-                        return [2 /*return*/, resolveCache];
-                    case 3: return [2 /*return*/, this._resolveEnsTextRecord(ens, txtRecord)];
+                        stale = (0, util_1.timestamp)() - resolvedTimestamp > 3600;
+                        return [2 /*return*/, { stale: stale, resolveCache: resolveCache }];
+                    case 3: return [2 /*return*/, undefined];
                 }
+            });
+        });
+    };
+    ClientsManager.prototype._resolveEnsTextRecordWithCache = function (ens, txtRecord) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                if (!ens.endsWith(".eth"))
+                    return [2 /*return*/, ens];
+                return [2 /*return*/, this._resolveEnsTextRecord(ens, txtRecord)];
             });
         });
     };
     ClientsManager.prototype._resolveEnsTextRecord = function (ens, txtRecordName) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, timeouts, i, newState, resolvedTxtRecord, e_4;
+            var log, timeouts, i, cacheEns, newState, resolvedTxtRecord, e_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -474,36 +475,40 @@ var ClientsManager = /** @class */ (function () {
                         i = 0;
                         _a.label = 1;
                     case 1:
-                        if (!(i < timeouts.length)) return [3 /*break*/, 8];
+                        if (!(i < timeouts.length)) return [3 /*break*/, 9];
                         if (!(timeouts[i] !== 0)) return [3 /*break*/, 3];
                         return [4 /*yield*/, (0, util_1.delay)(timeouts[i])];
                     case 2:
                         _a.sent();
                         _a.label = 3;
-                    case 3:
+                    case 3: return [4 /*yield*/, this._getCachedEns(ens, txtRecordName)];
+                    case 4:
+                        cacheEns = _a.sent();
+                        if (cacheEns && !cacheEns.stale)
+                            return [2 /*return*/, cacheEns.resolveCache];
                         log.trace("Retrying to resolve ENS (".concat(ens, ") text record (").concat(txtRecordName, ") for the ").concat(i, "th time"));
                         newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
                         this.updateChainProviderState(newState, "eth");
-                        _a.label = 4;
-                    case 4:
-                        _a.trys.push([4, 6, , 7]);
-                        return [4 /*yield*/, this._plebbit.resolver._resolveEnsTxtRecord(ens, txtRecordName)];
+                        _a.label = 5;
                     case 5:
+                        _a.trys.push([5, 7, , 8]);
+                        return [4 /*yield*/, this._plebbit.resolver._resolveEnsTxtRecord(ens, txtRecordName)];
+                    case 6:
                         resolvedTxtRecord = _a.sent();
                         this.updateChainProviderState("stopped", "eth");
                         return [2 /*return*/, resolvedTxtRecord];
-                    case 6:
+                    case 7:
                         e_4 = _a.sent();
                         this.updateChainProviderState("stopped", "eth");
                         if (i === timeouts.length - 1) {
                             this.emitError(e_4);
                             throw e_4;
                         }
-                        return [3 /*break*/, 7];
-                    case 7:
+                        return [3 /*break*/, 8];
+                    case 8:
                         i++;
                         return [3 /*break*/, 1];
-                    case 8: return [2 /*return*/];
+                    case 9: return [2 /*return*/];
                 }
             });
         });

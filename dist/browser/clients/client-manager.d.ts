@@ -55,6 +55,7 @@ export declare class ClientsManager {
     updateGatewayState(newState: GenericIpfsGatewayClient["state"], gateway: string): void;
     updateChainProviderState(newState: GenericChainProviderClient["state"], chainTicker: string): void;
     emitError(e: PlebbitError): void;
+    private _getCachedEns;
     private _resolveEnsTextRecordWithCache;
     private _resolveEnsTextRecord;
     resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | undefined>;
