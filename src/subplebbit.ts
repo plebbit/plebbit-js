@@ -398,7 +398,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const subState = await this._getDbInternalState(false);
 
             if (deterministicStringify(this.toJSONInternal()) !== deterministicStringify(subState)) {
-                log(`Remote Subplebbit received a new update. Will emit an update event`);
+                log(`Local Subplebbit received a new update. Will emit an update event`);
                 this._setUpdatingState("succeeded");
                 await this.initSubplebbit(subState);
                 this.emit("update", this);
