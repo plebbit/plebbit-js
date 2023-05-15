@@ -15,8 +15,6 @@ const { v4 } = require("uuid");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-const syncInterval = 300;
-
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 describe(`subplebbit.edit`, async () => {
@@ -44,7 +42,6 @@ describe(`subplebbit.edit`, async () => {
                 await subplebbit.edit(editArgs);
                 expect(subplebbit[keyToEdit]).to.equal(newValue);
                 const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
-                loadedSubplebbit._updateIntervalMs = syncInterval;
                 await loadedSubplebbit.update();
                 await waitUntil(() => loadedSubplebbit[keyToEdit] === newValue, { timeout: 200000 });
                 loadedSubplebbit.stop();
@@ -60,10 +57,9 @@ describe(`subplebbit.edit`, async () => {
 
     it(`Can edit a subplebbit to have ENS domain as address`, async () => {
         expect(subplebbit.posts.pages).to.not.deep.equal({});
-        const oldUpdatedAt = lodash.clone(subplebbit.updatedAt);
         await subplebbit.edit({ address: ethAddress });
         expect(subplebbit.address).to.equal(ethAddress);
-        await waitUntil(() => subplebbit.updatedAt !== oldUpdatedAt, { timeout: 50000 });
+        await new Promise((resolve) => subplebbit.once("update", resolve));
         expect(subplebbit.address).to.equal(ethAddress);
     });
 
@@ -74,7 +70,7 @@ describe(`subplebbit.edit`, async () => {
     });
 
     it(`Can load a subplebbit with ENS domain as address`, async () => {
-        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
+        const loadedSubplebbit = await plebbit.getSubplebbit(ethAddress);
         expect(loadedSubplebbit.address).to.equal(ethAddress);
         expect(stringify(loadedSubplebbit)).to.equal(stringify(subplebbit));
     });

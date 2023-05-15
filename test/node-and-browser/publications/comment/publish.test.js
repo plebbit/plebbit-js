@@ -357,7 +357,7 @@ describe(`comment.publishingState`, async () => {
 
     it(`comment.publishingState = 'failed' if pubsub provider is down`, async () => {
         const offlinePubsubUrl = "http://localhost:23425";
-        const offlinePubsubPlebbit = await Plebbit({
+        const offlinePubsubPlebbit = await mockPlebbit({
             ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
             pubsubHttpClientsOptions: [offlinePubsubUrl]
         });

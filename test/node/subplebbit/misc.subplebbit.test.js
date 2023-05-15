@@ -115,7 +115,7 @@ describe(`Create a sub with basic auth urls`, async () => {
             dataPath: globalThis["window"]?.plebbitDataPath
         };
 
-        const plebbit = await Plebbit(plebbitOptions);
+        const plebbit = await mockPlebbit(plebbitOptions);
         const sub = await createMockSub({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
@@ -132,7 +132,7 @@ describe(`Create a sub with basic auth urls`, async () => {
             dataPath: globalThis["window"]?.plebbitDataPath
         };
 
-        const plebbit = await Plebbit(plebbitOptions);
+        const plebbit = await mockPlebbit(plebbitOptions);
         const sub = await createMockSub({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
@@ -275,9 +275,6 @@ describe(`subplebbit.updatingState`, async () => {
         const expectedStates = ["resolving-address", "fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
         subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
-        //@ts-ignore
-        subplebbit._updateIntervalMs = 300;
-
         await subplebbit.update();
 
         publishRandomPost(subplebbit.address, plebbit, {}, false); // To force trigger an update
@@ -297,9 +294,6 @@ describe(`subplebbit.updatingState`, async () => {
         const recordedStates = [];
         subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
-        //@ts-ignore
-        subplebbit._updateIntervalMs = 500;
-
         await subplebbit.update();
 
         publishRandomPost(subplebbit.address, gatewayPlebbit, {}, false); // To force trigger an update
@@ -317,9 +311,6 @@ describe(`subplebbit.updatingState`, async () => {
         const recordedStates = [];
 
         localSub.on("updatingstatechange", (newState) => recordedStates.push(newState));
-
-        //@ts-ignore
-        localSub._updateIntervalMs = 500;
 
         await localSub.update();
 

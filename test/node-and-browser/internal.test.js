@@ -10,6 +10,7 @@ const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
+// TODO rewrite this
 describe("Test util functions", async () => {
     let plebbit, gatewayPlebbit;
     before(async () => {

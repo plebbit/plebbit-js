@@ -98,7 +98,6 @@ describe("subplebbit.update", async () => {
     it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit("plebbit.eth"); // 'plebbit.eth' is part of test-server.js
         expect(loadedSubplebbit.address).to.equal("plebbit.eth");
-        loadedSubplebbit._updateIntervalMs = 300;
         await loadedSubplebbit.update();
         const oldUpdatedAt = lodash.clone(loadedSubplebbit.updatedAt);
         await publishRandomPost(loadedSubplebbit.address, plebbit, {}, false); // Invoke an update
@@ -116,6 +115,7 @@ describe("plebbit.getSubplebbit", async () => {
     });
     it("Can load subplebbit via IPNS address", async () => {
         const _subplebbitIpns = JSON.parse(await plebbit._clientsManager.fetchSubplebbitIpns(subplebbitSigner.address));
+        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
         expect(_subplebbitIpns.lastPostCid).to.be.a.string;
         expect(_subplebbitIpns.pubsubTopic).to.be.a.string;
         expect(_subplebbitIpns.address).to.be.a.string;
@@ -126,7 +126,6 @@ describe("plebbit.getSubplebbit", async () => {
         expect(_subplebbitIpns.roles).to.be.a("object");
         expect(_subplebbitIpns.signature).to.be.a("object");
         expect(_subplebbitIpns.posts).to.be.a("object");
-        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
         // Remove undefined keys from json
         expect(stringify(loadedSubplebbit.toJSONIpfs())).to.equals(stringify(_subplebbitIpns));
     });
@@ -203,7 +202,6 @@ describe(`subplebbit.clients (Remote)`, async () => {
         it(`Correct order of ipfsGateways state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
             const sub = await gatewayPlebbit.getSubplebbit(signers[0].address);
             await publishRandomPost(sub.address, plebbit, {}, false);
-            sub._updateIntervalMs = 2000;
 
             const expectedStates = ["fetching-ipns", "stopped"];
 
@@ -235,7 +233,6 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
         it(`Correct order of ipfsClients state when updating a sub that was created with plebbit.createSubplebbit({address})`, async () => {
             const sub = await remotePlebbit.createSubplebbit({ address: signers[0].address });
-            sub._updateIntervalMs = 500;
 
             const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
 
@@ -254,7 +251,6 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
         it(`Correct order of ipfsClients state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
             const sub = await remotePlebbit.getSubplebbit(signers[0].address);
-            sub._updateIntervalMs = 500;
             await publishRandomPost(sub.address, plebbit, {}, false);
             const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
 
@@ -287,7 +283,6 @@ describe(`subplebbit.clients (Remote)`, async () => {
             const actualStates = [];
 
             sub.clients.chainProviders["eth"].on("statechange", (newState) => actualStates.push(newState));
-
 
             sub.update();
 

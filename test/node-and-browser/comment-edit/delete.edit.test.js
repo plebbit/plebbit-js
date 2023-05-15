@@ -16,7 +16,6 @@ const lodash = require("lodash");
 const { default: waitUntil } = require("async-wait-until");
 
 const subplebbitAddress = signers[0].address;
-const updateInterval = 300;
 const roles = [
     { role: "owner", signer: signers[1] },
     { role: "admin", signer: signers[2] },
@@ -70,7 +69,6 @@ describe("Deleting a post", async () => {
             return newComments.some((comment) => comment.cid === postToDelete.cid);
         };
         if (await isPostInPages()) {
-            sub._updateIntervalMs = updateInterval;
             await sub.update();
             await new Promise((resolve) => sub.on("update", async () => !(await isPostInPages()) && resolve()));
             sub.stop();

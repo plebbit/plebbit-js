@@ -45,7 +45,6 @@ describe(`Pinning posts`, async () => {
     before(async () => {
         plebbit = await mockPlebbit();
         sub = await plebbit.getSubplebbit(subplebbitAddress);
-        sub._updateIntervalMs = updateInterval;
         await sub.update();
 
         postToPin = await publishRandomPost(subplebbitAddress, plebbit, { timestamp: 1100 }, false);
@@ -100,7 +99,6 @@ describe(`Pinning posts`, async () => {
     });
     it(`A pinned post is on the top of every page in subplebbit.posts`, async () => {
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
-        sub._updateIntervalMs = updateInterval;
         await sub.update();
 
         // Seems like all pages don't get updated at the same time, so waitUntil will stop until all pages include the pinned post
@@ -243,7 +241,6 @@ describe(`Pinning replies`, async () => {
         sub = await plebbit.getSubplebbit(subplebbitAddress);
         const allPosts = await loadAllPages(sub.posts.pageCids.new, sub.posts);
         post = await plebbit.createComment(lodash.maxBy(allPosts, (c) => c.replyCount));
-        post._updateIntervalMs = updateInterval;
         await post.update();
         expect(post.replyCount).to.be.greaterThan(5); // Arbitary number
         replyToPin = await publishRandomReply(post, plebbit);

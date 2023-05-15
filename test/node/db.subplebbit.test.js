@@ -14,7 +14,6 @@ const plebbitVersion = globalThis["window"]?.plebbitVersionApi || require("../..
 const databases = [];
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-const syncInterval = 300;
 
 describe.skip(`DB importing`, async () => {
     let plebbit;
@@ -61,7 +60,6 @@ describe.skip("DB Migration", () => {
 
             subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
 
-            subplebbit._syncIntervalMs = syncInterval;
             await assert.isFulfilled(subplebbit.start());
             await new Promise((resolve) => subplebbit.once("update", resolve)); // Ensure IPNS is published
             const post = await publishRandomPost(subplebbit.address, plebbit);

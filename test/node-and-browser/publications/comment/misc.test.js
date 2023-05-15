@@ -132,7 +132,6 @@ describe(`comment.update`, async () => {
         expect(comment.author.shortAddress).to.be.a("string").with.length(12);
 
         const recreatedComment = await plebbit.createComment({ cid: comment.cid });
-        recreatedComment._updateIntervalMs = 300;
         expect(recreatedComment.cid).to.equal(comment.cid);
         expect(recreatedComment.shortCid).to.equal(comment.shortCid);
 
@@ -453,7 +452,7 @@ describe(`comment.clients`, async () => {
 
         it(`correct order of pubsubClients state when failing to publish a comment and the error is from the pubsub provider`, async () => {
             const offlinePubsubUrl = ["http://localhost:13173"]; // Should be down
-            const offlinePubsubPlebbit = await Plebbit({
+            const offlinePubsubPlebbit = await mockPlebbit({
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
                 pubsubHttpClientsOptions: offlinePubsubUrl
             });

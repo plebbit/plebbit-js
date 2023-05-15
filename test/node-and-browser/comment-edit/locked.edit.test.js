@@ -14,7 +14,6 @@ const { messages } = require("../../../dist/node/errors");
 const { default: waitUntil } = require("async-wait-until");
 
 const subplebbitAddress = signers[0].address;
-const updateInterval = 300;
 const roles = [
     { role: "owner", signer: signers[1] },
     { role: "admin", signer: signers[2] },
@@ -26,7 +25,6 @@ describe(`Locking posts`, async () => {
     before(async () => {
         plebbit = await mockPlebbit();
         sub = await plebbit.getSubplebbit(subplebbitAddress);
-        sub._updateIntervalMs = updateInterval;
         await sub.update();
         postToBeLocked = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
 

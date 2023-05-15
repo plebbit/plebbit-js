@@ -59,7 +59,6 @@ describe(`Removing post`, async () => {
         };
         if (!(await isPostInPage())) return;
 
-        sub._updateIntervalMs = updateInterval;
         await sub.update();
         await new Promise((resolve) =>
             sub.on("update", async () => {
@@ -124,7 +123,6 @@ describe(`Removing post`, async () => {
             const newComments = await loadAllPages(sub.posts.pageCids.new, sub.posts);
             return newComments.some((comment) => comment.cid === postToRemove.cid);
         };
-        sub._updateIntervalMs = updateInterval;
         await sub.update();
         await waitUntil(isUnremovedInPage, { timeout: 200000 });
         await sub.stop();
