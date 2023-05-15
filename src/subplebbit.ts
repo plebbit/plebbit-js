@@ -514,7 +514,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const file = await this._clientsManager.getCurrentIpfs()._client.add(deterministicStringify({ ...newIpns, signature }));
         const publishRes = await this._clientsManager.getCurrentIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
-            allowOffline: Boolean(process.env["TESTING"])
+            allowOffline: true
         });
         this.emit("update", this);
         log(
@@ -1114,7 +1114,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const file = await this._clientsManager.getCurrentIpfs()._client.add(deterministicStringify(options));
         await this._clientsManager.getCurrentIpfs()._client.name.publish(file.path, {
             key: signerRaw.ipnsKeyName,
-            allowOffline: Boolean(process.env["TESTING"])
+            allowOffline: true
         });
     }
 
