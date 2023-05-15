@@ -22,7 +22,7 @@ describe(`subplebbit.edit`, async () => {
     before(async () => {
         plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
         subplebbit = await createMockSub({}, plebbit, 1000);
-        ethAddress = `test-edit-${timestamp()}.eth`;
+        ethAddress = `test-edit-${v4()}.eth`;
         const originalPlebbit = await mockPlebbit();
         const subplebbitAddress = lodash.clone(subplebbit.address);
         plebbit.resolver._resolveEnsTxtRecord = (ensName, txtRecordName) => {
