@@ -123,7 +123,7 @@ export class DbHandler {
 
     async commitTransaction(transactionId: string) {
         const trx: Transaction = this._currentTrxs[transactionId];
-        assert(trx && trx.isTransaction && !trx.isCompleted(), `Transaction (${transactionId}) needs to be stored to commit`);
+        // assert(trx && trx.isTransaction && !trx.isCompleted(), `Transaction (${transactionId}) needs to be stored to commit`);
         await this._currentTrxs[transactionId].commit();
         delete this._currentTrxs[transactionId];
     }
