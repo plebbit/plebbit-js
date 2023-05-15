@@ -278,6 +278,8 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions) {
         ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
         pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`],
         resolveAuthorAddresses: true,
+        publishInterval: 1000,
+        updateInterval: 1000,
         ...plebbitOptions
     });
 
@@ -291,7 +293,8 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions) {
     //@ts-expect-error
     plebbit._clientsManager._getCachedEns = () => undefined;
 
-    plebbit.clients.pubsubClients[Object.keys(plebbit.clients.pubsubClients)[0]]._client = createMockIpfsClient();
+    if (!plebbitOptions?.pubsubHttpClientsOptions)
+        plebbit.clients.pubsubClients[Object.keys(plebbit.clients.pubsubClients)[0]]._client = createMockIpfsClient();
     plebbit.on("error", () => {});
     return plebbit;
 }
@@ -431,10 +434,8 @@ export async function waitTillCommentIsInParentPages(
                 throw Error(`commentInPage[${key}] is incorrect`);
 }
 
-export async function createMockSub(props: CreateSubplebbitOptions, plebbit: Plebbit, syncInterval = 300) {
+export async function createMockSub(props: CreateSubplebbitOptions, plebbit: Plebbit) {
     const sub = await plebbit.createSubplebbit(props);
-    //@ts-ignore
-    sub._syncIntervalMs = sub._updateIntervalMs = syncInterval;
     sub.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
     return sub;
 }

@@ -5,7 +5,7 @@ import fs from "fs";
 import Keyv from "keyv";
 
 export default class Cache implements CacheInterface {
-    private _plebbit: Pick<Plebbit, "dataPath">;
+    private _plebbit: Pick<Plebbit, "dataPath" | "noData">;
     private _keyv: Keyv;
     constructor(plebbit: Cache["_plebbit"]) {
         this._plebbit = plebbit;
@@ -16,14 +16,13 @@ export default class Cache implements CacheInterface {
     }
 
     async init() {
-        fs.mkdirSync(this._plebbit.dataPath, { recursive: true });
-        const dbPath = path.join(this._plebbit.dataPath, "cache");
-        const dbConfig = {
-            client: "sqlite3",
-            connection: { filename: dbPath },
-            useNullAsDefault: true
-        };
-        this._keyv = new Keyv(`sqlite://${dbConfig.connection.filename}`);
+        if (this._plebbit.noData) {
+            this._keyv = new Keyv(`sqlite://:memory:`);
+        } else {
+            fs.mkdirSync(this._plebbit.dataPath, { recursive: true });
+            const dbPath = path.join(this._plebbit.dataPath, "cache");
+            this._keyv = new Keyv(`sqlite://${dbPath}`);
+        }
     }
     async getItem(key: string): Promise<any> {
         return this._keyv.get(key);

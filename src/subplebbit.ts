@@ -77,9 +77,6 @@ import retry, { RetryOperation } from "retry";
 import Author from "./author";
 import { SubplebbitClientsManager } from "./clients/client-manager";
 
-const DEFAULT_UPDATE_INTERVAL_MS = 60000;
-const DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
-
 export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
     // public
     title?: string;
@@ -122,9 +119,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private validateCaptchaAnswerCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>;
     private sortHandler: SortHandler;
     private _updateInterval?: any;
-    private _updateIntervalMs: number;
-    private _syncInterval?: any;
-    private _syncIntervalMs: number; // How often should a sub publish a new IPNS
+    private _syncInterval?: any; // TODO change "sync" to "publish"
     private _sync: boolean;
     private _ipfsNodeIpnsKeyNames: string[];
     private _subplebbitUpdateTrigger: boolean;
@@ -150,9 +145,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
 
         this.on("error", (...args) => this.plebbit.emit("error", ...args));
-
-        this._syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS;
-        this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
 
         this._clientsManager = new SubplebbitClientsManager(this);
         this.clients = this._clientsManager.clients;
@@ -207,7 +199,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this.dbHandler = nativeFunctions.createDbHandler({
                 address: this.address,
                 plebbit: {
-                    dataPath: this.plebbit.dataPath
+                    dataPath: this.plebbit.dataPath,
+                    noData: this.plebbit.noData
                 }
             });
             await this.dbHandler.initDbConfigIfNeeded();
@@ -338,7 +331,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                 address: newSubplebbitOptions.address,
                 plebbit: {
-                    dataPath: this.plebbit.dataPath
+                    dataPath: this.plebbit.dataPath,
+                    noData: this.plebbit.noData
                 }
             });
             await this._switchDbIfNeeded();
@@ -434,10 +428,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         this._setState("updating");
         const updateLoop = (async () => {
-            if (this._updateInterval) this.updateOnce().finally(() => setTimeout(updateLoop, this._updateIntervalMs));
+            if (this._updateInterval) this.updateOnce().finally(() => setTimeout(updateLoop, this.plebbit.updateInterval));
         }).bind(this);
 
-        this.updateOnce().finally(() => (this._updateInterval = setTimeout(updateLoop, this._updateIntervalMs)));
+        this.updateOnce().finally(() => (this._updateInterval = setTimeout(updateLoop, this.plebbit.updateInterval)));
     }
 
     private pubsubTopicWithfallback() {
@@ -1342,7 +1336,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._setState("started");
 
         this.syncIpnsWithDb()
-            .then(() => this._syncLoop(this._syncIntervalMs))
+            .then(() => this._syncLoop(this.plebbit.publishInterval))
             .catch((reason) => {
                 log.error(reason);
                 this.emit("error", reason);

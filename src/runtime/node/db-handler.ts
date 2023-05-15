@@ -54,7 +54,7 @@ const TABLES = Object.freeze({
 export class DbHandler {
     private _knex: Knex;
     private _subplebbit: Pick<Subplebbit, "address"> & {
-        plebbit: Pick<Plebbit, "dataPath">;
+        plebbit: Pick<Plebbit, "dataPath" | "noData">;
     };
     private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
     private _dbConfig: Knex.Config<any>;

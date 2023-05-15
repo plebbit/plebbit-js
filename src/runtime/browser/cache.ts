@@ -1,9 +1,10 @@
 import localForage from "localforage";
 import { CacheInterface } from "../../types";
 import { Plebbit } from "../../plebbit";
+import lodash from "lodash";
 
 export default class Cache implements CacheInterface {
-    private _plebbit: Pick<Plebbit, "dataPath">;
+    private _plebbit: Pick<Plebbit, "dataPath" | "noData">;
     private _store: LocalForage;
     constructor(plebbit: Cache["_plebbit"]) {
         this._plebbit = plebbit;
@@ -14,8 +15,9 @@ export default class Cache implements CacheInterface {
     }
 
     async init() {
+        const cacheName = this._plebbit.noData ? lodash.uniqueId() : "plebbit-cache";
         this._store = localForage.createInstance({
-            name: "plebbit-cache"
+            name: cacheName
         });
     }
     async getItem(key: string): Promise<any> {

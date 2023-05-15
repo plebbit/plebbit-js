@@ -24,8 +24,6 @@ import assert from "assert";
 import { PlebbitError } from "./plebbit-error";
 import { CommentClientsManager } from "./clients/client-manager";
 
-const DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
-
 export class Comment extends Publication implements Omit<CommentType, "replies"> {
     // Only Comment props
     shortCid?: string;
@@ -76,14 +74,12 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     // private
     private _updateInterval?: any;
     private _isUpdating: boolean;
-    private _updateIntervalMs: number;
     private _rawCommentUpdate?: CommentUpdate;
     private _loadingOperation: RetryOperation;
     _clientsManager: CommentClientsManager;
 
     constructor(props: CommentType, plebbit: Plebbit) {
         super(props, plebbit);
-        this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
         this._isUpdating = false;
         this._setUpdatingState("stopped");
         // these functions might get separated from their `this` when used
@@ -388,7 +384,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this._isUpdating = true;
         this._updateState("updating");
         const updateLoop = (async () => {
-            if (this._isUpdating) this.updateOnce().finally(() => (this._updateInterval = setTimeout(updateLoop, this._updateIntervalMs)));
+            if (this._isUpdating)
+                this.updateOnce().finally(() => (this._updateInterval = setTimeout(updateLoop, this._plebbit.updateInterval)));
         }).bind(this);
         updateLoop();
     }

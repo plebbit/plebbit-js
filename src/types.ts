@@ -29,6 +29,10 @@ export interface PlebbitOptions {
     dataPath?: string;
     chainProviders?: { [chainTicker: string]: ChainProvider };
     resolveAuthorAddresses?: boolean;
+    // Options for tests only. Should not be used in production
+    publishInterval?: number // in ms, the time to wait for subplebbit instances to publish updates
+    updateInterval?: number // in ms, the time to wait for comment/subplebbit instances to check for updates
+    noData?: boolean // if true, dataPath is ignored, all database and cache data is saved in memory
 }
 
 export interface PageType {

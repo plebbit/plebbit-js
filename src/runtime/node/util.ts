@@ -15,13 +15,15 @@ export const mkdir = fs.mkdir;
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
 export const getDefaultSubplebbitDbConfig = async (
-    subplebbit: Pick<Subplebbit, "address"> & { plebbit: Pick<Plebbit, "dataPath"> }
+    subplebbit: Pick<Subplebbit, "address"> & { plebbit: Pick<Plebbit, "dataPath" | "noData"> }
 ): Promise<Knex.Config<any>> => {
-    assert(typeof subplebbit.plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get default subplebbit db config");
-    const dbPath = path.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
-    await mkdir(path.dirname(dbPath), { recursive: true });
-
-    const filename = process.env["DB_MEMORY"] === "1" ? ":memory:" : dbPath;
+    let filename: string;
+    if (subplebbit.plebbit.noData) filename = ":memory:";
+    else {
+        assert(typeof subplebbit.plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get default subplebbit db config");
+        filename = path.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
+        await mkdir(path.dirname(filename), { recursive: true });
+    }
 
     return {
         client: "sqlite3",

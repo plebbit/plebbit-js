@@ -32,7 +32,7 @@ const nativeFunctions: NativeFunctions = {
     listSubplebbits: async (dataPath: string): Promise<string[]> => {
         assert(typeof dataPath === "string", "Data path is not defined");
         const subplebbitsPath = path.join(dataPath, "subplebbits");
-        const dbHandler = new DbHandler({ address: "", plebbit: { dataPath: dataPath } }); // Hollow db handler created just to use lock functionality
+        const dbHandler = new DbHandler({ address: "", plebbit: { dataPath: dataPath, noData: false } }); // Hollow db handler created just to use lock functionality
 
         await fs.mkdir(subplebbitsPath, { recursive: true });
 
