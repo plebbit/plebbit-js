@@ -29,7 +29,7 @@ jobs:
     strategy:
       matrix:
         testServer: ["server:node"]
-        testClient: ["node:parallel", "browser:firefox", "browser:chrome"]
+        testClient: ["node:parallel:local", "node:parallel:remote","browser:firefox", "browser:chrome"]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3

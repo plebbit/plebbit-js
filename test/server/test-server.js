@@ -135,7 +135,7 @@ const startIpfsNodes = async () => {
 
     require("./pubsub-mock-server");
 
-    const runInMemory = process.env["CLIENT"]?.includes("browser"); // Sub should be in memory if running tests on browser
+    const runInMemory = process.env["CLIENT"]?.includes("browser") || process.env["CLIENT"]?.includes("remote"); // Sub should be in memory if running tests on browser
     if (runInMemory) console.log(`test-server will run in memory`);
 
     if (process.env["NO_SUBPLEBBITS"] !== "1")
