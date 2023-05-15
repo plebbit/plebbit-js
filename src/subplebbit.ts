@@ -1201,6 +1201,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             if (newAddresses.length > 1) throw Error(`There are multiple dbs of the same sub`);
             const newAddress = newAddresses[0];
             log(`Updating to a new address (${newAddress}) `);
+            this._subplebbitUpdateTrigger = true;
             await Promise.all(potentialNewAddresses.map(this.dbHandler.unlockSubStart));
             if (wasSubRunning) await this.dbHandler.lockSubStart(newAddress);
             this.setAddress(newAddress);
