@@ -135,11 +135,14 @@ const startIpfsNodes = async () => {
 
     require("./pubsub-mock-server");
 
+    const runInMemory = process.env["CLIENT"]?.includes("browser"); // Sub should be in memory if running tests on browser
+    if (runInMemory) console.log(`test-server will run in memory`);
+
     if (process.env["NO_SUBPLEBBITS"] !== "1")
         await startSubplebbits({
             signers: signers,
             publishInterval: 3000,
-            noData: process.env["CLIENT"]?.includes("browser"), // Sub should be in memory if running tests on browser
+            noData: runInMemory,
             votesPerCommentToPublish: 10,
             numOfCommentsToPublish: 10
         });

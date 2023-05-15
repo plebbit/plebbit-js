@@ -121,8 +121,8 @@ export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promi
     return sortedComments;
 }
 
-async function _mockSubplebbitPlebbit(signers: SignerType[], dataPath: string) {
-    const plebbit = await mockPlebbit({ dataPath });
+async function _mockSubplebbitPlebbit(signers: SignerType[], plebbitOptions: PlebbitOptions) {
+    const plebbit = await mockPlebbit(plebbitOptions);
 
     plebbit.resolver._resolveEnsTxtRecord = async (ensName: string, textRecord: string) => {
         if (ensName === "plebbit.eth" && textRecord === "subplebbit-address") return signers[3].address;
@@ -133,8 +133,7 @@ async function _mockSubplebbitPlebbit(signers: SignerType[], dataPath: string) {
     return plebbit;
 }
 
-async function _startMathCliSubplebbit(signers: SignerType[], dataPath: string) {
-    const plebbit = await _mockSubplebbitPlebbit(signers, dataPath);
+async function _startMathCliSubplebbit(signers: SignerType[], plebbit: Plebbit) {
     const signer = await plebbit.createSigner(signers[1]);
     const subplebbit = await createMockSub({ signer }, plebbit);
 
@@ -153,8 +152,7 @@ async function _startMathCliSubplebbit(signers: SignerType[], dataPath: string) 
     return subplebbit;
 }
 
-async function _startImageCaptchaSubplebbit(signers: SignerType[], dataPath: string) {
-    const plebbit = await _mockSubplebbitPlebbit(signers, dataPath);
+async function _startImageCaptchaSubplebbit(signers: SignerType[], plebbit: Plebbit) {
     const signer = await plebbit.createSigner(signers[2]);
     const subplebbit = await plebbit.createSubplebbit({ signer });
 
@@ -168,8 +166,7 @@ async function _startImageCaptchaSubplebbit(signers: SignerType[], dataPath: str
     return subplebbit;
 }
 
-async function _startEnsSubplebbit(signers: SignerType[], dataPath: string) {
-    const plebbit = await _mockSubplebbitPlebbit(signers, dataPath);
+async function _startEnsSubplebbit(signers: SignerType[], plebbit: Plebbit) {
     const signer = await plebbit.createSigner(signers[3]);
     const subplebbit = await plebbit.createSubplebbit({ signer });
     subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
@@ -237,7 +234,7 @@ export async function startSubplebbits(props: {
     votesPerCommentToPublish: number;
     numOfCommentsToPublish: number;
 }) {
-    const plebbit = await _mockSubplebbitPlebbit(props.signers, props.dataPath);
+    const plebbit = await _mockSubplebbitPlebbit(props.signers, lodash.pick(props, ["noData", "dataPath"]));
     const signer = await plebbit.createSigner(props.signers[0]);
     const subplebbit = await createMockSub({ signer }, plebbit);
 
@@ -246,9 +243,9 @@ export async function startSubplebbits(props: {
     await subplebbit.start();
     console.time("populate");
     const [imageSub, mathSub, ensSub] = await Promise.all([
-        _startImageCaptchaSubplebbit(props.signers, props.dataPath),
-        _startMathCliSubplebbit(props.signers, props.dataPath),
-        _startEnsSubplebbit(props.signers, props.dataPath),
+        _startImageCaptchaSubplebbit(props.signers, plebbit),
+        _startMathCliSubplebbit(props.signers, plebbit),
+        _startEnsSubplebbit(props.signers, plebbit),
         _populateSubplebbit(subplebbit, props)
     ]);
     console.timeEnd("populate");
