@@ -45,10 +45,10 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
-      - run: CI=1 DEBUG="plebbit*" npm run test:${{ matrix.testServer }} & npm run test:server:wait-on
+      - run:  CLIENT=${{ matrix.testClient }} DEBUG="plebbit*" npm run test:${{ matrix.testServer }} & npm run test:server:wait-on
       - name: Link chrome executable
         run: sudo ln -s /usr/bin/google-chrome-stable /usr/bin/chrome
-      - run: CI=1 npm run test:${{ matrix.testClient }}
+      - run:  npm run test:${{ matrix.testClient }}
 
   test-plebbit-react-hooks:
     uses: ./.github/workflows/CI-plebbit-react-hooks.yml

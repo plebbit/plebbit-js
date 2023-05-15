@@ -138,7 +138,8 @@ const startIpfsNodes = async () => {
     if (process.env["NO_SUBPLEBBITS"] !== "1")
         await startSubplebbits({
             signers: signers,
-            syncInterval: 3000,
+            publishInterval: 3000,
+            noData: process.env["CLIENT"]?.includes("browser"), // Sub should be in memory if running tests on browser
             votesPerCommentToPublish: 10,
             numOfCommentsToPublish: 10
         });
