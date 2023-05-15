@@ -133,7 +133,7 @@ async function _mockSubplebbitPlebbit(signers: SignerType[], dataPath: string) {
     return plebbit;
 }
 
-async function _startMathCliSubplebbit(signers: SignerType[], syncInterval: number, dataPath: string) {
+async function _startMathCliSubplebbit(signers: SignerType[], dataPath: string) {
     const plebbit = await _mockSubplebbitPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[1]);
     const subplebbit = await createMockSub({ signer }, plebbit);
@@ -149,20 +149,16 @@ async function _startMathCliSubplebbit(signers: SignerType[], syncInterval: numb
         const challengeErrors = challengeSuccess ? undefined : ["Result of math expression is incorrect"];
         return [challengeSuccess, challengeErrors];
     });
-    //@ts-ignore
-    subplebbit._syncIntervalMs = syncInterval;
     await subplebbit.start();
     return subplebbit;
 }
 
-async function _startImageCaptchaSubplebbit(signers: SignerType[], syncInterval: number, dataPath: string) {
+async function _startImageCaptchaSubplebbit(signers: SignerType[], dataPath: string) {
     const plebbit = await _mockSubplebbitPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[2]);
     const subplebbit = await plebbit.createSubplebbit({ signer });
 
     // Image captcha are default
-    //@ts-expect-error
-    subplebbit._syncIntervalMs = syncInterval;
     await subplebbit.start();
     subplebbit.setValidateCaptchaAnswerCallback(async (challengeAnswerMessage) => {
         const challengeSuccess = challengeAnswerMessage.challengeAnswers[0] === "1234";
@@ -172,13 +168,11 @@ async function _startImageCaptchaSubplebbit(signers: SignerType[], syncInterval:
     return subplebbit;
 }
 
-async function _startEnsSubplebbit(signers: SignerType[], syncInterval: number, dataPath: string) {
+async function _startEnsSubplebbit(signers: SignerType[], dataPath: string) {
     const plebbit = await _mockSubplebbitPlebbit(signers, dataPath);
     const signer = await plebbit.createSigner(signers[3]);
     const subplebbit = await plebbit.createSubplebbit({ signer });
     subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
-    //@ts-expect-error
-    subplebbit._syncIntervalMs = syncInterval;
     await subplebbit.start();
     await subplebbit.edit({ address: "plebbit.eth" });
     assert.equal(subplebbit.address, "plebbit.eth");
@@ -213,7 +207,6 @@ async function _populateSubplebbit(
     subplebbit: Subplebbit,
     props: {
         signers: SignerType[];
-        syncInterval: number;
         votesPerCommentToPublish: number;
         numOfCommentsToPublish: number;
     }
@@ -239,7 +232,7 @@ async function _populateSubplebbit(
 
 export async function startSubplebbits(props: {
     signers: SignerType[];
-    syncInterval: number;
+    noData: boolean;
     dataPath: string;
     votesPerCommentToPublish: number;
     numOfCommentsToPublish: number;
@@ -250,14 +243,12 @@ export async function startSubplebbits(props: {
 
     subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
 
-    //@ts-ignore
-    subplebbit._syncIntervalMs = props.syncInterval;
     await subplebbit.start();
     console.time("populate");
     const [imageSub, mathSub, ensSub] = await Promise.all([
-        _startImageCaptchaSubplebbit(props.signers, props.syncInterval, props.dataPath),
-        _startMathCliSubplebbit(props.signers, props.syncInterval, props.dataPath),
-        _startEnsSubplebbit(props.signers, props.syncInterval, props.dataPath),
+        _startImageCaptchaSubplebbit(props.signers, props.dataPath),
+        _startMathCliSubplebbit(props.signers, props.dataPath),
+        _startEnsSubplebbit(props.signers, props.dataPath),
         _populateSubplebbit(subplebbit, props)
     ]);
     console.timeEnd("populate");
