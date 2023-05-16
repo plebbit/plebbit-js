@@ -58,16 +58,16 @@ var Cache = /** @class */ (function () {
     };
     Cache.prototype.init = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var dbPath, dbConfig;
+            var dbPath;
             return __generator(this, function (_a) {
-                fs_1.default.mkdirSync(this._plebbit.dataPath, { recursive: true });
-                dbPath = path_1.default.join(this._plebbit.dataPath, "cache");
-                dbConfig = {
-                    client: "sqlite3",
-                    connection: { filename: dbPath },
-                    useNullAsDefault: true
-                };
-                this._keyv = new keyv_1.default("sqlite://".concat(dbConfig.connection.filename));
+                if (this._plebbit.noData) {
+                    this._keyv = new keyv_1.default("sqlite://:memory:");
+                }
+                else {
+                    fs_1.default.mkdirSync(this._plebbit.dataPath, { recursive: true });
+                    dbPath = path_1.default.join(this._plebbit.dataPath, "cache");
+                    this._keyv = new keyv_1.default("sqlite://".concat(dbPath));
+                }
                 return [2 /*return*/];
             });
         });

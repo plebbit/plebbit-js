@@ -124,7 +124,7 @@ var nativeFunctions = {
                 case 0:
                     (0, assert_1.default)(typeof dataPath === "string", "Data path is not defined");
                     subplebbitsPath = path_1.default.join(dataPath, "subplebbits");
-                    dbHandler = new db_handler_1.DbHandler({ address: "", plebbit: { dataPath: dataPath } });
+                    dbHandler = new db_handler_1.DbHandler({ address: "", plebbit: { dataPath: dataPath, noData: false } });
                     return [4 /*yield*/, promises_1.default.mkdir(subplebbitsPath, { recursive: true })];
                 case 1:
                     _a.sent();

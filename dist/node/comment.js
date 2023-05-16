@@ -76,12 +76,10 @@ var signatures_1 = require("./signer/signatures");
 var assert_1 = __importDefault(require("assert"));
 var plebbit_error_1 = require("./plebbit-error");
 var client_manager_1 = require("./clients/client-manager");
-var DEFAULT_UPDATE_INTERVAL_MS = 60000; // One minute
 var Comment = /** @class */ (function (_super) {
     __extends(Comment, _super);
     function Comment(props, plebbit) {
         var _this = _super.call(this, props, plebbit) || this;
-        _this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
         _this._isUpdating = false;
         _this._setUpdatingState("stopped");
         // these functions might get separated from their `this` when used
@@ -380,7 +378,7 @@ var Comment = /** @class */ (function (_super) {
                     var _this = this;
                     return __generator(this, function (_a) {
                         if (this._isUpdating)
-                            this.updateOnce().finally(function () { return (_this._updateInterval = setTimeout(updateLoop, _this._updateIntervalMs)); });
+                            this.updateOnce().finally(function () { return (_this._updateInterval = setTimeout(updateLoop, _this._plebbit.updateInterval)); });
                         return [2 /*return*/];
                     });
                 }); }).bind(this);

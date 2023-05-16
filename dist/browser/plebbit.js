@@ -98,7 +98,10 @@ var Plebbit = /** @class */ (function (_super) {
             "ipfsGatewayUrls",
             "ipfsHttpClientsOptions",
             "pubsubHttpClientsOptions",
-            "resolveAuthorAddresses"
+            "resolveAuthorAddresses",
+            "publishInterval",
+            "updateInterval",
+            "noData"
         ];
         for (var _i = 0, _a = Object.keys(options); _i < _a.length; _i++) {
             var option = _a[_i];
@@ -116,9 +119,13 @@ var Plebbit = /** @class */ (function (_super) {
                 ? _this._parseUrlToOption(options.pubsubHttpClientsOptions)
                 : options.pubsubHttpClientsOptions ||
                     _this.ipfsHttpClientsOptions || [{ url: "https://pubsubprovider.xyz/api/v0" }];
+        _this.publishInterval = options.hasOwnProperty("publishInterval") ? options.publishInterval : 100000; // Default to 1.67 minutes
+        _this.updateInterval = options.hasOwnProperty("updateInterval") ? options.updateInterval : 60000; // Default to 1 minute
+        _this.noData = options.hasOwnProperty("noData") ? options.noData : false;
         _this._initIpfsClients();
         _this._initPubsubClients();
-        _this.dataPath = options.dataPath || (0, util_1.getDefaultDataPath)();
+        if (!_this.noData)
+            _this.dataPath = options.dataPath || (0, util_1.getDefaultDataPath)();
         return _this;
     }
     Plebbit.prototype._initIpfsClients = function () {
@@ -254,7 +261,7 @@ var Plebbit = /** @class */ (function (_super) {
                         _e.label = 11;
                     case 11:
                         // Init cache
-                        this._cache = new cache_1.default({ dataPath: this.dataPath });
+                        this._cache = new cache_1.default({ dataPath: this.dataPath, noData: this.noData });
                         return [4 /*yield*/, this._cache.init()];
                     case 12:
                         _e.sent();
@@ -418,8 +425,6 @@ var Plebbit = /** @class */ (function (_super) {
                                     case 0:
                                         if (!canRunSub)
                                             (0, util_2.throwWithErrorCode)("ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS", { canRunSub: canRunSub, dataPath: this.dataPath });
-                                        if (!this.dataPath)
-                                            (0, util_2.throwWithErrorCode)("ERR_DATA_PATH_IS_NOT_DEFINED", { canRunSub: canRunSub, dataPath: this.dataPath });
                                         subplebbit = new subplebbit_1.Subplebbit(this);
                                         return [4 /*yield*/, subplebbit.initSubplebbit(options)];
                                     case 1:

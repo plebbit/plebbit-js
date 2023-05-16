@@ -100,8 +100,6 @@ var tiny_typed_emitter_1 = require("tiny-typed-emitter");
 var plebbit_error_1 = require("./plebbit-error");
 var retry_1 = __importDefault(require("retry"));
 var client_manager_1 = require("./clients/client-manager");
-var DEFAULT_UPDATE_INTERVAL_MS = 60000;
-var DEFAULT_SYNC_INTERVAL_MS = 100000; // 1.67 minutes
 var Subplebbit = /** @class */ (function (_super) {
     __extends(Subplebbit, _super);
     function Subplebbit(plebbit) {
@@ -128,8 +126,6 @@ var Subplebbit = /** @class */ (function (_super) {
             }
             return (_a = _this.plebbit).emit.apply(_a, __spreadArray(["error"], args, false));
         });
-        _this._syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS;
-        _this._updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
         _this._clientsManager = new client_manager_1.SubplebbitClientsManager(_this);
         _this.clients = _this._clientsManager.clients;
         return _this;
@@ -224,7 +220,8 @@ var Subplebbit = /** @class */ (function (_super) {
                         this.dbHandler = util_3.nativeFunctions.createDbHandler({
                             address: this.address,
                             plebbit: {
-                                dataPath: this.plebbit.dataPath
+                                dataPath: this.plebbit.dataPath,
+                                noData: this.plebbit.noData
                             }
                         });
                         return [4 /*yield*/, this.dbHandler.initDbConfigIfNeeded()];
@@ -401,7 +398,8 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                                 address: newSubplebbitOptions.address,
                                 plebbit: {
-                                    dataPath: this.plebbit.dataPath
+                                    dataPath: this.plebbit.dataPath,
+                                    noData: this.plebbit.noData
                                 }
                             })];
                     case 3:
@@ -545,11 +543,11 @@ var Subplebbit = /** @class */ (function (_super) {
                     var _this = this;
                     return __generator(this, function (_a) {
                         if (this._updateInterval)
-                            this.updateOnce().finally(function () { return setTimeout(updateLoop, _this._updateIntervalMs); });
+                            this.updateOnce().finally(function () { return setTimeout(updateLoop, _this.plebbit.updateInterval); });
                         return [2 /*return*/];
                     });
                 }); }).bind(this);
-                this.updateOnce().finally(function () { return (_this._updateInterval = setTimeout(updateLoop, _this._updateIntervalMs)); });
+                this.updateOnce().finally(function () { return (_this._updateInterval = setTimeout(updateLoop, _this.plebbit.updateInterval)); });
                 return [2 /*return*/];
             });
         });
@@ -664,7 +662,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         file = _b.sent();
                         return [4 /*yield*/, this._clientsManager.getCurrentIpfs()._client.name.publish(file.path, {
                                 key: this.signer.ipnsKeyName,
-                                allowOffline: Boolean(process.env["TESTING"])
+                                allowOffline: true
                             })];
                     case 12:
                         publishRes = _b.sent();
@@ -1407,7 +1405,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         file = _a.sent();
                         return [4 /*yield*/, this._clientsManager.getCurrentIpfs()._client.name.publish(file.path, {
                                 key: signerRaw.ipnsKeyName,
-                                allowOffline: Boolean(process.env["TESTING"])
+                                allowOffline: true
                             })];
                     case 4:
                         _a.sent();
@@ -1565,6 +1563,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             throw Error("There are multiple dbs of the same sub");
                         newAddress = newAddresses[0];
                         log("Updating to a new address (".concat(newAddress, ") "));
+                        this._subplebbitUpdateTrigger = true;
                         return [4 /*yield*/, Promise.all(potentialNewAddresses.map(this.dbHandler.unlockSubStart))];
                     case 4:
                         _a.sent();
@@ -1826,7 +1825,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _b.sent();
                         this._setState("started");
                         this.syncIpnsWithDb()
-                            .then(function () { return _this._syncLoop(_this._syncIntervalMs); })
+                            .then(function () { return _this._syncLoop(_this.plebbit.publishInterval); })
                             .catch(function (reason) {
                             log.error(reason);
                             _this.emit("error", reason);

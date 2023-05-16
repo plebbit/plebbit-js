@@ -255,9 +255,10 @@ var DbHandler = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         trx = this._currentTrxs[transactionId];
-                        (0, assert_1.default)(trx && trx.isTransaction && !trx.isCompleted(), "Transaction (".concat(transactionId, ") needs to be stored to commit"));
+                        // assert(trx && trx.isTransaction && !trx.isCompleted(), `Transaction (${transactionId}) needs to be stored to commit`);
                         return [4 /*yield*/, this._currentTrxs[transactionId].commit()];
                     case 1:
+                        // assert(trx && trx.isTransaction && !trx.isCompleted(), `Transaction (${transactionId}) needs to be stored to commit`);
                         _a.sent();
                         delete this._currentTrxs[transactionId];
                         return [2 /*return*/];

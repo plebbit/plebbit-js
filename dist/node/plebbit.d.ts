@@ -38,6 +38,9 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     stats: Stats;
     private _pubsubSubscriptions;
     _clientsManager: ClientsManager;
+    publishInterval: number;
+    updateInterval: number;
+    noData: boolean;
     constructor(options?: PlebbitOptions);
     private _initIpfsClients;
     private _initPubsubClients;
