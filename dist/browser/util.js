@@ -228,6 +228,8 @@ function parseRawPages(replies, plebbit) {
                             }];
                     if (replies instanceof pages_1.BasePages)
                         return [2 /*return*/, replies];
+                    if (!replies.pages)
+                        return [2 /*return*/, { pages: undefined, pagesIpfs: undefined }];
                     isIpfs = Boolean((_a = Object.values(replies.pages)[0]) === null || _a === void 0 ? void 0 : _a.comments[0]["update"]);
                     if (!isIpfs) return [3 /*break*/, 2];
                     replies = replies;
