@@ -1,4 +1,19 @@
 "use strict";
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -39,42 +54,53 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Pages = void 0;
+exports.PostsPages = exports.RepliesPages = exports.BasePages = void 0;
 var util_1 = require("./util");
 var signatures_1 = require("./signer/signatures");
 var lodash_1 = __importDefault(require("lodash"));
 var assert_1 = __importDefault(require("assert"));
-var Pages = /** @class */ (function () {
-    function Pages(props) {
+var pages_client_manager_1 = require("./clients/pages-client-manager");
+var BasePages = /** @class */ (function () {
+    function BasePages(props) {
+        this._plebbit = props.plebbit;
+        this._initClientsManager();
+        this.updateProps(props);
+    }
+    BasePages.prototype.updateProps = function (props) {
         this.pages = props.pages;
         this.pageCids = props.pageCids;
-        this._subplebbit = props.subplebbit;
+        this._plebbit = props.plebbit;
+        this._subplebbitAddress = props.subplebbitAddress;
         this._parentCid = props.parentCid;
         this._pagesIpfs = props.pagesIpfs;
-        this._clientsManager = props.clientManager;
-    }
-    Pages.prototype.getPage = function (pageCid) {
+        if (this.pageCids)
+            this._clientsManager.updatePageCidsToSortTypes(this.pageCids);
+    };
+    BasePages.prototype._initClientsManager = function () {
+        throw Error("This function should be overridden");
+    };
+    BasePages.prototype.getPage = function (pageCid) {
         return __awaiter(this, void 0, void 0, function () {
-            var pageIpfs, _a, _b, signatureValidity;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var pageIpfs, signatureValidity;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
-                        _b = (_a = JSON).parse;
-                        return [4 /*yield*/, this._subplebbit.plebbit.fetchCid(pageCid)];
+                        (0, assert_1.default)(typeof this._subplebbitAddress === "string", "Subplebbit address needs to be defined under page");
+                        return [4 /*yield*/, this._clientsManager.fetchPage(pageCid)];
                     case 1:
-                        pageIpfs = _b.apply(_a, [_c.sent()]);
-                        return [4 /*yield*/, (0, signatures_1.verifyPage)(pageIpfs, this._subplebbit.plebbit.resolveAuthorAddresses, this._clientsManager, this._subplebbit.address, this._parentCid)];
+                        pageIpfs = _a.sent();
+                        return [4 /*yield*/, (0, signatures_1.verifyPage)(pageIpfs, this._plebbit.resolveAuthorAddresses, this._clientsManager, this._subplebbitAddress, this._parentCid)];
                     case 2:
-                        signatureValidity = _c.sent();
+                        signatureValidity = _a.sent();
                         if (!signatureValidity.valid)
                             throw Error(signatureValidity.reason);
-                        return [4 /*yield*/, (0, util_1.parsePageIpfs)(pageIpfs, this._subplebbit)];
-                    case 3: return [2 /*return*/, _c.sent()];
+                        return [4 /*yield*/, (0, util_1.parsePageIpfs)(pageIpfs, this._plebbit)];
+                    case 3: return [2 /*return*/, _a.sent()];
                 }
             });
         });
     };
-    Pages.prototype.toJSON = function () {
+    BasePages.prototype.toJSON = function () {
         if (!this.pages)
             return undefined;
         var pagesJson = lodash_1.default.mapValues(this.pages, function (page) {
@@ -83,7 +109,7 @@ var Pages = /** @class */ (function () {
         });
         return { pages: pagesJson, pageCids: this.pageCids };
     };
-    Pages.prototype.toJSONIpfs = function () {
+    BasePages.prototype.toJSONIpfs = function () {
         if (!this.pages)
             return undefined;
         (0, assert_1.default)(this._pagesIpfs);
@@ -92,7 +118,44 @@ var Pages = /** @class */ (function () {
             pageCids: this.pageCids
         };
     };
-    return Pages;
+    return BasePages;
 }());
-exports.Pages = Pages;
+exports.BasePages = BasePages;
+var RepliesPages = /** @class */ (function (_super) {
+    __extends(RepliesPages, _super);
+    function RepliesPages(props) {
+        return _super.call(this, props) || this;
+    }
+    RepliesPages.prototype.updateProps = function (props) {
+        _super.prototype.updateProps.call(this, props);
+    };
+    RepliesPages.prototype._initClientsManager = function () {
+        this._clientsManager = new pages_client_manager_1.RepliesPagesClientsManager(this);
+        this.clients = this._clientsManager.clients;
+    };
+    // TODO override toJSON, toJSONIpfs
+    RepliesPages.prototype.toJSON = function () {
+        return _super.prototype.toJSON.call(this);
+    };
+    return RepliesPages;
+}(BasePages));
+exports.RepliesPages = RepliesPages;
+var PostsPages = /** @class */ (function (_super) {
+    __extends(PostsPages, _super);
+    function PostsPages(props) {
+        return _super.call(this, props) || this;
+    }
+    PostsPages.prototype.updateProps = function (props) {
+        _super.prototype.updateProps.call(this, props);
+    };
+    PostsPages.prototype._initClientsManager = function () {
+        this._clientsManager = new pages_client_manager_1.PostsPagesClientsManager(this);
+        this.clients = this._clientsManager.clients;
+    };
+    PostsPages.prototype.toJSON = function () {
+        return _super.prototype.toJSON.call(this);
+    };
+    return PostsPages;
+}(BasePages));
+exports.PostsPages = PostsPages;
 //# sourceMappingURL=pages.js.map

@@ -1,6 +1,6 @@
 import { ChallengeAnswerMessage } from "./challenge";
 import { Signer } from "./signer";
-import { Pages } from "./pages";
+import { PostsPages } from "./pages";
 import { Plebbit } from "./plebbit";
 import { ChallengeType, DbHandlerPublicAPI, DecryptedChallengeAnswerMessageType, DecryptedChallengeRequestMessageType, Flair, FlairOwner, InternalSubplebbitType, ProtocolVersion, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitIpfsType, SubplebbitStats, SubplebbitRole, SubplebbitSuggested, SubplebbitType, SubplebbitEvents, SubplebbitSettings } from "./types";
 import { SignatureType } from "./signer/constants";
@@ -13,7 +13,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
         [authorAddress: string]: SubplebbitRole;
     };
     lastPostCid?: string;
-    posts: Pages;
+    posts: PostsPages;
     pubsubTopic?: string;
     challengeTypes?: ChallengeType[];
     stats?: SubplebbitStats;

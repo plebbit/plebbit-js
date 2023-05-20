@@ -110,11 +110,11 @@ var Comment = /** @class */ (function (_super) {
         this.protocolVersion = props.protocolVersion;
         this.flair = props.flair;
         this.setPreviousCid(props.previousCid);
-        this.replies = new pages_1.Pages({
+        this.replies = new pages_1.RepliesPages({
             pages: undefined,
             pageCids: undefined,
-            subplebbit: { address: this.subplebbitAddress, plebbit: this._plebbit },
-            clientManager: this._clientsManager,
+            plebbit: this._plebbit,
+            subplebbitAddress: this.subplebbitAddress,
             pagesIpfs: undefined,
             parentCid: this.cid
         });
@@ -122,9 +122,9 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype._initCommentUpdate = function (props) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
         return __awaiter(this, void 0, void 0, function () {
-            var _m;
-            return __generator(this, function (_o) {
-                switch (_o.label) {
+            var parsedPages;
+            return __generator(this, function (_m) {
+                switch (_m.label) {
                     case 0:
                         if (!this.original)
                             this.original = (0, util_1.removeNullAndUndefinedValuesRecursively)(lodash_1.default.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"]));
@@ -148,14 +148,13 @@ var Comment = /** @class */ (function (_super) {
                         this.flair = props.flair || ((_f = props.edit) === null || _f === void 0 ? void 0 : _f.flair) || this.flair;
                         this.author.flair = ((_h = (_g = props.author) === null || _g === void 0 ? void 0 : _g.subplebbit) === null || _h === void 0 ? void 0 : _h.flair) || ((_k = (_j = props.edit) === null || _j === void 0 ? void 0 : _j.author) === null || _k === void 0 ? void 0 : _k.flair) || ((_l = this.author) === null || _l === void 0 ? void 0 : _l.flair);
                         (0, assert_1.default)(this.cid);
-                        _m = this;
-                        return [4 /*yield*/, (0, util_1.parseRawPages)(props.replies, this.cid, {
-                                address: this.subplebbitAddress,
-                                plebbit: this._plebbit
-                            }, this._clientsManager)];
+                        if (!props.replies) return [3 /*break*/, 2];
+                        return [4 /*yield*/, (0, util_1.parseRawPages)(props.replies, this._plebbit)];
                     case 1:
-                        _m.replies = _o.sent();
-                        return [2 /*return*/];
+                        parsedPages = _m.sent();
+                        this.replies.updateProps(__assign(__assign({}, parsedPages), { plebbit: this._plebbit, subplebbitAddress: this.subplebbitAddress, pageCids: props.replies.pageCids, parentCid: this.cid }));
+                        _m.label = 2;
+                    case 2: return [2 /*return*/];
                 }
             });
         });

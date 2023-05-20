@@ -114,11 +114,11 @@ var Plebbit = /** @class */ (function (_super) {
             Array.isArray(options.ipfsHttpClientsOptions) && typeof options.ipfsHttpClientsOptions[0] === "string"
                 ? _this._parseUrlToOption(options.ipfsHttpClientsOptions)
                 : options.ipfsHttpClientsOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
+        var fallbackPubsubProviders = [{ url: "https://pubsubprovider.xyz/api/v0" }];
         _this.pubsubHttpClientsOptions =
             Array.isArray(options.pubsubHttpClientsOptions) && typeof options.pubsubHttpClientsOptions[0] === "string"
                 ? _this._parseUrlToOption(options.pubsubHttpClientsOptions)
-                : options.pubsubHttpClientsOptions ||
-                    _this.ipfsHttpClientsOptions || [{ url: "https://pubsubprovider.xyz/api/v0" }];
+                : options.pubsubHttpClientsOptions || _this.ipfsHttpClientsOptions || fallbackPubsubProviders;
         _this.publishInterval = options.hasOwnProperty("publishInterval") ? options.publishInterval : 100000; // Default to 1.67 minutes
         _this.updateInterval = options.hasOwnProperty("updateInterval") ? options.updateInterval : 60000; // Default to 1 minute
         _this.noData = options.hasOwnProperty("noData") ? options.noData : false;

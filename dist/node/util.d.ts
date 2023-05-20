@@ -1,7 +1,7 @@
 import { CommentsTableRow, CommentUpdatesRow, OnlyDefinedProperties, PageIpfs, PagesType, PagesTypeIpfs, PagesTypeJson, PageType, Timeframe } from "./types";
 import { messages } from "./errors";
-import { Pages } from "./pages";
-import { ClientsManager } from "./clients/client-manager";
+import { BasePages } from "./pages";
+import { Plebbit } from "./plebbit";
 export declare const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number>;
 export declare function timestamp(): number;
 export declare function replaceXWithY(obj: Object, x: any, y: any): any;
@@ -29,10 +29,13 @@ export declare function removeNullAndUndefinedValues<T extends Object>(obj: T): 
 export declare function removeNullAndUndefinedValuesRecursively<T>(obj: T): T;
 export declare function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T>;
 export declare function throwWithErrorCode(code: keyof typeof messages, details?: {}): void;
-export declare function parsePageIpfs(pageIpfs: PageIpfs, subplebbit: Pages["_subplebbit"]): Promise<PageType>;
-export declare function parsePagesIpfs(pagesRaw: PagesTypeIpfs, subplebbit: Pages["_subplebbit"]): Promise<PagesType>;
 export declare const parseJsonStrings: (obj: any) => any;
-export declare function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | Pages | undefined, parentCid: string | undefined, subplebbit: Pages["_subplebbit"], clientManager: ClientsManager): Promise<Pages>;
+export declare function parsePageIpfs(pageIpfs: PageIpfs, plebbit: Plebbit): Promise<PageType>;
+export declare function parsePagesIpfs(pagesRaw: PagesTypeIpfs, plebbit: Plebbit): Promise<PagesType>;
+export declare function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | BasePages | undefined, plebbit: Plebbit): Promise<BasePages | {
+    pages: Partial<Record<"active" | "new" | "hot" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "old", PageType>>;
+    pagesIpfs: Partial<Record<"active" | "new" | "hot" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "old", PageIpfs>>;
+}>;
 export declare function shortifyAddress(address: string): string;
 export declare function shortifyCid(cid: string): string;
 export declare function delay(ms: number): Promise<void>;

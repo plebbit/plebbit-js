@@ -66,37 +66,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubplebbitClientsManager = exports.CommentClientsManager = exports.PublicationClientsManager = exports.ClientsManager = void 0;
-var from_string_1 = require("uint8arrays/from-string");
 var util_1 = require("../util");
 var assert_1 = __importDefault(require("assert"));
-var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
 var signer_1 = require("../signer");
 var lodash_1 = __importDefault(require("lodash"));
-var util_2 = require("../runtime/node/util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
-var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
-var p_limit_1 = __importDefault(require("p-limit"));
 var ipfs_client_1 = require("./ipfs-client");
 var pubsub_client_1 = require("./pubsub-client");
 var chain_provider_client_1 = require("./chain-provider-client");
 var ipfs_gateway_client_1 = require("./ipfs-gateway-client");
-var DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
-var ClientsManager = /** @class */ (function () {
+var base_client_manager_1 = require("./base-client-manager");
+var ClientsManager = /** @class */ (function (_super) {
+    __extends(ClientsManager, _super);
     function ClientsManager(plebbit) {
-        this._plebbit = plebbit;
-        this.curPubsubNodeUrl = Object.values(plebbit.clients.pubsubClients)[0]._clientOptions.url;
-        if (plebbit.clients.ipfsClients)
-            this.curIpfsNodeUrl = Object.values(plebbit.clients.ipfsClients)[0]._clientOptions.url;
+        var _this = _super.call(this, plebbit) || this;
         //@ts-expect-error
-        this.clients = {};
-        this._initIpfsGateways();
-        this._initIpfsClients();
-        this._initPubsubClients();
-        this._initChainProviders();
+        _this.clients = {};
+        _this._initIpfsGateways();
+        _this._initIpfsClients();
+        _this._initPubsubClients();
+        _this._initChainProviders();
+        return _this;
     }
-    ClientsManager.prototype.toJSON = function () {
-        return undefined;
-    };
     ClientsManager.prototype._initIpfsGateways = function () {
         var _a;
         for (var _i = 0, _b = Object.keys(this._plebbit.clients.ipfsGateways); _i < _b.length; _i++) {
@@ -126,302 +117,43 @@ var ClientsManager = /** @class */ (function () {
             this.clients.chainProviders = __assign(__assign({}, this.clients.chainProviders), (_a = {}, _a[chainProviderUrl] = new chain_provider_client_1.GenericChainProviderClient("stopped"), _a));
         }
     };
-    ClientsManager.prototype.getCurrentPubsub = function () {
-        return this._plebbit.clients.pubsubClients[this.curPubsubNodeUrl];
+    // Overriding functions from base client manager here
+    ClientsManager.prototype.preFetchGateway = function (gatewayUrl, path, loadType) {
+        var gatewayState = loadType === "subplebbit"
+            ? this._getStatePriorToResolvingSubplebbitIpns()
+            : loadType === "comment-update"
+                ? "fetching-update-ipns"
+                : loadType === "comment" || loadType === "generic-ipfs"
+                    ? "fetching-ipfs"
+                    : undefined;
+        (0, assert_1.default)(gatewayState);
+        this.updateGatewayState(gatewayState, gatewayUrl);
     };
-    ClientsManager.prototype.getCurrentIpfs = function () {
-        (0, assert_1.default)(this.curIpfsNodeUrl);
-        (0, assert_1.default)(this._plebbit.clients.ipfsClients[this.curIpfsNodeUrl]);
-        return this._plebbit.clients.ipfsClients[this.curIpfsNodeUrl];
+    ClientsManager.prototype.postFetchGatewayFailure = function (gatewayUrl, path, loadType) {
+        this.updateGatewayState("stopped", gatewayUrl);
     };
-    ClientsManager.prototype.pubsubSubscribe = function (pubsubTopic, handler) {
-        return __awaiter(this, void 0, void 0, function () {
-            var e_1;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, this.getCurrentPubsub()._client.pubsub.subscribe(pubsubTopic, handler)];
-                    case 1:
-                        _a.sent();
-                        return [3 /*break*/, 3];
-                    case 2:
-                        e_1 = _a.sent();
-                        (0, util_1.throwWithErrorCode)("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic: pubsubTopic, pubsubNode: this.curPubsubNodeUrl, error: e_1 });
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
+    ClientsManager.prototype.postFetchGatewaySuccess = function (gatewayUrl, path, loadType) {
+        this.updateGatewayState("stopped", gatewayUrl);
     };
-    ClientsManager.prototype.pubsubUnsubscribe = function (pubsubTopic, handler) {
-        return __awaiter(this, void 0, void 0, function () {
-            var error_1;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, this.getCurrentPubsub()._client.pubsub.unsubscribe(pubsubTopic, handler)];
-                    case 1:
-                        _a.sent();
-                        return [3 /*break*/, 3];
-                    case 2:
-                        error_1 = _a.sent();
-                        (0, util_1.throwWithErrorCode)("ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE", { pubsubTopic: pubsubTopic, pubsubNode: this.curPubsubNodeUrl, error: error_1 });
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
+    ClientsManager.prototype.preResolveTextRecord = function (ens, txtRecordName) {
+        var newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
+        this.updateChainProviderState(newState, "eth");
     };
-    ClientsManager.prototype.pubsubPublish = function (pubsubTopic, data) {
-        return __awaiter(this, void 0, void 0, function () {
-            var dataBinary, error_2;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        dataBinary = (0, from_string_1.fromString)(data);
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, this.getCurrentPubsub()._client.pubsub.publish(pubsubTopic, dataBinary)];
-                    case 2:
-                        _a.sent();
-                        return [3 /*break*/, 4];
-                    case 3:
-                        error_2 = _a.sent();
-                        (0, util_1.throwWithErrorCode)("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic: pubsubTopic, pubsubNode: this.curPubsubNodeUrl, error: error_2 });
-                        return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
-                }
-            });
-        });
+    ClientsManager.prototype.postResolveTextRecordSuccess = function (ens, txtRecordName, resolvedTextRecord) {
+        this.updateChainProviderState("stopped", "eth");
     };
-    ClientsManager.prototype._fetchWithLimit = function (url, options) {
-        var _a, _b;
-        return __awaiter(this, void 0, void 0, function () {
-            var res, e_2, errorCode, totalBytesRead, reader, decoder, resText, _c, done, value;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
-                    case 0:
-                        _d.trys.push([0, 4, , 5]);
-                        return [4 /*yield*/, util_2.nativeFunctions.fetch(url, __assign(__assign({}, options), { size: DOWNLOAD_LIMIT_BYTES }))];
-                    case 1:
-                        //@ts-expect-error
-                        res = _d.sent();
-                        if (res.status !== 200)
-                            throw Error("Failed to fetch");
-                        if (!(((_a = res === null || res === void 0 ? void 0 : res.body) === null || _a === void 0 ? void 0 : _a.getReader) === undefined)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, res.text()];
-                    case 2: return [2 /*return*/, _d.sent()];
-                    case 3: return [3 /*break*/, 5];
-                    case 4:
-                        e_2 = _d.sent();
-                        if (e_2.message.includes("over limit"))
-                            (0, util_1.throwWithErrorCode)("ERR_OVER_DOWNLOAD_LIMIT", { url: url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-                        errorCode = url.includes("/ipfs/")
-                            ? "ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"
-                            : url.includes("/ipns/")
-                                ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
-                                : "ERR_FAILED_TO_FETCH_GENERIC";
-                        (0, util_1.throwWithErrorCode)(errorCode, { url: url, status: res === null || res === void 0 ? void 0 : res.status, statusText: res === null || res === void 0 ? void 0 : res.statusText, error: e_2 });
-                        return [3 /*break*/, 5];
-                    case 5:
-                        if (!(((_b = res === null || res === void 0 ? void 0 : res.body) === null || _b === void 0 ? void 0 : _b.getReader) !== undefined)) return [3 /*break*/, 9];
-                        totalBytesRead = 0;
-                        reader = res.body.getReader();
-                        decoder = new TextDecoder("utf-8");
-                        resText = "";
-                        _d.label = 6;
-                    case 6:
-                        if (!true) return [3 /*break*/, 8];
-                        return [4 /*yield*/, reader.read()];
-                    case 7:
-                        _c = _d.sent(), done = _c.done, value = _c.value;
-                        //@ts-ignore
-                        if (value)
-                            resText += decoder.decode(value);
-                        if (done || !value)
-                            return [3 /*break*/, 8];
-                        if (value.length + totalBytesRead > DOWNLOAD_LIMIT_BYTES)
-                            (0, util_1.throwWithErrorCode)("ERR_OVER_DOWNLOAD_LIMIT", { url: url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-                        totalBytesRead += value.length;
-                        return [3 /*break*/, 6];
-                    case 8: return [2 /*return*/, resText];
-                    case 9: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    ClientsManager.prototype.resolveIpnsToCidP2P = function (ipns) {
-        return __awaiter(this, void 0, void 0, function () {
-            var ipfsClient, cid, error_3;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        ipfsClient = this.getCurrentIpfs();
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, ipfsClient._client.name.resolve(ipns)];
-                    case 2:
-                        cid = _a.sent();
-                        if (typeof cid !== "string")
-                            (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns: ipns });
-                        return [2 /*return*/, cid];
-                    case 3:
-                        error_3 = _a.sent();
-                        (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns: ipns, error: error_3 });
-                        return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    ClientsManager.prototype._fetchCidP2P = function (cid) {
-        return __awaiter(this, void 0, void 0, function () {
-            var ipfsClient, fileContent, calculatedCid;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        ipfsClient = this.getCurrentIpfs();
-                        return [4 /*yield*/, ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES })];
-                    case 1:
-                        fileContent = _a.sent();
-                        if (typeof fileContent !== "string")
-                            (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid: cid });
-                        return [4 /*yield*/, ipfs_only_hash_1.default.of(fileContent)];
-                    case 2:
-                        calculatedCid = _a.sent();
-                        if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
-                            (0, util_1.throwWithErrorCode)("ERR_OVER_DOWNLOAD_LIMIT", { cid: cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-                        return [2 /*return*/, fileContent];
-                }
-            });
-        });
-    };
-    ClientsManager.prototype._verifyContentIsSameAsCid = function (content, cid) {
-        return __awaiter(this, void 0, void 0, function () {
-            var calculatedCid;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, ipfs_only_hash_1.default.of(content)];
-                    case 1:
-                        calculatedCid = _a.sent();
-                        if (content.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
-                            (0, util_1.throwWithErrorCode)("ERR_OVER_DOWNLOAD_LIMIT", { cid: cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-                        if (calculatedCid !== cid)
-                            (0, util_1.throwWithErrorCode)("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid: calculatedCid, cid: cid });
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    ClientsManager.prototype._fetchWithGateway = function (gateway, path, loadType) {
-        return __awaiter(this, void 0, void 0, function () {
-            var log, url, timeBefore, isCid, gatewayState, resText, timeElapsedMs, e_3;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:fetchWithGateway");
-                        url = "".concat(gateway).concat(path);
-                        log.trace("Fetching url (".concat(url, ")"));
-                        timeBefore = Date.now();
-                        isCid = path.includes("/ipfs/");
-                        gatewayState = loadType === "subplebbit"
-                            ? this._getStatePriorToResolvingSubplebbitIpns()
-                            : loadType === "comment-update"
-                                ? "fetching-update-ipns"
-                                : loadType === "comment" || loadType === "generic-ipfs"
-                                    ? "fetching-ipfs"
-                                    : undefined;
-                        (0, assert_1.default)(gatewayState);
-                        this.updateGatewayState(gatewayState, gateway);
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 6, , 8]);
-                        return [4 /*yield*/, this._fetchWithLimit(url, { cache: isCid ? "force-cache" : "no-store" })];
-                    case 2:
-                        resText = _a.sent();
-                        if (!isCid) return [3 /*break*/, 4];
-                        return [4 /*yield*/, this._verifyContentIsSameAsCid(resText, path.split("/ipfs/")[1])];
-                    case 3:
-                        _a.sent();
-                        _a.label = 4;
-                    case 4:
-                        this.updateGatewayState("stopped", gateway);
-                        timeElapsedMs = Date.now() - timeBefore;
-                        return [4 /*yield*/, this._plebbit.stats.recordGatewaySuccess(gateway, isCid ? "cid" : "ipns", timeElapsedMs)];
-                    case 5:
-                        _a.sent();
-                        return [2 /*return*/, resText];
-                    case 6:
-                        e_3 = _a.sent();
-                        this.updateGatewayState("stopped", gateway);
-                        return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns")];
-                    case 7:
-                        _a.sent();
-                        return [2 /*return*/, { error: e_3 }];
-                    case 8: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    ClientsManager.prototype.fetchFromMultipleGateways = function (loadOpts, loadType) {
-        return __awaiter(this, void 0, void 0, function () {
-            var path, _firstResolve, type, concurrencyLimit, queueLimit, gatewaysSorted, _a, gatewayPromises, res;
-            var _this = this;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        (0, assert_1.default)(loadOpts.cid || loadOpts.ipns);
-                        path = loadOpts.cid ? "/ipfs/".concat(loadOpts.cid) : "/ipns/".concat(loadOpts.ipns);
-                        _firstResolve = function (promises) {
-                            return new Promise(function (resolve) {
-                                return promises.forEach(function (promise) {
-                                    return promise.then(function (res) {
-                                        if (typeof res === "string")
-                                            resolve(res);
-                                    });
-                                });
-                            });
-                        };
-                        type = loadOpts.cid ? "cid" : "ipns";
-                        concurrencyLimit = 3;
-                        queueLimit = (0, p_limit_1.default)(concurrencyLimit);
-                        if (!(Object.keys(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit)) return [3 /*break*/, 1];
-                        _a = Object.keys(this._plebbit.clients.ipfsGateways);
-                        return [3 /*break*/, 3];
-                    case 1: return [4 /*yield*/, this._plebbit.stats.sortGatewaysAccordingToScore(type)];
-                    case 2:
-                        _a = _b.sent();
-                        _b.label = 3;
-                    case 3:
-                        gatewaysSorted = _a;
-                        gatewayPromises = gatewaysSorted.map(function (gateway) { return queueLimit(function () { return _this._fetchWithGateway(gateway, path, loadType); }); });
-                        return [4 /*yield*/, Promise.race([_firstResolve(gatewayPromises), Promise.allSettled(gatewayPromises)])];
-                    case 4:
-                        res = _b.sent();
-                        if (typeof res === "string") {
-                            queueLimit.clearQueue();
-                            return [2 /*return*/, res];
-                        } //@ts-expect-error
-                        else
-                            throw res[0].value.error;
-                        return [2 /*return*/];
-                }
-            });
-        });
+    ClientsManager.prototype.postResolveTextRecordFailure = function (ens, txtRecordName) {
+        this.updateChainProviderState("stopped", "eth");
     };
     // State methods here
     ClientsManager.prototype.updatePubsubState = function (newState) {
-        this.clients.pubsubClients[this.curPubsubNodeUrl].state = newState;
-        this.clients.pubsubClients[this.curPubsubNodeUrl].emit("statechange", newState);
+        this.clients.pubsubClients[this._curPubsubNodeUrl].state = newState;
+        this.clients.pubsubClients[this._curPubsubNodeUrl].emit("statechange", newState);
     };
     ClientsManager.prototype.updateIpfsState = function (newState) {
-        (0, assert_1.default)(this.curIpfsNodeUrl);
-        this.clients.ipfsClients[this.curIpfsNodeUrl].state = newState;
-        this.clients.ipfsClients[this.curIpfsNodeUrl].emit("statechange", newState);
+        (0, assert_1.default)(this._curIpfsNodeUrl);
+        this.clients.ipfsClients[this._curIpfsNodeUrl].state = newState;
+        this.clients.ipfsClients[this._curIpfsNodeUrl].emit("statechange", newState);
     };
     ClientsManager.prototype.updateGatewayState = function (newState, gateway) {
         this.clients.ipfsGateways[gateway].state = newState;
@@ -430,104 +162,6 @@ var ClientsManager = /** @class */ (function () {
     ClientsManager.prototype.updateChainProviderState = function (newState, chainTicker) {
         this.clients.chainProviders[chainTicker].state = newState;
         this.clients.chainProviders[chainTicker].emit("statechange", newState);
-    };
-    ClientsManager.prototype.emitError = function (e) {
-        this._plebbit.emit("error", e);
-    };
-    // Resolver methods here
-    ClientsManager.prototype._getCachedEns = function (ens, txtRecord) {
-        return __awaiter(this, void 0, void 0, function () {
-            var resolveCache, resolvedTimestamp, stale;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._plebbit._cache.getItem("".concat(ens, "_").concat(txtRecord))];
-                    case 1:
-                        resolveCache = _a.sent();
-                        if (!(typeof resolveCache === "string")) return [3 /*break*/, 3];
-                        return [4 /*yield*/, this._plebbit._cache.getItem("".concat(ens, "_").concat(txtRecord, "_timestamp"))];
-                    case 2:
-                        resolvedTimestamp = _a.sent();
-                        (0, assert_1.default)(typeof resolvedTimestamp === "number");
-                        stale = (0, util_1.timestamp)() - resolvedTimestamp > 3600;
-                        return [2 /*return*/, { stale: stale, resolveCache: resolveCache }];
-                    case 3: return [2 /*return*/, undefined];
-                }
-            });
-        });
-    };
-    ClientsManager.prototype._resolveEnsTextRecordWithCache = function (ens, txtRecord) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                if (!ens.endsWith(".eth"))
-                    return [2 /*return*/, ens];
-                return [2 /*return*/, this._resolveEnsTextRecord(ens, txtRecord)];
-            });
-        });
-    };
-    ClientsManager.prototype._resolveEnsTextRecord = function (ens, txtRecordName) {
-        return __awaiter(this, void 0, void 0, function () {
-            var log, timeouts, i, cacheEns, newState, resolvedTxtRecord, e_4;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:client-manager:_resolveEnsTextRecord");
-                        timeouts = [0, 0, 100, 1000];
-                        i = 0;
-                        _a.label = 1;
-                    case 1:
-                        if (!(i < timeouts.length)) return [3 /*break*/, 9];
-                        if (!(timeouts[i] !== 0)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, (0, util_1.delay)(timeouts[i])];
-                    case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3: return [4 /*yield*/, this._getCachedEns(ens, txtRecordName)];
-                    case 4:
-                        cacheEns = _a.sent();
-                        if (cacheEns && !cacheEns.stale)
-                            return [2 /*return*/, cacheEns.resolveCache];
-                        log.trace("Retrying to resolve ENS (".concat(ens, ") text record (").concat(txtRecordName, ") for the ").concat(i, "th time"));
-                        newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
-                        this.updateChainProviderState(newState, "eth");
-                        _a.label = 5;
-                    case 5:
-                        _a.trys.push([5, 7, , 8]);
-                        return [4 /*yield*/, this._plebbit.resolver._resolveEnsTxtRecord(ens, txtRecordName)];
-                    case 6:
-                        resolvedTxtRecord = _a.sent();
-                        this.updateChainProviderState("stopped", "eth");
-                        return [2 /*return*/, resolvedTxtRecord];
-                    case 7:
-                        e_4 = _a.sent();
-                        this.updateChainProviderState("stopped", "eth");
-                        if (i === timeouts.length - 1) {
-                            this.emitError(e_4);
-                            throw e_4;
-                        }
-                        return [3 /*break*/, 8];
-                    case 8:
-                        i++;
-                        return [3 /*break*/, 1];
-                    case 9: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    ClientsManager.prototype.resolveSubplebbitAddressIfNeeded = function (subplebbitAddress) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                (0, assert_1.default)(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
-                return [2 /*return*/, this._resolveEnsTextRecordWithCache(subplebbitAddress, "subplebbit-address")];
-            });
-        });
-    };
-    ClientsManager.prototype.resolveAuthorAddressIfNeeded = function (authorAddress) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                (0, assert_1.default)(typeof authorAddress === "string", "subplebbitAddress needs to be a string to be resolved");
-                return [2 /*return*/, this._resolveEnsTextRecordWithCache(authorAddress, "plebbit-author-address")];
-            });
-        });
     };
     ClientsManager.prototype.fetchCid = function (cid) {
         return __awaiter(this, void 0, void 0, function () {
@@ -538,7 +172,7 @@ var ClientsManager = /** @class */ (function () {
                     finalCid = finalCid.split("/")[2];
                 if (!is_ipfs_1.default.cid(finalCid))
                     (0, util_1.throwWithErrorCode)("ERR_CID_IS_INVALID", { cid: cid });
-                if (this.curIpfsNodeUrl)
+                if (this._curIpfsNodeUrl)
                     return [2 /*return*/, this._fetchCidP2P(cid)];
                 else
                     return [2 /*return*/, this.fetchFromMultipleGateways({ cid: cid }, "generic-ipfs")];
@@ -558,7 +192,7 @@ var ClientsManager = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!this.curIpfsNodeUrl) return [3 /*break*/, 3];
+                        if (!this._curIpfsNodeUrl) return [3 /*break*/, 3];
                         this.updateIpfsState(this._getStatePriorToResolvingSubplebbitIpns());
                         return [4 /*yield*/, this.resolveIpnsToCidP2P(ipnsAddress)];
                     case 1:
@@ -575,7 +209,7 @@ var ClientsManager = /** @class */ (function () {
         });
     };
     return ClientsManager;
-}());
+}(base_client_manager_1.BaseClientsManager));
 exports.ClientsManager = ClientsManager;
 var PublicationClientsManager = /** @class */ (function (_super) {
     __extends(PublicationClientsManager, _super);
@@ -641,7 +275,7 @@ var PublicationClientsManager = /** @class */ (function (_super) {
                     case 1:
                         subIpns = _e.sent();
                         this._publication._updatePublishingState("fetching-subplebbit-ipns");
-                        if (!this.curIpfsNodeUrl) return [3 /*break*/, 4];
+                        if (!this._curIpfsNodeUrl) return [3 /*break*/, 4];
                         this.updateIpfsState("fetching-subplebbit-ipns");
                         return [4 /*yield*/, this.resolveIpnsToCidP2P(subIpns)];
                     case 2:
@@ -674,8 +308,8 @@ var PublicationClientsManager = /** @class */ (function (_super) {
         _super.prototype.updateIpfsState.call(this, newState);
     };
     PublicationClientsManager.prototype.updatePubsubState = function (newState) {
-        this.clients.pubsubClients[this.curPubsubNodeUrl].state = newState;
-        this.clients.pubsubClients[this.curPubsubNodeUrl].emit("statechange", newState);
+        this.clients.pubsubClients[this._curPubsubNodeUrl].state = newState;
+        this.clients.pubsubClients[this._curPubsubNodeUrl].emit("statechange", newState);
     };
     PublicationClientsManager.prototype.updateGatewayState = function (newState, gateway) {
         _super.prototype.updateGatewayState.call(this, newState, gateway);
@@ -705,7 +339,7 @@ var CommentClientsManager = /** @class */ (function (_super) {
                 switch (_e.label) {
                     case 0:
                         this._comment._setUpdatingState("fetching-update-ipns");
-                        if (!this.curIpfsNodeUrl) return [3 /*break*/, 3];
+                        if (!this._curIpfsNodeUrl) return [3 /*break*/, 3];
                         this.updateIpfsState("fetching-update-ipns");
                         return [4 /*yield*/, this.resolveIpnsToCidP2P(ipnsName)];
                     case 1:
@@ -735,7 +369,7 @@ var CommentClientsManager = /** @class */ (function (_super) {
                 switch (_e.label) {
                     case 0:
                         this._comment._setUpdatingState("fetching-ipfs");
-                        if (!this.curIpfsNodeUrl) return [3 /*break*/, 2];
+                        if (!this._curIpfsNodeUrl) return [3 /*break*/, 2];
                         this.updateIpfsState("fetching-ipfs");
                         _b = (_a = JSON).parse;
                         return [4 /*yield*/, this._fetchCidP2P(cid)];
@@ -788,7 +422,7 @@ var SubplebbitClientsManager = /** @class */ (function (_super) {
                 switch (_e.label) {
                     case 0:
                         this._subplebbit._setUpdatingState("fetching-ipns");
-                        if (!this.curIpfsNodeUrl) return [3 /*break*/, 3];
+                        if (!this._curIpfsNodeUrl) return [3 /*break*/, 3];
                         this.updateIpfsState("fetching-ipns");
                         return [4 /*yield*/, this.resolveIpnsToCidP2P(ipnsName)];
                     case 1:

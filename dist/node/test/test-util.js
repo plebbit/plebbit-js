@@ -373,7 +373,7 @@ function _populateSubplebbit(subplebbit, props) {
                     return [4 /*yield*/, new Promise(function (resolve) { return subplebbit.once("update", resolve); })];
                 case 2:
                     _b.sent();
-                    return [4 /*yield*/, _publishPosts(subplebbit.address, props.numOfCommentsToPublish, subplebbit.plebbit)];
+                    return [4 /*yield*/, _publishPosts(subplebbit.address, props.numOfPostsToPublish, subplebbit.plebbit)];
                 case 3:
                     posts = _b.sent();
                     console.log("Have successfully published ".concat(posts.length, " posts"));
@@ -499,8 +499,7 @@ function mockGatewayPlebbit(plebbitOptions) {
                     plebbit = _a.sent();
                     delete plebbit.clients.ipfsClients;
                     delete plebbit.ipfsHttpClientsOptions;
-                    //@ts-expect-error
-                    plebbit._clientsManager.curIpfsNodeUrl = undefined;
+                    plebbit._clientsManager._curIpfsNodeUrl = undefined;
                     return [2 /*return*/, plebbit];
             }
         });

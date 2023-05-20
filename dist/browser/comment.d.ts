@@ -1,5 +1,5 @@
 import Publication from "./publication";
-import { Pages } from "./pages";
+import { RepliesPages } from "./pages";
 import { AuthorCommentEdit, CommentIpfsType, CommentIpfsWithCid, CommentPubsubMessage, CommentsTableRowInsert, CommentType, CommentUpdate, CommentWithCommentUpdate, Flair, ProtocolVersion, PublicationTypeName } from "./types";
 import { Plebbit } from "./plebbit";
 import { CommentClientsManager } from "./clients/client-manager";
@@ -23,7 +23,7 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     downvoteCount?: number;
     replyCount?: number;
     updatedAt?: number;
-    replies: Pages;
+    replies: RepliesPages;
     edit?: AuthorCommentEdit;
     flair?: Flair;
     deleted?: CommentType["edit"]["deleted"];

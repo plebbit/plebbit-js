@@ -1,15 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -50,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.delay = exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parseJsonStrings = exports.parsePagesIpfs = exports.parsePageIpfs = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.delay = exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parsePagesIpfs = exports.parsePageIpfs = exports.parseJsonStrings = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var lodash_1 = __importDefault(require("lodash"));
 var assert_1 = __importDefault(require("assert"));
 var pages_1 = require("./pages");
@@ -155,48 +144,6 @@ function throwWithErrorCode(code, details) {
     throw new plebbit_error_1.PlebbitError(code, details);
 }
 exports.throwWithErrorCode = throwWithErrorCode;
-function parsePageIpfs(pageIpfs, subplebbit) {
-    return __awaiter(this, void 0, void 0, function () {
-        var finalComments, i;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, Promise.all(pageIpfs.comments.map(function (commentObj) { return subplebbit.plebbit.createComment(commentObj.comment); }))];
-                case 1:
-                    finalComments = _a.sent();
-                    i = 0;
-                    _a.label = 2;
-                case 2:
-                    if (!(i < finalComments.length)) return [3 /*break*/, 5];
-                    //@ts-expect-error
-                    finalComments[i].subplebbit = subplebbit;
-                    return [4 /*yield*/, finalComments[i]._initCommentUpdate(pageIpfs.comments[i].update)];
-                case 3:
-                    _a.sent();
-                    _a.label = 4;
-                case 4:
-                    i++;
-                    return [3 /*break*/, 2];
-                case 5: return [2 /*return*/, { comments: finalComments, nextCid: pageIpfs.nextCid }];
-            }
-        });
-    });
-}
-exports.parsePageIpfs = parsePageIpfs;
-function parsePagesIpfs(pagesRaw, subplebbit) {
-    return __awaiter(this, void 0, void 0, function () {
-        var parsedPages, pagesType;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, Promise.all(Object.keys(pagesRaw.pages).map(function (key) { return parsePageIpfs(pagesRaw.pages[key], subplebbit); }))];
-                case 1:
-                    parsedPages = _a.sent();
-                    pagesType = Object.fromEntries(Object.keys(pagesRaw.pages).map(function (key, i) { return [key, parsedPages[i]]; }));
-                    return [2 /*return*/, { pages: pagesType, pageCids: pagesRaw.pageCids }];
-            }
-        });
-    });
-}
-exports.parsePagesIpfs = parsePagesIpfs;
 var isJsonString = function (jsonString) {
     if (typeof jsonString !== "string" || (!jsonString.startsWith("{") && !jsonString.startsWith("[")))
         return false;
@@ -234,8 +181,40 @@ var parseJsonStrings = function (obj) {
     return newObj;
 };
 exports.parseJsonStrings = parseJsonStrings;
+function parsePageIpfs(pageIpfs, plebbit) {
+    return __awaiter(this, void 0, void 0, function () {
+        var finalComments;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, Promise.all(pageIpfs.comments.map(function (commentObj) { return plebbit.createComment(commentObj.comment); }))];
+                case 1:
+                    finalComments = _a.sent();
+                    return [4 /*yield*/, Promise.all(finalComments.map(function (comment, i) { return comment._initCommentUpdate(pageIpfs.comments[i].update); }))];
+                case 2:
+                    _a.sent();
+                    return [2 /*return*/, { comments: finalComments, nextCid: pageIpfs.nextCid }];
+            }
+        });
+    });
+}
+exports.parsePageIpfs = parsePageIpfs;
+function parsePagesIpfs(pagesRaw, plebbit) {
+    return __awaiter(this, void 0, void 0, function () {
+        var parsedPages, pagesType;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, Promise.all(Object.keys(pagesRaw.pages).map(function (key) { return parsePageIpfs(pagesRaw.pages[key], plebbit); }))];
+                case 1:
+                    parsedPages = _a.sent();
+                    pagesType = Object.fromEntries(Object.keys(pagesRaw.pages).map(function (key, i) { return [key, parsedPages[i]]; }));
+                    return [2 /*return*/, { pages: pagesType, pageCids: pagesRaw.pageCids }];
+            }
+        });
+    });
+}
+exports.parsePagesIpfs = parsePagesIpfs;
 // To use for both subplebbit.posts and comment.replies
-function parseRawPages(replies, parentCid, subplebbit, clientManager) {
+function parseRawPages(replies, plebbit) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
         var isIpfs, parsedPages, repliesClone, pageKeys, _i, pageKeys_1, key, _b;
@@ -243,30 +222,22 @@ function parseRawPages(replies, parentCid, subplebbit, clientManager) {
             switch (_c.label) {
                 case 0:
                     if (!replies)
-                        return [2 /*return*/, new pages_1.Pages({
+                        return [2 /*return*/, {
                                 pages: undefined,
-                                pageCids: undefined,
-                                subplebbit: subplebbit,
-                                pagesIpfs: undefined,
-                                parentCid: parentCid,
-                                clientManager: clientManager
-                            })];
-                    if (replies instanceof pages_1.Pages)
+                                pagesIpfs: undefined
+                            }];
+                    if (replies instanceof pages_1.BasePages)
                         return [2 /*return*/, replies];
                     isIpfs = Boolean((_a = Object.values(replies.pages)[0]) === null || _a === void 0 ? void 0 : _a.comments[0]["update"]);
                     if (!isIpfs) return [3 /*break*/, 2];
                     replies = replies;
-                    return [4 /*yield*/, parsePagesIpfs(replies, subplebbit)];
+                    return [4 /*yield*/, parsePagesIpfs(replies, plebbit)];
                 case 1:
                     parsedPages = _c.sent();
-                    return [2 /*return*/, new pages_1.Pages({
+                    return [2 /*return*/, {
                             pages: parsedPages.pages,
-                            pageCids: parsedPages.pageCids,
-                            subplebbit: subplebbit,
-                            pagesIpfs: replies.pages,
-                            parentCid: parentCid,
-                            clientManager: clientManager
-                        })];
+                            pagesIpfs: replies.pages
+                        }];
                 case 2:
                     replies = replies;
                     repliesClone = lodash_1.default.cloneDeep(replies);
@@ -277,23 +248,17 @@ function parseRawPages(replies, parentCid, subplebbit, clientManager) {
                     if (!(_i < pageKeys_1.length)) return [3 /*break*/, 6];
                     key = pageKeys_1[_i];
                     _b = repliesClone.pages[key];
-                    return [4 /*yield*/, Promise.all(replies.pages[key].comments.map(function (comment) {
-                            return subplebbit.plebbit.createComment.bind(subplebbit.plebbit)(__assign(__assign({}, comment), { subplebbit: subplebbit }));
-                        }))];
+                    return [4 /*yield*/, Promise.all(replies.pages[key].comments.map(function (comment) { return plebbit.createComment.bind(plebbit)(comment); }))];
                 case 4:
                     _b.comments = _c.sent();
                     _c.label = 5;
                 case 5:
                     _i++;
                     return [3 /*break*/, 3];
-                case 6: return [2 /*return*/, new pages_1.Pages({
+                case 6: return [2 /*return*/, {
                         pages: repliesClone.pages,
-                        pageCids: replies.pageCids,
-                        subplebbit: subplebbit,
-                        pagesIpfs: undefined,
-                        parentCid: parentCid,
-                        clientManager: clientManager
-                    })];
+                        pagesIpfs: undefined
+                    }];
             }
         });
     });

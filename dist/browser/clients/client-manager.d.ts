@@ -1,4 +1,3 @@
-import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import Publication from "../publication";
 import { Plebbit } from "../plebbit";
 import { Comment } from "../comment";
@@ -9,11 +8,9 @@ import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, Subplebbit
 import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client";
 import { GenericChainProviderClient } from "./chain-provider-client";
 import { CommentIpfsGatewayClient, GenericIpfsGatewayClient, PublicationIpfsGatewayClient, SubplebbitIpfsGatewayClient } from "./ipfs-gateway-client";
-declare type LoadType = "subplebbit" | "comment-update" | "comment" | "generic-ipfs";
-export declare class ClientsManager {
+import { BaseClientsManager, LoadType } from "./base-client-manager";
+export declare class ClientsManager extends BaseClientsManager {
     protected _plebbit: Plebbit;
-    protected curPubsubNodeUrl: string;
-    protected curIpfsNodeUrl: string | undefined;
     clients: {
         ipfsGateways: {
             [ipfsGatewayUrl: string]: GenericIpfsGatewayClient;
@@ -29,37 +26,20 @@ export declare class ClientsManager {
         };
     };
     constructor(plebbit: Plebbit);
-    toJSON(): any;
     protected _initIpfsGateways(): void;
     protected _initIpfsClients(): void;
     protected _initPubsubClients(): void;
     protected _initChainProviders(): void;
-    getCurrentPubsub(): import("../types").PubsubClient;
-    getCurrentIpfs(): import("../types").IpfsClient;
-    pubsubSubscribe(pubsubTopic: string, handler: MessageHandlerFn): Promise<void>;
-    pubsubUnsubscribe(pubsubTopic: string, handler?: MessageHandlerFn): Promise<void>;
-    pubsubPublish(pubsubTopic: string, data: string): Promise<void>;
-    private _fetchWithLimit;
-    resolveIpnsToCidP2P(ipns: string): Promise<string>;
-    protected _fetchCidP2P(cid: string): Promise<string>;
-    private _verifyContentIsSameAsCid;
-    protected _fetchWithGateway(gateway: string, path: string, loadType: LoadType): Promise<string | {
-        error: PlebbitError;
-    }>;
-    protected fetchFromMultipleGateways(loadOpts: {
-        cid?: string;
-        ipns?: string;
-    }, loadType: LoadType): Promise<string>;
+    preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void;
+    postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType): void;
+    postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType): void;
+    preResolveTextRecord(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address"): void;
+    postResolveTextRecordSuccess(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string): void;
+    postResolveTextRecordFailure(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address"): void;
     updatePubsubState(newState: GenericPubsubClient["state"]): void;
     updateIpfsState(newState: GenericIpfsClient["state"]): void;
     updateGatewayState(newState: GenericIpfsGatewayClient["state"], gateway: string): void;
     updateChainProviderState(newState: GenericChainProviderClient["state"], chainTicker: string): void;
-    emitError(e: PlebbitError): void;
-    private _getCachedEns;
-    private _resolveEnsTextRecordWithCache;
-    private _resolveEnsTextRecord;
-    resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | undefined>;
-    resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string>;
     fetchCid(cid: string): Promise<string>;
     protected _getStatePriorToResolvingSubplebbitIpns(): "fetching-subplebbit-ipns" | "fetching-ipns";
     protected _getStatePriorToResolvingSubplebbitIpfs(): "fetching-subplebbit-ipfs" | "fetching-ipfs";
@@ -141,4 +121,3 @@ export declare class SubplebbitClientsManager extends ClientsManager {
     protected _getStatePriorToResolvingSubplebbitIpns(): "fetching-subplebbit-ipns" | "fetching-ipns";
     protected _getStatePriorToResolvingSubplebbitIpfs(): "fetching-subplebbit-ipfs" | "fetching-ipfs";
 }
-export {};

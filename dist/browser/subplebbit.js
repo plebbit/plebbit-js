@@ -81,6 +81,7 @@ var challenge_1 = require("./challenge");
 var sort_handler_1 = require("./sort-handler");
 var util_1 = require("./util");
 var signer_1 = require("./signer");
+var pages_1 = require("./pages");
 var safe_stable_stringify_1 = require("safe-stable-stringify");
 var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
 var comment_1 = require("./comment");
@@ -128,13 +129,20 @@ var Subplebbit = /** @class */ (function (_super) {
         });
         _this._clientsManager = new client_manager_1.SubplebbitClientsManager(_this);
         _this.clients = _this._clientsManager.clients;
+        _this.posts = new pages_1.PostsPages({
+            pageCids: undefined,
+            pages: undefined,
+            plebbit: _this.plebbit,
+            subplebbitAddress: undefined,
+            pagesIpfs: undefined
+        });
         return _this;
     }
     Subplebbit.prototype.initSubplebbit = function (newProps) {
         return __awaiter(this, void 0, void 0, function () {
-            var oldProps, mergedProps, _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var oldProps, mergedProps, parsedPages;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
                         oldProps = this.toJSONInternal();
                         mergedProps = __assign(__assign({}, oldProps), newProps);
@@ -158,11 +166,22 @@ var Subplebbit = /** @class */ (function (_super) {
                         this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
                         if (!this.signer && mergedProps.signer)
                             this.signer = new signer_1.Signer(mergedProps.signer);
-                        _a = this;
-                        return [4 /*yield*/, (0, util_1.parseRawPages)(mergedProps.posts, undefined, this, this._clientsManager)];
+                        if (!mergedProps.posts) return [3 /*break*/, 2];
+                        return [4 /*yield*/, (0, util_1.parseRawPages)(mergedProps.posts, this.plebbit)];
                     case 1:
-                        _a.posts = _b.sent();
-                        return [2 /*return*/];
+                        parsedPages = _a.sent();
+                        this.posts.updateProps(__assign(__assign({}, parsedPages), { plebbit: this.plebbit, subplebbitAddress: this.address, pageCids: mergedProps.posts.pageCids }));
+                        return [3 /*break*/, 3];
+                    case 2:
+                        this.posts.updateProps({
+                            plebbit: this.plebbit,
+                            subplebbitAddress: this.address,
+                            pageCids: undefined,
+                            pages: undefined,
+                            pagesIpfs: undefined
+                        });
+                        _a.label = 3;
+                    case 3: return [2 /*return*/];
                 }
             });
         });

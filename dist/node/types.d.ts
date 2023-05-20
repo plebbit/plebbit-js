@@ -51,6 +51,14 @@ export interface PagesTypeJson {
     pages: Partial<Record<PostSortName | ReplySortName, PageTypeJson>>;
     pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
 }
+export interface RepliesPagesTypeJson extends PagesTypeJson {
+    pages: Partial<Record<ReplySortName, PageTypeJson>>;
+    pageCids: Partial<Record<ReplySortName, string>>;
+}
+export interface PostsPagesTypeJson extends PagesTypeJson {
+    pages: Partial<Record<PostSortName, PageTypeJson>>;
+    pageCids: Partial<Record<PostSortName, string>>;
+}
 export interface PagesTypeIpfs {
     pages: Partial<Record<PostSortName | ReplySortName, PageIpfs>>;
     pageCids: Partial<Record<PostSortName | ReplySortName, string>>;

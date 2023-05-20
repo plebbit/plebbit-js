@@ -3,7 +3,8 @@ import { GenericClientEvents } from "../types";
 declare type PublicationIpfsState = "stopped" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs";
 declare type CommentIpfsState = PublicationIpfsState | "fetching-ipfs" | "fetching-update-ipns" | "fetching-update-ipfs";
 declare type SubplebbitIpfsState = "stopped" | "fetching-ipns" | "fetching-ipfs" | "publishing-ipns";
-declare type GenericIpfsState = PublicationIpfsClient["state"] | CommentIpfsClient["state"] | SubplebbitIpfsClient["state"];
+declare type PagesIpfsState = "fetching-ipfs" | "stopped";
+declare type GenericIpfsState = PublicationIpfsState | CommentIpfsState | SubplebbitIpfsState | PagesIpfsState;
 declare class BaseIpfsClient<T extends GenericIpfsState> extends TypedEmitter<GenericClientEvents<T>> {
     state: T;
     constructor(state: T);
@@ -15,5 +16,7 @@ export declare class PublicationIpfsClient extends BaseIpfsClient<PublicationIpf
 export declare class CommentIpfsClient extends BaseIpfsClient<CommentIpfsState> {
 }
 export declare class SubplebbitIpfsClient extends BaseIpfsClient<SubplebbitIpfsState> {
+}
+export declare class PagesIpfsClient extends BaseIpfsClient<PagesIpfsState> {
 }
 export {};

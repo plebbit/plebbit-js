@@ -15,7 +15,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SubplebbitIpfsClient = exports.CommentIpfsClient = exports.PublicationIpfsClient = exports.GenericIpfsClient = void 0;
+exports.PagesIpfsClient = exports.SubplebbitIpfsClient = exports.CommentIpfsClient = exports.PublicationIpfsClient = exports.GenericIpfsClient = void 0;
 var tiny_typed_emitter_1 = require("tiny-typed-emitter");
 // Client classes
 var BaseIpfsClient = /** @class */ (function (_super) {
@@ -59,4 +59,12 @@ var SubplebbitIpfsClient = /** @class */ (function (_super) {
     return SubplebbitIpfsClient;
 }(BaseIpfsClient));
 exports.SubplebbitIpfsClient = SubplebbitIpfsClient;
+var PagesIpfsClient = /** @class */ (function (_super) {
+    __extends(PagesIpfsClient, _super);
+    function PagesIpfsClient() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return PagesIpfsClient;
+}(BaseIpfsClient));
+exports.PagesIpfsClient = PagesIpfsClient;
 //# sourceMappingURL=ipfs-client.js.map
