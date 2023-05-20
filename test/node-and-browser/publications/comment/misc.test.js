@@ -493,4 +493,70 @@ describe(`comment.clients`, async () => {
             expect(actualStates.slice(0, 2)).to.deep.equal(expectedStates);
         });
     });
+
+    describe(`comment.replies.clients`, async () => {
+        let commentCid;
+        before(async () => {
+            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            commentCid = subplebbit.posts.pages.hot.comments.find((comment) => comment.replyCount > 0).cid;
+        });
+        describe(`comment.replies.clients.ipfsClients`, async () => {
+            it(`comment.replies.clients.ipfsClients is undefined for gateway plebbit`, async () => {
+                const comment = await gatewayPlebbit.getComment(commentCid);
+                expect(comment.replies.clients.ipfsClients).to.be.undefined;
+            });
+
+            it(`comment.replies.clients.ipfsClients[sortType][url] is stopped by default`, async () => {
+                const comment = await plebbit.getComment(commentCid);
+                const ipfsUrl = Object.keys(comment.clients.ipfsClients)[0];
+                expect(Object.keys(comment.replies.clients.ipfsClients["new"]).length).to.equal(1);
+                expect(comment.replies.clients.ipfsClients["new"][ipfsUrl].state).to.equal("stopped");
+            });
+
+            it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
+                const comment = await plebbit.getComment(commentCid);
+                await comment.update();
+                await new Promise((resolve) => comment.once("update", resolve));
+                const ipfsUrl = Object.keys(comment.clients.ipfsClients)[0];
+
+                const expectedStates = ["fetching-ipfs", "stopped"];
+                const actualStates = [];
+                comment.replies.clients.ipfsClients["new"][ipfsUrl].on("statechange", (newState) => {
+                    actualStates.push(newState);
+                });
+
+                await comment.replies.getPage(comment.replies.pageCids.new);
+                await comment.stop();
+                expect(actualStates).to.deep.equal(expectedStates);
+            });
+        });
+
+        describe(`comment.replies.clients.clients.ipfsGateways`, async () => {
+            it(`comment.replies.clients.ipfsGateways[sortType][url] is stopped by default`, async () => {
+                const comment = await gatewayPlebbit.getComment(commentCid);
+                const gatewayUrl = Object.keys(comment.clients.ipfsGateways)[0];
+                // add tests here
+                expect(Object.keys(comment.replies.clients.ipfsGateways["new"]).length).to.equal(1);
+                expect(comment.replies.clients.ipfsGateways["new"][gatewayUrl].state).to.equal("stopped");
+            });
+
+            it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
+                const comment = await gatewayPlebbit.getComment(commentCid);
+                await comment.update();
+                await new Promise((resolve) => comment.once("update", resolve));
+
+                const gatewayUrl = Object.keys(comment.clients.ipfsGateways)[0];
+
+                const expectedStates = ["fetching-ipfs", "stopped"];
+                const actualStates = [];
+                comment.replies.clients.ipfsGateways["new"][gatewayUrl].on("statechange", (newState) => {
+                    actualStates.push(newState);
+                });
+
+                await comment.replies.getPage(comment.replies.pageCids.new);
+                await comment.stop();
+                expect(actualStates).to.deep.equal(expectedStates);
+            });
+        });
+    });
 });

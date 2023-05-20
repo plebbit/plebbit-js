@@ -293,4 +293,76 @@ describe(`subplebbit.clients (Remote)`, async () => {
             expect(actualStates.slice(0, 2)).to.deep.equal(expectedStates);
         });
     });
+
+    describe(`subplebbit.posts.clients`, async () => {
+        describe(`subplebbit.posts.clients.ipfsClients`, async () => {
+            it(`subplebbit.posts.clients.ipfsClients is undefined for gateway plebbit`, async () => {
+                const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
+                expect(mockSub.posts.clients.ipfsClients).to.be.undefined;
+            });
+
+            it(`subplebbit.posts.clients.ipfsClients[sortType][url] is stopped by default`, async () => {
+                const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
+                const ipfsUrl = Object.keys(mockSub.clients.ipfsClients)[0];
+                // add tests here
+                expect(Object.keys(mockSub.posts.clients.ipfsClients["new"]).length).to.equal(1);
+                expect(mockSub.posts.clients.ipfsClients["new"][ipfsUrl].state).to.equal("stopped");
+            });
+
+            it(`Correct state of 'new' sort is updated after fetching from subplebbit.posts.pageCids.new`, async () => {
+                const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
+                const ipfsUrl = Object.keys(mockSub.clients.ipfsClients)[0];
+
+                const expectedStates = ["fetching-ipfs", "stopped"];
+                const actualStates = [];
+                mockSub.posts.clients.ipfsClients["new"][ipfsUrl].on("statechange", (newState) => {
+                    actualStates.push(newState);
+                });
+
+                await mockSub.posts.getPage(mockSub.posts.pageCids.new);
+                expect(actualStates).to.deep.equal(expectedStates);
+            });
+
+            it("Correct state of 'new' sort is updated after fetching second page of 'new' pages", async () => {
+                const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
+                const ipfsUrl = Object.keys(mockSub.clients.ipfsClients)[0];
+
+                const expectedStates = ["fetching-ipfs", "stopped", "fetching-ipfs", "stopped"];
+                const actualStates = [];
+                mockSub.posts.clients.ipfsClients["new"][ipfsUrl].on("statechange", (newState) => {
+                    actualStates.push(newState);
+                });
+
+                const newFirstPage = await mockSub.posts.getPage(mockSub.posts.pageCids.new);
+                expect(newFirstPage.nextCid).to.be.a("string");
+                await mockSub.posts.getPage(newFirstPage.nextCid);
+
+                expect(actualStates).to.deep.equal(expectedStates);
+            });
+        });
+
+        describe(`subplebbit.posts.clients.ipfsGateways`, async () => {
+            it(`subplebbit.posts.clients.ipfsGateways[sortType][url] is stopped by default`, async () => {
+                const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
+                const gatewayUrl = Object.keys(mockSub.clients.ipfsGateways)[0];
+                // add tests here
+                expect(Object.keys(mockSub.posts.clients.ipfsGateways["new"]).length).to.equal(1);
+                expect(mockSub.posts.clients.ipfsGateways["new"][gatewayUrl].state).to.equal("stopped");
+            });
+
+            it(`Correct state of 'new' sort is updated after fetching from subplebbit.posts.pageCids.new`, async () => {
+                const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
+                const gatewayUrl = Object.keys(mockSub.clients.ipfsGateways)[0];
+
+                const expectedStates = ["fetching-ipfs", "stopped"];
+                const actualStates = [];
+                mockSub.posts.clients.ipfsGateways["new"][gatewayUrl].on("statechange", (newState) => {
+                    actualStates.push(newState);
+                });
+
+                await mockSub.posts.getPage(mockSub.posts.pageCids.new);
+                expect(actualStates).to.deep.equal(expectedStates);
+            });
+        });
+    });
 });
