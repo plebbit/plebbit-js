@@ -74,8 +74,8 @@ export default class Stats {
 
             // Thanks for @thisisnotph for their input on this formula
             const gatewayScore =
-                (1 / (successAverageMs + 1) / (1 / (successAverageMs + 1) + 1 / 300)) * 0.3 +
-                ((successCounts + 0.288) / (failureCounts * 2 + successCounts + 1)) * 0.7;
+                (1 / (successAverageMs + 150) / (1 / (successAverageMs + 100) + 1 / 150)) * 0.2 +
+                ((successCounts + 0.288) / (failureCounts * 2 + successCounts + 1)) * 0.8;
 
             log.trace(`gateway (${gatewayUrl}) score is (${gatewayScore}) for type (${type})`);
             return score;
