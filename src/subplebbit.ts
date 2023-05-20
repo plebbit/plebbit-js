@@ -181,9 +181,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
         if (!this.signer && mergedProps.signer) this.signer = new Signer(mergedProps.signer);
 
-        //@ts-expect-error
-        if (!this.posts._subplebbitAddress) this.posts.updateProps({ plebbit: this.plebbit, subplebbitAddress: this.address,  });
-
         if (mergedProps.posts) {
             const parsedPages = await parseRawPages(mergedProps.posts, this.plebbit);
             this.posts.updateProps({
@@ -192,7 +189,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 subplebbitAddress: this.address,
                 pageCids: mergedProps.posts.pageCids
             });
-        }
+        } else
+            this.posts.updateProps({
+                plebbit: this.plebbit,
+                subplebbitAddress: this.address,
+                pageCids: undefined,
+                pages: undefined,
+                pagesIpfs: undefined
+            });
     }
 
     private setAddress(newAddress: string) {
