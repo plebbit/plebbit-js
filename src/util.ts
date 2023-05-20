@@ -167,6 +167,8 @@ export async function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | Bas
 
     if (replies instanceof BasePages) return replies;
 
+    if (!replies.pages) return { pages: undefined, pagesIpfs: undefined };
+
     const isIpfs = Boolean(Object.values(replies.pages)[0]?.comments[0]["update"]);
 
     if (isIpfs) {
