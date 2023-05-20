@@ -44,9 +44,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private validateCaptchaAnswerCallback;
     private sortHandler;
     private _updateInterval?;
-    private _updateIntervalMs;
     private _syncInterval?;
-    private _syncIntervalMs;
     private _sync;
     private _ipfsNodeIpnsKeyNames;
     private _subplebbitUpdateTrigger;

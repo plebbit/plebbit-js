@@ -25,6 +25,9 @@ export interface PlebbitOptions {
         [chainTicker: string]: ChainProvider;
     };
     resolveAuthorAddresses?: boolean;
+    publishInterval?: number;
+    updateInterval?: number;
+    noData?: boolean;
 }
 export interface PageType {
     comments: Comment[];

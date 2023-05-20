@@ -13,7 +13,7 @@ export declare function generateMockVote(parentPostOrComment: Comment | Post, vo
 export declare function loadAllPages(pageCid: string, pagesInstance: Pages): Promise<Comment[]>;
 export declare function startSubplebbits(props: {
     signers: SignerType[];
-    syncInterval: number;
+    noData: boolean;
     dataPath: string;
     votesPerCommentToPublish: number;
     numOfCommentsToPublish: number;
@@ -27,4 +27,4 @@ export declare function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbi
 export declare function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string): Promise<void>;
 export declare function findCommentInPage(commentCid: string, pageCid: string, pages: Pages): Promise<Comment | undefined>;
 export declare function waitTillCommentIsInParentPages(comment: Comment, plebbit: Plebbit, propsToCheckFor?: Partial<CreateCommentOptions>, checkInAllPages?: boolean): Promise<void>;
-export declare function createMockSub(props: CreateSubplebbitOptions, plebbit: Plebbit, syncInterval?: number): Promise<Subplebbit>;
+export declare function createMockSub(props: CreateSubplebbitOptions, plebbit: Plebbit): Promise<Subplebbit>;

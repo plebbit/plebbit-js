@@ -7,7 +7,7 @@ import { Plebbit } from "../../plebbit";
 export declare const mkdir: typeof fs.mkdir;
 export declare const getDefaultDataPath: () => string;
 export declare const getDefaultSubplebbitDbConfig: (subplebbit: Pick<Subplebbit, "address"> & {
-    plebbit: Pick<Plebbit, "dataPath">;
+    plebbit: Pick<Plebbit, "dataPath" | "noData">;
 }) => Promise<Knex.Config<any>>;
 export declare function getThumbnailUrlOfLink(url: string, proxyHttpUrl?: string): Promise<string>;
 export declare const nativeFunctions: NativeFunctions;

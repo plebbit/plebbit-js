@@ -40,6 +40,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var localforage_1 = __importDefault(require("localforage"));
+var lodash_1 = __importDefault(require("lodash"));
 var Cache = /** @class */ (function () {
     function Cache(plebbit) {
         this._plebbit = plebbit;
@@ -49,9 +50,11 @@ var Cache = /** @class */ (function () {
     };
     Cache.prototype.init = function () {
         return __awaiter(this, void 0, void 0, function () {
+            var cacheName;
             return __generator(this, function (_a) {
+                cacheName = this._plebbit.noData ? lodash_1.default.uniqueId() : "plebbit-cache";
                 this._store = localforage_1.default.createInstance({
-                    name: "plebbit-cache"
+                    name: cacheName
                 });
                 return [2 /*return*/];
             });
