@@ -12,9 +12,9 @@ import {
 import { messages } from "./errors";
 import lodash from "lodash";
 import assert from "assert";
-import { Pages } from "./pages";
+import { BasePages } from "./pages";
 import { PlebbitError } from "./plebbit-error";
-import { ClientsManager } from "./clients/client-manager";
+import { Plebbit } from "./plebbit";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -114,23 +114,6 @@ export function throwWithErrorCode(code: keyof typeof messages, details?: {}) {
     throw new PlebbitError(code, details);
 }
 
-export async function parsePageIpfs(pageIpfs: PageIpfs, subplebbit: Pages["_subplebbit"]): Promise<PageType> {
-    const finalComments = await Promise.all(pageIpfs.comments.map((commentObj) => subplebbit.plebbit.createComment(commentObj.comment)));
-    for (let i = 0; i < finalComments.length; i++) {
-        //@ts-expect-error
-        finalComments[i].subplebbit = subplebbit;
-        await finalComments[i]._initCommentUpdate(pageIpfs.comments[i].update);
-    }
-
-    return { comments: finalComments, nextCid: pageIpfs.nextCid };
-}
-
-export async function parsePagesIpfs(pagesRaw: PagesTypeIpfs, subplebbit: Pages["_subplebbit"]): Promise<PagesType> {
-    const parsedPages = await Promise.all(Object.keys(pagesRaw.pages).map((key) => parsePageIpfs(pagesRaw.pages[key], subplebbit)));
-    const pagesType: PagesType["pages"] = Object.fromEntries(Object.keys(pagesRaw.pages).map((key, i) => [key, parsedPages[i]]));
-    return { pages: pagesType, pageCids: pagesRaw.pageCids };
-}
-
 const isJsonString = (jsonString: any) => {
     if (typeof jsonString !== "string" || (!jsonString.startsWith("{") && !jsonString.startsWith("["))) return false;
     try {
@@ -160,39 +143,39 @@ export const parseJsonStrings = (obj: any) => {
     return <any>newObj;
 };
 
+export async function parsePageIpfs(pageIpfs: PageIpfs, plebbit: Plebbit): Promise<PageType> {
+    const finalComments = await Promise.all(pageIpfs.comments.map((commentObj) => plebbit.createComment(commentObj.comment)));
+    await Promise.all(finalComments.map((comment, i) => comment._initCommentUpdate(pageIpfs.comments[i].update)));
+
+    return { comments: finalComments, nextCid: pageIpfs.nextCid };
+}
+
+export async function parsePagesIpfs(pagesRaw: PagesTypeIpfs, plebbit: Plebbit): Promise<PagesType> {
+    const parsedPages = await Promise.all(Object.keys(pagesRaw.pages).map((key) => parsePageIpfs(pagesRaw.pages[key], plebbit)));
+    const pagesType: PagesType["pages"] = Object.fromEntries(Object.keys(pagesRaw.pages).map((key, i) => [key, parsedPages[i]]));
+    return { pages: pagesType, pageCids: pagesRaw.pageCids };
+}
+
 // To use for both subplebbit.posts and comment.replies
 
-export async function parseRawPages(
-    replies: PagesTypeIpfs | PagesTypeJson | Pages | undefined,
-    parentCid: string | undefined,
-    subplebbit: Pages["_subplebbit"],
-    clientManager: ClientsManager
-): Promise<Pages> {
+export async function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | BasePages | undefined, plebbit: Plebbit) {
     if (!replies)
-        return new Pages({
+        return {
             pages: undefined,
-            pageCids: undefined,
-            subplebbit: subplebbit,
-            pagesIpfs: undefined,
-            parentCid: parentCid,
-            clientManager
-        });
+            pagesIpfs: undefined
+        };
 
-    if (replies instanceof Pages) return replies;
+    if (replies instanceof BasePages) return replies;
 
     const isIpfs = Boolean(Object.values(replies.pages)[0]?.comments[0]["update"]);
 
     if (isIpfs) {
         replies = replies as PagesTypeIpfs;
-        const parsedPages = await parsePagesIpfs(replies, subplebbit);
-        return new Pages({
+        const parsedPages = await parsePagesIpfs(replies, plebbit);
+        return {
             pages: parsedPages.pages,
-            pageCids: parsedPages.pageCids,
-            subplebbit: subplebbit,
-            pagesIpfs: replies.pages,
-            parentCid: parentCid,
-            clientManager
-        });
+            pagesIpfs: replies.pages
+        };
     } else {
         replies = replies as PagesTypeJson;
         const repliesClone = lodash.cloneDeep(replies) as PagesType;
@@ -200,19 +183,13 @@ export async function parseRawPages(
         const pageKeys: (keyof PagesType["pages"])[] = Object.keys(repliesClone.pages);
         for (const key of pageKeys)
             repliesClone.pages[key].comments = await Promise.all(
-                replies.pages[key].comments.map((comment) =>
-                    subplebbit.plebbit.createComment.bind(subplebbit.plebbit)({ ...comment, subplebbit })
-                )
+                replies.pages[key].comments.map((comment) => plebbit.createComment.bind(plebbit)(comment))
             );
 
-        return new Pages({
+        return {
             pages: repliesClone.pages,
-            pageCids: replies.pageCids,
-            subplebbit: subplebbit,
-            pagesIpfs: undefined,
-            parentCid: parentCid,
-            clientManager
-        });
+            pagesIpfs: undefined
+        };
     }
 }
 

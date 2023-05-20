@@ -4,7 +4,7 @@ import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, Chal
 import { SortHandler } from "./sort-handler";
 import { parseRawPages, removeKeysWithUndefinedValues, shortifyAddress, throwWithErrorCode, timestamp } from "./util";
 import { decrypt, encrypt, Signer } from "./signer";
-import { Pages } from "./pages";
+import { PostsPages } from "./pages";
 import { Plebbit } from "./plebbit";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import Hash from "ipfs-only-hash";
@@ -83,7 +83,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     description?: string;
     roles?: { [authorAddress: string]: SubplebbitRole };
     lastPostCid?: string;
-    posts: Pages;
+    posts: PostsPages;
     pubsubTopic?: string;
     challengeTypes?: ChallengeType[];
     stats?: SubplebbitStats;
@@ -148,6 +148,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         this._clientsManager = new SubplebbitClientsManager(this);
         this.clients = this._clientsManager.clients;
+
+        this.posts = new PostsPages({
+            pageCids: undefined,
+            pages: undefined,
+            plebbit: this.plebbit,
+            subplebbitAddress: undefined,
+            pagesIpfs: undefined
+        });
     }
 
     async initSubplebbit(newProps: InternalSubplebbitType | SubplebbitEditOptions | SubplebbitIpfsType) {
@@ -173,7 +181,18 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
         if (!this.signer && mergedProps.signer) this.signer = new Signer(mergedProps.signer);
 
-        this.posts = await parseRawPages(mergedProps.posts, undefined, this, this._clientsManager);
+        //@ts-expect-error
+        if (!this.posts._subplebbitAddress) this.posts.updateProps({ plebbit: this.plebbit, subplebbitAddress: this.address,  });
+
+        if (mergedProps.posts) {
+            const parsedPages = await parseRawPages(mergedProps.posts, this.plebbit);
+            this.posts.updateProps({
+                ...parsedPages,
+                plebbit: this.plebbit,
+                subplebbitAddress: this.address,
+                pageCids: mergedProps.posts.pageCids
+            });
+        }
     }
 
     private setAddress(newAddress: string) {

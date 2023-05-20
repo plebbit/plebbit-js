@@ -5,6 +5,7 @@ import { GenericClientEvents } from "../types";
 type PublicationGatewayState = "stopped" | "fetching-subplebbit-ipns";
 type CommentGatewayState = PublicationGatewayState | "fetching-update-ipns" | "fetching-ipfs";
 type SubplebbitGatewayState = "stopped" | "fetching-ipns";
+type PagesGatewayState = "fetching-ipfs" | "stopped";
 type GenericGatewayState = PublicationGatewayState | CommentGatewayState | SubplebbitGatewayState;
 
 // Client classes
@@ -23,3 +24,5 @@ export class PublicationIpfsGatewayClient extends BaseIpfsGateway<PublicationGat
 export class CommentIpfsGatewayClient extends BaseIpfsGateway<CommentGatewayState> {}
 
 export class SubplebbitIpfsGatewayClient extends BaseIpfsGateway<SubplebbitGatewayState> {}
+
+export class PagesIpfsGatewayClient extends BaseIpfsGateway<PagesGatewayState> {}

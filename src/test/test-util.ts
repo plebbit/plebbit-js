@@ -4,7 +4,6 @@ import Post from "../post";
 import { Plebbit } from "../plebbit";
 import PlebbitIndex from "../index";
 import Vote from "../vote";
-import { Pages } from "../pages";
 import { Subplebbit } from "../subplebbit";
 import { CreateCommentOptions, CreateSubplebbitOptions, PlebbitOptions, PostType, VoteType } from "../types";
 import isIPFS from "is-ipfs";
@@ -16,6 +15,7 @@ import Publication from "../publication";
 import lodash from "lodash";
 import { v4 as uuidv4 } from "uuid";
 import { create as createMockIpfsClient } from "./mock-ipfs-client";
+import { BasePages } from "../pages";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -110,7 +110,7 @@ export async function generateMockVote(
     return voteObj;
 }
 
-export async function loadAllPages(pageCid: string, pagesInstance: Pages): Promise<Comment[]> {
+export async function loadAllPages(pageCid: string, pagesInstance: BasePages): Promise<Comment[]> {
     if (!isIPFS.cid(pageCid)) throw Error(`loadAllPages: pageCid (${pageCid}) is not a valid CID`);
     let sortedCommentsPage = await pagesInstance.getPage(pageCid);
     let sortedComments: Comment[] = sortedCommentsPage.comments;
@@ -300,8 +300,7 @@ export async function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions) {
     const plebbit = await mockRemotePlebbit(plebbitOptions);
     delete plebbit.clients.ipfsClients;
     delete plebbit.ipfsHttpClientsOptions;
-    //@ts-expect-error
-    plebbit._clientsManager.curIpfsNodeUrl = undefined;
+    plebbit._clientsManager._curIpfsNodeUrl = undefined;
     return plebbit;
 }
 
@@ -370,7 +369,7 @@ export async function publishWithExpectedResult(publication: Publication, expect
     });
 }
 
-export async function findCommentInPage(commentCid: string, pageCid: string, pages: Pages): Promise<Comment | undefined> {
+export async function findCommentInPage(commentCid: string, pageCid: string, pages: BasePages): Promise<Comment | undefined> {
     let currentPageCid = lodash.clone(pageCid);
     while (currentPageCid) {
         const loadedPage = await pages.getPage(currentPageCid);

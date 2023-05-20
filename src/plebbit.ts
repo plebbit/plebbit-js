@@ -93,11 +93,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 ? this._parseUrlToOption(<string[]>options.ipfsHttpClientsOptions)
                 : <IpfsHttpClientOptions[] | undefined>options.ipfsHttpClientsOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
 
+        const fallbackPubsubProviders = [{ url: "https://pubsubprovider.xyz/api/v0" }];
         this.pubsubHttpClientsOptions =
             Array.isArray(options.pubsubHttpClientsOptions) && typeof options.pubsubHttpClientsOptions[0] === "string"
                 ? this._parseUrlToOption(<string[]>options.pubsubHttpClientsOptions)
-                : <IpfsHttpClientOptions[]>options.pubsubHttpClientsOptions ||
-                  this.ipfsHttpClientsOptions || [{ url: "https://pubsubprovider.xyz/api/v0" }];
+                : <IpfsHttpClientOptions[]>options.pubsubHttpClientsOptions || this.ipfsHttpClientsOptions || fallbackPubsubProviders;
 
         this.publishInterval = options.hasOwnProperty("publishInterval") ? options.publishInterval : 100000; // Default to 1.67 minutes
         this.updateInterval = options.hasOwnProperty("updateInterval") ? options.updateInterval : 60000; // Default to 1 minute

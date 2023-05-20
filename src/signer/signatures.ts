@@ -45,7 +45,7 @@ import {
     SubplebbitSignedPropertyNames,
     VoteSignedPropertyNames
 } from "./constants";
-import { ClientsManager } from "../clients/client-manager";
+import { BaseClientsManager } from "../clients/base-client-manager";
 
 interface ValidationResult {
     valid: boolean;
@@ -173,7 +173,7 @@ export async function signChallengeVerification(
 const _verifyAuthor = async (
     publicationJson: CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage,
     resolveAuthorAddresses: boolean,
-    clientsManager: ClientsManager
+    clientsManager: BaseClientsManager
 ): Promise<ValidationResult & { newAddress?: string }> => {
     const log = Logger("plebbit-js:signatures:verifyAuthor");
 
@@ -231,7 +231,7 @@ const _verifyPublicationSignature = async (publicationToBeVerified: PublicationT
 const _verifyPublicationWithAuthor = async (
     publicationJson: VotePubsubMessage | CommentPubsubMessage | CommentEditPubsubMessage,
     resolveAuthorAddresses: boolean,
-    clientsManager: ClientsManager,
+    clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult & { newAddress?: string }> => {
     // Validate author
@@ -255,7 +255,7 @@ const _verifyPublicationWithAuthor = async (
 export async function verifyVote(
     vote: VotePubsubMessage,
     resolveAuthorAddresses: boolean,
-    clientsManager: ClientsManager,
+    clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
     const res = await _verifyPublicationWithAuthor(vote, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
@@ -266,7 +266,7 @@ export async function verifyVote(
 export async function verifyCommentEdit(
     edit: CommentEditPubsubMessage,
     resolveAuthorAddresses: boolean,
-    clientsManager: ClientsManager,
+    clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
     const res = await _verifyPublicationWithAuthor(edit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
@@ -277,7 +277,7 @@ export async function verifyCommentEdit(
 export async function verifyComment(
     comment: CommentPubsubMessage | CommentIpfsType,
     resolveAuthorAddresses: boolean,
-    clientsManager: ClientsManager,
+    clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
     const validation = await _verifyPublicationWithAuthor(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
@@ -290,7 +290,7 @@ export async function verifyComment(
 export async function verifySubplebbit(
     subplebbit: SubplebbitIpfsType,
     resolveAuthorAddresses: boolean,
-    clientsManager: ClientsManager
+    clientsManager: BaseClientsManager
 ): Promise<ValidationResult> {
     if (subplebbit.posts?.pages)
         for (const page of Object.values(subplebbit.posts.pages)) {
@@ -326,7 +326,7 @@ async function _getValidationResult(publication: PublicationToVerify) {
 export async function verifyCommentUpdate(
     update: CommentUpdate,
     resolveAuthorAddresses: boolean,
-    clientsManager: ClientsManager,
+    clientsManager: BaseClientsManager,
     subplebbitAddress: string,
     comment: Pick<CommentWithCommentUpdate, "signature" | "cid">
 ): Promise<ValidationResult> {
@@ -373,7 +373,7 @@ export async function verifyChallengeVerification(verification: ChallengeVerific
 export async function verifyPage(
     page: PageIpfs,
     resolveAuthorAddresses: boolean,
-    clientsManager: ClientsManager,
+    clientsManager: BaseClientsManager,
     subplebbitAddress: string,
     parentCommentCid: string | undefined
 ): Promise<ValidationResult> {

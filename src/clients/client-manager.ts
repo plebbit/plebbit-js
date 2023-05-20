@@ -1,37 +1,30 @@
-import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import Publication from "../publication";
-import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { Plebbit } from "../plebbit";
 import { Comment } from "../comment";
 import { delay, throwWithErrorCode, timestamp } from "../util";
 import assert from "assert";
-import { CommentIpfsType, CommentUpdate, SubplebbitIpfsType } from "../types";
-import Hash from "ipfs-only-hash";
+import { CommentIpfsType, CommentUpdate, PostSortName, ReplySortName, SubplebbitIpfsType } from "../types";
 import { Subplebbit } from "../subplebbit";
 import { verifySubplebbit } from "../signer";
 import lodash from "lodash";
-import { nativeFunctions } from "../runtime/node/util";
 import isIPFS from "is-ipfs";
 import Logger from "@plebbit/plebbit-logger";
 import { PlebbitError } from "../plebbit-error";
-import pLimit from "p-limit";
-import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client";
+import { CommentIpfsClient, GenericIpfsClient, PagesIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client";
 import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client";
 import { GenericChainProviderClient } from "./chain-provider-client";
 import {
     CommentIpfsGatewayClient,
     GenericIpfsGatewayClient,
+    PagesIpfsGatewayClient,
     PublicationIpfsGatewayClient,
     SubplebbitIpfsGatewayClient
 } from "./ipfs-gateway-client";
+import { BaseClientsManager, LoadType } from "./base-client-manager";
 
-const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
-
-type LoadType = "subplebbit" | "comment-update" | "comment" | "generic-ipfs";
-export class ClientsManager {
+export class ClientsManager extends BaseClientsManager {
     protected _plebbit: Plebbit;
-    protected curPubsubNodeUrl: string; // The URL of the pubsub that is used currently
-    protected curIpfsNodeUrl: string | undefined; // The URL of the ipfs node that is used currently
+
     clients: {
         ipfsGateways: { [ipfsGatewayUrl: string]: GenericIpfsGatewayClient };
         ipfsClients: { [ipfsClientUrl: string]: GenericIpfsClient };
@@ -40,19 +33,13 @@ export class ClientsManager {
     };
 
     constructor(plebbit: Plebbit) {
-        this._plebbit = plebbit;
-        this.curPubsubNodeUrl = <string>Object.values(plebbit.clients.pubsubClients)[0]._clientOptions.url;
-        if (plebbit.clients.ipfsClients) this.curIpfsNodeUrl = <string>Object.values(plebbit.clients.ipfsClients)[0]._clientOptions.url;
+        super(plebbit);
         //@ts-expect-error
         this.clients = {};
         this._initIpfsGateways();
         this._initIpfsClients();
         this._initPubsubClients();
         this._initChainProviders();
-    }
-
-    toJSON() {
-        return undefined;
     }
 
     protected _initIpfsGateways() {
@@ -76,125 +63,9 @@ export class ClientsManager {
             this.clients.chainProviders = { ...this.clients.chainProviders, [chainProviderUrl]: new GenericChainProviderClient("stopped") };
     }
 
-    getCurrentPubsub() {
-        return this._plebbit.clients.pubsubClients[this.curPubsubNodeUrl];
-    }
+    // Overriding functions from base client manager here
 
-    getCurrentIpfs() {
-        assert(this.curIpfsNodeUrl);
-        assert(this._plebbit.clients.ipfsClients[this.curIpfsNodeUrl]);
-        return this._plebbit.clients.ipfsClients[this.curIpfsNodeUrl];
-    }
-
-    async pubsubSubscribe(pubsubTopic: string, handler: MessageHandlerFn) {
-        try {
-            await this.getCurrentPubsub()._client.pubsub.subscribe(pubsubTopic, handler);
-        } catch (e) {
-            throwWithErrorCode("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic, pubsubNode: this.curPubsubNodeUrl, error: e });
-        }
-    }
-
-    async pubsubUnsubscribe(pubsubTopic: string, handler?: MessageHandlerFn) {
-        try {
-            await this.getCurrentPubsub()._client.pubsub.unsubscribe(pubsubTopic, handler);
-        } catch (error) {
-            throwWithErrorCode("ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE", { pubsubTopic, pubsubNode: this.curPubsubNodeUrl, error });
-        }
-    }
-
-    async pubsubPublish(pubsubTopic: string, data: string) {
-        const dataBinary = uint8ArrayFromString(data);
-        try {
-            await this.getCurrentPubsub()._client.pubsub.publish(pubsubTopic, dataBinary);
-        } catch (error) {
-            throwWithErrorCode("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic, pubsubNode: this.curPubsubNodeUrl, error });
-        }
-    }
-
-    private async _fetchWithLimit(url: string, options?): Promise<string> {
-        // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
-        let res: Response;
-        try {
-            //@ts-expect-error
-            res = await nativeFunctions.fetch(url, { ...options, size: DOWNLOAD_LIMIT_BYTES });
-            if (res.status !== 200) throw Error("Failed to fetch");
-            // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
-            if (res?.body?.getReader === undefined) return await res.text();
-        } catch (e) {
-            if (e.message.includes("over limit"))
-                throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-            const errorCode = url.includes("/ipfs/")
-                ? "ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"
-                : url.includes("/ipns/")
-                ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
-                : "ERR_FAILED_TO_FETCH_GENERIC";
-            throwWithErrorCode(errorCode, { url, status: res?.status, statusText: res?.statusText, error: e });
-
-            // If error is not related to size limit, then throw it again
-        }
-
-        //@ts-ignore
-        if (res?.body?.getReader !== undefined) {
-            let totalBytesRead = 0;
-
-            // @ts-ignore
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder("utf-8");
-
-            let resText: string = "";
-
-            while (true) {
-                const { done, value } = await reader.read();
-                //@ts-ignore
-                if (value) resText += decoder.decode(value);
-                if (done || !value) break;
-                if (value.length + totalBytesRead > DOWNLOAD_LIMIT_BYTES)
-                    throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-                totalBytesRead += value.length;
-            }
-            return resText;
-        }
-    }
-
-    async resolveIpnsToCidP2P(ipns: string): Promise<string> {
-        const ipfsClient = this.getCurrentIpfs();
-        try {
-            const cid = await ipfsClient._client.name.resolve(ipns);
-            if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns });
-            return cid;
-        } catch (error) {
-            throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns, error });
-        }
-    }
-
-    protected async _fetchCidP2P(cid: string): Promise<string> {
-        const ipfsClient = this.getCurrentIpfs();
-        const fileContent = await ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES }); // Limit is 1mb files
-        if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid });
-        const calculatedCid: string = await Hash.of(fileContent);
-        if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
-            throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-        return fileContent;
-    }
-
-    private async _verifyContentIsSameAsCid(content: string, cid: string) {
-        const calculatedCid: string = await Hash.of(content);
-        if (content.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
-            throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-        if (calculatedCid !== cid) throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid, cid });
-    }
-
-    protected async _fetchWithGateway(gateway: string, path: string, loadType: LoadType): Promise<string | { error: PlebbitError }> {
-        const log = Logger("plebbit-js:plebbit:fetchWithGateway");
-        const url = `${gateway}${path}`;
-
-        log.trace(`Fetching url (${url})`);
-
-        const timeBefore = Date.now();
-        const isCid = path.includes("/ipfs/"); // If false, then IPNS
-
-        // TODO this should to update to either fetching-subplebbit
-
+    preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void {
         const gatewayState =
             loadType === "subplebbit"
                 ? this._getStatePriorToResolvingSubplebbitIpns()
@@ -203,71 +74,46 @@ export class ClientsManager {
                 : loadType === "comment" || loadType === "generic-ipfs"
                 ? "fetching-ipfs"
                 : undefined;
-
         assert(gatewayState);
-        this.updateGatewayState(gatewayState, gateway);
-        try {
-            const resText = await this._fetchWithLimit(url, { cache: isCid ? "force-cache" : "no-store" });
-            if (isCid) await this._verifyContentIsSameAsCid(resText, path.split("/ipfs/")[1]);
-            this.updateGatewayState("stopped", gateway);
-            const timeElapsedMs = Date.now() - timeBefore;
-            await this._plebbit.stats.recordGatewaySuccess(gateway, isCid ? "cid" : "ipns", timeElapsedMs);
-            return resText;
-        } catch (e) {
-            this.updateGatewayState("stopped", gateway);
-            await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
-            return { error: e };
-        }
+        this.updateGatewayState(gatewayState, gatewayUrl);
     }
 
-    protected async fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string }, loadType: LoadType): Promise<string> {
-        assert(loadOpts.cid || loadOpts.ipns);
+    postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType) {
+        this.updateGatewayState("stopped", gatewayUrl);
+    }
 
-        const path = loadOpts.cid ? `/ipfs/${loadOpts.cid}` : `/ipns/${loadOpts.ipns}`;
+    postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType) {
+        this.updateGatewayState("stopped", gatewayUrl);
+    }
 
-        const _firstResolve = (promises: Promise<string | { error: PlebbitError }>[]) => {
-            return new Promise<string>((resolve) =>
-                promises.forEach((promise) =>
-                    promise.then((res) => {
-                        if (typeof res === "string") resolve(res);
-                    })
-                )
-            );
-        };
+    preResolveTextRecord(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address") {
+        const newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
+        this.updateChainProviderState(newState, "eth");
+    }
 
-        const type = loadOpts.cid ? "cid" : "ipns";
+    postResolveTextRecordSuccess(
+        ens: string,
+        txtRecordName: "subplebbit-address" | "plebbit-author-address",
+        resolvedTextRecord: string
+    ): void {
+        this.updateChainProviderState("stopped", "eth");
+    }
 
-        const concurrencyLimit = 3;
-
-        const queueLimit = pLimit(concurrencyLimit);
-
-        // Only sort if we have more than 3 gateways
-        const gatewaysSorted =
-            Object.keys(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit
-                ? Object.keys(this._plebbit.clients.ipfsGateways)
-                : await this._plebbit.stats.sortGatewaysAccordingToScore(type);
-
-        const gatewayPromises = gatewaysSorted.map((gateway) => queueLimit(() => this._fetchWithGateway(gateway, path, loadType)));
-
-        const res = await Promise.race([_firstResolve(gatewayPromises), Promise.allSettled(gatewayPromises)]);
-        if (typeof res === "string") {
-            queueLimit.clearQueue();
-            return res;
-        } //@ts-expect-error
-        else throw res[0].value.error;
+    postResolveTextRecordFailure(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address") {
+        this.updateChainProviderState("stopped", "eth");
     }
 
     // State methods here
 
     updatePubsubState(newState: GenericPubsubClient["state"]) {
-        this.clients.pubsubClients[this.curPubsubNodeUrl].state = newState;
-        this.clients.pubsubClients[this.curPubsubNodeUrl].emit("statechange", newState);
+        this.clients.pubsubClients[this._curPubsubNodeUrl].state = newState;
+        this.clients.pubsubClients[this._curPubsubNodeUrl].emit("statechange", newState);
     }
 
     updateIpfsState(newState: GenericIpfsClient["state"]) {
-        assert(this.curIpfsNodeUrl);
-        this.clients.ipfsClients[this.curIpfsNodeUrl].state = newState;
-        this.clients.ipfsClients[this.curIpfsNodeUrl].emit("statechange", newState);
+        assert(this._curIpfsNodeUrl);
+        this.clients.ipfsClients[this._curIpfsNodeUrl].state = newState;
+        this.clients.ipfsClients[this._curIpfsNodeUrl].emit("statechange", newState);
     }
 
     updateGatewayState(newState: GenericIpfsGatewayClient["state"], gateway: string) {
@@ -280,71 +126,12 @@ export class ClientsManager {
         this.clients.chainProviders[chainTicker].emit("statechange", newState);
     }
 
-    emitError(e: PlebbitError) {
-        this._plebbit.emit("error", e);
-    }
-
-    // Resolver methods here
-
-    private async _getCachedEns(
-        ens: string,
-        txtRecord: "subplebbit-address" | "plebbit-author-address"
-    ): Promise<{ stale: boolean; resolveCache: string | undefined } | undefined> {
-        const resolveCache: string | undefined = await this._plebbit._cache.getItem(`${ens}_${txtRecord}`);
-        if (typeof resolveCache === "string") {
-            const resolvedTimestamp: number = await this._plebbit._cache.getItem(`${ens}_${txtRecord}_timestamp`);
-            assert(typeof resolvedTimestamp === "number");
-            const stale = timestamp() - resolvedTimestamp > 3600; // Only resolve again if cache was stored over an hour ago
-            return { stale, resolveCache };
-        }
-        return undefined;
-    }
-
-    private async _resolveEnsTextRecordWithCache(ens: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
-        if (!ens.endsWith(".eth")) return ens;
-
-        return this._resolveEnsTextRecord(ens, txtRecord);
-    }
-
-    private async _resolveEnsTextRecord(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address") {
-        const log = Logger("plebbit-js:plebbit:client-manager:_resolveEnsTextRecord");
-        const timeouts = [0, 0, 100, 1000];
-        for (let i = 0; i < timeouts.length; i++) {
-            if (timeouts[i] !== 0) await delay(timeouts[i]);
-            const cacheEns = await this._getCachedEns(ens, txtRecordName);
-            if (cacheEns && !cacheEns.stale) return cacheEns.resolveCache;
-            log.trace(`Retrying to resolve ENS (${ens}) text record (${txtRecordName}) for the ${i}th time`);
-            const newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
-            this.updateChainProviderState(newState, "eth");
-            try {
-                const resolvedTxtRecord = await this._plebbit.resolver._resolveEnsTxtRecord(ens, txtRecordName);
-                this.updateChainProviderState("stopped", "eth");
-                return resolvedTxtRecord;
-            } catch (e) {
-                this.updateChainProviderState("stopped", "eth");
-                if (i === timeouts.length - 1) {
-                    this.emitError(e);
-                    throw e;
-                }
-            }
-        }
-    }
-
-    async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | undefined> {
-        assert(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
-        return this._resolveEnsTextRecordWithCache(subplebbitAddress, "subplebbit-address");
-    }
-
-    async resolveAuthorAddressIfNeeded(authorAddress: string) {
-        assert(typeof authorAddress === "string", "subplebbitAddress needs to be a string to be resolved");
-        return this._resolveEnsTextRecordWithCache(authorAddress, "plebbit-author-address");
-    }
 
     async fetchCid(cid: string) {
         let finalCid = lodash.clone(cid);
         if (!isIPFS.cid(finalCid) && isIPFS.path(finalCid)) finalCid = finalCid.split("/")[2];
         if (!isIPFS.cid(finalCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
-        if (this.curIpfsNodeUrl) return this._fetchCidP2P(cid);
+        if (this._curIpfsNodeUrl) return this._fetchCidP2P(cid);
         else return this.fetchFromMultipleGateways({ cid }, "generic-ipfs");
     }
 
@@ -357,7 +144,7 @@ export class ClientsManager {
     }
 
     async fetchSubplebbitIpns(ipnsAddress: string): Promise<string> {
-        if (this.curIpfsNodeUrl) {
+        if (this._curIpfsNodeUrl) {
             this.updateIpfsState(this._getStatePriorToResolvingSubplebbitIpns());
             const subCid = await this.resolveIpnsToCidP2P(ipnsAddress);
             this.updateIpfsState(this._getStatePriorToResolvingSubplebbitIpfs());
@@ -367,6 +154,7 @@ export class ClientsManager {
         } else return this.fetchFromMultipleGateways({ ipns: ipnsAddress }, "subplebbit");
     }
 }
+
 
 export class PublicationClientsManager extends ClientsManager {
     clients: {
@@ -415,7 +203,7 @@ export class PublicationClientsManager extends ClientsManager {
 
         this._publication._updatePublishingState("fetching-subplebbit-ipns");
         let subJson: SubplebbitIpfsType;
-        if (this.curIpfsNodeUrl) {
+        if (this._curIpfsNodeUrl) {
             this.updateIpfsState("fetching-subplebbit-ipns");
             const subCid = await this.resolveIpnsToCidP2P(subIpns);
             this._publication._updatePublishingState("fetching-subplebbit-ipfs");
@@ -436,8 +224,8 @@ export class PublicationClientsManager extends ClientsManager {
     }
 
     updatePubsubState(newState: PublicationPubsubClient["state"]) {
-        this.clients.pubsubClients[this.curPubsubNodeUrl].state = newState;
-        this.clients.pubsubClients[this.curPubsubNodeUrl].emit("statechange", newState);
+        this.clients.pubsubClients[this._curPubsubNodeUrl].state = newState;
+        this.clients.pubsubClients[this._curPubsubNodeUrl].emit("statechange", newState);
     }
 
     updateGatewayState(newState: PublicationIpfsGatewayClient["state"], gateway: string): void {
@@ -467,7 +255,7 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     async fetchCommentUpdate(ipnsName: string): Promise<CommentUpdate> {
         this._comment._setUpdatingState("fetching-update-ipns");
-        if (this.curIpfsNodeUrl) {
+        if (this._curIpfsNodeUrl) {
             this.updateIpfsState("fetching-update-ipns");
             const updateCid = await this.resolveIpnsToCidP2P(ipnsName);
             this._comment._setUpdatingState("fetching-update-ipfs");
@@ -484,7 +272,7 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     async fetchCommentCid(cid: string): Promise<CommentIpfsType> {
         this._comment._setUpdatingState("fetching-ipfs");
-        if (this.curIpfsNodeUrl) {
+        if (this._curIpfsNodeUrl) {
             this.updateIpfsState("fetching-ipfs");
             const commentContent: CommentIpfsType = JSON.parse(await this._fetchCidP2P(cid));
             this.updateIpfsState("stopped");
@@ -527,7 +315,7 @@ export class SubplebbitClientsManager extends ClientsManager {
 
     async fetchSubplebbit(ipnsName: string) {
         this._subplebbit._setUpdatingState("fetching-ipns");
-        if (this.curIpfsNodeUrl) {
+        if (this._curIpfsNodeUrl) {
             this.updateIpfsState("fetching-ipns");
             const subplebbitCid = await this.resolveIpnsToCidP2P(ipnsName);
             this._subplebbit._setUpdatingState("fetching-ipfs");

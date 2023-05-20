@@ -30,9 +30,9 @@ export interface PlebbitOptions {
     chainProviders?: { [chainTicker: string]: ChainProvider };
     resolveAuthorAddresses?: boolean;
     // Options for tests only. Should not be used in production
-    publishInterval?: number // in ms, the time to wait for subplebbit instances to publish updates
-    updateInterval?: number // in ms, the time to wait for comment/subplebbit instances to check for updates
-    noData?: boolean // if true, dataPath is ignored, all database and cache data is saved in memory
+    publishInterval?: number; // in ms, the time to wait for subplebbit instances to publish updates
+    updateInterval?: number; // in ms, the time to wait for comment/subplebbit instances to check for updates
+    noData?: boolean; // if true, dataPath is ignored, all database and cache data is saved in memory
 }
 
 export interface PageType {
@@ -57,6 +57,16 @@ export interface PagesType {
 export interface PagesTypeJson {
     pages: Partial<Record<PostSortName | ReplySortName, PageTypeJson>>;
     pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
+}
+
+export interface RepliesPagesTypeJson extends PagesTypeJson {
+    pages: Partial<Record<ReplySortName, PageTypeJson>>;
+    pageCids: Partial<Record<ReplySortName, string>>;
+}
+
+export interface PostsPagesTypeJson extends PagesTypeJson {
+    pages: Partial<Record<PostSortName, PageTypeJson>>;
+    pageCids: Partial<Record<PostSortName, string>>;
 }
 
 export interface PagesTypeIpfs {

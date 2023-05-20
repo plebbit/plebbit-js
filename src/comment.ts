@@ -1,7 +1,7 @@
 import retry, { RetryOperation } from "retry";
 import { parseRawPages, removeNullAndUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "./util";
 import Publication from "./publication";
-import { Pages } from "./pages";
+import { RepliesPages } from "./pages";
 import {
     AuthorCommentEdit,
     CommentIpfsType,
@@ -51,7 +51,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     downvoteCount?: number;
     replyCount?: number;
     updatedAt?: number;
-    replies: Pages;
+    replies: RepliesPages;
     edit?: AuthorCommentEdit;
     flair?: Flair;
     deleted?: CommentType["edit"]["deleted"];
@@ -111,11 +111,11 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.protocolVersion = props.protocolVersion;
         this.flair = props.flair;
         this.setPreviousCid(props.previousCid);
-        this.replies = new Pages({
+        this.replies = new RepliesPages({
             pages: undefined,
             pageCids: undefined,
-            subplebbit: { address: this.subplebbitAddress, plebbit: this._plebbit },
-            clientManager: this._clientsManager,
+            plebbit: this._plebbit,
+            subplebbitAddress: this.subplebbitAddress,
             pagesIpfs: undefined,
             parentCid: this.cid
         });
@@ -148,15 +148,17 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.author.flair = props.author?.subplebbit?.flair || props.edit?.author?.flair || this.author?.flair;
 
         assert(this.cid);
-        this.replies = await parseRawPages(
-            props.replies,
-            this.cid,
-            {
-                address: this.subplebbitAddress,
-                plebbit: this._plebbit
-            },
-            this._clientsManager
-        );
+
+        if (props.replies) {
+            const parsedPages = await parseRawPages(props.replies, this._plebbit);
+            this.replies.updateProps({
+                ...parsedPages,
+                plebbit: this._plebbit,
+                subplebbitAddress: this.subplebbitAddress,
+                pageCids: props.replies.pageCids,
+                parentCid: this.cid
+            });
+        }
     }
 
     getType(): PublicationTypeName {
