@@ -63,6 +63,11 @@ describe(`subplebbit.edit`, async () => {
         expect(subplebbit.address).to.equal(ethAddress);
     });
 
+    it(`Local subplebbit resets posts after changing address`, async () => {
+        expect(subplebbit.posts.pages).to.be.undefined;
+        expect(subplebbit.posts.pageCids).to.undefined;
+    });
+
     it(`Start locks are moved to the new address`, async () => {
         // Check for locks
         expect(fs.existsSync(path.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.signer.address))).to.be.false;
@@ -75,7 +80,7 @@ describe(`subplebbit.edit`, async () => {
         expect(stringify(loadedSubplebbit)).to.equal(stringify(subplebbit));
     });
 
-    it(`subplebbit.posts is reset after changing address`, async () => {
+    it(`remote subplebbit.posts is reset after changing address`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(ethAddress);
         // subplebbit.posts should omit all comments that referenced the old subplebbit address
         // So in essence it be undefined
