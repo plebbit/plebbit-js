@@ -339,6 +339,27 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
                 expect(actualStates).to.deep.equal(expectedStates);
             });
+
+            it(`Correct state of 'new' sort is updated after fetching with a subplebbit created with plebbit.createSubplebbit({address, pageCids})`, async () => {
+                const remotePlebbit = await mockRemotePlebbit();
+                const mockSub = await remotePlebbit.getSubplebbit(subplebbitAddress);
+                const fetchSub = await remotePlebbit.createSubplebbit({
+                    address: subplebbitAddress,
+                    posts: { pageCids: mockSub.posts.pageCids }
+                });
+                expect(fetchSub.updatedAt).to.be.undefined;
+
+                const ipfsUrl = Object.keys(fetchSub.clients.ipfsClients)[0];
+
+                const expectedStates = ["fetching-ipfs", "stopped"];
+                const actualStates = [];
+                fetchSub.posts.clients.ipfsClients["new"][ipfsUrl].on("statechange", (newState) => {
+                    actualStates.push(newState);
+                });
+
+                await fetchSub.posts.getPage(fetchSub.posts.pageCids.new);
+                expect(actualStates).to.deep.equal(expectedStates);
+            });
         });
 
         describe(`subplebbit.posts.clients.ipfsGateways`, async () => {
