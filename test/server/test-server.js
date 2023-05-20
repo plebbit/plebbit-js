@@ -143,7 +143,8 @@ const startIpfsNodes = async () => {
             signers: signers,
             publishInterval: 3000,
             noData: runInMemory,
-            votesPerCommentToPublish: 10,
+            votesPerCommentToPublish: 5,
+            numOfPostsToPublish: 51,
             numOfCommentsToPublish: 10
         });
 

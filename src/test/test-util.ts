@@ -206,6 +206,7 @@ async function _populateSubplebbit(
         signers: SignerType[];
         votesPerCommentToPublish: number;
         numOfCommentsToPublish: number;
+        numOfPostsToPublish: number;
     }
 ) {
     await subplebbit.edit({
@@ -216,7 +217,7 @@ async function _populateSubplebbit(
         }
     });
     await new Promise((resolve) => subplebbit.once("update", resolve));
-    const posts = await _publishPosts(subplebbit.address, props.numOfCommentsToPublish, subplebbit.plebbit); // If no comment[] is provided, we publish posts
+    const posts = await _publishPosts(subplebbit.address, props.numOfPostsToPublish, subplebbit.plebbit); // If no comment[] is provided, we publish posts
     console.log(`Have successfully published ${posts.length} posts`);
     const replies = await _publishReplies(posts[0], props.numOfCommentsToPublish, subplebbit.plebbit);
     console.log(`Have sucessfully published ${replies.length} replies`);
@@ -233,6 +234,7 @@ export async function startSubplebbits(props: {
     dataPath: string;
     votesPerCommentToPublish: number;
     numOfCommentsToPublish: number;
+    numOfPostsToPublish: number;
 }) {
     const plebbit = await _mockSubplebbitPlebbit(props.signers, lodash.pick(props, ["noData", "dataPath"]));
     const signer = await plebbit.createSigner(props.signers[0]);
