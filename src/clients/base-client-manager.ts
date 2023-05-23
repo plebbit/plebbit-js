@@ -17,54 +17,107 @@ export class BaseClientsManager {
     // Class that has all function but without clients field for maximum interopability
 
     protected _plebbit: Plebbit;
-    _curPubsubNodeUrl: string; // The URL of the pubsub that is used currently
-    _curIpfsNodeUrl: string | undefined; // The URL of the ipfs node that is used currently
+    _defaultPubsubProviderUrl: string; // The URL of the pubsub that is used by default for pubsub
+    _defaultIpfsProviderUrl: string | undefined; // The URL of the ipfs node that is used by default for IPFS ipfs/ipns retrieval
 
     constructor(plebbit: Plebbit) {
         this._plebbit = plebbit;
-        this._curPubsubNodeUrl = <string>Object.values(plebbit.clients.pubsubClients)[0]._clientOptions.url;
-        if (plebbit.clients.ipfsClients) this._curIpfsNodeUrl = <string>Object.values(plebbit.clients.ipfsClients)[0]._clientOptions.url;
+        this._defaultPubsubProviderUrl = <string>Object.values(plebbit.clients.pubsubClients)[0]._clientOptions.url; // TODO Should be the gateway with the best score
+        if (plebbit.clients.ipfsClients)
+            this._defaultIpfsProviderUrl = <string>Object.values(plebbit.clients.ipfsClients)[0]._clientOptions.url;
     }
 
     toJSON() {
         return undefined;
     }
 
-    getCurrentPubsub() {
-        return this._plebbit.clients.pubsubClients[this._curPubsubNodeUrl];
+    getDefaultPubsub() {
+        return this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl];
     }
 
-    getCurrentIpfs() {
-        assert(this._curIpfsNodeUrl);
-        assert(this._plebbit.clients.ipfsClients[this._curIpfsNodeUrl]);
-        return this._plebbit.clients.ipfsClients[this._curIpfsNodeUrl];
+    getDefaultIpfs() {
+        assert(this._defaultIpfsProviderUrl);
+        assert(this._plebbit.clients.ipfsClients[this._defaultIpfsProviderUrl]);
+        return this._plebbit.clients.ipfsClients[this._defaultIpfsProviderUrl];
     }
 
     // Pubsub methods
 
     async pubsubSubscribe(pubsubTopic: string, handler: MessageHandlerFn) {
         try {
-            await this.getCurrentPubsub()._client.pubsub.subscribe(pubsubTopic, handler);
+            await this.getDefaultPubsub()._client.pubsub.subscribe(pubsubTopic, handler);
         } catch (e) {
-            throwWithErrorCode("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic, pubsubNode: this._curPubsubNodeUrl, error: e });
+            throwWithErrorCode("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic, pubsubNode: this._defaultPubsubProviderUrl, error: e });
         }
     }
 
     async pubsubUnsubscribe(pubsubTopic: string, handler?: MessageHandlerFn) {
         try {
-            await this.getCurrentPubsub()._client.pubsub.unsubscribe(pubsubTopic, handler);
+            await this.getDefaultPubsub()._client.pubsub.unsubscribe(pubsubTopic, handler);
         } catch (error) {
-            throwWithErrorCode("ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE", { pubsubTopic, pubsubNode: this._curPubsubNodeUrl, error });
+            throwWithErrorCode("ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE", { pubsubTopic, pubsubNode: this._defaultPubsubProviderUrl, error });
+        }
+    }
+
+    protected prePubsubPublishProvider(pubsubTopic: string, pubsubProvider: string) {}
+
+    protected postPubsubPublishProviderSuccess(pubsubTopic: string, pubsubProvider: string) {}
+
+    protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string) {}
+
+    protected async _publishToPubsubProvider(pubsubTopic: string, data: Uint8Array, pubsubProvider: string) {
+        const log = Logger("plebbit-js:plebbit:pubsubPublish");
+        this.prePubsubPublishProvider(pubsubTopic, pubsubProvider);
+        const timeBefore = Date.now();
+        try {
+            await this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.publish(pubsubTopic, data);
+            this._plebbit.stats.recordGatewaySuccess(pubsubProvider, "pubsub-publish", Date.now() - timeBefore); // Awaiting this statement will bug out tests
+            this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
+        } catch (error) {
+            await this._plebbit.stats.recordGatewayFailure(pubsubProvider, "pubsub-publish");
+            this.postPubsubPublishProviderFailure(pubsubTopic, pubsubProvider);
+            throwWithErrorCode("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic, pubsubProvider, error });
         }
     }
 
     async pubsubPublish(pubsubTopic: string, data: string) {
         const dataBinary = uint8ArrayFromString(data);
-        try {
-            await this.getCurrentPubsub()._client.pubsub.publish(pubsubTopic, dataBinary);
-        } catch (error) {
-            throwWithErrorCode("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic, pubsubNode: this._curPubsubNodeUrl, error });
+        // this.prePubsubPublish(pubsubTopic);
+
+        const _firstResolve = (promises: Promise<void>[]) => {
+            return new Promise<number>((resolve) => promises.forEach((promise) => promise.then(() => resolve(1))));
+        };
+
+        const timeouts = [0, 0, 100, 1000];
+
+        let lastError: PlebbitError;
+        const concurrencyLimit = 3;
+
+        for (const timeout of timeouts) {
+            if (timeout !== 0) await delay(timeout);
+            try {
+                const queueLimit = pLimit(concurrencyLimit);
+
+                // Only sort if we have more than 3 pubsub providers
+                const providersSorted =
+                    Object.keys(this._plebbit.clients.pubsubClients).length <= concurrencyLimit
+                        ? Object.keys(this._plebbit.clients.pubsubClients)
+                        : await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-publish");
+
+                const providerPromises = providersSorted.map((pubsubProviderUrl) =>
+                    queueLimit(() => this._publishToPubsubProvider(pubsubTopic, dataBinary, pubsubProviderUrl))
+                );
+
+                const res = await Promise.race([_firstResolve(providerPromises), Promise.allSettled(providerPromises)]);
+
+                if (res === 1) return;
+                else throw res[0].value.error;
+            } catch (e) {
+                lastError = e;
+            }
         }
+
+        throw lastError;
     }
 
     // Gateway methods
@@ -182,7 +235,7 @@ export class BaseClientsManager {
 
     // IPFS P2P methods
     async resolveIpnsToCidP2P(ipns: string): Promise<string> {
-        const ipfsClient = this.getCurrentIpfs();
+        const ipfsClient = this.getDefaultIpfs();
         try {
             const cid = await ipfsClient._client.name.resolve(ipns);
             if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns });
@@ -193,7 +246,7 @@ export class BaseClientsManager {
     }
 
     async _fetchCidP2P(cid: string): Promise<string> {
-        const ipfsClient = this.getCurrentIpfs();
+        const ipfsClient = this.getDefaultIpfs();
         const fileContent = await ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES }); // Limit is 1mb files
         if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid });
         const calculatedCid: string = await Hash.of(fileContent);
@@ -270,7 +323,6 @@ export class BaseClientsManager {
         assert(typeof authorAddress === "string", "subplebbitAddress needs to be a string to be resolved");
         return this._resolveEnsTextRecordWithCache(authorAddress, "plebbit-author-address");
     }
-
 
     // Misc functions
     emitError(e: PlebbitError) {

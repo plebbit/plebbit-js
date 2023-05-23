@@ -133,7 +133,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             );
             const decryptedChallenge: DecryptedChallengeMessageType = { ...msgParsed, challenges: decryptedChallenges };
             this._updatePublishingState("waiting-challenge-answers");
-            this._clientsManager.updatePubsubState("waiting-challenge-answers");
+            this._clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
             this.emit("challenge", decryptedChallenge);
         } else if (msgParsed?.type === "CHALLENGEVERIFICATION") {
             const signatureValidation = await verifyChallengeVerification(msgParsed);
@@ -170,7 +170,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             }
 
             await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
-            this._clientsManager.updatePubsubState("stopped");
+            this._clientsManager.updatePubsubState("stopped", undefined);
             this.emit(
                 "challengeverification",
                 { ...msgParsed, publication: decryptedPublication },
@@ -184,8 +184,6 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         const log = Logger("plebbit-js:publication:publishChallengeAnswers");
 
         if (!Array.isArray(challengeAnswers)) challengeAnswers = [challengeAnswers];
-        this._updatePublishingState("publishing-challenge-answer");
-        this._clientsManager.updatePubsubState("publishing-challenge-answers");
 
         const encryptedChallengeAnswers = await encrypt(
             JSON.stringify(challengeAnswers),
@@ -206,6 +204,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             ...toSignAnswer,
             signature: await signChallengeAnswer(toSignAnswer, this.pubsubMessageSigner)
         });
+        this._updatePublishingState("publishing-challenge-answer");
         await this._clientsManager.publishChallengeAnswer(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeAnswer));
         this._updatePublishingState("waiting-challenge-verification");
         log(`Responded to challenge (${this._challengeAnswer.challengeRequestId}) with answers`, challengeAnswers);
@@ -289,17 +288,17 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             }) to pubsub topic (${this._pubsubTopicWithfallback()})`
         );
 
-        this._clientsManager.updatePubsubState("subscribing-pubsub");
+        this._clientsManager.updatePubsubState("subscribing-pubsub", undefined);
         try {
             await this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
             await this._clientsManager.publishChallengeRequest(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeRequest));
         } catch (e) {
             this._updatePublishingState("failed");
-            this._clientsManager.updatePubsubState("stopped");
+            this._clientsManager.updatePubsubState("stopped", undefined);
             this.emit("error", e);
             throw e;
         }
-        this._clientsManager.updatePubsubState("waiting-challenge");
+        this._clientsManager.updatePubsubState("waiting-challenge", undefined);
 
         this._updatePublishingState("waiting-challenge");
 

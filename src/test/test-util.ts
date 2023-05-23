@@ -283,6 +283,7 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions) {
     //@ts-expect-error
     plebbit._clientsManager._getCachedEns = () => undefined;
 
+    // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
     if (!plebbitOptions?.pubsubHttpClientsOptions)
         plebbit.clients.pubsubClients[Object.keys(plebbit.clients.pubsubClients)[0]]._client = createMockIpfsClient();
     plebbit.on("error", () => {});
@@ -300,7 +301,8 @@ export async function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions) {
     const plebbit = await mockRemotePlebbit(plebbitOptions);
     delete plebbit.clients.ipfsClients;
     delete plebbit.ipfsHttpClientsOptions;
-    plebbit._clientsManager._curIpfsNodeUrl = undefined;
+    delete plebbit._clientsManager.clients.ipfsClients;
+    plebbit._clientsManager._defaultPubsubProviderUrl = plebbit._clientsManager._defaultIpfsProviderUrl = undefined;
     return plebbit;
 }
 

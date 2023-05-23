@@ -8,7 +8,6 @@ import { Subplebbit } from "../subplebbit";
 import { verifySubplebbit } from "../signer";
 import lodash from "lodash";
 import isIPFS from "is-ipfs";
-import Logger from "@plebbit/plebbit-logger";
 import { PlebbitError } from "../plebbit-error";
 import { CommentIpfsClient, GenericIpfsClient, PagesIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client";
 import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client";
@@ -105,15 +104,17 @@ export class ClientsManager extends BaseClientsManager {
 
     // State methods here
 
-    updatePubsubState(newState: GenericPubsubClient["state"]) {
-        this.clients.pubsubClients[this._curPubsubNodeUrl].state = newState;
-        this.clients.pubsubClients[this._curPubsubNodeUrl].emit("statechange", newState);
+    updatePubsubState(newState: GenericPubsubClient["state"], pubsubProvider: string | undefined) {
+        pubsubProvider = pubsubProvider || this._defaultPubsubProviderUrl;
+        assert(typeof pubsubProvider === "string");
+        this.clients.pubsubClients[pubsubProvider].state = newState;
+        this.clients.pubsubClients[pubsubProvider].emit("statechange", newState);
     }
 
     updateIpfsState(newState: GenericIpfsClient["state"]) {
-        assert(this._curIpfsNodeUrl);
-        this.clients.ipfsClients[this._curIpfsNodeUrl].state = newState;
-        this.clients.ipfsClients[this._curIpfsNodeUrl].emit("statechange", newState);
+        assert(this._defaultIpfsProviderUrl);
+        this.clients.ipfsClients[this._defaultIpfsProviderUrl].state = newState;
+        this.clients.ipfsClients[this._defaultIpfsProviderUrl].emit("statechange", newState);
     }
 
     updateGatewayState(newState: GenericIpfsGatewayClient["state"], gateway: string) {
@@ -126,12 +127,11 @@ export class ClientsManager extends BaseClientsManager {
         this.clients.chainProviders[chainTicker].emit("statechange", newState);
     }
 
-
     async fetchCid(cid: string) {
         let finalCid = lodash.clone(cid);
         if (!isIPFS.cid(finalCid) && isIPFS.path(finalCid)) finalCid = finalCid.split("/")[2];
         if (!isIPFS.cid(finalCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
-        if (this._curIpfsNodeUrl) return this._fetchCidP2P(cid);
+        if (this._defaultIpfsProviderUrl) return this._fetchCidP2P(cid);
         else return this.fetchFromMultipleGateways({ cid }, "generic-ipfs");
     }
 
@@ -144,7 +144,7 @@ export class ClientsManager extends BaseClientsManager {
     }
 
     async fetchSubplebbitIpns(ipnsAddress: string): Promise<string> {
-        if (this._curIpfsNodeUrl) {
+        if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState(this._getStatePriorToResolvingSubplebbitIpns());
             const subCid = await this.resolveIpnsToCidP2P(ipnsAddress);
             this.updateIpfsState(this._getStatePriorToResolvingSubplebbitIpfs());
@@ -154,7 +154,6 @@ export class ClientsManager extends BaseClientsManager {
         } else return this.fetchFromMultipleGateways({ ipns: ipnsAddress }, "subplebbit");
     }
 }
-
 
 export class PublicationClientsManager extends ClientsManager {
     clients: {
@@ -181,14 +180,31 @@ export class PublicationClientsManager extends ClientsManager {
             this.clients.pubsubClients = { ...this.clients.pubsubClients, [pubsubUrl]: new PublicationPubsubClient("stopped") };
     }
 
+    // Pubsub methods here
+
+    protected prePubsubPublishProvider(pubsubTopic: string, pubsubProvider: string) {
+        const newState =
+            this._publication.publishingState === "publishing-challenge-request"
+                ? "publishing-challenge-request"
+                : "publishing-challenge-answer";
+        this.updatePubsubState(newState, pubsubProvider);
+    }
+
+    protected postPubsubPublishProviderSuccess(pubsubTopic: string, pubsubProvider: string) {
+        this.updatePubsubState("stopped", pubsubProvider);
+    }
+
+    protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string) {
+        this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
+    }
+
     async publishChallengeRequest(pubsubTopic: string, data: string) {
-        this.updatePubsubState("publishing-challenge-request");
         await this.pubsubPublish(pubsubTopic, data);
     }
 
     async publishChallengeAnswer(pubsubTopic: string, data: string) {
         await this.pubsubPublish(pubsubTopic, data);
-        this.updatePubsubState("waiting-challenge-verification");
+        this.updatePubsubState("waiting-challenge-verification", undefined);
     }
 
     emitError(e: PlebbitError): void {
@@ -203,7 +219,7 @@ export class PublicationClientsManager extends ClientsManager {
 
         this._publication._updatePublishingState("fetching-subplebbit-ipns");
         let subJson: SubplebbitIpfsType;
-        if (this._curIpfsNodeUrl) {
+        if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-subplebbit-ipns");
             const subCid = await this.resolveIpnsToCidP2P(subIpns);
             this._publication._updatePublishingState("fetching-subplebbit-ipfs");
@@ -223,9 +239,8 @@ export class PublicationClientsManager extends ClientsManager {
         super.updateIpfsState(newState);
     }
 
-    updatePubsubState(newState: PublicationPubsubClient["state"]) {
-        this.clients.pubsubClients[this._curPubsubNodeUrl].state = newState;
-        this.clients.pubsubClients[this._curPubsubNodeUrl].emit("statechange", newState);
+    updatePubsubState(newState: PublicationPubsubClient["state"], pubsubProvider: string | undefined) {
+        super.updatePubsubState(newState, pubsubProvider);
     }
 
     updateGatewayState(newState: PublicationIpfsGatewayClient["state"], gateway: string): void {
@@ -255,7 +270,7 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     async fetchCommentUpdate(ipnsName: string): Promise<CommentUpdate> {
         this._comment._setUpdatingState("fetching-update-ipns");
-        if (this._curIpfsNodeUrl) {
+        if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-update-ipns");
             const updateCid = await this.resolveIpnsToCidP2P(ipnsName);
             this._comment._setUpdatingState("fetching-update-ipfs");
@@ -272,7 +287,7 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     async fetchCommentCid(cid: string): Promise<CommentIpfsType> {
         this._comment._setUpdatingState("fetching-ipfs");
-        if (this._curIpfsNodeUrl) {
+        if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-ipfs");
             const commentContent: CommentIpfsType = JSON.parse(await this._fetchCidP2P(cid));
             this.updateIpfsState("stopped");
@@ -315,7 +330,7 @@ export class SubplebbitClientsManager extends ClientsManager {
 
     async fetchSubplebbit(ipnsName: string) {
         this._subplebbit._setUpdatingState("fetching-ipns");
-        if (this._curIpfsNodeUrl) {
+        if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-ipns");
             const subplebbitCid = await this.resolveIpnsToCidP2P(ipnsName);
             this._subplebbit._setUpdatingState("fetching-ipfs");
@@ -334,8 +349,8 @@ export class SubplebbitClientsManager extends ClientsManager {
         super.updateIpfsState(newState);
     }
 
-    updatePubsubState(newState: SubplebbitPubsubClient["state"]) {
-        super.updatePubsubState(newState);
+    updatePubsubState(newState: SubplebbitPubsubClient["state"], pubsubProvider: string | undefined) {
+        super.updatePubsubState(newState, pubsubProvider);
     }
 
     updateGatewayState(newState: CommentIpfsGatewayClient["state"], gateway: string): void {

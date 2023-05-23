@@ -85,10 +85,10 @@ export class BasePagesClientsManager extends BaseClientsManager {
     updateIpfsState(newState: PagesIpfsClient["state"], sortTypes: string[]) {
         if (Object.keys(this._pageCidsToSortTypes).length === 0) return; // User probably initialized subplebbit with no pages. There's no way to get sort types
         assert(Array.isArray(sortTypes), "Can't determine sort type");
-        assert(typeof this._curIpfsNodeUrl === "string");
+        assert(typeof this._defaultIpfsProviderUrl === "string");
         for (const sortType of sortTypes) {
-            this.clients.ipfsClients[sortType][this._curIpfsNodeUrl].state = newState;
-            this.clients.ipfsClients[sortType][this._curIpfsNodeUrl].emit("statechange", newState);
+            this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].state = newState;
+            this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].emit("statechange", newState);
         }
     }
 
@@ -102,7 +102,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
     }
 
     async fetchPage(pageCid: string): Promise<PageIpfs> {
-        if (this._curIpfsNodeUrl) {
+        if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-ipfs", this._pageCidsToSortTypes[pageCid]);
             const page: PageIpfs = JSON.parse(await this._fetchCidP2P(pageCid));
             this.updateIpfsState("stopped", this._pageCidsToSortTypes[pageCid]);
