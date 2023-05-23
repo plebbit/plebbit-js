@@ -8,7 +8,7 @@ type PublicationPubsubState =
     | "subscribing-pubsub"
     | "waiting-challenge"
     | "waiting-challenge-answers"
-    | "publishing-challenge-answers"
+    | "publishing-challenge-answer"
     | "waiting-challenge-verification";
 type SubplebbitPubsubState =
     | "stopped"
