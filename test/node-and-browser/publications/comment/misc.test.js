@@ -405,7 +405,7 @@ describe(`comment.clients`, async () => {
         it(`correct order of pubsubClients state when publishing a comment with a sub that skips challenge`, async () => {
             const mockPost = await generateMockPost(signers[0].address, plebbit);
 
-            const expectedStates = ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"];
+            const expectedStates = ["subscribing-pubsub", "publishing-challenge-request", "stopped", "waiting-challenge", "stopped"];
 
             const actualStates = [];
 
@@ -427,9 +427,11 @@ describe(`comment.clients`, async () => {
             const expectedStates = [
                 "subscribing-pubsub",
                 "publishing-challenge-request",
+                "stopped",
                 "waiting-challenge",
                 "waiting-challenge-answers",
-                "publishing-challenge-answers",
+                "publishing-challenge-answer",
+                "stopped",
                 "waiting-challenge-verification",
                 "stopped"
             ];
