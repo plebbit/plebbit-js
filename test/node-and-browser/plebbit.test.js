@@ -145,7 +145,7 @@ describe("plebbit.fetchCid", async () => {
 
     it(`Can fetch a cid correctly`, async () => {
         const fileString = "Hello plebs";
-        const cid = (await plebbit._clientsManager.getCurrentIpfs()._client.add(fileString)).path;
+        const cid = (await plebbit._clientsManager.getDefaultIpfs()._client.add(fileString)).path;
         const contentFromFetchCid = await plebbit.fetchCid(cid);
         expect(contentFromFetchCid).to.equal(fileString);
         const contentFromGatewayFetchCid = await gatewayPlebbit.fetchCid(cid);
@@ -155,7 +155,7 @@ describe("plebbit.fetchCid", async () => {
     it(`Throws an error if malicious gateway modifies content of file`, async () => {
         const [fileString1, fileString2] = ["Hello plebs", "Hello plebs 2"];
         const cids = (
-            await Promise.all([fileString1, fileString2].map((file) => plebbit._clientsManager.getCurrentIpfs()._client.add(file)))
+            await Promise.all([fileString1, fileString2].map((file) => plebbit._clientsManager.getDefaultIpfs()._client.add(file)))
         ).map((res) => res.path);
 
         const plebbitWithMaliciousGateway = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:33415"] });
@@ -174,7 +174,7 @@ describe("plebbit.fetchCid", async () => {
     });
     it("plebbit.fetchCid() loads an ipfs file under 1mb as JSON correctly", async () => {
         const jsonFileTest = { 123: "123" };
-        const cid = (await plebbit._clientsManager.getCurrentIpfs()._client.add(JSON.stringify(jsonFileTest))).path;
+        const cid = (await plebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(jsonFileTest))).path;
         expect(cid).to.equal("QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo");
         let jsonFileLoaded = JSON.parse(await plebbit.fetchCid(cid));
         expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
@@ -186,7 +186,7 @@ describe("plebbit.fetchCid", async () => {
     it("Throws an error when file to download is over 1mb for both loading via IPFS and gateway", async () => {
         const twoMbObject = { testString: "x".repeat(2 * 1024 * 1024) };
 
-        const cid = (await plebbit._clientsManager.getCurrentIpfs()._client.add(JSON.stringify(twoMbObject))).path; // Cid of a file with over 1mb size
+        const cid = (await plebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(twoMbObject))).path; // Cid of a file with over 1mb size
         expect(cid).to.equal("QmQZDGmHHPetkjoMKP9sjnV5HaCVubJLnNUzQeCtzxLDX4");
 
         await assert.isRejected(plebbit.fetchCid(cid), messages.ERR_OVER_DOWNLOAD_LIMIT);

@@ -118,7 +118,7 @@ describe(`Validation of pubsub messages`, async () => {
 
     it(`Sub responds with error to a ChallengeRequest that can't be decrypted`, async () => {
         const tempPlebbit = await mockPlebbit();
-        tempPlebbit._clientsManager.getCurrentPubsub()._client.pubsub.publish = () => undefined;
+        tempPlebbit._clientsManager.getDefaultPubsub()._client.pubsub.publish = () => undefined;
         const comment = await generateMockPost(signers[0].address, tempPlebbit);
         await comment.publish(); // comment._challengeRequest should be defined now, although it hasn't been published
 
@@ -131,7 +131,7 @@ describe(`Validation of pubsub messages`, async () => {
         comment._challengeRequest.signature = await signChallengeRequest(comment._challengeRequest, comment.pubsubMessageSigner);
 
         await plebbit._clientsManager
-            .getCurrentPubsub()
+            .getDefaultPubsub()
             ._client.pubsub.publish(comment.subplebbit.pubsubTopic, fromString(JSON.stringify(comment._challengeRequest)));
 
         await new Promise((resolve) => {
@@ -150,7 +150,7 @@ describe(`Validation of pubsub messages`, async () => {
         comment.removeAllListeners("challenge");
 
         comment.once("challenge", async (challengeMsg) => {
-            tempPlebbit._clientsManager.getCurrentPubsub()._client.pubsub.publish = () => undefined;
+            tempPlebbit._clientsManager.getDefaultPubsub()._client.pubsub.publish = () => undefined;
 
             await comment.publishChallengeAnswers([]);
             // comment._challengeAnswer should be defined now
@@ -161,7 +161,7 @@ describe(`Validation of pubsub messages`, async () => {
             );
             comment._challengeAnswer.signature = await signChallengeAnswer(comment._challengeAnswer, comment.pubsubMessageSigner);
             await plebbit._clientsManager
-                .getCurrentPubsub()
+                .getDefaultPubsub()
                 ._client.pubsub.publish(comment.subplebbit.pubsubTopic, fromString(JSON.stringify(comment._challengeAnswer)));
         });
 

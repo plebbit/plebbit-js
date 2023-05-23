@@ -39,8 +39,8 @@ describe("Test util functions", async () => {
         });
         it("Loads an IPNS file as JSON correctly", async () => {
             const jsonFileTest = { 1234: "1234" };
-            const cid = (await plebbit._clientsManager.getCurrentIpfs()._client.add(JSON.stringify(jsonFileTest))).path;
-            const jsonFileAsIpns = await plebbit._clientsManager.getCurrentIpfs()._client.name.publish(cid, { allowOffline: true });
+            const cid = (await plebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(jsonFileTest))).path;
+            const jsonFileAsIpns = await plebbit._clientsManager.getDefaultIpfs()._client.name.publish(cid, { allowOffline: true });
             let jsonFileLoaded = JSON.parse(await plebbit._clientsManager.fetchSubplebbitIpns(jsonFileAsIpns.name));
             expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
             jsonFileLoaded = JSON.parse(await gatewayPlebbit._clientsManager.fetchSubplebbitIpns(jsonFileAsIpns.name));
@@ -50,10 +50,10 @@ describe("Test util functions", async () => {
         it(`Throws an error when file to download is over 1mb and we're loading it via gateway`, async () => {
             const twoMbObject = { testString: "x".repeat(2 * 1024 * 1024) };
 
-            const cid = (await plebbit._clientsManager.getCurrentIpfs()._client.add(JSON.stringify(twoMbObject))).path; // Cid of a file with over 1mb size
+            const cid = (await plebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(twoMbObject))).path; // Cid of a file with over 1mb size
 
             const ipns = (
-                await plebbit._clientsManager.getCurrentIpfs()._client.name.publish(cid, {
+                await plebbit._clientsManager.getDefaultIpfs()._client.name.publish(cid, {
                     lifetime: "5m",
                     allowOffline: true
                 })
