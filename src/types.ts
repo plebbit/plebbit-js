@@ -402,6 +402,8 @@ export interface CommentUpdate {
         // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flair with commentUpdate.author.subplebbit.flair if any
         subplebbit: SubplebbitAuthor;
     };
+    lastChildCid?: string; // The cid of the most recent direct child of the comment
+    lastReplyTimestamp?: number; // The timestamp of the most recent direct or indirect child of the comment
 }
 
 export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "replies">>, Omit<CreateCommentOptions, "signer"> {

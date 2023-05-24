@@ -60,6 +60,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     locked?: boolean;
     removed?: boolean;
     reason?: string;
+    lastChildCid?: string;
+    lastReplyTimestamp?: number;
 
     // updating states
     updatingState:
@@ -146,6 +148,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         if (props.edit?.content) this.content = props.edit.content;
         this.flair = props.flair || props.edit?.flair || this.flair;
         this.author.flair = props.author?.subplebbit?.flair || props.edit?.author?.flair || this.author?.flair;
+        this.lastChildCid = props.lastChildCid;
+        this.lastReplyTimestamp = props.lastReplyTimestamp;
 
         assert(this.cid);
 
@@ -188,7 +192,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                       protocolVersion: this.protocolVersion,
                       spoiler: this.spoiler,
                       flair: this.flair,
-                      replies: this.replies?.toJSON()
+                      replies: this.replies?.toJSON(),
+                      lastChildCid: this.lastChildCid,
+                      lastReplyTimestamp: this.lastReplyTimestamp
                   }
                 : {})
         };
@@ -269,7 +275,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             protocolVersion: this.protocolVersion,
             spoiler: this.spoiler,
             flair: this.flair,
-            replies: this.replies?.toJSON()
+            replies: this.replies?.toJSON(),
+            lastChildCid: this.lastChildCid,
+            lastReplyTimestamp: this.lastReplyTimestamp
         };
     }
 

@@ -1174,7 +1174,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             ...commentUpdatePriorToSigning,
             signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
         };
-        await this._validateCommentUpdate(newIpns, comment); // Should be removed once signature are working properly
+        await this._validateCommentUpdate(newIpns, comment); // TODO Should be removed once signature are working properly
         await this.dbHandler.upsertCommentUpdate(newIpns);
 
         await this._publishCommentIpns(comment, newIpns);

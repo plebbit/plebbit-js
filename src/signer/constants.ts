@@ -110,7 +110,9 @@ export const CommentUpdateSignedPropertyNames: readonly (keyof CommentUpdate)[] 
     "updatedAt",
     "replyCount",
     "edit",
-    "cid"
+    "cid",
+    "lastChildCid",
+    "lastReplyTimestamp"
 ] as const;
 
 export const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[] = [

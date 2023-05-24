@@ -206,6 +206,9 @@ export class DbHandler {
             table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
             table.json("author").nullable();
             table.json("replies").nullable();
+            table.text("lastChildCid").nullable().references("cid").inTable(TABLES.COMMENTS);
+            table.timestamp("lastReplyTimestamp").nullable();
+
             // Columns with defaults
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
         });
@@ -503,7 +506,7 @@ export class DbHandler {
         trx?: Transaction
     ): Promise<{ comment: CommentsTableRow; update: CommentUpdatesRow }[]> {
         //prettier-ignore
-        const commentUpdateColumns: (keyof CommentUpdatesRow)[] = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "signature", "spoiler", "updatedAt", "upvoteCount", "replies"];
+        const commentUpdateColumns: (keyof CommentUpdatesRow)[] = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "signature", "spoiler", "updatedAt", "upvoteCount", "replies", "lastChildCid", "lastReplyTimestamp"];
         const aliasSelect = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
 
         const commentsRaw: CommentsTableRow[] = await this._basePageQuery(options, trx).select([`${TABLES.COMMENTS}.*`, ...aliasSelect]);
@@ -740,17 +743,38 @@ export class DbHandler {
         return latestFlair;
     }
 
+    private async _queryLastChildCidAndLastReplyTimestamp(comment: Pick<CommentsTableRow, "cid" | "timestamp">, trx?: Transaction) {
+        const lastChildCidRaw = await this._baseTransaction(trx)(TABLES.COMMENTS)
+            .where("parentCid", comment.cid)
+            .orderBy("id", "desc")
+            .first();
+        const lastReplyTimestamp = lastChildCidRaw ? await this.queryActiveScore(comment, trx) : undefined;
+        return {
+            lastChildCid: lastChildCidRaw ? lastChildCidRaw.cid : undefined,
+            lastReplyTimestamp
+        };
+    }
+
     async queryCalculatedCommentUpdate(
-        comment: Pick<CommentsTableRow, "cid" | "author">,
+        comment: Pick<CommentsTableRow, "cid" | "author" | "timestamp">,
         trx?: Transaction
     ): Promise<Omit<CommentUpdate, "signature" | "updatedAt" | "replies" | "protocolVersion">> {
-        const [authorSubplebbit, authorEdit, commentUpdateCounts, moderatorReason, commentFlags, commentModFlair] = await Promise.all([
+        const [
+            authorSubplebbit,
+            authorEdit,
+            commentUpdateCounts,
+            moderatorReason,
+            commentFlags,
+            commentModFlair,
+            lastChildAndLastReplyTimestamp
+        ] = await Promise.all([
             this.querySubplebbitAuthor(comment.author.address, trx),
             this._queryAuthorEdit(comment.cid, comment.author.address, trx),
             this._queryCommentCounts(comment.cid, trx),
             this._queryLatestModeratorReason(comment, trx),
             this.queryCommentFlags(comment.cid, trx),
-            this._queryModCommentFlair(comment, trx)
+            this._queryModCommentFlair(comment, trx),
+            this._queryLastChildCidAndLastReplyTimestamp(comment, trx)
         ]);
         return {
             cid: comment.cid,
@@ -759,8 +783,8 @@ export class DbHandler {
             flair: commentModFlair?.flair || authorEdit?.flair,
             ...commentFlags,
             ...moderatorReason,
-
-            author: { subplebbit: authorSubplebbit }
+            author: { subplebbit: authorSubplebbit },
+            ...lastChildAndLastReplyTimestamp
         };
     }
 
