@@ -84,4 +84,15 @@ describe(`Test parsing of database queries`, async () => {
         expect(parsed).to.be.a("object");
         expect(parsed.removed).to.equal(true);
     });
+
+    it(`Can parse regular json object with a stringifed array field`, async () => {
+        const rawObj = {
+            acceptedChallengeTypes: '["test"]'
+        };
+
+        const parsed = parseJsonStrings(rawObj);
+        expect(parsed).to.be.a("object");
+        expect(parsed.acceptedChallengeTypes).to.be.a("array");
+        expect(parsed.acceptedChallengeTypes[0]).to.equal("test");
+    });
 });
