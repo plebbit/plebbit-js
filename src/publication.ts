@@ -293,8 +293,8 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             await this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
             await this._clientsManager.publishChallengeRequest(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeRequest));
         } catch (e) {
-            this._updatePublishingState("failed");
             this._clientsManager.updatePubsubState("stopped", undefined);
+            this._updatePublishingState("failed");
             this.emit("error", e);
             throw e;
         }
