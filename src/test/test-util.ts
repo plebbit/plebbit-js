@@ -122,13 +122,16 @@ export async function loadAllPages(pageCid: string, pagesInstance: BasePages): P
 }
 
 async function _mockSubplebbitPlebbit(signers: SignerType[], plebbitOptions: PlebbitOptions) {
-    const plebbit = await mockPlebbit(plebbitOptions);
+    const plebbit = await mockPlebbit({ ...plebbitOptions, pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] });
 
     plebbit.resolver._resolveEnsTxtRecord = async (ensName: string, textRecord: string) => {
         if (ensName === "plebbit.eth" && textRecord === "subplebbit-address") return signers[3].address;
         else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address") return signers[6].address;
         else return undefined;
     };
+
+    for (const pubsubUrl of Object.keys(plebbit.clients.pubsubClients))
+        plebbit.clients.pubsubClients[pubsubUrl]._client = createMockIpfsClient();
 
     return plebbit;
 }
@@ -266,7 +269,7 @@ export async function startSubplebbits(props: {
 export async function mockPlebbit(plebbitOptions?: PlebbitOptions) {
     const plebbit = await PlebbitIndex({
         ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
-        pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`],
+        pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`, `http://localhost:42234/api/v0`, `http://localhost:42254/api/v0`],
         resolveAuthorAddresses: true,
         publishInterval: 1000,
         updateInterval: 1000,
@@ -285,7 +288,9 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions) {
 
     // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
     if (!plebbitOptions?.pubsubHttpClientsOptions)
-        plebbit.clients.pubsubClients[Object.keys(plebbit.clients.pubsubClients)[0]]._client = createMockIpfsClient();
+        for (const pubsubUrl of Object.keys(plebbit.clients.pubsubClients))
+            plebbit.clients.pubsubClients[pubsubUrl]._client = createMockIpfsClient();
+
     plebbit.on("error", () => {});
     return plebbit;
 }
