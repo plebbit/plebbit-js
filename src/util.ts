@@ -137,8 +137,8 @@ export const parseJsonStrings = (obj: any) => {
         if (value === "[object Object]") throw Error(`key (${key}) shouldn't be [object Object]`);
 
         if (booleanFields.includes(key) && typeof value === "number") newObj[key] = Boolean(value);
-        else if (isJsonString(value)) newObj[key] = removeNullAndUndefinedValues(JSON.parse(<any>value));
-        if (newObj[key]?.constructor?.name === "Object") newObj[key] = removeNullAndUndefinedValues(parseJsonStrings(newObj[key]));
+        else if (isJsonString(value)) newObj[key] = JSON.parse(<any>value);
+        if (lodash.isPlainObject(newObj[key])) newObj[key] = removeNullAndUndefinedValues(parseJsonStrings(newObj[key]));
     }
     return <any>newObj;
 };

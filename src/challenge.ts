@@ -48,7 +48,11 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
     }
 
     toJSONForDb(): ChallengeRequestsTableRowInsert {
-        return { ...lodash.omit(this.toJSON(), ["type", "encryptedPublication"]) };
+        const acceptedChallengeTypes = Array.isArray(this.acceptedChallengeTypes) ? JSON.stringify(this.acceptedChallengeTypes) : this.acceptedChallengeTypes;
+        return {
+            ...lodash.omit(this.toJSON(), ["type", "encryptedPublication"]),
+            acceptedChallengeTypes
+        };
     }
 }
 

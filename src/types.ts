@@ -559,7 +559,9 @@ export interface ChallengeRequestsTableRow extends Omit<ChallengeRequestMessageT
     insertedAt: number;
 }
 
-export interface ChallengeRequestsTableRowInsert extends Omit<ChallengeRequestsTableRow, "insertedAt"> {}
+export interface ChallengeRequestsTableRowInsert extends Omit<ChallengeRequestsTableRow, "insertedAt" | "acceptedChallengeTypes"> {
+    acceptedChallengeTypes?: string; // Need to stringify arrays before inserting into DB
+}
 
 // Challenges table
 export interface ChallengesTableRow extends Omit<ChallengeMessageType, "type" | "encryptedChallenges"> {
