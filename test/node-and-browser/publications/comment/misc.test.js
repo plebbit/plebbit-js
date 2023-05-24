@@ -183,6 +183,64 @@ describe(`commentUpdate.replyCount`, async () => {
     });
 });
 
+describe(`commentUpdate.lastChildCid`, async () => {
+    let post, plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+        post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        await post.update();
+        await new Promise((resolve) => post.once("update", resolve));
+        expect(post.lastChildCid).to.be.undefined;
+    });
+
+    after(async () => {
+        await post.stop();
+    });
+
+    it(`commentUpdate.lastChildCid updates to the latest child comment when replying to post directly`, async () => {
+        const reply = await publishRandomReply(post, plebbit, {}, false);
+        await new Promise((resolve) => post.once("update", resolve));
+        expect(post.replyCount).to.equal(1);
+        expect(post.lastChildCid).to.equal(reply.cid);
+    });
+
+    it(`commentUpdate.lastChildCid of a post does not update when replying to a comment under one of its replies`, async () => {
+        await publishRandomReply(post.replies.pages.topAll.comments[0], plebbit, {}, false);
+        await new Promise((resolve) => post.once("update", resolve));
+        expect(post.replyCount).to.equal(2);
+        expect(post.lastChildCid).to.equal(post.replies.pages.topAll.comments[0].cid);
+    });
+});
+
+describe(`commentUpdate.lastReplyTimestamp`, async () => {
+    let post, plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+        post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        await post.update();
+        await new Promise((resolve) => post.once("update", resolve));
+        expect(post.lastReplyTimestamp).to.be.undefined;
+    });
+
+    after(async () => {
+        await post.stop();
+    });
+
+    it(`commentUpdate.lastReplyTimestamp updates to the latest child comment's timestamp`, async () => {
+        const reply = await publishRandomReply(post, plebbit, {}, false);
+        await new Promise((resolve) => post.once("update", resolve));
+        expect(post.replyCount).to.equal(1);
+        expect(post.lastReplyTimestamp).to.equal(reply.timestamp);
+    });
+
+    it(`commentUpdate.lastChildCid of a post does not update when replying to a comment under one of its replies`, async () => {
+        const replyOfReply = await publishRandomReply(post.replies.pages.topAll.comments[0], plebbit, {}, false);
+        await waitUntil(() => post.replyCount === 2, { timeout: 50000 });
+        expect(post.replyCount).to.equal(2);
+        expect(post.lastReplyTimestamp).to.equal(replyOfReply.timestamp);
+    });
+});
+
 describe(`comment.state`, async () => {
     let plebbit, comment;
     before(async () => {
