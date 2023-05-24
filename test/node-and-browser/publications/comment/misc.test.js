@@ -398,20 +398,25 @@ describe(`comment.clients`, async () => {
     describe(`comment.clients.pubsubClients`, async () => {
         it(`comment.clients.pubsubClients[url].state is stopped by default`, async () => {
             const mockPost = await generateMockPost(subplebbitAddress, plebbit);
-            expect(Object.keys(mockPost.clients.pubsubClients).length).to.equal(1);
+            expect(Object.keys(mockPost.clients.pubsubClients).length).to.equal(3);
             expect(Object.values(mockPost.clients.pubsubClients)[0].state).to.equal("stopped");
         });
 
         it(`correct order of pubsubClients state when publishing a comment with a sub that skips challenge`, async () => {
             const mockPost = await generateMockPost(signers[0].address, plebbit);
 
-            const expectedStates = ["subscribing-pubsub", "publishing-challenge-request", "stopped", "waiting-challenge", "stopped"];
+            const pubsubUrls = Object.keys(mockPost.clients.pubsubClients);
+            // Only first pubsub url is used for subscription. For publishing we use all providers
+            const expectedStates = {
+                [pubsubUrls[0]]: ["subscribing-pubsub", "publishing-challenge-request", "stopped", "waiting-challenge", "stopped"],
+                [pubsubUrls[1]]: ["publishing-challenge-request", "stopped"],
+                [pubsubUrls[2]]: ["publishing-challenge-request", "stopped"]
+            };
 
-            const actualStates = [];
+            const actualStates = { [pubsubUrls[0]]: [], [pubsubUrls[1]]: [], [pubsubUrls[2]]: [] };
 
-            const pubsubUrl = Object.keys(mockPost.clients.pubsubClients)[0];
-
-            mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates.push(newState));
+            for (const pubsubUrl of Object.keys(expectedStates))
+                mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -424,23 +429,28 @@ describe(`comment.clients`, async () => {
             const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
             mockPost.removeAllListeners();
 
-            const expectedStates = [
-                "subscribing-pubsub",
-                "publishing-challenge-request",
-                "stopped",
-                "waiting-challenge",
-                "waiting-challenge-answers",
-                "publishing-challenge-answer",
-                "stopped",
-                "waiting-challenge-verification",
-                "stopped"
-            ];
+            const pubsubUrls = Object.keys(mockPost.clients.pubsubClients);
+            // Only first pubsub url is used for subscription. For publishing we use all providers
+            const expectedStates = {
+                [pubsubUrls[0]]: [
+                    "subscribing-pubsub",
+                    "publishing-challenge-request",
+                    "stopped",
+                    "waiting-challenge",
+                    "waiting-challenge-answers",
+                    "publishing-challenge-answer",
+                    "stopped",
+                    "waiting-challenge-verification",
+                    "stopped"
+                ],
+                [pubsubUrls[1]]: ["publishing-challenge-request", "stopped", "publishing-challenge-answer", "stopped"],
+                [pubsubUrls[2]]: ["publishing-challenge-request", "stopped", "publishing-challenge-answer", "stopped"]
+            };
 
-            const actualStates = [];
+            const actualStates = { [pubsubUrls[0]]: [], [pubsubUrls[1]]: [], [pubsubUrls[2]]: [] };
 
-            const pubsubUrl = Object.keys(mockPost.clients.pubsubClients)[0];
-
-            mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates.push(newState));
+            for (const pubsubUrl of Object.keys(expectedStates))
+                mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
 
             mockPost.once("challenge", async (challengeMsg) => {
                 expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
@@ -453,12 +463,11 @@ describe(`comment.clients`, async () => {
         });
 
         it(`correct order of pubsubClients state when failing to publish a comment and the error is from the pubsub provider`, async () => {
-            const offlinePubsubUrl = ["http://localhost:13173"]; // Should be down
+            const offlinePubsubUrl = "http://localhost:13173"; // Should be down
             const offlinePubsubPlebbit = await mockPlebbit({
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
-                pubsubHttpClientsOptions: offlinePubsubUrl
+                pubsubHttpClientsOptions: [offlinePubsubUrl]
             });
-            offlinePubsubPlebbit.on("error", () => {});
 
             const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
 

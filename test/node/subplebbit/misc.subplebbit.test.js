@@ -447,7 +447,7 @@ describe(`subplebbit.clients (Local)`, async () => {
     describe(`subplebbit.clients.pubsubClients`, async () => {
         it(`subplebbit.clients.pubsubClients[url].state is stopped by default`, async () => {
             const mockSub = await createMockSub({}, plebbit);
-            expect(Object.keys(mockSub.clients.pubsubClients).length).to.equal(1);
+            expect(Object.keys(mockSub.clients.pubsubClients).length).to.equal(3);
             expect(Object.values(mockSub.clients.pubsubClients)[0].state).to.equal("stopped");
         });
 
