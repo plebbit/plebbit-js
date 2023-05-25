@@ -23,7 +23,7 @@ const offlineNodeArgs = {
     gatewayPort: 18080,
     daemonArgs: "--offline"
 };
-const ipfsNodeArgs = {
+const pubsubNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-pubsub"),
     apiPort: 15002,
     gatewayPort: 18081,
@@ -46,9 +46,17 @@ const anotherOfflineNodeArgs = {
     daemonArgs: "--offline"
 };
 
+const anotherPubsubNodeArgs = {
+    dir: path.join(process.cwd(), ".test-ipfs-pubsub2"),
+    apiPort: 15005,
+    gatewayPort: 18084,
+    daemonArgs: "--enable-pubsub-experiment",
+    extraCommands: ["bootstrap rm --all"]
+};
+
 const startIpfsNodes = async () => {
     await Promise.all(
-        [offlineNodeArgs, ipfsNodeArgs, onlineNodeArgs, anotherOfflineNodeArgs].map(async (nodeArgs) => {
+        [offlineNodeArgs, pubsubNodeArgs, onlineNodeArgs, anotherOfflineNodeArgs, anotherPubsubNodeArgs].map(async (nodeArgs) => {
             try {
                 execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} init`, { stdio: "ignore" });
             } catch {}
@@ -100,7 +108,7 @@ const startIpfsNodes = async () => {
 (async () => {
     // do more stuff here, like start some subplebbits
 
-    const dirsToDelete = [".plebbit", ".plebbit2", ".test-ipfs-offline", ".test-ipfs-offline2", ".test-ipfs-online", ".test-ipfs-pubsub"];
+    const dirsToDelete = [".plebbit", ".plebbit2", ".test-ipfs-offline", ".test-ipfs-offline2", ".test-ipfs-online", ".test-ipfs-pubsub", ".test-ipfs-pubsub2"];
 
     await Promise.all(dirsToDelete.map((dirPath) => fs.promises.rm(path.join(process.cwd(), dirPath), { recursive: true, force: true })));
 

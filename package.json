@@ -78,6 +78,7 @@
         "uuid": "9.0.0"
     },
     "devDependencies": {
+        "tempy": "1.0.1",
         "@babel/core": "7.20.2",
         "@babel/plugin-transform-runtime": "7.19.6",
         "@babel/preset-env": "7.20.2",

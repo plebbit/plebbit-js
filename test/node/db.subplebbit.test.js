@@ -1,25 +1,30 @@
-const Plebbit = globalThis["window"]?.plebbitApi || require("../../dist/node");
-const { publishRandomPost } = require("../../dist/node/test/test-util");
-const chai = globalThis["window"]?.chaiApi || require("chai");
-const chaiAsPromised = globalThis["window"]?.chaiAsPromisedApi || require("chai-as-promised");
+const Plebbit = require("../../dist/node");
+const chai = require("chai");
+const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
+const tempy = require("tempy");
 
-const path = globalThis["window"]?.pathApi || require("path");
-const fs = globalThis["window"]?.fsApi || require("fs");
-const { mockPlebbit, publishRandomReply } = globalThis["window"]?.testUtilApi || require("../../dist/node/test/test-util");
+const path = require("path");
+const fs = require("fs");
+const { mockPlebbit, publishRandomReply, publishRandomPost } = require("../../dist/node/test/test-util");
 
-const plebbitVersion = globalThis["window"]?.plebbitVersionApi || require("../../dist/node/version");
+const plebbitVersion = require("../../dist/node/version");
 
-const databases = [];
+const databases = [{ version: 5, address: "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR" }];
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-
-describe.skip(`DB importing`, async () => {
+const plebbitOptions = {
+    dataPath: tempy.directory(),
+    ipfsHttpClientsOptions: ["http://localhost:15004/api/v0"],
+    pubsubHttpClientsOptions: ["http://localhost:15005/api/v0"]
+};
+console.log(`PlebbitOptions for db.subplebbit.test.js`, plebbitOptions);
+describe(`DB importing`, async () => {
     let plebbit;
 
     const copyDbToDataPath = async (database) => {
-        const dbPath = path.join(process.cwd(), "test", "fixtures", `subplebbit_db_version_${database.version}`, database.address);
+        const dbPath = path.join(process.cwd(), "test", "fixtures", "subplebbits_dbs", `version_${database.version}`, database.address);
 
         const subAddress = path.basename(dbPath);
         const newPath = path.join(plebbit.dataPath, "subplebbits", subAddress);
@@ -27,7 +32,7 @@ describe.skip(`DB importing`, async () => {
     };
 
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        plebbit = await mockPlebbit(plebbitOptions);
     });
 
     after(async () => {
@@ -42,11 +47,11 @@ describe.skip(`DB importing`, async () => {
     });
 });
 
-describe.skip("DB Migration", () => {
+describe("DB Migration", () => {
     let plebbit;
 
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        plebbit = await mockPlebbit(plebbitOptions);
     });
 
     databases.map((database) =>
@@ -55,12 +60,12 @@ describe.skip("DB Migration", () => {
 
             const subplebbit = await plebbit.createSubplebbit({ address: database.address });
 
-            const currentDbVersion = await subplebbit.dbHandler.getDbVersion();
-            expect(currentDbVersion).to.equal(plebbitVersion.default.DB_VERSION); // If they're equal, that means all tables have been migrated
-
             subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
 
             await assert.isFulfilled(subplebbit.start());
+            const currentDbVersion = await subplebbit.dbHandler.getDbVersion();
+            expect(currentDbVersion).to.equal(plebbitVersion.default.DB_VERSION); // If they're equal, that means all tables have been migrated
+
             await new Promise((resolve) => subplebbit.once("update", resolve)); // Ensure IPNS is published
             const post = await publishRandomPost(subplebbit.address, plebbit);
             await publishRandomReply(post, plebbit);
