@@ -60,11 +60,13 @@ export class DbHandler {
     private _dbConfig: Knex.Config<any>;
     private _keyv: Keyv;
     private _createdTables: boolean;
+    private _needToUpdateCommentUpdates: boolean;
 
     constructor(subplebbit: DbHandler["_subplebbit"]) {
         this._subplebbit = subplebbit;
         this._currentTrxs = {};
         this._createdTables = false;
+        this._needToUpdateCommentUpdates = false;
     }
 
     async initDbConfigIfNeeded() {
@@ -185,6 +187,7 @@ export class DbHandler {
     }
 
     private async _createCommentUpdatesTable(tableName: string) {
+        this._needToUpdateCommentUpdates = true;
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("cid").notNullable().primary().unique().references("cid").inTable(TABLES.COMMENTS);
 
@@ -555,6 +558,11 @@ export class DbHandler {
     }
 
     async queryCommentsToBeUpdated(ipnsKeyNames: string[], trx?: Transaction): Promise<CommentsTableRow[]> {
+        if (this._needToUpdateCommentUpdates){
+            const allComments = await this._baseTransaction(trx)(TABLES.COMMENTS);
+            this._needToUpdateCommentUpdates = false;
+            return allComments;
+        }
         // Criteria:
         // 1 - Comment has no row in commentUpdates (has never published CommentUpdate) OR
         // 2 - comment.ipnsKeyName is not part of /key/list of IPFS RPC API OR

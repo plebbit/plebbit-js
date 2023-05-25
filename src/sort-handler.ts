@@ -78,6 +78,10 @@ export class SortHandler {
                 return await Promise.all(
                     chunk.map(async (commentProps) => {
                         const comment = await this.subplebbit.plebbit.createComment(commentProps.comment);
+                        if (commentProps.update.replyCount > 0)
+                            assert(
+                                commentProps.update.replies && commentProps.update.lastChildCid && commentProps.update.lastReplyTimestamp
+                            );
                         return comment.toJSONPagesIpfs(commentProps.update);
                     })
                 );
