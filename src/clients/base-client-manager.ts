@@ -81,8 +81,8 @@ export class BaseClientsManager {
     }
 
     async pubsubPublish(pubsubTopic: string, data: string) {
+        const log = Logger("plebbit-js:plebbit:client-manager:pubsubPublish");
         const dataBinary = uint8ArrayFromString(data);
-        // this.prePubsubPublish(pubsubTopic);
 
         const _firstResolve = (promises: Promise<void>[]) => {
             return new Promise<number>((resolve) => promises.forEach((promise) => promise.then(() => resolve(1))));
@@ -92,12 +92,11 @@ export class BaseClientsManager {
 
         let lastError: PlebbitError;
         const concurrencyLimit = 3;
+        const queueLimit = pLimit(concurrencyLimit);
 
-        for (const timeout of timeouts) {
-            if (timeout !== 0) await delay(timeout);
+        for (let i = 0; i < timeouts.length; i++) {
+            if (timeouts[i] !== 0) await delay(timeouts[i]);
             try {
-                const queueLimit = pLimit(concurrencyLimit);
-
                 // Only sort if we have more than 3 pubsub providers
                 const providersSorted =
                     Object.keys(this._plebbit.clients.pubsubClients).length <= concurrencyLimit
@@ -110,13 +109,17 @@ export class BaseClientsManager {
 
                 const res = await Promise.race([_firstResolve(providerPromises), Promise.allSettled(providerPromises)]);
 
-                if (res === 1) return;
-                else throw res[0].value.error;
+                if (res === 1) {
+                    queueLimit.clearQueue();
+                    return res;
+                } else throw res[0].value.error;
             } catch (e) {
+                log.error(`Failed to publish to pubsub topic (${pubsubTopic}) for the ${i}th time due to error: `, e);
                 lastError = e;
             }
         }
 
+        this.emitError(lastError);
         throw lastError;
     }
 
