@@ -107,22 +107,26 @@ export class ClientsManager extends BaseClientsManager {
     updatePubsubState(newState: GenericPubsubClient["state"], pubsubProvider: string | undefined) {
         pubsubProvider = pubsubProvider || this._defaultPubsubProviderUrl;
         assert(typeof pubsubProvider === "string");
+        assert(typeof newState === "string", "Can't update pubsub state to undefined");
         this.clients.pubsubClients[pubsubProvider].state = newState;
         this.clients.pubsubClients[pubsubProvider].emit("statechange", newState);
     }
 
     updateIpfsState(newState: GenericIpfsClient["state"]) {
         assert(this._defaultIpfsProviderUrl);
+        assert(typeof newState === "string", "Can't update ipfs state to undefined");
         this.clients.ipfsClients[this._defaultIpfsProviderUrl].state = newState;
         this.clients.ipfsClients[this._defaultIpfsProviderUrl].emit("statechange", newState);
     }
 
     updateGatewayState(newState: GenericIpfsGatewayClient["state"], gateway: string) {
+        assert(typeof newState === "string", "Can't update gateway state to undefined");
         this.clients.ipfsGateways[gateway].state = newState;
         this.clients.ipfsGateways[gateway].emit("statechange", newState);
     }
 
     updateChainProviderState(newState: GenericChainProviderClient["state"], chainTicker: string) {
+        assert(typeof newState === "string", "Can't update chain provider state to undefined");
         this.clients.chainProviders[chainTicker].state = newState;
         this.clients.chainProviders[chainTicker].emit("statechange", newState);
     }
