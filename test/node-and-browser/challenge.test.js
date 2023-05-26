@@ -145,12 +145,12 @@ describe(`Validation of pubsub messages`, async () => {
     });
 
     it(`Sub responds with error to a ChallengeAnswer that can't be decrypted`, async () => {
-        const tempPlebbit = await mockPlebbit();
+        const tempPlebbit = await mockPlebbit(); // Make sure it's a singular pubsub provider
         const comment = await generateMockPost(imageCaptchaSubplebbitAddress, tempPlebbit);
         comment.removeAllListeners("challenge");
 
         comment.once("challenge", async (challengeMsg) => {
-            tempPlebbit._clientsManager.getDefaultPubsub()._client.pubsub.publish = () => undefined;
+            tempPlebbit._clientsManager.pubsubPublish = () => undefined;
 
             await comment.publishChallengeAnswers([]);
             // comment._challengeAnswer should be defined now
