@@ -202,13 +202,13 @@ function loadAllPages(pageCid, pagesInstance) {
 exports.loadAllPages = loadAllPages;
 function _mockSubplebbitPlebbit(signers, plebbitOptions) {
     return __awaiter(this, void 0, void 0, function () {
-        var plebbit;
+        var plebbit, _i, _a, pubsubUrl;
         var _this = this;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, mockPlebbit(plebbitOptions)];
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0: return [4 /*yield*/, mockPlebbit(__assign(__assign({}, plebbitOptions), { pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] }))];
                 case 1:
-                    plebbit = _a.sent();
+                    plebbit = _b.sent();
                     plebbit.resolver._resolveEnsTxtRecord = function (ensName, textRecord) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             if (ensName === "plebbit.eth" && textRecord === "subplebbit-address")
@@ -220,6 +220,10 @@ function _mockSubplebbitPlebbit(signers, plebbitOptions) {
                             return [2 /*return*/];
                         });
                     }); };
+                    for (_i = 0, _a = Object.keys(plebbit.clients.pubsubClients); _i < _a.length; _i++) {
+                        pubsubUrl = _a[_i];
+                        plebbit.clients.pubsubClients[pubsubUrl]._client = (0, mock_ipfs_client_1.create)();
+                    }
                     return [2 /*return*/, plebbit];
             }
         });
@@ -445,13 +449,13 @@ function startSubplebbits(props) {
 exports.startSubplebbits = startSubplebbits;
 function mockPlebbit(plebbitOptions) {
     return __awaiter(this, void 0, void 0, function () {
-        var plebbit;
+        var plebbit, _i, _a, pubsubUrl;
         var _this = this;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, (0, index_1.default)(__assign({ ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"], pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"], resolveAuthorAddresses: true, publishInterval: 1000, updateInterval: 1000 }, plebbitOptions))];
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0: return [4 /*yield*/, (0, index_1.default)(__assign({ ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"], pubsubHttpClientsOptions: ["http://localhost:15002/api/v0", "http://localhost:42234/api/v0", "http://localhost:42254/api/v0"], resolveAuthorAddresses: true, publishInterval: 1000, updateInterval: 1000 }, plebbitOptions))];
                 case 1:
-                    plebbit = _a.sent();
+                    plebbit = _b.sent();
                     plebbit.resolver._resolveEnsTxtRecord = function (ensName, textRecord) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             if (ensName === "plebbit.eth" && textRecord === "subplebbit-address")
@@ -465,8 +469,12 @@ function mockPlebbit(plebbitOptions) {
                     }); };
                     //@ts-expect-error
                     plebbit._clientsManager._getCachedEns = function () { return undefined; };
+                    // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
                     if (!(plebbitOptions === null || plebbitOptions === void 0 ? void 0 : plebbitOptions.pubsubHttpClientsOptions))
-                        plebbit.clients.pubsubClients[Object.keys(plebbit.clients.pubsubClients)[0]]._client = (0, mock_ipfs_client_1.create)();
+                        for (_i = 0, _a = Object.keys(plebbit.clients.pubsubClients); _i < _a.length; _i++) {
+                            pubsubUrl = _a[_i];
+                            plebbit.clients.pubsubClients[pubsubUrl]._client = (0, mock_ipfs_client_1.create)();
+                        }
                     plebbit.on("error", function () { });
                     return [2 /*return*/, plebbit];
             }
@@ -499,7 +507,8 @@ function mockGatewayPlebbit(plebbitOptions) {
                     plebbit = _a.sent();
                     delete plebbit.clients.ipfsClients;
                     delete plebbit.ipfsHttpClientsOptions;
-                    plebbit._clientsManager._curIpfsNodeUrl = undefined;
+                    delete plebbit._clientsManager.clients.ipfsClients;
+                    plebbit._clientsManager._defaultPubsubProviderUrl = plebbit._clientsManager._defaultIpfsProviderUrl = undefined;
                     return [2 /*return*/, plebbit];
             }
         });

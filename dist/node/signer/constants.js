@@ -50,7 +50,9 @@ exports.CommentUpdateSignedPropertyNames = [
     "updatedAt",
     "replyCount",
     "edit",
-    "cid"
+    "cid",
+    "lastChildCid",
+    "lastReplyTimestamp"
 ];
 exports.SubplebbitSignedPropertyNames = [
     "title",

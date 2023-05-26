@@ -172,7 +172,7 @@ var Publication = /** @class */ (function (_super) {
                         decryptedChallenges = _b.apply(_a, [_e.sent()]);
                         decryptedChallenge = __assign(__assign({}, msgParsed), { challenges: decryptedChallenges });
                         this._updatePublishingState("waiting-challenge-answers");
-                        this._clientsManager.updatePubsubState("waiting-challenge-answers");
+                        this._clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
                         this.emit("challenge", decryptedChallenge);
                         return [3 /*break*/, 11];
                     case 4:
@@ -210,7 +210,7 @@ var Publication = /** @class */ (function (_super) {
                     case 9: return [4 /*yield*/, this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
                     case 10:
                         _e.sent();
-                        this._clientsManager.updatePubsubState("stopped");
+                        this._clientsManager.updatePubsubState("stopped", undefined);
                         this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication }), this instanceof comment_1.Comment && decryptedPublication ? this : undefined);
                         _e.label = 11;
                     case 11: return [2 /*return*/];
@@ -229,8 +229,6 @@ var Publication = /** @class */ (function (_super) {
                         log = (0, plebbit_logger_1.default)("plebbit-js:publication:publishChallengeAnswers");
                         if (!Array.isArray(challengeAnswers))
                             challengeAnswers = [challengeAnswers];
-                        this._updatePublishingState("publishing-challenge-answer");
-                        this._clientsManager.updatePubsubState("publishing-challenge-answers");
                         return [4 /*yield*/, (0, signer_1.encrypt)(JSON.stringify(challengeAnswers), this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)];
                     case 1:
                         encryptedChallengeAnswers = _e.sent();
@@ -250,6 +248,7 @@ var Publication = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signatures_1.signChallengeAnswer)(toSignAnswer, this.pubsubMessageSigner)];
                     case 2:
                         _a._challengeAnswer = new (_b.apply(challenge_1.ChallengeAnswerMessage, [void 0, __assign.apply(void 0, _c.concat([(_d.signature = _e.sent(), _d)]))]))();
+                        this._updatePublishingState("publishing-challenge-answer");
                         return [4 /*yield*/, this._clientsManager.publishChallengeAnswer(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeAnswer))];
                     case 3:
                         _e.sent();
@@ -336,7 +335,7 @@ var Publication = /** @class */ (function (_super) {
                     case 5:
                         _c._challengeRequest = new (_d.apply(challenge_1.ChallengeRequestMessage, [void 0, __assign.apply(void 0, _e.concat([(_f.signature = _g.sent(), _f)]))]))();
                         log.trace("Attempting to publish ".concat(this.getType(), " with challenge id (").concat(this._challengeRequest.challengeRequestId, ") to pubsub topic (").concat(this._pubsubTopicWithfallback(), ")"));
-                        this._clientsManager.updatePubsubState("subscribing-pubsub");
+                        this._clientsManager.updatePubsubState("subscribing-pubsub", undefined);
                         _g.label = 6;
                     case 6:
                         _g.trys.push([6, 9, , 10]);
@@ -349,12 +348,12 @@ var Publication = /** @class */ (function (_super) {
                         return [3 /*break*/, 10];
                     case 9:
                         e_1 = _g.sent();
+                        this._clientsManager.updatePubsubState("stopped", undefined);
                         this._updatePublishingState("failed");
-                        this._clientsManager.updatePubsubState("stopped");
                         this.emit("error", e_1);
                         throw e_1;
                     case 10:
-                        this._clientsManager.updatePubsubState("waiting-challenge");
+                        this._clientsManager.updatePubsubState("waiting-challenge", undefined);
                         this._updatePublishingState("waiting-challenge");
                         log("Sent a challenge request (".concat(this._challengeRequest.challengeRequestId, ")"));
                         this.emit("challengerequest", __assign(__assign({}, this._challengeRequest), { publication: this.toJSONPubsubMessagePublication() }));

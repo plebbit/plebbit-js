@@ -301,7 +301,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         (0, assert_1.default)(signer.ipnsKeyName);
                         if (!!this._ipfsNodeIpnsKeyNames) return [3 /*break*/, 2];
                         _a = this;
-                        return [4 /*yield*/, this._clientsManager.getCurrentIpfs()._client.key.list()];
+                        return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.key.list()];
                     case 1:
                         _a._ipfsNodeIpnsKeyNames = (_c.sent()).map(function (key) { return key.name; });
                         _c.label = 2;
@@ -585,7 +585,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this._setUpdatingState("stopped");
                         if (!this._sync) return [3 /*break*/, 4];
                         return [4 /*yield*/, this._clientsManager
-                                .getCurrentPubsub()
+                                .getDefaultPubsub()
                                 ._client.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange)];
                     case 1:
                         _b.sent();
@@ -599,7 +599,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this._syncInterval = clearInterval(this._syncInterval);
                         this._setStartedState("stopped");
                         this._clientsManager.updateIpfsState("stopped");
-                        this._clientsManager.updatePubsubState("stopped");
+                        this._clientsManager.updatePubsubState("stopped", undefined);
                         _b.label = 4;
                     case 4:
                         if (!this.dbHandler) return [3 /*break*/, 6];
@@ -655,7 +655,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 4:
                         _a = _b.sent(), stats = _a[0], subplebbitPosts = _a[1];
-                        return [4 /*yield*/, this._clientsManager.getCurrentIpfs()._client.add((0, safe_stable_stringify_1.stringify)(stats))];
+                        return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.add((0, safe_stable_stringify_1.stringify)(stats))];
                     case 5:
                         statsCid = (_b.sent()).path;
                         return [4 /*yield*/, this._mergeInstanceStateWithDbState({})];
@@ -676,10 +676,10 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this._updateDbInternalState(lodash_1.default.pick(this.toJSONInternal(), ["posts", "lastPostCid", "statsCid", "updatedAt", "signature", "_subplebbitUpdateTrigger"]))];
                     case 10:
                         _b.sent();
-                        return [4 /*yield*/, this._clientsManager.getCurrentIpfs()._client.add((0, safe_stable_stringify_1.stringify)(__assign(__assign({}, newIpns), { signature: signature })))];
+                        return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.add((0, safe_stable_stringify_1.stringify)(__assign(__assign({}, newIpns), { signature: signature })))];
                     case 11:
                         file = _b.sent();
-                        return [4 /*yield*/, this._clientsManager.getCurrentIpfs()._client.name.publish(file.path, {
+                        return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
                                 key: this.signer.ipnsKeyName,
                                 allowOffline: true
                             })];
@@ -994,7 +994,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 23:
                         _o.sent();
                         commentToInsert.setDepth(0);
-                        return [4 /*yield*/, this._clientsManager.getCurrentIpfs()._client.add((0, safe_stable_stringify_1.stringify)(commentToInsert.toJSONIpfs()))];
+                        return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.add((0, safe_stable_stringify_1.stringify)(commentToInsert.toJSONIpfs()))];
                     case 24:
                         file = _o.sent();
                         commentToInsert.setPostCid(file.path);
@@ -1021,7 +1021,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         commentToInsert.setPreviousCid((_d = commentsUnderParent[0]) === null || _d === void 0 ? void 0 : _d.cid);
                         commentToInsert.setDepth(parent_2.depth + 1);
                         commentToInsert.setPostCid(parent_2.postCid);
-                        return [4 /*yield*/, this._clientsManager.getCurrentIpfs()._client.add((0, safe_stable_stringify_1.stringify)(commentToInsert.toJSONIpfs()))];
+                        return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.add((0, safe_stable_stringify_1.stringify)(commentToInsert.toJSONIpfs()))];
                     case 30:
                         file = _o.sent();
                         commentToInsert.setCid(file.path);
@@ -1140,7 +1140,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signatures_1.signChallengeVerification)(toSignMsg, this.signer)];
                     case 8:
                         challengeVerification = new (_c.apply(challenge_1.ChallengeVerificationMessage, [void 0, __assign.apply(void 0, _d.concat([(_g.signature = _k.sent(), _g)]))]))();
-                        this._clientsManager.updatePubsubState("publishing-challenge-verification");
+                        this._clientsManager.updatePubsubState("publishing-challenge-verification", undefined);
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
                                 this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), (0, safe_stable_stringify_1.stringify)(challengeVerification))
@@ -1148,7 +1148,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 9:
                         _k.sent();
                         log("(".concat(request.challengeRequestId, "): "), "Published ".concat(challengeVerification.type, " over pubsub: "), lodash_1.default.omit(toSignMsg, ["encryptedPublication"]));
-                        this._clientsManager.updatePubsubState("waiting-challenge-requests");
+                        this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
                         this.emit("challengeverification", __assign(__assign({}, challengeVerification), { publication: typeof publicationOrReason === "string" ? undefined : publicationOrReason }));
                         return [3 /*break*/, 14];
                     case 10:
@@ -1169,7 +1169,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signatures_1.signChallengeMessage)(toSignChallenge, this.signer)];
                     case 12:
                         challengeMessage = new (_e.apply(challenge_1.ChallengeMessage, [void 0, __assign.apply(void 0, _f.concat([(_j.signature = _k.sent(), _j)]))]))();
-                        this._clientsManager.updatePubsubState("publishing-challenge");
+                        this._clientsManager.updatePubsubState("publishing-challenge", undefined);
                         challengeTypes = providedChallenges.map(function (challenge) { return challenge.type; });
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.insertChallenge(challengeMessage.toJSONForDb(challengeTypes), undefined),
@@ -1178,7 +1178,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 13:
                         _k.sent();
                         log.trace("(".concat(request.challengeRequestId, "): "), "Published ".concat(challengeMessage.type, " over pubsub: "), lodash_1.default.omit(toSignChallenge, ["encryptedChallenges"]));
-                        this._clientsManager.updatePubsubState("waiting-challenge-answers");
+                        this._clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
                         this.emit("challengemessage", __assign(__assign({}, challengeMessage), { challenges: providedChallenges }));
                         _k.label = 14;
                     case 14: return [2 /*return*/];
@@ -1240,7 +1240,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signatures_1.signChallengeVerification)(toSignMsg, this.signer)];
                     case 8:
                         challengeVerification = new (_c.apply(challenge_1.ChallengeVerificationMessage, [void 0, __assign.apply(void 0, _d.concat([(_g.signature = _j.sent(), _g)]))]))();
-                        this._clientsManager.updatePubsubState("publishing-challenge-verification");
+                        this._clientsManager.updatePubsubState("publishing-challenge-verification", undefined);
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
                                 this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), (0, safe_stable_stringify_1.stringify)(challengeVerification))
@@ -1248,7 +1248,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 9:
                         _j.sent();
                         log("(".concat(challengeAnswer.challengeRequestId, "): "), "Published ".concat(challengeVerification.type, " over pubsub:"), lodash_1.default.omit(toSignMsg, ["encryptedPublication"]));
-                        this._clientsManager.updatePubsubState("waiting-challenge-requests");
+                        this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
                         this.emit("challengeverification", __assign(__assign({}, challengeVerification), { publication: encryptedPublication ? publicationOrReason : undefined }));
                         return [3 /*break*/, 13];
                     case 10:
@@ -1269,7 +1269,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signatures_1.signChallengeVerification)(toSignVerification, this.signer)];
                     case 11:
                         challengeVerification = new (_e.apply(challenge_1.ChallengeVerificationMessage, [void 0, __assign.apply(void 0, _f.concat([(_h.signature = _j.sent(), _h)]))]))();
-                        this._clientsManager.updatePubsubState("publishing-challenge-verification");
+                        this._clientsManager.updatePubsubState("publishing-challenge-verification", undefined);
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
                                 this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), (0, safe_stable_stringify_1.stringify)(challengeVerification))
@@ -1277,7 +1277,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 12:
                         _j.sent();
                         log("(".concat(challengeAnswer.challengeRequestId, "): "), "Published ".concat(challengeVerification.type, " over pubsub:"), toSignVerification);
-                        this._clientsManager.updatePubsubState("waiting-challenge-requests");
+                        this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
                         this.emit("challengeverification", challengeVerification);
                         _j.label = 13;
                     case 13: return [2 /*return*/];
@@ -1419,10 +1419,10 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this._importSignerIntoIpfsIfNeeded(signerRaw)];
                     case 2:
                         _a.sent();
-                        return [4 /*yield*/, this._clientsManager.getCurrentIpfs()._client.add((0, safe_stable_stringify_1.stringify)(options))];
+                        return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.add((0, safe_stable_stringify_1.stringify)(options))];
                     case 3:
                         file = _a.sent();
-                        return [4 /*yield*/, this._clientsManager.getCurrentIpfs()._client.name.publish(file.path, {
+                        return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
                                 key: signerRaw.ipnsKeyName,
                                 allowOffline: true
                             })];
@@ -1477,7 +1477,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         newIpns = __assign.apply(void 0, _b.concat([(_c.signature = _d.sent(), _c)]));
                         return [4 /*yield*/, this._validateCommentUpdate(newIpns, comment)];
                     case 3:
-                        _d.sent(); // Should be removed once signature are working properly
+                        _d.sent(); // TODO Should be removed once signature are working properly
                         return [4 /*yield*/, this.dbHandler.upsertCommentUpdate(newIpns)];
                     case 4:
                         _d.sent();
@@ -1496,7 +1496,7 @@ var Subplebbit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:sync");
-                        return [4 /*yield*/, this._clientsManager.getCurrentPubsub()._client.pubsub.ls()];
+                        return [4 /*yield*/, this._clientsManager.getDefaultPubsub()._client.pubsub.ls()];
                     case 1:
                         subscribedTopics = _a.sent();
                         if (!!subscribedTopics.includes(this.pubsubTopicWithfallback())) return [3 /*break*/, 4];
@@ -1506,7 +1506,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this._clientsManager.pubsubSubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange)];
                     case 3:
                         _a.sent();
-                        this._clientsManager.updatePubsubState("waiting-challenge-requests");
+                        this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
                         log("Waiting for publications on pubsub topic (".concat(this.pubsubTopicWithfallback(), ")"));
                         _a.label = 4;
                     case 4: return [2 /*return*/];
@@ -1656,7 +1656,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.dbHandler.queryAllCommentsCid()];
                     case 1:
                         dbCommentsCids = _c.sent();
-                        return [4 /*yield*/, this._clientsManager.getCurrentIpfs()._client.pin.ls()];
+                        return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.pin.ls()];
                     case 2:
                         pinnedCids = (_c.sent()).map(function (cid) { return cid.cid.toString(); });
                         unpinnedCommentsCids = lodash_1.default.difference(dbCommentsCids, pinnedCids);
@@ -1678,7 +1678,7 @@ var Subplebbit = /** @class */ (function (_super) {
                                         case 1:
                                             contentHash = _a.sent();
                                             assert_1.default.equal(contentHash, comment.cid);
-                                            return [4 /*yield*/, this._clientsManager.getCurrentIpfs()._client.add(commentIpfsContent, { pin: true })];
+                                            return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true })];
                                         case 2:
                                             _a.sent();
                                             return [2 /*return*/];
@@ -1710,7 +1710,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 3:
                         _b.sent();
                         _a = this;
-                        return [4 /*yield*/, this._clientsManager.getCurrentIpfs()._client.key.list()];
+                        return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.key.list()];
                     case 4:
                         _a._ipfsNodeIpnsKeyNames = (_b.sent()).map(function (key) { return key.name; });
                         return [4 /*yield*/, this._listenToIncomingRequests()];
@@ -1800,7 +1800,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:start");
                         if (!((_a = this.signer) === null || _a === void 0 ? void 0 : _a.address))
                             (0, util_1.throwWithErrorCode)("ERR_SUB_SIGNER_NOT_DEFINED");
-                        if (!this._clientsManager.getCurrentIpfs())
+                        if (!this._clientsManager.getDefaultIpfs())
                             (0, util_1.throwWithErrorCode)("ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE", { ipfsHttpClientOptions: this.plebbit.ipfsHttpClientsOptions });
                         return [4 /*yield*/, this.dbHandler.initDestroyedConnection()];
                     case 1:
@@ -1865,7 +1865,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _c.sent();
                         if (typeof this.plebbit.dataPath !== "string")
                             (0, util_1.throwWithErrorCode)("ERR_DATA_PATH_IS_NOT_DEFINED", { plebbitDataPath: this.plebbit.dataPath });
-                        ipfsClient = this._clientsManager.getCurrentIpfs();
+                        ipfsClient = this._clientsManager.getDefaultIpfs();
                         if (!ipfsClient)
                             throw Error("Ipfs client is not defined");
                         return [4 /*yield*/, util_3.nativeFunctions.deleteSubplebbit(this.address, this.plebbit.dataPath)];

@@ -146,20 +146,26 @@ var ClientsManager = /** @class */ (function (_super) {
         this.updateChainProviderState("stopped", "eth");
     };
     // State methods here
-    ClientsManager.prototype.updatePubsubState = function (newState) {
-        this.clients.pubsubClients[this._curPubsubNodeUrl].state = newState;
-        this.clients.pubsubClients[this._curPubsubNodeUrl].emit("statechange", newState);
+    ClientsManager.prototype.updatePubsubState = function (newState, pubsubProvider) {
+        pubsubProvider = pubsubProvider || this._defaultPubsubProviderUrl;
+        (0, assert_1.default)(typeof pubsubProvider === "string");
+        (0, assert_1.default)(typeof newState === "string", "Can't update pubsub state to undefined");
+        this.clients.pubsubClients[pubsubProvider].state = newState;
+        this.clients.pubsubClients[pubsubProvider].emit("statechange", newState);
     };
     ClientsManager.prototype.updateIpfsState = function (newState) {
-        (0, assert_1.default)(this._curIpfsNodeUrl);
-        this.clients.ipfsClients[this._curIpfsNodeUrl].state = newState;
-        this.clients.ipfsClients[this._curIpfsNodeUrl].emit("statechange", newState);
+        (0, assert_1.default)(this._defaultIpfsProviderUrl);
+        (0, assert_1.default)(typeof newState === "string", "Can't update ipfs state to undefined");
+        this.clients.ipfsClients[this._defaultIpfsProviderUrl].state = newState;
+        this.clients.ipfsClients[this._defaultIpfsProviderUrl].emit("statechange", newState);
     };
     ClientsManager.prototype.updateGatewayState = function (newState, gateway) {
+        (0, assert_1.default)(typeof newState === "string", "Can't update gateway state to undefined");
         this.clients.ipfsGateways[gateway].state = newState;
         this.clients.ipfsGateways[gateway].emit("statechange", newState);
     };
     ClientsManager.prototype.updateChainProviderState = function (newState, chainTicker) {
+        (0, assert_1.default)(typeof newState === "string", "Can't update chain provider state to undefined");
         this.clients.chainProviders[chainTicker].state = newState;
         this.clients.chainProviders[chainTicker].emit("statechange", newState);
     };
@@ -172,7 +178,7 @@ var ClientsManager = /** @class */ (function (_super) {
                     finalCid = finalCid.split("/")[2];
                 if (!is_ipfs_1.default.cid(finalCid))
                     (0, util_1.throwWithErrorCode)("ERR_CID_IS_INVALID", { cid: cid });
-                if (this._curIpfsNodeUrl)
+                if (this._defaultIpfsProviderUrl)
                     return [2 /*return*/, this._fetchCidP2P(cid)];
                 else
                     return [2 /*return*/, this.fetchFromMultipleGateways({ cid: cid }, "generic-ipfs")];
@@ -192,7 +198,7 @@ var ClientsManager = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!this._curIpfsNodeUrl) return [3 /*break*/, 3];
+                        if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 3];
                         this.updateIpfsState(this._getStatePriorToResolvingSubplebbitIpns());
                         return [4 /*yield*/, this.resolveIpnsToCidP2P(ipnsAddress)];
                     case 1:
@@ -233,13 +239,24 @@ var PublicationClientsManager = /** @class */ (function (_super) {
             this.clients.pubsubClients = __assign(__assign({}, this.clients.pubsubClients), (_a = {}, _a[pubsubUrl] = new pubsub_client_1.PublicationPubsubClient("stopped"), _a));
         }
     };
+    // Pubsub methods here
+    PublicationClientsManager.prototype.prePubsubPublishProvider = function (pubsubTopic, pubsubProvider) {
+        var newState = this._publication.publishingState === "publishing-challenge-request"
+            ? "publishing-challenge-request"
+            : "publishing-challenge-answer";
+        this.updatePubsubState(newState, pubsubProvider);
+    };
+    PublicationClientsManager.prototype.postPubsubPublishProviderSuccess = function (pubsubTopic, pubsubProvider) {
+        this.updatePubsubState("stopped", pubsubProvider);
+    };
+    PublicationClientsManager.prototype.postPubsubPublishProviderFailure = function (pubsubTopic, pubsubProvider) {
+        this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
+    };
     PublicationClientsManager.prototype.publishChallengeRequest = function (pubsubTopic, data) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        this.updatePubsubState("publishing-challenge-request");
-                        return [4 /*yield*/, this.pubsubPublish(pubsubTopic, data)];
+                    case 0: return [4 /*yield*/, this.pubsubPublish(pubsubTopic, data)];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -254,7 +271,7 @@ var PublicationClientsManager = /** @class */ (function (_super) {
                     case 0: return [4 /*yield*/, this.pubsubPublish(pubsubTopic, data)];
                     case 1:
                         _a.sent();
-                        this.updatePubsubState("waiting-challenge-verification");
+                        this.updatePubsubState("waiting-challenge-verification", undefined);
                         return [2 /*return*/];
                 }
             });
@@ -275,7 +292,7 @@ var PublicationClientsManager = /** @class */ (function (_super) {
                     case 1:
                         subIpns = _e.sent();
                         this._publication._updatePublishingState("fetching-subplebbit-ipns");
-                        if (!this._curIpfsNodeUrl) return [3 /*break*/, 4];
+                        if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 4];
                         this.updateIpfsState("fetching-subplebbit-ipns");
                         return [4 /*yield*/, this.resolveIpnsToCidP2P(subIpns)];
                     case 2:
@@ -307,9 +324,8 @@ var PublicationClientsManager = /** @class */ (function (_super) {
     PublicationClientsManager.prototype.updateIpfsState = function (newState) {
         _super.prototype.updateIpfsState.call(this, newState);
     };
-    PublicationClientsManager.prototype.updatePubsubState = function (newState) {
-        this.clients.pubsubClients[this._curPubsubNodeUrl].state = newState;
-        this.clients.pubsubClients[this._curPubsubNodeUrl].emit("statechange", newState);
+    PublicationClientsManager.prototype.updatePubsubState = function (newState, pubsubProvider) {
+        _super.prototype.updatePubsubState.call(this, newState, pubsubProvider);
     };
     PublicationClientsManager.prototype.updateGatewayState = function (newState, gateway) {
         _super.prototype.updateGatewayState.call(this, newState, gateway);
@@ -339,7 +355,7 @@ var CommentClientsManager = /** @class */ (function (_super) {
                 switch (_e.label) {
                     case 0:
                         this._comment._setUpdatingState("fetching-update-ipns");
-                        if (!this._curIpfsNodeUrl) return [3 /*break*/, 3];
+                        if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 3];
                         this.updateIpfsState("fetching-update-ipns");
                         return [4 /*yield*/, this.resolveIpnsToCidP2P(ipnsName)];
                     case 1:
@@ -369,7 +385,7 @@ var CommentClientsManager = /** @class */ (function (_super) {
                 switch (_e.label) {
                     case 0:
                         this._comment._setUpdatingState("fetching-ipfs");
-                        if (!this._curIpfsNodeUrl) return [3 /*break*/, 2];
+                        if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 2];
                         this.updateIpfsState("fetching-ipfs");
                         _b = (_a = JSON).parse;
                         return [4 /*yield*/, this._fetchCidP2P(cid)];
@@ -422,7 +438,7 @@ var SubplebbitClientsManager = /** @class */ (function (_super) {
                 switch (_e.label) {
                     case 0:
                         this._subplebbit._setUpdatingState("fetching-ipns");
-                        if (!this._curIpfsNodeUrl) return [3 /*break*/, 3];
+                        if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 3];
                         this.updateIpfsState("fetching-ipns");
                         return [4 /*yield*/, this.resolveIpnsToCidP2P(ipnsName)];
                     case 1:
@@ -448,8 +464,8 @@ var SubplebbitClientsManager = /** @class */ (function (_super) {
     SubplebbitClientsManager.prototype.updateIpfsState = function (newState) {
         _super.prototype.updateIpfsState.call(this, newState);
     };
-    SubplebbitClientsManager.prototype.updatePubsubState = function (newState) {
-        _super.prototype.updatePubsubState.call(this, newState);
+    SubplebbitClientsManager.prototype.updatePubsubState = function (newState, pubsubProvider) {
+        _super.prototype.updatePubsubState.call(this, newState, pubsubProvider);
     };
     SubplebbitClientsManager.prototype.updateGatewayState = function (newState, gateway) {
         _super.prototype.updateGatewayState.call(this, newState, gateway);

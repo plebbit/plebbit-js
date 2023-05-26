@@ -9,6 +9,7 @@ export declare class DbHandler {
     private _dbConfig;
     private _keyv;
     private _createdTables;
+    private _needToUpdateCommentUpdates;
     constructor(subplebbit: DbHandler["_subplebbit"]);
     initDbConfigIfNeeded(): Promise<void>;
     initDbIfNeeded(): Promise<void>;
@@ -73,7 +74,8 @@ export declare class DbHandler {
     queryCommentFlags(cid: string, trx?: Transaction): Promise<Pick<CommentUpdate, "spoiler" | "pinned" | "locked" | "removed">>;
     queryAuthorEditDeleted(cid: string, trx?: Transaction): Promise<AuthorCommentEdit["deleted"] | undefined>;
     private _queryModCommentFlair;
-    queryCalculatedCommentUpdate(comment: Pick<CommentsTableRow, "cid" | "author">, trx?: Transaction): Promise<Omit<CommentUpdate, "signature" | "updatedAt" | "replies" | "protocolVersion">>;
+    private _queryLastChildCidAndLastReplyTimestamp;
+    queryCalculatedCommentUpdate(comment: Pick<CommentsTableRow, "cid" | "author" | "timestamp">, trx?: Transaction): Promise<Omit<CommentUpdate, "signature" | "updatedAt" | "replies" | "protocolVersion">>;
     queryLatestPostCid(trx?: Transaction): Promise<Pick<CommentWithCommentUpdate, "cid"> | undefined>;
     insertSigner(signer: SingersTableRowInsert, trx?: Transaction): Promise<number[]>;
     querySigner(ipnsKeyName: string, trx?: Transaction): Promise<SignersTableRow | undefined>;

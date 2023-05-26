@@ -36,7 +36,7 @@ export declare class ClientsManager extends BaseClientsManager {
     preResolveTextRecord(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address"): void;
     postResolveTextRecordSuccess(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string): void;
     postResolveTextRecordFailure(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address"): void;
-    updatePubsubState(newState: GenericPubsubClient["state"]): void;
+    updatePubsubState(newState: GenericPubsubClient["state"], pubsubProvider: string | undefined): void;
     updateIpfsState(newState: GenericIpfsClient["state"]): void;
     updateGatewayState(newState: GenericIpfsGatewayClient["state"], gateway: string): void;
     updateChainProviderState(newState: GenericChainProviderClient["state"], chainTicker: string): void;
@@ -64,12 +64,15 @@ export declare class PublicationClientsManager extends ClientsManager {
     constructor(publication: Publication);
     protected _initIpfsClients(): void;
     protected _initPubsubClients(): void;
+    protected prePubsubPublishProvider(pubsubTopic: string, pubsubProvider: string): void;
+    protected postPubsubPublishProviderSuccess(pubsubTopic: string, pubsubProvider: string): void;
+    protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string): void;
     publishChallengeRequest(pubsubTopic: string, data: string): Promise<void>;
     publishChallengeAnswer(pubsubTopic: string, data: string): Promise<void>;
     emitError(e: PlebbitError): void;
     fetchSubplebbitForPublishing(subplebbitAddress: string): Promise<SubplebbitIpfsType>;
     updateIpfsState(newState: PublicationIpfsClient["state"] | CommentIpfsClient["state"]): void;
-    updatePubsubState(newState: PublicationPubsubClient["state"]): void;
+    updatePubsubState(newState: PublicationPubsubClient["state"], pubsubProvider: string | undefined): void;
     updateGatewayState(newState: PublicationIpfsGatewayClient["state"], gateway: string): void;
 }
 export declare class CommentClientsManager extends PublicationClientsManager {
@@ -115,7 +118,7 @@ export declare class SubplebbitClientsManager extends ClientsManager {
     protected _initPubsubClients(): void;
     fetchSubplebbit(ipnsName: string): Promise<SubplebbitIpfsType>;
     updateIpfsState(newState: SubplebbitIpfsClient["state"]): void;
-    updatePubsubState(newState: SubplebbitPubsubClient["state"]): void;
+    updatePubsubState(newState: SubplebbitPubsubClient["state"], pubsubProvider: string | undefined): void;
     updateGatewayState(newState: CommentIpfsGatewayClient["state"], gateway: string): void;
     emitError(e: PlebbitError): void;
     protected _getStatePriorToResolvingSubplebbitIpns(): "fetching-subplebbit-ipns" | "fetching-ipns";

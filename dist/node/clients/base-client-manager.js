@@ -62,20 +62,20 @@ var DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 var BaseClientsManager = /** @class */ (function () {
     function BaseClientsManager(plebbit) {
         this._plebbit = plebbit;
-        this._curPubsubNodeUrl = Object.values(plebbit.clients.pubsubClients)[0]._clientOptions.url;
+        this._defaultPubsubProviderUrl = Object.values(plebbit.clients.pubsubClients)[0]._clientOptions.url; // TODO Should be the gateway with the best score
         if (plebbit.clients.ipfsClients)
-            this._curIpfsNodeUrl = Object.values(plebbit.clients.ipfsClients)[0]._clientOptions.url;
+            this._defaultIpfsProviderUrl = Object.values(plebbit.clients.ipfsClients)[0]._clientOptions.url;
     }
     BaseClientsManager.prototype.toJSON = function () {
         return undefined;
     };
-    BaseClientsManager.prototype.getCurrentPubsub = function () {
-        return this._plebbit.clients.pubsubClients[this._curPubsubNodeUrl];
+    BaseClientsManager.prototype.getDefaultPubsub = function () {
+        return this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl];
     };
-    BaseClientsManager.prototype.getCurrentIpfs = function () {
-        (0, assert_1.default)(this._curIpfsNodeUrl);
-        (0, assert_1.default)(this._plebbit.clients.ipfsClients[this._curIpfsNodeUrl]);
-        return this._plebbit.clients.ipfsClients[this._curIpfsNodeUrl];
+    BaseClientsManager.prototype.getDefaultIpfs = function () {
+        (0, assert_1.default)(this._defaultIpfsProviderUrl);
+        (0, assert_1.default)(this._plebbit.clients.ipfsClients[this._defaultIpfsProviderUrl]);
+        return this._plebbit.clients.ipfsClients[this._defaultIpfsProviderUrl];
     };
     // Pubsub methods
     BaseClientsManager.prototype.pubsubSubscribe = function (pubsubTopic, handler) {
@@ -85,13 +85,13 @@ var BaseClientsManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, this.getCurrentPubsub()._client.pubsub.subscribe(pubsubTopic, handler)];
+                        return [4 /*yield*/, this.getDefaultPubsub()._client.pubsub.subscribe(pubsubTopic, handler)];
                     case 1:
                         _a.sent();
                         return [3 /*break*/, 3];
                     case 2:
                         e_1 = _a.sent();
-                        (0, util_1.throwWithErrorCode)("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic: pubsubTopic, pubsubNode: this._curPubsubNodeUrl, error: e_1 });
+                        (0, util_1.throwWithErrorCode)("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic: pubsubTopic, pubsubNode: this._defaultPubsubProviderUrl, error: e_1 });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
@@ -105,38 +105,112 @@ var BaseClientsManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, this.getCurrentPubsub()._client.pubsub.unsubscribe(pubsubTopic, handler)];
+                        return [4 /*yield*/, this.getDefaultPubsub()._client.pubsub.unsubscribe(pubsubTopic, handler)];
                     case 1:
                         _a.sent();
                         return [3 /*break*/, 3];
                     case 2:
                         error_1 = _a.sent();
-                        (0, util_1.throwWithErrorCode)("ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE", { pubsubTopic: pubsubTopic, pubsubNode: this._curPubsubNodeUrl, error: error_1 });
+                        (0, util_1.throwWithErrorCode)("ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE", { pubsubTopic: pubsubTopic, pubsubNode: this._defaultPubsubProviderUrl, error: error_1 });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
             });
         });
     };
-    BaseClientsManager.prototype.pubsubPublish = function (pubsubTopic, data) {
+    BaseClientsManager.prototype.prePubsubPublishProvider = function (pubsubTopic, pubsubProvider) { };
+    BaseClientsManager.prototype.postPubsubPublishProviderSuccess = function (pubsubTopic, pubsubProvider) { };
+    BaseClientsManager.prototype.postPubsubPublishProviderFailure = function (pubsubTopic, pubsubProvider) { };
+    BaseClientsManager.prototype._publishToPubsubProvider = function (pubsubTopic, data, pubsubProvider) {
         return __awaiter(this, void 0, void 0, function () {
-            var dataBinary, error_2;
+            var log, timeBefore, error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        dataBinary = (0, from_string_1.fromString)(data);
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:pubsubPublish");
+                        this.prePubsubPublishProvider(pubsubTopic, pubsubProvider);
+                        timeBefore = Date.now();
                         _a.label = 1;
                     case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, this.getCurrentPubsub()._client.pubsub.publish(pubsubTopic, dataBinary)];
+                        _a.trys.push([1, 3, , 5]);
+                        return [4 /*yield*/, this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.publish(pubsubTopic, data)];
                     case 2:
                         _a.sent();
-                        return [3 /*break*/, 4];
+                        this._plebbit.stats.recordGatewaySuccess(pubsubProvider, "pubsub-publish", Date.now() - timeBefore); // Awaiting this statement will bug out tests
+                        this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
+                        return [3 /*break*/, 5];
                     case 3:
                         error_2 = _a.sent();
-                        (0, util_1.throwWithErrorCode)("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic: pubsubTopic, pubsubNode: this._curPubsubNodeUrl, error: error_2 });
-                        return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
+                        return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(pubsubProvider, "pubsub-publish")];
+                    case 4:
+                        _a.sent();
+                        this.postPubsubPublishProviderFailure(pubsubTopic, pubsubProvider);
+                        (0, util_1.throwWithErrorCode)("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic: pubsubTopic, pubsubProvider: pubsubProvider, error: error_2 });
+                        return [3 /*break*/, 5];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    BaseClientsManager.prototype.pubsubPublish = function (pubsubTopic, data) {
+        return __awaiter(this, void 0, void 0, function () {
+            var log, dataBinary, _firstResolve, timeouts, lastError, concurrencyLimit, queueLimit, i, providersSorted, _a, providerPromises, res, e_2;
+            var _this = this;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:client-manager:pubsubPublish");
+                        dataBinary = (0, from_string_1.fromString)(data);
+                        _firstResolve = function (promises) {
+                            return new Promise(function (resolve) { return promises.forEach(function (promise) { return promise.then(function () { return resolve(1); }); }); });
+                        };
+                        timeouts = [0, 0, 100, 1000];
+                        concurrencyLimit = 3;
+                        queueLimit = (0, p_limit_1.default)(concurrencyLimit);
+                        i = 0;
+                        _b.label = 1;
+                    case 1:
+                        if (!(i < timeouts.length)) return [3 /*break*/, 10];
+                        if (!(timeouts[i] !== 0)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, (0, util_1.delay)(timeouts[i])];
+                    case 2:
+                        _b.sent();
+                        _b.label = 3;
+                    case 3:
+                        _b.trys.push([3, 8, , 9]);
+                        if (!(Object.keys(this._plebbit.clients.pubsubClients).length <= concurrencyLimit)) return [3 /*break*/, 4];
+                        _a = Object.keys(this._plebbit.clients.pubsubClients);
+                        return [3 /*break*/, 6];
+                    case 4: return [4 /*yield*/, this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-publish")];
+                    case 5:
+                        _a = _b.sent();
+                        _b.label = 6;
+                    case 6:
+                        providersSorted = _a;
+                        providerPromises = providersSorted.map(function (pubsubProviderUrl) {
+                            return queueLimit(function () { return _this._publishToPubsubProvider(pubsubTopic, dataBinary, pubsubProviderUrl); });
+                        });
+                        return [4 /*yield*/, Promise.race([_firstResolve(providerPromises), Promise.allSettled(providerPromises)])];
+                    case 7:
+                        res = _b.sent();
+                        if (res === 1) {
+                            queueLimit.clearQueue();
+                            return [2 /*return*/, res];
+                        }
+                        else
+                            throw res[0].value.error;
+                        return [3 /*break*/, 9];
+                    case 8:
+                        e_2 = _b.sent();
+                        log.error("Failed to publish to pubsub topic (".concat(pubsubTopic, ") for the ").concat(i, "th time due to error: "), e_2);
+                        lastError = e_2;
+                        return [3 /*break*/, 9];
+                    case 9:
+                        i++;
+                        return [3 /*break*/, 1];
+                    case 10:
+                        this.emitError(lastError);
+                        throw lastError;
                 }
             });
         });
@@ -145,7 +219,7 @@ var BaseClientsManager = /** @class */ (function () {
     BaseClientsManager.prototype._fetchWithLimit = function (url, options) {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
-            var res, e_2, errorCode, totalBytesRead, reader, decoder, resText, _c, done, value;
+            var res, e_3, errorCode, totalBytesRead, reader, decoder, resText, _c, done, value;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
@@ -161,15 +235,15 @@ var BaseClientsManager = /** @class */ (function () {
                     case 2: return [2 /*return*/, _d.sent()];
                     case 3: return [3 /*break*/, 5];
                     case 4:
-                        e_2 = _d.sent();
-                        if (e_2.message.includes("over limit"))
+                        e_3 = _d.sent();
+                        if (e_3.message.includes("over limit"))
                             (0, util_1.throwWithErrorCode)("ERR_OVER_DOWNLOAD_LIMIT", { url: url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
                         errorCode = url.includes("/ipfs/")
                             ? "ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"
                             : url.includes("/ipns/")
                                 ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
                                 : "ERR_FAILED_TO_FETCH_GENERIC";
-                        (0, util_1.throwWithErrorCode)(errorCode, { url: url, status: res === null || res === void 0 ? void 0 : res.status, statusText: res === null || res === void 0 ? void 0 : res.statusText, error: e_2 });
+                        (0, util_1.throwWithErrorCode)(errorCode, { url: url, status: res === null || res === void 0 ? void 0 : res.status, statusText: res === null || res === void 0 ? void 0 : res.statusText, error: e_3 });
                         return [3 /*break*/, 5];
                     case 5:
                         if (!(((_b = res === null || res === void 0 ? void 0 : res.body) === null || _b === void 0 ? void 0 : _b.getReader) !== undefined)) return [3 /*break*/, 9];
@@ -203,7 +277,7 @@ var BaseClientsManager = /** @class */ (function () {
     BaseClientsManager.prototype.postFetchGatewayFailure = function (gatewayUrl, path, loadType) { };
     BaseClientsManager.prototype._fetchWithGateway = function (gateway, path, loadType) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, url, timeBefore, isCid, resText, timeElapsedMs, e_3;
+            var log, url, timeBefore, isCid, resText, timeElapsedMs, e_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -232,11 +306,11 @@ var BaseClientsManager = /** @class */ (function () {
                         _a.sent();
                         return [2 /*return*/, resText];
                     case 6:
-                        e_3 = _a.sent();
+                        e_4 = _a.sent();
                         return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns")];
                     case 7:
                         _a.sent();
-                        return [2 /*return*/, { error: e_3 }];
+                        return [2 /*return*/, { error: e_4 }];
                     case 8: return [2 /*return*/];
                 }
             });
@@ -295,7 +369,7 @@ var BaseClientsManager = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        ipfsClient = this.getCurrentIpfs();
+                        ipfsClient = this.getDefaultIpfs();
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 3, , 4]);
@@ -320,7 +394,7 @@ var BaseClientsManager = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        ipfsClient = this.getCurrentIpfs();
+                        ipfsClient = this.getDefaultIpfs();
                         return [4 /*yield*/, ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES })];
                     case 1:
                         fileContent = _a.sent();
@@ -388,7 +462,7 @@ var BaseClientsManager = /** @class */ (function () {
     BaseClientsManager.prototype.postResolveTextRecordFailure = function (ens, txtRecordName) { };
     BaseClientsManager.prototype._resolveEnsTextRecord = function (ens, txtRecordName) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, timeouts, i, cacheEns, resolvedTxtRecord, e_4;
+            var log, timeouts, i, cacheEns, resolvedTxtRecord, e_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -419,11 +493,11 @@ var BaseClientsManager = /** @class */ (function () {
                         this.postResolveTextRecordSuccess(ens, txtRecordName, resolvedTxtRecord);
                         return [2 /*return*/, resolvedTxtRecord];
                     case 7:
-                        e_4 = _a.sent();
+                        e_5 = _a.sent();
                         this.postResolveTextRecordFailure(ens, txtRecordName);
                         if (i === timeouts.length - 1) {
-                            this.emitError(e_4);
-                            throw e_4;
+                            this.emitError(e_5);
+                            throw e_5;
                         }
                         return [3 /*break*/, 8];
                     case 8:

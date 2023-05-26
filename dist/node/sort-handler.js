@@ -205,7 +205,7 @@ var SortHandler = /** @class */ (function () {
                                                         case 1:
                                                             comment = _a.sent();
                                                             if (commentProps.update.replyCount > 0)
-                                                                (0, assert_1.default)(commentProps.update.replies);
+                                                                (0, assert_1.default)(commentProps.update.replies && commentProps.update.lastChildCid && commentProps.update.lastReplyTimestamp);
                                                             return [2 /*return*/, comment.toJSONPagesIpfs(commentProps.update)];
                                                     }
                                                 });
@@ -223,7 +223,7 @@ var SortHandler = /** @class */ (function () {
                         pageIpfs = (0, util_1.removeNullAndUndefinedValuesRecursively)({ nextCid: cids[i + 1], comments: chunksWithReplies[i] });
                         _a = cids;
                         _b = i;
-                        return [4 /*yield*/, this.subplebbit._clientsManager.getCurrentIpfs()._client.add(JSON.stringify(pageIpfs))];
+                        return [4 /*yield*/, this.subplebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))];
                     case 3:
                         _a[_b] = (_d.sent()).path;
                         listOfPage[i] = pageIpfs;

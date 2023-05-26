@@ -40,6 +40,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
+var assert_1 = __importDefault(require("assert"));
 var lodash_1 = __importDefault(require("lodash"));
 var Stats = /** @class */ (function () {
     function Stats(plebbit) {
@@ -75,17 +76,17 @@ var Stats = /** @class */ (function () {
                         return [4 /*yield*/, Promise.all([this._plebbit._cache.setItem(averageKey, newAverage), this._plebbit._cache.setItem(countKey, newCount)])];
                     case 3:
                         _a.sent();
-                        log.trace("Updated gateway (".concat(gatewayUrl, ") success average from (").concat(curAverage, ") to ").concat(newAverage, " and count from (").concat(curCount, ") to (").concat(newCount, ")"));
+                        log.trace("Updated gateway (".concat(gatewayUrl, ") success average from (").concat(curAverage, ") to ").concat(newAverage, " and count from (").concat(curCount, ") to (").concat(newCount, ") for type (").concat(type, ")"));
                         return [2 /*return*/];
                 }
             });
         });
     };
-    Stats.prototype._getBaseKey = function (gatewayUrl, type) {
-        return "STATS_".concat(gatewayUrl, "_").concat(type);
+    Stats.prototype._getBaseKey = function (url, type) {
+        return "STATS_".concat(url, "_").concat(type);
     };
-    Stats.prototype._getFailuresCountKey = function (gatewayUrl, type) {
-        return "".concat(this._getBaseKey(gatewayUrl, type), "_COUNT_FAILURE");
+    Stats.prototype._getFailuresCountKey = function (url, type) {
+        return "".concat(this._getBaseKey(url, type), "_COUNT_FAILURE");
     };
     Stats.prototype.recordGatewayFailure = function (gatewayUrl, type) {
         return __awaiter(this, void 0, void 0, function () {
@@ -103,7 +104,7 @@ var Stats = /** @class */ (function () {
                         return [4 /*yield*/, this._plebbit._cache.setItem(countKey, newCount)];
                     case 2:
                         _a.sent();
-                        log.trace("Updated gateway (".concat(gatewayUrl, ") failure  count from (").concat(curCount, ") to (").concat(newCount, ")"));
+                        log.trace("Updated gateway (".concat(gatewayUrl, ") failure  count from (").concat(curCount, ") to (").concat(newCount, ") for type (").concat(type, ")"));
                         return [2 /*return*/];
                 }
             });
@@ -111,11 +112,13 @@ var Stats = /** @class */ (function () {
     };
     Stats.prototype.sortGatewaysAccordingToScore = function (type) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, ipfsGateways, score, gatewaysSorted;
+            var log, gatewayType, gateways, score, gatewaysSorted;
             var _this = this;
             return __generator(this, function (_a) {
                 log = (0, plebbit_logger_1.default)("plebbit-js:stats:gateway:sort");
-                ipfsGateways = Object.keys(this._plebbit.clients.ipfsGateways);
+                gatewayType = type === "cid" || type === "ipns" ? "ipfsGateways" : type === "pubsub-publish" ? "pubsubClients" : undefined;
+                (0, assert_1.default)(gatewayType);
+                gateways = Object.keys(this._plebbit.clients[gatewayType]);
                 score = function (gatewayUrl) { return __awaiter(_this, void 0, void 0, function () {
                     var failureCounts, successCounts, successAverageMs, gatewayScore;
                     return __generator(this, function (_a) {
@@ -129,14 +132,14 @@ var Stats = /** @class */ (function () {
                                 return [4 /*yield*/, this._plebbit._cache.getItem(this._getSuccessAverageKey(gatewayUrl, type))];
                             case 3:
                                 successAverageMs = (_a.sent()) || 0;
-                                gatewayScore = (1 / (successAverageMs + 1) / (1 / (successAverageMs + 1) + 1 / 300)) * 0.3 +
-                                    ((successCounts + 0.288) / (failureCounts * 2 + successCounts + 1)) * 0.7;
+                                gatewayScore = (1 / (successAverageMs + 150) / (1 / (successAverageMs + 100) + 1 / 150)) * 0.2 +
+                                    ((successCounts + 0.288) / (failureCounts * 2 + successCounts + 1)) * 0.8;
                                 log.trace("gateway (".concat(gatewayUrl, ") score is (").concat(gatewayScore, ") for type (").concat(type, ")"));
                                 return [2 /*return*/, score];
                         }
                     });
                 }); };
-                gatewaysSorted = lodash_1.default.sortBy(ipfsGateways, score);
+                gatewaysSorted = lodash_1.default.sortBy(gateways, score);
                 return [2 /*return*/, gatewaysSorted];
             });
         });

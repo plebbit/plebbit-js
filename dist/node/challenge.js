@@ -40,7 +40,8 @@ var ChallengeRequestMessage = /** @class */ (function () {
         };
     };
     ChallengeRequestMessage.prototype.toJSONForDb = function () {
-        return __assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedPublication"]));
+        var acceptedChallengeTypes = Array.isArray(this.acceptedChallengeTypes) ? JSON.stringify(this.acceptedChallengeTypes) : this.acceptedChallengeTypes;
+        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedPublication"])), { acceptedChallengeTypes: acceptedChallengeTypes });
     };
     return ChallengeRequestMessage;
 }());

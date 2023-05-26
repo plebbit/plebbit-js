@@ -157,7 +157,6 @@ var isJsonString = function (jsonString) {
 };
 // Only for DB
 var parseJsonStrings = function (obj) {
-    var _a, _b;
     if (obj === "[object Object]")
         throw Error("Object shouldn't be [object Object]");
     if (Array.isArray(obj))
@@ -167,15 +166,15 @@ var parseJsonStrings = function (obj) {
     var newObj = removeNullAndUndefinedValues(isJsonString(obj) ? JSON.parse(obj) : lodash_1.default.cloneDeep(obj));
     //prettier-ignore
     var booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed", "commentUpdate_deleted", "commentUpdate_spoiler", "commentUpdate_pinned", "commentUpdate_locked", "commentUpdate_removed"];
-    for (var _i = 0, _c = Object.entries(newObj); _i < _c.length; _i++) {
-        var _d = _c[_i], key = _d[0], value = _d[1];
+    for (var _i = 0, _a = Object.entries(newObj); _i < _a.length; _i++) {
+        var _b = _a[_i], key = _b[0], value = _b[1];
         if (value === "[object Object]")
             throw Error("key (".concat(key, ") shouldn't be [object Object]"));
         if (booleanFields.includes(key) && typeof value === "number")
             newObj[key] = Boolean(value);
         else if (isJsonString(value))
-            newObj[key] = removeNullAndUndefinedValues(JSON.parse(value));
-        if (((_b = (_a = newObj[key]) === null || _a === void 0 ? void 0 : _a.constructor) === null || _b === void 0 ? void 0 : _b.name) === "Object")
+            newObj[key] = JSON.parse(value);
+        if (lodash_1.default.isPlainObject(newObj[key]))
             newObj[key] = removeNullAndUndefinedValues((0, exports.parseJsonStrings)(newObj[key]));
     }
     return newObj;

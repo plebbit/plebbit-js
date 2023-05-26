@@ -147,6 +147,8 @@ var Comment = /** @class */ (function (_super) {
                             this.content = props.edit.content;
                         this.flair = props.flair || ((_f = props.edit) === null || _f === void 0 ? void 0 : _f.flair) || this.flair;
                         this.author.flair = ((_h = (_g = props.author) === null || _g === void 0 ? void 0 : _g.subplebbit) === null || _h === void 0 ? void 0 : _h.flair) || ((_k = (_j = props.edit) === null || _j === void 0 ? void 0 : _j.author) === null || _k === void 0 ? void 0 : _k.flair) || ((_l = this.author) === null || _l === void 0 ? void 0 : _l.flair);
+                        this.lastChildCid = props.lastChildCid;
+                        this.lastReplyTimestamp = props.lastReplyTimestamp;
                         (0, assert_1.default)(this.cid);
                         if (!props.replies) return [3 /*break*/, 2];
                         return [4 /*yield*/, (0, util_1.parseRawPages)(props.replies, this._plebbit)];
@@ -183,7 +185,9 @@ var Comment = /** @class */ (function (_super) {
                 protocolVersion: this.protocolVersion,
                 spoiler: this.spoiler,
                 flair: this.flair,
-                replies: (_a = this.replies) === null || _a === void 0 ? void 0 : _a.toJSON()
+                replies: (_a = this.replies) === null || _a === void 0 ? void 0 : _a.toJSON(),
+                lastChildCid: this.lastChildCid,
+                lastReplyTimestamp: this.lastReplyTimestamp
             }
             : {}));
     };
@@ -215,7 +219,7 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype.toJSONMerged = function () {
         var _a;
         (0, assert_1.default)(this.ipnsName && typeof this.updatedAt === "number" && this.original && this.shortCid);
-        return __assign(__assign({}, this.toJSONAfterChallengeVerification()), { shortCid: this.shortCid, author: this.author.toJSON(), original: this.original, upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replyCount: this.replyCount, updatedAt: this.updatedAt, deleted: this.deleted, pinned: this.pinned, locked: this.locked, removed: this.removed, reason: this.reason, edit: this.edit, protocolVersion: this.protocolVersion, spoiler: this.spoiler, flair: this.flair, replies: (_a = this.replies) === null || _a === void 0 ? void 0 : _a.toJSON() });
+        return __assign(__assign({}, this.toJSONAfterChallengeVerification()), { shortCid: this.shortCid, author: this.author.toJSON(), original: this.original, upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replyCount: this.replyCount, updatedAt: this.updatedAt, deleted: this.deleted, pinned: this.pinned, locked: this.locked, removed: this.removed, reason: this.reason, edit: this.edit, protocolVersion: this.protocolVersion, spoiler: this.spoiler, flair: this.flair, replies: (_a = this.replies) === null || _a === void 0 ? void 0 : _a.toJSON(), lastChildCid: this.lastChildCid, lastReplyTimestamp: this.lastReplyTimestamp });
     };
     Comment.prototype.setCommentIpnsKey = function (ipnsKey) {
         // Contains name and id

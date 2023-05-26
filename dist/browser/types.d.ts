@@ -337,6 +337,8 @@ export interface CommentUpdate {
     author?: {
         subplebbit: SubplebbitAuthor;
     };
+    lastChildCid?: string;
+    lastReplyTimestamp?: number;
 }
 export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "replies">>, Omit<CreateCommentOptions, "signer"> {
     author: AuthorTypeWithCommentUpdate;
@@ -451,7 +453,8 @@ export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {
 export interface ChallengeRequestsTableRow extends Omit<ChallengeRequestMessageType, "type" | "encryptedPublication"> {
     insertedAt: number;
 }
-export interface ChallengeRequestsTableRowInsert extends Omit<ChallengeRequestsTableRow, "insertedAt"> {
+export interface ChallengeRequestsTableRowInsert extends Omit<ChallengeRequestsTableRow, "insertedAt" | "acceptedChallengeTypes"> {
+    acceptedChallengeTypes?: string;
 }
 export interface ChallengesTableRow extends Omit<ChallengeMessageType, "type" | "encryptedChallenges"> {
     challengeTypes: ChallengeType["type"][];

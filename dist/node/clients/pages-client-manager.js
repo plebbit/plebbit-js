@@ -134,11 +134,11 @@ var BasePagesClientsManager = /** @class */ (function (_super) {
         if (Object.keys(this._pageCidsToSortTypes).length === 0)
             return; // User probably initialized subplebbit with no pages. There's no way to get sort types
         (0, assert_1.default)(Array.isArray(sortTypes), "Can't determine sort type");
-        (0, assert_1.default)(typeof this._curIpfsNodeUrl === "string");
+        (0, assert_1.default)(typeof this._defaultIpfsProviderUrl === "string");
         for (var _i = 0, sortTypes_1 = sortTypes; _i < sortTypes_1.length; _i++) {
             var sortType = sortTypes_1[_i];
-            this.clients.ipfsClients[sortType][this._curIpfsNodeUrl].state = newState;
-            this.clients.ipfsClients[sortType][this._curIpfsNodeUrl].emit("statechange", newState);
+            this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].state = newState;
+            this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].emit("statechange", newState);
         }
     };
     BasePagesClientsManager.prototype.updateGatewayState = function (newState, gateway, sortTypes) {
@@ -157,7 +157,7 @@ var BasePagesClientsManager = /** @class */ (function (_super) {
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
-                        if (!this._curIpfsNodeUrl) return [3 /*break*/, 2];
+                        if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 2];
                         this.updateIpfsState("fetching-ipfs", this._pageCidsToSortTypes[pageCid]);
                         _b = (_a = JSON).parse;
                         return [4 /*yield*/, this._fetchCidP2P(pageCid)];

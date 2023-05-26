@@ -111,6 +111,7 @@ var DbHandler = /** @class */ (function () {
         this._subplebbit = subplebbit;
         this._currentTrxs = {};
         this._createdTables = false;
+        this._needToUpdateCommentUpdates = false;
     }
     DbHandler.prototype.initDbConfigIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -342,27 +343,31 @@ var DbHandler = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
-                            table.text("cid").notNullable().primary().unique().references("cid").inTable(TABLES.COMMENTS);
-                            table.json("edit").nullable();
-                            table.integer("upvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-                            table.integer("downvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-                            // We're not storing replies here because it would take too much storage, and is not needed
-                            table.integer("replyCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-                            table.json("flair").nullable();
-                            table.boolean("spoiler");
-                            table.boolean("pinned");
-                            table.boolean("locked");
-                            table.boolean("removed");
-                            table.text("reason");
-                            table.timestamp("updatedAt").notNullable().checkPositive();
-                            table.text("protocolVersion").notNullable();
-                            table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
-                            table.json("author").nullable();
-                            table.json("replies").nullable();
-                            // Columns with defaults
-                            table.timestamp("insertedAt").defaultTo(_this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
-                        })];
+                    case 0:
+                        this._needToUpdateCommentUpdates = true;
+                        return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
+                                table.text("cid").notNullable().primary().unique().references("cid").inTable(TABLES.COMMENTS);
+                                table.json("edit").nullable();
+                                table.integer("upvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+                                table.integer("downvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+                                // We're not storing replies here because it would take too much storage, and is not needed
+                                table.integer("replyCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+                                table.json("flair").nullable();
+                                table.boolean("spoiler");
+                                table.boolean("pinned");
+                                table.boolean("locked");
+                                table.boolean("removed");
+                                table.text("reason");
+                                table.timestamp("updatedAt").notNullable().checkPositive();
+                                table.text("protocolVersion").notNullable();
+                                table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
+                                table.json("author").nullable();
+                                table.json("replies").nullable();
+                                table.text("lastChildCid").nullable().references("cid").inTable(TABLES.COMMENTS);
+                                table.timestamp("lastReplyTimestamp").nullable();
+                                // Columns with defaults
+                                table.timestamp("insertedAt").defaultTo(_this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
+                            })];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -659,7 +664,7 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype._copyTable = function (srcTable, dstTable) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, dstTableColumns, _a, _b, srcRecords, srcRecordFiltered;
+            var log, dstTableColumns, _a, _b, srcRecords, srcRecordFiltered, _i, srcRecordFiltered_1, srcRecord;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
@@ -671,14 +676,22 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, this._knex(srcTable).select("*")];
                     case 2:
                         srcRecords = _c.sent();
-                        if (!(srcRecords.length > 0)) return [3 /*break*/, 4];
+                        if (!(srcRecords.length > 0)) return [3 /*break*/, 6];
                         log("Attempting to copy ".concat(srcRecords.length, " ").concat(srcTable));
                         srcRecordFiltered = srcRecords.map(function (record) { return lodash_1.default.pick(record, dstTableColumns); });
-                        return [4 /*yield*/, this._knex(dstTable).insert(srcRecordFiltered)];
+                        _i = 0, srcRecordFiltered_1 = srcRecordFiltered;
+                        _c.label = 3;
                     case 3:
-                        _c.sent();
-                        _c.label = 4;
+                        if (!(_i < srcRecordFiltered_1.length)) return [3 /*break*/, 6];
+                        srcRecord = srcRecordFiltered_1[_i];
+                        return [4 /*yield*/, this._knex(dstTable).insert(srcRecord)];
                     case 4:
+                        _c.sent();
+                        _c.label = 5;
+                    case 5:
+                        _i++;
+                        return [3 /*break*/, 3];
+                    case 6:
                         log("copied table ".concat(srcTable, " to table ").concat(dstTable));
                         return [2 /*return*/];
                 }
@@ -896,7 +909,7 @@ var DbHandler = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        commentUpdateColumns = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "signature", "spoiler", "updatedAt", "upvoteCount", "replies"];
+                        commentUpdateColumns = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "signature", "spoiler", "updatedAt", "upvoteCount", "replies", "lastChildCid", "lastReplyTimestamp"];
                         aliasSelect = commentUpdateColumns.map(function (col) { return "".concat(TABLES.COMMENT_UPDATES, ".").concat(col, " AS commentUpdate_").concat(col); });
                         return [4 /*yield*/, this._basePageQuery(options, trx).select(__spreadArray(["".concat(TABLES.COMMENTS, ".*")], aliasSelect, true))];
                     case 1:
@@ -971,16 +984,23 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.queryCommentsToBeUpdated = function (ipnsKeyNames, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var criteriaOneTwoThree, lastUpdatedAtWithBuffer, criteriaFour, comments, parents, _a, _b, authorComments, uniqComments;
+            var allComments, criteriaOneTwoThree, lastUpdatedAtWithBuffer, criteriaFour, comments, parents, _a, _b, authorComments, uniqComments;
             var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
-                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
+                    case 0:
+                        if (!this._needToUpdateCommentUpdates) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)];
+                    case 1:
+                        allComments = _c.sent();
+                        this._needToUpdateCommentUpdates = false;
+                        return [2 /*return*/, allComments];
+                    case 2: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
                             .select("".concat(TABLES.COMMENTS, ".*"))
                             .leftJoin(TABLES.COMMENT_UPDATES, "".concat(TABLES.COMMENTS, ".cid"), "".concat(TABLES.COMMENT_UPDATES, ".cid"))
                             .whereNull("".concat(TABLES.COMMENT_UPDATES, ".updatedAt"))
                             .orWhereNotIn("ipnsKeyName", ipnsKeyNames)];
-                    case 1:
+                    case 3:
                         criteriaOneTwoThree = _c.sent();
                         lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
                         return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
@@ -999,15 +1019,15 @@ var DbHandler = /** @class */ (function () {
                                 .having("voteLastInsertedAt", ">=", lastUpdatedAtWithBuffer)
                                 .orHaving("editLastInsertedAt", ">=", lastUpdatedAtWithBuffer)
                                 .orHaving("childCommentLastInsertedAt", ">=", lastUpdatedAtWithBuffer)];
-                    case 2:
+                    case 4:
                         criteriaFour = _c.sent();
                         comments = lodash_1.default.uniqBy(__spreadArray(__spreadArray([], criteriaOneTwoThree, true), criteriaFour, true), function (comment) { return comment.cid; });
                         _b = (_a = lodash_1.default).flattenDeep;
                         return [4 /*yield*/, Promise.all(comments.filter(function (comment) { return comment.parentCid; }).map(function (comment) { return _this.queryParents(comment, trx); }))];
-                    case 3:
+                    case 5:
                         parents = _b.apply(_a, [_c.sent()]);
                         return [4 /*yield*/, this.queryCommentsOfAuthor(lodash_1.default.uniq(comments.map(function (comment) { return comment.authorAddress; })), trx)];
-                    case 4:
+                    case 6:
                         authorComments = _c.sent();
                         uniqComments = lodash_1.default.uniqBy(__spreadArray(__spreadArray(__spreadArray([], comments, true), parents, true), authorComments, true), function (comment) { return comment.cid; });
                         return [2 /*return*/, uniqComments];
@@ -1223,9 +1243,38 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
+    DbHandler.prototype._queryLastChildCidAndLastReplyTimestamp = function (comment, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            var lastChildCidRaw, lastReplyTimestamp, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
+                            .where("parentCid", comment.cid)
+                            .orderBy("id", "desc")
+                            .first()];
+                    case 1:
+                        lastChildCidRaw = _b.sent();
+                        if (!lastChildCidRaw) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.queryActiveScore(comment, trx)];
+                    case 2:
+                        _a = _b.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        _a = undefined;
+                        _b.label = 4;
+                    case 4:
+                        lastReplyTimestamp = _a;
+                        return [2 /*return*/, {
+                                lastChildCid: lastChildCidRaw ? lastChildCidRaw.cid : undefined,
+                                lastReplyTimestamp: lastReplyTimestamp
+                            }];
+                }
+            });
+        });
+    };
     DbHandler.prototype.queryCalculatedCommentUpdate = function (comment, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, authorSubplebbit, authorEdit, commentUpdateCounts, moderatorReason, commentFlags, commentModFlair;
+            var _a, authorSubplebbit, authorEdit, commentUpdateCounts, moderatorReason, commentFlags, commentModFlair, lastChildAndLastReplyTimestamp;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, Promise.all([
@@ -1234,11 +1283,12 @@ var DbHandler = /** @class */ (function () {
                             this._queryCommentCounts(comment.cid, trx),
                             this._queryLatestModeratorReason(comment, trx),
                             this.queryCommentFlags(comment.cid, trx),
-                            this._queryModCommentFlair(comment, trx)
+                            this._queryModCommentFlair(comment, trx),
+                            this._queryLastChildCidAndLastReplyTimestamp(comment, trx)
                         ])];
                     case 1:
-                        _a = _b.sent(), authorSubplebbit = _a[0], authorEdit = _a[1], commentUpdateCounts = _a[2], moderatorReason = _a[3], commentFlags = _a[4], commentModFlair = _a[5];
-                        return [2 /*return*/, __assign(__assign(__assign(__assign(__assign({ cid: comment.cid, edit: authorEdit }, commentUpdateCounts), { flair: (commentModFlair === null || commentModFlair === void 0 ? void 0 : commentModFlair.flair) || (authorEdit === null || authorEdit === void 0 ? void 0 : authorEdit.flair) }), commentFlags), moderatorReason), { author: { subplebbit: authorSubplebbit } })];
+                        _a = _b.sent(), authorSubplebbit = _a[0], authorEdit = _a[1], commentUpdateCounts = _a[2], moderatorReason = _a[3], commentFlags = _a[4], commentModFlair = _a[5], lastChildAndLastReplyTimestamp = _a[6];
+                        return [2 /*return*/, __assign(__assign(__assign(__assign(__assign(__assign({ cid: comment.cid, edit: authorEdit }, commentUpdateCounts), { flair: (commentModFlair === null || commentModFlair === void 0 ? void 0 : commentModFlair.flair) || (authorEdit === null || authorEdit === void 0 ? void 0 : authorEdit.flair) }), commentFlags), moderatorReason), { author: { subplebbit: authorSubplebbit } }), lastChildAndLastReplyTimestamp)];
                 }
             });
         });
@@ -1472,6 +1522,7 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, lockfile.lock(subDbPath, {
                                 lockfilePath: lockfilePath,
                                 realpath: false,
+                                retries: 5,
                                 onCompromised: function () { }
                             })];
                     case 2:

@@ -32,6 +32,8 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     locked?: boolean;
     removed?: boolean;
     reason?: string;
+    lastChildCid?: string;
+    lastReplyTimestamp?: number;
     updatingState: "stopped" | "resolving-author-address" | "fetching-ipfs" | "fetching-update-ipns" | "fetching-update-ipfs" | "failed" | "succeeded";
     private _updateInterval?;
     private _isUpdating;

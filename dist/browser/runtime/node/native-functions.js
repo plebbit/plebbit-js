@@ -118,13 +118,12 @@ var nativeFunctions = {
         });
     },
     listSubplebbits: function (dataPath) { return __awaiter(void 0, void 0, void 0, function () {
-        var subplebbitsPath, dbHandler, files, filterResults, filtered_results;
+        var subplebbitsPath, files, filterResults, filtered_results;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     (0, assert_1.default)(typeof dataPath === "string", "Data path is not defined");
                     subplebbitsPath = path_1.default.join(dataPath, "subplebbits");
-                    dbHandler = new db_handler_1.DbHandler({ address: "", plebbit: { dataPath: dataPath, noData: false } });
                     return [4 /*yield*/, promises_1.default.mkdir(subplebbitsPath, { recursive: true })];
                 case 1:
                     _a.sent();
@@ -135,19 +134,13 @@ var nativeFunctions = {
                         .filter(function (file) { return !/-journal$/.test(file.name); }) // Filter SQLite3 journal files out
                         .map(function (file) { return file.name; });
                     return [4 /*yield*/, Promise.all(files.map(function (address) { return __awaiter(void 0, void 0, void 0, function () {
-                            var typeOfFile, _a;
-                            return __generator(this, function (_b) {
-                                switch (_b.label) {
+                            var typeOfFile;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
                                     case 0: return [4 /*yield*/, fileType.fromFile(path_1.default.join(subplebbitsPath, address))];
                                     case 1:
-                                        typeOfFile = _b.sent();
-                                        _a = (typeOfFile === null || typeOfFile === void 0 ? void 0 : typeOfFile.mime) === "application/x-sqlite3";
-                                        if (!_a) return [3 /*break*/, 3];
-                                        return [4 /*yield*/, dbHandler.isSubCreationLocked(address)];
-                                    case 2:
-                                        _a = !(_b.sent());
-                                        _b.label = 3;
-                                    case 3: return [2 /*return*/, _a];
+                                        typeOfFile = _a.sent();
+                                        return [2 /*return*/, (typeOfFile === null || typeOfFile === void 0 ? void 0 : typeOfFile.mime) === "application/x-sqlite3"];
                                 }
                             });
                         }); }))];
