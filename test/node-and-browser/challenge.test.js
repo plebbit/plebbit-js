@@ -150,7 +150,7 @@ describe(`Validation of pubsub messages`, async () => {
         comment.removeAllListeners("challenge");
 
         comment.once("challenge", async (challengeMsg) => {
-            tempPlebbit._clientsManager.getDefaultPubsub()._client.pubsub.publish = () => undefined;
+            comment._clientsManager.publishChallengeAnswer = () => undefined;
 
             await comment.publishChallengeAnswers([]);
             // comment._challengeAnswer should be defined now
