@@ -130,13 +130,6 @@ describe("Create lock", async () => {
     before(async () => {
         plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
-    it(`Fail to create subplebbit if create lock is present`, async () => {
-        const subSigner = await plebbit.createSigner();
-        const subDbLockPath = path.join(plebbit.dataPath, "subplebbits", `${subSigner.address}.create.lock`);
-        plebbit.createSubplebbit({ signer: subSigner });
-        await waitUntil(() => fs.existsSync(subDbLockPath), { timeout: 60000, intervalBetweenAttempts: 10 });
-        await assert.isRejected(plebbit.createSubplebbit({ address: subSigner.address }), messages.ERR_SUB_CREATION_LOCKED);
-    });
 
     it(`Can create subplebbit as soon as create lock is unlocked`, async () => {
         const subSigner = await plebbit.createSigner();
@@ -153,24 +146,6 @@ describe("Create lock", async () => {
         await assert.isFulfilled(plebbit.createSubplebbit({ address: subSigner.address }));
     });
 
-    it(`createSubplebbit will throw if user attempted to create a new sub concurrently`, async () => {
-        const subSigner = await plebbit.createSigner();
-        await assert.isRejected(
-            Promise.all([plebbit.createSubplebbit({ signer: subSigner }), plebbit.createSubplebbit({ signer: subSigner })]),
-            messages.ERR_SUB_CREATION_LOCKED
-        );
-    });
-
-    it(`createSubplebbit will throw if user attempts to recreate a sub concurrently`, async () => {
-        const sub = await plebbit.createSubplebbit(); // Sub is created and has no lock
-
-        await assert.isRejected(
-            Promise.all([plebbit.createSubplebbit({ address: sub.address }), plebbit.createSubplebbit({ address: sub.address })]),
-            messages.ERR_SUB_CREATION_LOCKED
-        );
-        await sub.stop();
-    });
-
     it(`Can create subplebbit if create lock is stale (10s)`, async () => {
         // Lock is considered stale if lock has not been updated in 10000 ms (10s)
         const sub = await plebbit.createSubplebbit();
@@ -178,9 +153,10 @@ describe("Create lock", async () => {
         const lockPath = path.join(plebbit.dataPath, "subplebbits", `${sub.address}.create.lock`);
         await fs.promises.mkdir(lockPath); // Artifically create a create lock
 
-        await assert.isRejected(plebbit.createSubplebbit({ address: sub.address }), messages.ERR_SUB_CREATION_LOCKED);
-        await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for 10s
+        const timeBefore = Date.now();
         await assert.isFulfilled(plebbit.createSubplebbit({ address: sub.address }));
+        const elapsedTime = Date.now() - timeBefore;
+        expect(elapsedTime).to.be.greaterThan(10000); // It should take more than 10s because plebbit-js will keep trying to acquire lock until it's stale
         await sub.stop();
     });
 });
