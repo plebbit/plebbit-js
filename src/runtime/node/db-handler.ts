@@ -558,7 +558,7 @@ export class DbHandler {
     }
 
     async queryCommentsToBeUpdated(ipnsKeyNames: string[], trx?: Transaction): Promise<CommentsTableRow[]> {
-        if (this._needToUpdateCommentUpdates){
+        if (this._needToUpdateCommentUpdates) {
             const allComments = await this._baseTransaction(trx)(TABLES.COMMENTS);
             this._needToUpdateCommentUpdates = false;
             return allComments;
@@ -954,6 +954,7 @@ export class DbHandler {
             await lockfile.lock(subDbPath, {
                 lockfilePath,
                 realpath: false,
+                retries: 5,
                 onCompromised: () => {}
             });
             log(`Locked the creation of subplebbit (${subAddress}) successfully`);
