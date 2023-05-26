@@ -1,4 +1,3 @@
-import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { sha256 } from "js-sha256";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "./challenge";
 import { SortHandler } from "./sort-handler";
@@ -76,6 +75,9 @@ import { PlebbitError } from "./plebbit-error";
 import retry, { RetryOperation } from "retry";
 import Author from "./author";
 import { SubplebbitClientsManager } from "./clients/client-manager";
+import * as cborg from "cborg";
+import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
+
 
 export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
     // public
@@ -866,7 +868,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             await Promise.all([
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
-                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), deterministicStringify(challengeVerification))
+                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
             ]);
         }
 
@@ -916,7 +918,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             await Promise.all([
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
-                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), deterministicStringify(challengeVerification))
+                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
             ]);
             log(
                 `(${request.challengeRequestId}): `,
@@ -953,7 +955,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const challengeTypes = providedChallenges.map((challenge) => challenge.type);
             await Promise.all([
                 this.dbHandler.insertChallenge(challengeMessage.toJSONForDb(challengeTypes), undefined),
-                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), deterministicStringify(challengeMessage))
+                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage)
             ]);
             log.trace(
                 `(${request.challengeRequestId}): `,
@@ -1005,7 +1007,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             await Promise.all([
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
-                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), deterministicStringify(challengeVerification))
+                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
             ]);
             log(
                 `(${challengeAnswer.challengeRequestId}): `,
@@ -1041,7 +1043,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             await Promise.all([
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
-                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), deterministicStringify(challengeVerification))
+                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
             ]);
             log(`(${challengeAnswer.challengeRequestId}): `, `Published ${challengeVerification.type} over pubsub:`, toSignVerification);
             this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
@@ -1070,7 +1072,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 signature: await signChallengeVerification(toSignVerification, this.signer)
             });
 
-            await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), deterministicStringify(challengeVerification));
+            await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
 
             const err = new PlebbitError("ERR_SIGNATURE_IS_INVALID", { pubsubMsg: msgParsed, signatureValidity: validation });
             this.emit("error", err);
@@ -1078,12 +1080,12 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
     }
 
-    private async handleChallengeExchange(pubsubMsg) {
+    private async handleChallengeExchange(pubsubMsg: Parameters<MessageHandlerFn>[0]) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange");
 
         let msgParsed: ChallengeRequestMessageType | ChallengeAnswerMessageType | undefined;
         try {
-            msgParsed = <ChallengeRequestMessageType | ChallengeAnswerMessageType>JSON.parse(uint8ArrayToString(pubsubMsg.data));
+            msgParsed = cborg.decode(pubsubMsg.data);
 
             if (msgParsed.type === "CHALLENGEREQUEST") {
                 await this._verifyPubsubMsgSignature(msgParsed);

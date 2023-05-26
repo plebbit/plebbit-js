@@ -1,24 +1,24 @@
 import Publication from "../publication";
 import { Plebbit } from "../plebbit";
 import { Comment } from "../comment";
-import { delay, throwWithErrorCode, timestamp } from "../util";
+import { throwWithErrorCode } from "../util";
 import assert from "assert";
-import { CommentIpfsType, CommentUpdate, PostSortName, ReplySortName, SubplebbitIpfsType } from "../types";
+import { CommentIpfsType, CommentUpdate, SubplebbitIpfsType } from "../types";
 import { Subplebbit } from "../subplebbit";
 import { verifySubplebbit } from "../signer";
 import lodash from "lodash";
 import isIPFS from "is-ipfs";
 import { PlebbitError } from "../plebbit-error";
-import { CommentIpfsClient, GenericIpfsClient, PagesIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client";
+import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client";
 import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client";
 import { GenericChainProviderClient } from "./chain-provider-client";
 import {
     CommentIpfsGatewayClient,
     GenericIpfsGatewayClient,
-    PagesIpfsGatewayClient,
     PublicationIpfsGatewayClient,
     SubplebbitIpfsGatewayClient
 } from "./ipfs-gateway-client";
+
 import { BaseClientsManager, LoadType } from "./base-client-manager";
 
 export class ClientsManager extends BaseClientsManager {
@@ -200,15 +200,6 @@ export class PublicationClientsManager extends ClientsManager {
 
     protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string) {
         this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
-    }
-
-    async publishChallengeRequest(pubsubTopic: string, data: string) {
-        await this.pubsubPublish(pubsubTopic, data);
-    }
-
-    async publishChallengeAnswer(pubsubTopic: string, data: string) {
-        await this.pubsubPublish(pubsubTopic, data);
-        this.updatePubsubState("waiting-challenge-verification", undefined);
     }
 
     emitError(e: PlebbitError): void {

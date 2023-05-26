@@ -29,6 +29,8 @@ import { Comment } from "./comment";
 import { PlebbitError } from "./plebbit-error";
 import { getPlebbitAddressFromPublicKey } from "./signer/util";
 import { CommentClientsManager, PublicationClientsManager } from "./clients/client-manager";
+import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
+import * as cborg from "cborg";
 
 class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     // Only publication props
@@ -106,10 +108,9 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         };
     }
 
-    private async handleChallengeExchange(pubsubMsg) {
-        const log = Logger("plebbit-js:publication:handleChallengeExchange");
-
-        const msgParsed: ChallengeMessageType | ChallengeVerificationMessageType = JSON.parse(uint8ArrayToString(pubsubMsg["data"]));
+    private async handleChallengeExchange(pubsubMsg: Parameters<MessageHandlerFn>[0]) {
+        const log = Logger("plebbit-js:publication:handleChallengeExchange");        
+        const msgParsed: ChallengeMessageType | ChallengeVerificationMessageType = cborg.decode(pubsubMsg.data);
         const msgSignerAddress = await getPlebbitAddressFromPublicKey(msgParsed.signature.publicKey);
         if (msgSignerAddress !== this._pubsubTopicWithfallback()) return; // Process only responses from sub
         if (msgParsed?.challengeRequestId !== this._challengeRequest.challengeRequestId) return; // Process only this publication's challenge
@@ -205,8 +206,10 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             signature: await signChallengeAnswer(toSignAnswer, this.pubsubMessageSigner)
         });
         this._updatePublishingState("publishing-challenge-answer");
-        await this._clientsManager.publishChallengeAnswer(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeAnswer));
+        await this._clientsManager.pubsubPublish(this._pubsubTopicWithfallback(), this._challengeAnswer);
         this._updatePublishingState("waiting-challenge-verification");
+        this._clientsManager.updatePubsubState("waiting-challenge-verification", undefined);
+
         log(`Responded to challenge (${this._challengeAnswer.challengeRequestId}) with answers`, challengeAnswers);
         this.emit("challengeanswer", { ...this._challengeAnswer, challengeAnswers });
     }
@@ -291,7 +294,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this._clientsManager.updatePubsubState("subscribing-pubsub", undefined);
         try {
             await this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
-            await this._clientsManager.publishChallengeRequest(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeRequest));
+            await this._clientsManager.pubsubPublish(this._pubsubTopicWithfallback(), this._challengeRequest);
         } catch (e) {
             this._clientsManager.updatePubsubState("stopped", undefined);
             this._updatePublishingState("failed");

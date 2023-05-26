@@ -1,13 +1,14 @@
 import { Plebbit } from "../plebbit";
 import assert from "assert";
 import { delay, throwWithErrorCode, timestamp } from "../util";
-import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import Hash from "ipfs-only-hash";
 import { nativeFunctions } from "../runtime/node/util";
 import pLimit from "p-limit";
 import { PlebbitError } from "../plebbit-error";
 import Logger from "@plebbit/plebbit-logger";
+import { PubsubMessage } from "../types";
+import * as cborg from "cborg";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -80,9 +81,9 @@ export class BaseClientsManager {
         }
     }
 
-    async pubsubPublish(pubsubTopic: string, data: string) {
+    async pubsubPublish(pubsubTopic: string, data: PubsubMessage): Promise<void> {
         const log = Logger("plebbit-js:plebbit:client-manager:pubsubPublish");
-        const dataBinary = uint8ArrayFromString(data);
+        const dataBinary = cborg.encode(data);
 
         const _firstResolve = (promises: Promise<void>[]) => {
             return new Promise<number>((resolve) => promises.forEach((promise) => promise.then(() => resolve(1))));
@@ -111,7 +112,7 @@ export class BaseClientsManager {
 
                 if (res === 1) {
                     queueLimit.clearQueue();
-                    return res;
+                    return;
                 } else throw res[0].value.error;
             } catch (e) {
                 log.error(`Failed to publish to pubsub topic (${pubsubTopic}) for the ${i}th time due to error: `, e);
