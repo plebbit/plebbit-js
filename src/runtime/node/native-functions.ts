@@ -32,7 +32,6 @@ const nativeFunctions: NativeFunctions = {
     listSubplebbits: async (dataPath: string): Promise<string[]> => {
         assert(typeof dataPath === "string", "Data path is not defined");
         const subplebbitsPath = path.join(dataPath, "subplebbits");
-        const dbHandler = new DbHandler({ address: "", plebbit: { dataPath: dataPath, noData: false } }); // Hollow db handler created just to use lock functionality
 
         await fs.mkdir(subplebbitsPath, { recursive: true });
 
@@ -44,7 +43,7 @@ const nativeFunctions: NativeFunctions = {
         const filterResults = await Promise.all(
             files.map(async (address) => {
                 const typeOfFile = await fileType.fromFile(path.join(subplebbitsPath, address));
-                return typeOfFile?.mime === "application/x-sqlite3" && !(await dbHandler.isSubCreationLocked(address));
+                return typeOfFile?.mime === "application/x-sqlite3";
             })
         );
 
