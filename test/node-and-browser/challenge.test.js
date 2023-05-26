@@ -118,8 +118,10 @@ describe(`Validation of pubsub messages`, async () => {
 
     it(`Sub responds with error to a ChallengeRequest that can't be decrypted`, async () => {
         const tempPlebbit = await mockPlebbit();
-        tempPlebbit._clientsManager.getDefaultPubsub()._client.pubsub.publish = () => undefined;
         const comment = await generateMockPost(signers[0].address, tempPlebbit);
+        const originalPublish = comment._clientsManager.pubsubPublish.bind(comment._clientsManager);
+        comment._clientsManager.pubsubPublish = () => undefined;
+
         await comment.publish(); // comment._challengeRequest should be defined now, although it hasn't been published
 
         comment._challengeRequest.encryptedPublication = await encrypt(
@@ -130,9 +132,7 @@ describe(`Validation of pubsub messages`, async () => {
 
         comment._challengeRequest.signature = await signChallengeRequest(comment._challengeRequest, comment.pubsubMessageSigner);
 
-        await plebbit._clientsManager
-            .getDefaultPubsub()
-            ._client.pubsub.publish(comment.subplebbit.pubsubTopic, fromString(JSON.stringify(comment._challengeRequest)));
+        await originalPublish(comment.subplebbit.pubsubTopic, comment._challengeRequest);
 
         await new Promise((resolve) => {
             comment.once("challengeverification", (verificationMsg) => {
@@ -149,8 +149,10 @@ describe(`Validation of pubsub messages`, async () => {
         const comment = await generateMockPost(imageCaptchaSubplebbitAddress, tempPlebbit);
         comment.removeAllListeners("challenge");
 
+        const originalPublish = comment._clientsManager.pubsubPublish.bind(comment._clientsManager);
+
         comment.once("challenge", async (challengeMsg) => {
-            comment._clientsManager.publishChallengeAnswer = () => undefined;
+            comment._clientsManager.pubsubPublish = () => undefined;
 
             await comment.publishChallengeAnswers([]);
             // comment._challengeAnswer should be defined now
@@ -160,9 +162,7 @@ describe(`Validation of pubsub messages`, async () => {
                 signers[5].publicKey // Use a public key that cannot be decrypted for the sub
             );
             comment._challengeAnswer.signature = await signChallengeAnswer(comment._challengeAnswer, comment.pubsubMessageSigner);
-            await plebbit._clientsManager
-                .getDefaultPubsub()
-                ._client.pubsub.publish(comment.subplebbit.pubsubTopic, fromString(JSON.stringify(comment._challengeAnswer)));
+            await originalPublish(comment.subplebbit.pubsubTopic, comment._challengeAnswer);
         });
 
         await publishWithExpectedResult(comment, false, messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);

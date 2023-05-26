@@ -15,7 +15,7 @@ const { messages } = require("../../../dist/node/errors");
 const { ChallengeAnswerMessage } = require("../../../dist/node/challenge");
 const lodash = require("lodash");
 const version = require("../../../dist/node/version");
-
+const { encode, decode } = require("cborg");
 const mathCliSubplebbitAddress = signers[1].address;
 
 describe("challengerequest", async () => {
@@ -49,11 +49,11 @@ describe("challengerequest", async () => {
         const verificaiton = await verifyChallengeRequest(invalidSignature);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
 
-        await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, JSON.stringify(invalidSignature));
+        await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, invalidSignature);
 
         await new Promise(async (resolve) => {
             const subMethod = (pubsubMsg) => {
-                const msgParsed = JSON.parse(toString(pubsubMsg["data"]));
+                const msgParsed = decode(pubsubMsg["data"]);
                 if (msgParsed.type === "CHALLENGEVERIFICATION" && msgParsed.challengeRequestId === invalidSignature.challengeRequestId) {
                     expect(msgParsed.challengeSuccess).to.be.false;
                     expect(msgParsed.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
@@ -154,10 +154,10 @@ describe("challengeanswer", async () => {
                     reason: messages.ERR_SIGNATURE_IS_INVALID
                 });
 
-                await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, JSON.stringify(challengeAnswer));
+                await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, challengeAnswer);
 
                 const subMethod = (pubsubMsg) => {
-                    const msgParsed = JSON.parse(toString(pubsubMsg["data"]));
+                    const msgParsed = decode(pubsubMsg["data"]);
                     if (
                         msgParsed.type === "CHALLENGEVERIFICATION" &&
                         msgParsed.challengeRequestId === comment._challengeRequest.challengeRequestId
