@@ -145,7 +145,7 @@ describe(`Validation of pubsub messages`, async () => {
     });
 
     it(`Sub responds with error to a ChallengeAnswer that can't be decrypted`, async () => {
-        const tempPlebbit = await mockPlebbit();
+        const tempPlebbit = await mockPlebbit(); // Make sure it's a singular pubsub provider
         const comment = await generateMockPost(imageCaptchaSubplebbitAddress, tempPlebbit);
         comment.removeAllListeners("challenge");
 
