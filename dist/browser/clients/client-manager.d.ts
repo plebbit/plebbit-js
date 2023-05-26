@@ -67,8 +67,6 @@ export declare class PublicationClientsManager extends ClientsManager {
     protected prePubsubPublishProvider(pubsubTopic: string, pubsubProvider: string): void;
     protected postPubsubPublishProviderSuccess(pubsubTopic: string, pubsubProvider: string): void;
     protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string): void;
-    publishChallengeRequest(pubsubTopic: string, data: string): Promise<void>;
-    publishChallengeAnswer(pubsubTopic: string, data: string): Promise<void>;
     emitError(e: PlebbitError): void;
     fetchSubplebbitForPublishing(subplebbitAddress: string): Promise<SubplebbitIpfsType>;
     updateIpfsState(newState: PublicationIpfsClient["state"] | CommentIpfsClient["state"]): void;

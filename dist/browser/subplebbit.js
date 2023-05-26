@@ -25,6 +25,29 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -75,7 +98,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Subplebbit = void 0;
-var to_string_1 = require("uint8arrays/to-string");
 var js_sha256_1 = require("js-sha256");
 var challenge_1 = require("./challenge");
 var sort_handler_1 = require("./sort-handler");
@@ -101,6 +123,7 @@ var tiny_typed_emitter_1 = require("tiny-typed-emitter");
 var plebbit_error_1 = require("./plebbit-error");
 var retry_1 = __importDefault(require("retry"));
 var client_manager_1 = require("./clients/client-manager");
+var cborg = __importStar(require("cborg"));
 var Subplebbit = /** @class */ (function (_super) {
     __extends(Subplebbit, _super);
     function Subplebbit(plebbit) {
@@ -1068,7 +1091,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         challengeVerification = new (_b.apply(challenge_1.ChallengeVerificationMessage, [void 0, __assign.apply(void 0, _c.concat([(_d.signature = _e.sent(), _d)]))]))();
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
-                                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), (0, safe_stable_stringify_1.stringify)(challengeVerification))
+                                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
                             ])];
                     case 4:
                         _e.sent();
@@ -1143,7 +1166,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this._clientsManager.updatePubsubState("publishing-challenge-verification", undefined);
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
-                                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), (0, safe_stable_stringify_1.stringify)(challengeVerification))
+                                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
                             ])];
                     case 9:
                         _k.sent();
@@ -1173,7 +1196,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         challengeTypes = providedChallenges.map(function (challenge) { return challenge.type; });
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.insertChallenge(challengeMessage.toJSONForDb(challengeTypes), undefined),
-                                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), (0, safe_stable_stringify_1.stringify)(challengeMessage))
+                                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage)
                             ])];
                     case 13:
                         _k.sent();
@@ -1243,7 +1266,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this._clientsManager.updatePubsubState("publishing-challenge-verification", undefined);
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
-                                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), (0, safe_stable_stringify_1.stringify)(challengeVerification))
+                                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
                             ])];
                     case 9:
                         _j.sent();
@@ -1272,7 +1295,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this._clientsManager.updatePubsubState("publishing-challenge-verification", undefined);
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
-                                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), (0, safe_stable_stringify_1.stringify)(challengeVerification))
+                                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
                             ])];
                     case 12:
                         _j.sent();
@@ -1320,7 +1343,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signatures_1.signChallengeVerification)(toSignVerification, this.signer)];
                     case 5:
                         challengeVerification = new (_b.apply(challenge_1.ChallengeVerificationMessage, [void 0, __assign.apply(void 0, _c.concat([(_d.signature = _e.sent(), _d)]))]))();
-                        return [4 /*yield*/, this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), (0, safe_stable_stringify_1.stringify)(challengeVerification))];
+                        return [4 /*yield*/, this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)];
                     case 6:
                         _e.sent();
                         err = new plebbit_error_1.PlebbitError("ERR_SIGNATURE_IS_INVALID", { pubsubMsg: msgParsed, signatureValidity: validation });
@@ -1341,7 +1364,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 8, , 11]);
-                        msgParsed = JSON.parse((0, to_string_1.toString)(pubsubMsg.data));
+                        msgParsed = cborg.decode(pubsubMsg.data);
                         if (!(msgParsed.type === "CHALLENGEREQUEST")) return [3 /*break*/, 4];
                         return [4 /*yield*/, this._verifyPubsubMsgSignature(msgParsed)];
                     case 2:

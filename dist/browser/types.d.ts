@@ -156,7 +156,7 @@ export declare type Nft = {
 export declare type SubplebbitRole = {
     role: "owner" | "admin" | "moderator";
 };
-interface PubsubMessage {
+export interface PubsubMessage {
     type: "CHALLENGEREQUEST" | "CHALLENGE" | "CHALLENGEANSWER" | "CHALLENGEVERIFICATION";
     signature: SignatureType;
     protocolVersion: ProtocolVersion;

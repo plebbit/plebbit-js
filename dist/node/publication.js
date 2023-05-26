@@ -25,6 +25,29 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -76,7 +99,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var challenge_1 = require("./challenge");
 var uuid_1 = require("uuid");
-var to_string_1 = require("uint8arrays/to-string");
 var author_1 = __importDefault(require("./author"));
 var assert_1 = __importDefault(require("assert"));
 var signer_1 = require("./signer");
@@ -89,6 +111,7 @@ var comment_1 = require("./comment");
 var plebbit_error_1 = require("./plebbit-error");
 var util_2 = require("./signer/util");
 var client_manager_1 = require("./clients/client-manager");
+var cborg = __importStar(require("cborg"));
 var Publication = /** @class */ (function (_super) {
     __extends(Publication, _super);
     function Publication(props, plebbit) {
@@ -144,7 +167,7 @@ var Publication = /** @class */ (function (_super) {
                 switch (_e.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:publication:handleChallengeExchange");
-                        msgParsed = JSON.parse((0, to_string_1.toString)(pubsubMsg["data"]));
+                        msgParsed = cborg.decode(pubsubMsg.data);
                         return [4 /*yield*/, (0, util_2.getPlebbitAddressFromPublicKey)(msgParsed.signature.publicKey)];
                     case 1:
                         msgSignerAddress = _e.sent();
@@ -249,10 +272,11 @@ var Publication = /** @class */ (function (_super) {
                     case 2:
                         _a._challengeAnswer = new (_b.apply(challenge_1.ChallengeAnswerMessage, [void 0, __assign.apply(void 0, _c.concat([(_d.signature = _e.sent(), _d)]))]))();
                         this._updatePublishingState("publishing-challenge-answer");
-                        return [4 /*yield*/, this._clientsManager.publishChallengeAnswer(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeAnswer))];
+                        return [4 /*yield*/, this._clientsManager.pubsubPublish(this._pubsubTopicWithfallback(), this._challengeAnswer)];
                     case 3:
                         _e.sent();
                         this._updatePublishingState("waiting-challenge-verification");
+                        this._clientsManager.updatePubsubState("waiting-challenge-verification", undefined);
                         log("Responded to challenge (".concat(this._challengeAnswer.challengeRequestId, ") with answers"), challengeAnswers);
                         this.emit("challengeanswer", __assign(__assign({}, this._challengeAnswer), { challengeAnswers: challengeAnswers }));
                         return [2 /*return*/];
@@ -342,7 +366,7 @@ var Publication = /** @class */ (function (_super) {
                         return [4 /*yield*/, this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
                     case 7:
                         _g.sent();
-                        return [4 /*yield*/, this._clientsManager.publishChallengeRequest(this._pubsubTopicWithfallback(), JSON.stringify(this._challengeRequest))];
+                        return [4 /*yield*/, this._clientsManager.pubsubPublish(this._pubsubTopicWithfallback(), this._challengeRequest)];
                     case 8:
                         _g.sent();
                         return [3 /*break*/, 10];

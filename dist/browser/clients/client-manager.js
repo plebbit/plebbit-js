@@ -252,31 +252,6 @@ var PublicationClientsManager = /** @class */ (function (_super) {
     PublicationClientsManager.prototype.postPubsubPublishProviderFailure = function (pubsubTopic, pubsubProvider) {
         this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
     };
-    PublicationClientsManager.prototype.publishChallengeRequest = function (pubsubTopic, data) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.pubsubPublish(pubsubTopic, data)];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    PublicationClientsManager.prototype.publishChallengeAnswer = function (pubsubTopic, data) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.pubsubPublish(pubsubTopic, data)];
-                    case 1:
-                        _a.sent();
-                        this.updatePubsubState("waiting-challenge-verification", undefined);
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
     PublicationClientsManager.prototype.emitError = function (e) {
         this._publication.emit("error", e);
     };

@@ -10,6 +10,29 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -53,11 +76,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BaseClientsManager = void 0;
 var assert_1 = __importDefault(require("assert"));
 var util_1 = require("../util");
-var from_string_1 = require("uint8arrays/from-string");
 var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
 var util_2 = require("../runtime/node/util");
 var p_limit_1 = __importDefault(require("p-limit"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
+var cborg = __importStar(require("cborg"));
 var DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 var BaseClientsManager = /** @class */ (function () {
     function BaseClientsManager(plebbit) {
@@ -160,7 +183,7 @@ var BaseClientsManager = /** @class */ (function () {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:client-manager:pubsubPublish");
-                        dataBinary = (0, from_string_1.fromString)(data);
+                        dataBinary = cborg.encode(data);
                         _firstResolve = function (promises) {
                             return new Promise(function (resolve) { return promises.forEach(function (promise) { return promise.then(function () { return resolve(1); }); }); });
                         };
@@ -195,7 +218,7 @@ var BaseClientsManager = /** @class */ (function () {
                         res = _b.sent();
                         if (res === 1) {
                             queueLimit.clearQueue();
-                            return [2 /*return*/, res];
+                            return [2 /*return*/];
                         }
                         else
                             throw res[0].value.error;
