@@ -355,18 +355,36 @@ export async function verifyCommentUpdate(
 }
 
 export async function verifyChallengeRequest(request: ChallengeRequestMessageType): Promise<ValidationResult> {
+    const msgSignerAddress = await getPlebbitAddressFromPublicKey(request.signature.publicKey);
+    if (msgSignerAddress !== request.challengeRequestId)
+        return { valid: false, reason: messages["ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE"] };
+
     return _getValidationResult(request);
 }
 
-export async function verifyChallengeMessage(challenge: ChallengeMessageType): Promise<ValidationResult> {
+export async function verifyChallengeMessage(challenge: ChallengeMessageType, pubsubTopic: string): Promise<ValidationResult> {
+    const msgSignerAddress = await getPlebbitAddressFromPublicKey(challenge.signature.publicKey);
+    if (msgSignerAddress !== pubsubTopic) return { valid: false, reason: messages["ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT"] };
+
     return _getValidationResult(challenge);
 }
 
 export async function verifyChallengeAnswer(answer: ChallengeAnswerMessageType): Promise<ValidationResult> {
+    const msgSignerAddress = await getPlebbitAddressFromPublicKey(answer.signature.publicKey);
+    if (msgSignerAddress !== answer.challengeRequestId)
+        return { valid: false, reason: messages["ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE"] };
+
     return _getValidationResult(answer);
 }
 
-export async function verifyChallengeVerification(verification: ChallengeVerificationMessageType): Promise<ValidationResult> {
+export async function verifyChallengeVerification(
+    verification: ChallengeVerificationMessageType,
+    pubsubTopic: string
+): Promise<ValidationResult> {
+    const msgSignerAddress = await getPlebbitAddressFromPublicKey(verification.signature.publicKey);
+    if (msgSignerAddress !== pubsubTopic)
+        return { valid: false, reason: messages["ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_SUBPLEBBIT"] };
+
     return _getValidationResult(verification);
 }
 
