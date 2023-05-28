@@ -109,17 +109,15 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     }
 
     private async handleChallengeExchange(pubsubMsg: Parameters<MessageHandlerFn>[0]) {
-        const log = Logger("plebbit-js:publication:handleChallengeExchange");        
+        const log = Logger("plebbit-js:publication:handleChallengeExchange");
         const msgParsed: ChallengeMessageType | ChallengeVerificationMessageType = cborg.decode(pubsubMsg.data);
-        const msgSignerAddress = await getPlebbitAddressFromPublicKey(msgParsed.signature.publicKey);
-        if (msgSignerAddress !== this._pubsubTopicWithfallback()) return; // Process only responses from sub
         if (msgParsed?.challengeRequestId !== this._challengeRequest.challengeRequestId) return; // Process only this publication's challenge
         if (msgParsed?.type === "CHALLENGE") {
-            const challengeMsgValidity = await verifyChallengeMessage(msgParsed);
+            const challengeMsgValidity = await verifyChallengeMessage(msgParsed, this._pubsubTopicWithfallback());
             if (!challengeMsgValidity.valid) {
-                const error = new PlebbitError("ERR_SIGNATURE_IS_INVALID", {
+                const error = new PlebbitError("ERR_CHALLENGE_SIGNATURE_IS_INVALID", {
                     pubsubMsg: msgParsed,
-                    signatureValidity: challengeMsgValidity
+                    reason: challengeMsgValidity.reason
                 });
                 log.error(error.toString());
                 this.emit("error", error);
@@ -137,11 +135,11 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             this._clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
             this.emit("challenge", decryptedChallenge);
         } else if (msgParsed?.type === "CHALLENGEVERIFICATION") {
-            const signatureValidation = await verifyChallengeVerification(msgParsed);
+            const signatureValidation = await verifyChallengeVerification(msgParsed, this._pubsubTopicWithfallback());
             if (!signatureValidation.valid) {
-                const error = new PlebbitError("ERR_SIGNATURE_IS_INVALID", {
-                    signatureValidity: signatureValidation,
-                    pubsubMsg: msgParsed
+                const error = new PlebbitError("ERR_CHALLENGE_VERIFICATION_SIGNATURE_IS_INVALID", {
+                    pubsubMsg: msgParsed,
+                    reason: signatureValidation.reason
                 });
                 this._updatePublishingState("failed");
                 log.error(error.toString());
@@ -195,7 +193,6 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         const toSignAnswer: Omit<ChallengeAnswerMessageType, "signature"> = {
             type: "CHALLENGEANSWER",
             challengeRequestId: this._challengeRequest.challengeRequestId,
-            challengeAnswerId: uuidv4(),
             encryptedChallengeAnswers: encryptedChallengeAnswers,
             userAgent: env.USER_AGENT,
             protocolVersion: env.PROTOCOL_VERSION,
@@ -271,10 +268,12 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             this.subplebbit.encryption.publicKey
         );
 
+        const challengeRequestId = await getPlebbitAddressFromPublicKey(this.pubsubMessageSigner.publicKey);
+
         const toSignMsg: Omit<ChallengeRequestMessageType, "signature"> = {
             type: "CHALLENGEREQUEST",
             encryptedPublication,
-            challengeRequestId: uuidv4(),
+            challengeRequestId,
             acceptedChallengeTypes: options.acceptedChallengeTypes,
             userAgent: env.USER_AGENT,
             protocolVersion: env.PROTOCOL_VERSION,

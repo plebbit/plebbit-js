@@ -4,6 +4,7 @@ import { Plebbit } from "./plebbit";
 import isIPFS from "is-ipfs";
 import { verifyVote } from "./signer";
 import { throwWithErrorCode } from "./util";
+import { ChallengeRequestMessage } from "./challenge";
 
 class Vote extends Publication implements VoteType {
     commentCid: string;
@@ -34,7 +35,7 @@ class Vote extends Publication implements VoteType {
         return "vote";
     }
 
-    toJSONForDb(challengeRequestId: string): VotesTableRowInsert {
+    toJSONForDb(challengeRequestId: ChallengeRequestMessage["challengeRequestId"]): VotesTableRowInsert {
         return {
             ...this.toJSON(),
             authorAddress: this.author.address,

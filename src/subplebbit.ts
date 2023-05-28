@@ -78,7 +78,6 @@ import { SubplebbitClientsManager } from "./clients/client-manager";
 import * as cborg from "cborg";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 
-
 export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
     // public
     title?: string;
@@ -541,7 +540,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         );
     }
 
-    private async handleCommentEdit(commentEditRaw: CommentEditPubsubMessage, challengeRequestId: string): Promise<string | undefined> {
+    private async handleCommentEdit(
+        commentEditRaw: CommentEditPubsubMessage,
+        challengeRequestId: ChallengeRequestMessage["challengeRequestId"]
+    ): Promise<string | undefined> {
         const log = Logger("plebbit-js:subplebbit:handleCommentEdit");
 
         const validRes = await verifyCommentEdit(commentEditRaw, this.plebbit.resolveAuthorAddresses, this._clientsManager, false);
@@ -599,7 +601,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
     }
 
-    private async handleVote(newVoteProps: VoteType, challengeRequestId: string): Promise<undefined | string> {
+    private async handleVote(newVoteProps: VoteType, challengeRequestId: ChallengeRequestMessage["challengeRequestId"]): Promise<undefined | string> {
         const log = Logger("plebbit-js:subplebbit:handleVote");
 
         const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVoteProps.commentCid, newVoteProps.author.address);
@@ -644,7 +646,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private async storePublicationIfValid(
         publication: DecryptedChallengeRequestMessageType["publication"],
-        challengeRequestId: string
+        challengeRequestId: ChallengeRequestMessage["challengeRequestId"]
     ): Promise<CommentIpfsWithCid | string | undefined> {
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange:storePublicationIfValid");
 
@@ -854,7 +856,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
                 type: "CHALLENGEVERIFICATION",
                 challengeRequestId: request.challengeRequestId,
-                challengeAnswerId: request["challengeAnswerId"],
                 challengeSuccess: false,
                 reason: messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG,
                 userAgent: env.USER_AGENT,
@@ -892,7 +893,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             // Subplebbit owner has chosen to skip challenging this user or post
             log.trace(`(${request.challengeRequestId}): No challenge is required`);
 
-            const publicationOrReason = await this.storePublicationIfValid(decryptedRequest.publication, request.challengeRequestId);
+            const publicationOrReason = await this.storePublicationIfValid(decryptedRequest.publication, decryptedRequest.challengeRequestId);
             const encryptedPublication = lodash.isPlainObject(publicationOrReason)
                 ? await encrypt(deterministicStringify(publicationOrReason), this.signer.privateKey, request.signature.publicKey)
                 : undefined;
@@ -900,7 +901,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
                 type: "CHALLENGEVERIFICATION",
                 challengeRequestId: request.challengeRequestId,
-                challengeAnswerId: undefined,
                 challengeSuccess: typeof publicationOrReason !== "string",
                 reason: typeof publicationOrReason === "string" ? publicationOrReason : reasonForSkippingCaptcha,
                 encryptedPublication: encryptedPublication,
@@ -989,7 +989,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
                 type: "CHALLENGEVERIFICATION",
                 challengeRequestId: challengeAnswer.challengeRequestId,
-                challengeAnswerId: challengeAnswer.challengeAnswerId,
                 challengeSuccess: typeof publicationOrReason !== "string",
                 reason: typeof publicationOrReason === "string" ? publicationOrReason : undefined,
                 encryptedPublication: encryptedPublication,
@@ -1026,7 +1025,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const toSignVerification: Omit<ChallengeVerificationMessageType, "signature"> = {
                 type: "CHALLENGEVERIFICATION",
                 challengeRequestId: challengeAnswer.challengeRequestId,
-                challengeAnswerId: challengeAnswer.challengeAnswerId,
                 challengeSuccess: challengeSuccess,
                 challengeErrors: challengeErrors,
                 userAgent: env.USER_AGENT,
@@ -1059,7 +1057,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const toSignVerification: Omit<ChallengeVerificationMessageType, "signature"> = {
                 type: "CHALLENGEVERIFICATION",
                 challengeRequestId: msgParsed.challengeRequestId,
-                challengeAnswerId: msgParsed["challengeAnswerId"],
                 challengeSuccess: false,
                 reason: validation.reason,
                 userAgent: env.USER_AGENT,
@@ -1086,7 +1083,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         let msgParsed: ChallengeRequestMessageType | ChallengeAnswerMessageType | undefined;
         try {
             msgParsed = cborg.decode(pubsubMsg.data);
-
             if (msgParsed.type === "CHALLENGEREQUEST") {
                 await this._verifyPubsubMsgSignature(msgParsed);
                 await this.handleChallengeRequest(new ChallengeRequestMessage(msgParsed));

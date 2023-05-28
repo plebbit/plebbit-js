@@ -206,7 +206,7 @@ export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMe
 }
 
 export interface ChallengeMessageType extends PubsubMessage {
-    challengeRequestId: string;
+    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     type: "CHALLENGE";
     encryptedChallenges: Encrypted;
 }
@@ -216,9 +216,8 @@ export interface DecryptedChallengeMessageType extends ChallengeMessageType {
 }
 
 export interface ChallengeAnswerMessageType extends PubsubMessage {
-    challengeRequestId: string;
+    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     type: "CHALLENGEANSWER";
-    challengeAnswerId: string;
     encryptedChallengeAnswers: Encrypted;
 }
 
@@ -227,9 +226,8 @@ export interface DecryptedChallengeAnswerMessageType extends ChallengeAnswerMess
 }
 
 export interface ChallengeVerificationMessageType extends PubsubMessage {
-    challengeRequestId: string;
+    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     type: "CHALLENGEVERIFICATION";
-    challengeAnswerId: string;
     challengeSuccess: boolean;
     challengeErrors?: (string | undefined)[];
     reason?: string;
@@ -577,7 +575,9 @@ export interface ChallengeAnswersTableRow extends Omit<DecryptedChallengeAnswerM
     insertedAt: number;
 }
 
-export interface ChallengeAnswersTableRowInsert extends Omit<ChallengeAnswersTableRow, "insertedAt"> {}
+export interface ChallengeAnswersTableRowInsert extends Omit<ChallengeAnswersTableRow, "insertedAt" | "challengeAnswers"> {
+    challengeAnswers: string; // must stringify array before inserting into DB
+}
 
 // Challenge verifications table
 export interface ChallengeVerificationsTableRow extends Omit<ChallengeVerificationMessageType, "type" | "encryptedPublication"> {

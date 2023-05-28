@@ -1,3 +1,4 @@
+import { ChallengeRequestMessage } from "./challenge";
 import { Plebbit } from "./plebbit";
 import Publication from "./publication";
 import { verifyCommentEdit } from "./signer/signatures";
@@ -98,7 +99,7 @@ export class CommentEdit extends Publication implements CommentEditType {
         return this.toJSONPubsubMessagePublication();
     }
 
-    toJSONForDb(challengeRequestId: string): CommentEditsTableRowInsert {
+    toJSONForDb(challengeRequestId: ChallengeRequestMessage["challengeRequestId"]): CommentEditsTableRowInsert {
         return {
             ...this.toJSON(),
             author: this.author.toJSONIpfs(),

@@ -59,7 +59,7 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
 export class ChallengeMessage implements ChallengeMessageType {
     encryptedChallenges: Encrypted;
     type: "CHALLENGE";
-    challengeRequestId: string;
+    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
@@ -94,16 +94,14 @@ export class ChallengeMessage implements ChallengeMessageType {
 
 export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
     type: "CHALLENGEANSWER";
-    challengeAnswerId: string;
     encryptedChallengeAnswers: Encrypted;
-    challengeRequestId: string;
+    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     signature: SignatureType;
     protocolVersion: ProtocolVersion;
     userAgent: string;
     timestamp: number;
     constructor(props: Omit<ChallengeAnswerMessageType, "type">) {
         this.type = "CHALLENGEANSWER";
-        this.challengeAnswerId = props.challengeAnswerId;
         this.encryptedChallengeAnswers = props.encryptedChallengeAnswers;
         this.challengeRequestId = props.challengeRequestId;
         this.signature = props.signature;
@@ -116,7 +114,6 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
         return {
             type: this.type,
             challengeRequestId: this.challengeRequestId,
-            challengeAnswerId: this.challengeAnswerId,
             encryptedChallengeAnswers: this.encryptedChallengeAnswers,
             signature: this.signature,
             protocolVersion: this.protocolVersion,
@@ -133,8 +130,7 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
 
 export class ChallengeVerificationMessage implements ChallengeVerificationMessageType {
     type: "CHALLENGEVERIFICATION";
-    challengeRequestId: string;
-    challengeAnswerId: string;
+    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     challengeSuccess: boolean;
     challengeErrors?: (string | undefined)[];
     reason?: string;
@@ -147,7 +143,6 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
     constructor(props: Omit<ChallengeVerificationMessageType, "type">) {
         this.type = "CHALLENGEVERIFICATION";
         this.challengeRequestId = props.challengeRequestId;
-        this.challengeAnswerId = props.challengeAnswerId;
         this.challengeSuccess = props.challengeSuccess;
         this.challengeErrors = props.challengeErrors;
         this.reason = props.reason;
@@ -162,7 +157,6 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
         return {
             type: this.type,
             challengeRequestId: this.challengeRequestId,
-            challengeAnswerId: this.challengeAnswerId,
             challengeSuccess: this.challengeSuccess,
             challengeErrors: this.challengeErrors,
             reason: this.reason,

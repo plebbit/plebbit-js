@@ -150,7 +150,6 @@ export const ChallengeMessageSignedPropertyNames: readonly (keyof ChallengeMessa
 export const ChallengeAnswerMessageSignedPropertyNames: readonly (keyof ChallengeAnswerMessage)[] = [
     "type",
     "challengeRequestId",
-    "challengeAnswerId",
     "encryptedChallengeAnswers",
     "timestamp"
 ] as const;
@@ -159,7 +158,6 @@ export const ChallengeVerificationMessageSignedPropertyNames: readonly (keyof Ch
     "type",
     "challengeRequestId",
     "encryptedPublication",
-    "challengeAnswerId",
     "challengeSuccess",
     "challengeErrors",
     "timestamp"

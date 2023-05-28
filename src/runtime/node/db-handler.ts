@@ -276,7 +276,6 @@ export class DbHandler {
                 .unique()
                 .references("challengeRequestId")
                 .inTable(TABLES.CHALLENGE_REQUESTS);
-            table.uuid("challengeAnswerId").notNullable().unique();
             table.text("userAgent").notNullable();
             table.text("protocolVersion").notNullable();
             table.json("challengeAnswers").notNullable(); // Decrypted
@@ -295,7 +294,6 @@ export class DbHandler {
                 .unique()
                 .references("challengeRequestId")
                 .inTable(TABLES.CHALLENGE_REQUESTS);
-            table.uuid("challengeAnswerId").nullable().references("challengeAnswerId").inTable(TABLES.CHALLENGE_ANSWERS);
             table.boolean("challengeSuccess").notNullable();
             table.json("challengeErrors").nullable(); // string[]
             table.text("reason").nullable();
