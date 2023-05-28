@@ -1,20 +1,20 @@
 {
-    "challengeRequestId": "af086939-87d9-4a64-b866-a493c4bf2b89",
-    "encryptedChallenges": {
-        "ciphertext": "rteefp05Uikh5c53AOrjyIDsjowFnZlKx8A7UQPlX5Dm98Rr9S4NutldWRWHQqt7xsYRUWDkvx4dU2Le5i2A7wo25PFIrDDNY39/BeQqvMS04I4FbfnpHwv5irm51u9egIqr0n4i5X1CLZEpds90ekFcqVVsM5Tt+51gAe6tsR0K7HKpzN7MUECv826qhA/FQGDEFztGuQx0LTGG5gbI1y/3UT3nbcpXbIGeKmGR4LDgDTLZxC9KREwCJ4vFGqUlksWq4nu0WQw9nRWfGT8dsEhbILvBzERCT2+MgMwO79Kbm8vFSQ8co09izai0Y6IgOWUUqf6u96W9tHUy+QE6Z/2LMkRRu+0C34zUGhZeob8UW4J3cGJX/VoleZU0zUEteGgJRKyFL4aVBh3DH/toqXa7UcMwnJqcdFSFo2eI/h3lvayMFzSQ+nzLNWIPBCV3BiomGPg38pCxdiTL7lJCi3ErUe4iALa2Q3Qg4rX0aHxLaEh2FisgaaqL69f5uhlEP94rkFMvfu2APCcFBD/zNqkIO6yJO1RATfXfkpgK5Wn/Xdu71um/3+tqFc9kR0wJnoWrr/c60qyFvT2HZZR+HwBMU1Zl6/7ePYiqNXBeyLnb9QEp3PTQEzFoP7RjnMKj9YF1FpjRblw89wQicNalUFDuT+qH05LtQHB7F/agH5PXMvX904hLBaO8mscq6YsHrba4LAnKBMBpD5f1edEZ5ZrtmKftunOJEirAFy8WOiRQeBe5e+wAL4fY",
-        "iv": "MGTRI7KqoquHpeww",
-        "tag": "yZoi2OpxevZ1OokICjOOOQ",
+    "type": "CHALLENGEANSWER",
+    "encryptedChallengeAnswers": {
+        "ciphertext": "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",
+        "iv": "ZGXg5tO+AQW/kvlr",
+        "tag": "qv5hkust5MK7R9lYKasACw",
         "type": "ed25519-aes-gcm"
     },
-    "protocolVersion": "1.0.0",
+    "challengeRequestId": "12D3KooWHoams1akiFWQbf7mvqyQdkRGE3jQ7dKCJVosGDezjSwj",
     "signature": {
-        "publicKey": "CFhuD55tmzZjWZ113tZbDw/AsuNDkgSdvCCbPeqiF10",
-        "signature": "7tcpQzlH+8HWgKfzmwvL5HMu28f9yP468vYK9sDtsgMevNglu+ZbKxL7rRWP2k5OqcpwTu9FBRarS4JsCK+BCw",
-        "signedPropertyNames": ["type", "challengeRequestId", "encryptedChallenges", "timestamp"],
-        "type": "ed25519"
+        "signature": "gWjtG8m4PfuiT4Ofblw2E/epbF9xMEdGCtQoGbNHFdVuSr44ditx4WGwxpDGqNGZt1ZUjLf0NxJwWUOeNhxLAA",
+        "publicKey": "dqoq7PjtgpYlZeH+EAkSsnlTqLq6d3X8YRshVC5OVqo",
+        "type": "ed25519",
+        "signedPropertyNames": ["type", "challengeRequestId", "encryptedChallengeAnswers", "timestamp"]
     },
-    "timestamp": 1677394645,
-    "type": "CHALLENGE",
+    "protocolVersion": "1.0.0",
     "userAgent": "/plebbit-js:0.0.1/",
-    "challenges": [{ "challenge": "1+1=?", "type": "text/plain" }]
+    "timestamp": 1685277903,
+    "challengeAnswers": ["2"]
 }
