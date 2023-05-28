@@ -126,7 +126,8 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
     }
 
     toJSONForDb(challengeAnswers: DecryptedChallengeAnswerMessageType["challengeAnswers"]): ChallengeAnswersTableRowInsert {
-        return { ...lodash.omit(this.toJSON(), ["type", "encryptedChallengeAnswers"]), challengeAnswers };
+        const challengeAnswersFormattedForDb = Array.isArray(challengeAnswers) ? JSON.stringify(challengeAnswers) : challengeAnswers;
+        return { ...lodash.omit(this.toJSON(), ["type", "encryptedChallengeAnswers"]), challengeAnswers:challengeAnswersFormattedForDb };
     }
 }
 
