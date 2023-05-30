@@ -274,31 +274,26 @@ PlebbitDefaults { // fetched once when app first load, a dictionary of default s
 ```js
 PubsubMessage: {
   type: 'CHALLENGEREQUEST' | 'CHALLENGE' | 'CHALLENGEANSWER' | 'CHALLENGEVERIFICATION'
+  challengeRequestId: Uint8Array // (byte string in cbor) // multihash of challengeRequestMessage.signature.publicKey, each challengeRequestMessage must use a new public key
   timestamp: number // in seconds, needed because publication.timestamp is encrypted
-  signature: Signature
+  signature: Signature // each challengeRequestMessage must use a new public key
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
   userAgent: `/plebbit-js:${require('./package.json').version}/` // client name and version using this standard https://en.bitcoin.it/wiki/BIP_0014#Proposal
 }
 ChallengeRequestMessage extends PubsubMessage /* (sent by post author) */ {
-  challengeRequestId: string // random string choosen by sender
   acceptedChallengeTypes: string[] // list of challenge types the client can do, for example cli clients or old clients won't do all types
   encryptedPublication: Encrypted
   // plebbit-js should decrypt the publication when possible, and add an `publication` property for convenience (not part of the broadcasted pubsub message)
 }
 ChallengeMessage extends PubsubMessage /* (sent by subplebbit owner) */ {
-  challengeRequestId: string
   encryptedChallenges: Encrypted // a challenge message has a challenges array with 1 or more challenges
   // plebbit-js should decrypt the challenges when possible, and add a `challenges: Challenge[]` property for convenience (not part of the broadcasted pubsub message)
 }
 ChallengeAnswerMessage extends PubsubMessage /* (sent by post author) */ {
-  challengeRequestId: string
-  challengeAnswerId: string // random string choosen by sender
   encryptedChallengeAnswers: Encrypted // for example ['2+2=4', '1+7=8']
   // plebbit-js should decrypt the challengeAnswers when possible, and add a `challengeAnswers: string[]` property for convenience (not part of the broadcasted pubsub message)
 }
 ChallengeVerificationMessage extends PubsubMessage /* (sent by subplebbit owner) */ {
-  challengeRequestId: string // include in verification in case a peer is missing it
-  challengeAnswerId: string // include in verification in case a peer is missing it
   challengeSuccess: bool // true if the challenge was successfully completed by the requester
   challengeErrors?: (string|undefined)[] // tell the user which challenge failed and why
   reason?: string // reason for failed verification, for example post content is too long. could also be used for successful verification that bypass the challenge, for example because an author has good history
@@ -311,10 +306,16 @@ Challenge {
 }
 Encrypted {
   // examples available at https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
-  ciphertext: string // base64 encrypted string with AES GCM 128 // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Galois/counter_(GCM)
-  iv: string // base64 iv for the AES GCM 128 encrypted content
-  tag: string // base64 authentication tag, AES GCM has authentication tag https://en.wikipedia.org/wiki/Galois/Counter_Mode
+  ciphertext: Uint8Array // (byte string in cbor) encrypted byte string with AES GCM 128 // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Galois/counter_(GCM)
+  iv: Uint8Array // (byte string in cbor) iv for the AES GCM 128 encrypted content
+  tag: Uint8Array // (byte string in cbor) authentication tag, AES GCM has authentication tag https://en.wikipedia.org/wiki/Galois/Counter_Mode
   type: 'ed25519-aes-gcm'
+}
+Signature {
+  signature: Uint8Array // (byte string in cbor)
+  publicKey: Uint8Array // (byte string in cbor) 32 bytes
+  type: 'ed25519' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
+  signedPropertyNames: string[] // the fields that were signed as part of the signature e.g. ['title', 'content', 'author', etc.] client should require that certain fields be signed or reject the publication, e.g. 'content', 'author', 'timestamp' are essential
 }
 ```
 
