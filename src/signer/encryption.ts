@@ -91,20 +91,20 @@ export const encryptEd25519AesGcm = async (plaintext, privateKeyBase64, publicKe
     // AES GCM using 128-bit key https://en.wikipedia.org/wiki/Galois/Counter_Mode
     const { ciphertext, iv, tag } = await encryptStringAesGcm(plaintext + padding, aesGcmKey16Bytes);
 
-    const encryptedBase64: Encrypted = {
-        ciphertext: uint8ArrayToString(ciphertext, "base64"),
-        iv: uint8ArrayToString(iv, "base64"),
+    const encrypted: Encrypted = {
+        ciphertext,
+        iv,
         // AES-GCM has authentication tag https://en.wikipedia.org/wiki/Galois/Counter_Mode
-        tag: uint8ArrayToString(tag, "base64"),
+        tag,
         type: "ed25519-aes-gcm"
     };
-    return encryptedBase64;
+    return encrypted;
 };
 
 export const decryptEd25519AesGcm = async (encrypted: Encrypted, privateKeyBase64, publicKeyBase64) => {
-    if (!encrypted?.ciphertext || typeof encrypted?.ciphertext !== "string")
-        throw Error(`decryptEd25519AesGcm encrypted.ciphertext '${encrypted.ciphertext}' not a string`);
-    const ciphertextBuffer = uint8ArrayFromString(encrypted.ciphertext, "base64");
+    // if (!encrypted?.ciphertext || typeof encrypted?.ciphertext !== "string")
+    //     throw Error(`decryptEd25519AesGcm encrypted.ciphertext '${encrypted.ciphertext}' not a string`);
+    // const ciphertextBuffer = uint8ArrayFromString(encrypted.ciphertext, "base64");
     if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")
         throw Error(`decryptEd25519AesGcm ${privateKeyBase64} privateKeyBase64 not a string`);
     const privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, "base64");
@@ -117,12 +117,12 @@ export const decryptEd25519AesGcm = async (encrypted: Encrypted, privateKeyBase6
         throw Error(
             `decryptEd25519AesGcm publicKeyBase64 '${publicKeyBase64}' ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`
         );
-    if (!encrypted?.iv || typeof encrypted?.iv !== "string")
-        throw Error(`decryptEd25519AesGcm encrypted.iv '${encrypted.iv}' not a string`);
-    const ivBuffer = uint8ArrayFromString(encrypted.iv, "base64");
-    if (!encrypted?.tag || typeof encrypted?.tag !== "string")
-        throw Error(`decryptEd25519AesGcm encrypted.tag '${encrypted.tag}' not a string`);
-    const tagBuffer = uint8ArrayFromString(encrypted.tag, "base64");
+    // if (!encrypted?.iv || typeof encrypted?.iv !== "string")
+    //     throw Error(`decryptEd25519AesGcm encrypted.iv '${encrypted.iv}' not a string`);
+    // const ivBuffer = uint8ArrayFromString(encrypted.iv, "base64");
+    // if (!encrypted?.tag || typeof encrypted?.tag !== "string")
+    //     throw Error(`decryptEd25519AesGcm encrypted.tag '${encrypted.tag}' not a string`);
+    // const tagBuffer = uint8ArrayFromString(encrypted.tag, "base64");
 
     // compute the shared secret of the sender and recipient and use it as the encryption key
     // do not publish this secret https://datatracker.ietf.org/doc/html/rfc7748#section-6.1
@@ -131,7 +131,7 @@ export const decryptEd25519AesGcm = async (encrypted: Encrypted, privateKeyBase6
     const aesGcmKey16Bytes = aesGcmKey.slice(0, 16);
 
     // AES GCM using 128-bit key https://en.wikipedia.org/wiki/Galois/Counter_Mode
-    let decrypted = await decryptStringAesGcm(ciphertextBuffer, aesGcmKey16Bytes, ivBuffer, tagBuffer);
+    let decrypted = await decryptStringAesGcm(encrypted.ciphertext, aesGcmKey16Bytes, encrypted.iv, encrypted.tag);
 
     // remove padding
     decrypted = decrypted.replace(/ *$/, "");
