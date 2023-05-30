@@ -4,17 +4,22 @@ const {
     verifyChallengeAnswer,
     signChallengeAnswer,
     verifyChallengeMessage,
-    verifyChallengeVerification
+    verifyChallengeVerification,
+    signChallengeRequest,
+    verifyComment
 } = require("../../../dist/node/signer/signatures");
-const { generateMockPost, mockPlebbit } = require("../../../dist/node/test/test-util");
+const { generateMockPost, mockPlebbit, publishRandomPost } = require("../../../dist/node/test/test-util");
 const signers = require("../../fixtures/signers");
-const { expect } = require("chai");
+const { expect, assert } = require("chai");
 const { messages } = require("../../../dist/node/errors");
 const { ChallengeAnswerMessage } = require("../../../dist/node/challenge");
 const lodash = require("lodash");
 const version = require("../../../dist/node/version");
 const { encode, decode } = require("cborg");
+const { encrypt } = require("../../../dist/node/signer/index");
+
 const mathCliSubplebbitAddress = signers[1].address;
+const imageCaptchaSubplebbitAddress = signers[2].address;
 
 describe("challengerequest", async () => {
     let plebbit;
@@ -26,6 +31,13 @@ describe("challengerequest", async () => {
         const verificaiton = await verifyChallengeRequest(request);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
+
+    it(`challenge request with challengeRequestId that is not derived from signer is invalidated`, async () => {
+        const request = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_request.json"));
+        request.challengeRequestId = (await plebbit.createSigner()).address;
+        const verificaiton = await verifyChallengeRequest(request);
+        expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE });
+    });
     it(`Valid live ChallengeRequest gets validated correctly`, async () => {
         const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[5] });
         await comment.publish();
@@ -35,7 +47,97 @@ describe("challengerequest", async () => {
         expect(verificaiton).to.deep.equal({ valid: true });
     });
 
-    it(`Subplebbit responds to error if signature of challenge request is invalid`, async () => {
+    it(`Sub responds with error to a challenge request with a signer that has been used before`, async () => {
+        const comment = await publishRandomPost(signers[0].address, plebbit, {}, false);
+
+        await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, comment._challengeRequest);
+
+        await new Promise(async (resolve) => {
+            const subMethod = (pubsubMsg) => {
+                const msgParsed = decode(pubsubMsg["data"]);
+                if (
+                    msgParsed.type === "CHALLENGEVERIFICATION" &&
+                    msgParsed.challengeRequestId === comment._challengeRequest.challengeRequestId
+                ) {
+                    expect(msgParsed.challengeSuccess).to.be.false;
+                    expect(msgParsed.reason).to.equal(messages.ERR_REUSED_PUBSUB_MSG_SIGNER);
+                    expect(msgParsed.publication).to.be.undefined;
+                    expect(msgParsed.encryptedPublication).to.be.undefined;
+                    plebbit._clientsManager.pubsubUnsubscribe(comment.subplebbit.pubsubTopic, subMethod);
+                    resolve();
+                }
+            };
+            await plebbit._clientsManager.pubsubSubscribe(comment.subplebbit.pubsubTopic, subMethod);
+        });
+    });
+
+    it(`Sub responds with error to a challenge request whose publication can't be decrypted`, async () => {
+        const comment = await generateMockPost(signers[0].address, plebbit);
+        const originalPublish = comment._clientsManager.pubsubPublish.bind(comment._clientsManager);
+        comment._clientsManager.pubsubPublish = () => undefined;
+
+        await comment.publish(); // comment._challengeRequest should be defined now, although it hasn't been published
+
+        comment._challengeRequest.encryptedPublication = await encrypt(
+            JSON.stringify(comment.toJSONPubsubMessagePublication()),
+            comment.pubsubMessageSigner.privateKey,
+            signers[5].publicKey // Use a public key that cannot be decrypted for the sub
+        );
+
+        comment._challengeRequest.signature = await signChallengeRequest(comment._challengeRequest, comment.pubsubMessageSigner);
+
+        await originalPublish(comment.subplebbit.pubsubTopic, comment._challengeRequest);
+
+        await new Promise((resolve) => {
+            comment.once("challengeverification", (verificationMsg) => {
+                expect(verificationMsg.challengeSuccess).to.be.false;
+                expect(verificationMsg.reason).to.equal(messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);
+                expect(verificationMsg.publication).to.be.undefined;
+                resolve();
+            });
+        });
+    });
+
+    it(`Sub responds with error to a challenge request with invalid pubsubMessage.encryptedPublication.signature`, async () => {
+        const comment = await generateMockPost(signers[0].address, plebbit);
+        const originalPublish = comment._clientsManager.pubsubPublish.bind(comment._clientsManager);
+        comment._clientsManager.pubsubPublish = () => undefined;
+
+        await comment.publish(); // comment._challengeRequest should be defined now, although it hasn't been published
+
+        const commentObjToEncrypt = JSON.parse(JSON.stringify(comment.toJSONPubsubMessagePublication()));
+
+        expect(await verifyComment(commentObjToEncrypt, plebbit.resolveAuthorAddresses, comment._clientsManager, true)).to.deep.equal({ valid: true });
+        commentObjToEncrypt.timestamp += 1; // Should invalidate signature
+        expect(await verifyComment(commentObjToEncrypt, false, comment._clientsManager, false)).to.deep.equal({
+            valid: false,
+            reason: messages.ERR_SIGNATURE_IS_INVALID
+        });
+
+        comment._challengeRequest.encryptedPublication = await encrypt(
+            JSON.stringify(commentObjToEncrypt),
+            comment.pubsubMessageSigner.privateKey,
+            comment.subplebbit.encryption.publicKey
+        );
+
+        comment._challengeRequest.signature = await signChallengeRequest(comment._challengeRequest, comment.pubsubMessageSigner);
+
+        await originalPublish(comment.subplebbit.pubsubTopic, comment._challengeRequest);
+
+        await new Promise((resolve) => {
+            comment.once("challengeverification", (verificationMsg) => {
+                expect(verificationMsg.challengeSuccess).to.be.false;
+                expect(verificationMsg.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
+                expect(verificationMsg.publication).to.be.undefined;
+                expect(verificationMsg.encryptedPublication).to.be.undefined;
+
+                resolve();
+            });
+        });
+    });
+
+    it(`Sub ignores a challenge request with invalid pubsubMessage.signature`, async () => {
+        // This test case also includes challengeRequestId not being derived from signer since it's caught by verifyChallengeRequest
         const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[6] });
 
         await Promise.all([new Promise((resolve) => comment.once("challengeverification", resolve)), comment.publish()]);
@@ -53,15 +155,12 @@ describe("challengerequest", async () => {
             const subMethod = (pubsubMsg) => {
                 const msgParsed = decode(pubsubMsg["data"]);
                 if (msgParsed.type === "CHALLENGEVERIFICATION" && msgParsed.challengeRequestId === invalidSignature.challengeRequestId) {
-                    expect(msgParsed.challengeSuccess).to.be.false;
-                    expect(msgParsed.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
-                    expect(msgParsed.publication).to.be.undefined;
-                    expect(msgParsed.encryptedPublication).to.be.undefined;
-                    plebbit._clientsManager.pubsubUnsubscribe(comment.subplebbit.pubsubTopic, subMethod);
-                    resolve();
+                    assert.fail("Subplebbit should not respond to a challenge request with invalid signature");
                 }
             };
             await plebbit._clientsManager.pubsubSubscribe(comment.subplebbit.pubsubTopic, subMethod);
+            await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5s for sub response, if we didn't get a response then the request has been ignored
+            resolve();
         });
     });
 });
@@ -75,6 +174,19 @@ describe(`challengemessage`, async () => {
         const challenge = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_message.json"));
         const verificaiton = await verifyChallengeMessage(challenge, "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z");
         expect(verificaiton).to.deep.equal({ valid: true });
+    });
+
+    it(`Invalid ChallengeMessage gets invalidated correctly`, async () => {
+        const challenge = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_message.json"));
+        challenge.timestamp += 1234; // Should invalidate signature
+        const verificaiton = await verifyChallengeMessage(challenge, "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z");
+        expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
+    });
+
+    it(`challenge message signed by other than subplebbit.pubsubTopic is invalidated`, async () => {
+        const challenge = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_message.json"));
+        const verificaiton = await verifyChallengeMessage(challenge, (await plebbit.createSigner()).address); // Random pubsub topic
+        expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT });
     });
     it(`Valid live challengemessage gets validated correctly`, async () => {
         const comment = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[6] });
@@ -90,12 +202,6 @@ describe(`challengemessage`, async () => {
             });
         });
     });
-    it(`Invalid ChallengeMessage gets invalidated correctly`, async () => {
-        const challenge = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_message.json"));
-        challenge.challengeRequestId += "1234"; // Should invalidate signature
-        const verificaiton = await verifyChallengeMessage(challenge, "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z");
-        expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
-    });
 });
 
 describe("challengeanswer", async () => {
@@ -108,6 +214,14 @@ describe("challengeanswer", async () => {
         const verificaiton = await verifyChallengeAnswer(answer);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
+
+    it(`challenge answer with challengeRequestId that is not derived from signer is invalidated`, async () => {
+        const answer = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_answer.json"));
+        answer.challengeRequestId = (await plebbit.createSigner()).address;
+        const verificaiton = await verifyChallengeAnswer(answer);
+        expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE });
+    });
+
     it(`Valid live ChallengeAnswer gets validated correctly`, async () => {
         const comment = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[5] });
         comment.removeAllListeners();
@@ -122,7 +236,9 @@ describe("challengeanswer", async () => {
             });
         });
     });
-    it(`Subplebbit rejects challenge answer with invalid signature`, async () => {
+
+    it(`Sub ignores a challenge answer with invalid answer.signature`, async () => {
+        // Test includes cases where challengeRequestId is not derived from the signer of the message because verifyChallengeAnswer checks for that too
         const comment = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[6] });
 
         comment.removeAllListeners();
@@ -159,8 +275,71 @@ describe("challengeanswer", async () => {
                         msgParsed.type === "CHALLENGEVERIFICATION" &&
                         msgParsed.challengeRequestId === comment._challengeRequest.challengeRequestId
                     ) {
+                        assert.fail("Subplebbit should ignore a challenge answer with invalid signature");
+                    }
+                };
+
+                await plebbit._clientsManager.pubsubSubscribe(comment.subplebbit.pubsubTopic, subMethod);
+                await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5s for sub response, if we didn't get a response then the answer has been ignored
+                resolve();
+            });
+        });
+
+        it(`Sub responds with error to a challenge answer with answers that can't be decrypted`, async () => {
+            const tempPlebbit = await mockPlebbit();
+            const comment = await generateMockPost(imageCaptchaSubplebbitAddress, tempPlebbit);
+            comment.removeAllListeners("challenge");
+
+            const originalPublish = comment._clientsManager.pubsubPublish.bind(comment._clientsManager);
+
+            comment.once("challenge", async (challengeMsg) => {
+                comment._clientsManager.pubsubPublish = () => undefined;
+
+                await comment.publishChallengeAnswers([]);
+                // comment._challengeAnswer should be defined now
+                comment._challengeAnswer.encryptedChallengeAnswers = await encrypt(
+                    JSON.stringify([]),
+                    comment.pubsubMessageSigner.privateKey,
+                    signers[5].publicKey // Use a public key that cannot be decrypted for the sub
+                );
+                comment._challengeAnswer.signature = await signChallengeAnswer(comment._challengeAnswer, comment.pubsubMessageSigner);
+                await originalPublish(comment.subplebbit.pubsubTopic, comment._challengeAnswer);
+            });
+
+            await publishWithExpectedResult(comment, false, messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);
+        });
+    });
+
+    it(`Sub responds with error to challenge answer whose id not registered (no challenge request with same id)`, async () => {
+        const comment = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[6] });
+
+        comment.removeAllListeners();
+        await comment.publish();
+
+        await new Promise(async (resolve) => {
+            comment.once("challenge", async () => {
+                await comment._plebbit._clientsManager.pubsubUnsubscribe(comment.subplebbit.pubsubTopic, comment.handleChallengeExchange);
+                const newSigner = await plebbit.createSigner();
+                const toSignAnswer = {
+                    type: "CHALLENGEANSWER",
+                    challengeRequestId: newSigner.address, // Random signer address, is not used to sign the answer
+                    encryptedChallengeAnswers: JSON.stringify([2]),
+                    userAgent: version.default.USER_AGENT,
+                    protocolVersion: version.default.PROTOCOL_VERSION
+                };
+                const challengeAnswer = new ChallengeAnswerMessage({
+                    ...toSignAnswer,
+                    signature: await signChallengeAnswer(toSignAnswer, newSigner)
+                });
+                expect(await verifyChallengeAnswer(challengeAnswer)).to.deep.equal({ valid: true });
+
+                await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, challengeAnswer);
+
+                const subMethod = (pubsubMsg) => {
+                    const msgParsed = decode(pubsubMsg["data"]);
+                    if (msgParsed.type === "CHALLENGEVERIFICATION" && msgParsed.challengeRequestId === toSignAnswer.challengeRequestId) {
                         expect(msgParsed.challengeSuccess).to.be.false;
-                        expect(msgParsed.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
+                        expect(msgParsed.reason).to.equal(messages.ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST);
                         expect(msgParsed.publication).to.be.undefined;
                         expect(msgParsed.encryptedPublication).to.be.undefined;
                         plebbit._clientsManager.pubsubUnsubscribe(comment.subplebbit.pubsubTopic, subMethod);
@@ -169,6 +348,8 @@ describe("challengeanswer", async () => {
                 };
 
                 await plebbit._clientsManager.pubsubSubscribe(comment.subplebbit.pubsubTopic, subMethod);
+                await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5s for sub response, if we didn't get a response then the answer has been ignored
+                resolve();
             });
         });
     });
@@ -198,7 +379,7 @@ describe("challengeverification", async () => {
     });
     it(`Invalid challengeverification gets invalidated correctly`, async () => {
         const challengeVerification = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_verification.json"));
-        challengeVerification.challengeRequestId += "1234"; // Invalidate signature
+        challengeVerification.timestamp += 1234; // Invalidate signature
         const verificaiton = await verifyChallengeVerification(challengeVerification, signers[0].address);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
