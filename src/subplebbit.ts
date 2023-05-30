@@ -37,7 +37,8 @@ import {
     SubplebbitType,
     VoteType,
     SubplebbitEvents,
-    SubplebbitSettings
+    SubplebbitSettings,
+    VotePubsubMessage
 } from "./types";
 import { Comment } from "./comment";
 import Post from "./post";
@@ -54,6 +55,7 @@ import { getThumbnailUrlOfLink, nativeFunctions } from "./runtime/node/util";
 import env from "./version";
 import lodash from "lodash";
 import {
+    ValidationResult,
     signChallengeMessage,
     signChallengeVerification,
     signCommentUpdate,
@@ -114,7 +116,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     // private
 
     private _challengeToSolution: Record<string, string[]>;
-    private _challengeToPublicKey: Record<string, string>;
     private _challengeToPublication: Record<string, DecryptedChallengeRequestMessageType["publication"]>;
     private provideCaptchaCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[ChallengeType[], string | undefined]>;
     private validateCaptchaAnswerCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>;
@@ -132,7 +133,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this.plebbit = plebbit;
         this._challengeToSolution = {}; // Map challenge ID to its solution
         this._challengeToPublication = {}; // To hold unpublished posts/comments/votes
-        this._challengeToPublicKey = {}; // Map out challenge request id to their signers
         this._setState("stopped");
         this._setStartedState("stopped");
         this._setUpdatingState("stopped");
@@ -546,13 +546,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     ): Promise<string | undefined> {
         const log = Logger("plebbit-js:subplebbit:handleCommentEdit");
 
-        const validRes = await verifyCommentEdit(commentEditRaw, this.plebbit.resolveAuthorAddresses, this._clientsManager, false);
-
-        if (!validRes.valid) {
-            log(`(${challengeRequestId}): `, validRes.reason);
-            return validRes.reason;
-        }
-
         const commentEdit = await this.plebbit.createCommentEdit(commentEditRaw);
 
         const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
@@ -601,16 +594,13 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
     }
 
-    private async handleVote(newVoteProps: VoteType, challengeRequestId: ChallengeRequestMessage["challengeRequestId"]): Promise<undefined | string> {
+    private async handleVote(
+        newVoteProps: VoteType,
+        challengeRequestId: ChallengeRequestMessage["challengeRequestId"]
+    ): Promise<undefined | string> {
         const log = Logger("plebbit-js:subplebbit:handleVote");
 
         const lastVote = await this.dbHandler.getLastVoteOfAuthor(newVoteProps.commentCid, newVoteProps.author.address);
-
-        const validRes = await verifyVote(newVoteProps, this.plebbit.resolveAuthorAddresses, this._clientsManager, false);
-        if (!validRes.valid) {
-            log(`(${challengeRequestId}): `, validRes.reason);
-            return validRes.reason;
-        }
 
         if (lastVote && newVoteProps.signature.publicKey !== lastVote.signature.publicKey) {
             const msg = `Author (${newVoteProps.author.address}) attempted to change vote on (${newVoteProps.commentCid}) without having correct credentials`;
@@ -652,7 +642,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         delete this._challengeToSolution[challengeRequestId];
         delete this._challengeToPublication[challengeRequestId];
-        delete this._challengeToPublicKey[challengeRequestId];
 
         if (publication["signer"]) {
             log(`(${challengeRequestId}): `, messages.ERR_FORBIDDEN_SIGNER_FIELD);
@@ -779,13 +768,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             if (publicationKilobyteSize > 40) {
                 log(`(${challengeRequestId}): `, messages.ERR_COMMENT_OVER_ALLOWED_SIZE);
                 return messages.ERR_COMMENT_OVER_ALLOWED_SIZE;
-            }
-
-            const validRes = await verifyComment(publication, this.plebbit.resolveAuthorAddresses, this._clientsManager, false);
-
-            if (!validRes.valid) {
-                log(`(${challengeRequestId}): `, validRes.reason);
-                return validRes.reason;
             }
 
             // Comment and Post need to add file to ipfs
@@ -925,8 +907,12 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async handleChallengeRequest(request: ChallengeRequestMessage) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeRequest");
 
+        const requestSignatureValidation = await verifyChallengeRequest(request);
+        if (!requestSignatureValidation.valid) return;
+
         const decryptedRequest = <DecryptedChallengeRequestMessageType>await this._decryptOrRespondWithFailure(request);
         if (!decryptedRequest) return;
+        await this.dbHandler.insertChallengeRequest(request.toJSONForDb(), undefined);
         if (await this._respondWithErrorIfSignatureOfPublicationIsInvalid(decryptedRequest)) return;
         this._challengeToPublication[request.challengeRequestId] = decryptedRequest.publication;
         this.emit("challengerequest", decryptedRequest);
@@ -936,7 +922,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             // Subplebbit owner has chosen to skip challenging this user or post
             log.trace(`(${request.challengeRequestId}): No challenge is required`);
 
-            const publicationOrReason = await this.storePublicationIfValid(decryptedRequest.publication, decryptedRequest.challengeRequestId);
+            const publicationOrReason = await this.storePublicationIfValid(
+                decryptedRequest.publication,
+                decryptedRequest.challengeRequestId
+            );
             const encryptedPublication = lodash.isPlainObject(publicationOrReason)
                 ? await encrypt(deterministicStringify(publicationOrReason), this.signer.privateKey, request.signature.publicKey)
                 : undefined;

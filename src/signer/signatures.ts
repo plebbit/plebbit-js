@@ -47,7 +47,7 @@ import {
 } from "./constants";
 import { BaseClientsManager } from "../clients/base-client-manager";
 
-interface ValidationResult {
+export interface ValidationResult {
     valid: boolean;
     reason?: string; // Reason why it's invalid
 }
