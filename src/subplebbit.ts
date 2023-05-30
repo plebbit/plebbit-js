@@ -878,14 +878,57 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         return undefined;
     }
 
+    private async _respondWithErrorIfSignatureOfPublicationIsInvalid(request: DecryptedChallengeRequestMessageType): Promise<boolean> {
+        let validity: ValidationResult;
+        if (this.isPublicationComment(request.publication))
+            validity = await verifyComment(request.publication, this.plebbit.resolveAuthorAddresses, this._clientsManager, false);
+        else if (this.isPublicationCommentEdit(request.publication))
+            validity = await verifyCommentEdit(
+                <CommentEditPubsubMessage>request.publication,
+                this.plebbit.resolveAuthorAddresses,
+                this._clientsManager,
+                false
+            );
+        else if (this.isPublicationVote(request.publication))
+            validity = await verifyVote(
+                <VotePubsubMessage>request.publication,
+                this.plebbit.resolveAuthorAddresses,
+                this._clientsManager,
+                false
+            );
+
+        if (!validity.valid) {
+            const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
+                type: "CHALLENGEVERIFICATION",
+                challengeRequestId: request.challengeRequestId,
+                challengeSuccess: false,
+                reason: messages.ERR_SIGNATURE_IS_INVALID,
+                userAgent: env.USER_AGENT,
+                protocolVersion: env.PROTOCOL_VERSION,
+                timestamp: timestamp()
+            };
+            const challengeVerification = new ChallengeVerificationMessage({
+                ...toSignMsg,
+                signature: await signChallengeVerification(toSignMsg, this.signer)
+            });
+
+            await Promise.all([
+                this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
+                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
+            ]);
+
+            return true;
+        }
+        return false;
+    }
+
     private async handleChallengeRequest(request: ChallengeRequestMessage) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeRequest");
 
         const decryptedRequest = <DecryptedChallengeRequestMessageType>await this._decryptOrRespondWithFailure(request);
         if (!decryptedRequest) return;
+        if (await this._respondWithErrorIfSignatureOfPublicationIsInvalid(decryptedRequest)) return;
         this._challengeToPublication[request.challengeRequestId] = decryptedRequest.publication;
-        this._challengeToPublicKey[request.challengeRequestId] = decryptedRequest.signature.publicKey;
-        await this.dbHandler.insertChallengeRequest(request.toJSONForDb(), undefined);
         this.emit("challengerequest", decryptedRequest);
         const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(decryptedRequest);
         log(`Received a request to a challenge (${request.challengeRequestId})`);
