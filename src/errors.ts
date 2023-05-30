@@ -48,6 +48,9 @@ export enum messages {
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
     ERR_PARENT_CID_NOT_AS_EXPECTED = "Comment under parent comment/post should have parentCid initialized",
 
+    // Subplebbit rejections of pubsub messages
+    ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST = "Received a challenge answer without a prior challenge request",
+
     // Subplebbit rejections of publications
 
     ERR_UNAUTHORIZED_COMMENT_EDIT = "Can't edit the comment due to lack of authorization",

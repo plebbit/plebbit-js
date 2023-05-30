@@ -1013,6 +1013,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     async handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeAnswer");
 
+        const answerSignatureValidation = await verifyChallengeAnswer(challengeAnswer);
+
+        if (!answerSignatureValidation.valid) return;
+
         const decryptedChallengeAnswer = <DecryptedChallengeAnswerMessageType>await this._decryptOrRespondWithFailure(challengeAnswer);
         if (!decryptedChallengeAnswer) return;
 
@@ -1093,31 +1097,23 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
     }
 
-    private async _verifyPubsubMsgSignature(msgParsed: ChallengeRequestMessageType | ChallengeAnswerMessageType) {
-        const validation =
-            msgParsed.type === "CHALLENGEANSWER" ? await verifyChallengeAnswer(msgParsed) : await verifyChallengeRequest(msgParsed);
-        if (!validation.valid) {
-            const toSignVerification: Omit<ChallengeVerificationMessageType, "signature"> = {
-                type: "CHALLENGEVERIFICATION",
-                challengeRequestId: msgParsed.challengeRequestId,
-                challengeSuccess: false,
-                reason: validation.reason,
-                userAgent: env.USER_AGENT,
-                protocolVersion: env.PROTOCOL_VERSION,
-                timestamp: timestamp()
-            };
+    private async _respondWithErrorToAnswerWithNoRequest(answer: ChallengeAnswerMessageType) {
+        const toSignVerification: Omit<ChallengeVerificationMessageType, "signature"> = {
+            type: "CHALLENGEVERIFICATION",
+            challengeRequestId: answer.challengeRequestId,
+            challengeSuccess: false,
+            reason: messages.ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST,
+            userAgent: env.USER_AGENT,
+            protocolVersion: env.PROTOCOL_VERSION,
+            timestamp: timestamp()
+        };
 
-            const challengeVerification = new ChallengeVerificationMessage({
-                ...toSignVerification,
-                signature: await signChallengeVerification(toSignVerification, this.signer)
-            });
+        const challengeVerification = new ChallengeVerificationMessage({
+            ...toSignVerification,
+            signature: await signChallengeVerification(toSignVerification, this.signer)
+        });
 
-            await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
-
-            const err = new PlebbitError("ERR_SIGNATURE_IS_INVALID", { pubsubMsg: msgParsed, signatureValidity: validation });
-            this.emit("error", err);
-            throw err;
-        }
+        await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
     }
 
     private async handleChallengeExchange(pubsubMsg: Parameters<MessageHandlerFn>[0]) {
@@ -1127,13 +1123,12 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         try {
             msgParsed = cborg.decode(pubsubMsg.data);
             if (msgParsed.type === "CHALLENGEREQUEST") {
-                await this._verifyPubsubMsgSignature(msgParsed);
                 await this.handleChallengeRequest(new ChallengeRequestMessage(msgParsed));
             } else if (msgParsed.type === "CHALLENGEANSWER" && this._challengeToPublication[msgParsed.challengeRequestId]) {
-                // Only reply to peers who started a challenge request earlier
-                await this._verifyPubsubMsgSignature(msgParsed);
-                if (msgParsed.signature.publicKey !== this._challengeToPublicKey[msgParsed.challengeRequestId]) return;
-                await this.handleChallengeAnswer(new ChallengeAnswerMessage(msgParsed));
+                // Respond with error to answers without challenge request
+                if (!this._challengeToPublication[msgParsed.challengeRequestId])
+                    await this._respondWithErrorToAnswerWithNoRequest(<ChallengeAnswerMessageType>msgParsed);
+                else await this.handleChallengeAnswer(new ChallengeAnswerMessage(msgParsed));
             }
         } catch (e) {
             e.message = `failed process captcha for challenge request id (${msgParsed?.challengeRequestId}): ${e.message}`;
