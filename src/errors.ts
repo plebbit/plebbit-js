@@ -50,6 +50,7 @@ export enum messages {
 
     // Subplebbit rejections of pubsub messages
     ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST = "Received a challenge answer without a prior challenge request",
+    ERR_REUSED_PUBSUB_MSG_SIGNER = "Reusing a pubsub message signer is forbidden",
 
     // Subplebbit rejections of publications
 

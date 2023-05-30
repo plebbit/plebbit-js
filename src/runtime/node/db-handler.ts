@@ -452,6 +452,10 @@ export class DbHandler {
         await this._baseTransaction(trx)(TABLES.CHALLENGE_VERIFICATIONS).insert(verification);
     }
 
+    async queryChallengeRequest(requestId: ChallengeRequestsTableRowInsert["challengeRequestId"], trx?: Transaction){
+        return this._baseTransaction(trx)(TABLES.CHALLENGE_REQUESTS).where("challengeRequestId", requestId).first();
+    }
+
     async getLastVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<VotesTableRow | undefined> {
         return this._baseTransaction(trx)(TABLES.VOTES)
             .where({
