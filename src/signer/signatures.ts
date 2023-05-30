@@ -187,7 +187,7 @@ const _verifyAuthor = async (
             // Means plebbit-author-address text record is resolving to another address (outdated?)
             // Will always use address derived from publication.signature.publicKey as truth
             log.error(
-                `domain (${publicationJson.author.address}) resolved address (${resolvedAuthorAddress}) is invalid, changing publication.author.address to derived address ${derivedAddress}`
+                `author address (${publicationJson.author.address}) resolved address (${resolvedAuthorAddress}) is invalid`
             );
             return { valid: true, newAddress: derivedAddress };
         }
@@ -282,7 +282,7 @@ export async function verifyComment(
 ): Promise<ValidationResult> {
     const validation = await _verifyPublicationWithAuthor(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!validation.valid) return validation;
-    if (validation.newAddress) comment.author.address = validation.newAddress;
+    if (validation.newAddress && overrideAuthorAddressIfInvalid) comment.author.address = validation.newAddress;
 
     return { valid: true };
 }

@@ -884,7 +884,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 type: "CHALLENGEVERIFICATION",
                 challengeRequestId: request.challengeRequestId,
                 challengeSuccess: false,
-                reason: messages.ERR_SIGNATURE_IS_INVALID,
+                reason: validity.reason,
                 userAgent: env.USER_AGENT,
                 protocolVersion: env.PROTOCOL_VERSION,
                 timestamp: timestamp()
@@ -902,35 +902,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             return true;
         }
         return false;
-    }
-
-    private async _respondWithErrorIfRequestSignerHasBeenUsedBefore(request: ChallengeRequestMessage): Promise<boolean>{
-        const storedRequest = await this.dbHandler.queryChallengeRequest(request.challengeRequestId);
-        if (storedRequest){
-            const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
-                type: "CHALLENGEVERIFICATION",
-                challengeRequestId: request.challengeRequestId,
-                challengeSuccess: false,
-                reason: messages.ERR_REUSED_PUBSUB_MSG_SIGNER,
-                userAgent: env.USER_AGENT,
-                protocolVersion: env.PROTOCOL_VERSION,
-                timestamp: timestamp()
-            };
-            const challengeVerification = new ChallengeVerificationMessage({
-                ...toSignMsg,
-                signature: await signChallengeVerification(toSignMsg, this.signer)
-            });
-
-            await Promise.all([
-                this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
-                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
-            ]);
-
-            return true;
-        }
-
-        return false;
-
     }
 
     private async handleChallengeRequest(request: ChallengeRequestMessage) {
@@ -939,7 +910,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const requestSignatureValidation = await verifyChallengeRequest(request);
         if (!requestSignatureValidation.valid) return;
 
-        if (await this._respondWithErrorIfRequestSignerHasBeenUsedBefore(request)) return;
 
         const decryptedRequest = <DecryptedChallengeRequestMessageType>await this._decryptOrRespondWithFailure(request);
         if (!decryptedRequest) return;
