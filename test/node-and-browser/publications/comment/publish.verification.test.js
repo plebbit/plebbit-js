@@ -8,6 +8,7 @@ const {
     publishRandomPost
 } = require("../../../../dist/node/test/test-util");
 const { messages } = require("../../../../dist/node/errors");
+const { signComment, verifyComment } = require("../../../../dist/node/signer/signatures");
 const lodash = require("lodash");
 
 const chai = require("chai");
@@ -134,20 +135,30 @@ describe("Posts with forbidden author fields are rejected", async () => {
     before(async () => {
         plebbit = await mockPlebbit();
     });
-    const forbiddenFieldsWithValue = [
-        {
-            subplebbit: { lastCommentCid: "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs", postScore: 0, replyScore: 0, banExpiresAt: 0 },
-            shortAddress: "12345"
-        }
-    ];
+    const forbiddenFieldsWithValue = {
+        subplebbit: { lastCommentCid: "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs", postScore: 0, replyScore: 0, banExpiresAt: 0 },
+        shortAddress: "12345"
+    };
+    Object.keys(forbiddenFieldsWithValue).map((forbiddenFieldName) =>
+        it(`publication.author.${forbiddenFieldName} is rejected by sub`, async () => {
+            const post = await plebbit.createComment({
+                subplebbitAddress,
+                title: "Nonsense" + Date.now(),
+                author: { [forbiddenFieldName]: forbiddenFieldsWithValue[forbiddenFieldName] },
+                signer: await plebbit.createSigner()
+            });
+            const pubsubJsonPrior = post.toJSONPubsubMessagePublication();
+            const pubsubJsonAfterChange = {
+                ...pubsubJsonPrior,
+                author: { ...pubsubJsonPrior.author, [forbiddenFieldName]: forbiddenFieldsWithValue[forbiddenFieldName] }
+            };
 
-    forbiddenFieldsWithValue.map((forbiddenType) =>
-        it(`comment.author.${Object.keys(forbiddenType)[0]} is rejected by sub`, async () => {
-            const post = await generateMockPost(subplebbitAddress, plebbit);
-            const postPubsubJsonPrior = post.toJSONPubsubMessagePublication();
-            post.toJSONPubsubMessagePublication = () => ({
-                ...postPubsubJsonPrior,
-                author: { ...postPubsubJsonPrior.author, ...forbiddenType }
+            pubsubJsonAfterChange.signature = await signComment(pubsubJsonAfterChange, post.signer, plebbit);
+            post.toJSONPubsubMessagePublication = () => pubsubJsonAfterChange;
+            expect(
+                await verifyComment(JSON.parse(JSON.stringify(post.toJSONPubsubMessagePublication())), false, post._clientsManager, false)
+            ).to.deep.equal({
+                valid: true
             });
             post._validateSignature = async () => {}; // Disable signature validation before publishing
             await publishWithExpectedResult(post, false, messages.ERR_FORBIDDEN_AUTHOR_FIELD);
