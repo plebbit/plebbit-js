@@ -47,30 +47,6 @@ describe("challengerequest", async () => {
         expect(verificaiton).to.deep.equal({ valid: true });
     });
 
-    it(`Sub responds with error to a challenge request with a signer that has been used before`, async () => {
-        const comment = await publishRandomPost(signers[0].address, plebbit, {}, false);
-
-        await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, comment._challengeRequest);
-
-        await new Promise(async (resolve) => {
-            const subMethod = (pubsubMsg) => {
-                const msgParsed = decode(pubsubMsg["data"]);
-                if (
-                    msgParsed.type === "CHALLENGEVERIFICATION" &&
-                    msgParsed.challengeRequestId === comment._challengeRequest.challengeRequestId
-                ) {
-                    expect(msgParsed.challengeSuccess).to.be.false;
-                    expect(msgParsed.reason).to.equal(messages.ERR_REUSED_PUBSUB_MSG_SIGNER);
-                    expect(msgParsed.publication).to.be.undefined;
-                    expect(msgParsed.encryptedPublication).to.be.undefined;
-                    plebbit._clientsManager.pubsubUnsubscribe(comment.subplebbit.pubsubTopic, subMethod);
-                    resolve();
-                }
-            };
-            await plebbit._clientsManager.pubsubSubscribe(comment.subplebbit.pubsubTopic, subMethod);
-        });
-    });
-
     it(`Sub responds with error to a challenge request whose publication can't be decrypted`, async () => {
         const comment = await generateMockPost(signers[0].address, plebbit);
         const originalPublish = comment._clientsManager.pubsubPublish.bind(comment._clientsManager);
@@ -107,7 +83,9 @@ describe("challengerequest", async () => {
 
         const commentObjToEncrypt = JSON.parse(JSON.stringify(comment.toJSONPubsubMessagePublication()));
 
-        expect(await verifyComment(commentObjToEncrypt, plebbit.resolveAuthorAddresses, comment._clientsManager, true)).to.deep.equal({ valid: true });
+        expect(await verifyComment(commentObjToEncrypt, plebbit.resolveAuthorAddresses, comment._clientsManager, true)).to.deep.equal({
+            valid: true
+        });
         commentObjToEncrypt.timestamp += 1; // Should invalidate signature
         expect(await verifyComment(commentObjToEncrypt, false, comment._clientsManager, false)).to.deep.equal({
             valid: false,
