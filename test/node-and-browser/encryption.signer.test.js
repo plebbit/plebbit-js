@@ -141,12 +141,12 @@ describe("encryption", () => {
 
         it("encrypted publication has expected properties", async () => {
             expect(encryptedPublication).to.not.equal(undefined);
-            expect(encryptedPublication.ciphertext).to.be.a("string");
-            expect(encryptedPublication.ciphertext).to.not.be.empty;
-            expect(encryptedPublication.iv).to.be.a("string");
-            expect(encryptedPublication.iv).to.not.be.empty;
-            expect(encryptedPublication.tag).to.be.a("string");
-            expect(encryptedPublication.tag).to.not.be.empty;
+            expect(encryptedPublication.ciphertext instanceof Uint8Array).to.equal(true);
+            expect(encryptedPublication.ciphertext.length).to.be.greaterThan(0);
+            expect(encryptedPublication.iv instanceof Uint8Array).to.equal(true);
+            expect(encryptedPublication.iv.length).to.be.greaterThan(0);
+            expect(encryptedPublication.tag instanceof Uint8Array).to.equal(true);
+            expect(encryptedPublication.tag.length).to.be.greaterThan(0);
             expect(encryptedPublication.type).to.equal("ed25519-aes-gcm");
         });
 

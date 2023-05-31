@@ -35,9 +35,9 @@ export interface SignerType {
 // Encryption
 export type Encrypted = {
     // examples available at https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
-    ciphertext: string;
-    iv: string;
-    tag: string;
+    ciphertext: Uint8Array;
+    iv: Uint8Array;
+    tag: Uint8Array;
     type: "ed25519-aes-gcm";
 };
 
