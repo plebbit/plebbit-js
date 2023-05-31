@@ -9,6 +9,8 @@ import { Plebbit } from "../../plebbit";
 import { parseJsonStrings } from "../../util";
 import scraper from "open-graph-scraper";
 import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
+import Logger from "@plebbit/plebbit-logger";
+import { PlebbitError } from "../../plebbit-error";
 
 export const mkdir = fs.mkdir;
 
@@ -36,23 +38,35 @@ export const getDefaultSubplebbitDbConfig = async (
     };
 };
 
-export async function getThumbnailUrlOfLink(url: string, proxyHttpUrl?: string): Promise<string> {
-    const imageFileExtensions = [".png", ".jpg", ".webp", ".jpeg"];
-    for (const extension of imageFileExtensions) if (url.endsWith(extension)) return url;
+// Should be moved to subplebbit.ts
+export async function getThumbnailUrlOfLink(url: string, subplebbit: Subplebbit, proxyHttpUrl?: string): Promise<string | undefined> {
+    const log = Logger(`plebbit-js:subplebbit:getThumbnailUrlOfLink`);
 
     const options = { url, downloadLimit: 2000000 };
-    if (proxyHttpUrl) {
-        const httpAgent = new HttpProxyAgent({ proxy: proxyHttpUrl });
-        const httpsAgent = new HttpsProxyAgent({ proxy: proxyHttpUrl });
-        options["agent"] = { https: httpsAgent, http: httpAgent };
+
+    try {
+        if (proxyHttpUrl) {
+            const httpAgent = new HttpProxyAgent({ proxy: proxyHttpUrl });
+            const httpsAgent = new HttpsProxyAgent({ proxy: proxyHttpUrl });
+            options["agent"] = { https: httpsAgent, http: httpAgent };
+        }
+        const res = await scraper(options);
+
+        if (res.error) return undefined;
+
+        if (typeof res.result.ogImage === "string") return res.result.ogImage;
+        else if (res.result.ogImage["url"]) return res.result.ogImage["url"];
+        else return undefined;
+    } catch (e) {
+        const plebbitError = new PlebbitError("ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK", {
+            url,
+            downloadLimit: options.downloadLimit,
+            proxyHttpUrl
+        });
+        log.error(String(plebbitError));
+        subplebbit.emit("error", plebbitError);
+        return undefined;
     }
-    const res = await scraper(options);
-
-    if (res.error) return undefined;
-
-    if (typeof res.result.ogImage === "string") return res.result.ogImage;
-    else if (res.result.ogImage["url"]) return res.result.ogImage["url"];
-    else return undefined;
 }
 
 export const nativeFunctions: NativeFunctions = nodeNativeFunctions;

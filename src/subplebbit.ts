@@ -781,7 +781,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const commentToInsert = await this.plebbit.createComment(publication);
 
             if (commentToInsert.link && this.settings?.fetchThumbnailUrls)
-                commentToInsert.thumbnailUrl = await getThumbnailUrlOfLink(commentToInsert.link, this.settings.fetchThumbnailUrlsProxyUrl);
+                commentToInsert.thumbnailUrl = await getThumbnailUrlOfLink(commentToInsert.link,this,  this.settings.fetchThumbnailUrlsProxyUrl);
 
             const ipfsSigner = await this.plebbit.createSigner();
             ipfsSigner.ipnsKeyName = ipnsKeyName;
