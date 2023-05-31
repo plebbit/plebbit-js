@@ -20,7 +20,7 @@ import Publication from "./publication";
 import { PlebbitError } from "./plebbit-error";
 
 export type ProtocolVersion = "1.0.0";
-
+export type Chain = "eth" | "matic" | "avax";
 export type ChainProvider = { urls: string[]; chainId: number };
 export interface PlebbitOptions {
     ipfsGatewayUrls?: string[];

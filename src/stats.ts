@@ -2,8 +2,9 @@ import { Plebbit } from "./plebbit";
 import Logger from "@plebbit/plebbit-logger";
 import assert from "assert";
 import lodash from "lodash";
+import { Chain } from "./types";
 
-type StatTypes = "ipns" | "cid" | "pubsub-publish";
+type StatTypes = "ipns" | "cid" | "pubsub-publish" | Chain;
 export default class Stats {
     private _plebbit: Pick<Plebbit, "_cache" | "clients">;
     constructor(plebbit: Stats["_plebbit"]) {
@@ -65,22 +66,36 @@ export default class Stats {
         log.trace(`Updated gateway (${gatewayUrl}) failure  count from (${curCount}) to (${newCount}) for type (${type})`);
     }
 
+    private _gatewayScore(failureCounts: number, successCounts: number, successAverageMs: number) {
+        // Thanks for @thisisnotph for their input on this formula
+        return (
+            (1 / (successAverageMs + 150) / (1 / (successAverageMs + 100) + 1 / 150)) * 0.2 +
+            ((successCounts + 0.288) / (failureCounts * 2 + successCounts + 1)) * 0.8
+        );
+    }
+
     async sortGatewaysAccordingToScore(type: StatTypes): Promise<string[]> {
         const log = Logger("plebbit-js:stats:gateway:sort");
-        const gatewayType = type === "cid" || type === "ipns" ? "ipfsGateways" : type === "pubsub-publish" ? "pubsubClients" : undefined;
+        const gatewayType =
+            type === "cid" || type === "ipns"
+                ? "ipfsGateways"
+                : type === "pubsub-publish"
+                ? "pubsubClients"
+                : type === "eth" || type === "avax" || type === "matic"
+                ? "chainProviders"
+                : undefined;
         assert(gatewayType);
-        const gateways = Object.keys(this._plebbit.clients[gatewayType]);
+        const gateways =
+            gatewayType === "chainProviders"
+                ? this._plebbit.clients.chainProviders[type].urls
+                : Object.keys(this._plebbit.clients[gatewayType]);
 
         const score = async (gatewayUrl: string) => {
             const failureCounts: number = (await this._plebbit._cache.getItem(this._getFailuresCountKey(gatewayUrl, type))) || 0;
             const successCounts: number = (await this._plebbit._cache.getItem(this._getSuccessCountKey(gatewayUrl, type))) || 0;
             const successAverageMs: number = (await this._plebbit._cache.getItem(this._getSuccessAverageKey(gatewayUrl, type))) || 0;
 
-            // Thanks for @thisisnotph for their input on this formula
-            const gatewayScore =
-                (1 / (successAverageMs + 150) / (1 / (successAverageMs + 100) + 1 / 150)) * 0.2 +
-                ((successCounts + 0.288) / (failureCounts * 2 + successCounts + 1)) * 0.8;
-
+            const gatewayScore = this._gatewayScore(failureCounts, successCounts, successAverageMs);
             log.trace(`gateway (${gatewayUrl}) score is (${gatewayScore}) for type (${type})`);
             return score;
         };

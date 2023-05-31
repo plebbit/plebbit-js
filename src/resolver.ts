@@ -1,17 +1,14 @@
 import { ethers } from "ethers";
 import { Plebbit } from "./plebbit";
-import { ChainProvider } from "./types";
+import { Chain } from "./types";
 import assert from "assert";
 import Logger from "@plebbit/plebbit-logger";
-import lodash from "lodash";
-import { throwWithErrorCode, timestamp } from "./util";
+import { throwWithErrorCode } from "./util";
 
 export class Resolver {
-    private cachedChainProviders: { [chainTicker: string]: ethers.providers.BaseProvider };
     private plebbit: Pick<Plebbit, "resolveAuthorAddresses" | "chainProviders" | "_cache">;
 
     constructor(plebbit: Resolver["plebbit"]) {
-        this.cachedChainProviders = {};
         this.plebbit = plebbit;
     }
 
@@ -24,43 +21,30 @@ export class Resolver {
     }
 
     // cache the chain providers because only 1 should be running at the same time
-    _getChainProvider(chainTicker: string) {
+    _getChainProvider(chainTicker: Chain, chainProviderUrl: string) {
         assert(chainTicker && typeof chainTicker === "string", `invalid chainTicker '${chainTicker}'`);
         assert(this.plebbit.chainProviders, `invalid chainProviders '${this.plebbit.chainProviders}'`);
-        if (this.cachedChainProviders[chainTicker]) {
-            return this.cachedChainProviders[chainTicker];
-        }
-        if (chainTicker === "eth") {
+        assert(this.plebbit.chainProviders[chainTicker].urls.includes(chainProviderUrl));
+
+        if (chainTicker === "eth" && chainProviderUrl === "ethers.js") {
             // if using eth, use ethers' default provider unless another provider is specified
 
-            if (!this.plebbit.chainProviders["eth"] || this.plebbit.chainProviders["eth"]?.urls?.[0]?.match(/DefaultProvider/i)) {
-                this.cachedChainProviders["eth"] = ethers.getDefaultProvider();
-                return this.cachedChainProviders["eth"];
-            }
-        }
-        if (this.plebbit.chainProviders[chainTicker]) {
-            this.cachedChainProviders[chainTicker] = new ethers.providers.JsonRpcProvider(
-                { url: this.plebbit.chainProviders[chainTicker].urls[0] },
-                this.plebbit.chainProviders[chainTicker].chainId
-            );
-            return this.cachedChainProviders[chainTicker];
-        }
-        throwWithErrorCode("ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER", { chainTicker, chainProviders: this.plebbit.chainProviders });
+            return ethers.getDefaultProvider();
+        } else return new ethers.providers.JsonRpcProvider({ url: chainProviderUrl }, this.plebbit.chainProviders[chainTicker].chainId);
     }
 
-    async _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string | undefined> {
+    async resolveTxtRecord(address: string, txtRecordName: string, chain: Chain, chainProviderUrl: string): Promise<string | undefined> {
         const log = Logger("plebbit-js:resolver:_resolveEnsTxtRecord");
 
-        const chainProvider = this._getChainProvider("eth");
-        const resolver = await chainProvider.getResolver(ensName);
-        if (!resolver) throwWithErrorCode("ERR_ENS_RESOLVER_NOT_FOUND", { ensName, chainProvider });
+        const chainProvider = this._getChainProvider(chain, chainProviderUrl);
+        const resolver = await chainProvider.getResolver(address);
+        if (!resolver) throwWithErrorCode("ERR_ENS_RESOLVER_NOT_FOUND", { address, chainProvider, chain });
         const txtRecordResult = await resolver.getText(txtRecordName);
         if (!txtRecordResult) return undefined;
 
-        log(`Resolved text record name (${txtRecordName}) of ENS (${ensName}) to ${txtRecordResult}`);
-
-        this.plebbit._cache.setItem(`${ensName}_${txtRecordName}`, txtRecordResult);
-        this.plebbit._cache.setItem(`${ensName}_${txtRecordName}_timestamp`, timestamp());
+        log(
+            `Resolved text record name (${txtRecordName}) of address (${address}) to ${txtRecordResult} with chainProvider (${chainProviderUrl})`
+        );
 
         return txtRecordResult;
     }

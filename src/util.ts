@@ -213,3 +213,7 @@ export function shortifyCid(cid: string): string {
 export function delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+export function firstResolve(promises: Promise<any>[]) {
+    return new Promise<any>((resolve) => promises.forEach((promise) => promise.then(resolve)));
+}

@@ -3,7 +3,7 @@ import { Plebbit } from "../plebbit";
 import { Comment } from "../comment";
 import { throwWithErrorCode } from "../util";
 import assert from "assert";
-import { CommentIpfsType, CommentUpdate, SubplebbitIpfsType } from "../types";
+import { Chain, CommentIpfsType, CommentUpdate, SubplebbitIpfsType } from "../types";
 import { Subplebbit } from "../subplebbit";
 import { verifySubplebbit } from "../signer";
 import lodash from "lodash";
@@ -28,7 +28,7 @@ export class ClientsManager extends BaseClientsManager {
         ipfsGateways: { [ipfsGatewayUrl: string]: GenericIpfsGatewayClient };
         ipfsClients: { [ipfsClientUrl: string]: GenericIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: GenericPubsubClient };
-        chainProviders: { [chainProviderUrl: string]: GenericChainProviderClient };
+        chainProviders: Record<Chain, { [chainProviderUrl: string]: GenericChainProviderClient }>;
     };
 
     constructor(plebbit: Plebbit) {
@@ -58,8 +58,14 @@ export class ClientsManager extends BaseClientsManager {
     }
 
     protected _initChainProviders() {
-        for (const chainProviderUrl of Object.keys(this._plebbit.clients.chainProviders))
-            this.clients.chainProviders = { ...this.clients.chainProviders, [chainProviderUrl]: new GenericChainProviderClient("stopped") };
+        //@ts-expect-error
+        this.clients.chainProviders = {};
+        for (const chain of Object.keys(this._plebbit.chainProviders)) {
+            this.clients.chainProviders[chain] = {};
+            const chainProvider = this._plebbit.chainProviders[chain];
+            for (const chainProviderUrl of chainProvider.urls)
+                this.clients.chainProviders[chain][chainProviderUrl] = new GenericChainProviderClient("stopped");
+        }
     }
 
     // Overriding functions from base client manager here
@@ -85,21 +91,33 @@ export class ClientsManager extends BaseClientsManager {
         this.updateGatewayState("stopped", gatewayUrl);
     }
 
-    preResolveTextRecord(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address") {
+    preResolveTextRecord(
+        address: string,
+        txtRecordName: "subplebbit-address" | "plebbit-author-address",
+        chain: string,
+        chainProviderUrl: string
+    ) {
         const newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
-        this.updateChainProviderState(newState, "eth");
+        this.updateChainProviderState(newState, chain, chainProviderUrl);
     }
 
     postResolveTextRecordSuccess(
-        ens: string,
+        address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        resolvedTextRecord: string
+        resolvedTextRecord: string,
+        chain: string,
+        chainProviderUrl: string
     ): void {
-        this.updateChainProviderState("stopped", "eth");
+        this.updateChainProviderState("stopped", chain, chainProviderUrl);
     }
 
-    postResolveTextRecordFailure(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address") {
-        this.updateChainProviderState("stopped", "eth");
+    postResolveTextRecordFailure(
+        address: string,
+        txtRecordName: "subplebbit-address" | "plebbit-author-address",
+        chain: string,
+        chainProviderUrl: string
+    ) {
+        this.updateChainProviderState("stopped", chain, chainProviderUrl);
     }
 
     // State methods here
@@ -125,10 +143,10 @@ export class ClientsManager extends BaseClientsManager {
         this.clients.ipfsGateways[gateway].emit("statechange", newState);
     }
 
-    updateChainProviderState(newState: GenericChainProviderClient["state"], chainTicker: string) {
+    updateChainProviderState(newState: GenericChainProviderClient["state"], chainTicker: string, chainProviderUrl: string) {
         assert(typeof newState === "string", "Can't update chain provider state to undefined");
-        this.clients.chainProviders[chainTicker].state = newState;
-        this.clients.chainProviders[chainTicker].emit("statechange", newState);
+        this.clients.chainProviders[chainTicker][chainProviderUrl].state = newState;
+        this.clients.chainProviders[chainTicker][chainProviderUrl].emit("statechange", newState);
     }
 
     async fetchCid(cid: string) {
@@ -164,7 +182,7 @@ export class PublicationClientsManager extends ClientsManager {
         ipfsGateways: { [ipfsGatewayUrl: string]: PublicationIpfsGatewayClient | CommentIpfsGatewayClient };
         ipfsClients: { [ipfsClientUrl: string]: PublicationIpfsClient | CommentIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: PublicationPubsubClient };
-        chainProviders: { [chainProviderUrl: string]: GenericChainProviderClient };
+        chainProviders: Record<Chain, { [chainProviderUrl: string]: GenericChainProviderClient }>;
     };
     _publication: Publication;
 
@@ -248,7 +266,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         ipfsGateways: { [ipfsGatewayUrl: string]: CommentIpfsGatewayClient };
         ipfsClients: { [ipfsClientUrl: string]: CommentIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: PublicationPubsubClient };
-        chainProviders: { [chainProviderUrl: string]: GenericChainProviderClient };
+        chainProviders: Record<Chain, { [chainProviderUrl: string]: GenericChainProviderClient }>;
     };
     private _comment: Comment;
 
@@ -303,7 +321,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         ipfsGateways: { [ipfsGatewayUrl: string]: SubplebbitIpfsGatewayClient };
         ipfsClients: { [ipfsClientUrl: string]: SubplebbitIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: SubplebbitPubsubClient };
-        chainProviders: { [chainProviderUrl: string]: GenericChainProviderClient };
+        chainProviders: Record<Chain, { [chainProviderUrl: string]: GenericChainProviderClient }>;
     };
     private _subplebbit: Subplebbit;
 

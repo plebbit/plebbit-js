@@ -124,7 +124,7 @@ export async function loadAllPages(pageCid: string, pagesInstance: BasePages): P
 async function _mockSubplebbitPlebbit(signers: SignerType[], plebbitOptions: PlebbitOptions) {
     const plebbit = await mockPlebbit({ ...plebbitOptions, pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] });
 
-    plebbit.resolver._resolveEnsTxtRecord = async (ensName: string, textRecord: string) => {
+    plebbit.resolver.resolveTxtRecord = async (ensName: string, textRecord: string) => {
         if (ensName === "plebbit.eth" && textRecord === "subplebbit-address") return signers[3].address;
         else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address") return signers[6].address;
         else return undefined;
@@ -276,15 +276,16 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions) {
         ...plebbitOptions
     });
 
-    plebbit.resolver._resolveEnsTxtRecord = async (ensName: string, textRecord: string) => {
+    plebbit.resolver.resolveTxtRecord = async (ensName: string, textRecord: string) => {
         if (ensName === "plebbit.eth" && textRecord === "subplebbit-address") return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo";
         else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address")
             return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y";
         else return undefined;
     };
 
-    //@ts-expect-error
-    plebbit._clientsManager._getCachedEns = () => undefined;
+    plebbit._cache.getItem = () => undefined;
+    plebbit._cache.setItem = () => undefined;
+
 
     // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
     if (!plebbitOptions?.pubsubHttpClientsOptions)

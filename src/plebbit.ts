@@ -140,6 +140,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     private _initResolver(options: PlebbitOptions) {
         this.chainProviders = options.chainProviders || {
+            eth: { urls: ["ethers.js"], chainId: 1 },
             avax: {
                 urls: ["https://api.avax.network/ext/bc/C/rpc"],
                 chainId: 43114
@@ -150,7 +151,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             }
         };
         this.clients.chainProviders = this.chainProviders;
-        if (!this.clients.chainProviders["eth"]) this.clients.chainProviders["eth"] = { urls: ["DefaultProvider"], chainId: 1 };
 
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         this.resolver = new Resolver({
