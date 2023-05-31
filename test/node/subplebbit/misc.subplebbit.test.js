@@ -325,6 +325,22 @@ describe(`subplebbit.updatingState`, async () => {
 });
 
 describe(`Generation of thumbnail urls`, async () => {
+    let plebbit, subplebbit;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        subplebbit = await createMockSub({}, plebbit);
+        await subplebbit.edit({ settings: { fetchThumbnailUrls: true } });
+        expect(subplebbit.settings.fetchThumbnailUrls).to.be.true;
+
+        await subplebbit.start();
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+
+    });
+
+    after(async () => {
+        await subplebbit.stop();
+    })
     it(`Generates thumbnail url for youtube video correctly`, async () => {
         const url = "https://www.youtube.com/watch?v=TLysAkFM4cA";
         const expectedThumbnailUrl = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
@@ -334,21 +350,25 @@ describe(`Generation of thumbnail urls`, async () => {
 
     it(`comment.thumbnailUrl is populated by subplebbit in challengeVerification`, async () => {
         const link = "https://www.youtube.com/watch?v=TLysAkFM4cA";
-        const plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        const sub = await createMockSub({}, plebbit);
-        await sub.edit({ settings: { fetchThumbnailUrls: true } });
-        expect(sub.settings.fetchThumbnailUrls).to.be.true;
-
-        await sub.start();
-
-        await new Promise((resolve) => sub.once("update", resolve));
-
-        expect(sub.settings.fetchThumbnailUrls).to.be.true;
-
-        const post = await publishRandomPost(sub.address, plebbit, { link }, false);
+        const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
         expect(post.link).to.equal(link);
-        await sub.stop();
         expect(post.thumbnailUrl).to.equal("https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg");
+    });
+
+    it(`comment.thumbnailUrl is undefined if comment.link is a link of a jpg`, async () => {
+        const link = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
+        const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
+        expect(post.link).to.equal(link);
+        expect(post.thumbnailUrl).to.be.undefined
+
+    });
+
+    it(`comment.thumbnailUrl is undefined if comment.link is a link of a gif`, async () => {
+        const link = "https://files.catbox.moe/nlsfav.gif";
+        const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
+        expect(post.link).to.equal(link);
+        expect(post.thumbnailUrl).to.be.undefined
+
     });
 });
 
