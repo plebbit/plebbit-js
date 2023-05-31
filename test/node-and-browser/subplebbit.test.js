@@ -272,7 +272,11 @@ describe(`subplebbit.clients (Remote)`, async () => {
         it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
             const mockSub = await plebbit.getSubplebbit(signers[0].address);
             expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(3);
-            expect(Object.values(mockSub.clients.chainProviders)[0].state).to.equal("stopped");
+            for (const chain of Object.keys(mockSub.clients.chainProviders)) {
+                expect(Object.keys(mockSub.clients.chainProviders[chain]).length).to.be.greaterThan(0);
+                for (const chainUrl of Object.keys(mockSub.clients.chainProviders[chain]))
+                    expect(mockSub.clients.chainProviders[chain][chainUrl].state).to.equal("stopped");
+            }
         });
 
         it(`Correct order of chainProviders state when updating a subplebbit that was created with plebbit.createSubplebbit({address})`, async () => {
@@ -282,7 +286,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
             const actualStates = [];
 
-            sub.clients.chainProviders["eth"].on("statechange", (newState) => actualStates.push(newState));
+            sub.clients.chainProviders["eth"]["ethers.js"].on("statechange", (newState) => actualStates.push(newState));
 
             sub.update();
 

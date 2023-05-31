@@ -38,10 +38,7 @@ describe("Comments with Authors as domains", async () => {
     it(`Subplebbit rejects a comment if plebbit-author-address points to a different address than signer`, async () => {
         // There are two mocks of resovleAuthorAddressIfNeeded, one return undefined on testgibbreish.eth (server side) and this one returns signers[6]
         // The purpose is to test whether server rejects publications that has different plebbit-author-address and signer address
-        const tempPlebbit = await mockPlebbit();
-        tempPlebbit.resolver._resolveEnsTxtRecord = async (authorAddress, txtRecordName) =>
-            authorAddress === "testgibbreish.eth" ? signers[6].address : authorAddress;
-        const mockPost = await tempPlebbit.createComment({
+        const mockPost = await plebbit.createComment({
             author: { displayName: `Mock Author - ${Date.now()}`, address: "testgibbreish.eth" },
             signer: signers[6],
             content: `Mock comment - ${Date.now()}`,
@@ -59,7 +56,7 @@ describe("Comments with Authors as domains", async () => {
         const tempPlebbit = await mockPlebbit();
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = async (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress;
-        // verifyPublication in getComment should overwrite author.address to derived address
+        // verifyComment in getComment should overwrite author.address to derived address
         const post = await tempPlebbit.getComment(mockComments[mockComments.length - 1].cid);
         expect(post.author.address).to.equal(signers[6].address);
     });
@@ -74,10 +71,7 @@ describe(`Vote with authors as domains`, async () => {
     });
 
     it(`Subplebbit rejects a Vote with author.address (domain) that resolves to a different signer`, async () => {
-        const tempPlebbit = await mockPlebbit();
-        tempPlebbit.resolver._resolveEnsTxtRecord = async (authorAddress, txtRecordName) =>
-            authorAddress === "testgibbreish.eth" ? signers[6].address : authorAddress;
-        const vote = await tempPlebbit.createVote({
+        const vote = await plebbit.createVote({
             author: { displayName: `Mock Author - ${Date.now()}`, address: "testgibbreish.eth" },
             signer: signers[6],
             commentCid: comment.cid,

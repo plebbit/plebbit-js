@@ -542,10 +542,14 @@ describe(`comment.clients`, async () => {
     });
 
     describe(`comment.clients.chainProviders`, async () => {
-        it(`comment.clients.chainProviders[url].state is stopped by default`, async () => {
+        it(`comment.clients.chainProviders[url][chainTicker].state is stopped by default`, async () => {
             const mockPost = await generateMockPost(subplebbitAddress, plebbit);
             expect(Object.keys(mockPost.clients.chainProviders).length).to.equal(3);
-            expect(Object.values(mockPost.clients.chainProviders)[0].state).to.equal("stopped");
+            for (const chain of Object.keys(mockPost.clients.chainProviders)) {
+                expect(Object.keys(mockPost.clients.chainProviders[chain]).length).to.be.greaterThan(0);
+                for (const chainUrl of Object.keys(mockPost.clients.chainProviders[chain]))
+                    expect(mockPost.clients.chainProviders[chain][chainUrl].state).to.equal("stopped");
+            }
         });
 
         it(`correct order of chainProviders state when publishing a comment to a sub with a domain address`, async () => {
@@ -555,7 +559,7 @@ describe(`comment.clients`, async () => {
 
             const actualStates = [];
 
-            mockPost.clients.chainProviders["eth"].on("statechange", (newState) => actualStates.push(newState));
+            mockPost.clients.chainProviders["eth"]["ethers.js"].on("statechange", (newState) => actualStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 

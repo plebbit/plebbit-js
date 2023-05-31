@@ -335,12 +335,11 @@ describe(`Generation of thumbnail urls`, async () => {
 
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
-
     });
 
     after(async () => {
         await subplebbit.stop();
-    })
+    });
     it(`Generates thumbnail url for youtube video correctly`, async () => {
         const url = "https://www.youtube.com/watch?v=TLysAkFM4cA";
         const expectedThumbnailUrl = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
@@ -359,16 +358,14 @@ describe(`Generation of thumbnail urls`, async () => {
         const link = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
         const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
         expect(post.link).to.equal(link);
-        expect(post.thumbnailUrl).to.be.undefined
-
+        expect(post.thumbnailUrl).to.be.undefined;
     });
 
     it(`comment.thumbnailUrl is undefined if comment.link is a link of a gif`, async () => {
         const link = "https://files.catbox.moe/nlsfav.gif";
         const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
         expect(post.link).to.equal(link);
-        expect(post.thumbnailUrl).to.be.undefined
-
+        expect(post.thumbnailUrl).to.be.undefined;
     });
 });
 
@@ -530,7 +527,11 @@ describe(`subplebbit.clients (Local)`, async () => {
         it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
             const mockSub = await createMockSub({}, plebbit);
             expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(3);
-            expect(Object.values(mockSub.clients.chainProviders)[0].state).to.equal("stopped");
+            for (const chain of Object.keys(mockSub.clients.chainProviders)) {
+                expect(Object.keys(mockSub.clients.chainProviders[chain]).length).to.be.greaterThan(0);
+                for (const chainUrl of Object.keys(mockSub.clients.chainProviders[chain]))
+                    expect(mockSub.clients.chainProviders[chain][chainUrl].state).to.equal("stopped");
+            }
         });
 
         it(`correct order of chainProviders state when receiving a comment with a domain for author.address`, async () => {
@@ -540,7 +541,7 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             const actualStates = [];
 
-            mockSub.clients.chainProviders["eth"].on("statechange", (newState) => actualStates.push(newState));
+            mockSub.clients.chainProviders["eth"]["ethers.js"].on("statechange", (newState) => actualStates.push(newState));
 
             await mockSub.start();
 
