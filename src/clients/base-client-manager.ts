@@ -196,6 +196,7 @@ export class BaseClientsManager {
             return resText;
         } catch (e) {
             await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
+            this.postFetchGatewayFailure(gateway, path, loadType);
             return { error: e };
         }
     }
