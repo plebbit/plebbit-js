@@ -17,6 +17,7 @@ const lodash = require("lodash");
 const version = require("../../../dist/node/version");
 const { encode, decode } = require("cborg");
 const { encrypt } = require("../../../dist/node/signer/index");
+const { timestamp } = require("../../../dist/node/util");
 
 const mathCliSubplebbitAddress = signers[1].address;
 const imageCaptchaSubplebbitAddress = signers[2].address;
@@ -28,16 +29,28 @@ describe("challengerequest", async () => {
     });
     it(`valid challengerequest fixture from previous version can be validated`, async () => {
         const request = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_request.json"));
-        const verificaiton = await verifyChallengeRequest(request);
+        const verificaiton = await verifyChallengeRequest(request, false);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
 
     it(`challenge request with challengeRequestId that is not derived from signer is invalidated`, async () => {
         const request = lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_request.json"));
         request.challengeRequestId = (await plebbit.createSigner()).address;
-        const verificaiton = await verifyChallengeRequest(request);
+        const verificaiton = await verifyChallengeRequest(request, false);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE });
     });
+
+    it(`challenge request with outdated timestamp is invalidated`, async () => {
+        const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[5] });
+        await comment.publish();
+        expect(comment._challengeRequest).to.be.a("object");
+        const challengeRequestToEdit = lodash.cloneDeep(comment._challengeRequest);
+        challengeRequestToEdit.timestamp = timestamp() - 6 * 60; // Should be invalidated now
+        challengeRequestToEdit.signature = await signChallengeRequest(challengeRequestToEdit, comment.pubsubMessageSigner);
+        const verificaiton = await verifyChallengeRequest(challengeRequestToEdit, true);
+        expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED });
+    });
+
     it(`Valid live ChallengeRequest gets validated correctly`, async () => {
         const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[5] });
         await comment.publish();

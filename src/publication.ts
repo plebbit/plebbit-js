@@ -1,6 +1,4 @@
 import { ChallengeAnswerMessage, ChallengeRequestMessage } from "./challenge";
-import { v4 as uuidv4 } from "uuid";
-import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import Author from "./author";
 import assert from "assert";
 import { decrypt, encrypt, Signer } from "./signer";
@@ -113,7 +111,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         const msgParsed: ChallengeMessageType | ChallengeVerificationMessageType = cborg.decode(pubsubMsg.data);
         if (msgParsed?.challengeRequestId !== this._challengeRequest.challengeRequestId) return; // Process only this publication's challenge
         if (msgParsed?.type === "CHALLENGE") {
-            const challengeMsgValidity = await verifyChallengeMessage(msgParsed, this._pubsubTopicWithfallback());
+            const challengeMsgValidity = await verifyChallengeMessage(msgParsed, this._pubsubTopicWithfallback(), true);
             if (!challengeMsgValidity.valid) {
                 const error = new PlebbitError("ERR_CHALLENGE_SIGNATURE_IS_INVALID", {
                     pubsubMsg: msgParsed,
@@ -135,7 +133,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             this._clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
             this.emit("challenge", decryptedChallenge);
         } else if (msgParsed?.type === "CHALLENGEVERIFICATION") {
-            const signatureValidation = await verifyChallengeVerification(msgParsed, this._pubsubTopicWithfallback());
+            const signatureValidation = await verifyChallengeVerification(msgParsed, this._pubsubTopicWithfallback(), true);
             if (!signatureValidation.valid) {
                 const error = new PlebbitError("ERR_CHALLENGE_VERIFICATION_SIGNATURE_IS_INVALID", {
                     pubsubMsg: msgParsed,

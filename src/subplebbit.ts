@@ -907,7 +907,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async handleChallengeRequest(request: ChallengeRequestMessage) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeRequest");
 
-        const requestSignatureValidation = await verifyChallengeRequest(request);
+        const requestSignatureValidation = await verifyChallengeRequest(request, true);
         if (!requestSignatureValidation.valid) return;
 
 
@@ -1003,7 +1003,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     async handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeAnswer");
 
-        const answerSignatureValidation = await verifyChallengeAnswer(challengeAnswer);
+        const answerSignatureValidation = await verifyChallengeAnswer(challengeAnswer, true);
 
         if (!answerSignatureValidation.valid) return;
 

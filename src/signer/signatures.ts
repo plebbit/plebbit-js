@@ -5,7 +5,7 @@ import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import * as ed from "@noble/ed25519";
 
 import PeerId from "peer-id";
-import { removeNullAndUndefinedValuesRecursively, throwWithErrorCode } from "../util";
+import { removeNullAndUndefinedValuesRecursively, throwWithErrorCode, timestamp } from "../util";
 import { Plebbit } from "../plebbit";
 
 import {
@@ -186,9 +186,7 @@ const _verifyAuthor = async (
         if (resolvedAuthorAddress !== derivedAddress) {
             // Means plebbit-author-address text record is resolving to another address (outdated?)
             // Will always use address derived from publication.signature.publicKey as truth
-            log.error(
-                `author address (${publicationJson.author.address}) resolved address (${resolvedAuthorAddress}) is invalid`
-            );
+            log.error(`author address (${publicationJson.author.address}) resolved address (${resolvedAuthorAddress}) is invalid`);
             return { valid: true, newAddress: derivedAddress };
         }
     } else {
@@ -354,36 +352,64 @@ export async function verifyCommentUpdate(
     return _getValidationResult(update);
 }
 
-export async function verifyChallengeRequest(request: ChallengeRequestMessageType): Promise<ValidationResult> {
+// -5 mins
+function _minimumTimestamp() {
+    return timestamp() - 5 * 60;
+}
+
+// +5mins
+function _maximumTimestamp() {
+    return timestamp() + 5 * 60;
+}
+
+export async function verifyChallengeRequest(
+    request: ChallengeRequestMessageType,
+    validateTimestampRange: boolean
+): Promise<ValidationResult> {
     const msgSignerAddress = await getPlebbitAddressFromPublicKey(request.signature.publicKey);
     if (msgSignerAddress !== request.challengeRequestId)
-        return { valid: false, reason: messages["ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE"] };
+        return { valid: false, reason: messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE };
+    if ((validateTimestampRange && _minimumTimestamp() > request.timestamp) || _maximumTimestamp() < request.timestamp)
+        return { valid: false, reason: messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED };
 
     return _getValidationResult(request);
 }
 
-export async function verifyChallengeMessage(challenge: ChallengeMessageType, pubsubTopic: string): Promise<ValidationResult> {
+export async function verifyChallengeMessage(
+    challenge: ChallengeMessageType,
+    pubsubTopic: string,
+    validateTimestampRange: boolean
+): Promise<ValidationResult> {
     const msgSignerAddress = await getPlebbitAddressFromPublicKey(challenge.signature.publicKey);
-    if (msgSignerAddress !== pubsubTopic) return { valid: false, reason: messages["ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT"] };
+    if (msgSignerAddress !== pubsubTopic) return { valid: false, reason: messages.ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT };
+    if ((validateTimestampRange && _minimumTimestamp() > challenge.timestamp) || _maximumTimestamp() < challenge.timestamp)
+        return { valid: false, reason: messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED };
 
     return _getValidationResult(challenge);
 }
 
-export async function verifyChallengeAnswer(answer: ChallengeAnswerMessageType): Promise<ValidationResult> {
+export async function verifyChallengeAnswer(
+    answer: ChallengeAnswerMessageType,
+    validateTimestampRange: boolean
+): Promise<ValidationResult> {
     const msgSignerAddress = await getPlebbitAddressFromPublicKey(answer.signature.publicKey);
     if (msgSignerAddress !== answer.challengeRequestId)
-        return { valid: false, reason: messages["ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE"] };
+        return { valid: false, reason: messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE };
+    if ((validateTimestampRange && _minimumTimestamp() > answer.timestamp) || _maximumTimestamp() < answer.timestamp)
+        return { valid: false, reason: messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED };
 
     return _getValidationResult(answer);
 }
 
 export async function verifyChallengeVerification(
     verification: ChallengeVerificationMessageType,
-    pubsubTopic: string
+    pubsubTopic: string,
+    validateTimestampRange: boolean
 ): Promise<ValidationResult> {
     const msgSignerAddress = await getPlebbitAddressFromPublicKey(verification.signature.publicKey);
-    if (msgSignerAddress !== pubsubTopic)
-        return { valid: false, reason: messages["ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_SUBPLEBBIT"] };
+    if (msgSignerAddress !== pubsubTopic) return { valid: false, reason: messages.ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_SUBPLEBBIT };
+    if ((validateTimestampRange && _minimumTimestamp() > verification.timestamp) || _maximumTimestamp() < verification.timestamp)
+        return { valid: false, reason: messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED };
 
     return _getValidationResult(verification);
 }
