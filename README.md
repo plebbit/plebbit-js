@@ -276,7 +276,7 @@ PubsubMessage: {
   type: 'CHALLENGEREQUEST' | 'CHALLENGE' | 'CHALLENGEANSWER' | 'CHALLENGEVERIFICATION'
   challengeRequestId: Uint8Array // (byte string in cbor) // multihash of challengeRequestMessage.signature.publicKey, each challengeRequestMessage must use a new public key
   timestamp: number // in seconds, needed because publication.timestamp is encrypted
-  signature: Signature // each challengeRequestMessage must use a new public key
+  signature: PubsubSignature // each challengeRequestMessage must use a new public key
   protocolVersion: '1.0.0' // semantic version of the protocol https://semver.org/
   userAgent: `/plebbit-js:${require('./package.json').version}/` // client name and version using this standard https://en.bitcoin.it/wiki/BIP_0014#Proposal
 }
@@ -311,7 +311,7 @@ Encrypted {
   tag: Uint8Array // (byte string in cbor) authentication tag, AES GCM has authentication tag https://en.wikipedia.org/wiki/Galois/Counter_Mode
   type: 'ed25519-aes-gcm'
 }
-Signature {
+PubsubSignature {
   signature: Uint8Array // (byte string in cbor)
   publicKey: Uint8Array // (byte string in cbor) 32 bytes
   type: 'ed25519' | 'eip191' // multiple versions/types to allow signing with metamask/other wallet or to change the signature fields or algorithm
