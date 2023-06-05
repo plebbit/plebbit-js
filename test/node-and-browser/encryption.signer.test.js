@@ -3,19 +3,16 @@ const fixtureSigners = require("../fixtures/signers");
 const authorSignerFixture = fixtureSigners[1];
 const subplebbitSignerFixture = fixtureSigners[2];
 const fixtureComment = require("../fixtures/publications").comment;
-const { encrypt, decrypt } = require("../../dist/node/signer");
-const {
-    encryptStringAesGcm,
-    decryptStringAesGcm
-} = require("../../dist/node/signer/encryption");
+const { encryptEd25519AesGcm, decryptEd25519AesGcm } = require("../../dist/node/signer");
+const { encryptStringAesGcm, decryptStringAesGcm } = require("../../dist/node/signer/encryption");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect } = chai;
-const {fromString: uint8ArrayFromString} = require('uint8arrays/from-string')
-const {toString: uint8ArrayToString} = require('uint8arrays/to-string')
+const { fromString: uint8ArrayFromString } = require("uint8arrays/from-string");
+const { toString: uint8ArrayToString } = require("uint8arrays/to-string");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
-const ed = require('@noble/ed25519')
+const ed = require("@noble/ed25519");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
@@ -32,26 +29,26 @@ describe("encryption", () => {
             let key, ciphertext, iv, tag;
             before(async () => {
                 // key must be 16 bytes for aes-gcm 128
-                key = ed.utils.randomPrivateKey().slice(0, 16)
+                key = ed.utils.randomPrivateKey().slice(0, 16);
                 const res = await encryptStringAesGcm(JSON.stringify(fixtureComment), key);
-                ciphertext = res.ciphertext
-                iv = res.iv
-                tag = res.tag
+                ciphertext = res.ciphertext;
+                iv = res.iv;
+                tag = res.tag;
             });
 
             it("ciphertext is not empty", async () => {
                 expect(ciphertext.constructor.name).to.equal("Uint8Array");
-                expect(ciphertext.length).to.not.equal(0)
+                expect(ciphertext.length).to.not.equal(0);
             });
 
             it("iv is not empty", async () => {
                 expect(iv.constructor.name).to.equal("Uint8Array");
-                expect(iv.length).to.not.equal(0)
+                expect(iv.length).to.not.equal(0);
             });
 
             it("tag is not empty", async () => {
                 expect(tag.constructor.name).to.equal("Uint8Array");
-                expect(tag.length).to.not.equal(0)
+                expect(tag.length).to.not.equal(0);
             });
 
             it("encrypted string can be decrypted", async () => {
@@ -70,30 +67,30 @@ describe("encryption", () => {
 
             describe("encrypt the word 'string'", () => {
                 const string = "string";
-                let ciphertext, tag, resIv
+                let ciphertext, tag, resIv;
                 before(async () => {
                     const res = await encryptStringAesGcm(string, key, iv);
-                    ciphertext = res.ciphertext
-                    tag = res.tag
-                    resIv = res.iv
+                    ciphertext = res.ciphertext;
+                    tag = res.tag;
+                    resIv = res.iv;
                 });
 
                 it("ciphertext is correct", async () => {
                     expect(ciphertext.constructor.name).to.equal("Uint8Array");
-                    expect(ciphertext.length).to.not.equal(0)
-                    expect(uint8ArrayToString(ciphertext, 'base64')).to.equal("LjjTphzr");
+                    expect(ciphertext.length).to.not.equal(0);
+                    expect(uint8ArrayToString(ciphertext, "base64")).to.equal("LjjTphzr");
                 });
 
                 it("iv is correct", async () => {
                     expect(resIv.constructor.name).to.equal("Uint8Array");
-                    expect(resIv.length).to.not.equal(0)
+                    expect(resIv.length).to.not.equal(0);
                     expect(uint8ArrayToString(resIv)).to.equal(uint8ArrayToString(iv));
                 });
 
                 it("tag is correct", async () => {
                     expect(tag.constructor.name).to.equal("Uint8Array");
-                    expect(tag.length).to.not.equal(0)
-                    expect(uint8ArrayToString(tag, 'base64')).to.equal("A+d3AWJ0NM/4t1OwLs0/lw");
+                    expect(tag.length).to.not.equal(0);
+                    expect(uint8ArrayToString(tag, "base64")).to.equal("A+d3AWJ0NM/4t1OwLs0/lw");
                 });
 
                 it("encrypted string can be decrypted", async () => {
@@ -106,20 +103,20 @@ describe("encryption", () => {
 
             describe("encrypt an emoji", () => {
                 const emoji = "🤡";
-                let ciphertext, tag
+                let ciphertext, tag;
                 before(async () => {
                     const res = await encryptStringAesGcm(emoji, key, iv);
-                    ciphertext = res.ciphertext
-                    tag = res.tag
+                    ciphertext = res.ciphertext;
+                    tag = res.tag;
                 });
 
                 it("encrypted emoji is not empty", async () => {
                     expect(ciphertext.constructor.name).to.equal("Uint8Array");
-                    expect(ciphertext.length).to.not.equal(0)
+                    expect(ciphertext.length).to.not.equal(0);
 
                     // aes-gcm 128 encrypted "🤡" with key "1111111111111111" and iv "111111111111"
                     // should always return this value
-                    expect(uint8ArrayToString(ciphertext, 'base64')).to.equal("rdMFbg");
+                    expect(uint8ArrayToString(ciphertext, "base64")).to.equal("rdMFbg");
                 });
 
                 it("encrypted emoji can be decrypted", async () => {
@@ -136,7 +133,11 @@ describe("encryption", () => {
         let encryptedPublication;
 
         before(async () => {
-            encryptedPublication = await encrypt(JSON.stringify(fixtureComment), authorSignerFixture.privateKey, subplebbitSignerFixture.publicKey);
+            encryptedPublication = await encryptEd25519AesGcm(
+                JSON.stringify(fixtureComment),
+                authorSignerFixture.privateKey,
+                subplebbitSignerFixture.publicKey
+            );
         });
 
         it("encrypted publication has expected properties", async () => {
@@ -151,7 +152,7 @@ describe("encryption", () => {
         });
 
         it("encrypted publication can be decrypted", async () => {
-            const decryptedPublicationString = await decrypt(
+            const decryptedPublicationString = await decryptEd25519AesGcm(
                 encryptedPublication,
                 subplebbitSignerFixture.privateKey,
                 authorSignerFixture.publicKey
