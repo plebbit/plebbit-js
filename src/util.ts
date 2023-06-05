@@ -217,3 +217,8 @@ export function delay(ms: number): Promise<void> {
 export function firstResolve(promises: Promise<any>[]) {
     return new Promise<any>((resolve) => promises.forEach((promise) => promise.then(resolve)));
 }
+
+export function getErrorCodeFromMessage(message: string): keyof typeof messages {
+    for (const code of Object.keys(messages)) if (messages[code] === message) return <keyof typeof messages>code;
+    throw Error(`No error code was found for message (${message})`);
+}

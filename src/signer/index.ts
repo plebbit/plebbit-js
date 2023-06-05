@@ -3,7 +3,7 @@ import { SingersTableRowInsert } from "../types";
 import { CreateSignerOptions, SignerType } from "./constants";
 import { generatePrivateKey, getPublicKeyFromPrivateKey, getPlebbitAddressFromPrivateKey } from "./util";
 export { verifyComment, verifySubplebbit, verifyVote } from "./signatures";
-export { encryptEd25519AesGcm as encrypt, decryptEd25519AesGcm as decrypt } from "./encryption";
+export { encryptEd25519AesGcm, decryptEd25519AesGcm, decryptEd25519AesGcmPublicKeyBuffer } from "./encryption";
 
 export class Signer implements SignerType {
     type: "ed25519";

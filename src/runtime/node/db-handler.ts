@@ -237,7 +237,7 @@ export class DbHandler {
 
     private async _createChallengeRequestsTable(tableName: string) {
         await this._knex.schema.createTable(tableName, (table) => {
-            table.uuid("challengeRequestId").notNullable().primary().unique();
+            table.binary("challengeRequestId").notNullable().primary().unique();
             table.text("userAgent").notNullable();
             table.text("protocolVersion").notNullable();
             table.json("signature").notNullable().unique();
@@ -250,7 +250,7 @@ export class DbHandler {
     private async _createChallengesTable(tableName: string) {
         await this._knex.schema.createTable(tableName, (table) => {
             table
-                .uuid("challengeRequestId")
+                .binary("challengeRequestId")
                 .notNullable()
                 .primary()
                 .unique()
@@ -270,7 +270,7 @@ export class DbHandler {
     private async _createChallengeAnswersTable(tableName: string) {
         await this._knex.schema.createTable(tableName, (table) => {
             table
-                .uuid("challengeRequestId")
+                .binary("challengeRequestId")
                 .notNullable()
                 .primary()
                 .unique()
@@ -288,7 +288,7 @@ export class DbHandler {
     private async _createChallengeVerificationsTable(tableName: string) {
         await this._knex.schema.createTable(tableName, (table) => {
             table
-                .uuid("challengeRequestId")
+                .binary("challengeRequestId")
                 .notNullable()
                 .primary()
                 .unique()
@@ -452,7 +452,7 @@ export class DbHandler {
         await this._baseTransaction(trx)(TABLES.CHALLENGE_VERIFICATIONS).insert(verification);
     }
 
-    async queryChallengeRequest(requestId: ChallengeRequestsTableRowInsert["challengeRequestId"], trx?: Transaction){
+    async queryChallengeRequest(requestId: ChallengeRequestsTableRowInsert["challengeRequestId"], trx?: Transaction) {
         return this._baseTransaction(trx)(TABLES.CHALLENGE_REQUESTS).where("challengeRequestId", requestId).first();
     }
 

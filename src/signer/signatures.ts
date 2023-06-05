@@ -1,4 +1,10 @@
-import { getPeerIdFromPublicKey, getPlebbitAddressFromPrivateKey, getPlebbitAddressFromPublicKey } from "./util";
+import {
+    getPeerIdFromPublicKey,
+    getPeerIdFromPublicKeyBuffer,
+    getPlebbitAddressFromPrivateKey,
+    getPlebbitAddressFromPublicKey,
+    getPlebbitAddressFromPublicKeyBuffer
+} from "./util";
 import * as cborg from "cborg";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
@@ -22,8 +28,8 @@ import {
     CreateCommentOptions,
     CreateVoteOptions,
     PageIpfs,
+    PubsubMessage,
     SubplebbitIpfsType,
-    SubplebbitType,
     VotePubsubMessage
 } from "../types";
 import Logger from "@plebbit/plebbit-logger";
@@ -38,9 +44,11 @@ import {
     CommentEditSignedPropertyNames,
     CommentSignedPropertyNames,
     CommentUpdateSignedPropertyNames,
+    JsonSignature,
     PublicationsToSign,
     PublicationToVerify,
-    SignatureType,
+    PubsubMsgsToSign,
+    PubsubSignature,
     SignerType,
     SubplebbitSignedPropertyNames,
     VoteSignedPropertyNames
@@ -54,7 +62,7 @@ export interface ValidationResult {
 
 const isProbablyBuffer = (arg) => arg && typeof arg !== "string" && typeof arg !== "number";
 
-export const signBufferEd25519 = async (bufferToSign, privateKeyBase64) => {
+export const signBufferEd25519 = async (bufferToSign: Uint8Array, privateKeyBase64: string) => {
     if (!isProbablyBuffer(bufferToSign)) throw Error(`signBufferEd25519 invalid bufferToSign '${bufferToSign}' not buffer`);
     if (!privateKeyBase64 || typeof privateKeyBase64 !== "string") throw Error(`signBufferEd25519 privateKeyBase64 not a string`);
     const privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, "base64");
@@ -65,7 +73,7 @@ export const signBufferEd25519 = async (bufferToSign, privateKeyBase64) => {
     return signature;
 };
 
-export const verifyBufferEd25519 = async (bufferToSign, bufferSignature, publicKeyBase64: string) => {
+export const verifyBufferEd25519 = async (bufferToSign: Uint8Array, bufferSignature: Uint8Array, publicKeyBase64: string) => {
     if (!isProbablyBuffer(bufferToSign)) throw Error(`verifyBufferEd25519 invalid bufferSignature '${bufferToSign}' not buffer`);
     if (!isProbablyBuffer(bufferSignature)) throw Error(`verifyBufferEd25519 invalid bufferSignature '${bufferSignature}' not buffer`);
     if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
@@ -90,12 +98,12 @@ async function _validateAuthorIpns(author: CreateCommentOptions["author"], signe
     }
 }
 
-async function _sign(
+async function _signJson(
     signedPropertyNames: readonly string[],
     publication: PublicationsToSign,
     signer: SignerType,
     log: Logger
-): Promise<SignatureType> {
+): Promise<JsonSignature> {
     assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
 
     const publicationEncoded = bufferCleanedObject(signedPropertyNames, publication); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
@@ -108,65 +116,75 @@ async function _sign(
     };
 }
 
-export async function signComment(comment: CreateCommentOptions, signer: SignerType, plebbit: Plebbit): Promise<SignatureType> {
+async function _signPubsubMsg(
+    signedPropertyNames: readonly string[],
+    msg: PubsubMsgsToSign,
+    signer: SignerType,
+    log: Logger
+): Promise<PubsubSignature> {
+    assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
+
+    const publicationEncoded = bufferCleanedObject(signedPropertyNames, msg); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    const signatureData = await signBufferEd25519(publicationEncoded, signer.privateKey);
+    const publicKeyBuffer = uint8ArrayFromString(signer.publicKey, "base64");
+    return {
+        signature: signatureData,
+        publicKey: publicKeyBuffer,
+        type: signer.type,
+        signedPropertyNames: signedPropertyNames
+    };
+}
+
+export async function signComment(comment: CreateCommentOptions, signer: SignerType, plebbit: Plebbit) {
     const log = Logger("plebbit-js:signatures:signComment");
     await _validateAuthorIpns(comment.author, signer, plebbit);
-    return _sign(CommentSignedPropertyNames, comment, signer, log);
+    return _signJson(CommentSignedPropertyNames, comment, signer, log);
 }
 
-export async function signVote(vote: CreateVoteOptions, signer: SignerType, plebbit: Plebbit): Promise<SignatureType> {
+export async function signVote(vote: CreateVoteOptions, signer: SignerType, plebbit: Plebbit) {
     const log = Logger("plebbit-js:signatures:signVote");
     await _validateAuthorIpns(vote.author, signer, plebbit);
-    return _sign(VoteSignedPropertyNames, vote, signer, log);
+    return _signJson(VoteSignedPropertyNames, vote, signer, log);
 }
 
-export async function signCommentEdit(edit: CreateCommentEditOptions, signer: SignerType, plebbit: Plebbit): Promise<SignatureType> {
+export async function signCommentEdit(edit: CreateCommentEditOptions, signer: SignerType, plebbit: Plebbit) {
     const log = Logger("plebbit-js:signatures:signCommentEdit");
     await _validateAuthorIpns(edit.author, signer, plebbit);
-    return _sign(CommentEditSignedPropertyNames, edit, signer, log);
+    return _signJson(CommentEditSignedPropertyNames, edit, signer, log);
 }
 
-export async function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType): Promise<SignatureType> {
+export async function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType) {
     const log = Logger("plebbit-js:signatures:signCommentUpdate");
     // Not sure, should we validate update.authorEdit here?
-    return _sign(CommentUpdateSignedPropertyNames, update, signer, log);
+    return _signJson(CommentUpdateSignedPropertyNames, update, signer, log);
 }
 
-export async function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signature">, signer: SignerType): Promise<SignatureType> {
+export async function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signature">, signer: SignerType) {
     const log = Logger("plebbit-js:signatures:signSubplebbit");
-    return _sign(SubplebbitSignedPropertyNames, subplebbit, signer, log);
+    return _signJson(SubplebbitSignedPropertyNames, subplebbit, signer, log);
 }
 
-export async function signChallengeRequest(
-    request: Omit<ChallengeRequestMessageType, "signature">,
-    signer: SignerType
-): Promise<SignatureType> {
+export async function signChallengeRequest(request: Omit<ChallengeRequestMessageType, "signature">, signer: SignerType) {
     const log = Logger("plebbit-js:signatures:signChallengeRequest");
-    return _sign(ChallengeRequestMessageSignedPropertyNames, request, signer, log);
+    return _signPubsubMsg(ChallengeRequestMessageSignedPropertyNames, request, signer, log);
 }
 
-export async function signChallengeMessage(
-    challengeMessage: Omit<ChallengeMessageType, "signature">,
-    signer: SignerType
-): Promise<SignatureType> {
+export async function signChallengeMessage(challengeMessage: Omit<ChallengeMessageType, "signature">, signer: SignerType) {
     const log = Logger("plebbit-js:signatures:signChallengeMessage");
-    return _sign(ChallengeMessageSignedPropertyNames, challengeMessage, signer, log);
+    return _signPubsubMsg(ChallengeMessageSignedPropertyNames, challengeMessage, signer, log);
 }
 
-export async function signChallengeAnswer(
-    challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">,
-    signer: SignerType
-): Promise<SignatureType> {
+export async function signChallengeAnswer(challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">, signer: SignerType) {
     const log = Logger("plebbit-js:signatures:signChallengeAnswer");
-    return _sign(ChallengeAnswerMessageSignedPropertyNames, challengeAnswer, signer, log);
+    return _signPubsubMsg(ChallengeAnswerMessageSignedPropertyNames, challengeAnswer, signer, log);
 }
 
 export async function signChallengeVerification(
     challengeVerification: Omit<ChallengeVerificationMessageType, "signature">,
     signer: SignerType
-): Promise<SignatureType> {
+) {
     const log = Logger("plebbit-js:signatures:signChallengeVerification");
-    return _sign(ChallengeVerificationMessageSignedPropertyNames, challengeVerification, signer, log);
+    return _signPubsubMsg(ChallengeVerificationMessageSignedPropertyNames, challengeVerification, signer, log);
 }
 
 // Verify functions
@@ -203,7 +221,7 @@ const _verifyAuthor = async (
 };
 
 // DO NOT MODIFY THIS FUNCTION, OTHERWISE YOU RISK BREAKING BACKWARD COMPATIBILITY
-const bufferCleanedObject = (signedPropertyNames: readonly string[], objectToSign: PublicationsToSign) => {
+const bufferCleanedObject = (signedPropertyNames: readonly string[], objectToSign: PublicationsToSign | PubsubMsgsToSign) => {
     const propsToSign = removeNullAndUndefinedValuesRecursively(lodash.pick(objectToSign, signedPropertyNames));
 
     const bufferToSign = cborg.encode(propsToSign);
@@ -211,7 +229,7 @@ const bufferCleanedObject = (signedPropertyNames: readonly string[], objectToSig
 };
 
 // DO NOT MODIFY THIS FUNCTION, OTHERWISE YOU RISK BREAKING BACKWARD COMPATIBILITY
-const _verifyPublicationSignature = async (publicationToBeVerified: PublicationToVerify): Promise<boolean> => {
+const _verifyJsonSignature = async (publicationToBeVerified: PublicationToVerify): Promise<boolean> => {
     const propsToSign = {};
     for (const propertyName of publicationToBeVerified.signature.signedPropertyNames)
         if (publicationToBeVerified[propertyName] !== undefined && publicationToBeVerified[propertyName] !== null) {
@@ -223,6 +241,18 @@ const _verifyPublicationSignature = async (publicationToBeVerified: PublicationT
         uint8ArrayFromString(publicationToBeVerified.signature.signature, "base64"),
         publicationToBeVerified.signature.publicKey
     );
+    return signatureIsValid;
+};
+// DO NOT MODIFY THIS FUNCTION, OTHERWISE YOU RISK BREAKING BACKWARD COMPATIBILITY
+const _verifyPubsubSignature = async (msg: PubsubMessage): Promise<boolean> => {
+    const propsToSign = {};
+    for (const propertyName of msg.signature.signedPropertyNames)
+        if (msg[propertyName] !== undefined && msg[propertyName] !== null) {
+            propsToSign[propertyName] = msg[propertyName];
+        }
+
+    const publicKeyBase64 = uint8ArrayToString(msg.signature.publicKey, "base64");
+    const signatureIsValid = await verifyBufferEd25519(cborg.encode(propsToSign), msg.signature.signature, publicKeyBase64);
     return signatureIsValid;
 };
 
@@ -242,7 +272,7 @@ const _verifyPublicationWithAuthor = async (
 
     // Validate signature
 
-    const signatureValidity = await _verifyPublicationSignature(publicationJson);
+    const signatureValidity = await _verifyJsonSignature(publicationJson);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
 
     if (authorSignatureValidity?.newAddress) return { valid: true, newAddress: authorSignatureValidity.newAddress };
@@ -302,7 +332,7 @@ export async function verifySubplebbit(
             if (!pageValidity.valid) return { valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID };
         }
 
-    const signatureValidity = await _verifyPublicationSignature(subplebbit);
+    const signatureValidity = await _verifyJsonSignature(subplebbit);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
 
     const resolvedSubAddress = await clientsManager.resolveSubplebbitAddressIfNeeded(subplebbit.address);
@@ -315,8 +345,14 @@ export async function verifySubplebbit(
     return { valid: true };
 }
 
-async function _getValidationResult(publication: PublicationToVerify) {
-    const signatureValidity = await _verifyPublicationSignature(publication);
+async function _getJsonValidationResult(publication: PublicationToVerify) {
+    const signatureValidity = await _verifyJsonSignature(publication);
+    if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
+    return { valid: true };
+}
+
+async function _getBinaryValidationResult(publication: PubsubMessage) {
+    const signatureValidity = await _verifyPubsubSignature(publication);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
     return { valid: true };
 }
@@ -349,7 +385,7 @@ export async function verifyCommentUpdate(
         if (invalidPageValidity) return invalidPageValidity;
     }
 
-    return _getValidationResult(update);
+    return _getJsonValidationResult(update);
 }
 
 // -5 mins
@@ -362,17 +398,24 @@ function _maximumTimestamp() {
     return timestamp() + 5 * 60;
 }
 
+async function _validateChallengeRequestId(msg: ChallengeRequestMessageType | ChallengeAnswerMessageType) {
+    const signaturePublicKeyPeerId = await getPeerIdFromPublicKeyBuffer(msg.signature.publicKey);
+    if (!signaturePublicKeyPeerId.equals(msg.challengeRequestId))
+        return { valid: false, reason: messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE };
+    else return { valid: true };
+}
+
 export async function verifyChallengeRequest(
     request: ChallengeRequestMessageType,
     validateTimestampRange: boolean
 ): Promise<ValidationResult> {
-    const msgSignerAddress = await getPlebbitAddressFromPublicKey(request.signature.publicKey);
-    if (msgSignerAddress !== request.challengeRequestId)
-        return { valid: false, reason: messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE };
+    const idValid = await _validateChallengeRequestId(request);
+    if (!idValid.valid) return idValid;
+
     if ((validateTimestampRange && _minimumTimestamp() > request.timestamp) || _maximumTimestamp() < request.timestamp)
         return { valid: false, reason: messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED };
 
-    return _getValidationResult(request);
+    return _getBinaryValidationResult(request);
 }
 
 export async function verifyChallengeMessage(
@@ -380,25 +423,25 @@ export async function verifyChallengeMessage(
     pubsubTopic: string,
     validateTimestampRange: boolean
 ): Promise<ValidationResult> {
-    const msgSignerAddress = await getPlebbitAddressFromPublicKey(challenge.signature.publicKey);
+    const msgSignerAddress = await getPlebbitAddressFromPublicKeyBuffer(challenge.signature.publicKey);
     if (msgSignerAddress !== pubsubTopic) return { valid: false, reason: messages.ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT };
     if ((validateTimestampRange && _minimumTimestamp() > challenge.timestamp) || _maximumTimestamp() < challenge.timestamp)
         return { valid: false, reason: messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED };
 
-    return _getValidationResult(challenge);
+    return _getBinaryValidationResult(challenge);
 }
 
 export async function verifyChallengeAnswer(
     answer: ChallengeAnswerMessageType,
     validateTimestampRange: boolean
 ): Promise<ValidationResult> {
-    const msgSignerAddress = await getPlebbitAddressFromPublicKey(answer.signature.publicKey);
-    if (msgSignerAddress !== answer.challengeRequestId)
-        return { valid: false, reason: messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE };
+    const idValid = await _validateChallengeRequestId(answer);
+    if (!idValid.valid) return idValid;
+
     if ((validateTimestampRange && _minimumTimestamp() > answer.timestamp) || _maximumTimestamp() < answer.timestamp)
         return { valid: false, reason: messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED };
 
-    return _getValidationResult(answer);
+    return _getBinaryValidationResult(answer);
 }
 
 export async function verifyChallengeVerification(
@@ -406,12 +449,12 @@ export async function verifyChallengeVerification(
     pubsubTopic: string,
     validateTimestampRange: boolean
 ): Promise<ValidationResult> {
-    const msgSignerAddress = await getPlebbitAddressFromPublicKey(verification.signature.publicKey);
+    const msgSignerAddress = await getPlebbitAddressFromPublicKeyBuffer(verification.signature.publicKey);
     if (msgSignerAddress !== pubsubTopic) return { valid: false, reason: messages.ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_SUBPLEBBIT };
     if ((validateTimestampRange && _minimumTimestamp() > verification.timestamp) || _maximumTimestamp() < verification.timestamp)
         return { valid: false, reason: messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED };
 
-    return _getValidationResult(verification);
+    return _getBinaryValidationResult(verification);
 }
 
 export async function verifyPage(

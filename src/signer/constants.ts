@@ -44,11 +44,16 @@ export type Encrypted = {
 // ---------------------------
 // Signature
 
-export interface SignatureType {
-    signature: string;
-    publicKey: string;
+export interface PubsubSignature {
+    signature: Uint8Array; // (byte string in cbor)
+    publicKey: Uint8Array; // (byte string in cbor) 32 bytes
     type: "ed25519";
     signedPropertyNames: readonly string[];
+}
+
+export interface JsonSignature extends Omit<PubsubSignature, "signature" | "publicKey"> {
+    signature: string; // (base64)
+    publicKey: string; // (base64) 32 bytes
 }
 
 export type SignatureTypes =
@@ -178,7 +183,9 @@ export type PublicationsToSign =
     | CreateVoteOptions
     | CreateCommentOptions
     | Omit<CommentUpdate, "signature">
-    | Omit<SubplebbitIpfsType, "signature">
+    | Omit<SubplebbitIpfsType, "signature">;
+
+export type PubsubMsgsToSign =
     | Omit<ChallengeAnswerMessageType, "signature">
     | Omit<ChallengeRequestMessageType, "signature">
     | Omit<ChallengeVerificationMessageType, "signature">
@@ -186,13 +193,4 @@ export type PublicationsToSign =
 
 // ---------------------------
 // Verifying
-export type PublicationToVerify =
-    | CommentEditPubsubMessage
-    | VotePubsubMessage
-    | CommentPubsubMessage
-    | CommentUpdate
-    | SubplebbitIpfsType
-    | ChallengeRequestMessageType
-    | ChallengeMessageType
-    | ChallengeAnswerMessageType
-    | ChallengeVerificationMessageType;
+export type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | CommentUpdate | SubplebbitIpfsType;

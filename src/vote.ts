@@ -39,7 +39,7 @@ class Vote extends Publication implements VoteType {
         return {
             ...this.toJSON(),
             authorAddress: this.author.address,
-            challengeRequestId: challengeRequestId
+            challengeRequestId
         };
     }
 

@@ -15,7 +15,7 @@ const uint8ArrayToNodeForgeBuffer = (uint8Array) => {
 };
 
 // NOTE: never pass the last param 'iv', only used for testing, it must always be random
-export const encryptStringAesGcm = async (plaintext, key, iv?) => {
+export const encryptStringAesGcm = async (plaintext: string, key: Uint8Array, iv?: Uint8Array) => {
     if (!plaintext || typeof plaintext !== "string") throw Error(`encryptStringAesGcm plaintext '${plaintext}' not a string`);
     if (!isProbablyBuffer(key)) throw Error(`encryptStringAesGcm invalid key '${key}' not buffer`);
 
@@ -41,7 +41,7 @@ export const encryptStringAesGcm = async (plaintext, key, iv?) => {
     };
 };
 
-export const decryptStringAesGcm = async (ciphertext, key, iv, tag) => {
+export const decryptStringAesGcm = async (ciphertext: Uint8Array, key: Uint8Array, iv: Uint8Array, tag: Uint8Array) => {
     if (!isProbablyBuffer(ciphertext)) throw Error(`decryptStringAesGcm invalid ciphertext '${ciphertext}' not buffer`);
     if (!isProbablyBuffer(key)) throw Error(`decryptStringAesGcm invalid key '${key}' not buffer`);
     if (!isProbablyBuffer(iv)) throw Error(`decryptStringAesGcm invalid iv '${iv}' not buffer`);
@@ -60,18 +60,24 @@ export const decryptStringAesGcm = async (ciphertext, key, iv, tag) => {
     return decrypted;
 };
 
-export const encryptEd25519AesGcm = async (plaintext, privateKeyBase64, publicKeyBase64) => {
+export const encryptEd25519AesGcm = async (plaintext: string, privateKeyBase64: string, publicKeyBase64: string) => {
+    if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
+        throw Error(`encryptEd25519AesGcm publicKeyBase64 '${publicKeyBase64}' not a string`);
+    const publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, "base64");
+
+        return encryptEd25519AesGcmPublicKeyBuffer(plaintext, privateKeyBase64, publicKeyBuffer);
+
+};
+
+export const encryptEd25519AesGcmPublicKeyBuffer = async (plaintext: string, privateKeyBase64: string, publicKeyBuffer: Uint8Array) => {
     if (!plaintext || typeof plaintext !== "string") throw Error(`encryptEd25519AesGcm plaintext '${plaintext}' not a string`);
     if (!privateKeyBase64 || typeof privateKeyBase64 !== "string") throw Error(`encryptEd25519AesGcm privateKeyBase64 not a string`);
     const privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, "base64");
     if (privateKeyBuffer.length !== 32)
         throw Error(`encryptEd25519AesGcm publicKeyBase64 ed25519 public key length not 32 bytes (${privateKeyBuffer.length} bytes)`);
-    if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
-        throw Error(`encryptEd25519AesGcm publicKeyBase64 '${publicKeyBase64}' not a string`);
-    const publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, "base64");
     if (publicKeyBuffer.length !== 32)
         throw Error(
-            `encryptEd25519AesGcm publicKeyBase64 '${publicKeyBase64}' ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`
+            `encryptEd25519AesGcm publicKeyBase64 '${publicKeyBuffer}' ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`
         );
 
     // add random padding to prevent linking encrypted publications by sizes
@@ -101,18 +107,26 @@ export const encryptEd25519AesGcm = async (plaintext, privateKeyBase64, publicKe
     return encrypted;
 };
 
-export const decryptEd25519AesGcm = async (encrypted: Encrypted, privateKeyBase64, publicKeyBase64) => {
+
+export const decryptEd25519AesGcm = async (encrypted: Encrypted, privateKeyBase64: string, publicKeyBase64: string) => {
+    if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")
+        throw Error(`decryptEd25519AesGcm ${privateKeyBase64} privateKeyBase64 not a string`);
+    if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
+        throw Error(`decryptEd25519AesGcm publicKeyBase64 '${publicKeyBase64}' not a string`);
+    const publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, "base64");
+
+    return decryptEd25519AesGcmPublicKeyBuffer(encrypted, privateKeyBase64, publicKeyBuffer);
+};
+
+export const decryptEd25519AesGcmPublicKeyBuffer = async (encrypted: Encrypted, privateKeyBase64: string, publicKeyBuffer: Uint8Array) => {
     if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")
         throw Error(`decryptEd25519AesGcm ${privateKeyBase64} privateKeyBase64 not a string`);
     const privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, "base64");
     if (privateKeyBuffer.length !== 32)
         throw Error(`decryptEd25519AesGcm publicKeyBase64 ed25519 public key length not 32 bytes (${privateKeyBuffer.length} bytes)`);
-    if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
-        throw Error(`decryptEd25519AesGcm publicKeyBase64 '${publicKeyBase64}' not a string`);
-    const publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, "base64");
     if (publicKeyBuffer.length !== 32)
         throw Error(
-            `decryptEd25519AesGcm publicKeyBase64 '${publicKeyBase64}' ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`
+            `decryptEd25519AesGcm publicKeyBuffer '${publicKeyBuffer}' ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`
         );
 
     // compute the shared secret of the sender and recipient and use it as the encryption key

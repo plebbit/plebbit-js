@@ -11,7 +11,8 @@ import {
     CommentEditSignedPropertyNamesUnion,
     CommentSignedPropertyNamesUnion,
     Encrypted,
-    SignatureType,
+    JsonSignature,
+    PubsubSignature,
     SignerType,
     VoteSignedPropertyNamesUnion
 } from "./signer/constants";
@@ -129,7 +130,7 @@ export type Wallet = {
 
 export interface PublicationType extends Required<CreatePublicationOptions> {
     author: AuthorIpfsType;
-    signature: SignatureType; // sign immutable fields like author, title, content, timestamp to prevent tampering
+    signature: JsonSignature; // sign immutable fields like author, title, content, timestamp to prevent tampering
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
 }
 
@@ -176,14 +177,14 @@ export type Nft = {
     address: string; // address of the NFT contract
     id: string; // tokenId or index of the specific NFT used, must be string type, not number
     timestamp: number; // in seconds, needed to mitigate multiple users using the same signature
-    signature: SignatureType; // proof that author.address owns the nft
+    signature: JsonSignature; // proof that author.address owns the nft
     // how to resolve and verify NFT signatures https://github.com/plebbit/plebbit-js/blob/master/docs/nft.md
 };
 export type SubplebbitRole = { role: "owner" | "admin" | "moderator" };
 
 export interface PubsubMessage {
     type: "CHALLENGEREQUEST" | "CHALLENGE" | "CHALLENGEANSWER" | "CHALLENGEVERIFICATION";
-    signature: SignatureType;
+    signature: PubsubSignature;
     protocolVersion: ProtocolVersion;
     userAgent: string;
     timestamp: number;
@@ -195,7 +196,7 @@ export interface ChallengeType {
 }
 
 export interface ChallengeRequestMessageType extends PubsubMessage {
-    challengeRequestId: string;
+    challengeRequestId: Uint8Array; // (byte string in cbor) // multihash of challengeRequestMessage.signature.publicKey, each challengeRequestMessage must use a new public key
     type: "CHALLENGEREQUEST";
     encryptedPublication: Encrypted;
     acceptedChallengeTypes?: string[];
@@ -203,6 +204,7 @@ export interface ChallengeRequestMessageType extends PubsubMessage {
 
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType {
     publication: VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage | PostPubsubMessage;
+    challengeRequestIdHash: string; // sha256 of challengeRequestId
 }
 
 export interface ChallengeMessageType extends PubsubMessage {
@@ -213,6 +215,7 @@ export interface ChallengeMessageType extends PubsubMessage {
 
 export interface DecryptedChallengeMessageType extends ChallengeMessageType {
     challenges: ChallengeType[];
+    challengeRequestIdHash: string; // sha256 of challengeRequestId
 }
 
 export interface ChallengeAnswerMessageType extends PubsubMessage {
@@ -223,6 +226,7 @@ export interface ChallengeAnswerMessageType extends PubsubMessage {
 
 export interface DecryptedChallengeAnswerMessageType extends ChallengeAnswerMessageType {
     challengeAnswers: string[];
+    challengeRequestIdHash: string; // sha256 of challengeRequestId
 }
 
 export interface ChallengeVerificationMessageType extends PubsubMessage {
@@ -236,6 +240,7 @@ export interface ChallengeVerificationMessageType extends PubsubMessage {
 
 export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType {
     publication?: CommentIpfsWithCid; // Only comments receive new props after verification for now
+    challengeRequestIdHash: string; // sha256 of challengeRequestId
 }
 
 export type SubplebbitStats = {
@@ -300,7 +305,7 @@ export type Flair = {
 export type FlairOwner = "post" | "author";
 
 export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database" | "signer"> {
-    signature: SignatureType;
+    signature: JsonSignature;
     encryption: SubplebbitEncryption;
     address: string;
     shortAddress: string;
@@ -327,7 +332,7 @@ export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     updatedAt?: number;
     signer?: Pick<SignerType, "privateKey" | "type">;
     encryption?: SubplebbitEncryption;
-    signature?: SignatureType; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
+    signature?: JsonSignature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
 }
 
 export interface SubplebbitEditOptions {
@@ -395,7 +400,7 @@ export interface CommentUpdate {
     reason?: string; // reason the mod took a mod action
     updatedAt: number; // timestamp in seconds the IPNS record was updated
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
-    signature: SignatureType; // signature of the CommentUpdate by the sub owner to protect against malicious gateway
+    signature: JsonSignature; // signature of the CommentUpdate by the sub owner to protect against malicious gateway
     author?: {
         // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flair with commentUpdate.author.subplebbit.flair if any
         subplebbit: SubplebbitAuthor;
@@ -408,7 +413,7 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     author: AuthorTypeWithCommentUpdate;
     timestamp: number;
     protocolVersion: ProtocolVersion;
-    signature: SignatureType;
+    signature: JsonSignature;
     replies?: PagesTypeJson;
     postCid?: string;
     previousCid?: string; // each post is a linked list
@@ -571,7 +576,8 @@ export interface ChallengesTableRowInsert extends Omit<ChallengesTableRow, "inse
 
 // Challenge answers table
 
-export interface ChallengeAnswersTableRow extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encryptedChallengeAnswers"> {
+export interface ChallengeAnswersTableRow
+    extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encryptedChallengeAnswers" | "challengeRequestIdHash"> {
     insertedAt: number;
 }
 

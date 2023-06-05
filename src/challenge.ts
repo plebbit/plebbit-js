@@ -12,14 +12,14 @@ import {
     ProtocolVersion
 } from "./types";
 import lodash from "lodash";
-import { Encrypted, SignatureType } from "./signer/constants";
+import { Encrypted, PubsubSignature } from "./signer/constants";
 
 export class ChallengeRequestMessage implements ChallengeRequestMessageType {
     encryptedPublication: Encrypted;
     type: "CHALLENGEREQUEST";
-    challengeRequestId: string;
+    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     acceptedChallengeTypes?: string[];
-    signature: SignatureType;
+    signature: PubsubSignature;
     protocolVersion: ProtocolVersion;
     userAgent: string;
     timestamp: number;
@@ -60,7 +60,7 @@ export class ChallengeMessage implements ChallengeMessageType {
     encryptedChallenges: Encrypted;
     type: "CHALLENGE";
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
-    signature: SignatureType;
+    signature: PubsubSignature;
     protocolVersion: ProtocolVersion;
     userAgent: string;
     timestamp: number;
@@ -96,7 +96,7 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
     type: "CHALLENGEANSWER";
     encryptedChallengeAnswers: Encrypted;
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
-    signature: SignatureType;
+    signature: PubsubSignature;
     protocolVersion: ProtocolVersion;
     userAgent: string;
     timestamp: number;
@@ -135,7 +135,7 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
     challengeErrors?: (string | undefined)[];
     reason?: string;
     encryptedPublication?: Encrypted;
-    signature: SignatureType;
+    signature: PubsubSignature;
     protocolVersion: "1.0.0";
     userAgent: string;
     timestamp: number;
