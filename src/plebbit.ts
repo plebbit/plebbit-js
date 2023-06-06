@@ -387,4 +387,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         await this._clientsManager.pubsubUnsubscribe(subplebbitAddress, this._pubsubSubscriptions[subplebbitAddress]);
         delete this._pubsubSubscriptions[subplebbitAddress];
     }
+
+    async resolveAuthorAddress(authorAddress: string){
+        const resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(authorAddress);
+        return resolved;
+    }
 }
