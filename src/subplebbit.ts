@@ -918,7 +918,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private async handleChallengeRequest(request: ChallengeRequestMessage) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeRequest");
+        const requestIdHashed = sha256(request.challengeRequestId);
 
+        if (this._challengeIdHashToChallengeRequest[requestIdHashed]) return;
         const requestSignatureValidation = await verifyChallengeRequest(request, true);
         if (!requestSignatureValidation.valid) throwWithErrorCode(getErrorCodeFromMessage(requestSignatureValidation.reason), { request });
 
@@ -928,7 +930,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._challengeIdHashToChallengeRequest[decryptedRequest.challengeRequestIdHash] = decryptedRequest;
         this.emit("challengerequest", decryptedRequest);
         const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(decryptedRequest);
-        log(`Received a request to a challenge (${request.challengeRequestId})`);
+        log(`Received a request to a challenge (${decryptedRequest.challengeRequestIdHash})`);
         if (providedChallenges.length === 0) {
             // Subplebbit owner has chosen to skip challenging this user or post
             log.trace(`(${decryptedRequest.challengeRequestIdHash}): No challenge is required`);
@@ -1021,10 +1023,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         const answerSignatureValidation = await verifyChallengeAnswer(challengeAnswer, true);
 
-        if (!answerSignatureValidation.valid) return;
+        if (!answerSignatureValidation.valid)
+            throwWithErrorCode(getErrorCodeFromMessage(answerSignatureValidation.reason), { challengeAnswer });
 
-        const decryptedChallengeAnswer = <DecryptedChallengeAnswerMessageType>await this._decryptOrRespondWithFailure(challengeAnswer);
-        if (!decryptedChallengeAnswer) return;
+        const decryptedChallengeAnswer = <DecryptedChallengeAnswerMessageType> await this._decryptOrRespondWithFailure(challengeAnswer);
 
         await this.dbHandler.insertChallengeAnswer(challengeAnswer.toJSONForDb(decryptedChallengeAnswer.challengeAnswers), undefined);
         this.emit("challengeanswer", decryptedChallengeAnswer);
@@ -1101,7 +1103,11 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
                 this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
             ]);
-            log(`(${decryptedChallengeAnswer.challengeRequestIdHash}): `, `Published ${challengeVerification.type} over pubsub:`, toSignVerification);
+            log(
+                `(${decryptedChallengeAnswer.challengeRequestIdHash}): `,
+                `Published ${challengeVerification.type} over pubsub:`,
+                toSignVerification
+            );
             this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
 
             this.emit("challengeverification", {
