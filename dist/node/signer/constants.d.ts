@@ -13,16 +13,20 @@ export interface SignerType {
     ipnsKeyName?: string;
 }
 export declare type Encrypted = {
-    ciphertext: string;
-    iv: string;
-    tag: string;
+    ciphertext: Uint8Array;
+    iv: Uint8Array;
+    tag: Uint8Array;
     type: "ed25519-aes-gcm";
 };
-export interface SignatureType {
-    signature: string;
-    publicKey: string;
+export interface PubsubSignature {
+    signature: Uint8Array;
+    publicKey: Uint8Array;
     type: "ed25519";
     signedPropertyNames: readonly string[];
+}
+export interface JsonSignature extends Omit<PubsubSignature, "signature" | "publicKey"> {
+    signature: string;
+    publicKey: string;
 }
 export declare type SignatureTypes = PublicationTypeName | "challengerequestmessage" | "challengemessage" | "challengeanswermessage" | "challengeverificationmessage";
 export declare const CommentSignedPropertyNames: readonly (keyof CreateCommentOptions)[];
@@ -38,5 +42,6 @@ export declare type CommentSignedPropertyNamesUnion = typeof CommentSignedProper
 export declare type CommentEditSignedPropertyNamesUnion = typeof CommentEditSignedPropertyNames[number];
 export declare type VoteSignedPropertyNamesUnion = typeof VoteSignedPropertyNames[number];
 export declare type CommentUpdatedSignedPropertyNamesUnion = typeof CommentUpdateSignedPropertyNames[number];
-export declare type PublicationsToSign = CreateCommentEditOptions | CreateVoteOptions | CreateCommentOptions | Omit<CommentUpdate, "signature"> | Omit<SubplebbitIpfsType, "signature"> | Omit<ChallengeAnswerMessageType, "signature"> | Omit<ChallengeRequestMessageType, "signature"> | Omit<ChallengeVerificationMessageType, "signature"> | Omit<ChallengeMessageType, "signature">;
-export declare type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | CommentUpdate | SubplebbitIpfsType | ChallengeRequestMessageType | ChallengeMessageType | ChallengeAnswerMessageType | ChallengeVerificationMessageType;
+export declare type PublicationsToSign = CreateCommentEditOptions | CreateVoteOptions | CreateCommentOptions | Omit<CommentUpdate, "signature"> | Omit<SubplebbitIpfsType, "signature">;
+export declare type PubsubMsgsToSign = Omit<ChallengeAnswerMessageType, "signature"> | Omit<ChallengeRequestMessageType, "signature"> | Omit<ChallengeVerificationMessageType, "signature"> | Omit<ChallengeMessageType, "signature">;
+export declare type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | CommentUpdate | SubplebbitIpfsType;

@@ -175,6 +175,7 @@ var Plebbit = /** @class */ (function (_super) {
     };
     Plebbit.prototype._initResolver = function (options) {
         this.chainProviders = options.chainProviders || {
+            eth: { urls: ["ethers.js"], chainId: 1 },
             avax: {
                 urls: ["https://api.avax.network/ext/bc/C/rpc"],
                 chainId: 43114
@@ -185,8 +186,6 @@ var Plebbit = /** @class */ (function (_super) {
             }
         };
         this.clients.chainProviders = this.chainProviders;
-        if (!this.clients.chainProviders["eth"])
-            this.clients.chainProviders["eth"] = { urls: ["DefaultProvider"], chainId: 1 };
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         this.resolver = new resolver_1.Resolver({
             _cache: this._cache,
@@ -592,6 +591,19 @@ var Plebbit = /** @class */ (function (_super) {
                         _a.sent();
                         delete this._pubsubSubscriptions[subplebbitAddress];
                         return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Plebbit.prototype.resolveAuthorAddress = function (authorAddress) {
+        return __awaiter(this, void 0, void 0, function () {
+            var resolved;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._clientsManager.resolveAuthorAddressIfNeeded(authorAddress)];
+                    case 1:
+                        resolved = _a.sent();
+                        return [2 /*return*/, resolved];
                 }
             });
         });

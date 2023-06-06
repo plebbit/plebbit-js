@@ -62,9 +62,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.decryptEd25519AesGcm = exports.encryptEd25519AesGcm = exports.decryptStringAesGcm = exports.encryptStringAesGcm = void 0;
+exports.decryptEd25519AesGcmPublicKeyBuffer = exports.decryptEd25519AesGcm = exports.encryptEd25519AesGcmPublicKeyBuffer = exports.encryptEd25519AesGcm = exports.decryptStringAesGcm = exports.encryptStringAesGcm = void 0;
 var node_forge_1 = __importDefault(require("node-forge"));
-var to_string_1 = require("uint8arrays/to-string");
 var from_string_1 = require("uint8arrays/from-string");
 var ed = __importStar(require("@noble/ed25519"));
 var isProbablyBuffer = function (arg) { return arg && typeof arg !== "string" && typeof arg !== "number"; };
@@ -127,7 +126,17 @@ var decryptStringAesGcm = function (ciphertext, key, iv, tag) { return __awaiter
 }); };
 exports.decryptStringAesGcm = decryptStringAesGcm;
 var encryptEd25519AesGcm = function (plaintext, privateKeyBase64, publicKeyBase64) { return __awaiter(void 0, void 0, void 0, function () {
-    var privateKeyBuffer, publicKeyBuffer, randomPaddingLength, padding, aesGcmKey, aesGcmKey16Bytes, _a, ciphertext, iv, tag, encryptedBase64;
+    var publicKeyBuffer;
+    return __generator(this, function (_a) {
+        if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
+            throw Error("encryptEd25519AesGcm publicKeyBase64 '".concat(publicKeyBase64, "' not a string"));
+        publicKeyBuffer = (0, from_string_1.fromString)(publicKeyBase64, "base64");
+        return [2 /*return*/, (0, exports.encryptEd25519AesGcmPublicKeyBuffer)(plaintext, privateKeyBase64, publicKeyBuffer)];
+    });
+}); };
+exports.encryptEd25519AesGcm = encryptEd25519AesGcm;
+var encryptEd25519AesGcmPublicKeyBuffer = function (plaintext, privateKeyBase64, publicKeyBuffer) { return __awaiter(void 0, void 0, void 0, function () {
+    var privateKeyBuffer, randomPaddingLength, padding, aesGcmKey, aesGcmKey16Bytes, _a, ciphertext, iv, tag, encrypted;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -138,11 +147,8 @@ var encryptEd25519AesGcm = function (plaintext, privateKeyBase64, publicKeyBase6
                 privateKeyBuffer = (0, from_string_1.fromString)(privateKeyBase64, "base64");
                 if (privateKeyBuffer.length !== 32)
                     throw Error("encryptEd25519AesGcm publicKeyBase64 ed25519 public key length not 32 bytes (".concat(privateKeyBuffer.length, " bytes)"));
-                if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
-                    throw Error("encryptEd25519AesGcm publicKeyBase64 '".concat(publicKeyBase64, "' not a string"));
-                publicKeyBuffer = (0, from_string_1.fromString)(publicKeyBase64, "base64");
                 if (publicKeyBuffer.length !== 32)
-                    throw Error("encryptEd25519AesGcm publicKeyBase64 '".concat(publicKeyBase64, "' ed25519 public key length not 32 bytes (").concat(publicKeyBuffer.length, " bytes)"));
+                    throw Error("encryptEd25519AesGcm publicKeyBase64 '".concat(publicKeyBuffer, "' ed25519 public key length not 32 bytes (").concat(publicKeyBuffer.length, " bytes)"));
                 randomPaddingLength = Math.round(Math.random() * 5000);
                 padding = "";
                 while (padding.length < randomPaddingLength) {
@@ -155,47 +161,47 @@ var encryptEd25519AesGcm = function (plaintext, privateKeyBase64, publicKeyBase6
                 return [4 /*yield*/, (0, exports.encryptStringAesGcm)(plaintext + padding, aesGcmKey16Bytes)];
             case 2:
                 _a = _b.sent(), ciphertext = _a.ciphertext, iv = _a.iv, tag = _a.tag;
-                encryptedBase64 = {
-                    ciphertext: (0, to_string_1.toString)(ciphertext, "base64"),
-                    iv: (0, to_string_1.toString)(iv, "base64"),
+                encrypted = {
+                    ciphertext: ciphertext,
+                    iv: iv,
                     // AES-GCM has authentication tag https://en.wikipedia.org/wiki/Galois/Counter_Mode
-                    tag: (0, to_string_1.toString)(tag, "base64"),
+                    tag: tag,
                     type: "ed25519-aes-gcm"
                 };
-                return [2 /*return*/, encryptedBase64];
+                return [2 /*return*/, encrypted];
         }
     });
 }); };
-exports.encryptEd25519AesGcm = encryptEd25519AesGcm;
+exports.encryptEd25519AesGcmPublicKeyBuffer = encryptEd25519AesGcmPublicKeyBuffer;
 var decryptEd25519AesGcm = function (encrypted, privateKeyBase64, publicKeyBase64) { return __awaiter(void 0, void 0, void 0, function () {
-    var ciphertextBuffer, privateKeyBuffer, publicKeyBuffer, ivBuffer, tagBuffer, aesGcmKey, aesGcmKey16Bytes, decrypted;
+    var publicKeyBuffer;
+    return __generator(this, function (_a) {
+        if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")
+            throw Error("decryptEd25519AesGcm ".concat(privateKeyBase64, " privateKeyBase64 not a string"));
+        if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
+            throw Error("decryptEd25519AesGcm publicKeyBase64 '".concat(publicKeyBase64, "' not a string"));
+        publicKeyBuffer = (0, from_string_1.fromString)(publicKeyBase64, "base64");
+        return [2 /*return*/, (0, exports.decryptEd25519AesGcmPublicKeyBuffer)(encrypted, privateKeyBase64, publicKeyBuffer)];
+    });
+}); };
+exports.decryptEd25519AesGcm = decryptEd25519AesGcm;
+var decryptEd25519AesGcmPublicKeyBuffer = function (encrypted, privateKeyBase64, publicKeyBuffer) { return __awaiter(void 0, void 0, void 0, function () {
+    var privateKeyBuffer, aesGcmKey, aesGcmKey16Bytes, decrypted;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                if (!(encrypted === null || encrypted === void 0 ? void 0 : encrypted.ciphertext) || typeof (encrypted === null || encrypted === void 0 ? void 0 : encrypted.ciphertext) !== "string")
-                    throw Error("decryptEd25519AesGcm encrypted.ciphertext '".concat(encrypted.ciphertext, "' not a string"));
-                ciphertextBuffer = (0, from_string_1.fromString)(encrypted.ciphertext, "base64");
                 if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")
                     throw Error("decryptEd25519AesGcm ".concat(privateKeyBase64, " privateKeyBase64 not a string"));
                 privateKeyBuffer = (0, from_string_1.fromString)(privateKeyBase64, "base64");
                 if (privateKeyBuffer.length !== 32)
                     throw Error("decryptEd25519AesGcm publicKeyBase64 ed25519 public key length not 32 bytes (".concat(privateKeyBuffer.length, " bytes)"));
-                if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
-                    throw Error("decryptEd25519AesGcm publicKeyBase64 '".concat(publicKeyBase64, "' not a string"));
-                publicKeyBuffer = (0, from_string_1.fromString)(publicKeyBase64, "base64");
                 if (publicKeyBuffer.length !== 32)
-                    throw Error("decryptEd25519AesGcm publicKeyBase64 '".concat(publicKeyBase64, "' ed25519 public key length not 32 bytes (").concat(publicKeyBuffer.length, " bytes)"));
-                if (!(encrypted === null || encrypted === void 0 ? void 0 : encrypted.iv) || typeof (encrypted === null || encrypted === void 0 ? void 0 : encrypted.iv) !== "string")
-                    throw Error("decryptEd25519AesGcm encrypted.iv '".concat(encrypted.iv, "' not a string"));
-                ivBuffer = (0, from_string_1.fromString)(encrypted.iv, "base64");
-                if (!(encrypted === null || encrypted === void 0 ? void 0 : encrypted.tag) || typeof (encrypted === null || encrypted === void 0 ? void 0 : encrypted.tag) !== "string")
-                    throw Error("decryptEd25519AesGcm encrypted.tag '".concat(encrypted.tag, "' not a string"));
-                tagBuffer = (0, from_string_1.fromString)(encrypted.tag, "base64");
+                    throw Error("decryptEd25519AesGcm publicKeyBuffer '".concat(publicKeyBuffer, "' ed25519 public key length not 32 bytes (").concat(publicKeyBuffer.length, " bytes)"));
                 return [4 /*yield*/, ed.getSharedSecret(privateKeyBuffer, publicKeyBuffer)];
             case 1:
                 aesGcmKey = _a.sent();
                 aesGcmKey16Bytes = aesGcmKey.slice(0, 16);
-                return [4 /*yield*/, (0, exports.decryptStringAesGcm)(ciphertextBuffer, aesGcmKey16Bytes, ivBuffer, tagBuffer)];
+                return [4 /*yield*/, (0, exports.decryptStringAesGcm)(encrypted.ciphertext, aesGcmKey16Bytes, encrypted.iv, encrypted.tag)];
             case 2:
                 decrypted = _a.sent();
                 // remove padding
@@ -204,5 +210,5 @@ var decryptEd25519AesGcm = function (encrypted, privateKeyBase64, publicKeyBase6
         }
     });
 }); };
-exports.decryptEd25519AesGcm = decryptEd25519AesGcm;
+exports.decryptEd25519AesGcmPublicKeyBuffer = decryptEd25519AesGcmPublicKeyBuffer;
 //# sourceMappingURL=encryption.js.map

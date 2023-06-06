@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createSigner = exports.Signer = exports.decrypt = exports.encrypt = exports.verifyVote = exports.verifySubplebbit = exports.verifyComment = void 0;
+exports.createSigner = exports.Signer = exports.decryptEd25519AesGcmPublicKeyBuffer = exports.decryptEd25519AesGcm = exports.encryptEd25519AesGcm = exports.verifyVote = exports.verifySubplebbit = exports.verifyComment = void 0;
 var assert_1 = __importDefault(require("assert"));
 var util_1 = require("./util");
 var signatures_1 = require("./signatures");
@@ -47,8 +47,9 @@ Object.defineProperty(exports, "verifyComment", { enumerable: true, get: functio
 Object.defineProperty(exports, "verifySubplebbit", { enumerable: true, get: function () { return signatures_1.verifySubplebbit; } });
 Object.defineProperty(exports, "verifyVote", { enumerable: true, get: function () { return signatures_1.verifyVote; } });
 var encryption_1 = require("./encryption");
-Object.defineProperty(exports, "encrypt", { enumerable: true, get: function () { return encryption_1.encryptEd25519AesGcm; } });
-Object.defineProperty(exports, "decrypt", { enumerable: true, get: function () { return encryption_1.decryptEd25519AesGcm; } });
+Object.defineProperty(exports, "encryptEd25519AesGcm", { enumerable: true, get: function () { return encryption_1.encryptEd25519AesGcm; } });
+Object.defineProperty(exports, "decryptEd25519AesGcm", { enumerable: true, get: function () { return encryption_1.decryptEd25519AesGcm; } });
+Object.defineProperty(exports, "decryptEd25519AesGcmPublicKeyBuffer", { enumerable: true, get: function () { return encryption_1.decryptEd25519AesGcmPublicKeyBuffer; } });
 var Signer = /** @class */ (function () {
     function Signer(props) {
         var _a, _b;

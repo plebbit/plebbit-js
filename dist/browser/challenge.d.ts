@@ -1,11 +1,11 @@
 import { ChallengeAnswerMessageType, ChallengeAnswersTableRowInsert, ChallengeMessageType, ChallengeRequestMessageType, ChallengeRequestsTableRowInsert, ChallengesTableRow, ChallengesTableRowInsert, ChallengeVerificationMessageType, ChallengeVerificationsTableRowInsert, DecryptedChallengeAnswerMessageType, ProtocolVersion } from "./types";
-import { Encrypted, SignatureType } from "./signer/constants";
+import { Encrypted, PubsubSignature } from "./signer/constants";
 export declare class ChallengeRequestMessage implements ChallengeRequestMessageType {
     encryptedPublication: Encrypted;
     type: "CHALLENGEREQUEST";
-    challengeRequestId: string;
+    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     acceptedChallengeTypes?: string[];
-    signature: SignatureType;
+    signature: PubsubSignature;
     protocolVersion: ProtocolVersion;
     userAgent: string;
     timestamp: number;
@@ -16,8 +16,8 @@ export declare class ChallengeRequestMessage implements ChallengeRequestMessageT
 export declare class ChallengeMessage implements ChallengeMessageType {
     encryptedChallenges: Encrypted;
     type: "CHALLENGE";
-    challengeRequestId: string;
-    signature: SignatureType;
+    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
+    signature: PubsubSignature;
     protocolVersion: ProtocolVersion;
     userAgent: string;
     timestamp: number;
@@ -27,10 +27,9 @@ export declare class ChallengeMessage implements ChallengeMessageType {
 }
 export declare class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
     type: "CHALLENGEANSWER";
-    challengeAnswerId: string;
     encryptedChallengeAnswers: Encrypted;
-    challengeRequestId: string;
-    signature: SignatureType;
+    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
+    signature: PubsubSignature;
     protocolVersion: ProtocolVersion;
     userAgent: string;
     timestamp: number;
@@ -40,13 +39,12 @@ export declare class ChallengeAnswerMessage implements ChallengeAnswerMessageTyp
 }
 export declare class ChallengeVerificationMessage implements ChallengeVerificationMessageType {
     type: "CHALLENGEVERIFICATION";
-    challengeRequestId: string;
-    challengeAnswerId: string;
+    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     challengeSuccess: boolean;
     challengeErrors?: (string | undefined)[];
     reason?: string;
     encryptedPublication?: Encrypted;
-    signature: SignatureType;
+    signature: PubsubSignature;
     protocolVersion: "1.0.0";
     userAgent: string;
     timestamp: number;

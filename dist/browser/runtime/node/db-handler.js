@@ -316,7 +316,7 @@ var DbHandler = /** @class */ (function () {
                             table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);
-                            table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
+                            table.binary("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
                             table.text("subplebbitAddress").notNullable();
                             table.text("content").nullable();
                             table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
@@ -384,7 +384,7 @@ var DbHandler = /** @class */ (function () {
                             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("authorAddress").notNullable();
                             table.json("author").notNullable();
-                            table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
+                            table.binary("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
                             table.timestamp("timestamp").checkPositive().notNullable();
                             table.text("subplebbitAddress").notNullable();
                             table.integer("vote").checkBetween([-1, 1]).notNullable();
@@ -406,7 +406,7 @@ var DbHandler = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
-                            table.uuid("challengeRequestId").notNullable().primary().unique();
+                            table.binary("challengeRequestId").notNullable().primary().unique();
                             table.text("userAgent").notNullable();
                             table.text("protocolVersion").notNullable();
                             table.json("signature").notNullable().unique();
@@ -428,7 +428,7 @@ var DbHandler = /** @class */ (function () {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
                             table
-                                .uuid("challengeRequestId")
+                                .binary("challengeRequestId")
                                 .notNullable()
                                 .primary()
                                 .unique()
@@ -456,13 +456,12 @@ var DbHandler = /** @class */ (function () {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
                             table
-                                .uuid("challengeRequestId")
+                                .binary("challengeRequestId")
                                 .notNullable()
                                 .primary()
                                 .unique()
                                 .references("challengeRequestId")
                                 .inTable(TABLES.CHALLENGE_REQUESTS);
-                            table.uuid("challengeAnswerId").notNullable().unique();
                             table.text("userAgent").notNullable();
                             table.text("protocolVersion").notNullable();
                             table.json("challengeAnswers").notNullable(); // Decrypted
@@ -484,13 +483,12 @@ var DbHandler = /** @class */ (function () {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
                             table
-                                .uuid("challengeRequestId")
+                                .binary("challengeRequestId")
                                 .notNullable()
                                 .primary()
                                 .unique()
                                 .references("challengeRequestId")
                                 .inTable(TABLES.CHALLENGE_REQUESTS);
-                            table.uuid("challengeAnswerId").nullable().references("challengeAnswerId").inTable(TABLES.CHALLENGE_ANSWERS);
                             table.boolean("challengeSuccess").notNullable();
                             table.json("challengeErrors").nullable(); // string[]
                             table.text("reason").nullable();
@@ -534,7 +532,7 @@ var DbHandler = /** @class */ (function () {
                             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("authorAddress").notNullable();
                             table.json("author").notNullable();
-                            table.uuid("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
+                            table.binary("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
                             table.json("signature").notNullable().unique();
                             table.text("protocolVersion").notNullable();
                             table.increments("id"); // Used for sorts
@@ -612,9 +610,9 @@ var DbHandler = /** @class */ (function () {
                                             return [4 /*yield*/, createTableFunctions[i].bind(this)(table)];
                                         case 2:
                                             _a.sent();
-                                            return [3 /*break*/, 9];
+                                            return [3 /*break*/, 12];
                                         case 3:
-                                            if (!(tableExists && needToMigrate)) return [3 /*break*/, 9];
+                                            if (!(tableExists && needToMigrate)) return [3 /*break*/, 12];
                                             log("Migrating table ".concat(table, " to new schema"));
                                             return [4 /*yield*/, this._knex.raw("PRAGMA foreign_keys = OFF")];
                                         case 4:
@@ -623,17 +621,27 @@ var DbHandler = /** @class */ (function () {
                                             return [4 /*yield*/, createTableFunctions[i].bind(this)(tempTableName)];
                                         case 5:
                                             _a.sent();
-                                            return [4 /*yield*/, this._copyTable(table, tempTableName)];
-                                        case 6:
-                                            _a.sent();
+                                            if (!(table.startsWith("challenge") && priorDbVersion === 6)) return [3 /*break*/, 8];
+                                            // Skip copying challenge tables if current db version is 6
                                             return [4 /*yield*/, this._knex.schema.dropTable(table)];
-                                        case 7:
+                                        case 6:
+                                            // Skip copying challenge tables if current db version is 6
                                             _a.sent();
                                             return [4 /*yield*/, this._knex.schema.renameTable(tempTableName, table)];
-                                        case 8:
+                                        case 7:
                                             _a.sent();
-                                            _a.label = 9;
-                                        case 9: return [2 /*return*/];
+                                            return [3 /*break*/, 12];
+                                        case 8: return [4 /*yield*/, this._copyTable(table, tempTableName)];
+                                        case 9:
+                                            _a.sent();
+                                            return [4 /*yield*/, this._knex.schema.dropTable(table)];
+                                        case 10:
+                                            _a.sent();
+                                            return [4 /*yield*/, this._knex.schema.renameTable(tempTableName, table)];
+                                        case 11:
+                                            _a.sent();
+                                            _a.label = 12;
+                                        case 12: return [2 /*return*/];
                                     }
                                 });
                             }); }))];
@@ -803,6 +811,13 @@ var DbHandler = /** @class */ (function () {
                         _a.sent();
                         return [2 /*return*/];
                 }
+            });
+        });
+    };
+    DbHandler.prototype.queryChallengeRequest = function (requestId, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, this._baseTransaction(trx)(TABLES.CHALLENGE_REQUESTS).where("challengeRequestId", requestId).first()];
             });
         });
     };

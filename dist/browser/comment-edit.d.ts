@@ -1,3 +1,4 @@
+import { ChallengeRequestMessage } from "./challenge";
 import { Plebbit } from "./plebbit";
 import Publication from "./publication";
 import { AuthorCommentEdit, CommentAuthorEditOptions, CommentEditPubsubMessage, CommentEditsTableRowInsert, CommentEditType, Flair, ModeratorCommentEdit, PublicationTypeName } from "./types";
@@ -18,7 +19,7 @@ export declare class CommentEdit extends Publication implements CommentEditType 
     _initProps(props: CommentEditType): void;
     toJSONPubsubMessagePublication(): CommentEditPubsubMessage;
     toJSON(): CommentEditPubsubMessage;
-    toJSONForDb(challengeRequestId: string): CommentEditsTableRowInsert;
+    toJSONForDb(challengeRequestId: ChallengeRequestMessage["challengeRequestId"]): CommentEditsTableRowInsert;
     getType(): PublicationTypeName;
     private _validateSignature;
     publish(): Promise<void>;

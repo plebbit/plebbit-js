@@ -3,7 +3,7 @@ import { Signer } from "./signer";
 import { PostsPages } from "./pages";
 import { Plebbit } from "./plebbit";
 import { ChallengeType, DbHandlerPublicAPI, DecryptedChallengeAnswerMessageType, DecryptedChallengeRequestMessageType, Flair, FlairOwner, InternalSubplebbitType, ProtocolVersion, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitIpfsType, SubplebbitStats, SubplebbitRole, SubplebbitSuggested, SubplebbitType, SubplebbitEvents, SubplebbitSettings } from "./types";
-import { SignatureType } from "./signer/constants";
+import { JsonSignature } from "./signer/constants";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { SubplebbitClientsManager } from "./clients/client-manager";
 export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
@@ -28,7 +28,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     signer?: Signer;
     encryption: SubplebbitEncryption;
     protocolVersion: ProtocolVersion;
-    signature: SignatureType;
+    signature: JsonSignature;
     rules?: string[];
     settings?: SubplebbitSettings;
     state: "stopped" | "updating" | "started";
@@ -37,9 +37,8 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     plebbit: Plebbit;
     dbHandler?: DbHandlerPublicAPI;
     clients: SubplebbitClientsManager["clients"];
-    private _challengeToSolution;
-    private _challengeToPublicKey;
-    private _challengeToPublication;
+    private _challengeIdHashToSolution;
+    private _challengeIdHashToChallengeRequest;
     private provideCaptchaCallback;
     private validateCaptchaAnswerCallback;
     private sortHandler;
@@ -84,9 +83,10 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private isPublicationCommentEdit;
     private storePublicationIfValid;
     private _decryptOrRespondWithFailure;
+    private _respondWithErrorIfSignatureOfPublicationIsInvalid;
     private handleChallengeRequest;
     handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage): Promise<void>;
-    private _verifyPubsubMsgSignature;
+    private _respondWithErrorToAnswerWithNoRequest;
     private handleChallengeExchange;
     private defaultProvideCaptcha;
     private defaultValidateCaptcha;

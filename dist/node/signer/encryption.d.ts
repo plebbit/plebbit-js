@@ -1,9 +1,11 @@
 import { Encrypted } from "./constants";
-export declare const encryptStringAesGcm: (plaintext: any, key: any, iv?: any) => Promise<{
+export declare const encryptStringAesGcm: (plaintext: string, key: Uint8Array, iv?: Uint8Array) => Promise<{
     ciphertext: Uint8Array;
-    iv: any;
+    iv: Uint8Array;
     tag: Uint8Array;
 }>;
-export declare const decryptStringAesGcm: (ciphertext: any, key: any, iv: any, tag: any) => Promise<any>;
-export declare const encryptEd25519AesGcm: (plaintext: any, privateKeyBase64: any, publicKeyBase64: any) => Promise<Encrypted>;
-export declare const decryptEd25519AesGcm: (encrypted: Encrypted, privateKeyBase64: any, publicKeyBase64: any) => Promise<any>;
+export declare const decryptStringAesGcm: (ciphertext: Uint8Array, key: Uint8Array, iv: Uint8Array, tag: Uint8Array) => Promise<any>;
+export declare const encryptEd25519AesGcm: (plaintext: string, privateKeyBase64: string, publicKeyBase64: string) => Promise<Encrypted>;
+export declare const encryptEd25519AesGcmPublicKeyBuffer: (plaintext: string, privateKeyBase64: string, publicKeyBuffer: Uint8Array) => Promise<Encrypted>;
+export declare const decryptEd25519AesGcm: (encrypted: Encrypted, privateKeyBase64: string, publicKeyBase64: string) => Promise<any>;
+export declare const decryptEd25519AesGcmPublicKeyBuffer: (encrypted: Encrypted, privateKeyBase64: string, publicKeyBuffer: Uint8Array) => Promise<any>;

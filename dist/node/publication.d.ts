@@ -2,14 +2,14 @@ import Author from "./author";
 import { Signer } from "./signer";
 import { ProtocolVersion, PublicationEvents, PublicationType, PublicationTypeName, SubplebbitIpfsType } from "./types";
 import { Plebbit } from "./plebbit";
-import { SignatureType } from "./signer/constants";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { CommentClientsManager, PublicationClientsManager } from "./clients/client-manager";
+import { JsonSignature } from "./signer/constants";
 declare class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     clients: PublicationClientsManager["clients"];
     subplebbitAddress: string;
     timestamp: number;
-    signature: SignatureType;
+    signature: JsonSignature;
     signer: Signer;
     author: Author;
     protocolVersion: ProtocolVersion;

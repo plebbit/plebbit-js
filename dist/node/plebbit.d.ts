@@ -61,4 +61,5 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     fetchCid(cid: string): Promise<string>;
     pubsubSubscribe(subplebbitAddress: string): Promise<void>;
     pubsubUnsubscribe(subplebbitAddress: string): Promise<void>;
+    resolveAuthorAddress(authorAddress: string): Promise<string>;
 }

@@ -39,3 +39,5 @@ export declare function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | B
 export declare function shortifyAddress(address: string): string;
 export declare function shortifyCid(cid: string): string;
 export declare function delay(ms: number): Promise<void>;
+export declare function firstResolve(promises: Promise<any>[]): Promise<any>;
+export declare function getErrorCodeFromMessage(message: string): keyof typeof messages;

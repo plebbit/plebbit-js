@@ -1,7 +1,7 @@
 import { Plebbit } from "../plebbit";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import { PlebbitError } from "../plebbit-error";
-import { PubsubMessage } from "../types";
+import { Chain, PubsubMessage } from "../types";
 export declare type LoadType = "subplebbit" | "comment-update" | "comment" | "generic-ipfs";
 export declare class BaseClientsManager {
     protected _plebbit: Plebbit;
@@ -32,12 +32,13 @@ export declare class BaseClientsManager {
     resolveIpnsToCidP2P(ipns: string): Promise<string>;
     _fetchCidP2P(cid: string): Promise<string>;
     private _verifyContentIsSameAsCid;
-    private _getCachedEns;
-    private _resolveEnsTextRecordWithCache;
-    preResolveTextRecord(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address"): void;
-    postResolveTextRecordSuccess(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string): void;
-    postResolveTextRecordFailure(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address"): void;
-    private _resolveEnsTextRecord;
+    private _getCachedTextRecord;
+    private _resolveTextRecordWithCache;
+    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: Chain, chainProviderUrl: string): void;
+    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: Chain, chainProviderUrl: string): void;
+    postResolveTextRecordFailure(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: Chain, chainProviderUrl: string): void;
+    private _resolveTextRecordSingleChainProvider;
+    private _resolveTextRecordConcurrently;
     resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | undefined>;
     resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string>;
     emitError(e: PlebbitError): void;

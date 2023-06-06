@@ -110,15 +110,28 @@ var Stats = /** @class */ (function () {
             });
         });
     };
+    Stats.prototype._gatewayScore = function (failureCounts, successCounts, successAverageMs) {
+        // Thanks for @thisisnotph for their input on this formula
+        return ((1 / (successAverageMs + 150) / (1 / (successAverageMs + 100) + 1 / 150)) * 0.2 +
+            ((successCounts + 0.288) / (failureCounts * 2 + successCounts + 1)) * 0.8);
+    };
     Stats.prototype.sortGatewaysAccordingToScore = function (type) {
         return __awaiter(this, void 0, void 0, function () {
             var log, gatewayType, gateways, score, gatewaysSorted;
             var _this = this;
             return __generator(this, function (_a) {
                 log = (0, plebbit_logger_1.default)("plebbit-js:stats:gateway:sort");
-                gatewayType = type === "cid" || type === "ipns" ? "ipfsGateways" : type === "pubsub-publish" ? "pubsubClients" : undefined;
+                gatewayType = type === "cid" || type === "ipns"
+                    ? "ipfsGateways"
+                    : type === "pubsub-publish"
+                        ? "pubsubClients"
+                        : type === "eth" || type === "avax" || type === "matic"
+                            ? "chainProviders"
+                            : undefined;
                 (0, assert_1.default)(gatewayType);
-                gateways = Object.keys(this._plebbit.clients[gatewayType]);
+                gateways = gatewayType === "chainProviders"
+                    ? this._plebbit.clients.chainProviders[type].urls
+                    : Object.keys(this._plebbit.clients[gatewayType]);
                 score = function (gatewayUrl) { return __awaiter(_this, void 0, void 0, function () {
                     var failureCounts, successCounts, successAverageMs, gatewayScore;
                     return __generator(this, function (_a) {
@@ -132,8 +145,7 @@ var Stats = /** @class */ (function () {
                                 return [4 /*yield*/, this._plebbit._cache.getItem(this._getSuccessAverageKey(gatewayUrl, type))];
                             case 3:
                                 successAverageMs = (_a.sent()) || 0;
-                                gatewayScore = (1 / (successAverageMs + 150) / (1 / (successAverageMs + 100) + 1 / 150)) * 0.2 +
-                                    ((successCounts + 0.288) / (failureCounts * 2 + successCounts + 1)) * 0.8;
+                                gatewayScore = this._gatewayScore(failureCounts, successCounts, successAverageMs);
                                 log.trace("gateway (".concat(gatewayUrl, ") score is (").concat(gatewayScore, ") for type (").concat(type, ")"));
                                 return [2 /*return*/, score];
                         }

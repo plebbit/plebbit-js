@@ -1,30 +1,29 @@
 import { Plebbit } from "../plebbit";
 import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditPubsubMessage, CommentIpfsType, CommentPubsubMessage, CommentUpdate, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, PageIpfs, SubplebbitIpfsType, VotePubsubMessage } from "../types";
-import { SignatureType, SignerType } from "./constants";
+import { JsonSignature, PubsubSignature, SignerType } from "./constants";
 import { BaseClientsManager } from "../clients/base-client-manager";
-interface ValidationResult {
+export interface ValidationResult {
     valid: boolean;
     reason?: string;
 }
-export declare const signBufferEd25519: (bufferToSign: any, privateKeyBase64: any) => Promise<Uint8Array>;
-export declare const verifyBufferEd25519: (bufferToSign: any, bufferSignature: any, publicKeyBase64: string) => Promise<boolean>;
-export declare function signComment(comment: CreateCommentOptions, signer: SignerType, plebbit: Plebbit): Promise<SignatureType>;
-export declare function signVote(vote: CreateVoteOptions, signer: SignerType, plebbit: Plebbit): Promise<SignatureType>;
-export declare function signCommentEdit(edit: CreateCommentEditOptions, signer: SignerType, plebbit: Plebbit): Promise<SignatureType>;
-export declare function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType): Promise<SignatureType>;
-export declare function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signature">, signer: SignerType): Promise<SignatureType>;
-export declare function signChallengeRequest(request: Omit<ChallengeRequestMessageType, "signature">, signer: SignerType): Promise<SignatureType>;
-export declare function signChallengeMessage(challengeMessage: Omit<ChallengeMessageType, "signature">, signer: SignerType): Promise<SignatureType>;
-export declare function signChallengeAnswer(challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">, signer: SignerType): Promise<SignatureType>;
-export declare function signChallengeVerification(challengeVerification: Omit<ChallengeVerificationMessageType, "signature">, signer: SignerType): Promise<SignatureType>;
+export declare const signBufferEd25519: (bufferToSign: Uint8Array, privateKeyBase64: string) => Promise<Uint8Array>;
+export declare const verifyBufferEd25519: (bufferToSign: Uint8Array, bufferSignature: Uint8Array, publicKeyBase64: string) => Promise<boolean>;
+export declare function signComment(comment: CreateCommentOptions, signer: SignerType, plebbit: Plebbit): Promise<JsonSignature>;
+export declare function signVote(vote: CreateVoteOptions, signer: SignerType, plebbit: Plebbit): Promise<JsonSignature>;
+export declare function signCommentEdit(edit: CreateCommentEditOptions, signer: SignerType, plebbit: Plebbit): Promise<JsonSignature>;
+export declare function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType): Promise<JsonSignature>;
+export declare function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signature">, signer: SignerType): Promise<JsonSignature>;
+export declare function signChallengeRequest(request: Omit<ChallengeRequestMessageType, "signature">, signer: SignerType): Promise<PubsubSignature>;
+export declare function signChallengeMessage(challengeMessage: Omit<ChallengeMessageType, "signature">, signer: SignerType): Promise<PubsubSignature>;
+export declare function signChallengeAnswer(challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">, signer: SignerType): Promise<PubsubSignature>;
+export declare function signChallengeVerification(challengeVerification: Omit<ChallengeVerificationMessageType, "signature">, signer: SignerType): Promise<PubsubSignature>;
 export declare function verifyVote(vote: VotePubsubMessage, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
 export declare function verifyCommentEdit(edit: CommentEditPubsubMessage, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
 export declare function verifyComment(comment: CommentPubsubMessage | CommentIpfsType, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
 export declare function verifySubplebbit(subplebbit: SubplebbitIpfsType, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager): Promise<ValidationResult>;
 export declare function verifyCommentUpdate(update: CommentUpdate, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, subplebbitAddress: string, comment: Pick<CommentWithCommentUpdate, "signature" | "cid">): Promise<ValidationResult>;
-export declare function verifyChallengeRequest(request: ChallengeRequestMessageType): Promise<ValidationResult>;
-export declare function verifyChallengeMessage(challenge: ChallengeMessageType): Promise<ValidationResult>;
-export declare function verifyChallengeAnswer(answer: ChallengeAnswerMessageType): Promise<ValidationResult>;
-export declare function verifyChallengeVerification(verification: ChallengeVerificationMessageType): Promise<ValidationResult>;
+export declare function verifyChallengeRequest(request: ChallengeRequestMessageType, validateTimestampRange: boolean): Promise<ValidationResult>;
+export declare function verifyChallengeMessage(challenge: ChallengeMessageType, pubsubTopic: string, validateTimestampRange: boolean): Promise<ValidationResult>;
+export declare function verifyChallengeAnswer(answer: ChallengeAnswerMessageType, validateTimestampRange: boolean): Promise<ValidationResult>;
+export declare function verifyChallengeVerification(verification: ChallengeVerificationMessageType, pubsubTopic: string, validateTimestampRange: boolean): Promise<ValidationResult>;
 export declare function verifyPage(page: PageIpfs, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, subplebbitAddress: string, parentCommentCid: string | undefined): Promise<ValidationResult>;
-export {};

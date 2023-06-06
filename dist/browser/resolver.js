@@ -46,7 +46,6 @@ var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var util_1 = require("./util");
 var Resolver = /** @class */ (function () {
     function Resolver(plebbit) {
-        this.cachedChainProviders = {};
         this.plebbit = plebbit;
     }
     Resolver.prototype.toJSON = function () {
@@ -56,47 +55,36 @@ var Resolver = /** @class */ (function () {
         return undefined;
     };
     // cache the chain providers because only 1 should be running at the same time
-    Resolver.prototype._getChainProvider = function (chainTicker) {
-        var _a, _b, _c;
+    Resolver.prototype._getChainProvider = function (chainTicker, chainProviderUrl) {
         (0, assert_1.default)(chainTicker && typeof chainTicker === "string", "invalid chainTicker '".concat(chainTicker, "'"));
         (0, assert_1.default)(this.plebbit.chainProviders, "invalid chainProviders '".concat(this.plebbit.chainProviders, "'"));
-        if (this.cachedChainProviders[chainTicker]) {
-            return this.cachedChainProviders[chainTicker];
-        }
-        if (chainTicker === "eth") {
+        (0, assert_1.default)(this.plebbit.chainProviders[chainTicker].urls.includes(chainProviderUrl));
+        if (chainTicker === "eth" && chainProviderUrl === "ethers.js") {
             // if using eth, use ethers' default provider unless another provider is specified
-            if (!this.plebbit.chainProviders["eth"] || ((_c = (_b = (_a = this.plebbit.chainProviders["eth"]) === null || _a === void 0 ? void 0 : _a.urls) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.match(/DefaultProvider/i))) {
-                this.cachedChainProviders["eth"] = ethers_1.ethers.getDefaultProvider();
-                return this.cachedChainProviders["eth"];
-            }
+            return ethers_1.ethers.getDefaultProvider();
         }
-        if (this.plebbit.chainProviders[chainTicker]) {
-            this.cachedChainProviders[chainTicker] = new ethers_1.ethers.providers.JsonRpcProvider({ url: this.plebbit.chainProviders[chainTicker].urls[0] }, this.plebbit.chainProviders[chainTicker].chainId);
-            return this.cachedChainProviders[chainTicker];
-        }
-        (0, util_1.throwWithErrorCode)("ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER", { chainTicker: chainTicker, chainProviders: this.plebbit.chainProviders });
+        else
+            return new ethers_1.ethers.providers.JsonRpcProvider({ url: chainProviderUrl }, this.plebbit.chainProviders[chainTicker].chainId);
     };
-    Resolver.prototype._resolveEnsTxtRecord = function (ensName, txtRecordName) {
+    Resolver.prototype.resolveTxtRecord = function (address, txtRecordName, chain, chainProviderUrl) {
         return __awaiter(this, void 0, void 0, function () {
             var log, chainProvider, resolver, txtRecordResult;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:resolver:_resolveEnsTxtRecord");
-                        chainProvider = this._getChainProvider("eth");
-                        return [4 /*yield*/, chainProvider.getResolver(ensName)];
+                        chainProvider = this._getChainProvider(chain, chainProviderUrl);
+                        return [4 /*yield*/, chainProvider.getResolver(address)];
                     case 1:
                         resolver = _a.sent();
                         if (!resolver)
-                            (0, util_1.throwWithErrorCode)("ERR_ENS_RESOLVER_NOT_FOUND", { ensName: ensName, chainProvider: chainProvider });
+                            (0, util_1.throwWithErrorCode)("ERR_ENS_RESOLVER_NOT_FOUND", { address: address, chainProvider: chainProvider, chain: chain });
                         return [4 /*yield*/, resolver.getText(txtRecordName)];
                     case 2:
                         txtRecordResult = _a.sent();
                         if (!txtRecordResult)
                             return [2 /*return*/, undefined];
-                        log("Resolved text record name (".concat(txtRecordName, ") of ENS (").concat(ensName, ") to ").concat(txtRecordResult));
-                        this.plebbit._cache.setItem("".concat(ensName, "_").concat(txtRecordName), txtRecordResult);
-                        this.plebbit._cache.setItem("".concat(ensName, "_").concat(txtRecordName, "_timestamp"), (0, util_1.timestamp)());
+                        log("Resolved text record name (".concat(txtRecordName, ") of address (").concat(address, ") to ").concat(txtRecordResult, " with chainProvider (").concat(chainProviderUrl, ")"));
                         return [2 /*return*/, txtRecordResult];
                 }
             });

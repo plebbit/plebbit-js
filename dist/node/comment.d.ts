@@ -53,7 +53,7 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     toJSONIpfs(): CommentIpfsType;
     toJSONPubsubMessagePublication(): CommentPubsubMessage;
     toJSONAfterChallengeVerification(): CommentIpfsWithCid;
-    toJSONCommentsTableRowInsert(challengeRequestId: string): CommentsTableRowInsert;
+    toJSONCommentsTableRowInsert(challengeRequestId: CommentsTableRowInsert["challengeRequestId"]): CommentsTableRowInsert;
     toJSONMerged(): CommentWithCommentUpdate;
     setCommentIpnsKey(ipnsKey: {
         Id: string;
