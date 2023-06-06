@@ -266,7 +266,7 @@ export async function startSubplebbits(props: {
     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 }
 
-export async function mockPlebbit(plebbitOptions?: PlebbitOptions) {
+export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubsub = false) {
     const plebbit = await PlebbitIndex({
         ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
         pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`, `http://localhost:42234/api/v0`, `http://localhost:42254/api/v0`],
@@ -288,7 +288,7 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions) {
 
 
     // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
-    if (!plebbitOptions?.pubsubHttpClientsOptions)
+    if (!plebbitOptions?.pubsubHttpClientsOptions || forceMockPubsub)
         for (const pubsubUrl of Object.keys(plebbit.clients.pubsubClients))
             plebbit.clients.pubsubClients[pubsubUrl]._client = createMockIpfsClient();
 

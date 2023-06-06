@@ -28,7 +28,7 @@ describe("math-cli", async () => {
     let plebbit;
 
     before(async () => {
-        plebbit = await mockPlebbit({ pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`] }); // Singular pubsub provider to avoid multiple challenge request/answers collision
+        plebbit = await mockPlebbit({ pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`] }, true); // Singular pubsub provider to avoid multiple challenge request/answers collision
     });
     it("can post after answering correctly", async function () {
         const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[0] });
