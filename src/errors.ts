@@ -29,6 +29,7 @@ export enum messages {
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",
     ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 = "author.address is not a domain or B58",
+    ERR_SIGNATURE_PUBLIC_KEY_IS_NOT_B58 = "The public key of the signature is not B58",
 
     // Verify Signature errors
     ERR_SIGNATURE_IS_INVALID = "Signature of publication is invalid",

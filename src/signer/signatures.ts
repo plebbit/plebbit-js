@@ -208,13 +208,18 @@ const _verifyAuthor = async (
             return { valid: true, newAddress: derivedAddress };
         }
     } else {
+        let authorPeerId: PeerId, signaturePeerId: PeerId;
         try {
-            const authorPeerId = PeerId.createFromB58String(publicationJson.author.address);
-            const signaturePeerId = await getPeerIdFromPublicKey(publicationJson.signature.publicKey);
-            if (!signaturePeerId.equals(authorPeerId)) return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
+            authorPeerId = PeerId.createFromB58String(publicationJson.author.address);
         } catch {
             return { valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 };
         }
+        try {
+            signaturePeerId = await getPeerIdFromPublicKey(publicationJson.signature.publicKey);
+        } catch {
+            return { valid: false, reason: messages.ERR_SIGNATURE_PUBLIC_KEY_IS_NOT_B58 };
+        }
+        if (!signaturePeerId.equals(authorPeerId)) return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
     }
     // Author
     return { valid: true };
