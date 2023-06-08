@@ -93,6 +93,8 @@ CommentUpdate /* (IPNS record Comment.ipnsName) */ {
   author?: { // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flair with commentUpdate.author.subplebbit.flair if any
     subplebbit: SubplebbitAuthor
   }
+  lastReplyTimestamp?: number // needed for active sort in frontend
+  lastChildCid?: number // needed to fetch reply updates using subplebbit.postUpdates https://github.com/plebbit/plebbit-js/issues/12
 }
 Author {
   address: string
