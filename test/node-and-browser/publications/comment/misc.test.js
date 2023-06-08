@@ -463,12 +463,12 @@ describe(`comment.clients`, async () => {
         it(`correct order of pubsubClients state when publishing a comment with a sub that skips challenge`, async () => {
             const mockPost = await generateMockPost(signers[0].address, plebbit);
 
-            const pubsubUrls = Object.keys(mockPost.clients.pubsubClients);
+            const pubsubUrls = await plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe");
             // Only first pubsub url is used for subscription. For publishing we use all providers
             const expectedStates = {
                 [pubsubUrls[0]]: ["subscribing-pubsub", "publishing-challenge-request", "stopped", "waiting-challenge", "stopped"],
-                [pubsubUrls[1]]: ["publishing-challenge-request", "stopped"],
-                [pubsubUrls[2]]: ["publishing-challenge-request", "stopped"]
+                [pubsubUrls[1]]: [],
+                [pubsubUrls[2]]: []
             };
 
             const actualStates = { [pubsubUrls[0]]: [], [pubsubUrls[1]]: [], [pubsubUrls[2]]: [] };
@@ -487,7 +487,7 @@ describe(`comment.clients`, async () => {
             const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
             mockPost.removeAllListeners();
 
-            const pubsubUrls = Object.keys(mockPost.clients.pubsubClients);
+            const pubsubUrls = await plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe");
             // Only first pubsub url is used for subscription. For publishing we use all providers
             const expectedStates = {
                 [pubsubUrls[0]]: [
@@ -501,8 +501,8 @@ describe(`comment.clients`, async () => {
                     "waiting-challenge-verification",
                     "stopped"
                 ],
-                [pubsubUrls[1]]: ["publishing-challenge-request", "stopped", "publishing-challenge-answer", "stopped"],
-                [pubsubUrls[2]]: ["publishing-challenge-request", "stopped", "publishing-challenge-answer", "stopped"]
+                [pubsubUrls[1]]: [],
+                [pubsubUrls[2]]: []
             };
 
             const actualStates = { [pubsubUrls[0]]: [], [pubsubUrls[1]]: [], [pubsubUrls[2]]: [] };
