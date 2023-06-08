@@ -25,7 +25,7 @@ Subplebbit {
 }
 
 Pages {
-  clients: Clients
+  clients: {[sortType: string]: {[chainProviderUrl: string]: Client}}
 }
 
 IpfsStats {
