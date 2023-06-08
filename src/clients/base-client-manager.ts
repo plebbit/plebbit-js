@@ -45,18 +45,38 @@ export class BaseClientsManager {
     // Pubsub methods
 
     async pubsubSubscribe(pubsubTopic: string, handler: MessageHandlerFn) {
-        try {
-            await this.getDefaultPubsub()._client.pubsub.subscribe(pubsubTopic, handler);
-        } catch (e) {
-            throwWithErrorCode("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic, pubsubNode: this._defaultPubsubProviderUrl, error: e });
+        const log = Logger("plebbit-js:plebbit:client-manager:pubsubSubscribe");
+
+        const providersSorted = await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe");
+        const providerToError: Record<string, PlebbitError> = {};
+
+        for (let i = 0; i < providersSorted.length; i++) {
+            const pubsubProviderUrl = providersSorted[i];
+            const timeBefore = Date.now();
+            try {
+                await this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler);
+                await this._plebbit.stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore);
+
+                return;
+            } catch (e) {
+                await this._plebbit.stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe");
+                log.error(`Failed to subscribe to pubsub topic (${pubsubTopic}) to (${pubsubProviderUrl})`);
+                providerToError[pubsubProviderUrl] = e;
+            }
         }
+
+        const combinedError = new PlebbitError("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic, providerToError });
+
+        this.emitError(combinedError);
+        throw combinedError;
     }
 
     async pubsubUnsubscribe(pubsubTopic: string, handler?: MessageHandlerFn) {
-        try {
-            await this.getDefaultPubsub()._client.pubsub.unsubscribe(pubsubTopic, handler);
-        } catch (error) {
-            throwWithErrorCode("ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE", { pubsubTopic, pubsubNode: this._defaultPubsubProviderUrl, error });
+        for (let i = 0; i < Object.keys(this._plebbit.clients.pubsubClients).length; i++) {
+            const pubsubProviderUrl = Object.keys(this._plebbit.clients.pubsubClients)[i];
+            try {
+                await this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.unsubscribe(pubsubTopic, handler);
+            } catch {}
         }
     }
 
@@ -85,43 +105,23 @@ export class BaseClientsManager {
         const log = Logger("plebbit-js:plebbit:client-manager:pubsubPublish");
         const dataBinary = cborg.encode(data);
 
-        const _firstResolve = (promises: Promise<void>[]) => {
-            return new Promise<number>((resolve) => promises.forEach((promise) => promise.then(() => resolve(1))));
-        };
+        const providersSorted = await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-publish");
+        const providerToError: Record<string, PlebbitError> = {};
 
-        const timeouts = [0, 0, 100, 1000];
-
-        let lastError: PlebbitError;
-        const concurrencyLimit = 3;
-        const queueLimit = pLimit(concurrencyLimit);
-
-        for (let i = 0; i < timeouts.length; i++) {
-            if (timeouts[i] !== 0) await delay(timeouts[i]);
+        for (let i = 0; i < providersSorted.length; i++) {
+            const pubsubProviderUrl = providersSorted[i];
             try {
-                // Only sort if we have more than 3 pubsub providers
-                const providersSorted =
-                    Object.keys(this._plebbit.clients.pubsubClients).length <= concurrencyLimit
-                        ? Object.keys(this._plebbit.clients.pubsubClients)
-                        : await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-publish");
-
-                const providerPromises = providersSorted.map((pubsubProviderUrl) =>
-                    queueLimit(() => this._publishToPubsubProvider(pubsubTopic, dataBinary, pubsubProviderUrl))
-                );
-
-                const res = await Promise.race([_firstResolve(providerPromises), Promise.allSettled(providerPromises)]);
-
-                if (res === 1) {
-                    queueLimit.clearQueue();
-                    return;
-                } else throw res[0].value.error;
+                return await this._publishToPubsubProvider(pubsubTopic, dataBinary, pubsubProviderUrl);
             } catch (e) {
-                log.error(`Failed to publish to pubsub topic (${pubsubTopic}) for the ${i}th time due to error: `, e);
-                lastError = e;
+                log.error(`Failed to publish to pubsub topic (${pubsubTopic}) to (${pubsubProviderUrl})`);
+                providerToError[pubsubProviderUrl] = e;
             }
         }
 
-        this.emitError(lastError);
-        throw lastError;
+        const combinedError = new PlebbitError("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic, data, providerToError });
+
+        this.emitError(combinedError);
+        throw combinedError;
     }
 
     // Gateway methods
