@@ -13,7 +13,7 @@ Clients {
   ipfsGateways: {[ipfsGatewayUrl: string]: Client}
   ipfsClients: {[ipfsClientUrl: string]: Client}
   pubsubClients: {[pubsubClientUrl: string]: Client}
-  chainProviders: {[chainProviderUrl: string]: Client}
+  chainProviders: {[chainTicker: string]: {[chainProviderUrl: string]: Client}}
 }
 
 Comment {
@@ -98,7 +98,7 @@ PlebbitClients {
   ipfsGateways: {[ipfsGatewayUrl: string]: GatewayClient}
   ipfsClients: {[ipfsClientUrl: string]: IpfsClient}
   pubsubClients: {[pubsubClientUrl: string]: PubsubClient}
-  chainProviders: {[chainProviderUrl: string]: ChainProvider}
+  chainProviders: {[chainTicker: string]: {[chainProviderUrl: string]: Client}}
 }
 
 Plebbit {
