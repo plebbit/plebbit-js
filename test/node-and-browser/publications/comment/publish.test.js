@@ -117,7 +117,7 @@ describe("publishing comments", async () => {
         await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY);
     });
 
-    it(`Can publish a comment when all gateways are down except one`, async () => {
+    it(`Can publish a comment when all ipfs gateways are down except one`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit({
             ipfsGatewayUrls: [
                 "http://127.0.0.1:28080", // Not working
@@ -135,6 +135,32 @@ describe("publishing comments", async () => {
         ]);
         const post = await generateMockPost(subplebbitAddress, gatewayPlebbit);
         await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can publish a comment when all pubsub providers are down except one`, async () => {
+        const tempPlebbit = await mockPlebbit();
+        // We're gonna modify this plebbit instance to throw errors when pubsub publish/subscribe is called for two of its pubsub providers (it uses three)
+        const pubsubProviders = Object.keys(tempPlebbit.clients.pubsubClients);
+        expect(pubsubProviders.length).to.equal(3);
+
+        tempPlebbit.clients.pubsubClients[pubsubProviders[0]]._client.pubsub.publish = () => {
+            throw Error("Can't publish");
+        };
+        tempPlebbit.clients.pubsubClients[pubsubProviders[0]]._client.pubsub.subscribe = () => {
+            throw Error("Can't subscribe");
+        };
+
+        tempPlebbit.clients.pubsubClients[pubsubProviders[1]]._client.pubsub.publish = () => {
+            throw Error("Can't publish");
+        };
+        tempPlebbit.clients.pubsubClients[pubsubProviders[1]]._client.pubsub.subscribe = () => {
+            throw Error("Can't subscribe");
+        };
+        // Only pubsubProviders [2] is able to publish/subscribe
+
+        const post = await generateMockPost(subplebbitAddress, tempPlebbit);
+        await publishWithExpectedResult(post, true);
+
     });
 });
 
