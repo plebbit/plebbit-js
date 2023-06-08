@@ -26,6 +26,7 @@ var messages;
     messages["ERR_FAILED_TO_FETCH_GENERIC"] = "Failed to fetch";
     messages["ERR_OVER_DOWNLOAD_LIMIT"] = "The file size is larger than download limit";
     messages["ERR_CALCULATED_CID_DOES_NOT_MATCH"] = "The CID calculated from loaded content does not match the provided CID";
+    messages["ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK"] = "Failed to fetch the thumbnail url of the link";
     // Sign errors
     messages["ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER"] = "comment.author.address does not match signer.address";
     messages["ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58"] = "author.address is not a domain or B58";
@@ -38,9 +39,18 @@ var messages;
     messages["ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR"] = "Author edit is not signed by original author of comment";
     messages["ERR_SUBPLEBBIT_POSTS_INVALID"] = "subplebbit.posts signature is invalid";
     messages["ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT"] = "CommentUpdate.cid is different than comment.cid";
+    messages["ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT"] = "The signer of challenge pubsub message is not the subplebbit";
+    messages["ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_SUBPLEBBIT"] = "The signer of challenge verification pubsub message is not the subplebbit";
+    messages["ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE"] = "Challenge request id is not derived from signature.publicKey";
+    messages["ERR_CHALLENGE_SIGNATURE_IS_INVALID"] = "Received a challenge message with an invalid signature";
+    messages["ERR_CHALLENGE_VERIFICATION_SIGNATURE_IS_INVALID"] = "Received a challenge verification message with an invalid signature";
     // getPage errors
     messages["ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB"] = "Comment in page should be under the same subplebbit";
     messages["ERR_PARENT_CID_NOT_AS_EXPECTED"] = "Comment under parent comment/post should have parentCid initialized";
+    // Subplebbit rejections of pubsub messages
+    messages["ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST"] = "Received a challenge answer without a prior challenge request";
+    messages["ERR_REUSED_PUBSUB_MSG_SIGNER"] = "Reusing a pubsub message signer is forbidden";
+    messages["ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED"] = "The timestamp of the pubsub message is outdated";
     // Subplebbit rejections of publications
     messages["ERR_UNAUTHORIZED_COMMENT_EDIT"] = "Can't edit the comment due to lack of authorization";
     messages["ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT"] = "Rejecting post/comment because its timestamp is earlier than its parent";

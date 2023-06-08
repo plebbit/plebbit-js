@@ -209,7 +209,7 @@ function _mockSubplebbitPlebbit(signers, plebbitOptions) {
                 case 0: return [4 /*yield*/, mockPlebbit(__assign(__assign({}, plebbitOptions), { pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] }))];
                 case 1:
                     plebbit = _b.sent();
-                    plebbit.resolver._resolveEnsTxtRecord = function (ensName, textRecord) { return __awaiter(_this, void 0, void 0, function () {
+                    plebbit.resolver.resolveTxtRecord = function (ensName, textRecord) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             if (ensName === "plebbit.eth" && textRecord === "subplebbit-address")
                                 return [2 /*return*/, signers[3].address];
@@ -447,7 +447,8 @@ function startSubplebbits(props) {
     });
 }
 exports.startSubplebbits = startSubplebbits;
-function mockPlebbit(plebbitOptions) {
+function mockPlebbit(plebbitOptions, forceMockPubsub) {
+    if (forceMockPubsub === void 0) { forceMockPubsub = false; }
     return __awaiter(this, void 0, void 0, function () {
         var plebbit, _i, _a, pubsubUrl;
         var _this = this;
@@ -456,7 +457,7 @@ function mockPlebbit(plebbitOptions) {
                 case 0: return [4 /*yield*/, (0, index_1.default)(__assign({ ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"], pubsubHttpClientsOptions: ["http://localhost:15002/api/v0", "http://localhost:42234/api/v0", "http://localhost:42254/api/v0"], resolveAuthorAddresses: true, publishInterval: 1000, updateInterval: 1000 }, plebbitOptions))];
                 case 1:
                     plebbit = _b.sent();
-                    plebbit.resolver._resolveEnsTxtRecord = function (ensName, textRecord) { return __awaiter(_this, void 0, void 0, function () {
+                    plebbit.resolver.resolveTxtRecord = function (ensName, textRecord) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             if (ensName === "plebbit.eth" && textRecord === "subplebbit-address")
                                 return [2 /*return*/, "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"];
@@ -467,10 +468,10 @@ function mockPlebbit(plebbitOptions) {
                             return [2 /*return*/];
                         });
                     }); };
-                    //@ts-expect-error
-                    plebbit._clientsManager._getCachedEns = function () { return undefined; };
+                    plebbit._cache.getItem = function () { return undefined; };
+                    plebbit._cache.setItem = function () { return undefined; };
                     // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
-                    if (!(plebbitOptions === null || plebbitOptions === void 0 ? void 0 : plebbitOptions.pubsubHttpClientsOptions))
+                    if (!(plebbitOptions === null || plebbitOptions === void 0 ? void 0 : plebbitOptions.pubsubHttpClientsOptions) || forceMockPubsub)
                         for (_i = 0, _a = Object.keys(plebbit.clients.pubsubClients); _i < _a.length; _i++) {
                             pubsubUrl = _a[_i];
                             plebbit.clients.pubsubClients[pubsubUrl]._client = (0, mock_ipfs_client_1.create)();

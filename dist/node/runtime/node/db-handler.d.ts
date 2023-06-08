@@ -49,6 +49,7 @@ export declare class DbHandler {
     insertChallenge(challenge: ChallengesTableRowInsert, trx?: Transaction): Promise<void>;
     insertChallengeAnswer(answer: ChallengeAnswersTableRowInsert, trx?: Transaction): Promise<void>;
     insertChallengeVerification(verification: ChallengeVerificationsTableRowInsert, trx?: Transaction): Promise<void>;
+    queryChallengeRequest(requestId: ChallengeRequestsTableRowInsert["challengeRequestId"], trx?: Transaction): Promise<import("../../types").ChallengeRequestsTableRow>;
     getLastVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<VotesTableRow | undefined>;
     private _basePageQuery;
     queryReplyCount(commentCid: string, trx?: Transaction): Promise<number>;

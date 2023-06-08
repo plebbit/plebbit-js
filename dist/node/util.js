@@ -39,7 +39,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.delay = exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parsePagesIpfs = exports.parsePageIpfs = exports.parseJsonStrings = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.getErrorCodeFromMessage = exports.firstResolve = exports.delay = exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parsePagesIpfs = exports.parsePageIpfs = exports.parseJsonStrings = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.TIMEFRAMES_TO_SECONDS = void 0;
+var errors_1 = require("./errors");
 var lodash_1 = __importDefault(require("lodash"));
 var assert_1 = __importDefault(require("assert"));
 var pages_1 = require("./pages");
@@ -285,4 +286,17 @@ function delay(ms) {
     return new Promise(function (resolve) { return setTimeout(resolve, ms); });
 }
 exports.delay = delay;
+function firstResolve(promises) {
+    return new Promise(function (resolve) { return promises.forEach(function (promise) { return promise.then(resolve); }); });
+}
+exports.firstResolve = firstResolve;
+function getErrorCodeFromMessage(message) {
+    for (var _i = 0, _a = Object.keys(errors_1.messages); _i < _a.length; _i++) {
+        var code = _a[_i];
+        if (errors_1.messages[code] === message)
+            return code;
+    }
+    throw Error("No error code was found for message (".concat(message, ")"));
+}
+exports.getErrorCodeFromMessage = getErrorCodeFromMessage;
 //# sourceMappingURL=util.js.map

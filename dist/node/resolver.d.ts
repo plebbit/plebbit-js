@@ -1,11 +1,11 @@
 import { ethers } from "ethers";
+import { Chain } from "./types";
 export declare class Resolver {
-    private cachedChainProviders;
     private plebbit;
     constructor(plebbit: Resolver["plebbit"]);
     toJSON(): any;
     toString(): any;
-    _getChainProvider(chainTicker: string): ethers.providers.BaseProvider;
-    _resolveEnsTxtRecord(ensName: string, txtRecordName: string): Promise<string | undefined>;
+    _getChainProvider(chainTicker: Chain, chainProviderUrl: string): ethers.providers.BaseProvider;
+    resolveTxtRecord(address: string, txtRecordName: string, chain: Chain, chainProviderUrl: string): Promise<string | undefined>;
     isDomain(address: string): boolean;
 }

@@ -111,10 +111,16 @@ var ClientsManager = /** @class */ (function (_super) {
         }
     };
     ClientsManager.prototype._initChainProviders = function () {
-        var _a;
-        for (var _i = 0, _b = Object.keys(this._plebbit.clients.chainProviders); _i < _b.length; _i++) {
-            var chainProviderUrl = _b[_i];
-            this.clients.chainProviders = __assign(__assign({}, this.clients.chainProviders), (_a = {}, _a[chainProviderUrl] = new chain_provider_client_1.GenericChainProviderClient("stopped"), _a));
+        //@ts-expect-error
+        this.clients.chainProviders = {};
+        for (var _i = 0, _a = Object.keys(this._plebbit.chainProviders); _i < _a.length; _i++) {
+            var chain = _a[_i];
+            this.clients.chainProviders[chain] = {};
+            var chainProvider = this._plebbit.chainProviders[chain];
+            for (var _b = 0, _c = chainProvider.urls; _b < _c.length; _b++) {
+                var chainProviderUrl = _c[_b];
+                this.clients.chainProviders[chain][chainProviderUrl] = new chain_provider_client_1.GenericChainProviderClient("stopped");
+            }
         }
     };
     // Overriding functions from base client manager here
@@ -135,15 +141,15 @@ var ClientsManager = /** @class */ (function (_super) {
     ClientsManager.prototype.postFetchGatewaySuccess = function (gatewayUrl, path, loadType) {
         this.updateGatewayState("stopped", gatewayUrl);
     };
-    ClientsManager.prototype.preResolveTextRecord = function (ens, txtRecordName) {
+    ClientsManager.prototype.preResolveTextRecord = function (address, txtRecordName, chain, chainProviderUrl) {
         var newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
-        this.updateChainProviderState(newState, "eth");
+        this.updateChainProviderState(newState, chain, chainProviderUrl);
     };
-    ClientsManager.prototype.postResolveTextRecordSuccess = function (ens, txtRecordName, resolvedTextRecord) {
-        this.updateChainProviderState("stopped", "eth");
+    ClientsManager.prototype.postResolveTextRecordSuccess = function (address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl) {
+        this.updateChainProviderState("stopped", chain, chainProviderUrl);
     };
-    ClientsManager.prototype.postResolveTextRecordFailure = function (ens, txtRecordName) {
-        this.updateChainProviderState("stopped", "eth");
+    ClientsManager.prototype.postResolveTextRecordFailure = function (address, txtRecordName, chain, chainProviderUrl) {
+        this.updateChainProviderState("stopped", chain, chainProviderUrl);
     };
     // State methods here
     ClientsManager.prototype.updatePubsubState = function (newState, pubsubProvider) {
@@ -164,10 +170,10 @@ var ClientsManager = /** @class */ (function (_super) {
         this.clients.ipfsGateways[gateway].state = newState;
         this.clients.ipfsGateways[gateway].emit("statechange", newState);
     };
-    ClientsManager.prototype.updateChainProviderState = function (newState, chainTicker) {
+    ClientsManager.prototype.updateChainProviderState = function (newState, chainTicker, chainProviderUrl) {
         (0, assert_1.default)(typeof newState === "string", "Can't update chain provider state to undefined");
-        this.clients.chainProviders[chainTicker].state = newState;
-        this.clients.chainProviders[chainTicker].emit("statechange", newState);
+        this.clients.chainProviders[chainTicker][chainProviderUrl].state = newState;
+        this.clients.chainProviders[chainTicker][chainProviderUrl].emit("statechange", newState);
     };
     ClientsManager.prototype.fetchCid = function (cid) {
         return __awaiter(this, void 0, void 0, function () {

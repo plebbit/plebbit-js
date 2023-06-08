@@ -76,7 +76,6 @@ exports.ChallengeMessage = ChallengeMessage;
 var ChallengeAnswerMessage = /** @class */ (function () {
     function ChallengeAnswerMessage(props) {
         this.type = "CHALLENGEANSWER";
-        this.challengeAnswerId = props.challengeAnswerId;
         this.encryptedChallengeAnswers = props.encryptedChallengeAnswers;
         this.challengeRequestId = props.challengeRequestId;
         this.signature = props.signature;
@@ -88,7 +87,6 @@ var ChallengeAnswerMessage = /** @class */ (function () {
         return {
             type: this.type,
             challengeRequestId: this.challengeRequestId,
-            challengeAnswerId: this.challengeAnswerId,
             encryptedChallengeAnswers: this.encryptedChallengeAnswers,
             signature: this.signature,
             protocolVersion: this.protocolVersion,
@@ -97,7 +95,8 @@ var ChallengeAnswerMessage = /** @class */ (function () {
         };
     };
     ChallengeAnswerMessage.prototype.toJSONForDb = function (challengeAnswers) {
-        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedChallengeAnswers"])), { challengeAnswers: challengeAnswers });
+        var challengeAnswersFormattedForDb = Array.isArray(challengeAnswers) ? JSON.stringify(challengeAnswers) : challengeAnswers;
+        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedChallengeAnswers"])), { challengeAnswers: challengeAnswersFormattedForDb });
     };
     return ChallengeAnswerMessage;
 }());
@@ -106,7 +105,6 @@ var ChallengeVerificationMessage = /** @class */ (function () {
     function ChallengeVerificationMessage(props) {
         this.type = "CHALLENGEVERIFICATION";
         this.challengeRequestId = props.challengeRequestId;
-        this.challengeAnswerId = props.challengeAnswerId;
         this.challengeSuccess = props.challengeSuccess;
         this.challengeErrors = props.challengeErrors;
         this.reason = props.reason;
@@ -120,7 +118,6 @@ var ChallengeVerificationMessage = /** @class */ (function () {
         return {
             type: this.type,
             challengeRequestId: this.challengeRequestId,
-            challengeAnswerId: this.challengeAnswerId,
             challengeSuccess: this.challengeSuccess,
             challengeErrors: this.challengeErrors,
             reason: this.reason,

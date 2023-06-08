@@ -1,7 +1,7 @@
 import Publication from "../publication";
 import { Plebbit } from "../plebbit";
 import { Comment } from "../comment";
-import { CommentIpfsType, CommentUpdate, SubplebbitIpfsType } from "../types";
+import { Chain, CommentIpfsType, CommentUpdate, SubplebbitIpfsType } from "../types";
 import { Subplebbit } from "../subplebbit";
 import { PlebbitError } from "../plebbit-error";
 import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client";
@@ -21,9 +21,9 @@ export declare class ClientsManager extends BaseClientsManager {
         pubsubClients: {
             [pubsubClientUrl: string]: GenericPubsubClient;
         };
-        chainProviders: {
+        chainProviders: Record<Chain, {
             [chainProviderUrl: string]: GenericChainProviderClient;
-        };
+        }>;
     };
     constructor(plebbit: Plebbit);
     protected _initIpfsGateways(): void;
@@ -33,13 +33,13 @@ export declare class ClientsManager extends BaseClientsManager {
     preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void;
     postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType): void;
     postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType): void;
-    preResolveTextRecord(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address"): void;
-    postResolveTextRecordSuccess(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string): void;
-    postResolveTextRecordFailure(ens: string, txtRecordName: "subplebbit-address" | "plebbit-author-address"): void;
+    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: string, chainProviderUrl: string): void;
+    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: string, chainProviderUrl: string): void;
+    postResolveTextRecordFailure(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: string, chainProviderUrl: string): void;
     updatePubsubState(newState: GenericPubsubClient["state"], pubsubProvider: string | undefined): void;
     updateIpfsState(newState: GenericIpfsClient["state"]): void;
     updateGatewayState(newState: GenericIpfsGatewayClient["state"], gateway: string): void;
-    updateChainProviderState(newState: GenericChainProviderClient["state"], chainTicker: string): void;
+    updateChainProviderState(newState: GenericChainProviderClient["state"], chainTicker: string, chainProviderUrl: string): void;
     fetchCid(cid: string): Promise<string>;
     protected _getStatePriorToResolvingSubplebbitIpns(): "fetching-subplebbit-ipns" | "fetching-ipns";
     protected _getStatePriorToResolvingSubplebbitIpfs(): "fetching-subplebbit-ipfs" | "fetching-ipfs";
@@ -56,9 +56,9 @@ export declare class PublicationClientsManager extends ClientsManager {
         pubsubClients: {
             [pubsubClientUrl: string]: PublicationPubsubClient;
         };
-        chainProviders: {
+        chainProviders: Record<Chain, {
             [chainProviderUrl: string]: GenericChainProviderClient;
-        };
+        }>;
     };
     _publication: Publication;
     constructor(publication: Publication);
@@ -84,9 +84,9 @@ export declare class CommentClientsManager extends PublicationClientsManager {
         pubsubClients: {
             [pubsubClientUrl: string]: PublicationPubsubClient;
         };
-        chainProviders: {
+        chainProviders: Record<Chain, {
             [chainProviderUrl: string]: GenericChainProviderClient;
-        };
+        }>;
     };
     private _comment;
     constructor(comment: Comment);
@@ -106,9 +106,9 @@ export declare class SubplebbitClientsManager extends ClientsManager {
         pubsubClients: {
             [pubsubClientUrl: string]: SubplebbitPubsubClient;
         };
-        chainProviders: {
+        chainProviders: Record<Chain, {
             [chainProviderUrl: string]: GenericChainProviderClient;
-        };
+        }>;
     };
     private _subplebbit;
     constructor(subplebbit: Subplebbit);

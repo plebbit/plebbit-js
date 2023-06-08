@@ -88,7 +88,6 @@ exports.ChallengeMessageSignedPropertyNames = [
 exports.ChallengeAnswerMessageSignedPropertyNames = [
     "type",
     "challengeRequestId",
-    "challengeAnswerId",
     "encryptedChallengeAnswers",
     "timestamp"
 ];
@@ -97,7 +96,6 @@ exports.ChallengeVerificationMessageSignedPropertyNames = [
     "type",
     "challengeRequestId",
     "encryptedPublication",
-    "challengeAnswerId",
     "challengeSuccess",
     "challengeErrors",
     "timestamp"

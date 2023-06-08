@@ -137,7 +137,7 @@ function _validateAuthorIpns(author, signer, plebbit) {
         });
     });
 }
-function _sign(signedPropertyNames, publication, signer, log) {
+function _signJson(signedPropertyNames, publication, signer, log) {
     return __awaiter(this, void 0, void 0, function () {
         var publicationEncoded, signatureData, _a;
         return __generator(this, function (_b) {
@@ -159,6 +159,28 @@ function _sign(signedPropertyNames, publication, signer, log) {
         });
     });
 }
+function _signPubsubMsg(signedPropertyNames, msg, signer, log) {
+    return __awaiter(this, void 0, void 0, function () {
+        var publicationEncoded, signatureData, publicKeyBuffer;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    (0, assert_1.default)(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
+                    publicationEncoded = bufferCleanedObject(signedPropertyNames, msg);
+                    return [4 /*yield*/, (0, exports.signBufferEd25519)(publicationEncoded, signer.privateKey)];
+                case 1:
+                    signatureData = _a.sent();
+                    publicKeyBuffer = (0, from_string_1.fromString)(signer.publicKey, "base64");
+                    return [2 /*return*/, {
+                            signature: signatureData,
+                            publicKey: publicKeyBuffer,
+                            type: signer.type,
+                            signedPropertyNames: signedPropertyNames
+                        }];
+            }
+        });
+    });
+}
 function signComment(comment, signer, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
         var log;
@@ -169,7 +191,7 @@ function signComment(comment, signer, plebbit) {
                     return [4 /*yield*/, _validateAuthorIpns(comment.author, signer, plebbit)];
                 case 1:
                     _a.sent();
-                    return [2 /*return*/, _sign(constants_1.CommentSignedPropertyNames, comment, signer, log)];
+                    return [2 /*return*/, _signJson(constants_1.CommentSignedPropertyNames, comment, signer, log)];
             }
         });
     });
@@ -185,7 +207,7 @@ function signVote(vote, signer, plebbit) {
                     return [4 /*yield*/, _validateAuthorIpns(vote.author, signer, plebbit)];
                 case 1:
                     _a.sent();
-                    return [2 /*return*/, _sign(constants_1.VoteSignedPropertyNames, vote, signer, log)];
+                    return [2 /*return*/, _signJson(constants_1.VoteSignedPropertyNames, vote, signer, log)];
             }
         });
     });
@@ -201,7 +223,7 @@ function signCommentEdit(edit, signer, plebbit) {
                     return [4 /*yield*/, _validateAuthorIpns(edit.author, signer, plebbit)];
                 case 1:
                     _a.sent();
-                    return [2 /*return*/, _sign(constants_1.CommentEditSignedPropertyNames, edit, signer, log)];
+                    return [2 /*return*/, _signJson(constants_1.CommentEditSignedPropertyNames, edit, signer, log)];
             }
         });
     });
@@ -213,7 +235,7 @@ function signCommentUpdate(update, signer) {
         return __generator(this, function (_a) {
             log = (0, plebbit_logger_1.default)("plebbit-js:signatures:signCommentUpdate");
             // Not sure, should we validate update.authorEdit here?
-            return [2 /*return*/, _sign(constants_1.CommentUpdateSignedPropertyNames, update, signer, log)];
+            return [2 /*return*/, _signJson(constants_1.CommentUpdateSignedPropertyNames, update, signer, log)];
         });
     });
 }
@@ -223,7 +245,7 @@ function signSubplebbit(subplebbit, signer) {
         var log;
         return __generator(this, function (_a) {
             log = (0, plebbit_logger_1.default)("plebbit-js:signatures:signSubplebbit");
-            return [2 /*return*/, _sign(constants_1.SubplebbitSignedPropertyNames, subplebbit, signer, log)];
+            return [2 /*return*/, _signJson(constants_1.SubplebbitSignedPropertyNames, subplebbit, signer, log)];
         });
     });
 }
@@ -233,7 +255,7 @@ function signChallengeRequest(request, signer) {
         var log;
         return __generator(this, function (_a) {
             log = (0, plebbit_logger_1.default)("plebbit-js:signatures:signChallengeRequest");
-            return [2 /*return*/, _sign(constants_1.ChallengeRequestMessageSignedPropertyNames, request, signer, log)];
+            return [2 /*return*/, _signPubsubMsg(constants_1.ChallengeRequestMessageSignedPropertyNames, request, signer, log)];
         });
     });
 }
@@ -243,7 +265,7 @@ function signChallengeMessage(challengeMessage, signer) {
         var log;
         return __generator(this, function (_a) {
             log = (0, plebbit_logger_1.default)("plebbit-js:signatures:signChallengeMessage");
-            return [2 /*return*/, _sign(constants_1.ChallengeMessageSignedPropertyNames, challengeMessage, signer, log)];
+            return [2 /*return*/, _signPubsubMsg(constants_1.ChallengeMessageSignedPropertyNames, challengeMessage, signer, log)];
         });
     });
 }
@@ -253,7 +275,7 @@ function signChallengeAnswer(challengeAnswer, signer) {
         var log;
         return __generator(this, function (_a) {
             log = (0, plebbit_logger_1.default)("plebbit-js:signatures:signChallengeAnswer");
-            return [2 /*return*/, _sign(constants_1.ChallengeAnswerMessageSignedPropertyNames, challengeAnswer, signer, log)];
+            return [2 /*return*/, _signPubsubMsg(constants_1.ChallengeAnswerMessageSignedPropertyNames, challengeAnswer, signer, log)];
         });
     });
 }
@@ -263,7 +285,7 @@ function signChallengeVerification(challengeVerification, signer) {
         var log;
         return __generator(this, function (_a) {
             log = (0, plebbit_logger_1.default)("plebbit-js:signatures:signChallengeVerification");
-            return [2 /*return*/, _sign(constants_1.ChallengeVerificationMessageSignedPropertyNames, challengeVerification, signer, log)];
+            return [2 /*return*/, _signPubsubMsg(constants_1.ChallengeVerificationMessageSignedPropertyNames, challengeVerification, signer, log)];
         });
     });
 }
@@ -288,7 +310,7 @@ var _verifyAuthor = function (publicationJson, resolveAuthorAddresses, clientsMa
                 if (resolvedAuthorAddress !== derivedAddress) {
                     // Means plebbit-author-address text record is resolving to another address (outdated?)
                     // Will always use address derived from publication.signature.publicKey as truth
-                    log.error("domain (".concat(publicationJson.author.address, ") resolved address (").concat(resolvedAuthorAddress, ") is invalid, changing publication.author.address to derived address ").concat(derivedAddress));
+                    log.error("author address (".concat(publicationJson.author.address, ") resolved address (").concat(resolvedAuthorAddress, ") is invalid"));
                     return [2 /*return*/, { valid: true, newAddress: derivedAddress }];
                 }
                 return [3 /*break*/, 6];
@@ -317,7 +339,7 @@ var bufferCleanedObject = function (signedPropertyNames, objectToSign) {
     return bufferToSign;
 };
 // DO NOT MODIFY THIS FUNCTION, OTHERWISE YOU RISK BREAKING BACKWARD COMPATIBILITY
-var _verifyPublicationSignature = function (publicationToBeVerified) { return __awaiter(void 0, void 0, void 0, function () {
+var _verifyJsonSignature = function (publicationToBeVerified) { return __awaiter(void 0, void 0, void 0, function () {
     var propsToSign, _i, _a, propertyName, signatureIsValid;
     return __generator(this, function (_b) {
         switch (_b.label) {
@@ -336,6 +358,27 @@ var _verifyPublicationSignature = function (publicationToBeVerified) { return __
         }
     });
 }); };
+// DO NOT MODIFY THIS FUNCTION, OTHERWISE YOU RISK BREAKING BACKWARD COMPATIBILITY
+var _verifyPubsubSignature = function (msg) { return __awaiter(void 0, void 0, void 0, function () {
+    var propsToSign, _i, _a, propertyName, publicKeyBase64, signatureIsValid;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
+            case 0:
+                propsToSign = {};
+                for (_i = 0, _a = msg.signature.signedPropertyNames; _i < _a.length; _i++) {
+                    propertyName = _a[_i];
+                    if (msg[propertyName] !== undefined && msg[propertyName] !== null) {
+                        propsToSign[propertyName] = msg[propertyName];
+                    }
+                }
+                publicKeyBase64 = (0, to_string_1.toString)(msg.signature.publicKey, "base64");
+                return [4 /*yield*/, (0, exports.verifyBufferEd25519)(cborg.encode(propsToSign), msg.signature.signature, publicKeyBase64)];
+            case 1:
+                signatureIsValid = _b.sent();
+                return [2 /*return*/, signatureIsValid];
+        }
+    });
+}); };
 var _verifyPublicationWithAuthor = function (publicationJson, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) { return __awaiter(void 0, void 0, void 0, function () {
     var authorSignatureValidity, signatureValidity;
     return __generator(this, function (_a) {
@@ -347,7 +390,7 @@ var _verifyPublicationWithAuthor = function (publicationJson, resolveAuthorAddre
                     return [2 /*return*/, { valid: false, reason: authorSignatureValidity.reason }];
                 if (!overrideAuthorAddressIfInvalid && authorSignatureValidity.newAddress)
                     return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE }];
-                return [4 /*yield*/, _verifyPublicationSignature(publicationJson)];
+                return [4 /*yield*/, _verifyJsonSignature(publicationJson)];
             case 2:
                 signatureValidity = _a.sent();
                 if (!signatureValidity)
@@ -400,7 +443,7 @@ function verifyComment(comment, resolveAuthorAddresses, clientsManager, override
                     validation = _a.sent();
                     if (!validation.valid)
                         return [2 /*return*/, validation];
-                    if (validation.newAddress)
+                    if (validation.newAddress && overrideAuthorAddressIfInvalid)
                         comment.author.address = validation.newAddress;
                     return [2 /*return*/, { valid: true }];
             }
@@ -430,7 +473,7 @@ function verifySubplebbit(subplebbit, resolveAuthorAddresses, clientsManager) {
                 case 3:
                     _i++;
                     return [3 /*break*/, 1];
-                case 4: return [4 /*yield*/, _verifyPublicationSignature(subplebbit)];
+                case 4: return [4 /*yield*/, _verifyJsonSignature(subplebbit)];
                 case 5:
                     signatureValidity = _c.sent();
                     if (!signatureValidity)
@@ -452,12 +495,27 @@ function verifySubplebbit(subplebbit, resolveAuthorAddresses, clientsManager) {
     });
 }
 exports.verifySubplebbit = verifySubplebbit;
-function _getValidationResult(publication) {
+function _getJsonValidationResult(publication) {
     return __awaiter(this, void 0, void 0, function () {
         var signatureValidity;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, _verifyPublicationSignature(publication)];
+                case 0: return [4 /*yield*/, _verifyJsonSignature(publication)];
+                case 1:
+                    signatureValidity = _a.sent();
+                    if (!signatureValidity)
+                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SIGNATURE_IS_INVALID }];
+                    return [2 /*return*/, { valid: true }];
+            }
+        });
+    });
+}
+function _getBinaryValidationResult(publication) {
+    return __awaiter(this, void 0, void 0, function () {
+        var signatureValidity;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, _verifyPubsubSignature(publication)];
                 case 1:
                     signatureValidity = _a.sent();
                     if (!signatureValidity)
@@ -495,40 +553,105 @@ function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, sub
                     if (invalidPageValidity)
                         return [2 /*return*/, invalidPageValidity];
                     _a.label = 4;
-                case 4: return [2 /*return*/, _getValidationResult(update)];
+                case 4: return [2 /*return*/, _getJsonValidationResult(update)];
             }
         });
     });
 }
 exports.verifyCommentUpdate = verifyCommentUpdate;
-function verifyChallengeRequest(request) {
+// -5 mins
+function _minimumTimestamp() {
+    return (0, util_2.timestamp)() - 5 * 60;
+}
+// +5mins
+function _maximumTimestamp() {
+    return (0, util_2.timestamp)() + 5 * 60;
+}
+function _validateChallengeRequestId(msg) {
     return __awaiter(this, void 0, void 0, function () {
+        var signaturePublicKeyPeerId;
         return __generator(this, function (_a) {
-            return [2 /*return*/, _getValidationResult(request)];
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, (0, util_1.getPeerIdFromPublicKeyBuffer)(msg.signature.publicKey)];
+                case 1:
+                    signaturePublicKeyPeerId = _a.sent();
+                    if (!signaturePublicKeyPeerId.equals(msg.challengeRequestId))
+                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE }];
+                    else
+                        return [2 /*return*/, { valid: true }];
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+function verifyChallengeRequest(request, validateTimestampRange) {
+    return __awaiter(this, void 0, void 0, function () {
+        var idValid;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, _validateChallengeRequestId(request)];
+                case 1:
+                    idValid = _a.sent();
+                    if (!idValid.valid)
+                        return [2 /*return*/, idValid];
+                    if ((validateTimestampRange && _minimumTimestamp() > request.timestamp) || _maximumTimestamp() < request.timestamp)
+                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED }];
+                    return [2 /*return*/, _getBinaryValidationResult(request)];
+            }
         });
     });
 }
 exports.verifyChallengeRequest = verifyChallengeRequest;
-function verifyChallengeMessage(challenge) {
+function verifyChallengeMessage(challenge, pubsubTopic, validateTimestampRange) {
     return __awaiter(this, void 0, void 0, function () {
+        var msgSignerAddress;
         return __generator(this, function (_a) {
-            return [2 /*return*/, _getValidationResult(challenge)];
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPublicKeyBuffer)(challenge.signature.publicKey)];
+                case 1:
+                    msgSignerAddress = _a.sent();
+                    if (msgSignerAddress !== pubsubTopic)
+                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT }];
+                    if ((validateTimestampRange && _minimumTimestamp() > challenge.timestamp) || _maximumTimestamp() < challenge.timestamp)
+                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED }];
+                    return [2 /*return*/, _getBinaryValidationResult(challenge)];
+            }
         });
     });
 }
 exports.verifyChallengeMessage = verifyChallengeMessage;
-function verifyChallengeAnswer(answer) {
+function verifyChallengeAnswer(answer, validateTimestampRange) {
     return __awaiter(this, void 0, void 0, function () {
+        var idValid;
         return __generator(this, function (_a) {
-            return [2 /*return*/, _getValidationResult(answer)];
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, _validateChallengeRequestId(answer)];
+                case 1:
+                    idValid = _a.sent();
+                    if (!idValid.valid)
+                        return [2 /*return*/, idValid];
+                    if ((validateTimestampRange && _minimumTimestamp() > answer.timestamp) || _maximumTimestamp() < answer.timestamp)
+                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED }];
+                    return [2 /*return*/, _getBinaryValidationResult(answer)];
+            }
         });
     });
 }
 exports.verifyChallengeAnswer = verifyChallengeAnswer;
-function verifyChallengeVerification(verification) {
+function verifyChallengeVerification(verification, pubsubTopic, validateTimestampRange) {
     return __awaiter(this, void 0, void 0, function () {
+        var msgSignerAddress;
         return __generator(this, function (_a) {
-            return [2 /*return*/, _getValidationResult(verification)];
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPublicKeyBuffer)(verification.signature.publicKey)];
+                case 1:
+                    msgSignerAddress = _a.sent();
+                    if (msgSignerAddress !== pubsubTopic)
+                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_SUBPLEBBIT }];
+                    if ((validateTimestampRange && _minimumTimestamp() > verification.timestamp) || _maximumTimestamp() < verification.timestamp)
+                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED }];
+                    return [2 /*return*/, _getBinaryValidationResult(verification)];
+            }
         });
     });
 }

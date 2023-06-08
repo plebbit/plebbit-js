@@ -1,4 +1,5 @@
-declare type StatTypes = "ipns" | "cid" | "pubsub-publish";
+import { Chain } from "./types";
+declare type StatTypes = "ipns" | "cid" | "pubsub-publish" | Chain;
 export default class Stats {
     private _plebbit;
     constructor(plebbit: Stats["_plebbit"]);
@@ -9,6 +10,7 @@ export default class Stats {
     private _getBaseKey;
     private _getFailuresCountKey;
     recordGatewayFailure(gatewayUrl: string, type: StatTypes): Promise<void>;
+    private _gatewayScore;
     sortGatewaysAccordingToScore(type: StatTypes): Promise<string[]>;
 }
 export {};

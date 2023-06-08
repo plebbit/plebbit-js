@@ -19,7 +19,7 @@ export declare function startSubplebbits(props: {
     numOfCommentsToPublish: number;
     numOfPostsToPublish: number;
 }): Promise<void>;
-export declare function mockPlebbit(plebbitOptions?: PlebbitOptions): Promise<Plebbit>;
+export declare function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubsub?: boolean): Promise<Plebbit>;
 export declare function mockRemotePlebbit(plebbitOptions?: PlebbitOptions): Promise<Plebbit>;
 export declare function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions): Promise<Plebbit>;
 export declare function publishRandomReply(parentComment: Comment, plebbit: Plebbit, commentProps: Partial<CreateCommentOptions>, verifyCommentPropsInParentPages?: boolean): Promise<Comment>;
