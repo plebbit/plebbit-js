@@ -24,6 +24,10 @@ Subplebbit {
   clients: Clients
 }
 
+Pages {
+  clients: Clients
+}
+
 IpfsStats {
   totalIn: number // IPFS stats https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-stats-bw
   totalOut: number
