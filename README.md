@@ -1470,13 +1470,19 @@ The client events.
 #### Example
 
 ```js
-for (const clientType in comment.clients) {
-  const clientTypes = comment.clients[clientType]
-  for (const clientUrl in clientTypes) {
-    const client = clientTypes[clientUrl]
-    client.on('statechange', (state) => {
-      console.log('client state changed', state, client, clientType, clientUrl)
-    })
+const onStateChange = (state) => console.log('client state changed:', state)
+for (const clientUrl in clients?.ipfsGateways) {
+  comment.clients?.ipfsGateways?.[clientUrl].on('statechange', onStateChange)
+}
+for (const clientUrl in clients?.ipfsClients) {
+  comment.clients?.ipfsClients?.[clientUrl].on('statechange', onStateChange)
+}
+for (const clientUrl in clients?.pubsubClients) {
+  comment.clients?.pubsubClients?.[clientUrl].on('statechange', onStateChange)
+}
+for (const chainTicker in clients?.chainProviders) {
+  for (const clientUrl in clients?.chainProviders?.[chainTicker]) {
+    comment.clients?.chainProviders?.[chainTicker]?.[clientUrl].on('statechange', onStateChange)
   }
 }
 ```
