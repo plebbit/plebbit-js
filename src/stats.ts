@@ -4,7 +4,7 @@ import assert from "assert";
 import lodash from "lodash";
 import { Chain } from "./types";
 
-type StatTypes = "ipns" | "cid" | "pubsub-publish" | Chain;
+type StatTypes = "ipns" | "cid" | "pubsub-publish" | "pubsub-subscribe" | Chain;
 export default class Stats {
     private _plebbit: Pick<Plebbit, "_cache" | "clients">;
     constructor(plebbit: Stats["_plebbit"]) {
@@ -79,7 +79,7 @@ export default class Stats {
         const gatewayType =
             type === "cid" || type === "ipns"
                 ? "ipfsGateways"
-                : type === "pubsub-publish"
+                : type === "pubsub-publish" || type === "pubsub-subscribe"
                 ? "pubsubClients"
                 : type === "eth" || type === "avax" || type === "matic"
                 ? "chainProviders"
