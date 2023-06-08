@@ -136,8 +136,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             );
             const decryptedChallenge: DecryptedChallengeMessageType = {
                 ...msgParsed,
-                challenges: decryptedChallenges,
-                challengeRequestIdHash: sha256(msgParsed.challengeRequestId)
+                challenges: decryptedChallenges
             };
             this._updatePublishingState("waiting-challenge-answers");
             this._clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
@@ -180,7 +179,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             this._clientsManager.updatePubsubState("stopped", undefined);
             this.emit(
                 "challengeverification",
-                { ...msgParsed, publication: decryptedPublication, challengeRequestIdHash: sha256(msgParsed.challengeRequestId) },
+                { ...msgParsed, publication: decryptedPublication },
                 this instanceof Comment && decryptedPublication ? this : undefined
             );
         }
@@ -218,8 +217,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         log(`Responded to challenge (${this._challengeAnswer.challengeRequestId}) with answers`, challengeAnswers);
         this.emit("challengeanswer", {
             ...this._challengeAnswer,
-            challengeAnswers,
-            challengeRequestIdHash: sha256(this._challengeAnswer.challengeRequestId)
+            challengeAnswers
         });
     }
 
@@ -319,8 +317,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         log(`Sent a challenge request (${this._challengeRequest.challengeRequestId})`);
         this.emit("challengerequest", {
             ...this._challengeRequest,
-            publication: this.toJSONPubsubMessagePublication(),
-            challengeRequestIdHash: sha256(challengeRequestId)
+            publication: this.toJSONPubsubMessagePublication()
         });
     }
 }

@@ -123,8 +123,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     // private
 
-    private _challengeIdHashToSolution: Record<string, string[]>;
-    private _challengeIdHashToChallengeRequest: Record<string, DecryptedChallengeRequestMessageType>;
+    private _challengeIdToSolution: Record<string, string[]>;
+    private _challengeIdToChallengeRequest: Record<string, DecryptedChallengeRequestMessageType>;
     private provideCaptchaCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[ChallengeType[], string | undefined]>;
     private validateCaptchaAnswerCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>;
     private sortHandler: SortHandler;
@@ -139,8 +139,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     constructor(plebbit: Plebbit) {
         super();
         this.plebbit = plebbit;
-        this._challengeIdHashToSolution = {}; // Map challenge ID to its solution
-        this._challengeIdHashToChallengeRequest = {}; // To hold unpublished posts/comments/votes
+        this._challengeIdToSolution = {}; // Map challenge ID to its solution
+        this._challengeIdToChallengeRequest = {}; // To hold unpublished posts/comments/votes
         this._setState("stopped");
         this._setStartedState("stopped");
         this._setUpdatingState("stopped");
@@ -646,37 +646,37 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange:storePublicationIfValid");
 
         const publication = request.publication;
-        delete this._challengeIdHashToSolution[request.challengeRequestIdHash];
-        delete this._challengeIdHashToChallengeRequest[request.challengeRequestIdHash];
+        delete this._challengeIdToSolution[request.challengeRequestId.toString()];
+        delete this._challengeIdToChallengeRequest[request.challengeRequestId.toString()];
 
         if (publication["signer"]) {
-            log(`(${request.challengeRequestIdHash}): `, messages.ERR_FORBIDDEN_SIGNER_FIELD);
+            log(`(${request.challengeRequestId}): `, messages.ERR_FORBIDDEN_SIGNER_FIELD);
             return messages.ERR_FORBIDDEN_SIGNER_FIELD;
         }
 
         log.trace(`(${request.challengeRequestId}): `, `Will attempt to store publication if valid, `, publication);
 
         if (publication.subplebbitAddress !== this.address) {
-            log(`(${request.challengeRequestIdHash}): `, messages.ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS);
+            log(`(${request.challengeRequestId}): `, messages.ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS);
             return messages.ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS;
         }
         if (publication?.author?.address) {
             // Check if author is banned
             const authorModEdits = await this.dbHandler.queryAuthorModEdits(publication.author.address);
             if (typeof authorModEdits.banExpiresAt === "number" && authorModEdits.banExpiresAt > timestamp()) {
-                log(`(${request.challengeRequestIdHash}): `, messages.ERR_AUTHOR_IS_BANNED);
+                log(`(${request.challengeRequestId}): `, messages.ERR_AUTHOR_IS_BANNED);
                 return messages.ERR_AUTHOR_IS_BANNED;
             }
         } else {
             const msg = `Rejecting publication because it doesn't have author.address`;
-            log(`(${request.challengeRequestIdHash}): `, msg);
+            log(`(${request.challengeRequestId}): `, msg);
             return msg;
         }
 
         const forbiddenAuthorFields: (keyof Author)[] = ["subplebbit", "shortAddress"];
 
         if (Object.keys(publication.author).some((key: keyof Author) => forbiddenAuthorFields.includes(key))) {
-            log(`(${request.challengeRequestIdHash}): `, messages.ERR_FORBIDDEN_AUTHOR_FIELD);
+            log(`(${request.challengeRequestId}): `, messages.ERR_FORBIDDEN_AUTHOR_FIELD);
             return messages.ERR_FORBIDDEN_AUTHOR_FIELD;
         }
 
@@ -688,51 +688,51 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 : undefined;
 
             if (!parentCid) {
-                log(`(${request.challengeRequestIdHash}): `, messages.ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED);
+                log(`(${request.challengeRequestId}): `, messages.ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED);
                 return messages.ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED;
             }
 
             const parent = await this.dbHandler.queryComment(parentCid);
             if (!parent) {
-                log(`(${request.challengeRequestIdHash}): `, messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST);
+                log(`(${request.challengeRequestId}): `, messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST);
                 return messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST;
             }
 
             const parentFlags = await this.dbHandler.queryCommentFlags(parentCid);
 
             if (parentFlags.removed && !this.isPublicationCommentEdit(publication)) {
-                log(`(${request.challengeRequestIdHash}): `, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED);
+                log(`(${request.challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED);
                 return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED;
             }
 
             const isParentDeleted = await this.dbHandler.queryAuthorEditDeleted(parentCid);
 
             if (isParentDeleted && !this.isPublicationCommentEdit(publication)) {
-                log(`(${request.challengeRequestIdHash}): `, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
+                log(`(${request.challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
                 return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED;
             }
 
             const postFlags = await this.dbHandler.queryCommentFlags(parent.postCid);
 
             if (postFlags.removed && !this.isPublicationCommentEdit(publication)) {
-                log(`(${request.challengeRequestIdHash}): `, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED);
+                log(`(${request.challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED);
                 return messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED;
             }
 
             const isPostDeleted = await this.dbHandler.queryAuthorEditDeleted(parent.postCid);
 
             if (isPostDeleted && !this.isPublicationCommentEdit(publication)) {
-                log(`(${request.challengeRequestIdHash}): `, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
+                log(`(${request.challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
                 return messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED;
             }
 
             if (postFlags.locked && !this.isPublicationCommentEdit(publication)) {
-                log(`(${request.challengeRequestIdHash}): `, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
+                log(`(${request.challengeRequestId}): `, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
                 return messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED;
             }
 
             if (parent.timestamp > publication.timestamp) {
-                log(`(${request.challengeRequestIdHash}): `, messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT);
+                log(`(${request.challengeRequestId}): `, messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT);
                 return messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT;
             }
         }
@@ -764,7 +764,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             ];
 
             if (Object.keys(publication).some((key: keyof CommentType) => forbiddenCommentFields.includes(key))) {
-                log(`(${request.challengeRequestIdHash}): `, messages.ERR_FORBIDDEN_COMMENT_FIELD);
+                log(`(${request.challengeRequestId}): `, messages.ERR_FORBIDDEN_COMMENT_FIELD);
                 return messages.ERR_FORBIDDEN_COMMENT_FIELD;
             }
 
@@ -772,7 +772,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const publicationKilobyteSize = Buffer.byteLength(JSON.stringify(publication)) / 1000;
 
             if (publicationKilobyteSize > 40) {
-                log(`(${request.challengeRequestIdHash}): `, messages.ERR_COMMENT_OVER_ALLOWED_SIZE);
+                log(`(${request.challengeRequestId}): `, messages.ERR_COMMENT_OVER_ALLOWED_SIZE);
                 return messages.ERR_COMMENT_OVER_ALLOWED_SIZE;
             }
 
@@ -780,7 +780,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const ipnsKeyName = sha256(deterministicStringify(publication));
 
             if (await this.dbHandler.querySigner(ipnsKeyName)) {
-                log(`(${request.challengeRequestIdHash}): `, messages.ERR_DUPLICATE_COMMENT);
+                log(`(${request.challengeRequestId}): `, messages.ERR_DUPLICATE_COMMENT);
                 return messages.ERR_DUPLICATE_COMMENT;
             }
 
@@ -802,9 +802,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             );
 
             if (commentToInsert instanceof Post) {
-                const trx = await this.dbHandler.createTransaction(request.challengeRequestIdHash);
+                const trx = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
                 commentToInsert.setPreviousCid((await this.dbHandler.queryLatestPostCid(trx))?.cid);
-                await this.dbHandler.commitTransaction(request.challengeRequestIdHash);
+                await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
                 commentToInsert.setDepth(0);
                 const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setPostCid(file.path);
@@ -815,12 +815,12 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 log(`(${request.challengeRequestId}): `, `New post with cid ${commentToInsert.cid} has been inserted into DB`);
             } else if (commentToInsert instanceof Comment) {
                 // Comment
-                const trx = await this.dbHandler.createTransaction(request.challengeRequestIdHash);
+                const trx = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
                 const [commentsUnderParent, parent] = await Promise.all([
                     this.dbHandler.queryCommentsUnderComment(commentToInsert.parentCid, trx),
                     this.dbHandler.queryComment(commentToInsert.parentCid, trx)
                 ]);
-                await this.dbHandler.commitTransaction(request.challengeRequestIdHash);
+                await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
                 commentToInsert.setPreviousCid(commentsUnderParent[0]?.cid);
                 commentToInsert.setDepth(parent.depth + 1);
                 commentToInsert.setPostCid(parent.postCid);
@@ -828,7 +828,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 commentToInsert.setCid(file.path);
                 await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(request.challengeRequestId));
 
-                log(`(${request.challengeRequestIdHash}): `, `New comment with cid ${commentToInsert.cid} has been inserted into DB`);
+                log(`(${request.challengeRequestId}): `, `New comment with cid ${commentToInsert.cid} has been inserted into DB`);
             }
             return commentToInsert.toJSONAfterChallengeVerification();
         }
@@ -839,16 +839,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     ): Promise<DecryptedChallengeRequestMessageType | DecryptedChallengeAnswerMessageType | undefined> {
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange");
         let decrypted: any | undefined;
-        const challengeRequestIdHash = sha256(request.challengeRequestId);
         try {
             decrypted = await decryptEd25519AesGcmPublicKeyBuffer(
                 request.type === "CHALLENGEANSWER" ? request.encryptedChallengeAnswers : request.encryptedPublication,
                 this.signer.privateKey,
                 request.signature.publicKey
             );
-            if (request.type === "CHALLENGEREQUEST") return { ...request, publication: JSON.parse(decrypted), challengeRequestIdHash };
-            else if (request.type === "CHALLENGEANSWER")
-                return { ...request, challengeAnswers: JSON.parse(decrypted), challengeRequestIdHash };
+            if (request.type === "CHALLENGEREQUEST") return { ...request, publication: JSON.parse(decrypted) };
+            else if (request.type === "CHALLENGEANSWER") return { ...request, challengeAnswers: JSON.parse(decrypted) };
         } catch (e) {
             log.error(`Failed to decrypt request (${request.challengeRequestId}) due to error`, e);
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
@@ -918,22 +916,21 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private async handleChallengeRequest(request: ChallengeRequestMessage) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeRequest");
-        const requestIdHashed = sha256(request.challengeRequestId);
 
-        if (this._challengeIdHashToChallengeRequest[requestIdHashed]) return;
+        if (this._challengeIdToChallengeRequest[request.challengeRequestId.toString()]) return;
         const requestSignatureValidation = await verifyChallengeRequest(request, true);
         if (!requestSignatureValidation.valid) throwWithErrorCode(getErrorCodeFromMessage(requestSignatureValidation.reason), { request });
 
         const decryptedRequest = <DecryptedChallengeRequestMessageType>await this._decryptOrRespondWithFailure(request);
         await this.dbHandler.insertChallengeRequest(request.toJSONForDb(), undefined);
         await this._respondWithErrorIfSignatureOfPublicationIsInvalid(decryptedRequest);
-        this._challengeIdHashToChallengeRequest[decryptedRequest.challengeRequestIdHash] = decryptedRequest;
+        this._challengeIdToChallengeRequest[decryptedRequest.challengeRequestId.toString()] = decryptedRequest;
         this.emit("challengerequest", decryptedRequest);
         const [providedChallenges, reasonForSkippingCaptcha] = await this.provideCaptchaCallback(decryptedRequest);
-        log(`Received a request to a challenge (${decryptedRequest.challengeRequestIdHash})`);
+        log(`Received a request to a challenge (${decryptedRequest.challengeRequestId.toString()})`);
         if (providedChallenges.length === 0) {
             // Subplebbit owner has chosen to skip challenging this user or post
-            log.trace(`(${decryptedRequest.challengeRequestIdHash}): No challenge is required`);
+            log.trace(`(${decryptedRequest.challengeRequestId}): No challenge is required`);
 
             const publicationOrReason = await this.storePublicationIfValid(decryptedRequest);
             const encryptedPublication = lodash.isPlainObject(publicationOrReason)
@@ -967,7 +964,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
             ]);
             log(
-                `(${decryptedRequest.challengeRequestIdHash}): `,
+                `(${decryptedRequest.challengeRequestId}): `,
                 `Published ${challengeVerification.type} over pubsub: `,
                 lodash.omit(toSignMsg, ["encryptedPublication"])
             );
@@ -975,8 +972,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             this.emit("challengeverification", {
                 ...challengeVerification,
-                publication: typeof publicationOrReason === "string" ? undefined : publicationOrReason,
-                challengeRequestIdHash: decryptedRequest.challengeRequestIdHash
+                publication: typeof publicationOrReason === "string" ? undefined : publicationOrReason
             });
         } else {
             const toSignChallenge: Omit<ChallengeMessageType, "signature"> = {
@@ -1005,15 +1001,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage)
             ]);
             log.trace(
-                `(${decryptedRequest.challengeRequestIdHash}): `,
+                `(${decryptedRequest.challengeRequestId}): `,
                 `Published ${challengeMessage.type} over pubsub: `,
                 lodash.omit(toSignChallenge, ["encryptedChallenges"])
             );
             this._clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
             this.emit("challengemessage", {
                 ...challengeMessage,
-                challenges: providedChallenges,
-                challengeRequestIdHash: decryptedRequest.challengeRequestIdHash
+                challenges: providedChallenges
             });
         }
     }
@@ -1026,16 +1021,16 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         if (!answerSignatureValidation.valid)
             throwWithErrorCode(getErrorCodeFromMessage(answerSignatureValidation.reason), { challengeAnswer });
 
-        const decryptedChallengeAnswer = <DecryptedChallengeAnswerMessageType> await this._decryptOrRespondWithFailure(challengeAnswer);
+        const decryptedChallengeAnswer = <DecryptedChallengeAnswerMessageType>await this._decryptOrRespondWithFailure(challengeAnswer);
 
         await this.dbHandler.insertChallengeAnswer(challengeAnswer.toJSONForDb(decryptedChallengeAnswer.challengeAnswers), undefined);
         this.emit("challengeanswer", decryptedChallengeAnswer);
 
         const [challengeSuccess, challengeErrors] = await this.validateCaptchaAnswerCallback(decryptedChallengeAnswer);
         if (challengeSuccess) {
-            log.trace(`(${decryptedChallengeAnswer.challengeRequestIdHash}): `, `User has been answered correctly`);
+            log.trace(`(${decryptedChallengeAnswer.challengeRequestId}): `, `User has been answered correctly`);
             const publicationOrReason = await this.storePublicationIfValid(
-                this._challengeIdHashToChallengeRequest[decryptedChallengeAnswer.challengeRequestIdHash]
+                this._challengeIdToChallengeRequest[decryptedChallengeAnswer.challengeRequestId.toString()]
             ); // could contain "publication" or "reason"
             const encryptedPublication = lodash.isPlainObject(publicationOrReason)
                 ? await encryptEd25519AesGcmPublicKeyBuffer(
@@ -1068,7 +1063,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
             ]);
             log(
-                `(${decryptedChallengeAnswer.challengeRequestIdHash}): `,
+                `(${decryptedChallengeAnswer.challengeRequestId}): `,
                 `Published ${challengeVerification.type} over pubsub:`,
                 lodash.omit(toSignMsg, ["encryptedPublication"])
             );
@@ -1077,11 +1072,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             this.emit("challengeverification", {
                 ...challengeVerification,
-                publication: encryptedPublication ? <CommentIpfsWithCid>publicationOrReason : undefined,
-                challengeRequestIdHash: decryptedChallengeAnswer.challengeRequestIdHash
+                publication: encryptedPublication ? <CommentIpfsWithCid>publicationOrReason : undefined
             });
         } else {
-            log.trace(`Challenge (${decryptedChallengeAnswer.challengeRequestIdHash}) has been answered incorrectly`);
+            log.trace(`Challenge (${decryptedChallengeAnswer.challengeRequestId}) has been answered incorrectly`);
             const toSignVerification: Omit<ChallengeVerificationMessageType, "signature"> = {
                 type: "CHALLENGEVERIFICATION",
                 challengeRequestId: challengeAnswer.challengeRequestId,
@@ -1104,15 +1098,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
             ]);
             log(
-                `(${decryptedChallengeAnswer.challengeRequestIdHash}): `,
+                `(${decryptedChallengeAnswer.challengeRequestId}): `,
                 `Published ${challengeVerification.type} over pubsub:`,
                 toSignVerification
             );
             this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
 
             this.emit("challengeverification", {
-                ...challengeVerification,
-                challengeRequestIdHash: decryptedChallengeAnswer.challengeRequestIdHash
+                ...challengeVerification
             });
         }
     }
@@ -1140,20 +1133,21 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange");
 
         let msgParsed: ChallengeRequestMessageType | ChallengeAnswerMessageType | undefined;
-        let requestIdHashed: string;
         try {
             msgParsed = cborg.decode(pubsubMsg.data);
-            requestIdHashed = sha256(msgParsed.challengeRequestId);
             if (msgParsed.type === "CHALLENGEREQUEST") {
                 await this.handleChallengeRequest(new ChallengeRequestMessage(msgParsed));
-            } else if (msgParsed.type === "CHALLENGEANSWER" && !this._challengeIdHashToChallengeRequest[requestIdHashed])
+            } else if (
+                msgParsed.type === "CHALLENGEANSWER" &&
+                !this._challengeIdToChallengeRequest[msgParsed.challengeRequestId.toString()]
+            )
                 // Respond with error to answers without challenge request
                 await this._respondWithErrorToAnswerWithNoRequest(<ChallengeAnswerMessageType>msgParsed);
             else if (msgParsed.type === "CHALLENGEANSWER") await this.handleChallengeAnswer(new ChallengeAnswerMessage(msgParsed));
         } catch (e) {
-            e.message = `failed process captcha for challenge request id (${requestIdHashed}): ${e.message}`;
-            log.error(`(${requestIdHashed}): `, String(e));
-            if (requestIdHashed) await this.dbHandler.rollbackTransaction(requestIdHashed);
+            e.message = `failed process captcha for challenge request id (${msgParsed.challengeRequestId}): ${e.message}`;
+            log.error(`(${msgParsed.challengeRequestId}): `, String(e));
+            if (msgParsed) await this.dbHandler.rollbackTransaction(msgParsed.challengeRequestId.toString());
         }
     }
 
@@ -1162,17 +1156,17 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         // Expected return is:
         // captcha, reason for skipping captcha (if it's skipped by nullifying captcha)
         const { image, text } = await nativeFunctions.createImageCaptcha(300, 100);
-        this._challengeIdHashToSolution[request.challengeRequestIdHash] = [text];
+        this._challengeIdToSolution[request.challengeRequestId.toString()] = [text];
         return [[{ challenge: image, type: "image/png" }], undefined];
     }
 
     private async defaultValidateCaptcha(answerMessage: DecryptedChallengeAnswerMessageType): Promise<[boolean, string[] | undefined]> {
         const log = Logger("plebbit-js:subplebbit:validateCaptcha");
 
-        const actualSolution = this._challengeIdHashToSolution[answerMessage.challengeRequestIdHash];
+        const actualSolution = this._challengeIdToChallengeRequest[answerMessage.challengeRequestId.toString()];
         const answerIsCorrect = lodash.isEqual(answerMessage.challengeAnswers, actualSolution);
         log(
-            `(${answerMessage.challengeRequestIdHash}): `,
+            `(${answerMessage.challengeRequestId}): `,
             `Answer's validity: ${answerIsCorrect}, user's answer: ${answerMessage.challengeAnswers}, actual solution: ${actualSolution}`
         );
         const challengeErrors = answerIsCorrect ? undefined : ["User solved captcha incorrectly"];

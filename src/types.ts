@@ -204,7 +204,6 @@ export interface ChallengeRequestMessageType extends PubsubMessage {
 
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType {
     publication: VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage | PostPubsubMessage;
-    challengeRequestIdHash: string; // sha256 of challengeRequestId
 }
 
 export interface ChallengeMessageType extends PubsubMessage {
@@ -215,7 +214,6 @@ export interface ChallengeMessageType extends PubsubMessage {
 
 export interface DecryptedChallengeMessageType extends ChallengeMessageType {
     challenges: ChallengeType[];
-    challengeRequestIdHash: string; // sha256 of challengeRequestId
 }
 
 export interface ChallengeAnswerMessageType extends PubsubMessage {
@@ -226,7 +224,6 @@ export interface ChallengeAnswerMessageType extends PubsubMessage {
 
 export interface DecryptedChallengeAnswerMessageType extends ChallengeAnswerMessageType {
     challengeAnswers: string[];
-    challengeRequestIdHash: string; // sha256 of challengeRequestId
 }
 
 export interface ChallengeVerificationMessageType extends PubsubMessage {
@@ -240,7 +237,6 @@ export interface ChallengeVerificationMessageType extends PubsubMessage {
 
 export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType {
     publication?: CommentIpfsWithCid; // Only comments receive new props after verification for now
-    challengeRequestIdHash: string; // sha256 of challengeRequestId
 }
 
 export type SubplebbitStats = {
@@ -576,8 +572,7 @@ export interface ChallengesTableRowInsert extends Omit<ChallengesTableRow, "inse
 
 // Challenge answers table
 
-export interface ChallengeAnswersTableRow
-    extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encryptedChallengeAnswers" | "challengeRequestIdHash"> {
+export interface ChallengeAnswersTableRow extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encryptedChallengeAnswers"> {
     insertedAt: number;
 }
 
