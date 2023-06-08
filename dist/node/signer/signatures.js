@@ -313,20 +313,30 @@ var _verifyAuthor = function (publicationJson, resolveAuthorAddresses, clientsMa
                     log.error("author address (".concat(publicationJson.author.address, ") resolved address (").concat(resolvedAuthorAddress, ") is invalid"));
                     return [2 /*return*/, { valid: true, newAddress: derivedAddress }];
                 }
-                return [3 /*break*/, 6];
+                return [3 /*break*/, 8];
             case 3:
-                _c.trys.push([3, 5, , 6]);
-                authorPeerId = peer_id_1.default.createFromB58String(publicationJson.author.address);
-                return [4 /*yield*/, (0, util_1.getPeerIdFromPublicKey)(publicationJson.signature.publicKey)];
+                authorPeerId = void 0, signaturePeerId = void 0;
+                try {
+                    authorPeerId = peer_id_1.default.createFromB58String(publicationJson.author.address);
+                }
+                catch (_d) {
+                    return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 }];
+                }
+                _c.label = 4;
             case 4:
+                _c.trys.push([4, 6, , 7]);
+                return [4 /*yield*/, (0, util_1.getPeerIdFromPublicKey)(publicationJson.signature.publicKey)];
+            case 5:
                 signaturePeerId = _c.sent();
+                return [3 /*break*/, 7];
+            case 6:
+                _a = _c.sent();
+                return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SIGNATURE_PUBLIC_KEY_IS_NOT_B58 }];
+            case 7:
                 if (!signaturePeerId.equals(authorPeerId))
                     return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE }];
-                return [3 /*break*/, 6];
-            case 5:
-                _a = _c.sent();
-                return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 }];
-            case 6: 
+                _c.label = 8;
+            case 8: 
             // Author
             return [2 /*return*/, { valid: true }];
         }

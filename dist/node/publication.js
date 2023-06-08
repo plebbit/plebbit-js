@@ -111,7 +111,6 @@ var plebbit_error_1 = require("./plebbit-error");
 var util_2 = require("./signer/util");
 var client_manager_1 = require("./clients/client-manager");
 var cborg = __importStar(require("cborg"));
-var js_sha256_1 = require("js-sha256");
 var lodash_1 = __importDefault(require("lodash"));
 var Publication = /** @class */ (function (_super) {
     __extends(Publication, _super);
@@ -189,7 +188,7 @@ var Publication = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signer_1.decryptEd25519AesGcm)(msgParsed.encryptedChallenges, this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)];
                     case 2:
                         decryptedChallenges = _b.apply(_a, [_e.sent()]);
-                        decryptedChallenge = __assign(__assign({}, msgParsed), { challenges: decryptedChallenges, challengeRequestIdHash: (0, js_sha256_1.sha256)(msgParsed.challengeRequestId) });
+                        decryptedChallenge = __assign(__assign({}, msgParsed), { challenges: decryptedChallenges });
                         this._updatePublishingState("waiting-challenge-answers");
                         this._clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
                         this.emit("challenge", decryptedChallenge);
@@ -230,7 +229,7 @@ var Publication = /** @class */ (function (_super) {
                     case 9:
                         _e.sent();
                         this._clientsManager.updatePubsubState("stopped", undefined);
-                        this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication, challengeRequestIdHash: (0, js_sha256_1.sha256)(msgParsed.challengeRequestId) }), this instanceof comment_1.Comment && decryptedPublication ? this : undefined);
+                        this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication }), this instanceof comment_1.Comment && decryptedPublication ? this : undefined);
                         _e.label = 10;
                     case 10: return [2 /*return*/];
                 }
@@ -273,7 +272,7 @@ var Publication = /** @class */ (function (_super) {
                         this._updatePublishingState("waiting-challenge-verification");
                         this._clientsManager.updatePubsubState("waiting-challenge-verification", undefined);
                         log("Responded to challenge (".concat(this._challengeAnswer.challengeRequestId, ") with answers"), challengeAnswers);
-                        this.emit("challengeanswer", __assign(__assign({}, this._challengeAnswer), { challengeAnswers: challengeAnswers, challengeRequestIdHash: (0, js_sha256_1.sha256)(this._challengeAnswer.challengeRequestId) }));
+                        this.emit("challengeanswer", __assign(__assign({}, this._challengeAnswer), { challengeAnswers: challengeAnswers }));
                         return [2 /*return*/];
                 }
             });
@@ -378,7 +377,7 @@ var Publication = /** @class */ (function (_super) {
                         this._clientsManager.updatePubsubState("waiting-challenge", undefined);
                         this._updatePublishingState("waiting-challenge");
                         log("Sent a challenge request (".concat(this._challengeRequest.challengeRequestId, ")"));
-                        this.emit("challengerequest", __assign(__assign({}, this._challengeRequest), { publication: this.toJSONPubsubMessagePublication(), challengeRequestIdHash: (0, js_sha256_1.sha256)(challengeRequestId) }));
+                        this.emit("challengerequest", __assign(__assign({}, this._challengeRequest), { publication: this.toJSONPubsubMessagePublication() }));
                         return [2 /*return*/];
                 }
             });

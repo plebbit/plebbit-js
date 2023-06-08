@@ -37,8 +37,8 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     plebbit: Plebbit;
     dbHandler?: DbHandlerPublicAPI;
     clients: SubplebbitClientsManager["clients"];
-    private _challengeIdHashToSolution;
-    private _challengeIdHashToChallengeRequest;
+    private _challengeIdToSolution;
+    private _challengeIdToChallengeRequest;
     private provideCaptchaCallback;
     private validateCaptchaAnswerCallback;
     private sortHandler;

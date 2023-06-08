@@ -23,6 +23,7 @@ export declare enum messages {
     ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK = "Failed to fetch the thumbnail url of the link",
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",
     ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 = "author.address is not a domain or B58",
+    ERR_SIGNATURE_PUBLIC_KEY_IS_NOT_B58 = "The public key of the signature is not B58",
     ERR_SIGNATURE_IS_INVALID = "Signature of publication is invalid",
     ERR_AUTHOR_NOT_MATCHING_SIGNATURE = "comment.author.address doesn't match comment.signature.publicKey",
     ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY = "subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey",

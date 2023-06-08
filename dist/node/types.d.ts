@@ -176,7 +176,6 @@ export interface ChallengeRequestMessageType extends PubsubMessage {
 }
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType {
     publication: VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage | PostPubsubMessage;
-    challengeRequestIdHash: string;
 }
 export interface ChallengeMessageType extends PubsubMessage {
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
@@ -185,7 +184,6 @@ export interface ChallengeMessageType extends PubsubMessage {
 }
 export interface DecryptedChallengeMessageType extends ChallengeMessageType {
     challenges: ChallengeType[];
-    challengeRequestIdHash: string;
 }
 export interface ChallengeAnswerMessageType extends PubsubMessage {
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
@@ -194,7 +192,6 @@ export interface ChallengeAnswerMessageType extends PubsubMessage {
 }
 export interface DecryptedChallengeAnswerMessageType extends ChallengeAnswerMessageType {
     challengeAnswers: string[];
-    challengeRequestIdHash: string;
 }
 export interface ChallengeVerificationMessageType extends PubsubMessage {
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
@@ -206,7 +203,6 @@ export interface ChallengeVerificationMessageType extends PubsubMessage {
 }
 export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType {
     publication?: CommentIpfsWithCid;
-    challengeRequestIdHash: string;
 }
 export declare type SubplebbitStats = {
     hourActiveUserCount: number;
@@ -465,7 +461,7 @@ export interface ChallengesTableRow extends Omit<ChallengeMessageType, "type" | 
 }
 export interface ChallengesTableRowInsert extends Omit<ChallengesTableRow, "insertedAt"> {
 }
-export interface ChallengeAnswersTableRow extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encryptedChallengeAnswers" | "challengeRequestIdHash"> {
+export interface ChallengeAnswersTableRow extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encryptedChallengeAnswers"> {
     insertedAt: number;
 }
 export interface ChallengeAnswersTableRowInsert extends Omit<ChallengeAnswersTableRow, "insertedAt" | "challengeAnswers"> {

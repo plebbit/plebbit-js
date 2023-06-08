@@ -123,7 +123,7 @@ var Stats = /** @class */ (function () {
                 log = (0, plebbit_logger_1.default)("plebbit-js:stats:gateway:sort");
                 gatewayType = type === "cid" || type === "ipns"
                     ? "ipfsGateways"
-                    : type === "pubsub-publish"
+                    : type === "pubsub-publish" || type === "pubsub-subscribe"
                         ? "pubsubClients"
                         : type === "eth" || type === "avax" || type === "matic"
                             ? "chainProviders"

@@ -30,6 +30,7 @@ var messages;
     // Sign errors
     messages["ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER"] = "comment.author.address does not match signer.address";
     messages["ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58"] = "author.address is not a domain or B58";
+    messages["ERR_SIGNATURE_PUBLIC_KEY_IS_NOT_B58"] = "The public key of the signature is not B58";
     // Verify Signature errors
     messages["ERR_SIGNATURE_IS_INVALID"] = "Signature of publication is invalid";
     messages["ERR_AUTHOR_NOT_MATCHING_SIGNATURE"] = "comment.author.address doesn't match comment.signature.publicKey";

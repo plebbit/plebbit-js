@@ -79,6 +79,7 @@ var util_1 = require("../util");
 var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
 var util_2 = require("../runtime/browser/util");
 var p_limit_1 = __importDefault(require("p-limit"));
+var plebbit_error_1 = require("../plebbit-error");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var cborg = __importStar(require("cborg"));
 var DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
@@ -103,40 +104,75 @@ var BaseClientsManager = /** @class */ (function () {
     // Pubsub methods
     BaseClientsManager.prototype.pubsubSubscribe = function (pubsubTopic, handler) {
         return __awaiter(this, void 0, void 0, function () {
-            var e_1;
+            var log, providersSorted, providerToError, i, pubsubProviderUrl, timeBefore, e_1, combinedError;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, this.getDefaultPubsub()._client.pubsub.subscribe(pubsubTopic, handler)];
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:client-manager:pubsubSubscribe");
+                        return [4 /*yield*/, this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe")];
                     case 1:
-                        _a.sent();
-                        return [3 /*break*/, 3];
+                        providersSorted = _a.sent();
+                        providerToError = {};
+                        i = 0;
+                        _a.label = 2;
                     case 2:
+                        if (!(i < providersSorted.length)) return [3 /*break*/, 9];
+                        pubsubProviderUrl = providersSorted[i];
+                        timeBefore = Date.now();
+                        _a.label = 3;
+                    case 3:
+                        _a.trys.push([3, 6, , 8]);
+                        return [4 /*yield*/, this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler)];
+                    case 4:
+                        _a.sent();
+                        return [4 /*yield*/, this._plebbit.stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore)];
+                    case 5:
+                        _a.sent();
+                        return [2 /*return*/];
+                    case 6:
                         e_1 = _a.sent();
-                        (0, util_1.throwWithErrorCode)("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic: pubsubTopic, pubsubNode: this._defaultPubsubProviderUrl, error: e_1 });
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
+                        return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe")];
+                    case 7:
+                        _a.sent();
+                        log.error("Failed to subscribe to pubsub topic (".concat(pubsubTopic, ") to (").concat(pubsubProviderUrl, ")"));
+                        providerToError[pubsubProviderUrl] = e_1;
+                        return [3 /*break*/, 8];
+                    case 8:
+                        i++;
+                        return [3 /*break*/, 2];
+                    case 9:
+                        combinedError = new plebbit_error_1.PlebbitError("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic: pubsubTopic, providerToError: providerToError });
+                        this.emitError(combinedError);
+                        throw combinedError;
                 }
             });
         });
     };
     BaseClientsManager.prototype.pubsubUnsubscribe = function (pubsubTopic, handler) {
         return __awaiter(this, void 0, void 0, function () {
-            var error_1;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var i, pubsubProviderUrl, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, this.getDefaultPubsub()._client.pubsub.unsubscribe(pubsubTopic, handler)];
+                        i = 0;
+                        _b.label = 1;
                     case 1:
-                        _a.sent();
-                        return [3 /*break*/, 3];
+                        if (!(i < Object.keys(this._plebbit.clients.pubsubClients).length)) return [3 /*break*/, 6];
+                        pubsubProviderUrl = Object.keys(this._plebbit.clients.pubsubClients)[i];
+                        _b.label = 2;
                     case 2:
-                        error_1 = _a.sent();
-                        (0, util_1.throwWithErrorCode)("ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE", { pubsubTopic: pubsubTopic, pubsubNode: this._defaultPubsubProviderUrl, error: error_1 });
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
+                        _b.trys.push([2, 4, , 5]);
+                        return [4 /*yield*/, this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.unsubscribe(pubsubTopic, handler)];
+                    case 3:
+                        _b.sent();
+                        return [3 /*break*/, 5];
+                    case 4:
+                        _a = _b.sent();
+                        return [3 /*break*/, 5];
+                    case 5:
+                        i++;
+                        return [3 /*break*/, 1];
+                    case 6: return [2 /*return*/];
                 }
             });
         });
@@ -146,7 +182,7 @@ var BaseClientsManager = /** @class */ (function () {
     BaseClientsManager.prototype.postPubsubPublishProviderFailure = function (pubsubTopic, pubsubProvider) { };
     BaseClientsManager.prototype._publishToPubsubProvider = function (pubsubTopic, data, pubsubProvider) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, timeBefore, error_2;
+            var log, timeBefore, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -163,12 +199,12 @@ var BaseClientsManager = /** @class */ (function () {
                         this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
                         return [3 /*break*/, 5];
                     case 3:
-                        error_2 = _a.sent();
+                        error_1 = _a.sent();
                         return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(pubsubProvider, "pubsub-publish")];
                     case 4:
                         _a.sent();
                         this.postPubsubPublishProviderFailure(pubsubTopic, pubsubProvider);
-                        (0, util_1.throwWithErrorCode)("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic: pubsubTopic, pubsubProvider: pubsubProvider, error: error_2 });
+                        (0, util_1.throwWithErrorCode)("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic: pubsubTopic, pubsubProvider: pubsubProvider, error: error_1 });
                         return [3 /*break*/, 5];
                     case 5: return [2 /*return*/];
                 }
@@ -177,63 +213,38 @@ var BaseClientsManager = /** @class */ (function () {
     };
     BaseClientsManager.prototype.pubsubPublish = function (pubsubTopic, data) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, dataBinary, _firstResolve, timeouts, lastError, concurrencyLimit, queueLimit, i, providersSorted, _a, providerPromises, res, e_2;
-            var _this = this;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var log, dataBinary, providersSorted, providerToError, i, pubsubProviderUrl, e_2, combinedError;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:client-manager:pubsubPublish");
                         dataBinary = cborg.encode(data);
-                        _firstResolve = function (promises) {
-                            return new Promise(function (resolve) { return promises.forEach(function (promise) { return promise.then(function () { return resolve(1); }); }); });
-                        };
-                        timeouts = [0, 0, 100, 1000];
-                        concurrencyLimit = 3;
-                        queueLimit = (0, p_limit_1.default)(concurrencyLimit);
-                        i = 0;
-                        _b.label = 1;
+                        return [4 /*yield*/, this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-publish")];
                     case 1:
-                        if (!(i < timeouts.length)) return [3 /*break*/, 10];
-                        if (!(timeouts[i] !== 0)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, (0, util_1.delay)(timeouts[i])];
+                        providersSorted = _a.sent();
+                        providerToError = {};
+                        i = 0;
+                        _a.label = 2;
                     case 2:
-                        _b.sent();
-                        _b.label = 3;
+                        if (!(i < providersSorted.length)) return [3 /*break*/, 7];
+                        pubsubProviderUrl = providersSorted[i];
+                        _a.label = 3;
                     case 3:
-                        _b.trys.push([3, 8, , 9]);
-                        if (!(Object.keys(this._plebbit.clients.pubsubClients).length <= concurrencyLimit)) return [3 /*break*/, 4];
-                        _a = Object.keys(this._plebbit.clients.pubsubClients);
-                        return [3 /*break*/, 6];
-                    case 4: return [4 /*yield*/, this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-publish")];
+                        _a.trys.push([3, 5, , 6]);
+                        return [4 /*yield*/, this._publishToPubsubProvider(pubsubTopic, dataBinary, pubsubProviderUrl)];
+                    case 4: return [2 /*return*/, _a.sent()];
                     case 5:
-                        _a = _b.sent();
-                        _b.label = 6;
+                        e_2 = _a.sent();
+                        log.error("Failed to publish to pubsub topic (".concat(pubsubTopic, ") to (").concat(pubsubProviderUrl, ")"));
+                        providerToError[pubsubProviderUrl] = e_2;
+                        return [3 /*break*/, 6];
                     case 6:
-                        providersSorted = _a;
-                        providerPromises = providersSorted.map(function (pubsubProviderUrl) {
-                            return queueLimit(function () { return _this._publishToPubsubProvider(pubsubTopic, dataBinary, pubsubProviderUrl); });
-                        });
-                        return [4 /*yield*/, Promise.race([_firstResolve(providerPromises), Promise.allSettled(providerPromises)])];
-                    case 7:
-                        res = _b.sent();
-                        if (res === 1) {
-                            queueLimit.clearQueue();
-                            return [2 /*return*/];
-                        }
-                        else
-                            throw res[0].value.error;
-                        return [3 /*break*/, 9];
-                    case 8:
-                        e_2 = _b.sent();
-                        log.error("Failed to publish to pubsub topic (".concat(pubsubTopic, ") for the ").concat(i, "th time due to error: "), e_2);
-                        lastError = e_2;
-                        return [3 /*break*/, 9];
-                    case 9:
                         i++;
-                        return [3 /*break*/, 1];
-                    case 10:
-                        this.emitError(lastError);
-                        throw lastError;
+                        return [3 /*break*/, 2];
+                    case 7:
+                        combinedError = new plebbit_error_1.PlebbitError("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic: pubsubTopic, data: data, providerToError: providerToError });
+                        this.emitError(combinedError);
+                        throw combinedError;
                 }
             });
         });
@@ -389,7 +400,7 @@ var BaseClientsManager = /** @class */ (function () {
     // IPFS P2P methods
     BaseClientsManager.prototype.resolveIpnsToCidP2P = function (ipns) {
         return __awaiter(this, void 0, void 0, function () {
-            var ipfsClient, cid, error_3;
+            var ipfsClient, cid, error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -404,8 +415,8 @@ var BaseClientsManager = /** @class */ (function () {
                             (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns: ipns });
                         return [2 /*return*/, cid];
                     case 3:
-                        error_3 = _a.sent();
-                        (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns: ipns, error: error_3 });
+                        error_2 = _a.sent();
+                        (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns: ipns, error: error_2 });
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/];
                 }
