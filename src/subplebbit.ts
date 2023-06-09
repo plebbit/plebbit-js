@@ -1163,7 +1163,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async defaultValidateCaptcha(answerMessage: DecryptedChallengeAnswerMessageType): Promise<[boolean, string[] | undefined]> {
         const log = Logger("plebbit-js:subplebbit:validateCaptcha");
 
-        const actualSolution = this._challengeIdToChallengeRequest[answerMessage.challengeRequestId.toString()];
+        const actualSolution = this._challengeIdToSolution[answerMessage.challengeRequestId.toString()];
         const answerIsCorrect = lodash.isEqual(answerMessage.challengeAnswers, actualSolution);
         log(
             `(${answerMessage.challengeRequestId}): `,
