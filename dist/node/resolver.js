@@ -82,8 +82,6 @@ var Resolver = /** @class */ (function () {
                         return [4 /*yield*/, resolver.getText(txtRecordName)];
                     case 2:
                         txtRecordResult = _a.sent();
-                        if (!txtRecordResult)
-                            return [2 /*return*/, null];
                         log("Resolved text record name (".concat(txtRecordName, ") of address (").concat(address, ") to ").concat(txtRecordResult, " with chainProvider (").concat(chainProviderUrl, ")"));
                         return [2 /*return*/, txtRecordResult];
                 }

@@ -45,6 +45,7 @@ var messages;
     messages["ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE"] = "Challenge request id is not derived from signature.publicKey";
     messages["ERR_CHALLENGE_SIGNATURE_IS_INVALID"] = "Received a challenge message with an invalid signature";
     messages["ERR_CHALLENGE_VERIFICATION_SIGNATURE_IS_INVALID"] = "Received a challenge verification message with an invalid signature";
+    messages["ERR_LOCAL_SUBPLEBBIT_SIGNATURE_IS_INVALID"] = "Local subplebbit signature is invalid";
     // getPage errors
     messages["ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB"] = "Comment in page should be under the same subplebbit";
     messages["ERR_PARENT_CID_NOT_AS_EXPECTED"] = "Comment under parent comment/post should have parentCid initialized";

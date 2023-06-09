@@ -639,15 +639,20 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype._validateLocalSignature = function (newSignature, record) {
         return __awaiter(this, void 0, void 0, function () {
-            var ipnsRecord, signatureValidation;
+            var log, ipnsRecord, signatureValidation, error;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:_validateLocalSignature");
                         ipnsRecord = JSON.parse(JSON.stringify(__assign(__assign({}, record), { signature: newSignature })));
                         return [4 /*yield*/, (0, signatures_1.verifySubplebbit)(ipnsRecord, false, this._clientsManager)];
                     case 1:
                         signatureValidation = _a.sent();
-                        assert_1.default.equal(signatureValidation.valid, true, "Failed to validate subplebbit (".concat(this.address, ") local signature due to reason (").concat(signatureValidation.reason, ")"));
+                        if (!signatureValidation.valid) {
+                            error = new plebbit_error_1.PlebbitError("ERR_LOCAL_SUBPLEBBIT_SIGNATURE_IS_INVALID", { signatureValidation: signatureValidation });
+                            log.error(String(error));
+                            this.emit("error", error);
+                        }
                         return [2 /*return*/];
                 }
             });
@@ -1446,7 +1451,7 @@ var Subplebbit = /** @class */ (function (_super) {
             var log, actualSolution, answerIsCorrect, challengeErrors;
             return __generator(this, function (_a) {
                 log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:validateCaptcha");
-                actualSolution = this._challengeIdToChallengeRequest[answerMessage.challengeRequestId.toString()];
+                actualSolution = this._challengeIdToSolution[answerMessage.challengeRequestId.toString()];
                 answerIsCorrect = lodash_1.default.isEqual(answerMessage.challengeAnswers, actualSolution);
                 log("(".concat(answerMessage.challengeRequestId, "): "), "Answer's validity: ".concat(answerIsCorrect, ", user's answer: ").concat(answerMessage.challengeAnswers, ", actual solution: ").concat(actualSolution));
                 challengeErrors = answerIsCorrect ? undefined : ["User solved captcha incorrectly"];
