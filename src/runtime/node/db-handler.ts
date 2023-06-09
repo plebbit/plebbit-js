@@ -379,8 +379,8 @@ export class DbHandler {
                     await this._knex.raw("PRAGMA foreign_keys = OFF");
                     const tempTableName = `${table}${env.DB_VERSION}`;
                     await createTableFunctions[i].bind(this)(tempTableName);
-                    if (table.startsWith("challenge") && priorDbVersion === 6) {
-                        // Skip copying challenge tables if current db version is 6
+                    if (table.startsWith("challenge") && priorDbVersion <= 6) {
+                        // Skip copying challenge tables if current db version is 6 or lower
                         await this._knex.schema.dropTable(table);
                         await this._knex.schema.renameTable(tempTableName, table);
                     } else {
