@@ -494,11 +494,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async _validateLocalSignature(newSignature: SubplebbitIpfsType["signature"], record: Omit<SubplebbitIpfsType, "signature">) {
         const ipnsRecord: SubplebbitIpfsType = JSON.parse(JSON.stringify({ ...record, signature: newSignature })); // stringify it so it would be of the same content as IPNS or pubsub
         const signatureValidation = await verifySubplebbit(ipnsRecord, false, this._clientsManager);
-        assert.equal(
-            signatureValidation.valid,
-            true,
-            `Failed to validate subplebbit (${this.address}) local signature due to reason (${signatureValidation.reason})`
-        );
+        this.emit("error", new PlebbitError("ERR_LOCAL_SUBPLEBBIT_SIGNATURE_IS_INVALID", { signatureValidation, ipnsRecord }));
     }
     private async updateSubplebbitIpnsIfNeeded() {
         const log = Logger("plebbit-js:subplebbit:sync");
