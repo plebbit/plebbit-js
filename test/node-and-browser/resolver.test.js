@@ -83,3 +83,25 @@ describe(`Vote with authors as domains`, async () => {
         expect(vote.author.address).to.equal("testgibbreish.eth");
     });
 });
+
+describe(`Resolving resiliency`, async () => {
+    it(`Resolver retries multiple times before throwing error`, async () => {
+        const regularPlebbit = await Plebbit();
+
+        regularPlebbit.resolver._getChainProvider = () => ({ getResolver: () => undefined });
+        const plebbit = await mockPlebbit();
+
+        const originalResolveFunction = plebbit.resolver.resolveTxtRecord;
+
+        let resolveHit = 0;
+
+        plebbit.resolver.resolveTxtRecord = (...args) => {
+            resolveHit++;
+            if (resolveHit < 4) return regularPlebbit.resolver.resolveTxtRecord(...args);
+            else return originalResolveFunction(...args);
+        };
+
+        const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("plebbit.eth");
+        expect(resolvedAuthorAddress).to.equal("12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y");
+    });
+});
