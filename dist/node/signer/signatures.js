@@ -466,21 +466,24 @@ exports.verifyComment = verifyComment;
 function verifySubplebbit(subplebbit, resolveAuthorAddresses, clientsManager) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var _i, _b, page, pageValidity, signatureValidity, resolvedSubAddress, subPeerId, signaturePeerId;
+        var log, _i, _b, pageName, pageValidity, signatureValidity, resolvedSubAddress, subPeerId, signaturePeerId;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
+                    log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifySubplebbit");
                     if (!((_a = subplebbit.posts) === null || _a === void 0 ? void 0 : _a.pages)) return [3 /*break*/, 4];
-                    _i = 0, _b = Object.values(subplebbit.posts.pages);
+                    _i = 0, _b = Object.keys(subplebbit.posts.pages);
                     _c.label = 1;
                 case 1:
                     if (!(_i < _b.length)) return [3 /*break*/, 4];
-                    page = _b[_i];
-                    return [4 /*yield*/, verifyPage(lodash_1.default.cloneDeep(page), resolveAuthorAddresses, clientsManager, subplebbit.address, undefined)];
+                    pageName = _b[_i];
+                    return [4 /*yield*/, verifyPage(lodash_1.default.cloneDeep(subplebbit.posts.pages[pageName]), resolveAuthorAddresses, clientsManager, subplebbit.address, undefined)];
                 case 2:
                     pageValidity = _c.sent();
-                    if (!pageValidity.valid)
+                    if (!pageValidity.valid) {
+                        log.error("Subplebbit (".concat(subplebbit.address, ") page (").concat(pageName, " - ").concat(subplebbit.posts.pageCids[pageName], ") has an invalid signature due to reason (").concat(pageValidity.reason, ")"));
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SUBPLEBBIT_POSTS_INVALID }];
+                    }
                     _c.label = 3;
                 case 3:
                     _i++;
