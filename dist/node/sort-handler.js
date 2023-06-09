@@ -204,8 +204,6 @@ var SortHandler = /** @class */ (function () {
                                                         case 0: return [4 /*yield*/, this.subplebbit.plebbit.createComment(commentProps.comment)];
                                                         case 1:
                                                             comment = _a.sent();
-                                                            if (commentProps.update.replyCount > 0)
-                                                                (0, assert_1.default)(commentProps.update.replies && commentProps.update.lastChildCid && commentProps.update.lastReplyTimestamp);
                                                             return [2 /*return*/, comment.toJSONPagesIpfs(commentProps.update)];
                                                     }
                                                 });

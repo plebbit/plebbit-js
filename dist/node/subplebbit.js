@@ -1380,20 +1380,21 @@ var Subplebbit = /** @class */ (function (_super) {
         });
     };
     Subplebbit.prototype.handleChallengeExchange = function (pubsubMsg) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var log, msgParsed, e_3;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:handleChallengeExchange");
-                        _a.label = 1;
+                        _b.label = 1;
                     case 1:
-                        _a.trys.push([1, 8, , 11]);
+                        _b.trys.push([1, 8, , 11]);
                         msgParsed = cborg.decode(pubsubMsg.data);
                         if (!(msgParsed.type === "CHALLENGEREQUEST")) return [3 /*break*/, 3];
                         return [4 /*yield*/, this.handleChallengeRequest(new challenge_1.ChallengeRequestMessage(msgParsed))];
                     case 2:
-                        _a.sent();
+                        _b.sent();
                         return [3 /*break*/, 7];
                     case 3:
                         if (!(msgParsed.type === "CHALLENGEANSWER" &&
@@ -1402,24 +1403,24 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this._respondWithErrorToAnswerWithNoRequest(msgParsed)];
                     case 4:
                         // Respond with error to answers without challenge request
-                        _a.sent();
+                        _b.sent();
                         return [3 /*break*/, 7];
                     case 5:
                         if (!(msgParsed.type === "CHALLENGEANSWER")) return [3 /*break*/, 7];
                         return [4 /*yield*/, this.handleChallengeAnswer(new challenge_1.ChallengeAnswerMessage(msgParsed))];
                     case 6:
-                        _a.sent();
-                        _a.label = 7;
+                        _b.sent();
+                        _b.label = 7;
                     case 7: return [3 /*break*/, 11];
                     case 8:
-                        e_3 = _a.sent();
-                        e_3.message = "failed process captcha for challenge request id (".concat(msgParsed.challengeRequestId, "): ").concat(e_3.message);
-                        log.error("(".concat(msgParsed.challengeRequestId, "): "), String(e_3));
-                        if (!msgParsed) return [3 /*break*/, 10];
+                        e_3 = _b.sent();
+                        e_3.message = "failed process captcha for challenge request id (".concat(msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId, "): ").concat(e_3.message);
+                        log.error("(".concat(msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId, "): "), String(e_3));
+                        if (!((_a = msgParsed === null || msgParsed === void 0 ? void 0 : msgParsed.challengeRequestId) === null || _a === void 0 ? void 0 : _a.toString())) return [3 /*break*/, 10];
                         return [4 /*yield*/, this.dbHandler.rollbackTransaction(msgParsed.challengeRequestId.toString())];
                     case 9:
-                        _a.sent();
-                        _a.label = 10;
+                        _b.sent();
+                        _b.label = 10;
                     case 10: return [3 /*break*/, 11];
                     case 11: return [2 /*return*/];
                 }

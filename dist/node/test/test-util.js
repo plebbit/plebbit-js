@@ -216,7 +216,7 @@ function _mockSubplebbitPlebbit(signers, plebbitOptions) {
                             else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address")
                                 return [2 /*return*/, signers[6].address];
                             else
-                                return [2 /*return*/, undefined];
+                                return [2 /*return*/, null];
                             return [2 /*return*/];
                         });
                     }); };
@@ -464,7 +464,7 @@ function mockPlebbit(plebbitOptions, forceMockPubsub) {
                             else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address")
                                 return [2 /*return*/, "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"];
                             else
-                                return [2 /*return*/, undefined];
+                                return [2 /*return*/, null];
                             return [2 /*return*/];
                         });
                     }); };
