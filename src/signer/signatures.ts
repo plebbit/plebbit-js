@@ -198,7 +198,8 @@ const _verifyAuthor = async (
     if (!publicationJson.author?.address) return { valid: false, reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED };
 
     // Is it a domain?
-    if (publicationJson.author.address.includes(".") && resolveAuthorAddresses) {
+    if (publicationJson.author.address.includes(".")) {
+        if (!resolveAuthorAddresses) return { valid: true };
         const resolvedAuthorAddress = await clientsManager.resolveAuthorAddressIfNeeded(publicationJson.author.address);
         const derivedAddress = await getPlebbitAddressFromPublicKey(publicationJson.signature.publicKey);
         if (resolvedAuthorAddress !== derivedAddress) {
@@ -270,7 +271,7 @@ const _verifyPublicationWithAuthor = async (
     // Validate author
     const authorSignatureValidity = await _verifyAuthor(publicationJson, resolveAuthorAddresses, clientsManager);
 
-    if (!authorSignatureValidity.valid) return { valid: false, reason: authorSignatureValidity.reason };
+    if (!authorSignatureValidity.valid) return authorSignatureValidity;
 
     if (!overrideAuthorAddressIfInvalid && authorSignatureValidity.newAddress)
         return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
