@@ -1145,9 +1145,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 await this._respondWithErrorToAnswerWithNoRequest(<ChallengeAnswerMessageType>msgParsed);
             else if (msgParsed.type === "CHALLENGEANSWER") await this.handleChallengeAnswer(new ChallengeAnswerMessage(msgParsed));
         } catch (e) {
-            e.message = `failed process captcha for challenge request id (${msgParsed.challengeRequestId}): ${e.message}`;
-            log.error(`(${msgParsed.challengeRequestId}): `, String(e));
-            if (msgParsed) await this.dbHandler.rollbackTransaction(msgParsed.challengeRequestId.toString());
+            e.message = `failed process captcha for challenge request id (${msgParsed?.challengeRequestId}): ${e.message}`;
+            log.error(`(${msgParsed?.challengeRequestId}): `, String(e));
+            if (msgParsed?.challengeRequestId?.toString())
+                await this.dbHandler.rollbackTransaction(msgParsed.challengeRequestId.toString());
         }
     }
 
