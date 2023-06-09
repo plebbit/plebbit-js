@@ -1,8 +1,9 @@
 const Plebbit = require("../../../dist/node");
-const { publishRandomPost, mockPlebbit, createMockSub } = require("../../../dist/node/test/test-util");
+const { publishRandomPost, mockPlebbit, createMockSub, publishWithExpectedResult } = require("../../../dist/node/test/test-util");
 const { messages } = require("../../../dist/node/errors");
 const path = require("path");
 const fs = require("fs");
+const signers = require("../../fixtures/signers");
 const { default: waitUntil } = require("async-wait-until");
 
 const chai = require("chai");
@@ -124,5 +125,40 @@ describe(`Start lock`, async () => {
         await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for 10s
         await assert.isFulfilled(sub.start());
         await sub.stop();
+    });
+});
+
+describe(`Publish loop resiliency`, async () => {
+    let plebbit, subplebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+        subplebbit = await createMockSub({}, plebbit);
+        await subplebbit.start();
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+    });
+
+    after(async () => {
+        await subplebbit.stop();
+    });
+
+    it(`Subplebbit can publish a new IPNS record with one of its comments having a valid ENS author address`, async () => {
+        const mockPost = await plebbit.createComment({
+            author: { address: "plebbit.eth" },
+            signer: signers[6],
+            content: `Mock post - ${Date.now()}`,
+            title: "Mock post title " + Date.now(),
+            subplebbitAddress: subplebbit.address
+        });
+
+        await publishWithExpectedResult(mockPost, true);
+
+        let updated = false;
+        setTimeout(() => {
+            if (!updated) assert.fail("Subplebbit failed to publish a new IPNS record with ENS author address");
+        }, 60000);
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        const loadedSub = await plebbit.getSubplebbit(subplebbit.address); // If it can load, then it has a valid signature
+
+        expect(loadedSub.posts.pages.hot.comments[0].cid).to.equal(mockPost.cid);
     });
 });
