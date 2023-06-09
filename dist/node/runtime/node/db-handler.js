@@ -621,11 +621,11 @@ var DbHandler = /** @class */ (function () {
                                             return [4 /*yield*/, createTableFunctions[i].bind(this)(tempTableName)];
                                         case 5:
                                             _a.sent();
-                                            if (!(table.startsWith("challenge") && priorDbVersion === 6)) return [3 /*break*/, 8];
-                                            // Skip copying challenge tables if current db version is 6
+                                            if (!(table.startsWith("challenge") && priorDbVersion <= 6)) return [3 /*break*/, 8];
+                                            // Skip copying challenge tables if current db version is 6 or lower
                                             return [4 /*yield*/, this._knex.schema.dropTable(table)];
                                         case 6:
-                                            // Skip copying challenge tables if current db version is 6
+                                            // Skip copying challenge tables if current db version is 6 or lower
                                             _a.sent();
                                             return [4 /*yield*/, this._knex.schema.renameTable(tempTableName, table)];
                                         case 7:
