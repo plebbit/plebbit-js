@@ -75,6 +75,7 @@ var messages;
     messages["ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG"] = "Subplebbit failed to decrypt the pubsub message";
     messages["ERR_COMMENT_OVER_ALLOWED_SIZE"] = "Comment size is over the allowed size";
     // Resolver errors
+    messages["ERR_FAILED_TO_RESOLVE_TEXT_RECORD"] = "Failed to resolve text record";
     messages["ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER"] = "no chain provider options set for chain ticker";
     messages["ERR_ENS_RESOLVER_NOT_FOUND"] = "ENS resolver is not found";
     messages["ERR_ENS_TXT_RECORD_NOT_FOUND"] = "ENS resolver did not find the text record";

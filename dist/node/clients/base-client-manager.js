@@ -471,7 +471,7 @@ var BaseClientsManager = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this._plebbit._cache.getItem("".concat(address, "_").concat(txtRecord))];
                     case 1:
                         resolveCache = _a.sent();
-                        if (!(typeof resolveCache === "string")) return [3 /*break*/, 3];
+                        if (!(typeof resolveCache === "string" || resolveCache === null)) return [3 /*break*/, 3];
                         return [4 /*yield*/, this._plebbit._cache.getItem("".concat(address, "_").concat(txtRecord, "_timestamp"))];
                     case 2:
                         resolvedTimestamp = _a.sent();
@@ -485,11 +485,24 @@ var BaseClientsManager = /** @class */ (function () {
     };
     BaseClientsManager.prototype._resolveTextRecordWithCache = function (address, txtRecord) {
         return __awaiter(this, void 0, void 0, function () {
-            var chain;
+            var chain, cachedTextRecord;
             return __generator(this, function (_a) {
-                chain = address.endsWith(".eth") ? "eth" : undefined;
-                (0, assert_1.default)(chain);
-                return [2 /*return*/, this._resolveTextRecordConcurrently(address, txtRecord, chain)];
+                switch (_a.label) {
+                    case 0:
+                        chain = address.endsWith(".eth") ? "eth" : undefined;
+                        (0, assert_1.default)(chain);
+                        return [4 /*yield*/, this._getCachedTextRecord(address, txtRecord)];
+                    case 1:
+                        cachedTextRecord = _a.sent();
+                        if (cachedTextRecord) {
+                            if (cachedTextRecord.stale)
+                                this._resolveTextRecordConcurrently(address, txtRecord, chain);
+                            return [2 /*return*/, cachedTextRecord.resolveCache];
+                        }
+                        else
+                            return [2 /*return*/, this._resolveTextRecordConcurrently(address, txtRecord, chain)];
+                        return [2 /*return*/];
+                }
             });
         });
     };
@@ -521,7 +534,7 @@ var BaseClientsManager = /** @class */ (function () {
                     case 5:
                         _a.sent();
                         this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl);
-                        throw e_5;
+                        return [2 /*return*/, { error: e_5 }];
                     case 6: return [2 /*return*/];
                 }
             });
@@ -529,13 +542,23 @@ var BaseClientsManager = /** @class */ (function () {
     };
     BaseClientsManager.prototype._resolveTextRecordConcurrently = function (address, txtRecordName, chain) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, timeouts, concurrencyLimit, queueLimit, i, cachedTextRecord, providersSorted, _a, providerPromises, resolvedTextRecord, e_6;
+            var log, timeouts, _firstResolve, concurrencyLimit, queueLimit, i, cachedTextRecord, providersSorted, _a, providerPromises, resolvedTextRecord, errorsCombined, i_1, e_6;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:client-manager:_resolveEnsTextRecord");
                         timeouts = [0, 0, 100, 1000];
+                        _firstResolve = function (promises) {
+                            return new Promise(function (resolve) {
+                                return promises.forEach(function (promise) {
+                                    return promise.then(function (res) {
+                                        if (typeof res === "string" || res === null)
+                                            resolve(res);
+                                    });
+                                });
+                            });
+                        };
                         concurrencyLimit = 3;
                         queueLimit = (0, p_limit_1.default)(concurrencyLimit);
                         i = 0;
@@ -568,19 +591,27 @@ var BaseClientsManager = /** @class */ (function () {
                         providerPromises = providersSorted.map(function (providerUrl) {
                             return queueLimit(function () { return _this._resolveTextRecordSingleChainProvider(address, txtRecordName, chain, providerUrl); });
                         });
-                        return [4 /*yield*/, Promise.race([(0, util_1.firstResolve)(providerPromises), Promise.allSettled(providerPromises)])];
+                        return [4 /*yield*/, Promise.race([
+                                _firstResolve(providerPromises),
+                                Promise.allSettled(providerPromises)
+                            ])];
                     case 9:
                         resolvedTextRecord = _b.sent();
-                        if (!(typeof resolvedTextRecord === "string" || resolvedTextRecord === undefined)) return [3 /*break*/, 12];
+                        if (!Array.isArray(resolvedTextRecord)) return [3 /*break*/, 10];
+                        errorsCombined = {};
+                        for (i_1 = 0; i_1 < providersSorted.length; i_1++)
+                            errorsCombined[providersSorted[i_1]] = resolvedTextRecord[i_1]["value"]["error"];
+                        (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_RESOLVE_TEXT_RECORD", { errors: errorsCombined, address: address, txtRecordName: txtRecordName, chain: chain });
+                        return [3 /*break*/, 13];
+                    case 10:
                         queueLimit.clearQueue();
                         return [4 /*yield*/, this._plebbit._cache.setItem("".concat(address, "_").concat(txtRecordName), resolvedTextRecord)];
-                    case 10:
-                        _b.sent();
-                        return [4 /*yield*/, this._plebbit._cache.setItem("".concat(address, "_").concat(txtRecordName, "_timestamp"), (0, util_1.timestamp)())];
                     case 11:
                         _b.sent();
+                        return [4 /*yield*/, this._plebbit._cache.setItem("".concat(address, "_").concat(txtRecordName, "_timestamp"), (0, util_1.timestamp)())];
+                    case 12:
+                        _b.sent();
                         return [2 /*return*/, resolvedTextRecord];
-                    case 12: throw resolvedTextRecord[0].value.error;
                     case 13: return [3 /*break*/, 15];
                     case 14:
                         e_6 = _b.sent();
