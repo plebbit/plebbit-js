@@ -40,7 +40,6 @@ export class Resolver {
         const resolver = await chainProvider.getResolver(address);
         if (!resolver) throwWithErrorCode("ERR_ENS_RESOLVER_NOT_FOUND", { address, chainProvider, chain });
         const txtRecordResult = await resolver.getText(txtRecordName);
-        if (!txtRecordResult) return null;
 
         log(
             `Resolved text record name (${txtRecordName}) of address (${address}) to ${txtRecordResult} with chainProvider (${chainProviderUrl})`
