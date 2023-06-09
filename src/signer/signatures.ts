@@ -326,16 +326,23 @@ export async function verifySubplebbit(
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager
 ): Promise<ValidationResult> {
+    const log = Logger("plebbit-js:signatures:verifySubplebbit");
     if (subplebbit.posts?.pages)
-        for (const page of Object.values(subplebbit.posts.pages)) {
+        for (const pageName of Object.keys(subplebbit.posts.pages)) {
             const pageValidity = await verifyPage(
-                lodash.cloneDeep(page),
+                lodash.cloneDeep(subplebbit.posts.pages[pageName]),
                 resolveAuthorAddresses,
                 clientsManager,
                 subplebbit.address,
                 undefined
             );
-            if (!pageValidity.valid) return { valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID };
+
+            if (!pageValidity.valid) {
+                log.error(
+                    `Subplebbit (${subplebbit.address}) page (${pageName} - ${subplebbit.posts.pageCids[pageName]}) has an invalid signature due to reason (${pageValidity.reason})`
+                );
+                return { valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID };
+            }
         }
 
     const signatureValidity = await _verifyJsonSignature(subplebbit);
