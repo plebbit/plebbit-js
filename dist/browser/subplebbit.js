@@ -644,7 +644,7 @@ var Subplebbit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         ipnsRecord = JSON.parse(JSON.stringify(__assign(__assign({}, record), { signature: newSignature })));
-                        return [4 /*yield*/, (0, signatures_1.verifySubplebbit)(ipnsRecord, this.plebbit.resolveAuthorAddresses, this._clientsManager)];
+                        return [4 /*yield*/, (0, signatures_1.verifySubplebbit)(ipnsRecord, false, this._clientsManager)];
                     case 1:
                         signatureValidation = _a.sent();
                         assert_1.default.equal(signatureValidation.valid, true, "Failed to validate subplebbit (".concat(this.address, ") local signature due to reason (").concat(signatureValidation.reason, ")"));

@@ -300,7 +300,9 @@ var _verifyAuthor = function (publicationJson, resolveAuthorAddresses, clientsMa
                 log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifyAuthor");
                 if (!((_b = publicationJson.author) === null || _b === void 0 ? void 0 : _b.address))
                     return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_ADDRESS_UNDEFINED }];
-                if (!(publicationJson.author.address.includes(".") && resolveAuthorAddresses)) return [3 /*break*/, 3];
+                if (!publicationJson.author.address.includes(".")) return [3 /*break*/, 3];
+                if (!resolveAuthorAddresses)
+                    return [2 /*return*/, { valid: true }];
                 return [4 /*yield*/, clientsManager.resolveAuthorAddressIfNeeded(publicationJson.author.address)];
             case 1:
                 resolvedAuthorAddress = _c.sent();
@@ -397,7 +399,7 @@ var _verifyPublicationWithAuthor = function (publicationJson, resolveAuthorAddre
             case 1:
                 authorSignatureValidity = _a.sent();
                 if (!authorSignatureValidity.valid)
-                    return [2 /*return*/, { valid: false, reason: authorSignatureValidity.reason }];
+                    return [2 /*return*/, authorSignatureValidity];
                 if (!overrideAuthorAddressIfInvalid && authorSignatureValidity.newAddress)
                     return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE }];
                 return [4 /*yield*/, _verifyJsonSignature(publicationJson)];
