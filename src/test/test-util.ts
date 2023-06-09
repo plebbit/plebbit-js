@@ -127,7 +127,7 @@ async function _mockSubplebbitPlebbit(signers: SignerType[], plebbitOptions: Ple
     plebbit.resolver.resolveTxtRecord = async (ensName: string, textRecord: string) => {
         if (ensName === "plebbit.eth" && textRecord === "subplebbit-address") return signers[3].address;
         else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address") return signers[6].address;
-        else return undefined;
+        else return null;
     };
 
     for (const pubsubUrl of Object.keys(plebbit.clients.pubsubClients))
@@ -280,12 +280,11 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
         if (ensName === "plebbit.eth" && textRecord === "subplebbit-address") return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo";
         else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address")
             return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y";
-        else return undefined;
+        else return null;
     };
 
     plebbit._cache.getItem = () => undefined;
     plebbit._cache.setItem = () => undefined;
-
 
     // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
     if (!plebbitOptions?.pubsubHttpClientsOptions || forceMockPubsub)

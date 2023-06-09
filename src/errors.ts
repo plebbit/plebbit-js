@@ -41,7 +41,7 @@ export enum messages {
     ERR_SUBPLEBBIT_POSTS_INVALID = "subplebbit.posts signature is invalid",
     ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT = "CommentUpdate.cid is different than comment.cid",
     ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT = "The signer of challenge pubsub message is not the subplebbit",
-    ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_SUBPLEBBIT = "The signer of challenge verification pubsub message is not the subplebbit", 
+    ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_SUBPLEBBIT = "The signer of challenge verification pubsub message is not the subplebbit",
     ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE = "Challenge request id is not derived from signature.publicKey",
     ERR_CHALLENGE_SIGNATURE_IS_INVALID = "Received a challenge message with an invalid signature",
     ERR_CHALLENGE_VERIFICATION_SIGNATURE_IS_INVALID = "Received a challenge verification message with an invalid signature",
@@ -80,6 +80,7 @@ export enum messages {
     ERR_COMMENT_OVER_ALLOWED_SIZE = "Comment size is over the allowed size",
 
     // Resolver errors
+    ERR_FAILED_TO_RESOLVE_TEXT_RECORD = "Failed to resolve text record",
     ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER = "no chain provider options set for chain ticker",
     ERR_ENS_RESOLVER_NOT_FOUND = "ENS resolver is not found",
     ERR_ENS_TXT_RECORD_NOT_FOUND = "ENS resolver did not find the text record",

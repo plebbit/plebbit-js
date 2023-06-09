@@ -33,14 +33,14 @@ export class Resolver {
         } else return new ethers.providers.JsonRpcProvider({ url: chainProviderUrl }, this.plebbit.chainProviders[chainTicker].chainId);
     }
 
-    async resolveTxtRecord(address: string, txtRecordName: string, chain: Chain, chainProviderUrl: string): Promise<string | undefined> {
+    async resolveTxtRecord(address: string, txtRecordName: string, chain: Chain, chainProviderUrl: string): Promise<string | null> {
         const log = Logger("plebbit-js:resolver:_resolveEnsTxtRecord");
 
         const chainProvider = this._getChainProvider(chain, chainProviderUrl);
         const resolver = await chainProvider.getResolver(address);
         if (!resolver) throwWithErrorCode("ERR_ENS_RESOLVER_NOT_FOUND", { address, chainProvider, chain });
         const txtRecordResult = await resolver.getText(txtRecordName);
-        if (!txtRecordResult) return undefined;
+        if (!txtRecordResult) return null;
 
         log(
             `Resolved text record name (${txtRecordName}) of address (${address}) to ${txtRecordResult} with chainProvider (${chainProviderUrl})`

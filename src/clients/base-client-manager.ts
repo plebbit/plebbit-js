@@ -272,9 +272,9 @@ export class BaseClientsManager {
     private async _getCachedTextRecord(
         address: string,
         txtRecord: "subplebbit-address" | "plebbit-author-address"
-    ): Promise<{ stale: boolean; resolveCache: string | undefined } | undefined> {
-        const resolveCache: string | undefined = await this._plebbit._cache.getItem(`${address}_${txtRecord}`);
-        if (typeof resolveCache === "string") {
+    ): Promise<{ stale: boolean; resolveCache: string | null } | undefined> {
+        const resolveCache: string | undefined | null = await this._plebbit._cache.getItem(`${address}_${txtRecord}`);
+        if (typeof resolveCache === "string" || resolveCache === null) {
             const resolvedTimestamp: number = await this._plebbit._cache.getItem(`${address}_${txtRecord}_timestamp`);
             assert(typeof resolvedTimestamp === "number");
             const stale = timestamp() - resolvedTimestamp > 3600; // Only resolve again if cache was stored over an hour ago
@@ -286,7 +286,11 @@ export class BaseClientsManager {
     private async _resolveTextRecordWithCache(address: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
         const chain = address.endsWith(".eth") ? "eth" : undefined;
         assert(chain);
-        return this._resolveTextRecordConcurrently(address, txtRecord, chain);
+        const cachedTextRecord = await this._getCachedTextRecord(address, txtRecord);
+        if (cachedTextRecord) {
+            if (cachedTextRecord.stale) this._resolveTextRecordConcurrently(address, txtRecord, chain);
+            return cachedTextRecord.resolveCache;
+        } else return this._resolveTextRecordConcurrently(address, txtRecord, chain);
     }
 
     preResolveTextRecord(
@@ -327,7 +331,7 @@ export class BaseClientsManager {
         } catch (e) {
             await this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain);
             this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl);
-            throw e;
+            return { error: e };
         }
     }
     private async _resolveTextRecordConcurrently(
@@ -337,6 +341,17 @@ export class BaseClientsManager {
     ): Promise<string | undefined> {
         const log = Logger("plebbit-js:plebbit:client-manager:_resolveEnsTextRecord");
         const timeouts = [0, 0, 100, 1000];
+
+        const _firstResolve = (promises: Promise<string | null | { error: PlebbitError }>[]) => {
+            return new Promise<any>((resolve) =>
+                promises.forEach((promise) =>
+                    promise.then((res) => {
+                        if (typeof res === "string" || res === null) resolve(res);
+                    })
+                )
+            );
+        };
+
         const concurrencyLimit = 3;
         const queueLimit = pLimit(concurrencyLimit);
 
@@ -357,14 +372,24 @@ export class BaseClientsManager {
                     queueLimit(() => this._resolveTextRecordSingleChainProvider(address, txtRecordName, chain, providerUrl))
                 );
 
-                const resolvedTextRecord = await Promise.race([firstResolve(providerPromises), Promise.allSettled(providerPromises)]);
-                if (typeof resolvedTextRecord === "string" || resolvedTextRecord === undefined) {
+                const resolvedTextRecord: string | null | Promise<{ error: PlebbitError }>[] = await Promise.race([
+                    _firstResolve(providerPromises),
+                    Promise.allSettled(providerPromises)
+                ]);
+                if (Array.isArray(resolvedTextRecord)) {
+                    // It means none of the promises settled with string or null, they all failed
+                    const errorsCombined = {};
+                    for (let i = 0; i < providersSorted.length; i++)
+                        errorsCombined[providersSorted[i]] = resolvedTextRecord[i]["value"]["error"];
+
+                    throwWithErrorCode("ERR_FAILED_TO_RESOLVE_TEXT_RECORD", { errors: errorsCombined, address, txtRecordName, chain });
+                } else {
                     queueLimit.clearQueue();
                     await this._plebbit._cache.setItem(`${address}_${txtRecordName}`, resolvedTextRecord);
                     await this._plebbit._cache.setItem(`${address}_${txtRecordName}_timestamp`, timestamp());
 
                     return resolvedTextRecord;
-                } else throw resolvedTextRecord[0].value.error;
+                }
             } catch (e) {
                 if (i === timeouts.length - 1) {
                     this.emitError(e);
