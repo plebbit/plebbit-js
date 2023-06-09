@@ -542,10 +542,11 @@ function _getBinaryValidationResult(publication) {
 }
 function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment) {
     return __awaiter(this, void 0, void 0, function () {
-        var updateSignatureAddress, subplebbitResolvedAddress, pagesValidity, invalidPageValidity;
+        var log, updateSignatureAddress, subplebbitResolvedAddress, pagesValidity, invalidPageValidity;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
+                    log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifyCommentUpdate");
                     if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR }];
                     return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPublicKey)(update.signature.publicKey)];
@@ -554,8 +555,10 @@ function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, sub
                     return [4 /*yield*/, clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
                 case 2:
                     subplebbitResolvedAddress = _a.sent();
-                    if (updateSignatureAddress !== subplebbitResolvedAddress)
+                    if (updateSignatureAddress !== subplebbitResolvedAddress) {
+                        log.error("Comment (".concat(update.cid, "), CommentUpdate's signature address (").concat(updateSignatureAddress, ") is not the same as the B58 address of the subplebbit (").concat(subplebbitResolvedAddress, ")"));
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT }];
+                    }
                     if (update.cid !== comment.cid)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT }];
                     if (!update.replies) return [3 /*break*/, 4];
