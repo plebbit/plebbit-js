@@ -377,13 +377,18 @@ export async function verifyCommentUpdate(
     subplebbitAddress: string,
     comment: Pick<CommentWithCommentUpdate, "signature" | "cid">
 ): Promise<ValidationResult> {
+    const log = Logger("plebbit-js:signatures:verifyCommentUpdate");
     if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
         return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
 
     const updateSignatureAddress: string = await getPlebbitAddressFromPublicKey(update.signature.publicKey);
     const subplebbitResolvedAddress = await clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
-    if (updateSignatureAddress !== subplebbitResolvedAddress)
+    if (updateSignatureAddress !== subplebbitResolvedAddress) {
+        log.error(
+            `Comment (${update.cid}), CommentUpdate's signature address (${updateSignatureAddress}) is not the same as the B58 address of the subplebbit (${subplebbitResolvedAddress})`
+        );
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT };
+    }
 
     if (update.cid !== comment.cid) return { valid: false, reason: messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT };
 
