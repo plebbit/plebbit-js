@@ -14,7 +14,7 @@ const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
 export type LoadType = "subplebbit" | "comment-update" | "comment" | "generic-ipfs";
 
-export const resolvePromises: Record<string, () => Promise<string | null>> = {};
+export const resolvePromises: Record<string, Promise<string | null>> = {};
 
 export class BaseClientsManager {
     // Class that has all function but without clients field for maximum interopability
@@ -275,30 +275,35 @@ export class BaseClientsManager {
         address: string,
         txtRecord: "subplebbit-address" | "plebbit-author-address"
     ): Promise<{ stale: boolean; resolveCache: string | null } | undefined> {
+        const log = Logger("plebbit-js:client-manager:resolveTextRecord");
         const resolveCache: string | undefined | null = await this._plebbit._cache.getItem(`${address}_${txtRecord}`);
         if (typeof resolveCache === "string" || resolveCache === null) {
             const resolvedTimestamp: number = await this._plebbit._cache.getItem(`${address}_${txtRecord}_timestamp`);
             assert(typeof resolvedTimestamp === "number");
             const stale = timestamp() - resolvedTimestamp > 3600; // Only resolve again if cache was stored over an hour ago
+            log.trace(`Retrieved cache of address (${address}) text record (${txtRecord}):`, { stale, resolveCache });
             return { stale, resolveCache };
         }
         return undefined;
     }
 
     private async _resolveTextRecordWithCache(address: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
-        if (resolvePromises[address + txtRecord]) return await resolvePromises[address + txtRecord]();
-        resolvePromises[address + txtRecord] = async () => {
+        const log = Logger("plebbit-js:client-manager:resolveTextRecord");
+        if (resolvePromises[address + txtRecord]) return await resolvePromises[address + txtRecord];
+
+        resolvePromises[address + txtRecord] = new Promise(async (resolve, reject) => {
+            log.trace(`Creating a new promise for retrieving address (${address}) txt record (${txtRecord})`);
             const chain = address.endsWith(".eth") ? "eth" : undefined;
-            assert(chain);
+            if (!chain) reject(`Can't figure out the chain of the address`);
             const cachedTextRecord = await this._getCachedTextRecord(address, txtRecord);
             if (cachedTextRecord) {
                 if (cachedTextRecord.stale) this._resolveTextRecordConcurrently(address, txtRecord, chain);
-                return cachedTextRecord.resolveCache;
-            } else return this._resolveTextRecordConcurrently(address, txtRecord, chain);
-        };
+                resolve(cachedTextRecord.resolveCache);
+            } else this._resolveTextRecordConcurrently(address, txtRecord, chain).then(resolve).catch(reject);
+        });
 
         try {
-            const res = await resolvePromises[address + txtRecord]();
+            const res = await resolvePromises[address + txtRecord];
             delete resolvePromises[address + txtRecord];
             return res;
         } catch (e) {
