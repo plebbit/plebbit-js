@@ -639,22 +639,19 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype._validateLocalSignature = function (newSignature, record) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, ipnsRecord, signatureValidation, error;
+            var log, ipnsRecord;
+            var _this = this;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:_validateLocalSignature");
-                        ipnsRecord = JSON.parse(JSON.stringify(__assign(__assign({}, record), { signature: newSignature })));
-                        return [4 /*yield*/, (0, signatures_1.verifySubplebbit)(ipnsRecord, false, this._clientsManager)];
-                    case 1:
-                        signatureValidation = _a.sent();
-                        if (!signatureValidation.valid) {
-                            error = new plebbit_error_1.PlebbitError("ERR_LOCAL_SUBPLEBBIT_SIGNATURE_IS_INVALID", { signatureValidation: signatureValidation });
-                            log.error(String(error));
-                            this.emit("error", error);
-                        }
-                        return [2 /*return*/];
-                }
+                log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:_validateLocalSignature");
+                ipnsRecord = JSON.parse(JSON.stringify(__assign(__assign({}, record), { signature: newSignature })));
+                (0, signatures_1.verifySubplebbit)(ipnsRecord, false, this._clientsManager).then(function (signatureValidation) {
+                    if (!signatureValidation.valid) {
+                        var error = new plebbit_error_1.PlebbitError("ERR_LOCAL_SUBPLEBBIT_SIGNATURE_IS_INVALID", { signatureValidation: signatureValidation });
+                        log.error(String(error));
+                        _this.emit("error", error);
+                    }
+                });
+                return [2 /*return*/];
             });
         });
     };
