@@ -58,7 +58,6 @@ export class BaseClientsManager {
             try {
                 await this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler);
                 await this._plebbit.stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore);
-
                 return;
             } catch (e) {
                 await this._plebbit.stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe");
@@ -94,11 +93,11 @@ export class BaseClientsManager {
         const timeBefore = Date.now();
         try {
             await this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.publish(pubsubTopic, data);
-            this._plebbit.stats.recordGatewaySuccess(pubsubProvider, "pubsub-publish", Date.now() - timeBefore); // Awaiting this statement will bug out tests
             this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
+            this._plebbit.stats.recordGatewaySuccess(pubsubProvider, "pubsub-publish", Date.now() - timeBefore); // Awaiting this statement will bug out tests
         } catch (error) {
-            await this._plebbit.stats.recordGatewayFailure(pubsubProvider, "pubsub-publish");
             this.postPubsubPublishProviderFailure(pubsubTopic, pubsubProvider);
+            await this._plebbit.stats.recordGatewayFailure(pubsubProvider, "pubsub-publish");
             throwWithErrorCode("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic, pubsubProvider, error });
         }
     }
@@ -197,8 +196,8 @@ export class BaseClientsManager {
             await this._plebbit.stats.recordGatewaySuccess(gateway, isCid ? "cid" : "ipns", timeElapsedMs);
             return resText;
         } catch (e) {
-            await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
             this.postFetchGatewayFailure(gateway, path, loadType);
+            await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
             return { error: e };
         }
     }
@@ -344,12 +343,13 @@ export class BaseClientsManager {
         const timeBefore = Date.now();
         try {
             const resolvedTextRecord = await this._plebbit.resolver.resolveTxtRecord(address, txtRecordName, chain, chainproviderUrl);
-            await this._plebbit.stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
             this.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainproviderUrl);
+            await this._plebbit.stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
             return resolvedTextRecord;
         } catch (e) {
-            await this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain);
             this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl);
+
+            await this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain);
             return { error: e };
         }
     }
