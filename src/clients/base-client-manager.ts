@@ -288,30 +288,13 @@ export class BaseClientsManager {
 
     private async _resolveTextRecordWithCache(address: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
         const log = Logger("plebbit-js:client-manager:resolveTextRecord");
-        if (resolvePromises[address + txtRecord]) {
-            log.trace(`Awaiting an already created promise for resolving address (${address}) txt record (${txtRecord})`);
-            return await resolvePromises[address + txtRecord];
-        }
-
-        resolvePromises[address + txtRecord] = new Promise(async (resolve, reject) => {
-            log.trace(`Creating a new promise for retrieving address (${address}) txt record (${txtRecord})`);
-            const chain = address.endsWith(".eth") ? "eth" : undefined;
-            if (!chain) reject(`Can't figure out the chain of the address`);
-            const cachedTextRecord = await this._getCachedTextRecord(address, txtRecord);
-            if (cachedTextRecord) {
-                if (cachedTextRecord.stale) this._resolveTextRecordConcurrently(address, txtRecord, chain);
-                resolve(cachedTextRecord.resolveCache);
-            } else this._resolveTextRecordConcurrently(address, txtRecord, chain).then(resolve).catch(reject);
-        });
-
-        try {
-            const res = await resolvePromises[address + txtRecord];
-            delete resolvePromises[address + txtRecord];
-            return res;
-        } catch (e) {
-            delete resolvePromises[address + txtRecord];
-            throw e;
-        }
+        const chain = address.endsWith(".eth") ? "eth" : undefined;
+        if (!chain) throw Error(`Can't figure out the chain of the address`);
+        const cachedTextRecord = await this._getCachedTextRecord(address, txtRecord);
+        if (cachedTextRecord) {
+            if (cachedTextRecord.stale) this._resolveTextRecordConcurrently(address, txtRecord, chain);
+            return cachedTextRecord.resolveCache;
+        } else return this._resolveTextRecordConcurrently(address, txtRecord, chain);
     }
 
     preResolveTextRecord(
