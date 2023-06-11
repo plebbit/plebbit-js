@@ -63,15 +63,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PostsPagesClientsManager = exports.RepliesPagesClientsManager = exports.BasePagesClientsManager = exports.pageCidToSortTypesCache = void 0;
+exports.PostsPagesClientsManager = exports.RepliesPagesClientsManager = exports.BasePagesClientsManager = void 0;
 var assert_1 = __importDefault(require("assert"));
 var base_client_manager_1 = require("./base-client-manager");
 var ipfs_client_1 = require("./ipfs-client");
 var ipfs_gateway_client_1 = require("./ipfs-gateway-client");
 var sort_handler_1 = require("../sort-handler");
-var tiny_lru_1 = require("tiny-lru");
 var lodash_1 = __importDefault(require("lodash"));
-exports.pageCidToSortTypesCache = (0, tiny_lru_1.lru)(500, 0);
+var constants_1 = require("../constants");
 var BasePagesClientsManager = /** @class */ (function (_super) {
     __extends(BasePagesClientsManager, _super);
     function BasePagesClientsManager(pages) {
@@ -115,25 +114,25 @@ var BasePagesClientsManager = /** @class */ (function (_super) {
     // Override methods from BaseClientsManager here
     BasePagesClientsManager.prototype.preFetchGateway = function (gatewayUrl, path, loadType) {
         var cid = path.split("/")[2];
-        var sortTypes = exports.pageCidToSortTypesCache.get(cid);
+        var sortTypes = constants_1.pageCidToSortTypesCache.get(cid);
         this.updateGatewayState("fetching-ipfs", gatewayUrl, sortTypes);
     };
     BasePagesClientsManager.prototype.postFetchGatewaySuccess = function (gatewayUrl, path, loadType) {
         var cid = path.split("/")[2];
-        var sortTypes = exports.pageCidToSortTypesCache.get(cid);
+        var sortTypes = constants_1.pageCidToSortTypesCache.get(cid);
         this.updateGatewayState("stopped", gatewayUrl, sortTypes);
     };
     BasePagesClientsManager.prototype.postFetchGatewayFailure = function (gatewayUrl, path, loadType) {
         this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
     };
     BasePagesClientsManager.prototype._updatePageCidsSortCache = function (pageCid, sortTypes) {
-        var curSortTypes = exports.pageCidToSortTypesCache.get(pageCid);
+        var curSortTypes = constants_1.pageCidToSortTypesCache.get(pageCid);
         if (!curSortTypes) {
-            exports.pageCidToSortTypesCache.set(pageCid, sortTypes);
+            constants_1.pageCidToSortTypesCache.set(pageCid, sortTypes);
         }
         else {
             var newSortTypes = lodash_1.default.uniq(__spreadArray(__spreadArray([], curSortTypes, true), sortTypes, true));
-            exports.pageCidToSortTypesCache.set(pageCid, newSortTypes);
+            constants_1.pageCidToSortTypesCache.set(pageCid, newSortTypes);
         }
     };
     BasePagesClientsManager.prototype.updatePageCidsToSortTypes = function (newPageCids) {
@@ -144,7 +143,7 @@ var BasePagesClientsManager = /** @class */ (function (_super) {
         }
     };
     BasePagesClientsManager.prototype.updatePageCidsToSortTypesToIncludeSubsequent = function (nextPageCid, previousPageCid) {
-        var sortTypes = exports.pageCidToSortTypesCache.get(previousPageCid);
+        var sortTypes = constants_1.pageCidToSortTypesCache.get(previousPageCid);
         (0, assert_1.default)(Array.isArray(sortTypes));
         this._updatePageCidsSortCache(nextPageCid, sortTypes);
     };
@@ -172,7 +171,7 @@ var BasePagesClientsManager = /** @class */ (function (_super) {
                 switch (_e.label) {
                     case 0:
                         if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 2];
-                        sortTypes = exports.pageCidToSortTypesCache.get(pageCid);
+                        sortTypes = constants_1.pageCidToSortTypesCache.get(pageCid);
                         (0, assert_1.default)(Array.isArray(sortTypes), "Page cid is not mapped to a sort type");
                         this.updateIpfsState("fetching-ipfs", sortTypes);
                         _b = (_a = JSON).parse;

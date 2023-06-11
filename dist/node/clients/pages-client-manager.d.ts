@@ -3,7 +3,6 @@ import { BaseClientsManager, LoadType } from "./base-client-manager";
 import { PagesIpfsClient } from "./ipfs-client";
 import { PagesIpfsGatewayClient } from "./ipfs-gateway-client";
 import { PageIpfs, PostSortName, ReplySortName } from "../types";
-export declare const pageCidToSortTypesCache: import("tiny-lru").LRU<any>;
 export declare class BasePagesClientsManager extends BaseClientsManager {
     clients: {
         ipfsGateways: {
