@@ -1,10 +1,10 @@
 import { Plebbit } from "../../plebbit";
-import { CacheInterface } from "../../types";
+import { StorageInterface } from "../../types";
 import path from "path";
 import fs from "fs";
 import Keyv from "keyv";
 
-export default class Cache implements CacheInterface {
+export default class Cache implements StorageInterface {
     private _plebbit: Pick<Plebbit, "dataPath" | "noData">;
     private _keyv: Keyv;
     constructor(plebbit: Cache["_plebbit"]) {

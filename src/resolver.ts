@@ -6,7 +6,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { throwWithErrorCode } from "./util";
 
 export class Resolver {
-    private plebbit: Pick<Plebbit, "resolveAuthorAddresses" | "chainProviders" | "_cache">;
+    private plebbit: Pick<Plebbit, "resolveAuthorAddresses" | "chainProviders">;
 
     constructor(plebbit: Resolver["plebbit"]) {
         this.plebbit = plebbit;

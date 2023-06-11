@@ -6,7 +6,7 @@ import { Chain } from "./types";
 
 type StatTypes = "ipns" | "cid" | "pubsub-publish" | "pubsub-subscribe" | Chain;
 export default class Stats {
-    private _plebbit: Pick<Plebbit, "_cache" | "clients">;
+    private _plebbit: Pick<Plebbit, "_storage" | "clients">;
     constructor(plebbit: Stats["_plebbit"]) {
         this._plebbit = plebbit;
     }
@@ -30,13 +30,13 @@ export default class Stats {
         const countKey = this._getSuccessCountKey(gatewayUrl, type);
         const averageKey = this._getSuccessAverageKey(gatewayUrl, type);
 
-        const curAverage: number = (await this._plebbit._cache.getItem(averageKey)) || 0;
-        const curCount: number = (await this._plebbit._cache.getItem(countKey)) || 0;
+        const curAverage: number = (await this._plebbit._storage.getItem(averageKey)) || 0;
+        const curCount: number = (await this._plebbit._storage.getItem(countKey)) || 0;
 
         const newAverage = curAverage + (timeElapsedMs - curAverage) / (curCount + 1);
         const newCount = curCount + 1;
 
-        await Promise.all([this._plebbit._cache.setItem(averageKey, newAverage), this._plebbit._cache.setItem(countKey, newCount)]);
+        await Promise.all([this._plebbit._storage.setItem(averageKey, newAverage), this._plebbit._storage.setItem(countKey, newCount)]);
 
         log.trace(
             `Updated gateway (${gatewayUrl}) success average from (${curAverage}) to ${newAverage} and count from (${curCount}) to (${newCount}) for type (${type})`
@@ -58,10 +58,10 @@ export default class Stats {
 
         const countKey = this._getFailuresCountKey(gatewayUrl, type);
 
-        const curCount: number = (await this._plebbit._cache.getItem(countKey)) || 0;
+        const curCount: number = (await this._plebbit._storage.getItem(countKey)) || 0;
 
         const newCount: number = curCount + 1;
-        await this._plebbit._cache.setItem(countKey, newCount);
+        await this._plebbit._storage.setItem(countKey, newCount);
 
         log.trace(`Updated gateway (${gatewayUrl}) failure  count from (${curCount}) to (${newCount}) for type (${type})`);
     }
@@ -91,9 +91,9 @@ export default class Stats {
                 : Object.keys(this._plebbit.clients[gatewayType]);
 
         const score = async (gatewayUrl: string) => {
-            const failureCounts: number = (await this._plebbit._cache.getItem(this._getFailuresCountKey(gatewayUrl, type))) || 0;
-            const successCounts: number = (await this._plebbit._cache.getItem(this._getSuccessCountKey(gatewayUrl, type))) || 0;
-            const successAverageMs: number = (await this._plebbit._cache.getItem(this._getSuccessAverageKey(gatewayUrl, type))) || 0;
+            const failureCounts: number = (await this._plebbit._storage.getItem(this._getFailuresCountKey(gatewayUrl, type))) || 0;
+            const successCounts: number = (await this._plebbit._storage.getItem(this._getSuccessCountKey(gatewayUrl, type))) || 0;
+            const successAverageMs: number = (await this._plebbit._storage.getItem(this._getSuccessAverageKey(gatewayUrl, type))) || 0;
 
             const gatewayScore = this._gatewayScore(failureCounts, successCounts, successAverageMs);
             log.trace(`gateway (${gatewayUrl}) score is (${gatewayScore}) for type (${type})`);

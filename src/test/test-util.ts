@@ -283,8 +283,8 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
         else return null;
     };
 
-    plebbit._cache.getItem = () => undefined;
-    plebbit._cache.setItem = () => undefined;
+    plebbit._storage.getItem = () => undefined;
+    plebbit._storage.setItem = () => undefined;
 
     // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
     if (!plebbitOptions?.pubsubHttpClientsOptions || forceMockPubsub)

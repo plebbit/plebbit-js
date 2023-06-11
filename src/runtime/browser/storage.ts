@@ -1,9 +1,9 @@
 import localForage from "localforage";
-import { CacheInterface } from "../../types";
+import { StorageInterface } from "../../types";
 import { Plebbit } from "../../plebbit";
 import lodash from "lodash";
 
-export default class Cache implements CacheInterface {
+export default class Cache implements StorageInterface {
     private _plebbit: Pick<Plebbit, "dataPath" | "noData">;
     private _store: LocalForage;
     constructor(plebbit: Cache["_plebbit"]) {

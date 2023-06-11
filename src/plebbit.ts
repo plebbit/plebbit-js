@@ -1,5 +1,5 @@
 import {
-    CacheInterface,
+    StorageInterface,
     ChainProvider,
     CommentEditType,
     CommentIpfsType,
@@ -30,7 +30,6 @@ import { removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./
 import Vote from "./vote";
 import { createSigner, Signer, verifyComment, verifySubplebbit } from "./signer";
 import { Resolver } from "./resolver";
-import TinyCache from "tinycache";
 import { CommentEdit } from "./comment-edit";
 import { getPlebbitAddressFromPrivateKey } from "./signer/util";
 import isIPFS from "is-ipfs";
@@ -43,7 +42,7 @@ import { Buffer } from "buffer";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions, SignerType } from "./signer/constants";
 import Stats from "./stats";
-import Cache from "./runtime/node/cache";
+import Storage from "./runtime/node/storage";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import { ClientsManager } from "./clients/client-manager";
 
@@ -60,7 +59,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     dataPath?: string;
     resolveAuthorAddresses?: boolean;
     chainProviders: { [chainTicker: string]: ChainProvider };
-    _cache: CacheInterface;
+    _storage: StorageInterface;
     stats: Stats;
 
     private _pubsubSubscriptions: Record<string, MessageHandlerFn>;
@@ -154,7 +153,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         this.resolver = new Resolver({
-            _cache: this._cache,
             resolveAuthorAddresses: this.resolveAuthorAddresses,
             chainProviders: this.chainProviders
         });
@@ -198,11 +196,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         } else for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
 
         // Init cache
-        this._cache = new Cache({ dataPath: this.dataPath, noData: this.noData });
-        await this._cache.init();
+        this._storage = new Storage({ dataPath: this.dataPath, noData: this.noData });
+        await this._storage.init();
 
         // Init stats
-        this.stats = new Stats({ _cache: this._cache, clients: this.clients });
+        this.stats = new Stats({ _storage: this._storage, clients: this.clients });
         // Init resolver
         this._initResolver(options);
         // Init clients manager
@@ -388,7 +386,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         delete this._pubsubSubscriptions[subplebbitAddress];
     }
 
-    async resolveAuthorAddress(authorAddress: string){
+    async resolveAuthorAddress(authorAddress: string) {
         const resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(authorAddress);
         return resolved;
     }

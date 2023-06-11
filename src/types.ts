@@ -729,8 +729,8 @@ export interface GatewayClient {
     subplebbitStats?: { [subplebbitAddress: string]: IpfsSubplebbitStats }; // Should be defined, will change later
 }
 
-// Cache interface, will be used to set up general cache using localforage (for browser) or key-v SQLite (Node)
-export interface CacheInterface {
+// Storage interface, will be used to set up storage cache using localforage (for browser) or key-v SQLite (Node)
+export interface StorageInterface {
     init: () => Promise<void>;
     getItem: (key: string) => Promise<any>;
     setItem: (key: string, value: any) => Promise<void>;

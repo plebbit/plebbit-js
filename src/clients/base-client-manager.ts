@@ -275,9 +275,9 @@ export class BaseClientsManager {
         txtRecord: "subplebbit-address" | "plebbit-author-address"
     ): Promise<{ stale: boolean; resolveCache: string | null } | undefined> {
         const log = Logger("plebbit-js:client-manager:resolveTextRecord");
-        const resolveCache: string | undefined | null = await this._plebbit._cache.getItem(`${address}_${txtRecord}`);
+        const resolveCache: string | undefined | null = await this._plebbit._storage.getItem(`${address}_${txtRecord}`);
         if (typeof resolveCache === "string" || resolveCache === null) {
-            const resolvedTimestamp: number = await this._plebbit._cache.getItem(`${address}_${txtRecord}_timestamp`);
+            const resolvedTimestamp: number = await this._plebbit._storage.getItem(`${address}_${txtRecord}_timestamp`);
             assert(typeof resolvedTimestamp === "number");
             const stale = timestamp() - resolvedTimestamp > 3600; // Only resolve again if cache was stored over an hour ago
             log.trace(`Retrieved cache of address (${address}) text record (${txtRecord}):`, { stale, resolveCache });
@@ -405,8 +405,8 @@ export class BaseClientsManager {
                 } else {
                     queueLimit.clearQueue();
                     if (typeof resolvedTextRecord === "string") {
-                        await this._plebbit._cache.setItem(`${address}_${txtRecordName}`, resolvedTextRecord);
-                        await this._plebbit._cache.setItem(`${address}_${txtRecordName}_timestamp`, timestamp());
+                        await this._plebbit._storage.setItem(`${address}_${txtRecordName}`, resolvedTextRecord);
+                        await this._plebbit._storage.setItem(`${address}_${txtRecordName}_timestamp`, timestamp());
                     }
 
                     return resolvedTextRecord;
