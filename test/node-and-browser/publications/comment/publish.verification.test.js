@@ -42,6 +42,7 @@ describe(`Client side verification`, async () => {
         });
 
         const mockPost = await generateMockPost(subplebbitAddress, customPlebbit);
+        mockPost._getSubplebbitCache = () => undefined;
         mockPost._clientsManager._fetchCidP2P = (address) => JSON.stringify(subJson);
 
         await assert.isRejected(mockPost.publish(), messages.ERR_SIGNATURE_IS_INVALID);

@@ -103,6 +103,7 @@ describe("publishing comments", async () => {
     it(`publish() can be caught if subplebbit failed to load`, async () => {
         const downPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:28080", "http://127.0.0.1:28480"] });
         const post = await generateMockPost(subplebbitAddress, downPlebbit);
+        post._getSubplebbitCache = () => undefined;
 
         await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY);
     });
@@ -160,7 +161,6 @@ describe("publishing comments", async () => {
 
         const post = await generateMockPost(subplebbitAddress, tempPlebbit);
         await publishWithExpectedResult(post, true);
-
     });
 });
 
@@ -308,9 +308,8 @@ describe(`comment.publishingState`, async () => {
         expect(comment.publishingState).to.equal("stopped");
     });
 
-    it(`publishing states is in correct order upon publishing a comment with IPFS client`, async () => {
+    it(`publishing states is in correct order upon publishing a comment with IPFS client (uncached)`, async () => {
         const expectedStates = [
-            "resolving-subplebbit-address",
             "fetching-subplebbit-ipns",
             "fetching-subplebbit-ipfs",
             "publishing-challenge-request",
@@ -337,10 +336,85 @@ describe(`comment.publishingState`, async () => {
         expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
-    it(`publishing states is in correct order upon publishing a comment with gateway`, async () => {
-        const gatewayPlebbit = await mockGatewayPlebbit();
+    it(`publishing states is in correct order upon publishing a comment with IPFS client (cached)`, async () => {
+        const expectedStates = [
+            "publishing-challenge-request",
+            "waiting-challenge",
+            "waiting-challenge-answers",
+            "publishing-challenge-answer",
+            "waiting-challenge-verification",
+            "succeeded"
+        ];
+        const recordedStates = [];
+        await plebbit.getSubplebbit(imageCaptchaSubplebbitAddress);
+        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+        mockPost.removeAllListeners("challenge");
+
+        mockPost.once("challenge", async (challengeMsg) => {
+            expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
+            await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
+        });
+
+        mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
+
+        await publishWithExpectedResult(mockPost, true);
+
+        expect(recordedStates).to.deep.equal(expectedStates);
+        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
+    });
+
+    it(`publishing states is in correct order upon publishing a comment to plebbit.eth with IPFS client (uncached)`, async () => {
         const expectedStates = [
             "resolving-subplebbit-address",
+            "fetching-subplebbit-ipns",
+            "fetching-subplebbit-ipfs",
+            "publishing-challenge-request",
+            "waiting-challenge",
+            "succeeded"
+        ];
+        const recordedStates = [];
+        const mockPost = await generateMockPost("plebbit.eth", plebbit);
+        mockPost._getSubplebbitCache = () => undefined;
+
+        mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
+
+        await publishWithExpectedResult(mockPost, true);
+
+        expect(recordedStates).to.deep.equal(expectedStates);
+        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
+    });
+
+    it(`publishing states is in correct order upon publishing a comment with gateway (cached)`, async () => {
+        const gatewayPlebbit = await mockGatewayPlebbit();
+        const expectedStates = [
+            "publishing-challenge-request",
+            "waiting-challenge",
+            "waiting-challenge-answers",
+            "publishing-challenge-answer",
+            "waiting-challenge-verification",
+            "succeeded"
+        ];
+        const recordedStates = [];
+        await gatewayPlebbit.getSubplebbit(imageCaptchaSubplebbitAddress); // Make sure it's cached
+        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, gatewayPlebbit);
+        mockPost.removeAllListeners("challenge");
+
+        mockPost.once("challenge", async (challengeMsg) => {
+            expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
+            await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
+        });
+
+        mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
+
+        await publishWithExpectedResult(mockPost, true);
+
+        expect(recordedStates).to.deep.equal(expectedStates);
+        expect(gatewayPlebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
+    });
+
+    it(`publishing states is in correct order upon publishing a comment with gateway (uncached)`, async () => {
+        const gatewayPlebbit = await mockGatewayPlebbit();
+        const expectedStates = [
             "fetching-subplebbit-ipns",
             "publishing-challenge-request",
             "waiting-challenge",
@@ -351,6 +425,7 @@ describe(`comment.publishingState`, async () => {
         ];
         const recordedStates = [];
         const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, gatewayPlebbit);
+        mockPost._getSubplebbitCache = () => undefined;
         mockPost.removeAllListeners("challenge");
 
         mockPost.once("challenge", async (challengeMsg) => {

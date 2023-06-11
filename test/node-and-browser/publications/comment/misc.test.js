@@ -368,10 +368,27 @@ describe(`comment.clients`, async () => {
             expect(actualStates).to.deep.equal(expectedStates);
         });
 
-        it(`Correct order of ipfsGateways state when publishing a comment`, async () => {
+        it(`Correct order of ipfsGateways state when publishing a comment (uncached subplebbit)`, async () => {
             const mockPost = await generateMockPost(signers[0].address, gatewayPlebbit);
 
+            mockPost._getSubplebbitCache = () => undefined;
+
             const expectedStates = ["fetching-subplebbit-ipns", "stopped"];
+
+            const actualStates = [];
+
+            const gatewayUrl = Object.keys(mockPost.clients.ipfsGateways)[0];
+            mockPost.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => actualStates.push(newState));
+
+            await publishWithExpectedResult(mockPost, true);
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+
+        it(`Correct order of ipfsGateways state when publishing a comment (cached subplebbit)`, async () => {
+            const mockPost = await generateMockPost(signers[0].address, gatewayPlebbit);
+
+            const expectedStates = []; // Should be empty since we're using cached subplebbit
 
             const actualStates = [];
 
@@ -436,10 +453,26 @@ describe(`comment.clients`, async () => {
             expect(actualStates).to.deep.equal(expectedStates);
         });
 
-        it(`Correct order of ipfsClients state when publishing a comment`, async () => {
+        it(`Correct order of ipfsClients state when publishing a comment (uncached)`, async () => {
+            const mockPost = await generateMockPost(signers[0].address, plebbit);
+            mockPost._getSubplebbitCache = () => undefined;
+            const expectedStates = ["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "stopped"];
+
+            const actualStates = [];
+
+            const ipfsUrl = Object.keys(mockPost.clients.ipfsClients)[0];
+
+            mockPost.clients.ipfsClients[ipfsUrl].on("statechange", (newState) => actualStates.push(newState));
+
+            await publishWithExpectedResult(mockPost, true);
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+
+        it(`Correct order of ipfsClients state when publishing a comment (cached)`, async () => {
             const mockPost = await generateMockPost(signers[0].address, plebbit);
 
-            const expectedStates = ["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "stopped"];
+            const expectedStates = []; // Empty because we're using the cached subplebbit
 
             const actualStates = [];
 
