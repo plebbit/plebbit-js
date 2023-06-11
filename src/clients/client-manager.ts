@@ -221,6 +221,17 @@ export class PublicationClientsManager extends ClientsManager {
         this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
     }
 
+    // Resolver methods here
+    preResolveTextRecord(
+        address: string,
+        txtRecordName: "subplebbit-address" | "plebbit-author-address",
+        resolvedTextRecord: string,
+        chain: string
+    ): void {
+        super.preResolveTextRecord(address, txtRecordName, resolvedTextRecord, chain);
+        if (this._publication.publishingState === "stopped") this._publication._updatePublishingState("resolving-subplebbit-address");
+    }
+
     emitError(e: PlebbitError): void {
         this._publication.emit("error", e);
     }
@@ -229,7 +240,8 @@ export class PublicationClientsManager extends ClientsManager {
         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
             throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
 
-        const subIpns = await this.resolveSubplebbitAddressIfNeeded(subplebbitAddress); // Temporary. Should be retrying here
+        const subIpns = await this.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
+        assert(typeof subIpns === "string");
 
         this._publication._updatePublishingState("fetching-subplebbit-ipns");
         let subJson: SubplebbitIpfsType;
