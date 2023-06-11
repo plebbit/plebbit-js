@@ -5,10 +5,8 @@ import { PagesIpfsClient } from "./ipfs-client";
 import { PagesIpfsGatewayClient } from "./ipfs-gateway-client";
 import { PageIpfs, PostSortName, ReplySortName } from "../types";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../sort-handler";
-import { lru } from "tiny-lru";
 import lodash from "lodash";
-
-export const pageCidToSortTypesCache = lru(500, 0);
+import { pageCidToSortTypesCache } from "../constants";
 
 export class BasePagesClientsManager extends BaseClientsManager {
     // pageClients.ipfsGateways['new']['https://ipfs.io']
