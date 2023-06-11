@@ -156,7 +156,7 @@ describe(`Publish loop resiliency`, async () => {
         setTimeout(() => {
             if (!updated) assert.fail("Subplebbit failed to publish a new IPNS record with ENS author address");
         }, 60000);
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await new Promise((resolve) => subplebbit.once("update", () => (updated = true) && resolve(1)));
         const loadedSub = await plebbit.getSubplebbit(subplebbit.address); // If it can load, then it has a valid signature
 
         expect(loadedSub.posts.pages.hot.comments[0].cid).to.equal(mockPost.cid);
