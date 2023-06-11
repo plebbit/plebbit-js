@@ -321,6 +321,7 @@ describe(`comment.publishingState`, async () => {
         ];
         const recordedStates = [];
         const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+        mockPost._getSubplebbitCache = () => undefined;
         mockPost.removeAllListeners("challenge");
 
         mockPost.once("challenge", async (challengeMsg) => {
