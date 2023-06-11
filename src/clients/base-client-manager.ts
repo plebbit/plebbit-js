@@ -404,8 +404,10 @@ export class BaseClientsManager {
                     throwWithErrorCode("ERR_FAILED_TO_RESOLVE_TEXT_RECORD", { errors: errorsCombined, address, txtRecordName, chain });
                 } else {
                     queueLimit.clearQueue();
-                    await this._plebbit._cache.setItem(`${address}_${txtRecordName}`, resolvedTextRecord);
-                    await this._plebbit._cache.setItem(`${address}_${txtRecordName}_timestamp`, timestamp());
+                    if (typeof resolvedTextRecord === "string") {
+                        await this._plebbit._cache.setItem(`${address}_${txtRecordName}`, resolvedTextRecord);
+                        await this._plebbit._cache.setItem(`${address}_${txtRecordName}_timestamp`, timestamp());
+                    }
 
                     return resolvedTextRecord;
                 }
