@@ -364,6 +364,33 @@ describe(`subplebbit.clients (Remote)`, async () => {
                 await fetchSub.posts.getPage(fetchSub.posts.pageCids.new);
                 expect(actualStates).to.deep.equal(expectedStates);
             });
+
+            it(`Original subplebbit instances, as well as recreated instances receive statechange event`, async () => {
+                const remotePlebbit = await mockRemotePlebbit();
+
+                const sub = await remotePlebbit.createSubplebbit({ address: signers[0].address });
+                sub.update();
+                await new Promise((resolve, reject) => {
+                    sub.once("update", async () => {
+                        const pageCid = sub.posts.pageCids["new"];
+
+                        const sub2 = await remotePlebbit.createSubplebbit({ address: sub.address });
+                        const expectedStates = ["fetching-ipfs", "stopped"];
+                        const ipfsUrl = Object.keys(sub.clients.ipfsClients)[0];
+
+                        for (const subToTest of [sub, sub2]) {
+                            const actualStates = [];
+                            subToTest.posts.clients.ipfsClients["new"][ipfsUrl].on("statechange", (newState) =>
+                                actualStates.push(newState)
+                            );
+                            await subToTest.posts.getPage(pageCid);
+                            if (JSON.stringify(actualStates) !== JSON.stringify(expectedStates))
+                                reject("Sub failed to update to subplebbit.posts.clients.ipfsClients");
+                        }
+                        resolve();
+                    });
+                });
+            });
         });
 
         describe(`subplebbit.posts.clients.ipfsGateways`, async () => {
