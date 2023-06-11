@@ -84,7 +84,7 @@ var signatures_1 = require("./signer/signatures");
 var buffer_1 = require("buffer");
 var tiny_typed_emitter_1 = require("tiny-typed-emitter");
 var stats_1 = __importDefault(require("./stats"));
-var cache_1 = __importDefault(require("./runtime/browser/cache"));
+var storage_1 = __importDefault(require("./runtime/browser/storage"));
 var client_manager_1 = require("./clients/client-manager");
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
@@ -188,7 +188,6 @@ var Plebbit = /** @class */ (function (_super) {
         this.clients.chainProviders = this.chainProviders;
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         this.resolver = new resolver_1.Resolver({
-            _cache: this._cache,
             resolveAuthorAddresses: this.resolveAuthorAddresses,
             chainProviders: this.chainProviders
         });
@@ -260,12 +259,12 @@ var Plebbit = /** @class */ (function (_super) {
                         _e.label = 11;
                     case 11:
                         // Init cache
-                        this._cache = new cache_1.default({ dataPath: this.dataPath, noData: this.noData });
-                        return [4 /*yield*/, this._cache.init()];
+                        this._storage = new storage_1.default({ dataPath: this.dataPath, noData: this.noData });
+                        return [4 /*yield*/, this._storage.init()];
                     case 12:
                         _e.sent();
                         // Init stats
-                        this.stats = new stats_1.default({ _cache: this._cache, clients: this.clients });
+                        this.stats = new stats_1.default({ _storage: this._storage, clients: this.clients });
                         // Init resolver
                         this._initResolver(options);
                         // Init clients manager

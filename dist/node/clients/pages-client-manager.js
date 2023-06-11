@@ -50,16 +50,28 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PostsPagesClientsManager = exports.RepliesPagesClientsManager = exports.BasePagesClientsManager = void 0;
+exports.PostsPagesClientsManager = exports.RepliesPagesClientsManager = exports.BasePagesClientsManager = exports.pageCidToSortTypesCache = void 0;
 var assert_1 = __importDefault(require("assert"));
 var base_client_manager_1 = require("./base-client-manager");
 var ipfs_client_1 = require("./ipfs-client");
 var ipfs_gateway_client_1 = require("./ipfs-gateway-client");
 var sort_handler_1 = require("../sort-handler");
+var tiny_lru_1 = require("tiny-lru");
+var lodash_1 = __importDefault(require("lodash"));
+exports.pageCidToSortTypesCache = (0, tiny_lru_1.lru)(500, 0);
 var BasePagesClientsManager = /** @class */ (function (_super) {
     __extends(BasePagesClientsManager, _super);
     function BasePagesClientsManager(pages) {
@@ -68,7 +80,6 @@ var BasePagesClientsManager = /** @class */ (function (_super) {
         _this.clients = {};
         _this._initIpfsGateways();
         _this._initIpfsClients();
-        _this._pageCidsToSortTypes = {};
         if (pages.pageCids)
             _this.updatePageCidsToSortTypes(pages.pageCids);
         return _this;
@@ -104,35 +115,40 @@ var BasePagesClientsManager = /** @class */ (function (_super) {
     // Override methods from BaseClientsManager here
     BasePagesClientsManager.prototype.preFetchGateway = function (gatewayUrl, path, loadType) {
         var cid = path.split("/")[2];
-        this.updateGatewayState("fetching-ipfs", gatewayUrl, this._pageCidsToSortTypes[cid]);
+        var sortTypes = exports.pageCidToSortTypesCache.get(cid);
+        this.updateGatewayState("fetching-ipfs", gatewayUrl, sortTypes);
     };
     BasePagesClientsManager.prototype.postFetchGatewaySuccess = function (gatewayUrl, path, loadType) {
         var cid = path.split("/")[2];
-        this.updateGatewayState("stopped", gatewayUrl, this._pageCidsToSortTypes[cid]);
+        var sortTypes = exports.pageCidToSortTypesCache.get(cid);
+        this.updateGatewayState("stopped", gatewayUrl, sortTypes);
     };
     BasePagesClientsManager.prototype.postFetchGatewayFailure = function (gatewayUrl, path, loadType) {
         this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
+    };
+    BasePagesClientsManager.prototype._updatePageCidsSortCache = function (pageCid, sortTypes) {
+        var curSortTypes = exports.pageCidToSortTypesCache.get(pageCid);
+        if (!curSortTypes) {
+            exports.pageCidToSortTypesCache.set(pageCid, sortTypes);
+        }
+        else {
+            var newSortTypes = lodash_1.default.uniq(__spreadArray(__spreadArray([], curSortTypes, true), sortTypes, true));
+            exports.pageCidToSortTypesCache.set(pageCid, newSortTypes);
+        }
     };
     BasePagesClientsManager.prototype.updatePageCidsToSortTypes = function (newPageCids) {
         for (var _i = 0, _a = Object.keys(newPageCids); _i < _a.length; _i++) {
             var sortType = _a[_i];
             var pageCid = newPageCids[sortType];
-            if (!this._pageCidsToSortTypes[pageCid])
-                this._pageCidsToSortTypes[pageCid] = [sortType];
-            else
-                this._pageCidsToSortTypes[pageCid].push(sortType);
+            this._updatePageCidsSortCache(pageCid, [sortType]);
         }
     };
     BasePagesClientsManager.prototype.updatePageCidsToSortTypesToIncludeSubsequent = function (nextPageCid, previousPageCid) {
-        if (Object.keys(this._pageCidsToSortTypes).length === 0)
-            return; // User probably initialized subplebbit with no pages. There's no way to get sort types
-        var sortTypes = this._pageCidsToSortTypes[previousPageCid];
+        var sortTypes = exports.pageCidToSortTypesCache.get(previousPageCid);
         (0, assert_1.default)(Array.isArray(sortTypes));
-        this._pageCidsToSortTypes[nextPageCid] = sortTypes;
+        this._updatePageCidsSortCache(nextPageCid, sortTypes);
     };
     BasePagesClientsManager.prototype.updateIpfsState = function (newState, sortTypes) {
-        if (Object.keys(this._pageCidsToSortTypes).length === 0)
-            return; // User probably initialized subplebbit with no pages. There's no way to get sort types
         (0, assert_1.default)(Array.isArray(sortTypes), "Can't determine sort type");
         (0, assert_1.default)(typeof this._defaultIpfsProviderUrl === "string");
         for (var _i = 0, sortTypes_1 = sortTypes; _i < sortTypes_1.length; _i++) {
@@ -142,8 +158,6 @@ var BasePagesClientsManager = /** @class */ (function (_super) {
         }
     };
     BasePagesClientsManager.prototype.updateGatewayState = function (newState, gateway, sortTypes) {
-        if (Object.keys(this._pageCidsToSortTypes).length === 0)
-            return; // User probably initialized subplebbit with no pages. There's no way to get sort types
         (0, assert_1.default)(Array.isArray(sortTypes), "Can't determine sort type");
         for (var _i = 0, sortTypes_2 = sortTypes; _i < sortTypes_2.length; _i++) {
             var sortType = sortTypes_2[_i];
@@ -153,17 +167,19 @@ var BasePagesClientsManager = /** @class */ (function (_super) {
     };
     BasePagesClientsManager.prototype.fetchPage = function (pageCid) {
         return __awaiter(this, void 0, void 0, function () {
-            var page, _a, _b, page, _c, _d;
+            var sortTypes, page, _a, _b, page, _c, _d;
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
                         if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 2];
-                        this.updateIpfsState("fetching-ipfs", this._pageCidsToSortTypes[pageCid]);
+                        sortTypes = exports.pageCidToSortTypesCache.get(pageCid);
+                        (0, assert_1.default)(Array.isArray(sortTypes), "Page cid is not mapped to a sort type");
+                        this.updateIpfsState("fetching-ipfs", sortTypes);
                         _b = (_a = JSON).parse;
                         return [4 /*yield*/, this._fetchCidP2P(pageCid)];
                     case 1:
                         page = _b.apply(_a, [_e.sent()]);
-                        this.updateIpfsState("stopped", this._pageCidsToSortTypes[pageCid]);
+                        this.updateIpfsState("stopped", sortTypes);
                         if (page.nextCid)
                             this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
                         return [2 /*return*/, page];

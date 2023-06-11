@@ -468,8 +468,8 @@ function mockPlebbit(plebbitOptions, forceMockPubsub) {
                             return [2 /*return*/];
                         });
                     }); };
-                    plebbit._cache.getItem = function () { return undefined; };
-                    plebbit._cache.setItem = function () { return undefined; };
+                    plebbit._storage.getItem = function () { return undefined; };
+                    plebbit._storage.setItem = function () { return undefined; };
                     // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
                     if (!(plebbitOptions === null || plebbitOptions === void 0 ? void 0 : plebbitOptions.pubsubHttpClientsOptions) || forceMockPubsub)
                         for (_i = 0, _a = Object.keys(plebbit.clients.pubsubClients); _i < _a.length; _i++) {

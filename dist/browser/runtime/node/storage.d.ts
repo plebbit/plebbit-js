@@ -1,7 +1,7 @@
-import { CacheInterface } from "../../types";
-export default class Cache implements CacheInterface {
+import { StorageInterface } from "../../types";
+export default class Cache implements StorageInterface {
     private _plebbit;
-    private _store;
+    private _keyv;
     constructor(plebbit: Cache["_plebbit"]);
     toJSON(): any;
     init(): Promise<void>;

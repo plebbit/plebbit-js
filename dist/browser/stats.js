@@ -65,15 +65,15 @@ var Stats = /** @class */ (function () {
                         log.trace("Attempting to record gateway (".concat(gatewayUrl, ") success for type (").concat(type, ") that took ").concat(timeElapsedMs, "ms"));
                         countKey = this._getSuccessCountKey(gatewayUrl, type);
                         averageKey = this._getSuccessAverageKey(gatewayUrl, type);
-                        return [4 /*yield*/, this._plebbit._cache.getItem(averageKey)];
+                        return [4 /*yield*/, this._plebbit._storage.getItem(averageKey)];
                     case 1:
                         curAverage = (_a.sent()) || 0;
-                        return [4 /*yield*/, this._plebbit._cache.getItem(countKey)];
+                        return [4 /*yield*/, this._plebbit._storage.getItem(countKey)];
                     case 2:
                         curCount = (_a.sent()) || 0;
                         newAverage = curAverage + (timeElapsedMs - curAverage) / (curCount + 1);
                         newCount = curCount + 1;
-                        return [4 /*yield*/, Promise.all([this._plebbit._cache.setItem(averageKey, newAverage), this._plebbit._cache.setItem(countKey, newCount)])];
+                        return [4 /*yield*/, Promise.all([this._plebbit._storage.setItem(averageKey, newAverage), this._plebbit._storage.setItem(countKey, newCount)])];
                     case 3:
                         _a.sent();
                         log.trace("Updated gateway (".concat(gatewayUrl, ") success average from (").concat(curAverage, ") to ").concat(newAverage, " and count from (").concat(curCount, ") to (").concat(newCount, ") for type (").concat(type, ")"));
@@ -97,11 +97,11 @@ var Stats = /** @class */ (function () {
                         log = (0, plebbit_logger_1.default)("plebbit-js:stats:gateway:failure");
                         log.trace("Attempting to record gateway (".concat(gatewayUrl, ") failure for type (").concat(type, ")"));
                         countKey = this._getFailuresCountKey(gatewayUrl, type);
-                        return [4 /*yield*/, this._plebbit._cache.getItem(countKey)];
+                        return [4 /*yield*/, this._plebbit._storage.getItem(countKey)];
                     case 1:
                         curCount = (_a.sent()) || 0;
                         newCount = curCount + 1;
-                        return [4 /*yield*/, this._plebbit._cache.setItem(countKey, newCount)];
+                        return [4 /*yield*/, this._plebbit._storage.setItem(countKey, newCount)];
                     case 2:
                         _a.sent();
                         log.trace("Updated gateway (".concat(gatewayUrl, ") failure  count from (").concat(curCount, ") to (").concat(newCount, ") for type (").concat(type, ")"));
@@ -136,13 +136,13 @@ var Stats = /** @class */ (function () {
                     var failureCounts, successCounts, successAverageMs, gatewayScore;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
-                            case 0: return [4 /*yield*/, this._plebbit._cache.getItem(this._getFailuresCountKey(gatewayUrl, type))];
+                            case 0: return [4 /*yield*/, this._plebbit._storage.getItem(this._getFailuresCountKey(gatewayUrl, type))];
                             case 1:
                                 failureCounts = (_a.sent()) || 0;
-                                return [4 /*yield*/, this._plebbit._cache.getItem(this._getSuccessCountKey(gatewayUrl, type))];
+                                return [4 /*yield*/, this._plebbit._storage.getItem(this._getSuccessCountKey(gatewayUrl, type))];
                             case 2:
                                 successCounts = (_a.sent()) || 0;
-                                return [4 /*yield*/, this._plebbit._cache.getItem(this._getSuccessAverageKey(gatewayUrl, type))];
+                                return [4 /*yield*/, this._plebbit._storage.getItem(this._getSuccessAverageKey(gatewayUrl, type))];
                             case 3:
                                 successAverageMs = (_a.sent()) || 0;
                                 gatewayScore = this._gatewayScore(failureCounts, successCounts, successAverageMs);

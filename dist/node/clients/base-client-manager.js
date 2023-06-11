@@ -196,15 +196,15 @@ var BaseClientsManager = /** @class */ (function () {
                         return [4 /*yield*/, this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.publish(pubsubTopic, data)];
                     case 2:
                         _a.sent();
-                        this._plebbit.stats.recordGatewaySuccess(pubsubProvider, "pubsub-publish", Date.now() - timeBefore); // Awaiting this statement will bug out tests
                         this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
+                        this._plebbit.stats.recordGatewaySuccess(pubsubProvider, "pubsub-publish", Date.now() - timeBefore); // Awaiting this statement will bug out tests
                         return [3 /*break*/, 5];
                     case 3:
                         error_1 = _a.sent();
+                        this.postPubsubPublishProviderFailure(pubsubTopic, pubsubProvider);
                         return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(pubsubProvider, "pubsub-publish")];
                     case 4:
                         _a.sent();
-                        this.postPubsubPublishProviderFailure(pubsubTopic, pubsubProvider);
                         (0, util_1.throwWithErrorCode)("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic: pubsubTopic, pubsubProvider: pubsubProvider, error: error_1 });
                         return [3 /*break*/, 5];
                     case 5: return [2 /*return*/];
@@ -342,10 +342,10 @@ var BaseClientsManager = /** @class */ (function () {
                         return [2 /*return*/, resText];
                     case 6:
                         e_4 = _a.sent();
+                        this.postFetchGatewayFailure(gateway, path, loadType);
                         return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns")];
                     case 7:
                         _a.sent();
-                        this.postFetchGatewayFailure(gateway, path, loadType);
                         return [2 /*return*/, { error: e_4 }];
                     case 8: return [2 /*return*/];
                 }
@@ -471,11 +471,11 @@ var BaseClientsManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:client-manager:resolveTextRecord");
-                        return [4 /*yield*/, this._plebbit._cache.getItem("".concat(address, "_").concat(txtRecord))];
+                        return [4 /*yield*/, this._plebbit._storage.getItem("".concat(address, "_").concat(txtRecord))];
                     case 1:
                         resolveCache = _a.sent();
                         if (!(typeof resolveCache === "string" || resolveCache === null)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, this._plebbit._cache.getItem("".concat(address, "_").concat(txtRecord, "_timestamp"))];
+                        return [4 /*yield*/, this._plebbit._storage.getItem("".concat(address, "_").concat(txtRecord, "_timestamp"))];
                     case 2:
                         resolvedTimestamp = _a.sent();
                         (0, assert_1.default)(typeof resolvedTimestamp === "number");
@@ -496,6 +496,7 @@ var BaseClientsManager = /** @class */ (function () {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:client-manager:resolveTextRecord");
                         if (!exports.resolvePromises[address + txtRecord]) return [3 /*break*/, 2];
+                        log.trace("Awaiting an already created promise for resolving address (".concat(address, ") txt record (").concat(txtRecord, ")"));
                         return [4 /*yield*/, exports.resolvePromises[address + txtRecord]];
                     case 1: return [2 /*return*/, _a.sent()];
                     case 2:
@@ -556,17 +557,17 @@ var BaseClientsManager = /** @class */ (function () {
                         return [4 /*yield*/, this._plebbit.resolver.resolveTxtRecord(address, txtRecordName, chain, chainproviderUrl)];
                     case 2:
                         resolvedTextRecord = _a.sent();
+                        this.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainproviderUrl);
                         return [4 /*yield*/, this._plebbit.stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore)];
                     case 3:
                         _a.sent();
-                        this.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainproviderUrl);
                         return [2 /*return*/, resolvedTextRecord];
                     case 4:
                         e_6 = _a.sent();
+                        this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl);
                         return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain)];
                     case 5:
                         _a.sent();
-                        this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl);
                         return [2 /*return*/, { error: e_6 }];
                     case 6: return [2 /*return*/];
                 }
@@ -597,7 +598,7 @@ var BaseClientsManager = /** @class */ (function () {
                         i = 0;
                         _b.label = 1;
                     case 1:
-                        if (!(i < timeouts.length)) return [3 /*break*/, 16];
+                        if (!(i < timeouts.length)) return [3 /*break*/, 17];
                         if (!(timeouts[i] !== 0)) return [3 /*break*/, 3];
                         return [4 /*yield*/, (0, util_1.delay)(timeouts[i])];
                     case 2:
@@ -620,7 +621,7 @@ var BaseClientsManager = /** @class */ (function () {
                         providersSorted = _a;
                         _b.label = 8;
                     case 8:
-                        _b.trys.push([8, 14, , 15]);
+                        _b.trys.push([8, 15, , 16]);
                         providerPromises = providersSorted.map(function (providerUrl) {
                             return queueLimit(function () { return _this._resolveTextRecordSingleChainProvider(address, txtRecordName, chain, providerUrl); });
                         });
@@ -635,28 +636,30 @@ var BaseClientsManager = /** @class */ (function () {
                         for (i_1 = 0; i_1 < providersSorted.length; i_1++)
                             errorsCombined[providersSorted[i_1]] = resolvedTextRecord[i_1]["value"]["error"];
                         (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_RESOLVE_TEXT_RECORD", { errors: errorsCombined, address: address, txtRecordName: txtRecordName, chain: chain });
-                        return [3 /*break*/, 13];
+                        return [3 /*break*/, 14];
                     case 10:
                         queueLimit.clearQueue();
-                        return [4 /*yield*/, this._plebbit._cache.setItem("".concat(address, "_").concat(txtRecordName), resolvedTextRecord)];
+                        if (!(typeof resolvedTextRecord === "string")) return [3 /*break*/, 13];
+                        return [4 /*yield*/, this._plebbit._storage.setItem("".concat(address, "_").concat(txtRecordName), resolvedTextRecord)];
                     case 11:
                         _b.sent();
-                        return [4 /*yield*/, this._plebbit._cache.setItem("".concat(address, "_").concat(txtRecordName, "_timestamp"), (0, util_1.timestamp)())];
+                        return [4 /*yield*/, this._plebbit._storage.setItem("".concat(address, "_").concat(txtRecordName, "_timestamp"), (0, util_1.timestamp)())];
                     case 12:
                         _b.sent();
-                        return [2 /*return*/, resolvedTextRecord];
-                    case 13: return [3 /*break*/, 15];
-                    case 14:
+                        _b.label = 13;
+                    case 13: return [2 /*return*/, resolvedTextRecord];
+                    case 14: return [3 /*break*/, 16];
+                    case 15:
                         e_7 = _b.sent();
                         if (i === timeouts.length - 1) {
                             this.emitError(e_7);
                             throw e_7;
                         }
-                        return [3 /*break*/, 15];
-                    case 15:
+                        return [3 /*break*/, 16];
+                    case 16:
                         i++;
                         return [3 /*break*/, 1];
-                    case 16: return [2 /*return*/];
+                    case 17: return [2 /*return*/];
                 }
             });
         });

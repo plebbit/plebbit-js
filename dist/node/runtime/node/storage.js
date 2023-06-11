@@ -35,12 +35,20 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var localforage_1 = __importDefault(require("localforage"));
-var lodash_1 = __importDefault(require("lodash"));
+var path_1 = __importDefault(require("path"));
+var fs_1 = __importDefault(require("fs"));
+var keyv_1 = __importDefault(require("keyv"));
 var Cache = /** @class */ (function () {
     function Cache(plebbit) {
         this._plebbit = plebbit;
@@ -50,12 +58,16 @@ var Cache = /** @class */ (function () {
     };
     Cache.prototype.init = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var cacheName;
+            var dbPath;
             return __generator(this, function (_a) {
-                cacheName = this._plebbit.noData ? lodash_1.default.uniqueId() : "plebbit-cache";
-                this._store = localforage_1.default.createInstance({
-                    name: cacheName
-                });
+                if (this._plebbit.noData) {
+                    this._keyv = new keyv_1.default("sqlite://:memory:");
+                }
+                else {
+                    fs_1.default.mkdirSync(this._plebbit.dataPath, { recursive: true });
+                    dbPath = path_1.default.join(this._plebbit.dataPath, "cache");
+                    this._keyv = new keyv_1.default("sqlite://".concat(dbPath));
+                }
                 return [2 /*return*/];
             });
         });
@@ -63,7 +75,7 @@ var Cache = /** @class */ (function () {
     Cache.prototype.getItem = function (key) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, this._store.getItem(key)];
+                return [2 /*return*/, this._keyv.get(key)];
             });
         });
     };
@@ -71,7 +83,7 @@ var Cache = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._store.setItem(key, value)];
+                    case 0: return [4 /*yield*/, this._keyv.set(key, value)];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -82,12 +94,7 @@ var Cache = /** @class */ (function () {
     Cache.prototype.removeItem = function (key) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._store.removeItem(key)];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/, true];
-                }
+                return [2 /*return*/, this._keyv.delete(key)];
             });
         });
     };
@@ -95,7 +102,7 @@ var Cache = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._store.clear()];
+                    case 0: return [4 /*yield*/, this._keyv.clear()];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -104,11 +111,43 @@ var Cache = /** @class */ (function () {
         });
     };
     Cache.prototype.keys = function () {
+        var e_1, _a;
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._store.keys()];
-                    case 1: return [2 /*return*/, _a.sent()];
+            var keys, _b, _c, _d, key, value, e_1_1;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
+                    case 0:
+                        keys = [];
+                        _e.label = 1;
+                    case 1:
+                        _e.trys.push([1, 6, 7, 12]);
+                        _b = __asyncValues(this._keyv.iterator());
+                        _e.label = 2;
+                    case 2: return [4 /*yield*/, _b.next()];
+                    case 3:
+                        if (!(_c = _e.sent(), !_c.done)) return [3 /*break*/, 5];
+                        _d = _c.value, key = _d[0], value = _d[1];
+                        keys.push(key);
+                        _e.label = 4;
+                    case 4: return [3 /*break*/, 2];
+                    case 5: return [3 /*break*/, 12];
+                    case 6:
+                        e_1_1 = _e.sent();
+                        e_1 = { error: e_1_1 };
+                        return [3 /*break*/, 12];
+                    case 7:
+                        _e.trys.push([7, , 10, 11]);
+                        if (!(_c && !_c.done && (_a = _b.return))) return [3 /*break*/, 9];
+                        return [4 /*yield*/, _a.call(_b)];
+                    case 8:
+                        _e.sent();
+                        _e.label = 9;
+                    case 9: return [3 /*break*/, 11];
+                    case 10:
+                        if (e_1) throw e_1.error;
+                        return [7 /*endfinally*/];
+                    case 11: return [7 /*endfinally*/];
+                    case 12: return [2 /*return*/, keys];
                 }
             });
         });
@@ -116,4 +155,4 @@ var Cache = /** @class */ (function () {
     return Cache;
 }());
 exports.default = Cache;
-//# sourceMappingURL=cache.js.map
+//# sourceMappingURL=storage.js.map

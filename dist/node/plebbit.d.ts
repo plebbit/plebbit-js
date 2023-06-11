@@ -1,4 +1,4 @@
-import { CacheInterface, ChainProvider, CommentEditType, CommentIpfsType, CommentPubsubMessage, CommentType, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateSubplebbitOptions, CreateVoteOptions, GatewayClient, IpfsClient, PlebbitEvents, PlebbitOptions, PubsubClient, SubplebbitIpfsType, SubplebbitType, VotePubsubMessage, VoteType } from "./types";
+import { StorageInterface, ChainProvider, CommentEditType, CommentIpfsType, CommentPubsubMessage, CommentType, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateSubplebbitOptions, CreateVoteOptions, GatewayClient, IpfsClient, PlebbitEvents, PlebbitOptions, PubsubClient, SubplebbitIpfsType, SubplebbitType, VotePubsubMessage, VoteType } from "./types";
 import { Comment } from "./comment";
 import Post from "./post";
 import { Subplebbit } from "./subplebbit";
@@ -34,7 +34,7 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     chainProviders: {
         [chainTicker: string]: ChainProvider;
     };
-    _cache: CacheInterface;
+    _storage: StorageInterface;
     stats: Stats;
     private _pubsubSubscriptions;
     _clientsManager: ClientsManager;

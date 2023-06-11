@@ -584,7 +584,7 @@ export interface GatewayClient {
         [subplebbitAddress: string]: IpfsSubplebbitStats;
     };
 }
-export interface CacheInterface {
+export interface StorageInterface {
     init: () => Promise<void>;
     getItem: (key: string) => Promise<any>;
     setItem: (key: string, value: any) => Promise<void>;
