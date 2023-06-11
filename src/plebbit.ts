@@ -217,7 +217,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
 
-        subplebbitForPublishingCache.set(subplebbitAddress, lodash.pick(subplebbitJson, ["encryption", "address", "pubsubTopic"]));
+        subplebbitForPublishingCache.set(subplebbitAddress, lodash.pick(subplebbitJson, ["encryption", "address", "pubsubTopic"]), {
+            maxAge: 600000
+        });
 
         const subplebbit = new Subplebbit(this);
         await subplebbit.initSubplebbit(subplebbitJson);

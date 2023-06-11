@@ -258,7 +258,9 @@ export class PublicationClientsManager extends ClientsManager {
 
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity, subplebbitAddress, subJson });
 
-        subplebbitForPublishingCache.set(subJson.address, lodash.pick(subJson, ["encryption", "pubsubTopic", "address"]));
+        subplebbitForPublishingCache.set(subJson.address, lodash.pick(subJson, ["encryption", "pubsubTopic", "address"]), {
+            maxAge: 600000
+        });
 
         return subJson;
     }
