@@ -15,7 +15,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     protocolVersion: ProtocolVersion;
     state: "stopped" | "updating" | "publishing";
     publishingState: "stopped" | "resolving-subplebbit-address" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs" | "publishing-challenge-request" | "waiting-challenge" | "waiting-challenge-answers" | "publishing-challenge-answer" | "waiting-challenge-verification" | "failed" | "succeeded";
-    protected subplebbit?: SubplebbitIpfsType;
+    protected subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">;
     protected pubsubMessageSigner: Signer;
     private _challengeAnswer;
     private _challengeRequest;
@@ -33,6 +33,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     _updatePublishingState(newState: Publication["publishingState"]): void;
     protected _updateState(newState: Publication["state"]): void;
     private _pubsubTopicWithfallback;
+    _getSubplebbitCache(): Pick<SubplebbitIpfsType, "address" | "encryption" | "pubsubTopic">;
     publish(): Promise<void>;
 }
 export default Publication;

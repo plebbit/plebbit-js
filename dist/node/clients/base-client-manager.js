@@ -489,53 +489,25 @@ var BaseClientsManager = /** @class */ (function () {
     };
     BaseClientsManager.prototype._resolveTextRecordWithCache = function (address, txtRecord) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, res, e_5;
-            var _this = this;
+            var log, chain, cachedTextRecord;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:client-manager:resolveTextRecord");
-                        if (!exports.resolvePromises[address + txtRecord]) return [3 /*break*/, 2];
-                        log.trace("Awaiting an already created promise for resolving address (".concat(address, ") txt record (").concat(txtRecord, ")"));
-                        return [4 /*yield*/, exports.resolvePromises[address + txtRecord]];
-                    case 1: return [2 /*return*/, _a.sent()];
-                    case 2:
-                        exports.resolvePromises[address + txtRecord] = new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                            var chain, cachedTextRecord;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        log.trace("Creating a new promise for retrieving address (".concat(address, ") txt record (").concat(txtRecord, ")"));
-                                        chain = address.endsWith(".eth") ? "eth" : undefined;
-                                        if (!chain)
-                                            reject("Can't figure out the chain of the address");
-                                        return [4 /*yield*/, this._getCachedTextRecord(address, txtRecord)];
-                                    case 1:
-                                        cachedTextRecord = _a.sent();
-                                        if (cachedTextRecord) {
-                                            if (cachedTextRecord.stale)
-                                                this._resolveTextRecordConcurrently(address, txtRecord, chain);
-                                            resolve(cachedTextRecord.resolveCache);
-                                        }
-                                        else
-                                            this._resolveTextRecordConcurrently(address, txtRecord, chain).then(resolve).catch(reject);
-                                        return [2 /*return*/];
-                                }
-                            });
-                        }); });
-                        _a.label = 3;
-                    case 3:
-                        _a.trys.push([3, 5, , 6]);
-                        return [4 /*yield*/, exports.resolvePromises[address + txtRecord]];
-                    case 4:
-                        res = _a.sent();
-                        delete exports.resolvePromises[address + txtRecord];
-                        return [2 /*return*/, res];
-                    case 5:
-                        e_5 = _a.sent();
-                        delete exports.resolvePromises[address + txtRecord];
-                        throw e_5;
-                    case 6: return [2 /*return*/];
+                        chain = address.endsWith(".eth") ? "eth" : undefined;
+                        if (!chain)
+                            throw Error("Can't figure out the chain of the address");
+                        return [4 /*yield*/, this._getCachedTextRecord(address, txtRecord)];
+                    case 1:
+                        cachedTextRecord = _a.sent();
+                        if (cachedTextRecord) {
+                            if (cachedTextRecord.stale)
+                                this._resolveTextRecordConcurrently(address, txtRecord, chain);
+                            return [2 /*return*/, cachedTextRecord.resolveCache];
+                        }
+                        else
+                            return [2 /*return*/, this._resolveTextRecordConcurrently(address, txtRecord, chain)];
+                        return [2 /*return*/];
                 }
             });
         });
@@ -545,7 +517,7 @@ var BaseClientsManager = /** @class */ (function () {
     BaseClientsManager.prototype.postResolveTextRecordFailure = function (address, txtRecordName, chain, chainProviderUrl) { };
     BaseClientsManager.prototype._resolveTextRecordSingleChainProvider = function (address, txtRecordName, chain, chainproviderUrl) {
         return __awaiter(this, void 0, void 0, function () {
-            var timeBefore, resolvedTextRecord, e_6;
+            var timeBefore, resolvedTextRecord, e_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -563,12 +535,12 @@ var BaseClientsManager = /** @class */ (function () {
                         _a.sent();
                         return [2 /*return*/, resolvedTextRecord];
                     case 4:
-                        e_6 = _a.sent();
+                        e_5 = _a.sent();
                         this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl);
                         return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain)];
                     case 5:
                         _a.sent();
-                        return [2 /*return*/, { error: e_6 }];
+                        return [2 /*return*/, { error: e_5 }];
                     case 6: return [2 /*return*/];
                 }
             });
@@ -576,7 +548,7 @@ var BaseClientsManager = /** @class */ (function () {
     };
     BaseClientsManager.prototype._resolveTextRecordConcurrently = function (address, txtRecordName, chain) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, timeouts, _firstResolve, concurrencyLimit, queueLimit, i, cachedTextRecord, providersSorted, _a, providerPromises, resolvedTextRecord, errorsCombined, i_1, e_7;
+            var log, timeouts, _firstResolve, concurrencyLimit, queueLimit, i, cachedTextRecord, providersSorted, _a, providerPromises, resolvedTextRecord, errorsCombined, i_1, e_6;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -650,10 +622,10 @@ var BaseClientsManager = /** @class */ (function () {
                     case 13: return [2 /*return*/, resolvedTextRecord];
                     case 14: return [3 /*break*/, 16];
                     case 15:
-                        e_7 = _b.sent();
+                        e_6 = _b.sent();
                         if (i === timeouts.length - 1) {
-                            this.emitError(e_7);
-                            throw e_7;
+                            this.emitError(e_6);
+                            throw e_6;
                         }
                         return [3 /*break*/, 16];
                     case 16:

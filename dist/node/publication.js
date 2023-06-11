@@ -112,6 +112,7 @@ var util_2 = require("./signer/util");
 var client_manager_1 = require("./clients/client-manager");
 var cborg = __importStar(require("cborg"));
 var lodash_1 = __importDefault(require("lodash"));
+var constants_1 = require("./constants");
 var Publication = /** @class */ (function (_super) {
     __extends(Publication, _super);
     function Publication(props, plebbit) {
@@ -308,37 +309,45 @@ var Publication = /** @class */ (function (_super) {
     Publication.prototype._pubsubTopicWithfallback = function () {
         return this.subplebbit.pubsubTopic || this.subplebbit.address;
     };
+    Publication.prototype._getSubplebbitCache = function () {
+        var cachedSubplebbit = constants_1.subplebbitForPublishingCache.get(this.subplebbitAddress);
+        return cachedSubplebbit;
+    };
     Publication.prototype.publish = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, options, _a, _b, encryptedPublication, challengeRequestId, toSignMsg, _c, _d, _e, e_1;
-            var _f;
-            return __generator(this, function (_g) {
-                switch (_g.label) {
+            var log, options, _a, _b, _c, encryptedPublication, challengeRequestId, toSignMsg, _d, _e, _f, e_1;
+            var _g;
+            return __generator(this, function (_h) {
+                switch (_h.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:publication:publish");
                         this._updateState("publishing");
                         this._validatePublicationFields();
                         options = { acceptedChallengeTypes: [] };
-                        this._updatePublishingState("resolving-subplebbit-address");
                         _a = this;
+                        _b = this._getSubplebbitCache();
+                        if (_b) return [3 /*break*/, 2];
                         return [4 /*yield*/, this._clientsManager.fetchSubplebbitForPublishing(this.subplebbitAddress)];
                     case 1:
-                        _a.subplebbit = _g.sent();
+                        _b = (_h.sent());
+                        _h.label = 2;
+                    case 2:
+                        _a.subplebbit = _b;
                         this._updatePublishingState("publishing-challenge-request");
                         this._validateSubFields();
                         return [4 /*yield*/, this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
-                    case 2:
-                        _g.sent();
-                        _b = this;
-                        return [4 /*yield*/, this._plebbit.createSigner()];
                     case 3:
-                        _b.pubsubMessageSigner = _g.sent();
-                        return [4 /*yield*/, (0, signer_1.encryptEd25519AesGcm)(JSON.stringify(this.toJSONPubsubMessagePublication()), this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)];
+                        _h.sent();
+                        _c = this;
+                        return [4 /*yield*/, this._plebbit.createSigner()];
                     case 4:
-                        encryptedPublication = _g.sent();
-                        return [4 /*yield*/, (0, util_2.getBufferedPlebbitAddressFromPublicKey)(this.pubsubMessageSigner.publicKey)];
+                        _c.pubsubMessageSigner = _h.sent();
+                        return [4 /*yield*/, (0, signer_1.encryptEd25519AesGcm)(JSON.stringify(this.toJSONPubsubMessagePublication()), this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)];
                     case 5:
-                        challengeRequestId = _g.sent();
+                        encryptedPublication = _h.sent();
+                        return [4 /*yield*/, (0, util_2.getBufferedPlebbitAddressFromPublicKey)(this.pubsubMessageSigner.publicKey)];
+                    case 6:
+                        challengeRequestId = _h.sent();
                         toSignMsg = {
                             type: "CHALLENGEREQUEST",
                             encryptedPublication: encryptedPublication,
@@ -348,32 +357,32 @@ var Publication = /** @class */ (function (_super) {
                             protocolVersion: version_1.default.PROTOCOL_VERSION,
                             timestamp: (0, util_1.timestamp)()
                         };
-                        _c = this;
-                        _d = challenge_1.ChallengeRequestMessage.bind;
-                        _e = [__assign({}, toSignMsg)];
-                        _f = {};
+                        _d = this;
+                        _e = challenge_1.ChallengeRequestMessage.bind;
+                        _f = [__assign({}, toSignMsg)];
+                        _g = {};
                         return [4 /*yield*/, (0, signatures_1.signChallengeRequest)(toSignMsg, this.pubsubMessageSigner)];
-                    case 6:
-                        _c._challengeRequest = new (_d.apply(challenge_1.ChallengeRequestMessage, [void 0, __assign.apply(void 0, _e.concat([(_f.signature = _g.sent(), _f)]))]))();
+                    case 7:
+                        _d._challengeRequest = new (_e.apply(challenge_1.ChallengeRequestMessage, [void 0, __assign.apply(void 0, _f.concat([(_g.signature = _h.sent(), _g)]))]))();
                         log.trace("Attempting to publish ".concat(this.getType(), " with challenge id (").concat(this._challengeRequest.challengeRequestId, ") to pubsub topic (").concat(this._pubsubTopicWithfallback(), ")"));
                         this._clientsManager.updatePubsubState("subscribing-pubsub", undefined);
-                        _g.label = 7;
-                    case 7:
-                        _g.trys.push([7, 10, , 11]);
-                        return [4 /*yield*/, this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
+                        _h.label = 8;
                     case 8:
-                        _g.sent();
-                        return [4 /*yield*/, this._clientsManager.pubsubPublish(this._pubsubTopicWithfallback(), this._challengeRequest)];
+                        _h.trys.push([8, 11, , 12]);
+                        return [4 /*yield*/, this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
                     case 9:
-                        _g.sent();
-                        return [3 /*break*/, 11];
+                        _h.sent();
+                        return [4 /*yield*/, this._clientsManager.pubsubPublish(this._pubsubTopicWithfallback(), this._challengeRequest)];
                     case 10:
-                        e_1 = _g.sent();
+                        _h.sent();
+                        return [3 /*break*/, 12];
+                    case 11:
+                        e_1 = _h.sent();
                         this._clientsManager.updatePubsubState("stopped", undefined);
                         this._updatePublishingState("failed");
                         this.emit("error", e_1);
                         throw e_1;
-                    case 11:
+                    case 12:
                         this._clientsManager.updatePubsubState("waiting-challenge", undefined);
                         this._updatePublishingState("waiting-challenge");
                         log("Sent a challenge request (".concat(this._challengeRequest.challengeRequestId, ")"));

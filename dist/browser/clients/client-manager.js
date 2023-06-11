@@ -76,6 +76,7 @@ var pubsub_client_1 = require("./pubsub-client");
 var chain_provider_client_1 = require("./chain-provider-client");
 var ipfs_gateway_client_1 = require("./ipfs-gateway-client");
 var base_client_manager_1 = require("./base-client-manager");
+var constants_1 = require("../constants");
 var ClientsManager = /** @class */ (function (_super) {
     __extends(ClientsManager, _super);
     function ClientsManager(plebbit) {
@@ -258,6 +259,12 @@ var PublicationClientsManager = /** @class */ (function (_super) {
     PublicationClientsManager.prototype.postPubsubPublishProviderFailure = function (pubsubTopic, pubsubProvider) {
         this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
     };
+    // Resolver methods here
+    PublicationClientsManager.prototype.preResolveTextRecord = function (address, txtRecordName, resolvedTextRecord, chain) {
+        _super.prototype.preResolveTextRecord.call(this, address, txtRecordName, resolvedTextRecord, chain);
+        if (this._publication.publishingState === "stopped")
+            this._publication._updatePublishingState("resolving-subplebbit-address");
+    };
     PublicationClientsManager.prototype.emitError = function (e) {
         this._publication.emit("error", e);
     };
@@ -272,6 +279,7 @@ var PublicationClientsManager = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
                     case 1:
                         subIpns = _e.sent();
+                        (0, assert_1.default)(typeof subIpns === "string");
                         this._publication._updatePublishingState("fetching-subplebbit-ipns");
                         if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 4];
                         this.updateIpfsState("fetching-subplebbit-ipns");
@@ -297,6 +305,7 @@ var PublicationClientsManager = /** @class */ (function (_super) {
                         signatureValidity = _e.sent();
                         if (!signatureValidity.valid)
                             (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", { signatureValidity: signatureValidity, subplebbitAddress: subplebbitAddress, subJson: subJson });
+                        constants_1.subplebbitForPublishingCache.set(subJson.address, lodash_1.default.pick(subJson, ["encryption", "pubsubTopic", "address"]));
                         return [2 /*return*/, subJson];
                 }
             });

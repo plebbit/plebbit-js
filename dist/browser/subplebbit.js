@@ -534,6 +534,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 2:
                         _a.sent();
                         this.emit("update", this);
+                        constants_1.subplebbitForPublishingCache.set(subState.address, lodash_1.default.pick(subState, ["encryption", "address", "pubsubTopic"]));
                         _a.label = 3;
                     case 3: return [3 /*break*/, 11];
                     case 4:
@@ -563,6 +564,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this._setUpdatingState("succeeded");
                         log("Remote Subplebbit received a new update. Will emit an update event");
                         this.emit("update", this);
+                        constants_1.subplebbitForPublishingCache.set(subplebbitIpns.address, lodash_1.default.pick(subplebbitIpns, ["encryption", "address", "pubsubTopic"]));
                         return [3 /*break*/, 11];
                     case 10:
                         log.trace("Remote subplebbit received a new update with no new information");

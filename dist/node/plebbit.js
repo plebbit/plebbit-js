@@ -86,6 +86,7 @@ var tiny_typed_emitter_1 = require("tiny-typed-emitter");
 var stats_1 = __importDefault(require("./stats"));
 var storage_1 = __importDefault(require("./runtime/node/storage"));
 var client_manager_1 = require("./clients/client-manager");
+var constants_1 = require("./constants");
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
     function Plebbit(options) {
@@ -294,6 +295,7 @@ var Plebbit = /** @class */ (function (_super) {
                         signatureValidity = _c.sent();
                         if (!signatureValidity.valid)
                             (0, util_2.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", { signatureValidity: signatureValidity });
+                        constants_1.subplebbitForPublishingCache.set(subplebbitAddress, lodash_1.default.pick(subplebbitJson, ["encryption", "address", "pubsubTopic"]));
                         subplebbit = new subplebbit_1.Subplebbit(this);
                         return [4 /*yield*/, subplebbit.initSubplebbit(subplebbitJson)];
                     case 4:
