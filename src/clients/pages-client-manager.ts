@@ -5,6 +5,10 @@ import { PagesIpfsClient } from "./ipfs-client";
 import { PagesIpfsGatewayClient } from "./ipfs-gateway-client";
 import { PageIpfs, PostSortName, ReplySortName } from "../types";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../sort-handler";
+import { lru } from "tiny-lru";
+import lodash from "lodash";
+
+export const pageCidToSortTypesCache = lru(500, 0);
 
 export class BasePagesClientsManager extends BaseClientsManager {
     // pageClients.ipfsGateways['new']['https://ipfs.io']
@@ -13,8 +17,6 @@ export class BasePagesClientsManager extends BaseClientsManager {
         ipfsClients: { [sortType: string]: { [ipfsClientUrl: string]: PagesIpfsClient } };
     };
 
-    protected _pageCidsToSortTypes: Record<string, string[]>;
-
     constructor(pages: BasePages) {
         super(pages._plebbit);
         //@ts-expect-error
@@ -22,7 +24,6 @@ export class BasePagesClientsManager extends BaseClientsManager {
         this._initIpfsGateways();
         this._initIpfsClients();
 
-        this._pageCidsToSortTypes = {};
         if (pages.pageCids) this.updatePageCidsToSortTypes(pages.pageCids);
     }
 
@@ -55,35 +56,46 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
     preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void {
         const cid = path.split("/")[2];
-        this.updateGatewayState("fetching-ipfs", gatewayUrl, this._pageCidsToSortTypes[cid]);
+        const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(cid);
+
+        this.updateGatewayState("fetching-ipfs", gatewayUrl, sortTypes);
     }
 
     postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType) {
         const cid = path.split("/")[2];
-        this.updateGatewayState("stopped", gatewayUrl, this._pageCidsToSortTypes[cid]);
+        const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(cid);
+
+        this.updateGatewayState("stopped", gatewayUrl, sortTypes);
     }
 
     postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType) {
         this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
     }
 
+    _updatePageCidsSortCache(pageCid: string, sortTypes: string[]) {
+        const curSortTypes: string[] | undefined = pageCidToSortTypesCache.get(pageCid);
+        if (!curSortTypes) {
+            pageCidToSortTypesCache.set(pageCid, sortTypes);
+        } else {
+            const newSortTypes = lodash.uniq([...curSortTypes, ...sortTypes]);
+            pageCidToSortTypesCache.set(pageCid, newSortTypes);
+        }
+    }
+
     updatePageCidsToSortTypes(newPageCids: BasePages["pageCids"]) {
         for (const sortType of Object.keys(newPageCids)) {
             const pageCid = newPageCids[sortType];
-            if (!this._pageCidsToSortTypes[pageCid]) this._pageCidsToSortTypes[pageCid] = [sortType];
-            else this._pageCidsToSortTypes[pageCid].push(sortType);
+            this._updatePageCidsSortCache(pageCid, [sortType]);
         }
     }
 
     updatePageCidsToSortTypesToIncludeSubsequent(nextPageCid: string, previousPageCid: string) {
-        if (Object.keys(this._pageCidsToSortTypes).length === 0) return; // User probably initialized subplebbit with no pages. There's no way to get sort types
-        const sortTypes = this._pageCidsToSortTypes[previousPageCid];
+        const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(previousPageCid);
         assert(Array.isArray(sortTypes));
-        this._pageCidsToSortTypes[nextPageCid] = sortTypes;
+        this._updatePageCidsSortCache(nextPageCid, sortTypes);
     }
 
     updateIpfsState(newState: PagesIpfsClient["state"], sortTypes: string[]) {
-        if (Object.keys(this._pageCidsToSortTypes).length === 0) return; // User probably initialized subplebbit with no pages. There's no way to get sort types
         assert(Array.isArray(sortTypes), "Can't determine sort type");
         assert(typeof this._defaultIpfsProviderUrl === "string");
         for (const sortType of sortTypes) {
@@ -93,7 +105,6 @@ export class BasePagesClientsManager extends BaseClientsManager {
     }
 
     updateGatewayState(newState: PagesIpfsGatewayClient["state"], gateway: string, sortTypes: string[]) {
-        if (Object.keys(this._pageCidsToSortTypes).length === 0) return; // User probably initialized subplebbit with no pages. There's no way to get sort types
         assert(Array.isArray(sortTypes), "Can't determine sort type");
         for (const sortType of sortTypes) {
             this.clients.ipfsGateways[sortType][gateway].state = newState;
@@ -103,9 +114,11 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
     async fetchPage(pageCid: string): Promise<PageIpfs> {
         if (this._defaultIpfsProviderUrl) {
-            this.updateIpfsState("fetching-ipfs", this._pageCidsToSortTypes[pageCid]);
+            const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(pageCid);
+            assert(Array.isArray(sortTypes), "Page cid is not mapped to a sort type");
+            this.updateIpfsState("fetching-ipfs", sortTypes);
             const page: PageIpfs = JSON.parse(await this._fetchCidP2P(pageCid));
-            this.updateIpfsState("stopped", this._pageCidsToSortTypes[pageCid]);
+            this.updateIpfsState("stopped", sortTypes);
             if (page.nextCid) this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
             return page;
         } else {
