@@ -45,6 +45,7 @@ import Stats from "./stats";
 import Storage from "./runtime/node/storage";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import { ClientsManager } from "./clients/client-manager";
+import { subplebbitForPublishingCache } from "./constants";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
@@ -215,6 +216,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const signatureValidity = await verifySubplebbit(subplebbitJson, this.resolveAuthorAddresses, this._clientsManager);
 
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
+
+        subplebbitForPublishingCache.set(subplebbitAddress, lodash.pick(subplebbitJson, ["encryption", "address", "pubsubTopic"]));
 
         const subplebbit = new Subplebbit(this);
         await subplebbit.initSubplebbit(subplebbitJson);

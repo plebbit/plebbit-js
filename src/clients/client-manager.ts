@@ -20,6 +20,7 @@ import {
 } from "./ipfs-gateway-client";
 
 import { BaseClientsManager, LoadType } from "./base-client-manager";
+import { subplebbitForPublishingCache } from "../constants";
 
 export class ClientsManager extends BaseClientsManager {
     protected _plebbit: Plebbit;
@@ -244,6 +245,8 @@ export class PublicationClientsManager extends ClientsManager {
         const signatureValidity = await verifySubplebbit(subJson, this._plebbit.resolveAuthorAddresses, this);
 
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity, subplebbitAddress, subJson });
+
+        subplebbitForPublishingCache.set(subJson.address, lodash.pick(subJson, ["encryption", "pubsubTopic", "address"]));
 
         return subJson;
     }

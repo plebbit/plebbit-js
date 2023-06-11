@@ -75,7 +75,7 @@ import {
     verifySubplebbit,
     verifyVote
 } from "./signer/signatures";
-import { CACHE_KEYS } from "./constants";
+import { CACHE_KEYS, subplebbitForPublishingCache } from "./constants";
 import assert from "assert";
 import version from "./version";
 import { JsonSignature, SignerType } from "./signer/constants";
@@ -428,6 +428,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 this._setUpdatingState("succeeded");
                 await this.initSubplebbit(subState);
                 this.emit("update", this);
+                subplebbitForPublishingCache.set(subState.address, lodash.pick(subState, ["encryption", "address", "pubsubTopic"]));
             }
         } else {
             this._setUpdatingState("resolving-address");
@@ -448,6 +449,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 this._setUpdatingState("succeeded");
                 log(`Remote Subplebbit received a new update. Will emit an update event`);
                 this.emit("update", this);
+                subplebbitForPublishingCache.set(
+                    subplebbitIpns.address,
+                    lodash.pick(subplebbitIpns, ["encryption", "address", "pubsubTopic"])
+                );
             } else {
                 log.trace("Remote subplebbit received a new update with no new information");
                 this._setUpdatingState("succeeded");

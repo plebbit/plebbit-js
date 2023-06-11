@@ -31,6 +31,7 @@ import * as cborg from "cborg";
 import { JsonSignature } from "./signer/constants";
 import { sha256 } from "js-sha256";
 import lodash from "lodash";
+import { subplebbitForPublishingCache } from "./constants";
 
 class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     // Only publication props
@@ -58,7 +59,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         | "succeeded";
 
     // private
-    protected subplebbit?: SubplebbitIpfsType;
+    protected subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">;
     protected pubsubMessageSigner: Signer;
     private _challengeAnswer: ChallengeAnswerMessage;
     private _challengeRequest: ChallengeRequestMessage;
@@ -255,6 +256,12 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         return this.subplebbit.pubsubTopic || this.subplebbit.address;
     }
 
+    _getSubplebbitCache() {
+        const cachedSubplebbit: Pick<SubplebbitIpfsType, "address" | "encryption" | "pubsubTopic"> | undefined =
+            subplebbitForPublishingCache.get(this.subplebbitAddress);
+        return cachedSubplebbit;
+    }
+
     async publish() {
         const log = Logger("plebbit-js:publication:publish");
         this._updateState("publishing");
@@ -262,8 +269,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this._validatePublicationFields();
 
         const options = { acceptedChallengeTypes: [] };
-        this._updatePublishingState("resolving-subplebbit-address");
-        this.subplebbit = await this._clientsManager.fetchSubplebbitForPublishing(this.subplebbitAddress);
+        this.subplebbit = this._getSubplebbitCache() || (await this._clientsManager.fetchSubplebbitForPublishing(this.subplebbitAddress));
         this._updatePublishingState("publishing-challenge-request");
 
         this._validateSubFields();
