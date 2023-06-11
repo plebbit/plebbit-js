@@ -288,7 +288,10 @@ export class BaseClientsManager {
 
     private async _resolveTextRecordWithCache(address: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
         const log = Logger("plebbit-js:client-manager:resolveTextRecord");
-        if (resolvePromises[address + txtRecord]) return await resolvePromises[address + txtRecord];
+        if (resolvePromises[address + txtRecord]) {
+            log.trace(`Awaiting an already created promise for resolving address (${address}) txt record (${txtRecord})`);
+            return await resolvePromises[address + txtRecord];
+        }
 
         resolvePromises[address + txtRecord] = new Promise(async (resolve, reject) => {
             log.trace(`Creating a new promise for retrieving address (${address}) txt record (${txtRecord})`);
