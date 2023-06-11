@@ -1,4 +1,4 @@
-import lru from "tiny-lru";
+import lru from "tiny-lru/lib/tiny-lru";
 import { SubplebbitIpfsType } from "./types";
 export enum CACHE_KEYS {
     SUBPLEBBIT_IPNS,
