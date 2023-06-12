@@ -536,7 +536,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this.emit("update", this);
                         constants_1.subplebbitForPublishingCache.set(subState.address, lodash_1.default.pick(subState, ["encryption", "address", "pubsubTopic"]));
                         _a.label = 3;
-                    case 3: return [3 /*break*/, 11];
+                    case 3: return [3 /*break*/, 10];
                     case 4:
                         this._setUpdatingState("resolving-address");
                         return [4 /*yield*/, this._clientsManager.resolveSubplebbitAddressIfNeeded(this.address)];
@@ -548,29 +548,29 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this._retryLoadingSubplebbitIpns(log, ipnsAddress)];
                     case 6:
                         subplebbitIpns = _a.sent();
-                        return [4 /*yield*/, (0, signatures_1.verifySubplebbit)(subplebbitIpns, this.plebbit.resolveAuthorAddresses, this._clientsManager)];
+                        if (!(this.updatedAt !== subplebbitIpns.updatedAt)) return [3 /*break*/, 9];
+                        return [4 /*yield*/, (0, signatures_1.verifySubplebbit)(subplebbitIpns, this.plebbit.resolveAuthorAddresses, this._clientsManager, true)];
                     case 7:
                         updateValidity = _a.sent();
-                        if (!!updateValidity.valid) return [3 /*break*/, 8];
-                        this._setUpdatingState("failed");
-                        error = new plebbit_error_1.PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity: updateValidity, subplebbitIpns: subplebbitIpns });
-                        this.emit("error", error);
-                        return [3 /*break*/, 11];
-                    case 8:
-                        if (!(this.updatedAt !== subplebbitIpns.updatedAt)) return [3 /*break*/, 10];
+                        if (!updateValidity.valid) {
+                            this._setUpdatingState("failed");
+                            error = new plebbit_error_1.PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity: updateValidity, subplebbitIpns: subplebbitIpns });
+                            this.emit("error", error);
+                            return [2 /*return*/];
+                        }
                         return [4 /*yield*/, this.initSubplebbit(subplebbitIpns)];
-                    case 9:
+                    case 8:
                         _a.sent();
                         this._setUpdatingState("succeeded");
                         log("Remote Subplebbit received a new update. Will emit an update event");
                         this.emit("update", this);
                         constants_1.subplebbitForPublishingCache.set(subplebbitIpns.address, lodash_1.default.pick(subplebbitIpns, ["encryption", "address", "pubsubTopic"]));
-                        return [3 /*break*/, 11];
-                    case 10:
+                        return [3 /*break*/, 10];
+                    case 9:
                         log.trace("Remote subplebbit received a new update with no new information");
                         this._setUpdatingState("succeeded");
-                        _a.label = 11;
-                    case 11: return [2 /*return*/];
+                        _a.label = 10;
+                    case 10: return [2 /*return*/];
                 }
             });
         });
@@ -641,19 +641,25 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype._validateLocalSignature = function (newSignature, record) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, ipnsRecord;
-            var _this = this;
+            var log, ipnsRecord, signatureValidation, error;
             return __generator(this, function (_a) {
-                log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:_validateLocalSignature");
-                ipnsRecord = JSON.parse(JSON.stringify(__assign(__assign({}, record), { signature: newSignature })));
-                (0, signatures_1.verifySubplebbit)(ipnsRecord, false, this._clientsManager).then(function (signatureValidation) {
-                    if (!signatureValidation.valid) {
-                        var error = new plebbit_error_1.PlebbitError("ERR_LOCAL_SUBPLEBBIT_SIGNATURE_IS_INVALID", { signatureValidation: signatureValidation });
-                        log.error(String(error));
-                        _this.emit("error", error);
-                    }
-                });
-                return [2 /*return*/];
+                switch (_a.label) {
+                    case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:_validateLocalSignature");
+                        ipnsRecord = JSON.parse(JSON.stringify(__assign(__assign({}, record), { signature: newSignature })));
+                        return [4 /*yield*/, this._clientsManager.resolveSubplebbitAddressIfNeeded(ipnsRecord.address)];
+                    case 1:
+                        _a.sent(); // Resolve before validation so we wouldn't have multiple resolves running concurrently
+                        return [4 /*yield*/, (0, signatures_1.verifySubplebbit)(ipnsRecord, false, this._clientsManager, false)];
+                    case 2:
+                        signatureValidation = _a.sent();
+                        if (!signatureValidation.valid) {
+                            error = new plebbit_error_1.PlebbitError("ERR_LOCAL_SUBPLEBBIT_SIGNATURE_IS_INVALID", { signatureValidation: signatureValidation });
+                            log.error(String(error));
+                            this.emit("error", error);
+                        }
+                        return [2 /*return*/];
+                }
             });
         });
     };
@@ -693,24 +699,22 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signatures_1.signSubplebbit)(newIpns, this.signer)];
                     case 7:
                         signature = _b.sent();
-                        return [4 /*yield*/, this._validateLocalSignature(signature, newIpns)];
-                    case 8:
-                        _b.sent();
+                        this._validateLocalSignature(signature, newIpns);
                         return [4 /*yield*/, this.initSubplebbit(__assign(__assign({}, newIpns), { signature: signature }))];
-                    case 9:
+                    case 8:
                         _b.sent();
                         this._subplebbitUpdateTrigger = false;
                         return [4 /*yield*/, this._updateDbInternalState(lodash_1.default.pick(this.toJSONInternal(), ["posts", "lastPostCid", "statsCid", "updatedAt", "signature", "_subplebbitUpdateTrigger"]))];
-                    case 10:
+                    case 9:
                         _b.sent();
                         return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.add((0, safe_stable_stringify_1.stringify)(__assign(__assign({}, newIpns), { signature: signature })))];
-                    case 11:
+                    case 10:
                         file = _b.sent();
                         return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
                                 key: this.signer.ipnsKeyName,
                                 allowOffline: true
                             })];
-                    case 12:
+                    case 11:
                         publishRes = _b.sent();
                         this.emit("update", this);
                         log("Published a new IPNS record for sub(".concat(this.address, ") on IPNS (").concat(publishRes.name, ") that points to file (").concat(publishRes.value, ") with updatedAt (").concat(this.updatedAt, ")"));
@@ -1492,7 +1496,7 @@ var Subplebbit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         simUpdate = JSON.parse((0, safe_stable_stringify_1.stringify)(update));
-                        return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(simUpdate, this.plebbit.resolveAuthorAddresses, this._clientsManager, this.address, comment)];
+                        return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(simUpdate, this.plebbit.resolveAuthorAddresses, this._clientsManager, this.address, comment, false)];
                     case 1:
                         signatureValidity = _a.sent();
                         (0, assert_1.default)(signatureValidity.valid, "Comment Update signature is invalid. Reason (".concat(signatureValidity.reason, ")"));

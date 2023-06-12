@@ -335,7 +335,7 @@ var Comment = /** @class */ (function (_super) {
                         if (!(res && this.updatedAt !== res.updatedAt)) return [3 /*break*/, 6];
                         log("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
                         commentInstance = lodash_1.default.pick(this, ["cid", "signature"]);
-                        return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(res, this._plebbit.resolveAuthorAddresses, this._clientsManager, this.subplebbitAddress, commentInstance)];
+                        return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(res, this._plebbit.resolveAuthorAddresses, this._clientsManager, this.subplebbitAddress, commentInstance, true)];
                     case 4:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid) {

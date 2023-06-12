@@ -463,7 +463,7 @@ function verifyComment(comment, resolveAuthorAddresses, clientsManager, override
     });
 }
 exports.verifyComment = verifyComment;
-function verifySubplebbit(subplebbit, resolveAuthorAddresses, clientsManager) {
+function verifySubplebbit(subplebbit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
         var log, _i, _b, pageName, pageValidity, signatureValidity, resolvedSubAddress, subPeerId, signaturePeerId;
@@ -477,7 +477,7 @@ function verifySubplebbit(subplebbit, resolveAuthorAddresses, clientsManager) {
                 case 1:
                     if (!(_i < _b.length)) return [3 /*break*/, 4];
                     pageName = _b[_i];
-                    return [4 /*yield*/, verifyPage(lodash_1.default.cloneDeep(subplebbit.posts.pages[pageName]), resolveAuthorAddresses, clientsManager, subplebbit.address, undefined)];
+                    return [4 /*yield*/, verifyPage(overrideAuthorAddressIfInvalid ? lodash_1.default.cloneDeep(subplebbit.posts.pages[pageName]) : subplebbit.posts.pages[pageName], resolveAuthorAddresses, clientsManager, subplebbit.address, undefined, overrideAuthorAddressIfInvalid)];
                 case 2:
                     pageValidity = _c.sent();
                     if (!pageValidity.valid) {
@@ -540,7 +540,7 @@ function _getBinaryValidationResult(publication) {
         });
     });
 }
-function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment) {
+function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid) {
     return __awaiter(this, void 0, void 0, function () {
         var log, updateSignatureAddress, subplebbitResolvedAddress, pagesValidity, invalidPageValidity;
         return __generator(this, function (_a) {
@@ -563,7 +563,7 @@ function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, sub
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT }];
                     if (!update.replies) return [3 /*break*/, 4];
                     return [4 /*yield*/, Promise.all(Object.values(update.replies.pages).map(function (page) {
-                            return verifyPage(page, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment.cid);
+                            return verifyPage(page, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment.cid, overrideAuthorAddressIfInvalid);
                         }))];
                 case 3:
                     pagesValidity = _a.sent();
@@ -674,7 +674,7 @@ function verifyChallengeVerification(verification, pubsubTopic, validateTimestam
     });
 }
 exports.verifyChallengeVerification = verifyChallengeVerification;
-function verifyPage(page, resolveAuthorAddresses, clientsManager, subplebbitAddress, parentCommentCid) {
+function verifyPage(page, resolveAuthorAddresses, clientsManager, subplebbitAddress, parentCommentCid, overrideAuthorAddressIfInvalid) {
     return __awaiter(this, void 0, void 0, function () {
         var _i, _a, pageComment, commentSignatureValidity, commentUpdateSignatureValidity;
         return __generator(this, function (_b) {
@@ -689,12 +689,12 @@ function verifyPage(page, resolveAuthorAddresses, clientsManager, subplebbitAddr
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB }];
                     if (parentCommentCid !== pageComment.comment.parentCid)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_PARENT_CID_NOT_AS_EXPECTED }];
-                    return [4 /*yield*/, verifyComment(pageComment.comment, resolveAuthorAddresses, clientsManager, true)];
+                    return [4 /*yield*/, verifyComment(pageComment.comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid)];
                 case 2:
                     commentSignatureValidity = _b.sent();
                     if (!commentSignatureValidity.valid)
                         return [2 /*return*/, commentSignatureValidity];
-                    return [4 /*yield*/, verifyCommentUpdate(pageComment.update, resolveAuthorAddresses, clientsManager, subplebbitAddress, pageComment.comment)];
+                    return [4 /*yield*/, verifyCommentUpdate(pageComment.update, resolveAuthorAddresses, clientsManager, subplebbitAddress, pageComment.comment, overrideAuthorAddressIfInvalid)];
                 case 3:
                     commentUpdateSignatureValidity = _b.sent();
                     if (!commentUpdateSignatureValidity.valid)

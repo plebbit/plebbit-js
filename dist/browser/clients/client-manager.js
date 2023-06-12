@@ -300,7 +300,7 @@ var PublicationClientsManager = /** @class */ (function (_super) {
                     case 5:
                         subJson = _d.apply(_c, [_e.sent()]);
                         _e.label = 6;
-                    case 6: return [4 /*yield*/, (0, signer_1.verifySubplebbit)(subJson, this._plebbit.resolveAuthorAddresses, this)];
+                    case 6: return [4 /*yield*/, (0, signer_1.verifySubplebbit)(subJson, this._plebbit.resolveAuthorAddresses, this, false)];
                     case 7:
                         signatureValidity = _e.sent();
                         if (!signatureValidity.valid)

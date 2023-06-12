@@ -290,7 +290,7 @@ var Plebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this._clientsManager.fetchSubplebbitIpns(resolvedSubplebbitAddress)];
                     case 2:
                         subplebbitJson = _b.apply(_a, [_c.sent()]);
-                        return [4 /*yield*/, (0, signer_1.verifySubplebbit)(subplebbitJson, this.resolveAuthorAddresses, this._clientsManager)];
+                        return [4 /*yield*/, (0, signer_1.verifySubplebbit)(subplebbitJson, this.resolveAuthorAddresses, this._clientsManager, true)];
                     case 3:
                         signatureValidity = _c.sent();
                         if (!signatureValidity.valid)

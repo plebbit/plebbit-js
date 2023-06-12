@@ -89,7 +89,7 @@ var BasePages = /** @class */ (function () {
                         return [4 /*yield*/, this._clientsManager.fetchPage(pageCid)];
                     case 1:
                         pageIpfs = _a.sent();
-                        return [4 /*yield*/, (0, signatures_1.verifyPage)(pageIpfs, this._plebbit.resolveAuthorAddresses, this._clientsManager, this._subplebbitAddress, this._parentCid)];
+                        return [4 /*yield*/, (0, signatures_1.verifyPage)(pageIpfs, this._plebbit.resolveAuthorAddresses, this._clientsManager, this._subplebbitAddress, this._parentCid, true)];
                     case 2:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)

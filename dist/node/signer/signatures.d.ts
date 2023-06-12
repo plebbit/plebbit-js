@@ -20,10 +20,10 @@ export declare function signChallengeVerification(challengeVerification: Omit<Ch
 export declare function verifyVote(vote: VotePubsubMessage, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
 export declare function verifyCommentEdit(edit: CommentEditPubsubMessage, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
 export declare function verifyComment(comment: CommentPubsubMessage | CommentIpfsType, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
-export declare function verifySubplebbit(subplebbit: SubplebbitIpfsType, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager): Promise<ValidationResult>;
-export declare function verifyCommentUpdate(update: CommentUpdate, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, subplebbitAddress: string, comment: Pick<CommentWithCommentUpdate, "signature" | "cid">): Promise<ValidationResult>;
+export declare function verifySubplebbit(subplebbit: SubplebbitIpfsType, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
+export declare function verifyCommentUpdate(update: CommentUpdate, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, subplebbitAddress: string, comment: Pick<CommentWithCommentUpdate, "signature" | "cid">, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
 export declare function verifyChallengeRequest(request: ChallengeRequestMessageType, validateTimestampRange: boolean): Promise<ValidationResult>;
 export declare function verifyChallengeMessage(challenge: ChallengeMessageType, pubsubTopic: string, validateTimestampRange: boolean): Promise<ValidationResult>;
 export declare function verifyChallengeAnswer(answer: ChallengeAnswerMessageType, validateTimestampRange: boolean): Promise<ValidationResult>;
 export declare function verifyChallengeVerification(verification: ChallengeVerificationMessageType, pubsubTopic: string, validateTimestampRange: boolean): Promise<ValidationResult>;
-export declare function verifyPage(page: PageIpfs, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, subplebbitAddress: string, parentCommentCid: string | undefined): Promise<ValidationResult>;
+export declare function verifyPage(page: PageIpfs, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, subplebbitAddress: string, parentCommentCid: string | undefined, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
