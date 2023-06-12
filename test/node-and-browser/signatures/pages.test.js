@@ -4,6 +4,7 @@ const { messages } = require("../../../dist/node/errors");
 const { expect } = require("chai");
 const signers = require("../../fixtures/signers");
 const lodash = require("lodash");
+const { commentValidationCache, commentUpdateValidationCache } = require("../../../dist/node/constants");
 
 const { mockPlebbit } = require("../../../dist/node/test/test-util");
 
@@ -12,6 +13,8 @@ const subAddress = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR";
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const verifyPageJsonAlongWithObject = async (pageJson, plebbit, subplebbit, parentCid, overrideAuthorAddressIsInvalid) => {
+    commentValidationCache.clear();
+    commentUpdateValidationCache.clear();
     const pageObjRes = await verifyPage(
         JSON.parse(JSON.stringify(pageJson)),
         plebbit.resolveAuthorAddresses,
@@ -20,6 +23,8 @@ const verifyPageJsonAlongWithObject = async (pageJson, plebbit, subplebbit, pare
         parentCid,
         overrideAuthorAddressIsInvalid
     );
+    commentValidationCache.clear();
+    commentUpdateValidationCache.clear();
     const pageJsonRes = await verifyPage(
         pageJson,
         plebbit.resolveAuthorAddresses,
@@ -28,6 +33,8 @@ const verifyPageJsonAlongWithObject = async (pageJson, plebbit, subplebbit, pare
         parentCid,
         overrideAuthorAddressIsInvalid
     );
+    commentValidationCache.clear();
+    commentUpdateValidationCache.clear();
     expect(pageObjRes).to.deep.equal(pageJsonRes);
     return pageObjRes;
 };
