@@ -439,12 +439,19 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             const subplebbitIpns = await this._retryLoadingSubplebbitIpns(log, ipnsAddress);
 
-            const updateValidity = await verifySubplebbit(subplebbitIpns, this.plebbit.resolveAuthorAddresses, this._clientsManager);
-            if (!updateValidity.valid) {
-                this._setUpdatingState("failed");
-                const error = new PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity: updateValidity, subplebbitIpns });
-                this.emit("error", error);
-            } else if (this.updatedAt !== subplebbitIpns.updatedAt) {
+            if (this.updatedAt !== subplebbitIpns.updatedAt) {
+                const updateValidity = await verifySubplebbit(
+                    subplebbitIpns,
+                    this.plebbit.resolveAuthorAddresses,
+                    this._clientsManager,
+                    true
+                );
+                if (!updateValidity.valid) {
+                    this._setUpdatingState("failed");
+                    const error = new PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity: updateValidity, subplebbitIpns });
+                    this.emit("error", error);
+                    return;
+                }
                 await this.initSubplebbit(subplebbitIpns);
                 this._setUpdatingState("succeeded");
                 log(`Remote Subplebbit received a new update. Will emit an update event`);
@@ -499,13 +506,13 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async _validateLocalSignature(newSignature: SubplebbitIpfsType["signature"], record: Omit<SubplebbitIpfsType, "signature">) {
         const log = Logger("plebbit-js:subplebbit:_validateLocalSignature");
         const ipnsRecord: SubplebbitIpfsType = JSON.parse(JSON.stringify({ ...record, signature: newSignature })); // stringify it so it would be of the same content as IPNS or pubsub
-        verifySubplebbit(ipnsRecord, false, this._clientsManager).then((signatureValidation) => {
-            if (!signatureValidation.valid) {
-                const error = new PlebbitError("ERR_LOCAL_SUBPLEBBIT_SIGNATURE_IS_INVALID", { signatureValidation });
-                log.error(String(error));
-                this.emit("error", error);
-            }
-        });
+        await this._clientsManager.resolveSubplebbitAddressIfNeeded(ipnsRecord.address); // Resolve before validation so we wouldn't have multiple resolves running concurrently
+        const signatureValidation = await verifySubplebbit(ipnsRecord, false, this._clientsManager, false);
+        if (!signatureValidation.valid) {
+            const error = new PlebbitError("ERR_LOCAL_SUBPLEBBIT_SIGNATURE_IS_INVALID", { signatureValidation });
+            log.error(String(error));
+            this.emit("error", error);
+        }
     }
     private async updateSubplebbitIpnsIfNeeded() {
         const log = Logger("plebbit-js:subplebbit:sync");
@@ -536,7 +543,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             posts: subplebbitPosts ? { pageCids: subplebbitPosts.pageCids, pages: lodash.pick(subplebbitPosts.pages, "hot") } : undefined
         };
         const signature = await signSubplebbit(newIpns, this.signer);
-        await this._validateLocalSignature(signature, newIpns);
+        this._validateLocalSignature(signature, newIpns);
         await this.initSubplebbit({ ...newIpns, signature });
         this._subplebbitUpdateTrigger = false;
 
