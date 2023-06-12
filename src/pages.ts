@@ -64,7 +64,8 @@ export class BasePages implements PagesType {
             this._plebbit.resolveAuthorAddresses,
             this._clientsManager,
             this._subplebbitAddress,
-            this._parentCid
+            this._parentCid,
+            true
         );
         if (!signatureValidity.valid) throw Error(signatureValidity.reason);
 

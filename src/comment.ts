@@ -365,7 +365,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 this._plebbit.resolveAuthorAddresses,
                 this._clientsManager,
                 this.subplebbitAddress,
-                commentInstance
+                commentInstance,
+                true
             );
             if (!signatureValidity.valid) {
                 this._setUpdatingState("failed");

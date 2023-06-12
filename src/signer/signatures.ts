@@ -324,17 +324,19 @@ export async function verifyComment(
 export async function verifySubplebbit(
     subplebbit: SubplebbitIpfsType,
     resolveAuthorAddresses: boolean,
-    clientsManager: BaseClientsManager
+    clientsManager: BaseClientsManager,
+    overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
     const log = Logger("plebbit-js:signatures:verifySubplebbit");
     if (subplebbit.posts?.pages)
         for (const pageName of Object.keys(subplebbit.posts.pages)) {
             const pageValidity = await verifyPage(
-                lodash.cloneDeep(subplebbit.posts.pages[pageName]),
+                overrideAuthorAddressIfInvalid ? lodash.cloneDeep(subplebbit.posts.pages[pageName]) : subplebbit.posts.pages[pageName],
                 resolveAuthorAddresses,
                 clientsManager,
                 subplebbit.address,
-                undefined
+                undefined,
+                overrideAuthorAddressIfInvalid
             );
 
             if (!pageValidity.valid) {
@@ -375,7 +377,8 @@ export async function verifyCommentUpdate(
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager,
     subplebbitAddress: string,
-    comment: Pick<CommentWithCommentUpdate, "signature" | "cid">
+    comment: Pick<CommentWithCommentUpdate, "signature" | "cid">,
+    overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
     const log = Logger("plebbit-js:signatures:verifyCommentUpdate");
     if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
@@ -396,7 +399,7 @@ export async function verifyCommentUpdate(
         // Validate update.replies
         const pagesValidity = await Promise.all(
             Object.values(update.replies.pages).map((page) =>
-                verifyPage(page, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment.cid)
+                verifyPage(page, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment.cid, overrideAuthorAddressIfInvalid)
             )
         );
         const invalidPageValidity = pagesValidity.find((validity) => !validity.valid);
@@ -480,21 +483,28 @@ export async function verifyPage(
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager,
     subplebbitAddress: string,
-    parentCommentCid: string | undefined
+    parentCommentCid: string | undefined,
+    overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
     for (const pageComment of page.comments) {
         if (pageComment.comment.subplebbitAddress !== subplebbitAddress)
             return { valid: false, reason: messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB };
         if (parentCommentCid !== pageComment.comment.parentCid) return { valid: false, reason: messages.ERR_PARENT_CID_NOT_AS_EXPECTED };
 
-        const commentSignatureValidity = await verifyComment(pageComment.comment, resolveAuthorAddresses, clientsManager, true);
+        const commentSignatureValidity = await verifyComment(
+            pageComment.comment,
+            resolveAuthorAddresses,
+            clientsManager,
+            overrideAuthorAddressIfInvalid
+        );
         if (!commentSignatureValidity.valid) return commentSignatureValidity;
         const commentUpdateSignatureValidity = await verifyCommentUpdate(
             pageComment.update,
             resolveAuthorAddresses,
             clientsManager,
             subplebbitAddress,
-            pageComment.comment
+            pageComment.comment,
+            overrideAuthorAddressIfInvalid
         );
         if (!commentUpdateSignatureValidity.valid) return commentUpdateSignatureValidity;
     }

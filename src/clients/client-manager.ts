@@ -254,7 +254,7 @@ export class PublicationClientsManager extends ClientsManager {
             this.updateIpfsState("stopped");
         } else subJson = JSON.parse(await this.fetchFromMultipleGateways({ ipns: subIpns }, "subplebbit"));
 
-        const signatureValidity = await verifySubplebbit(subJson, this._plebbit.resolveAuthorAddresses, this);
+        const signatureValidity = await verifySubplebbit(subJson, this._plebbit.resolveAuthorAddresses, this, false);
 
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity, subplebbitAddress, subJson });
 

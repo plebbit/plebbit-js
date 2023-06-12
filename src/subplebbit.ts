@@ -1200,7 +1200,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this.plebbit.resolveAuthorAddresses,
             this._clientsManager,
             this.address,
-            comment
+            comment,
+            false
         );
         assert(signatureValidity.valid, `Comment Update signature is invalid. Reason (${signatureValidity.reason})`);
     }
