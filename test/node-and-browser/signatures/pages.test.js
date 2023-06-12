@@ -11,15 +11,23 @@ const subAddress = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR";
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
-const verifyPageJsonAlongWithObject = async (pageJson, plebbit, subplebbit, parentCid) => {
+const verifyPageJsonAlongWithObject = async (pageJson, plebbit, subplebbit, parentCid, overrideAuthorAddressIsInvalid) => {
     const pageObjRes = await verifyPage(
         JSON.parse(JSON.stringify(pageJson)),
         plebbit.resolveAuthorAddresses,
         plebbit._clientsManager,
         subplebbit.address,
-        parentCid
+        parentCid,
+        overrideAuthorAddressIsInvalid
     );
-    const pageJsonRes = await verifyPage(pageJson, plebbit.resolveAuthorAddresses, plebbit._clientsManager, subplebbit.address, parentCid);
+    const pageJsonRes = await verifyPage(
+        pageJson,
+        plebbit.resolveAuthorAddresses,
+        plebbit._clientsManager,
+        subplebbit.address,
+        parentCid,
+        overrideAuthorAddressIsInvalid
+    );
     expect(pageObjRes).to.deep.equal(pageJsonRes);
     return pageObjRes;
 };
@@ -43,7 +51,7 @@ describe(`verify pages`, async () => {
         expect(verification).to.deep.equal({ valid: true });
     });
 
-    it(`verifyPage will validate a page with comment.author.address (domain) that resolves to address different than author's. It will also override the domain with actual address`, async () => {
+    it(`verifyPage will validate a page with comment.author.address (domain) that resolves to address different than author's. It will also override the domain with actual address (overrideAuthorAddress=true)`, async () => {
         // verifyPage would override the incorrect domain
         const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
         const commentWithDomainAddressIndex = invalidPage.comments.findIndex((comment) =>
@@ -58,9 +66,30 @@ describe(`verify pages`, async () => {
                 ? signers[3].address
                 : authorAddress; // Resolve to wrong address intentionally. Correct address would be signers[6].address
 
-        const verification = await verifyPageJsonAlongWithObject(invalidPage, tempPlebbit, subplebbit, undefined); // comments[commentWithDomainAddressIndex] author address should be modified after
+        const overrideAuthorAddress = true;
+        const verification = await verifyPageJsonAlongWithObject(invalidPage, tempPlebbit, subplebbit, undefined, overrideAuthorAddress); // comments[commentWithDomainAddressIndex] author address should be modified after
         expect(verification).to.deep.equal({ valid: true });
         expect(invalidPage.comments[commentWithDomainAddressIndex].comment.author.address).to.equal(signers[6].address);
+    });
+
+    it(`verifyPage will invalidate validate a page with comment.author.address (domain) that resolves to address different than author's (overrideAuthorAddress=false)`, async () => {
+        const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+        const commentWithDomainAddressIndex = invalidPage.comments.findIndex((comment) =>
+            plebbit.resolver.isDomain(comment.comment.author.address)
+        );
+        expect(commentWithDomainAddressIndex).to.be.greaterThanOrEqual(0);
+
+        const tempPlebbit = await mockPlebbit();
+
+        tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
+            authorAddress === invalidPage.comments[commentWithDomainAddressIndex].comment.author.address
+                ? signers[3].address
+                : authorAddress; // Resolve to wrong address intentionally. Correct address would be signers[6].address
+
+        const overrideAuthorAddress = false;
+        const verification = await verifyPageJsonAlongWithObject(invalidPage, tempPlebbit, subplebbit, undefined, overrideAuthorAddress); // comments[commentWithDomainAddressIndex] author address should be modified after
+        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE });
+        expect(invalidPage.comments[commentWithDomainAddressIndex].comment.author.address).to.equal("plebbit.eth");
     });
 
     describe(`A sub owner changing any of comment fields in page will invalidate`, async () => {
