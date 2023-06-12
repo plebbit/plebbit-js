@@ -10,3 +10,6 @@ export const subplebbitForPublishingCache = new LRUCache<string, Pick<Subplebbit
     ttl: 600000
 }); // Cache for only 10 mins
 export const pageCidToSortTypesCache = new LRUCache<string, string[]>({ max: 500 });
+
+export const commentValidationCache = new LRUCache<string, true>({ max: 50000 });
+export const commentUpdateValidationCache = new LRUCache<string, true>({ max: 10000 });

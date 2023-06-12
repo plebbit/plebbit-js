@@ -10,6 +10,7 @@ import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import * as ed from "@noble/ed25519";
 
+import { createHash } from "sha1-uint8array";
 import PeerId from "peer-id";
 import { removeNullAndUndefinedValuesRecursively, throwWithErrorCode, timestamp } from "../util";
 import { Plebbit } from "../plebbit";
@@ -54,6 +55,7 @@ import {
     VoteSignedPropertyNames
 } from "./constants";
 import { BaseClientsManager } from "../clients/base-client-manager";
+import { commentUpdateValidationCache, commentValidationCache } from "../constants";
 
 export interface ValidationResult {
     valid: boolean;
@@ -318,7 +320,20 @@ export async function verifyComment(
     if (!validation.valid) return validation;
     if (validation.newAddress && overrideAuthorAddressIfInvalid) comment.author.address = validation.newAddress;
 
+    const hash = createHash().update(JSON.stringify(comment)).digest("hex").slice(0, 12);
+    commentValidationCache.set(hash, true);
     return { valid: true };
+}
+
+export async function verifyCommentWithCache(
+    comment: CommentPubsubMessage | CommentIpfsType,
+    resolveAuthorAddresses: boolean,
+    clientsManager: BaseClientsManager,
+    overrideAuthorAddressIfInvalid: boolean
+): Promise<ValidationResult> {
+    const hash = createHash().update(JSON.stringify(comment)).digest("hex").slice(0, 12);
+    if (commentValidationCache.get(hash)) return { valid: true };
+    else return verifyComment(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
 }
 
 export async function verifySubplebbit(
@@ -381,6 +396,7 @@ export async function verifyCommentUpdate(
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
     const log = Logger("plebbit-js:signatures:verifyCommentUpdate");
+    // const hash =
     if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
         return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
 
@@ -406,7 +422,35 @@ export async function verifyCommentUpdate(
         if (invalidPageValidity) return invalidPageValidity;
     }
 
-    return _getJsonValidationResult(update);
+    const jsonValidation = await _getJsonValidationResult(update);
+
+    if (!jsonValidation.valid) return jsonValidation;
+
+    const hash = createHash().update(JSON.stringify(update)).digest("hex").slice(0, 12);
+    commentUpdateValidationCache.set(hash, true);
+
+    return { valid: true };
+}
+
+export async function verifyCommentUpdateWithCache(
+    update: CommentUpdate,
+    resolveAuthorAddresses: boolean,
+    clientsManager: BaseClientsManager,
+    subplebbitAddress: string,
+    comment: Pick<CommentWithCommentUpdate, "signature" | "cid">,
+    overrideAuthorAddressIfInvalid: boolean
+): Promise<ValidationResult> {
+    const hash = createHash().update(JSON.stringify(update)).digest("hex").slice(0, 12);
+    if (commentUpdateValidationCache.get(hash)) return { valid: true };
+    else
+        return verifyCommentUpdate(
+            update,
+            resolveAuthorAddresses,
+            clientsManager,
+            subplebbitAddress,
+            comment,
+            overrideAuthorAddressIfInvalid
+        );
 }
 
 // -5 mins
@@ -491,14 +535,14 @@ export async function verifyPage(
             return { valid: false, reason: messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB };
         if (parentCommentCid !== pageComment.comment.parentCid) return { valid: false, reason: messages.ERR_PARENT_CID_NOT_AS_EXPECTED };
 
-        const commentSignatureValidity = await verifyComment(
+        const commentSignatureValidity = await verifyCommentWithCache(
             pageComment.comment,
             resolveAuthorAddresses,
             clientsManager,
             overrideAuthorAddressIfInvalid
         );
         if (!commentSignatureValidity.valid) return commentSignatureValidity;
-        const commentUpdateSignatureValidity = await verifyCommentUpdate(
+        const commentUpdateSignatureValidity = await verifyCommentUpdateWithCache(
             pageComment.update,
             resolveAuthorAddresses,
             clientsManager,

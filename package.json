@@ -71,6 +71,7 @@
         "proper-lockfile": "github:plebbit/node-proper-lockfile",
         "retry": "0.13.1",
         "safe-stable-stringify": "2.4.1",
+        "sha1-uint8array": "0.10.5",
         "skia-canvas": "1.0.0",
         "sqlite3": "5.1.6",
         "tiny-typed-emitter": "2.1.0",
