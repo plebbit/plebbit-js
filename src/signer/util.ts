@@ -1,6 +1,6 @@
 // NOTE: Ed25519PublicKey, Ed25519PrivateKey are not public apis, could break when upgrading libp2p-crypto
 import { Ed25519PublicKey, Ed25519PrivateKey } from "libp2p-crypto/src/keys/ed25519-class";
-import PeerId from "peer-id";
+import PeerId from "@libp2p/peer-id-factory";
 import * as ed from "@noble/ed25519";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";

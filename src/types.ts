@@ -19,6 +19,7 @@ import {
 import { Subplebbit } from "./subplebbit";
 import Publication from "./publication";
 import { PlebbitError } from "./plebbit-error";
+import type { PeerId } from "@libp2p/interface-peer-id";
 
 export type ProtocolVersion = "1.0.0";
 export type Chain = "eth" | "matic" | "avax";
@@ -715,7 +716,7 @@ export interface IpfsClient {
 }
 
 export interface PubsubClient {
-    peers: () => Promise<string[]>; // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-pubsub-peers
+    peers: () => Promise<PeerId[]>; // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-pubsub-peers
     stats?: undefined; // Should be defined, will change later
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
