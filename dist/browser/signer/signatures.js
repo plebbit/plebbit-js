@@ -62,12 +62,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyPage = exports.verifyChallengeVerification = exports.verifyChallengeAnswer = exports.verifyChallengeMessage = exports.verifyChallengeRequest = exports.verifyCommentUpdate = exports.verifySubplebbit = exports.verifyComment = exports.verifyCommentEdit = exports.verifyVote = exports.signChallengeVerification = exports.signChallengeAnswer = exports.signChallengeMessage = exports.signChallengeRequest = exports.signSubplebbit = exports.signCommentUpdate = exports.signCommentEdit = exports.signVote = exports.signComment = exports.verifyBufferEd25519 = exports.signBufferEd25519 = void 0;
+exports.verifyPage = exports.verifyChallengeVerification = exports.verifyChallengeAnswer = exports.verifyChallengeMessage = exports.verifyChallengeRequest = exports.verifyCommentUpdateWithCache = exports.verifyCommentUpdate = exports.verifySubplebbit = exports.verifyCommentWithCache = exports.verifyComment = exports.verifyCommentEdit = exports.verifyVote = exports.signChallengeVerification = exports.signChallengeAnswer = exports.signChallengeMessage = exports.signChallengeRequest = exports.signSubplebbit = exports.signCommentUpdate = exports.signCommentEdit = exports.signVote = exports.signComment = exports.verifyBufferEd25519 = exports.signBufferEd25519 = void 0;
 var util_1 = require("./util");
 var cborg = __importStar(require("cborg"));
 var to_string_1 = require("uint8arrays/to-string");
 var from_string_1 = require("uint8arrays/from-string");
 var ed = __importStar(require("@noble/ed25519"));
+var sha1_uint8array_1 = require("sha1-uint8array");
 var peer_id_1 = __importDefault(require("peer-id"));
 var util_2 = require("../util");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
@@ -75,6 +76,7 @@ var lodash_1 = __importDefault(require("lodash"));
 var errors_1 = require("../errors");
 var assert_1 = __importDefault(require("assert"));
 var constants_1 = require("./constants");
+var constants_2 = require("../constants");
 var isProbablyBuffer = function (arg) { return arg && typeof arg !== "string" && typeof arg !== "number"; };
 var signBufferEd25519 = function (bufferToSign, privateKeyBase64) { return __awaiter(void 0, void 0, void 0, function () {
     var privateKeyBuffer, signature;
@@ -447,7 +449,7 @@ function verifyCommentEdit(edit, resolveAuthorAddresses, clientsManager, overrid
 exports.verifyCommentEdit = verifyCommentEdit;
 function verifyComment(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
     return __awaiter(this, void 0, void 0, function () {
-        var validation;
+        var validation, hash;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, _verifyPublicationWithAuthor(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid)];
@@ -457,12 +459,28 @@ function verifyComment(comment, resolveAuthorAddresses, clientsManager, override
                         return [2 /*return*/, validation];
                     if (validation.newAddress && overrideAuthorAddressIfInvalid)
                         comment.author.address = validation.newAddress;
+                    hash = (0, sha1_uint8array_1.createHash)().update(JSON.stringify(comment)).digest("hex").slice(0, 12);
+                    constants_2.commentValidationCache.set(hash, true);
                     return [2 /*return*/, { valid: true }];
             }
         });
     });
 }
 exports.verifyComment = verifyComment;
+function verifyCommentWithCache(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
+    return __awaiter(this, void 0, void 0, function () {
+        var hash;
+        return __generator(this, function (_a) {
+            hash = (0, sha1_uint8array_1.createHash)().update(JSON.stringify(comment)).digest("hex").slice(0, 12);
+            if (constants_2.commentValidationCache.get(hash))
+                return [2 /*return*/, { valid: true }];
+            else
+                return [2 /*return*/, verifyComment(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid)];
+            return [2 /*return*/];
+        });
+    });
+}
+exports.verifyCommentWithCache = verifyCommentWithCache;
 function verifySubplebbit(subplebbit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
@@ -542,11 +560,12 @@ function _getBinaryValidationResult(publication) {
 }
 function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid) {
     return __awaiter(this, void 0, void 0, function () {
-        var log, updateSignatureAddress, subplebbitResolvedAddress, pagesValidity, invalidPageValidity;
+        var log, updateSignatureAddress, subplebbitResolvedAddress, pagesValidity, invalidPageValidity, jsonValidation, hash;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifyCommentUpdate");
+                    // const hash =
                     if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR }];
                     return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPublicKey)(update.signature.publicKey)];
@@ -571,12 +590,33 @@ function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, sub
                     if (invalidPageValidity)
                         return [2 /*return*/, invalidPageValidity];
                     _a.label = 4;
-                case 4: return [2 /*return*/, _getJsonValidationResult(update)];
+                case 4: return [4 /*yield*/, _getJsonValidationResult(update)];
+                case 5:
+                    jsonValidation = _a.sent();
+                    if (!jsonValidation.valid)
+                        return [2 /*return*/, jsonValidation];
+                    hash = (0, sha1_uint8array_1.createHash)().update(JSON.stringify(update)).digest("hex").slice(0, 12);
+                    constants_2.commentUpdateValidationCache.set(hash, true);
+                    return [2 /*return*/, { valid: true }];
             }
         });
     });
 }
 exports.verifyCommentUpdate = verifyCommentUpdate;
+function verifyCommentUpdateWithCache(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid) {
+    return __awaiter(this, void 0, void 0, function () {
+        var hash;
+        return __generator(this, function (_a) {
+            hash = (0, sha1_uint8array_1.createHash)().update(JSON.stringify(update)).digest("hex").slice(0, 12);
+            if (constants_2.commentUpdateValidationCache.get(hash))
+                return [2 /*return*/, { valid: true }];
+            else
+                return [2 /*return*/, verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid)];
+            return [2 /*return*/];
+        });
+    });
+}
+exports.verifyCommentUpdateWithCache = verifyCommentUpdateWithCache;
 // -5 mins
 function _minimumTimestamp() {
     return (0, util_2.timestamp)() - 5 * 60;
@@ -689,12 +729,12 @@ function verifyPage(page, resolveAuthorAddresses, clientsManager, subplebbitAddr
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB }];
                     if (parentCommentCid !== pageComment.comment.parentCid)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_PARENT_CID_NOT_AS_EXPECTED }];
-                    return [4 /*yield*/, verifyComment(pageComment.comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid)];
+                    return [4 /*yield*/, verifyCommentWithCache(pageComment.comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid)];
                 case 2:
                     commentSignatureValidity = _b.sent();
                     if (!commentSignatureValidity.valid)
                         return [2 /*return*/, commentSignatureValidity];
-                    return [4 /*yield*/, verifyCommentUpdate(pageComment.update, resolveAuthorAddresses, clientsManager, subplebbitAddress, pageComment.comment, overrideAuthorAddressIfInvalid)];
+                    return [4 /*yield*/, verifyCommentUpdateWithCache(pageComment.update, resolveAuthorAddresses, clientsManager, subplebbitAddress, pageComment.comment, overrideAuthorAddressIfInvalid)];
                 case 3:
                     commentUpdateSignatureValidity = _b.sent();
                     if (!commentUpdateSignatureValidity.valid)

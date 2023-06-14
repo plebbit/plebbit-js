@@ -6,3 +6,5 @@ export declare enum CACHE_KEYS {
 }
 export declare const subplebbitForPublishingCache: LRUCache<string, Pick<SubplebbitIpfsType, "address" | "encryption" | "pubsubTopic">>;
 export declare const pageCidToSortTypesCache: LRUCache<string, string[]>;
+export declare const commentValidationCache: LRUCache<string, true>;
+export declare const commentUpdateValidationCache: LRUCache<string, true>;
