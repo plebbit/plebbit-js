@@ -26,9 +26,10 @@ import { Comment } from "./comment";
 import { PlebbitError } from "./plebbit-error";
 import { getBufferedPlebbitAddressFromPublicKey } from "./signer/util";
 import { CommentClientsManager, PublicationClientsManager } from "./clients/client-manager";
-import type { Message } from "@libp2p/interface-pubsub";
+import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import * as cborg from "cborg";
 import { JsonSignature } from "./signer/constants";
+import { sha256 } from "js-sha256";
 import lodash from "lodash";
 import { subplebbitForPublishingCache } from "./constants";
 
@@ -108,7 +109,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         };
     }
 
-    private async handleChallengeExchange(pubsubMsg: Message) {
+    private async handleChallengeExchange(pubsubMsg: Parameters<MessageHandlerFn>[0]) {
         const log = Logger("plebbit-js:publication:handleChallengeExchange");
         const msgParsed: ChallengeMessageType | ChallengeVerificationMessageType = cborg.decode(pubsubMsg.data);
         if (!lodash.isEqual(msgParsed?.challengeRequestId, this._challengeRequest.challengeRequestId)) return; // Process only this publication's challenge

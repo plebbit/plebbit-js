@@ -85,7 +85,7 @@ import retry, { RetryOperation } from "retry";
 import Author from "./author";
 import { SubplebbitClientsManager } from "./clients/client-manager";
 import * as cborg from "cborg";
-import type { Message } from "@libp2p/interface-pubsub";
+import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import { encryptEd25519AesGcmPublicKeyBuffer } from "./signer/encryption";
 
 export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
@@ -1143,7 +1143,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
     }
 
-    private async handleChallengeExchange(pubsubMsg: Message) {
+    private async handleChallengeExchange(pubsubMsg: Parameters<MessageHandlerFn>[0]) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange");
 
         let msgParsed: ChallengeRequestMessageType | ChallengeAnswerMessageType | undefined;

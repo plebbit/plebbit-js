@@ -43,10 +43,7 @@ import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions, SignerType } from "./signer/constants";
 import Stats from "./stats";
 import Storage from "./runtime/node/storage";
-import type { EventHandler } from "@libp2p/interfaces/events";
-import type { Message } from "@libp2p/interface-pubsub";
-import type { PeerId } from "@libp2p/interface-peer-id";
-
+import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import { ClientsManager } from "./clients/client-manager";
 import { subplebbitForPublishingCache } from "./constants";
 
@@ -66,7 +63,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     _storage: StorageInterface;
     stats: Stats;
 
-    private _pubsubSubscriptions: Record<string, EventHandler<Message>>;
+    private _pubsubSubscriptions: Record<string, MessageHandlerFn>;
     _clientsManager: ClientsManager;
     publishInterval: number;
     updateInterval: number;
@@ -135,12 +132,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 _clientOptions: clientOptions,
                 peers: async () => {
                     const topics = await ipfsClient.pubsub.ls();
-                    const peers: PeerId[] = [];
-                    // Note: Peers may overlap from different topics in peers array
-                    for (const topic of topics) {
-                        peers.push(...(await ipfsClient.pubsub.peers(topic)));
-                    }
-                    return peers;
+                    return lodash.uniq(lodash.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic)))));
                 }
             };
         }

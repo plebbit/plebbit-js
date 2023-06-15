@@ -1,6 +1,5 @@
 import io from "socket.io-client";
-import type { EventHandler } from "@libp2p/interfaces/events";
-import type { Message } from "@libp2p/interface-pubsub";
+import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import { IpfsHttpClientPublicAPI } from "../types";
 
 const port = 25963;
@@ -10,7 +9,7 @@ const ioClient = globalThis["window"]?.["io"] || io(`ws://localhost:${port}`);
 
 class IpfsHttpClient {
     public pubsub: IpfsHttpClientPublicAPI["pubsub"];
-    private subscriptions: { topic: string; rawCallback: EventHandler<Message>; callback: (...args: any[]) => any }[];
+    private subscriptions: { topic: string; rawCallback: MessageHandlerFn; callback: (...args: any[]) => any }[];
 
     constructor() {
         this.subscriptions = [];
@@ -19,15 +18,14 @@ class IpfsHttpClient {
             publish: async (topic: string, message: Uint8Array) => {
                 ioClient.emit(topic, message);
             },
-            subscribe: async (topic: string, rawCallback: EventHandler<Message>) => {
+            subscribe: async (topic: string, rawCallback: MessageHandlerFn) => {
                 const callback = (msg: Buffer) => {
-                    //@ts-expect-error
                     rawCallback({ from: undefined, seqno: undefined, topicIDs: undefined, data: new Uint8Array(msg) });
                 };
                 ioClient.on(topic, callback);
                 this.subscriptions.push({ topic, rawCallback, callback });
             },
-            unsubscribe: async (topic: string, rawCallback?: EventHandler<Message>) => {
+            unsubscribe: async (topic: string, rawCallback?: MessageHandlerFn) => {
                 if (!rawCallback) {
                     ioClient.off(topic);
                     this.subscriptions = this.subscriptions.filter((sub) => sub.topic !== topic);

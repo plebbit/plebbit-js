@@ -1,9 +1,7 @@
 import { Plebbit } from "../plebbit";
 import assert from "assert";
-import { delay, throwWithErrorCode, timestamp } from "../util";
-import type { EventHandler } from '@libp2p/interfaces/events'
-import type { Message } from '@libp2p/interface-pubsub'
-
+import { delay, firstResolve, throwWithErrorCode, timestamp } from "../util";
+import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import Hash from "ipfs-only-hash";
 import { nativeFunctions } from "../runtime/node/util";
 import pLimit from "p-limit";
@@ -48,7 +46,7 @@ export class BaseClientsManager {
 
     // Pubsub methods
 
-    async pubsubSubscribe(pubsubTopic: string, handler: EventHandler<Message>) {
+    async pubsubSubscribe(pubsubTopic: string, handler: MessageHandlerFn) {
         const log = Logger("plebbit-js:plebbit:client-manager:pubsubSubscribe");
 
         const providersSorted = await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe");
@@ -74,7 +72,7 @@ export class BaseClientsManager {
         throw combinedError;
     }
 
-    async pubsubUnsubscribe(pubsubTopic: string, handler?: EventHandler<Message>) {
+    async pubsubUnsubscribe(pubsubTopic: string, handler?: MessageHandlerFn) {
         for (let i = 0; i < Object.keys(this._plebbit.clients.pubsubClients).length; i++) {
             const pubsubProviderUrl = Object.keys(this._plebbit.clients.pubsubClients)[i];
             try {
