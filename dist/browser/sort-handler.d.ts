@@ -2,14 +2,14 @@ import { Subplebbit } from "./subplebbit";
 import { CommentsTableRow, CommentUpdatesRow, CommentWithCommentUpdate, PageIpfs, PagesTypeIpfs, PostSort, PostSortName, ReplySort, ReplySortName } from "./types";
 export declare const POSTS_SORT_TYPES: PostSort;
 export declare const REPLIES_SORT_TYPES: ReplySort;
-export declare type PageOptions = {
+export type PageOptions = {
     excludeRemovedComments: boolean;
     excludeDeletedComments: boolean;
     excludeCommentsWithDifferentSubAddress: boolean;
     parentCid: string | null;
     pageSize: number;
 };
-declare type PageGenerationRes = Partial<Record<PostSortName | ReplySortName, {
+type PageGenerationRes = Partial<Record<PostSortName | ReplySortName, {
     pages: PageIpfs[];
     cids: string[];
 }>>;

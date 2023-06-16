@@ -33,8 +33,8 @@ export declare const parseJsonStrings: (obj: any) => any;
 export declare function parsePageIpfs(pageIpfs: PageIpfs, plebbit: Plebbit): Promise<PageType>;
 export declare function parsePagesIpfs(pagesRaw: PagesTypeIpfs, plebbit: Plebbit): Promise<PagesType>;
 export declare function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | BasePages | undefined, plebbit: Plebbit): Promise<BasePages | {
-    pages: Partial<Record<"active" | "new" | "hot" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "old", PageType>>;
-    pagesIpfs: Partial<Record<"active" | "new" | "hot" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "old", PageIpfs>>;
+    pages: Partial<Record<"hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "active" | "old", PageType>>;
+    pagesIpfs: Partial<Record<"hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "active" | "old", PageIpfs>>;
 }>;
 export declare function shortifyAddress(address: string): string;
 export declare function shortifyCid(cid: string): string;

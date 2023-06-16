@@ -91,5 +91,5 @@ var messages;
     messages["ERR_PUBSUB_FAILED_TO_SUBSCRIBE"] = "Failed to subscribe on pubsub";
     messages["ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE"] = "Failed to unsubscribe on pubsub";
     messages["ERR_PUBSUB_FAILED_TO_PUBLISH"] = "Failed to publish on pubsub";
-})(messages = exports.messages || (exports.messages = {}));
+})(messages || (exports.messages = messages = {}));
 //# sourceMappingURL=errors.js.map

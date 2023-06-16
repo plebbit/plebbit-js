@@ -1,10 +1,10 @@
 import { TypedEmitter } from "tiny-typed-emitter";
 import { GenericClientEvents } from "../types";
-declare type PublicationIpfsState = "stopped" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs";
-declare type CommentIpfsState = PublicationIpfsState | "fetching-ipfs" | "fetching-update-ipns" | "fetching-update-ipfs";
-declare type SubplebbitIpfsState = "stopped" | "fetching-ipns" | "fetching-ipfs" | "publishing-ipns";
-declare type PagesIpfsState = "fetching-ipfs" | "stopped";
-declare type GenericIpfsState = PublicationIpfsState | CommentIpfsState | SubplebbitIpfsState | PagesIpfsState;
+type PublicationIpfsState = "stopped" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs";
+type CommentIpfsState = PublicationIpfsState | "fetching-ipfs" | "fetching-update-ipns" | "fetching-update-ipfs";
+type SubplebbitIpfsState = "stopped" | "fetching-ipns" | "fetching-ipfs" | "publishing-ipns";
+type PagesIpfsState = "fetching-ipfs" | "stopped";
+type GenericIpfsState = PublicationIpfsState | CommentIpfsState | SubplebbitIpfsState | PagesIpfsState;
 declare class BaseIpfsClient<T extends GenericIpfsState> extends TypedEmitter<GenericClientEvents<T>> {
     state: T;
     constructor(state: T);

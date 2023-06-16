@@ -1,6 +1,6 @@
 import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge";
 import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditPubsubMessage, CommentPubsubMessage, CommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, PublicationTypeName, SubplebbitIpfsType, VotePubsubMessage } from "../types";
-export declare type CreateSignerOptions = {
+export type CreateSignerOptions = {
     privateKey?: string;
     type?: "ed25519";
 };
@@ -12,7 +12,7 @@ export interface SignerType {
     ipfsKey?: Uint8Array;
     ipnsKeyName?: string;
 }
-export declare type Encrypted = {
+export type Encrypted = {
     ciphertext: Uint8Array;
     iv: Uint8Array;
     tag: Uint8Array;
@@ -28,7 +28,7 @@ export interface JsonSignature extends Omit<PubsubSignature, "signature" | "publ
     signature: string;
     publicKey: string;
 }
-export declare type SignatureTypes = PublicationTypeName | "challengerequestmessage" | "challengemessage" | "challengeanswermessage" | "challengeverificationmessage";
+export type SignatureTypes = PublicationTypeName | "challengerequestmessage" | "challengemessage" | "challengeanswermessage" | "challengeverificationmessage";
 export declare const CommentSignedPropertyNames: readonly (keyof CreateCommentOptions)[];
 export declare const CommentEditSignedPropertyNames: readonly (keyof CreateCommentEditOptions)[];
 export declare const VoteSignedPropertyNames: readonly (keyof CreateVoteOptions)[];
@@ -38,10 +38,10 @@ export declare const ChallengeRequestMessageSignedPropertyNames: readonly (keyof
 export declare const ChallengeMessageSignedPropertyNames: readonly (keyof ChallengeMessageType)[];
 export declare const ChallengeAnswerMessageSignedPropertyNames: readonly (keyof ChallengeAnswerMessage)[];
 export declare const ChallengeVerificationMessageSignedPropertyNames: readonly (keyof ChallengeVerificationMessageType)[];
-export declare type CommentSignedPropertyNamesUnion = typeof CommentSignedPropertyNames[number];
-export declare type CommentEditSignedPropertyNamesUnion = typeof CommentEditSignedPropertyNames[number];
-export declare type VoteSignedPropertyNamesUnion = typeof VoteSignedPropertyNames[number];
-export declare type CommentUpdatedSignedPropertyNamesUnion = typeof CommentUpdateSignedPropertyNames[number];
-export declare type PublicationsToSign = CreateCommentEditOptions | CreateVoteOptions | CreateCommentOptions | Omit<CommentUpdate, "signature"> | Omit<SubplebbitIpfsType, "signature">;
-export declare type PubsubMsgsToSign = Omit<ChallengeAnswerMessageType, "signature"> | Omit<ChallengeRequestMessageType, "signature"> | Omit<ChallengeVerificationMessageType, "signature"> | Omit<ChallengeMessageType, "signature">;
-export declare type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | CommentUpdate | SubplebbitIpfsType;
+export type CommentSignedPropertyNamesUnion = typeof CommentSignedPropertyNames[number];
+export type CommentEditSignedPropertyNamesUnion = typeof CommentEditSignedPropertyNames[number];
+export type VoteSignedPropertyNamesUnion = typeof VoteSignedPropertyNames[number];
+export type CommentUpdatedSignedPropertyNamesUnion = typeof CommentUpdateSignedPropertyNames[number];
+export type PublicationsToSign = CreateCommentEditOptions | CreateVoteOptions | CreateCommentOptions | Omit<CommentUpdate, "signature"> | Omit<SubplebbitIpfsType, "signature">;
+export type PubsubMsgsToSign = Omit<ChallengeAnswerMessageType, "signature"> | Omit<ChallengeRequestMessageType, "signature"> | Omit<ChallengeVerificationMessageType, "signature"> | Omit<ChallengeMessageType, "signature">;
+export type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | CommentUpdate | SubplebbitIpfsType;

@@ -14,7 +14,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -111,37 +111,41 @@ var Cache = /** @class */ (function () {
         });
     };
     Cache.prototype.keys = function () {
-        var e_1, _a;
+        var _a, e_1, _b, _c;
         return __awaiter(this, void 0, void 0, function () {
-            var keys, _b, _c, _d, key, value, e_1_1;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
+            var keys, _d, _e, _f, key, value, e_1_1;
+            return __generator(this, function (_g) {
+                switch (_g.label) {
                     case 0:
                         keys = [];
-                        _e.label = 1;
+                        _g.label = 1;
                     case 1:
-                        _e.trys.push([1, 6, 7, 12]);
-                        _b = __asyncValues(this._keyv.iterator());
-                        _e.label = 2;
-                    case 2: return [4 /*yield*/, _b.next()];
+                        _g.trys.push([1, 6, 7, 12]);
+                        _d = true, _e = __asyncValues(this._keyv.iterator());
+                        _g.label = 2;
+                    case 2: return [4 /*yield*/, _e.next()];
                     case 3:
-                        if (!(_c = _e.sent(), !_c.done)) return [3 /*break*/, 5];
-                        _d = _c.value, key = _d[0], value = _d[1];
+                        if (!(_f = _g.sent(), _a = _f.done, !_a)) return [3 /*break*/, 5];
+                        _c = _f.value;
+                        _d = false;
+                        key = _c[0], value = _c[1];
                         keys.push(key);
-                        _e.label = 4;
-                    case 4: return [3 /*break*/, 2];
+                        _g.label = 4;
+                    case 4:
+                        _d = true;
+                        return [3 /*break*/, 2];
                     case 5: return [3 /*break*/, 12];
                     case 6:
-                        e_1_1 = _e.sent();
+                        e_1_1 = _g.sent();
                         e_1 = { error: e_1_1 };
                         return [3 /*break*/, 12];
                     case 7:
-                        _e.trys.push([7, , 10, 11]);
-                        if (!(_c && !_c.done && (_a = _b.return))) return [3 /*break*/, 9];
-                        return [4 /*yield*/, _a.call(_b)];
+                        _g.trys.push([7, , 10, 11]);
+                        if (!(!_d && !_a && (_b = _e.return))) return [3 /*break*/, 9];
+                        return [4 /*yield*/, _b.call(_e)];
                     case 8:
-                        _e.sent();
-                        _e.label = 9;
+                        _g.sent();
+                        _g.label = 9;
                     case 9: return [3 /*break*/, 11];
                     case 10:
                         if (e_1) throw e_1.error;

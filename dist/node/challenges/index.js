@@ -25,7 +25,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -103,22 +103,25 @@ var validateChallengeOrChallengeResult = function (challengeOrChallengeResult, g
     }
 };
 var getPendingChallengesOrChallengeVerification = function (challengeRequestMessage, subplebbit) { return __awaiter(void 0, void 0, void 0, function () {
-    var challengeResults, _a, _b, _i, i, challengeIndex, subplebbitChallengeSettings, challengeFile, ChallengeFileFactory, ChallengeFileFactory, challengeResult, getChallengeError, e_1, challengeFailureCount, pendingChallenges, challengeErrors, _c, _d, _e, i, challengeIndex, challengeResult, subplebbitChallengeSettings, subplebbitChallenge, challengeSuccess;
-    var _f, _g;
-    return __generator(this, function (_h) {
-        switch (_h.label) {
+    var challengeResults, _a, _b, _c, _i, i, challengeIndex, subplebbitChallengeSettings, challengeFile, ChallengeFileFactory, ChallengeFileFactory, challengeResult, getChallengeError, e_1, challengeFailureCount, pendingChallenges, challengeErrors, _d, _e, _f, _g, i, challengeIndex, challengeResult, subplebbitChallengeSettings, subplebbitChallenge, challengeSuccess;
+    var _h, _j;
+    return __generator(this, function (_k) {
+        switch (_k.label) {
             case 0:
                 challengeResults = [];
-                _a = [];
-                for (_b in (_f = subplebbit.settings) === null || _f === void 0 ? void 0 : _f.challenges)
-                    _a.push(_b);
+                _a = (_h = subplebbit.settings) === null || _h === void 0 ? void 0 : _h.challenges;
+                _b = [];
+                for (_c in _a)
+                    _b.push(_c);
                 _i = 0;
-                _h.label = 1;
+                _k.label = 1;
             case 1:
-                if (!(_i < _a.length)) return [3 /*break*/, 7];
-                i = _a[_i];
+                if (!(_i < _b.length)) return [3 /*break*/, 7];
+                _c = _b[_i];
+                if (!(_c in _a)) return [3 /*break*/, 6];
+                i = _c;
                 challengeIndex = Number(i);
-                subplebbitChallengeSettings = (_g = subplebbit.settings) === null || _g === void 0 ? void 0 : _g.challenges[challengeIndex];
+                subplebbitChallengeSettings = (_j = subplebbit.settings) === null || _j === void 0 ? void 0 : _j.challenges[challengeIndex];
                 challengeFile = void 0;
                 if (subplebbitChallengeSettings.path) {
                     try {
@@ -143,22 +146,22 @@ var getPendingChallengesOrChallengeVerification = function (challengeRequestMess
                     validateChallengeFile(challengeFile, challengeIndex, subplebbit);
                 }
                 challengeResult = void 0, getChallengeError = void 0;
-                _h.label = 2;
+                _k.label = 2;
             case 2:
-                _h.trys.push([2, 4, , 5]);
+                _k.trys.push([2, 4, , 5]);
                 return [4 /*yield*/, challengeFile.getChallenge(subplebbitChallengeSettings, challengeRequestMessage, challengeIndex)];
             case 3:
                 // the getChallenge function could throw
-                challengeResult = _h.sent();
+                challengeResult = _k.sent();
                 return [3 /*break*/, 5];
             case 4:
-                e_1 = _h.sent();
+                e_1 = _k.sent();
                 getChallengeError = e_1;
                 return [3 /*break*/, 5];
             case 5:
                 validateChallengeOrChallengeResult(challengeResult, getChallengeError, challengeIndex, subplebbit);
                 challengeResults.push(challengeResult);
-                _h.label = 6;
+                _k.label = 6;
             case 6:
                 _i++;
                 return [3 /*break*/, 1];
@@ -166,14 +169,17 @@ var getPendingChallengesOrChallengeVerification = function (challengeRequestMess
                 challengeFailureCount = 0;
                 pendingChallenges = [];
                 challengeErrors = new Array(challengeResults.length);
-                _c = [];
-                for (_d in challengeResults)
-                    _c.push(_d);
-                _e = 0;
-                _h.label = 8;
+                _d = challengeResults;
+                _e = [];
+                for (_f in _d)
+                    _e.push(_f);
+                _g = 0;
+                _k.label = 8;
             case 8:
-                if (!(_e < _c.length)) return [3 /*break*/, 11];
-                i = _c[_e];
+                if (!(_g < _e.length)) return [3 /*break*/, 11];
+                _f = _e[_g];
+                if (!(_f in _d)) return [3 /*break*/, 10];
+                i = _f;
                 challengeIndex = Number(i);
                 challengeResult = challengeResults[challengeIndex];
                 subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
@@ -184,7 +190,7 @@ var getPendingChallengesOrChallengeVerification = function (challengeRequestMess
                 }
                 return [4 /*yield*/, (0, exclude_1.shouldExcludeChallengeCommentCids)(subplebbitChallenge, challengeRequestMessage, subplebbit.plebbit)];
             case 9:
-                if (_h.sent()) {
+                if (_k.sent()) {
                     return [3 /*break*/, 10];
                 }
                 // exclude based on other challenges successes
@@ -202,9 +208,9 @@ var getPendingChallengesOrChallengeVerification = function (challengeRequestMess
                     // index is needed to exlude based on other challenge success in getChallengeVerification
                     pendingChallenges.push(__assign(__assign({}, challengeResult), { index: challengeIndex }));
                 }
-                _h.label = 10;
+                _k.label = 10;
             case 10:
-                _e++;
+                _g++;
                 return [3 /*break*/, 8];
             case 11:
                 challengeSuccess = undefined;

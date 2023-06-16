@@ -1,5 +1,5 @@
 import { Chain } from "./types";
-declare type StatTypes = "ipns" | "cid" | "pubsub-publish" | "pubsub-subscribe" | Chain;
+type StatTypes = "ipns" | "cid" | "pubsub-publish" | "pubsub-subscribe" | Chain;
 export default class Stats {
     private _plebbit;
     constructor(plebbit: Stats["_plebbit"]);

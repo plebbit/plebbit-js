@@ -37,7 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -294,28 +294,28 @@ function signChallengeVerification(challengeVerification, signer) {
 exports.signChallengeVerification = signChallengeVerification;
 // Verify functions
 var _verifyAuthor = function (publicationJson, resolveAuthorAddresses, clientsManager) { return __awaiter(void 0, void 0, void 0, function () {
-    var log, resolvedAuthorAddress, derivedAddress, authorPeerId, signaturePeerId, _a;
+    var log, derivedAddress, resolvedAuthorAddress, authorPeerId, signaturePeerId, _a;
     var _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
                 log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifyAuthor");
+                return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPublicKey)(publicationJson.signature.publicKey)];
+            case 1:
+                derivedAddress = _c.sent();
                 if (!((_b = publicationJson.author) === null || _b === void 0 ? void 0 : _b.address))
-                    return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_ADDRESS_UNDEFINED }];
+                    return [2 /*return*/, { useDerivedAddress: true, reason: errors_1.messages.ERR_AUTHOR_ADDRESS_UNDEFINED, derivedAddress: derivedAddress }];
                 if (!publicationJson.author.address.includes(".")) return [3 /*break*/, 3];
                 if (!resolveAuthorAddresses)
-                    return [2 /*return*/, { valid: true }];
+                    return [2 /*return*/, { useDerivedAddress: false }];
                 return [4 /*yield*/, clientsManager.resolveAuthorAddressIfNeeded(publicationJson.author.address)];
-            case 1:
-                resolvedAuthorAddress = _c.sent();
-                return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPublicKey)(publicationJson.signature.publicKey)];
             case 2:
-                derivedAddress = _c.sent();
+                resolvedAuthorAddress = _c.sent();
                 if (resolvedAuthorAddress !== derivedAddress) {
                     // Means plebbit-author-address text record is resolving to another address (outdated?)
                     // Will always use address derived from publication.signature.publicKey as truth
                     log.error("author address (".concat(publicationJson.author.address, ") resolved address (").concat(resolvedAuthorAddress, ") is invalid"));
-                    return [2 /*return*/, { valid: true, newAddress: derivedAddress }];
+                    return [2 /*return*/, { useDerivedAddress: true, derivedAddress: derivedAddress, reason: errors_1.messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE }];
                 }
                 return [3 /*break*/, 8];
             case 3:
@@ -324,7 +324,7 @@ var _verifyAuthor = function (publicationJson, resolveAuthorAddresses, clientsMa
                     authorPeerId = peer_id_1.default.createFromB58String(publicationJson.author.address);
                 }
                 catch (_d) {
-                    return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 }];
+                    return [2 /*return*/, { useDerivedAddress: true, reason: errors_1.messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58, derivedAddress: derivedAddress }];
                 }
                 _c.label = 4;
             case 4:
@@ -335,14 +335,14 @@ var _verifyAuthor = function (publicationJson, resolveAuthorAddresses, clientsMa
                 return [3 /*break*/, 7];
             case 6:
                 _a = _c.sent();
-                return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SIGNATURE_PUBLIC_KEY_IS_NOT_B58 }];
+                return [2 /*return*/, { useDerivedAddress: false, reason: errors_1.messages.ERR_SIGNATURE_PUBLIC_KEY_IS_NOT_B58 }];
             case 7:
                 if (!signaturePeerId.equals(authorPeerId))
-                    return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE }];
+                    return [2 /*return*/, { useDerivedAddress: true, reason: errors_1.messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE, derivedAddress: derivedAddress }];
                 _c.label = 8;
             case 8: 
             // Author
-            return [2 /*return*/, { valid: true }];
+            return [2 /*return*/, { useDerivedAddress: false }];
         }
     });
 }); };
@@ -400,17 +400,15 @@ var _verifyPublicationWithAuthor = function (publicationJson, resolveAuthorAddre
             case 0: return [4 /*yield*/, _verifyAuthor(publicationJson, resolveAuthorAddresses, clientsManager)];
             case 1:
                 authorSignatureValidity = _a.sent();
-                if (!authorSignatureValidity.valid)
-                    return [2 /*return*/, authorSignatureValidity];
-                if (!overrideAuthorAddressIfInvalid && authorSignatureValidity.newAddress)
-                    return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE }];
+                if (authorSignatureValidity.useDerivedAddress && !overrideAuthorAddressIfInvalid)
+                    return [2 /*return*/, { valid: false, reason: authorSignatureValidity.reason }];
                 return [4 /*yield*/, _verifyJsonSignature(publicationJson)];
             case 2:
                 signatureValidity = _a.sent();
                 if (!signatureValidity)
                     return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SIGNATURE_IS_INVALID }];
-                if (authorSignatureValidity === null || authorSignatureValidity === void 0 ? void 0 : authorSignatureValidity.newAddress)
-                    return [2 /*return*/, { valid: true, newAddress: authorSignatureValidity.newAddress }];
+                if (overrideAuthorAddressIfInvalid && authorSignatureValidity.useDerivedAddress)
+                    publicationJson.author.address = authorSignatureValidity.derivedAddress;
                 return [2 /*return*/, { valid: true }];
         }
     });
@@ -449,17 +447,16 @@ function verifyCommentEdit(edit, resolveAuthorAddresses, clientsManager, overrid
 exports.verifyCommentEdit = verifyCommentEdit;
 function verifyComment(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
     return __awaiter(this, void 0, void 0, function () {
-        var validation, hash;
+        var hash, validation;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, _verifyPublicationWithAuthor(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid)];
+                case 0:
+                    hash = (0, sha1_uint8array_1.createHash)().update(JSON.stringify(comment)).digest("hex").slice(0, 12);
+                    return [4 /*yield*/, _verifyPublicationWithAuthor(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid)];
                 case 1:
                     validation = _a.sent();
                     if (!validation.valid)
                         return [2 /*return*/, validation];
-                    if (validation.newAddress && overrideAuthorAddressIfInvalid)
-                        comment.author.address = validation.newAddress;
-                    hash = (0, sha1_uint8array_1.createHash)().update(JSON.stringify(comment)).digest("hex").slice(0, 12);
                     constants_2.commentValidationCache.set(hash, true);
                     return [2 /*return*/, { valid: true }];
             }
@@ -484,34 +481,34 @@ exports.verifyCommentWithCache = verifyCommentWithCache;
 function verifySubplebbit(subplebbit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var log, _i, _b, pageName, pageValidity, signatureValidity, resolvedSubAddress, subPeerId, signaturePeerId;
+        var log, signatureValidity, _i, _b, pageName, pageValidity, resolvedSubAddress, subPeerId, signaturePeerId;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
                     log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifySubplebbit");
-                    if (!((_a = subplebbit.posts) === null || _a === void 0 ? void 0 : _a.pages)) return [3 /*break*/, 4];
-                    _i = 0, _b = Object.keys(subplebbit.posts.pages);
-                    _c.label = 1;
+                    return [4 /*yield*/, _verifyJsonSignature(subplebbit)];
                 case 1:
-                    if (!(_i < _b.length)) return [3 /*break*/, 4];
-                    pageName = _b[_i];
-                    return [4 /*yield*/, verifyPage(overrideAuthorAddressIfInvalid ? lodash_1.default.cloneDeep(subplebbit.posts.pages[pageName]) : subplebbit.posts.pages[pageName], resolveAuthorAddresses, clientsManager, subplebbit.address, undefined, overrideAuthorAddressIfInvalid)];
+                    signatureValidity = _c.sent();
+                    if (!signatureValidity)
+                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SIGNATURE_IS_INVALID }];
+                    if (!((_a = subplebbit.posts) === null || _a === void 0 ? void 0 : _a.pages)) return [3 /*break*/, 5];
+                    _i = 0, _b = Object.keys(subplebbit.posts.pages);
+                    _c.label = 2;
                 case 2:
+                    if (!(_i < _b.length)) return [3 /*break*/, 5];
+                    pageName = _b[_i];
+                    return [4 /*yield*/, verifyPage(subplebbit.posts.pages[pageName], resolveAuthorAddresses, clientsManager, subplebbit.address, undefined, overrideAuthorAddressIfInvalid)];
+                case 3:
                     pageValidity = _c.sent();
                     if (!pageValidity.valid) {
                         log.error("Subplebbit (".concat(subplebbit.address, ") page (").concat(pageName, " - ").concat(subplebbit.posts.pageCids[pageName], ") has an invalid signature due to reason (").concat(pageValidity.reason, ")"));
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SUBPLEBBIT_POSTS_INVALID }];
                     }
-                    _c.label = 3;
-                case 3:
+                    _c.label = 4;
+                case 4:
                     _i++;
-                    return [3 /*break*/, 1];
-                case 4: return [4 /*yield*/, _verifyJsonSignature(subplebbit)];
-                case 5:
-                    signatureValidity = _c.sent();
-                    if (!signatureValidity)
-                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SIGNATURE_IS_INVALID }];
-                    return [4 /*yield*/, clientsManager.resolveSubplebbitAddressIfNeeded(subplebbit.address)];
+                    return [3 /*break*/, 2];
+                case 5: return [4 /*yield*/, clientsManager.resolveSubplebbitAddressIfNeeded(subplebbit.address)];
                 case 6:
                     resolvedSubAddress = _c.sent();
                     if (!resolvedSubAddress)
@@ -560,11 +557,12 @@ function _getBinaryValidationResult(publication) {
 }
 function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid) {
     return __awaiter(this, void 0, void 0, function () {
-        var log, updateSignatureAddress, subplebbitResolvedAddress, pagesValidity, invalidPageValidity, jsonValidation, hash;
+        var log, hash, updateSignatureAddress, subplebbitResolvedAddress, pagesValidity, invalidPageValidity, jsonValidation;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifyCommentUpdate");
+                    hash = (0, sha1_uint8array_1.createHash)().update(JSON.stringify(update)).digest("hex").slice(0, 12);
                     // const hash =
                     if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR }];
@@ -595,7 +593,6 @@ function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, sub
                     jsonValidation = _a.sent();
                     if (!jsonValidation.valid)
                         return [2 /*return*/, jsonValidation];
-                    hash = (0, sha1_uint8array_1.createHash)().update(JSON.stringify(update)).digest("hex").slice(0, 12);
                     constants_2.commentUpdateValidationCache.set(hash, true);
                     return [2 /*return*/, { valid: true }];
             }

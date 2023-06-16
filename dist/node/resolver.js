@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -14,7 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -39,11 +62,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Resolver = void 0;
-var ethers_1 = require("ethers");
+exports.Resolver = exports.viemPublicClient = void 0;
 var assert_1 = __importDefault(require("assert"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
-var util_1 = require("./util");
+var ens_1 = require("viem/ens");
+var viem_1 = require("viem");
+var chains = __importStar(require("viem/chains"));
+exports.viemPublicClient = (0, viem_1.createPublicClient)({
+    chain: chains.mainnet,
+    transport: (0, viem_1.http)()
+});
 var Resolver = /** @class */ (function () {
     function Resolver(plebbit) {
         this.plebbit = plebbit;
@@ -59,28 +87,29 @@ var Resolver = /** @class */ (function () {
         (0, assert_1.default)(chainTicker && typeof chainTicker === "string", "invalid chainTicker '".concat(chainTicker, "'"));
         (0, assert_1.default)(this.plebbit.chainProviders, "invalid chainProviders '".concat(this.plebbit.chainProviders, "'"));
         (0, assert_1.default)(this.plebbit.chainProviders[chainTicker].urls.includes(chainProviderUrl));
-        if (chainTicker === "eth" && chainProviderUrl === "ethers.js") {
-            // if using eth, use ethers' default provider unless another provider is specified
-            return ethers_1.ethers.getDefaultProvider();
+        if (chainTicker === "eth" && chainProviderUrl === "viem") {
+            // if using eth, use viem' default provider unless another provider is specified
+            return exports.viemPublicClient;
         }
-        else
-            return new ethers_1.ethers.providers.JsonRpcProvider({ url: chainProviderUrl }, this.plebbit.chainProviders[chainTicker].chainId);
+        else {
+            var chainId_1 = this.plebbit.chainProviders[chainTicker].chainId;
+            var chain = Object.values(chains).find(function (chain) { return chain.id === chainId_1; });
+            return (0, viem_1.createPublicClient)({
+                chain: chain,
+                transport: (0, viem_1.http)(chainProviderUrl)
+            });
+        }
     };
     Resolver.prototype.resolveTxtRecord = function (address, txtRecordName, chain, chainProviderUrl) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, chainProvider, resolver, txtRecordResult;
+            var log, chainProvider, txtRecordResult;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:resolver:_resolveEnsTxtRecord");
                         chainProvider = this._getChainProvider(chain, chainProviderUrl);
-                        return [4 /*yield*/, chainProvider.getResolver(address)];
+                        return [4 /*yield*/, chainProvider.getEnsText({ name: (0, ens_1.normalize)(address), key: txtRecordName })];
                     case 1:
-                        resolver = _a.sent();
-                        if (!resolver)
-                            (0, util_1.throwWithErrorCode)("ERR_ENS_RESOLVER_NOT_FOUND", { address: address, chainProvider: chainProvider, chain: chain });
-                        return [4 /*yield*/, resolver.getText(txtRecordName)];
-                    case 2:
                         txtRecordResult = _a.sent();
                         log("Resolved text record name (".concat(txtRecordName, ") of address (").concat(address, ") to ").concat(txtRecordResult, " with chainProvider (").concat(chainProviderUrl, ")"));
                         return [2 /*return*/, txtRecordResult];

@@ -11,9 +11,9 @@ import { CommentEditSignedPropertyNamesUnion, CommentSignedPropertyNamesUnion, E
 import { Subplebbit } from "./subplebbit";
 import Publication from "./publication";
 import { PlebbitError } from "./plebbit-error";
-export declare type ProtocolVersion = "1.0.0";
-export declare type Chain = "eth" | "matic" | "avax";
-export declare type ChainProvider = {
+export type ProtocolVersion = "1.0.0";
+export type Chain = "eth" | "matic" | "avax";
+export type ChainProvider = {
     urls: string[];
     chainId: number;
 };
@@ -64,7 +64,7 @@ export interface PagesTypeIpfs {
     pages: Partial<Record<PostSortName | ReplySortName, PageIpfs>>;
     pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
 }
-export declare type SubplebbitEncryption = {
+export type SubplebbitEncryption = {
     type: "ed25519-aes-gcm";
     publicKey: string;
 };
@@ -108,7 +108,7 @@ export interface AuthorIpfsType {
 export interface AuthorTypeWithCommentUpdate extends AuthorIpfsType {
     subplebbit?: SubplebbitAuthor;
 }
-export declare type Wallet = {
+export type Wallet = {
     address: string;
 };
 export interface PublicationType extends Required<CreatePublicationOptions> {
@@ -143,18 +143,18 @@ export interface AuthorCommentEdit extends AuthorCommentEditOptions, Publication
 }
 export interface ModeratorCommentEdit extends ModeratorCommentEditOptions, PublicationType {
 }
-export declare type CommentAuthorEditOptions = Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
+export type CommentAuthorEditOptions = Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
 export interface CreateCommentEditOptions extends AuthorCommentEdit, ModeratorCommentEdit {
     signer: SignerType | Pick<SignerType, "privateKey" | "type">;
 }
-export declare type Nft = {
+export type Nft = {
     chainTicker: string;
     address: string;
     id: string;
     timestamp: number;
     signature: JsonSignature;
 };
-export declare type SubplebbitRole = {
+export type SubplebbitRole = {
     role: "owner" | "admin" | "moderator";
 };
 export interface PubsubMessage {
@@ -204,7 +204,7 @@ export interface ChallengeVerificationMessageType extends PubsubMessage {
 export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType {
     publication?: CommentIpfsWithCid;
 }
-export declare type SubplebbitStats = {
+export type SubplebbitStats = {
     hourActiveUserCount: number;
     dayActiveUserCount: number;
     weekActiveUserCount: number;
@@ -218,7 +218,7 @@ export declare type SubplebbitStats = {
     yearPostCount: number;
     allPostCount: number;
 };
-export declare type SubplebbitFeatures = {
+export type SubplebbitFeatures = {
     noVideos?: boolean;
     noSpoilers?: boolean;
     noImages?: boolean;
@@ -242,7 +242,7 @@ export declare type SubplebbitFeatures = {
     markdownImageReplies?: boolean;
     markdownVideoReplies?: boolean;
 };
-export declare type SubplebbitSuggested = {
+export type SubplebbitSuggested = {
     primaryColor?: string;
     secondaryColor?: string;
     avatarUrl?: string;
@@ -250,13 +250,13 @@ export declare type SubplebbitSuggested = {
     backgroundUrl?: string;
     language?: string;
 };
-export declare type Flair = {
+export type Flair = {
     text: string;
     backgroundColor?: string;
     textColor?: string;
     expiresAt?: number;
 };
-export declare type FlairOwner = "post" | "author";
+export type FlairOwner = "post" | "author";
 export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database" | "signer"> {
     signature: JsonSignature;
     encryption: SubplebbitEncryption;
@@ -301,22 +301,22 @@ export interface SubplebbitEditOptions {
     address?: string;
     settings?: SubplebbitSettings;
 }
-export declare type SubplebbitSettings = {
+export type SubplebbitSettings = {
     fetchThumbnailUrls?: boolean;
     fetchThumbnailUrlsProxyUrl?: string;
 };
-export declare type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
-export declare type PostSortName = "hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "active";
-export declare type ReplySortName = "topAll" | "new" | "old" | "controversialAll";
-export declare type SortProps = {
+export type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
+export type PostSortName = "hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "active";
+export type ReplySortName = "topAll" | "new" | "old" | "controversialAll";
+export type SortProps = {
     score: (comment: {
         comment: CommentsTableRow;
         update: CommentUpdatesRow;
     }) => number;
     timeframe?: Timeframe;
 };
-export declare type PostSort = Record<PostSortName, SortProps>;
-export declare type ReplySort = Record<ReplySortName, SortProps>;
+export type PostSort = Record<PostSortName, SortProps>;
+export type ReplySort = Record<ReplySortName, SortProps>;
 export interface CommentUpdate {
     cid: string;
     upvoteCount: number;
@@ -375,7 +375,7 @@ export interface CommentEditType extends PublicationType, Omit<CreateCommentEdit
     author: CommentIpfsType["author"];
     signer?: SignerType;
 }
-export declare type PublicationTypeName = "comment" | "vote" | "commentedit" | "commentupdate" | "subplebbit";
+export type PublicationTypeName = "comment" | "vote" | "commentedit" | "commentupdate" | "subplebbit";
 export interface CommentPubsubMessage extends Pick<CommentType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {
 }
 export interface PostPubsubMessage extends Pick<PostType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {
@@ -384,11 +384,11 @@ export interface VotePubsubMessage extends Pick<VoteType, VoteSignedPropertyName
 }
 export interface CommentEditPubsubMessage extends Pick<CommentEditType, CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion"> {
 }
-declare type FunctionPropertyOf<T> = {
+type FunctionPropertyOf<T> = {
     [P in keyof T]: T[P] extends Function ? P : never;
 }[keyof T];
-export declare type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHandler>>;
-export declare type IpfsHttpClientPublicAPI = {
+export type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHandler>>;
+export type IpfsHttpClientPublicAPI = {
     add: IPFSHTTPClient["add"];
     cat: (...p: Parameters<IPFSHTTPClient["cat"]>) => Promise<string | undefined>;
     pubsub: Pick<IPFSHTTPClient["pubsub"], "subscribe" | "unsubscribe" | "publish" | "ls" | "peers">;
@@ -411,7 +411,7 @@ export declare type IpfsHttpClientPublicAPI = {
     };
     swarm: Pick<IPFSHTTPClient["swarm"], "peers">;
 };
-export declare type NativeFunctions = {
+export type NativeFunctions = {
     listSubplebbits: (dataPath: string) => Promise<string[]>;
     createDbHandler: (subplebbit: DbHandler["_subplebbit"]) => DbHandlerPublicAPI;
     fetch: typeof fetch;
@@ -426,7 +426,7 @@ export declare type NativeFunctions = {
     }>;
     deleteSubplebbit(subplebbitAddress: string, dataPath: string): Promise<void>;
 };
-export declare type OnlyDefinedProperties<T> = Pick<T, {
+export type OnlyDefinedProperties<T> = Pick<T, {
     [Prop in keyof T]: T[Prop] extends undefined ? never : Prop;
 }[keyof T]>;
 export interface CommentsTableRow extends CommentIpfsWithCid, Required<Pick<CommentType, "ipnsKeyName">> {

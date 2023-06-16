@@ -2,7 +2,7 @@ import { Plebbit } from "../plebbit";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import { PlebbitError } from "../plebbit-error";
 import { Chain, PubsubMessage } from "../types";
-export declare type LoadType = "subplebbit" | "comment-update" | "comment" | "generic-ipfs";
+export type LoadType = "subplebbit" | "comment-update" | "comment" | "generic-ipfs";
 export declare const resolvePromises: Record<string, Promise<string | null>>;
 export declare class BaseClientsManager {
     protected _plebbit: Plebbit;

@@ -14,7 +14,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -117,37 +117,41 @@ var nativeFunctions = {
                 args[_i] = arguments[_i];
             }
             return __awaiter(void 0, void 0, void 0, function () {
-                var rmResults, _a, _b, res, e_1_1;
-                var _c;
-                var e_1, _d;
-                return __generator(this, function (_e) {
-                    switch (_e.label) {
+                var rmResults, _a, _b, _c, res, e_1_1;
+                var _d;
+                var _e, e_1, _f, _g;
+                return __generator(this, function (_h) {
+                    switch (_h.label) {
                         case 0:
                             rmResults = [];
-                            _e.label = 1;
+                            _h.label = 1;
                         case 1:
-                            _e.trys.push([1, 6, 7, 12]);
-                            _a = __asyncValues((_c = ipfsClient.block).rm.apply(_c, args));
-                            _e.label = 2;
-                        case 2: return [4 /*yield*/, _a.next()];
+                            _h.trys.push([1, 6, 7, 12]);
+                            _a = true, _b = __asyncValues((_d = ipfsClient.block).rm.apply(_d, args));
+                            _h.label = 2;
+                        case 2: return [4 /*yield*/, _b.next()];
                         case 3:
-                            if (!(_b = _e.sent(), !_b.done)) return [3 /*break*/, 5];
-                            res = _b.value;
+                            if (!(_c = _h.sent(), _e = _c.done, !_e)) return [3 /*break*/, 5];
+                            _g = _c.value;
+                            _a = false;
+                            res = _g;
                             rmResults.push(res);
-                            _e.label = 4;
-                        case 4: return [3 /*break*/, 2];
+                            _h.label = 4;
+                        case 4:
+                            _a = true;
+                            return [3 /*break*/, 2];
                         case 5: return [3 /*break*/, 12];
                         case 6:
-                            e_1_1 = _e.sent();
+                            e_1_1 = _h.sent();
                             e_1 = { error: e_1_1 };
                             return [3 /*break*/, 12];
                         case 7:
-                            _e.trys.push([7, , 10, 11]);
-                            if (!(_b && !_b.done && (_d = _a.return))) return [3 /*break*/, 9];
-                            return [4 /*yield*/, _d.call(_a)];
+                            _h.trys.push([7, , 10, 11]);
+                            if (!(!_a && !_e && (_f = _b.return))) return [3 /*break*/, 9];
+                            return [4 /*yield*/, _f.call(_b)];
                         case 8:
-                            _e.sent();
-                            _e.label = 9;
+                            _h.sent();
+                            _h.label = 9;
                         case 9: return [3 /*break*/, 11];
                         case 10:
                             if (e_1) throw e_1.error;

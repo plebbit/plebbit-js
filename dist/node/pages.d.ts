@@ -1,7 +1,7 @@
 import { CommentIpfsType, PagesType, PagesTypeIpfs, PagesTypeJson, PageType, PostSortName, PostsPagesTypeJson, RepliesPagesTypeJson, ReplySortName } from "./types";
 import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "./clients/pages-client-manager";
 import { Plebbit } from "./plebbit";
-declare type ConstructorProps = PagesType & {
+type ConstructorProps = PagesType & {
     plebbit: BasePages["_plebbit"];
     subplebbitAddress: BasePages["_subplebbitAddress"];
     parentCid?: CommentIpfsType["parentCid"];
