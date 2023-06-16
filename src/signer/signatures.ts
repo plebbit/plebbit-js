@@ -194,38 +194,39 @@ const _verifyAuthor = async (
     publicationJson: CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage,
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager
-): Promise<ValidationResult & { newAddress?: string }> => {
+): Promise<Omit<ValidationResult, "valid"> & { useDerivedAddress: boolean; derivedAddress?: string }> => {
     const log = Logger("plebbit-js:signatures:verifyAuthor");
+    const derivedAddress = await getPlebbitAddressFromPublicKey(publicationJson.signature.publicKey);
 
-    if (!publicationJson.author?.address) return { valid: false, reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED };
+    if (!publicationJson.author?.address) return { useDerivedAddress: true, reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED, derivedAddress };
 
     // Is it a domain?
     if (publicationJson.author.address.includes(".")) {
-        if (!resolveAuthorAddresses) return { valid: true };
+        if (!resolveAuthorAddresses) return { useDerivedAddress: false };
         const resolvedAuthorAddress = await clientsManager.resolveAuthorAddressIfNeeded(publicationJson.author.address);
-        const derivedAddress = await getPlebbitAddressFromPublicKey(publicationJson.signature.publicKey);
         if (resolvedAuthorAddress !== derivedAddress) {
             // Means plebbit-author-address text record is resolving to another address (outdated?)
             // Will always use address derived from publication.signature.publicKey as truth
             log.error(`author address (${publicationJson.author.address}) resolved address (${resolvedAuthorAddress}) is invalid`);
-            return { valid: true, newAddress: derivedAddress };
+            return { useDerivedAddress: true, derivedAddress, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
         }
     } else {
         let authorPeerId: PeerId, signaturePeerId: PeerId;
         try {
             authorPeerId = PeerId.createFromB58String(publicationJson.author.address);
         } catch {
-            return { valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 };
+            return { useDerivedAddress: true, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58, derivedAddress };
         }
         try {
             signaturePeerId = await getPeerIdFromPublicKey(publicationJson.signature.publicKey);
         } catch {
-            return { valid: false, reason: messages.ERR_SIGNATURE_PUBLIC_KEY_IS_NOT_B58 };
+            return { useDerivedAddress: false, reason: messages.ERR_SIGNATURE_PUBLIC_KEY_IS_NOT_B58 };
         }
-        if (!signaturePeerId.equals(authorPeerId)) return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
+        if (!signaturePeerId.equals(authorPeerId))
+            return { useDerivedAddress: true, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE, derivedAddress };
     }
     // Author
-    return { valid: true };
+    return { useDerivedAddress: false };
 };
 
 // DO NOT MODIFY THIS FUNCTION, OTHERWISE YOU RISK BREAKING BACKWARD COMPATIBILITY
@@ -269,21 +270,19 @@ const _verifyPublicationWithAuthor = async (
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
-): Promise<ValidationResult & { newAddress?: string }> => {
+): Promise<ValidationResult & { derivedAddress?: string }> => {
     // Validate author
     const authorSignatureValidity = await _verifyAuthor(publicationJson, resolveAuthorAddresses, clientsManager);
 
-    if (!authorSignatureValidity.valid) return authorSignatureValidity;
-
-    if (!overrideAuthorAddressIfInvalid && authorSignatureValidity.newAddress)
-        return { valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
+    if (authorSignatureValidity.useDerivedAddress && !overrideAuthorAddressIfInvalid)
+        return { valid: false, reason: authorSignatureValidity.reason };
 
     // Validate signature
-
     const signatureValidity = await _verifyJsonSignature(publicationJson);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
 
-    if (authorSignatureValidity?.newAddress) return { valid: true, newAddress: authorSignatureValidity.newAddress };
+    if (overrideAuthorAddressIfInvalid && authorSignatureValidity.useDerivedAddress)
+        publicationJson.author.address = authorSignatureValidity.derivedAddress;
 
     return { valid: true };
 };
@@ -316,11 +315,10 @@ export async function verifyComment(
     clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
+    const hash = createHash().update(JSON.stringify(comment)).digest("hex").slice(0, 12);
     const validation = await _verifyPublicationWithAuthor(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!validation.valid) return validation;
-    if (validation.newAddress && overrideAuthorAddressIfInvalid) comment.author.address = validation.newAddress;
 
-    const hash = createHash().update(JSON.stringify(comment)).digest("hex").slice(0, 12);
     commentValidationCache.set(hash, true);
     return { valid: true };
 }
@@ -343,10 +341,13 @@ export async function verifySubplebbit(
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
     const log = Logger("plebbit-js:signatures:verifySubplebbit");
+    const signatureValidity = await _verifyJsonSignature(subplebbit);
+    if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
+
     if (subplebbit.posts?.pages)
         for (const pageName of Object.keys(subplebbit.posts.pages)) {
             const pageValidity = await verifyPage(
-                overrideAuthorAddressIfInvalid ? lodash.cloneDeep(subplebbit.posts.pages[pageName]) : subplebbit.posts.pages[pageName],
+                subplebbit.posts.pages[pageName],
                 resolveAuthorAddresses,
                 clientsManager,
                 subplebbit.address,
@@ -361,9 +362,6 @@ export async function verifySubplebbit(
                 return { valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID };
             }
         }
-
-    const signatureValidity = await _verifyJsonSignature(subplebbit);
-    if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
 
     const resolvedSubAddress = await clientsManager.resolveSubplebbitAddressIfNeeded(subplebbit.address);
 
@@ -396,6 +394,7 @@ export async function verifyCommentUpdate(
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
     const log = Logger("plebbit-js:signatures:verifyCommentUpdate");
+    const hash = createHash().update(JSON.stringify(update)).digest("hex").slice(0, 12);
     // const hash =
     if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
         return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
@@ -426,7 +425,6 @@ export async function verifyCommentUpdate(
 
     if (!jsonValidation.valid) return jsonValidation;
 
-    const hash = createHash().update(JSON.stringify(update)).digest("hex").slice(0, 12);
     commentUpdateValidationCache.set(hash, true);
 
     return { valid: true };
