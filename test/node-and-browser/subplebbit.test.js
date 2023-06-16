@@ -286,7 +286,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
             const actualStates = [];
 
-            sub.clients.chainProviders["eth"]["ethers.js"].on("statechange", (newState) => actualStates.push(newState));
+            sub.clients.chainProviders["eth"]["viem"].on("statechange", (newState) => actualStates.push(newState));
 
             sub.update();
 

@@ -541,7 +541,7 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             const actualStates = [];
 
-            mockSub.clients.chainProviders["eth"]["ethers.js"].on("statechange", (newState) => actualStates.push(newState));
+            mockSub.clients.chainProviders["eth"]["viem"].on("statechange", (newState) => actualStates.push(newState));
 
             await mockSub.start();
 

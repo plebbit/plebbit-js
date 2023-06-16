@@ -592,7 +592,7 @@ describe(`comment.clients`, async () => {
 
             const actualStates = [];
 
-            mockPost.clients.chainProviders["eth"]["ethers.js"].on("statechange", (newState) => actualStates.push(newState));
+            mockPost.clients.chainProviders["eth"]["viem"].on("statechange", (newState) => actualStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
