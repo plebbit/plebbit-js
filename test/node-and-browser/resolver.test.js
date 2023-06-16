@@ -10,6 +10,30 @@ const { mockPlebbit, publishWithExpectedResult, publishRandomPost } = require(".
 const mockComments = [];
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
+describe(`Resolving text records`, async () => {
+    it(`Can resolve correctly with just viem`, async () => {
+        const plebbit = await Plebbit(); // Should have viem defined
+        plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
+        expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["viem"]);
+        const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
+        expect(resolvedAuthorAddress).to.equal("12D3KooWCgebdyrXRz4VERrQVpqAchXZ4ZbLum1CGB1V1jquxHnj");
+    });
+    it(`Can resolve correctly with custom chain provider`, async () => {
+        const plebbit = await Plebbit({ chainProviders: { eth: { urls: ["https://cloudflare-eth.com/"], chainId: 1 } } }); // Should have viem defined
+        plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
+        expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["https://cloudflare-eth.com/"]);
+        const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
+        expect(resolvedAuthorAddress).to.equal("12D3KooWCgebdyrXRz4VERrQVpqAchXZ4ZbLum1CGB1V1jquxHnj");
+    });
+    it(`Can resolve correctly with viem and a custom chain provider`, async () => {
+        const plebbit = await Plebbit({ chainProviders: { eth: { urls: ["https://cloudflare-eth.com/", "viem"], chainId: 1 } } }); // Should have viem defined
+        plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
+        expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["https://cloudflare-eth.com/", "viem"]);
+        const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
+        expect(resolvedAuthorAddress).to.equal("12D3KooWCgebdyrXRz4VERrQVpqAchXZ4ZbLum1CGB1V1jquxHnj");
+    });
+});
+
 describe("Comments with Authors as domains", async () => {
     let plebbit;
     before(async () => {
