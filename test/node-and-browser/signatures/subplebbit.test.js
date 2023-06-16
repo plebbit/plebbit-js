@@ -5,6 +5,7 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const { messages } = require("../../../dist/node/errors");
+const { commentValidationCache } = require("../../../dist/node/constants");
 const { verifySubplebbit, signSubplebbit } = require("../../../dist/node/signer/signatures");
 const { mockPlebbit } = require("../../../dist/node/test/test-util");
 const lodash = require("lodash");
@@ -62,16 +63,43 @@ describe("Verify subplebbit", async () => {
         expect(verification.valid).to.be.false;
     });
 
-    it(`Invalidate a subplebbit signature if subplebbit.posts has an invalid page`, async () => {
+    it(`subplebbit signature is invalid if subplebbit.posts has an invalid comment signature `, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(signers[0].address);
 
         const subJson = loadedSubplebbit.toJSONIpfs();
-        expect(await verifySubplebbit(subJson, plebbit.resolveAuthorAddresses, plebbit._clientsManager)).to.deep.equal({ valid: true });
+        expect(await verifySubplebbit(subJson, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false)).to.deep.equal({
+            valid: true
+        });
 
         subJson.posts.pages.hot.comments[0].comment.content += "1234"; // Invalidate signature
-        expect(await verifySubplebbit(subJson, plebbit.resolveAuthorAddresses, plebbit._clientsManager)).to.deep.equal({
+        expect(await verifySubplebbit(subJson, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false)).to.deep.equal({
             valid: false,
-            reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID
+            reason: messages.ERR_SIGNATURE_IS_INVALID
         });
+    });
+
+    it(`subplebbit signature is valid if subplebbit.posts has a comment.authorAddress who resolves to an invalid address (overrideAuthorAddressIfInvalid=true)`, async () => {
+        // Publish a comment with ENS domain here
+
+        const subJson = lodash.cloneDeep(require("../../fixtures/valid_subplebbit_with_ens_comments.json")); // This json has only one comment with plebbit.eth
+        const commentWithEnsCid = subJson.posts.pages.hot.comments.find((comment) => comment.comment.author.address === "plebbit.eth")
+            .comment.cid;
+
+        const getLatestComment = () => subJson.posts.pages.hot.comments.find((comment) => comment.comment.cid === commentWithEnsCid);
+
+        const tempPlebbit = await mockPlebbit();
+        commentValidationCache.clear();
+
+        const originalResolveAuthor = plebbit._clientsManager.resolveAuthorAddressIfNeeded;
+        tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
+            authorAddress === "plebbit.eth" ? signers[7].address : originalResolveAuthor(authorAddress);
+
+        expect(getLatestComment().comment.author.address).to.equal("plebbit.eth");
+        expect(await verifySubplebbit(subJson, tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager, true)).to.deep.equal({
+            valid: true
+        });
+
+        // The author.address should be overridden here
+        expect(getLatestComment().comment.author.address).to.equal(signers[6].address);
     });
 });
