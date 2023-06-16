@@ -334,7 +334,6 @@ export class BaseClientsManager {
             return resolvedTextRecord;
         } catch (e) {
             this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl);
-
             await this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain);
             return { error: e };
         }

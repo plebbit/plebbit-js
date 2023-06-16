@@ -7,6 +7,8 @@ import nodeNativeFunctions from "./runtime/node/native-functions";
 import browserNativeFunctions from "./runtime/browser/native-functions";
 
 const Plebbit = async function Plebbit(plebbitOptions: PlebbitOptions = {}): Promise<PlebbitClass.Plebbit> {
+    //@ts-expect-error
+    if (typeof window === "undefined") global.fetch = nodeNativeFunctions.fetch;
     const plebbit = new PlebbitClass.Plebbit(plebbitOptions);
     await plebbit._init(plebbitOptions);
     return plebbit;
