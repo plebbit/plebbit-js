@@ -6,6 +6,7 @@ export declare const MOD_EDIT_FIELDS: (keyof ModeratorCommentEdit)[];
 export declare const AUTHOR_EDIT_FIELDS: (keyof AuthorCommentEdit)[];
 export declare class CommentEdit extends Publication implements CommentEditType {
     commentCid: string;
+    shortCid: string;
     content?: string;
     reason?: string;
     deleted?: boolean;
