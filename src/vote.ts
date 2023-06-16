@@ -3,16 +3,18 @@ import { PublicationTypeName, VotePubsubMessage, VotesTableRowInsert, VoteType }
 import { Plebbit } from "./plebbit";
 import isIPFS from "is-ipfs";
 import { verifyVote } from "./signer";
-import { throwWithErrorCode } from "./util";
+import { shortifyCid, throwWithErrorCode } from "./util";
 import { ChallengeRequestMessage } from "./challenge";
 
 class Vote extends Publication implements VoteType {
     commentCid: string;
+    shortCid: string;
     vote: 1 | 0 | -1;
 
     constructor(props: VoteType, plebbit: Plebbit) {
         super(props, plebbit);
         this.commentCid = props.commentCid;
+        this.shortCid = shortifyCid(this.commentCid);
         this.vote = props.vote; // Either 1, 0, -1 (upvote, cancel vote, downvote)
 
         // public method should be bound

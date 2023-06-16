@@ -13,7 +13,7 @@ import {
     PublicationType,
     PublicationTypeName
 } from "./types";
-import { throwWithErrorCode } from "./util";
+import { shortifyCid, throwWithErrorCode } from "./util";
 import isIPFS from "is-ipfs";
 
 const PUBLICATION_FIELDS: (keyof Required<PublicationType>)[] = [
@@ -48,6 +48,7 @@ export const AUTHOR_EDIT_FIELDS: (keyof AuthorCommentEdit)[] = [
 
 export class CommentEdit extends Publication implements CommentEditType {
     commentCid: string;
+    shortCid: string;
     content?: string;
     reason?: string;
     deleted?: boolean;
@@ -68,6 +69,7 @@ export class CommentEdit extends Publication implements CommentEditType {
     _initProps(props: CommentEditType) {
         super._initProps(props);
         this.commentCid = props.commentCid;
+        this.shortCid = shortifyCid(this.commentCid);
         this.content = props.content;
         this.reason = props.reason;
         this.deleted = props.deleted;
