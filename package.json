@@ -77,7 +77,8 @@
         "tinycache": "1.1.2",
         "ts-custom-error": "3.3.1",
         "uuid": "9.0.0",
-        "viem": "1.0.7"
+        "viem": "1.0.7",
+        "@adraffy/ens-normalize": "1.9.2"
     },
     "devDependencies": {
         "@babel/core": "7.20.2",
@@ -130,5 +131,8 @@
     "bugs": {
         "url": "https://github.com/plebbit/plebbit-js/issues"
     },
-    "homepage": "https://github.com/plebbit/plebbit-js#readme"
+    "homepage": "https://github.com/plebbit/plebbit-js#readme",
+    "resolutions": {
+        "@adraffy/ens-normalize": "1.9.2"
+    }
 }
