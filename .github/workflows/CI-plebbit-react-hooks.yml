@@ -28,11 +28,11 @@ jobs:
       - run: cd plebbit-js && npm ci
       - run: cd plebbit-js && npm run build
       - run: rm -fr plebbit-js/node_modules
-      # install plebbit-react-hooks
-      - run: yarn install --frozen-lockfile
       # install latest plebbit-js using add ./plebbit-js (local folder module)
       - run: yarn remove @plebbit/plebbit-js
       - run: yarn add ./plebbit-js
+      - run: rm -rf plebbit-js/yarn.lock
+      - run: yarn
       # build
       - run: yarn test
       - run: yarn build
