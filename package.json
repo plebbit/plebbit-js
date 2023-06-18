@@ -39,7 +39,6 @@
         "dist/"
     ],
     "dependencies": {
-        "@adraffy/ens-normalize": "1.9.2",
         "@keyv/sqlite": "3.6.2",
         "@plebbit/plebbit-logger": "github:plebbit/plebbit-logger",
         "@types/node-fetch": "2.6.2",
@@ -132,8 +131,5 @@
     "bugs": {
         "url": "https://github.com/plebbit/plebbit-js/issues"
     },
-    "homepage": "https://github.com/plebbit/plebbit-js#readme",
-    "resolutions": {
-        "@adraffy/ens-normalize": "1.9.2"
-    }
+    "homepage": "https://github.com/plebbit/plebbit-js#readme"
 }

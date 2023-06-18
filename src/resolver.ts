@@ -2,7 +2,6 @@ import { Plebbit } from "./plebbit";
 import { Chain } from "./types";
 import assert from "assert";
 import Logger from "@plebbit/plebbit-logger";
-import { ens_normalize } from "@adraffy/ens-normalize";
 import { createPublicClient, http } from "viem";
 import * as chains from "viem/chains";
 import { ethers } from "ethers";
@@ -66,7 +65,7 @@ export class Resolver {
         else {
             // Using viem or custom RPC
             const chainProvider = this._getChainProvider(chain, chainProviderUrl);
-            txtRecordResult = await chainProvider.getEnsText({ name: ens_normalize(address), key: txtRecordName });
+            txtRecordResult = await chainProvider.getEnsText({ name: ethers.ensNormalize(address), key: txtRecordName });
         }
 
         log(
