@@ -278,7 +278,7 @@ export class BaseClientsManager {
         const resolveCache: string | undefined | null = await this._plebbit._storage.getItem(`${address}_${txtRecord}`);
         if (typeof resolveCache === "string") {
             const resolvedTimestamp: number = await this._plebbit._storage.getItem(`${address}_${txtRecord}_timestamp`);
-            assert(typeof resolvedTimestamp === "number");
+            assert(typeof resolvedTimestamp === "number", `Cache of address (${address}) txt record (${txtRecord}) has no timestamp`);
             const stale = timestamp() - resolvedTimestamp > 3600; // Only resolve again if cache was stored over an hour ago
             log.trace(`Retrieved cache of address (${address}) text record (${txtRecord}):`, { stale, resolveCache });
             return { stale, resolveCache };

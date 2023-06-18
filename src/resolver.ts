@@ -2,14 +2,17 @@ import { Plebbit } from "./plebbit";
 import { Chain } from "./types";
 import assert from "assert";
 import Logger from "@plebbit/plebbit-logger";
-import { normalize } from 'viem/ens'
+import { normalize } from "viem/ens";
 import { createPublicClient, http } from "viem";
 import * as chains from "viem/chains";
+import { ethers } from "ethers";
 
 export const viemPublicClient = createPublicClient({
     chain: chains.mainnet,
     transport: http()
 });
+//@ts-expect-error
+export const ethersPublicClient = ethers.getDefaultProvider();
 
 export class Resolver {
     private plebbit: Pick<Plebbit, "resolveAuthorAddresses" | "chainProviders">;
@@ -45,11 +48,26 @@ export class Resolver {
         }
     }
 
+    async _resolveViaEthers(chainTicker: Chain, address: string, txtRecordName: string) {
+        assert(chainTicker && typeof chainTicker === "string", `invalid chainTicker '${chainTicker}'`);
+        assert(this.plebbit.chainProviders, `invalid chainProviders '${this.plebbit.chainProviders}'`);
+        assert(this.plebbit.chainProviders[chainTicker].urls.includes("ethers.js"));
+
+        const resolver = await ethersPublicClient.getResolver(address);
+        return resolver.getText(txtRecordName);
+    }
+
     async resolveTxtRecord(address: string, txtRecordName: string, chain: Chain, chainProviderUrl: string): Promise<string | null> {
         const log = Logger("plebbit-js:resolver:_resolveEnsTxtRecord");
 
-        const chainProvider = this._getChainProvider(chain, chainProviderUrl);
-        const txtRecordResult: string | null = await chainProvider.getEnsText({ name: normalize(address), key: txtRecordName });
+        let txtRecordResult: string | null;
+        if (chainProviderUrl === "ethers.js" && chain === "eth")
+            txtRecordResult = await this._resolveViaEthers(chain, address, txtRecordName);
+        else {
+            // Using viem or custom RPC
+            const chainProvider = this._getChainProvider(chain, chainProviderUrl);
+            txtRecordResult = await chainProvider.getEnsText({ name: normalize(address), key: txtRecordName });
+        }
 
         log(
             `Resolved text record name (${txtRecordName}) of address (${address}) to ${txtRecordResult} with chainProvider (${chainProviderUrl})`
