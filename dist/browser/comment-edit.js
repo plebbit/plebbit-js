@@ -116,7 +116,6 @@ var CommentEdit = /** @class */ (function (_super) {
     CommentEdit.prototype._initProps = function (props) {
         _super.prototype._initProps.call(this, props);
         this.commentCid = props.commentCid;
-        this.shortCid = (0, util_1.shortifyCid)(this.commentCid);
         this.content = props.content;
         this.reason = props.reason;
         this.deleted = props.deleted;

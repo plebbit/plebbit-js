@@ -474,7 +474,7 @@ var BaseClientsManager = /** @class */ (function () {
                         return [4 /*yield*/, this._plebbit._storage.getItem("".concat(address, "_").concat(txtRecord))];
                     case 1:
                         resolveCache = _a.sent();
-                        if (!(typeof resolveCache === "string" || resolveCache === null)) return [3 /*break*/, 3];
+                        if (!(typeof resolveCache === "string")) return [3 /*break*/, 3];
                         return [4 /*yield*/, this._plebbit._storage.getItem("".concat(address, "_").concat(txtRecord, "_timestamp"))];
                     case 2:
                         resolvedTimestamp = _a.sent();

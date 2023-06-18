@@ -74,7 +74,6 @@ var Vote = /** @class */ (function (_super) {
     function Vote(props, plebbit) {
         var _this = _super.call(this, props, plebbit) || this;
         _this.commentCid = props.commentCid;
-        _this.shortCid = (0, util_1.shortifyCid)(_this.commentCid);
         _this.vote = props.vote; // Either 1, 0, -1 (upvote, cancel vote, downvote)
         // public method should be bound
         _this.publish = _this.publish.bind(_this);

@@ -4,7 +4,6 @@ import { Plebbit } from "./plebbit";
 import { ChallengeRequestMessage } from "./challenge";
 declare class Vote extends Publication implements VoteType {
     commentCid: string;
-    shortCid: string;
     vote: 1 | 0 | -1;
     constructor(props: VoteType, plebbit: Plebbit);
     toJSONPubsubMessagePublication(): VotePubsubMessage;
