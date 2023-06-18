@@ -119,10 +119,12 @@ describe(`Vote with authors as domains`, async () => {
 });
 
 describe(`Resolving resiliency`, async () => {
-    it(`Resolver retries multiple times before throwing error`, async () => {
+    it(`Resolver retries four times before throwing error`, async () => {
         const regularPlebbit = await Plebbit();
 
-        regularPlebbit.resolver._getChainProvider = () => ({ getResolver: () => undefined });
+        regularPlebbit.resolver._getChainProvider = regularPlebbit.resolver._resolveViaEthers = () => {
+            throw Error("Failed just because");
+        };
         const plebbit = await mockPlebbit();
 
         const originalResolveFunction = plebbit.resolver.resolveTxtRecord;
@@ -137,5 +139,6 @@ describe(`Resolving resiliency`, async () => {
 
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("plebbit.eth");
         expect(resolvedAuthorAddress).to.equal("12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y");
+        expect(resolveHit).to.equal(4);
     });
 });
