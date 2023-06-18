@@ -65,7 +65,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Resolver = exports.ethersPublicClient = exports.viemPublicClient = void 0;
 var assert_1 = __importDefault(require("assert"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
-var ens_1 = require("viem/ens");
+var ens_normalize_1 = require("@adraffy/ens-normalize");
 var viem_1 = require("viem");
 var chains = __importStar(require("viem/chains"));
 var ethers_1 = require("ethers");
@@ -134,7 +134,7 @@ var Resolver = /** @class */ (function () {
                         return [3 /*break*/, 4];
                     case 2:
                         chainProvider = this._getChainProvider(chain, chainProviderUrl);
-                        return [4 /*yield*/, chainProvider.getEnsText({ name: (0, ens_1.normalize)(address), key: txtRecordName })];
+                        return [4 /*yield*/, chainProvider.getEnsText({ name: (0, ens_normalize_1.ens_normalize)(address), key: txtRecordName })];
                     case 3:
                         txtRecordResult = _a.sent();
                         _a.label = 4;
