@@ -478,7 +478,7 @@ var BaseClientsManager = /** @class */ (function () {
                         return [4 /*yield*/, this._plebbit._storage.getItem("".concat(address, "_").concat(txtRecord, "_timestamp"))];
                     case 2:
                         resolvedTimestamp = _a.sent();
-                        (0, assert_1.default)(typeof resolvedTimestamp === "number");
+                        (0, assert_1.default)(typeof resolvedTimestamp === "number", "Cache of address (".concat(address, ") txt record (").concat(txtRecord, ") has no timestamp"));
                         stale = (0, util_1.timestamp)() - resolvedTimestamp > 3600;
                         log.trace("Retrieved cache of address (".concat(address, ") text record (").concat(txtRecord, "):"), { stale: stale, resolveCache: resolveCache });
                         return [2 /*return*/, { stale: stale, resolveCache: resolveCache }];

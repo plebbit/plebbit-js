@@ -1,5 +1,6 @@
 import { Chain } from "./types";
 import * as chains from "viem/chains";
+import { ethers } from "ethers";
 export declare const viemPublicClient: {
     chain: {
         readonly id: 1;
@@ -534,6 +535,7 @@ export declare const viemPublicClient: {
     watchEvent: <TAbiEvent_2 extends import("abitype").AbiEvent, TStrict_6 extends boolean = undefined>(args: import("viem").WatchEventParameters<TAbiEvent_2, TStrict_6>) => import("viem").WatchEventReturnType;
     watchPendingTransactions: (args: import("viem").WatchPendingTransactionsParameters<import("viem").HttpTransport>) => import("viem").WatchPendingTransactionsReturnType;
 };
+export declare const ethersPublicClient: ethers.AbstractProvider;
 export declare class Resolver {
     private plebbit;
     constructor(plebbit: Resolver["plebbit"]);
@@ -22593,6 +22595,7 @@ export declare class Resolver {
         watchEvent: <TAbiEvent_2 extends import("abitype").AbiEvent, TStrict_6 extends boolean = undefined>(args: import("viem").WatchEventParameters<TAbiEvent_2, TStrict_6>) => import("viem").WatchEventReturnType;
         watchPendingTransactions: (args: import("viem").WatchPendingTransactionsParameters<import("viem").HttpTransport>) => import("viem").WatchPendingTransactionsReturnType;
     };
+    _resolveViaEthers(chainTicker: Chain, address: string, txtRecordName: string): Promise<string>;
     resolveTxtRecord(address: string, txtRecordName: string, chain: Chain, chainProviderUrl: string): Promise<string | null>;
     isDomain(address: string): boolean;
 }

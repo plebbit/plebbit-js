@@ -62,16 +62,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Resolver = exports.viemPublicClient = void 0;
+exports.Resolver = exports.ethersPublicClient = exports.viemPublicClient = void 0;
 var assert_1 = __importDefault(require("assert"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var ens_1 = require("viem/ens");
 var viem_1 = require("viem");
 var chains = __importStar(require("viem/chains"));
+var ethers_1 = require("ethers");
 exports.viemPublicClient = (0, viem_1.createPublicClient)({
     chain: chains.mainnet,
     transport: (0, viem_1.http)()
 });
+//@ts-expect-error
+exports.ethersPublicClient = ethers_1.ethers.getDefaultProvider();
 var Resolver = /** @class */ (function () {
     function Resolver(plebbit) {
         this.plebbit = plebbit;
@@ -100,17 +103,42 @@ var Resolver = /** @class */ (function () {
             });
         }
     };
+    Resolver.prototype._resolveViaEthers = function (chainTicker, address, txtRecordName) {
+        return __awaiter(this, void 0, void 0, function () {
+            var resolver;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        (0, assert_1.default)(chainTicker && typeof chainTicker === "string", "invalid chainTicker '".concat(chainTicker, "'"));
+                        (0, assert_1.default)(this.plebbit.chainProviders, "invalid chainProviders '".concat(this.plebbit.chainProviders, "'"));
+                        (0, assert_1.default)(this.plebbit.chainProviders[chainTicker].urls.includes("ethers.js"));
+                        return [4 /*yield*/, exports.ethersPublicClient.getResolver(address)];
+                    case 1:
+                        resolver = _a.sent();
+                        return [2 /*return*/, resolver.getText(txtRecordName)];
+                }
+            });
+        });
+    };
     Resolver.prototype.resolveTxtRecord = function (address, txtRecordName, chain, chainProviderUrl) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, chainProvider, txtRecordResult;
+            var log, txtRecordResult, chainProvider;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:resolver:_resolveEnsTxtRecord");
-                        chainProvider = this._getChainProvider(chain, chainProviderUrl);
-                        return [4 /*yield*/, chainProvider.getEnsText({ name: (0, ens_1.normalize)(address), key: txtRecordName })];
+                        if (!(chainProviderUrl === "ethers.js" && chain === "eth")) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this._resolveViaEthers(chain, address, txtRecordName)];
                     case 1:
                         txtRecordResult = _a.sent();
+                        return [3 /*break*/, 4];
+                    case 2:
+                        chainProvider = this._getChainProvider(chain, chainProviderUrl);
+                        return [4 /*yield*/, chainProvider.getEnsText({ name: (0, ens_1.normalize)(address), key: txtRecordName })];
+                    case 3:
+                        txtRecordResult = _a.sent();
+                        _a.label = 4;
+                    case 4:
                         log("Resolved text record name (".concat(txtRecordName, ") of address (").concat(address, ") to ").concat(txtRecordResult, " with chainProvider (").concat(chainProviderUrl, ")"));
                         return [2 /*return*/, txtRecordResult];
                 }

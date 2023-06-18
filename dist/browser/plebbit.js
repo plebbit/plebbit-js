@@ -176,7 +176,7 @@ var Plebbit = /** @class */ (function (_super) {
     };
     Plebbit.prototype._initResolver = function (options) {
         this.chainProviders = options.chainProviders || {
-            eth: { urls: ["viem"], chainId: 1 },
+            eth: { urls: ["viem", "ethers.js"], chainId: 1 },
             avax: {
                 urls: ["https://api.avax.network/ext/bc/C/rpc"],
                 chainId: 43114
