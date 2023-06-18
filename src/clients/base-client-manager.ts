@@ -276,7 +276,7 @@ export class BaseClientsManager {
     ): Promise<{ stale: boolean; resolveCache: string | null } | undefined> {
         const log = Logger("plebbit-js:client-manager:resolveTextRecord");
         const resolveCache: string | undefined | null = await this._plebbit._storage.getItem(`${address}_${txtRecord}`);
-        if (typeof resolveCache === "string" || resolveCache === null) {
+        if (typeof resolveCache === "string") {
             const resolvedTimestamp: number = await this._plebbit._storage.getItem(`${address}_${txtRecord}_timestamp`);
             assert(typeof resolvedTimestamp === "number");
             const stale = timestamp() - resolvedTimestamp > 3600; // Only resolve again if cache was stored over an hour ago
