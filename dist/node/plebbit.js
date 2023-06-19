@@ -68,7 +68,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Plebbit = void 0;
 var util_1 = require("./runtime/node/util");
 var comment_1 = require("./comment");
-var post_1 = __importDefault(require("./post"));
 var subplebbit_1 = require("./subplebbit");
 var util_2 = require("./util");
 var vote_1 = __importDefault(require("./vote"));
@@ -363,9 +362,7 @@ var Plebbit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         options = options;
-                        comment = options.parentCid || lodash_1.default.isEqual(Object.keys(options), ["cid"])
-                            ? new comment_1.Comment(options, this)
-                            : new post_1.default(options, this);
+                        comment = new comment_1.Comment(options, this);
                         comment["subplebbit"] = subplebbit;
                         if (!(typeof options["updatedAt"] === "number")) return [3 /*break*/, 2];
                         return [4 /*yield*/, comment._initCommentUpdate(options)];

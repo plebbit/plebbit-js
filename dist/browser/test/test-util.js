@@ -96,8 +96,6 @@ function generateMockPost(subplebbitAddress, plebbit, randomTimestamp, postProps
                     post = _b.sent();
                     //@ts-ignore
                     post._updateIntervalMs = 200;
-                    if (post.constructor.name !== "Post")
-                        throw Error("createComment should return Post if title is provided");
                     post.once("challenge", function (challengeMsg) { return post.publishChallengeAnswers([]); });
                     return [2 /*return*/, post];
             }

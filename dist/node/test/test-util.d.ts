@@ -1,5 +1,4 @@
 import { Comment } from "../comment";
-import Post from "../post";
 import { Plebbit } from "../plebbit";
 import Vote from "../vote";
 import { Subplebbit } from "../subplebbit";
@@ -7,9 +6,9 @@ import { CreateCommentOptions, CreateSubplebbitOptions, PlebbitOptions, PostType
 import { SignerType } from "../signer/constants";
 import Publication from "../publication";
 import { BasePages } from "../pages";
-export declare function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, randomTimestamp?: boolean, postProps?: Partial<CreateCommentOptions | PostType>): Promise<Post>;
-export declare function generateMockComment(parentPostOrComment: Post | Comment, plebbit: Plebbit, randomTimestamp?: boolean, commentProps?: Partial<CreateCommentOptions>): Promise<Comment>;
-export declare function generateMockVote(parentPostOrComment: Comment | Post, vote: -1 | 0 | 1, plebbit: Plebbit, signer?: SignerType): Promise<Vote>;
+export declare function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, randomTimestamp?: boolean, postProps?: Partial<CreateCommentOptions | PostType>): Promise<Comment>;
+export declare function generateMockComment(parentPostOrComment: Comment, plebbit: Plebbit, randomTimestamp?: boolean, commentProps?: Partial<CreateCommentOptions>): Promise<Comment>;
+export declare function generateMockVote(parentPostOrComment: Comment, vote: -1 | 0 | 1, plebbit: Plebbit, signer?: SignerType): Promise<Vote>;
 export declare function loadAllPages(pageCid: string, pagesInstance: BasePages): Promise<Comment[]>;
 export declare function startSubplebbits(props: {
     signers: SignerType[];
@@ -23,7 +22,7 @@ export declare function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPu
 export declare function mockRemotePlebbit(plebbitOptions?: PlebbitOptions): Promise<Plebbit>;
 export declare function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions): Promise<Plebbit>;
 export declare function publishRandomReply(parentComment: Comment, plebbit: Plebbit, commentProps: Partial<CreateCommentOptions>, verifyCommentPropsInParentPages?: boolean): Promise<Comment>;
-export declare function publishRandomPost(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<PostType>, verifyCommentPropsInParentPages?: boolean): Promise<Post>;
+export declare function publishRandomPost(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<PostType>, verifyCommentPropsInParentPages?: boolean): Promise<Comment>;
 export declare function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbit: Plebbit, voteProps?: Partial<VoteType>): Promise<Vote>;
 export declare function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string): Promise<void>;
 export declare function findCommentInPage(commentCid: string, pageCid: string, pages: BasePages): Promise<Comment | undefined>;

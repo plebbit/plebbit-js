@@ -1,6 +1,5 @@
 import { StorageInterface, ChainProvider, CommentEditType, CommentIpfsType, CommentPubsubMessage, CommentType, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateSubplebbitOptions, CreateVoteOptions, GatewayClient, IpfsClient, PlebbitEvents, PlebbitOptions, PubsubClient, SubplebbitIpfsType, SubplebbitType, VotePubsubMessage, VoteType } from "./types";
 import { Comment } from "./comment";
-import Post from "./post";
 import { Subplebbit } from "./subplebbit";
 import Vote from "./vote";
 import { Signer } from "./signer";
@@ -48,10 +47,10 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     private _parseUrlToOption;
     _init(options: PlebbitOptions): Promise<void>;
     getSubplebbit(subplebbitAddress: string): Promise<Subplebbit>;
-    getComment(cid: string): Promise<Comment | Post>;
+    getComment(cid: string): Promise<Comment>;
     private _initMissingFields;
     private _createCommentInstance;
-    createComment(options: CreateCommentOptions | CommentWithCommentUpdate | CommentIpfsType | CommentPubsubMessage | CommentType | Comment): Promise<Comment | Post>;
+    createComment(options: CreateCommentOptions | CommentWithCommentUpdate | CommentIpfsType | CommentPubsubMessage | CommentType | Comment): Promise<Comment>;
     _canRunSub(): boolean;
     createSubplebbit(options?: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType): Promise<Subplebbit>;
     createVote(options: CreateVoteOptions | VoteType | VotePubsubMessage): Promise<Vote>;

@@ -106,8 +106,6 @@ var signer_1 = require("./signer");
 var pages_1 = require("./pages");
 var safe_stable_stringify_1 = require("safe-stable-stringify");
 var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
-var comment_1 = require("./comment");
-var post_1 = __importDefault(require("./post"));
 var util_2 = require("./signer/util");
 var comment_edit_1 = require("./comment-edit");
 var errors_1 = require("./errors");
@@ -992,7 +990,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, util_3.nativeFunctions.importSignerIntoIpfsNode(ipfsSigner.ipnsKeyName, ipfsSigner.ipfsKey, this.plebbit)];
                     case 19:
                         _j.apply(_h, [_o.sent()]);
-                        if (!(commentToInsert instanceof post_1.default)) return [3 /*break*/, 25];
+                        if (!this.isPublicationPost(commentToInsert)) return [3 /*break*/, 25];
                         return [4 /*yield*/, this.dbHandler.createTransaction(request.challengeRequestId.toString())];
                     case 20:
                         trx = _o.sent();
@@ -1014,9 +1012,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _o.sent();
                         log("(".concat(request.challengeRequestId, "): "), "New post with cid ".concat(commentToInsert.cid, " has been inserted into DB"));
                         return [3 /*break*/, 31];
-                    case 25:
-                        if (!(commentToInsert instanceof comment_1.Comment)) return [3 /*break*/, 31];
-                        return [4 /*yield*/, this.dbHandler.createTransaction(request.challengeRequestId.toString())];
+                    case 25: return [4 /*yield*/, this.dbHandler.createTransaction(request.challengeRequestId.toString())];
                     case 26:
                         trx = _o.sent();
                         return [4 /*yield*/, Promise.all([
