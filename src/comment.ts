@@ -99,7 +99,6 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     _initProps(props: CommentType) {
         // This function is called once at in the constructor
         super._initProps(props);
-        this.postCid = props.postCid;
         this.setCid(props.cid);
         this.parentCid = props.parentCid;
         this.ipnsName = props.ipnsName; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
@@ -113,6 +112,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.spoiler = props.spoiler;
         this.protocolVersion = props.protocolVersion;
         this.flair = props.flair;
+        this.postCid = props.postCid ? props.postCid : this.depth === 0 ? this.cid : undefined;
         this.setPreviousCid(props.previousCid);
         this.replies = new RepliesPages({
             pages: undefined,
