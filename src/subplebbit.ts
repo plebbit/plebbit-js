@@ -48,7 +48,6 @@ import {
     VotePubsubMessage
 } from "./types";
 import { Comment } from "./comment";
-import Post from "./post";
 import {
     getIpfsKeyFromPrivateKey,
     getPlebbitAddressFromPrivateKey,
@@ -815,7 +814,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 await nativeFunctions.importSignerIntoIpfsNode(ipfsSigner.ipnsKeyName, ipfsSigner.ipfsKey, this.plebbit)
             );
 
-            if (commentToInsert instanceof Post) {
+            if (this.isPublicationPost(commentToInsert)) {
+                // Post
                 const trx = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
                 commentToInsert.setPreviousCid((await this.dbHandler.queryLatestPostCid(trx))?.cid);
                 await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
@@ -827,8 +827,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(request.challengeRequestId));
 
                 log(`(${request.challengeRequestId}): `, `New post with cid ${commentToInsert.cid} has been inserted into DB`);
-            } else if (commentToInsert instanceof Comment) {
-                // Comment
+            } else {
+                // Reply
                 const trx = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
                 const [commentsUnderParent, parent] = await Promise.all([
                     this.dbHandler.queryCommentsUnderComment(commentToInsert.parentCid, trx),

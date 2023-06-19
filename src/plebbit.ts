@@ -24,7 +24,6 @@ import {
 } from "./types";
 import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util";
 import { Comment } from "./comment";
-import Post from "./post";
 import { Subplebbit } from "./subplebbit";
 import { removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
 import Vote from "./vote";
@@ -225,7 +224,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         return subplebbit;
     }
 
-    async getComment(cid: string): Promise<Comment | Post> {
+    async getComment(cid: string): Promise<Comment> {
         if (!isIPFS.cid(cid)) throwWithErrorCode("ERR_CID_IS_INVALID", `getComment: cid (${cid}) is invalid as a CID`);
         const commentJson: CommentIpfsType = JSON.parse(await this.fetchCid(cid));
         const signatureValidity = await verifyComment(commentJson, this.resolveAuthorAddresses, this._clientsManager, true);
@@ -256,10 +255,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         subplebbit?: SubplebbitIpfsType
     ) {
         options = options as CreateCommentOptions | CommentIpfsType | CommentPubsubMessage;
-        const comment =
-            options.parentCid || lodash.isEqual(Object.keys(options), ["cid"])
-                ? new Comment(<CommentType>options, this)
-                : new Post(<PostType>options, this);
+        const comment = new Comment(<CommentType>options, this);
+
         comment["subplebbit"] = subplebbit;
         //@ts-expect-error
         if (typeof options["updatedAt"] === "number") await comment._initCommentUpdate(<CommentUpdate>options);
@@ -268,7 +265,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async createComment(
         options: CreateCommentOptions | CommentWithCommentUpdate | CommentIpfsType | CommentPubsubMessage | CommentType | Comment
-    ): Promise<Comment | Post> {
+    ): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
 
         let finalOptions = options instanceof Comment ? options.toJSON() : options;

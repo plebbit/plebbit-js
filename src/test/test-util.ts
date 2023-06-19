@@ -1,6 +1,5 @@
 import { TIMEFRAMES_TO_SECONDS, timestamp } from "../util";
 import { Comment } from "../comment";
-import Post from "../post";
 import { Plebbit } from "../plebbit";
 import PlebbitIndex from "../index";
 import Vote from "../vote";
@@ -35,7 +34,7 @@ export async function generateMockPost(
     plebbit: Plebbit,
     randomTimestamp = false,
     postProps: Partial<CreateCommentOptions | PostType> = {}
-): Promise<Post> {
+): Promise<Comment> {
     const postTimestamp = (randomTimestamp && generateRandomTimestamp()) || timestamp();
     const postStartTestTime = Date.now() / 1000 + Math.random();
     const signer = postProps?.signer || (await plebbit.createSigner());
@@ -51,15 +50,14 @@ export async function generateMockPost(
     //@ts-ignore
     post._updateIntervalMs = 200;
 
-    if (post.constructor.name !== "Post") throw Error("createComment should return Post if title is provided");
     post.once("challenge", (challengeMsg) => post.publishChallengeAnswers([]));
 
-    return <Post>post;
+    return post;
 }
 
 // TODO rework this
 export async function generateMockComment(
-    parentPostOrComment: Post | Comment,
+    parentPostOrComment: Comment,
     plebbit: Plebbit,
     randomTimestamp = false,
     commentProps: Partial<CreateCommentOptions> = {}
@@ -87,7 +85,7 @@ export async function generateMockComment(
 }
 
 export async function generateMockVote(
-    parentPostOrComment: Comment | Post,
+    parentPostOrComment: Comment,
     vote: -1 | 0 | 1,
     plebbit: Plebbit,
     signer?: SignerType
