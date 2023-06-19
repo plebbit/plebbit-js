@@ -157,6 +157,28 @@ describe("createComment", async () => {
 
         await recreatedPost.stop();
     });
+
+    it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a reply`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+
+        const originalReply = subplebbit.posts.pages.hot.comments.find(post => post.replyCount > 0).replies.pages.topAll.comments[0];
+
+        const recreatedReply = await plebbit.createComment({ cid: originalReply.cid });
+
+        recreatedReply.update();
+
+        await new Promise((resolve) => recreatedReply.once("update", resolve));
+        // Comment ipfs props should be defined now, but not CommentUpdate
+        expect(recreatedReply.updatedAt).to.be.undefined;
+
+        expect(recreatedReply.toJSONIpfs()).to.deep.equal(originalReply.toJSONIpfs());
+
+        await new Promise((resolve) => recreatedReply.once("update", resolve));
+        expect(recreatedReply.updatedAt).to.be.a("number");
+        expect(recreatedReply.toJSON()).to.deep.equal(originalReply.toJSON());
+
+        await recreatedReply.stop();
+    });
 });
 
 describe(`comment.update`, async () => {
