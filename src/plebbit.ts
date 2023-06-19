@@ -256,7 +256,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         subplebbit?: SubplebbitIpfsType
     ) {
         options = options as CreateCommentOptions | CommentIpfsType | CommentPubsubMessage;
-        const comment = options.parentCid ? new Comment(<CommentType>options, this) : new Post(<PostType>options, this);
+        const comment =
+            options.parentCid || lodash.isEqual(Object.keys(options), ["cid"])
+                ? new Comment(<CommentType>options, this)
+                : new Post(<PostType>options, this);
         comment["subplebbit"] = subplebbit;
         //@ts-expect-error
         if (typeof options["updatedAt"] === "number") await comment._initCommentUpdate(<CommentUpdate>options);
