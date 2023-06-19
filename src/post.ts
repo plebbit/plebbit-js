@@ -14,7 +14,6 @@ class Post extends Comment implements Omit<PostType, "replies"> {
 
     _initProps(props: Omit<PostType, "depth" | "parentCid">) {
         assert.equal(props["parentCid"], undefined, "A post can't have parentCid defined");
-        assert.equal(props["depth"], 0, "A post can't have depth not equal to 0")
         super._initProps(props);
         this.parentCid = undefined;
     }
@@ -29,6 +28,7 @@ class Post extends Comment implements Omit<PostType, "replies"> {
     }
 
     toJSONAfterChallengeVerification(): PostIpfsWithCid {
+        assert.equal(this.depth, 0, "A post can't have depth not equal to 0");
         return { ...super.toJSONAfterChallengeVerification(), depth: this.depth, parentCid: this.parentCid, title: this.title };
     }
 
