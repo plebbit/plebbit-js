@@ -108,6 +108,30 @@ describe("createComment", async () => {
         const page = await postClone.replies.getPage(pageCid);
         expect(page.comments.length).to.be.equal(1);
     });
+
+    it(`plebbit.createComment({cid}).update() verifies signature of comment ipfs`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+
+        const postJson = lodash.cloneDeep(subplebbit.posts.pages.hot.comments[0].toJSONIpfs());
+
+        postJson.title += "1234"; // Invalidate signature
+
+        expect(await verifyComment(postJson, true, plebbit._clientsManager, false)).to.deep.equal({
+            valid: false,
+            reason: messages.ERR_SIGNATURE_IS_INVALID
+        });
+
+        const postWithInvalidSignatureCid = (await plebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(postJson))).path;
+
+        const createdComment = await plebbit.createComment({ cid: postWithInvalidSignatureCid });
+
+        createdComment.once("update", () => assert.fail("Should not update with invalid comment props"));
+        createdComment.update();
+
+        await new Promise((resolve) => createdComment.once("error", resolve));
+
+        expect(createdComment.ipnsName).to.be.undefined; // Make sure it didn't use the props from the invalid comment
+    });
 });
 
 describe(`comment.update`, async () => {

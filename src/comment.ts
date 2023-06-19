@@ -23,6 +23,7 @@ import { verifyComment, verifyCommentUpdate } from "./signer/signatures";
 import assert from "assert";
 import { PlebbitError } from "./plebbit-error";
 import { CommentClientsManager } from "./clients/client-manager";
+import { getErrorCodeFromMessage } from "./util";
 
 export class Comment extends Publication implements Omit<CommentType, "replies"> {
     // Only Comment props
@@ -349,7 +350,23 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             // User may have attempted to call plebbit.createComment({cid}).update
             // plebbit-js should be able to retrieve ipnsName from the IPFS file
             const commentIpfs: CommentIpfsType = await this._retryLoadingCommentIpfs(log); // Will keep retrying to load until comment.stop() is called
-            assert(commentIpfs.ipnsName);
+            const commentIpfsValidation = await verifyComment(
+                commentIpfs,
+                this._plebbit.resolveAuthorAddresses,
+                this._clientsManager,
+                true
+            );
+            if (!commentIpfsValidation.valid) {
+                this.emit(
+                    "error",
+                    new PlebbitError(getErrorCodeFromMessage(commentIpfsValidation.reason), {
+                        commentIpfs,
+                        commentIpfsValidation,
+                        cid: this.cid
+                    })
+                );
+                return;
+            }
             this._initProps({ ...commentIpfs, cid: this.cid });
             this.emit("update", this);
         }
