@@ -189,8 +189,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
         if (!this.signer && mergedProps.signer) this.signer = new Signer(mergedProps.signer);
 
-        if (mergedProps.posts) {
-            const parsedPages = await parseRawPages(mergedProps.posts, this.plebbit);
+        if (newProps["posts"]) {
+            const parsedPages = await parseRawPages(newProps["posts"], this.plebbit);
             this.posts.updateProps({
                 ...parsedPages,
                 plebbit: this.plebbit,
