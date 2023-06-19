@@ -81,20 +81,17 @@ export class BasePagesClientsManager extends BaseClientsManager {
     }
 
     updatePageCidsToSortTypes(newPageCids: BasePages["pageCids"]) {
-        for (const sortType of Object.keys(newPageCids)) {
-            const pageCid = newPageCids[sortType];
-            this._updatePageCidsSortCache(pageCid, [sortType]);
-        }
+        for (const [sortType, pageCid] of Object.entries(newPageCids)) this._updatePageCidsSortCache(pageCid, [sortType]);
     }
 
     updatePageCidsToSortTypesToIncludeSubsequent(nextPageCid: string, previousPageCid: string) {
         const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(previousPageCid);
-        assert(Array.isArray(sortTypes));
+        if (!Array.isArray(sortTypes)) return;
         this._updatePageCidsSortCache(nextPageCid, sortTypes);
     }
 
     updateIpfsState(newState: PagesIpfsClient["state"], sortTypes: string[]) {
-        assert(Array.isArray(sortTypes), "Can't determine sort type");
+        if (!Array.isArray(sortTypes)) return;
         assert(typeof this._defaultIpfsProviderUrl === "string");
         for (const sortType of sortTypes) {
             this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].state = newState;
@@ -103,7 +100,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
     }
 
     updateGatewayState(newState: PagesIpfsGatewayClient["state"], gateway: string, sortTypes: string[]) {
-        assert(Array.isArray(sortTypes), "Can't determine sort type");
+        if (!Array.isArray(sortTypes)) return;
         for (const sortType of sortTypes) {
             this.clients.ipfsGateways[sortType][gateway].state = newState;
             this.clients.ipfsGateways[sortType][gateway].emit("statechange", newState);
@@ -113,7 +110,6 @@ export class BasePagesClientsManager extends BaseClientsManager {
     async fetchPage(pageCid: string): Promise<PageIpfs> {
         if (this._defaultIpfsProviderUrl) {
             const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(pageCid);
-            assert(Array.isArray(sortTypes), "Page cid is not mapped to a sort type");
             this.updateIpfsState("fetching-ipfs", sortTypes);
             const page: PageIpfs = JSON.parse(await this._fetchCidP2P(pageCid));
             this.updateIpfsState("stopped", sortTypes);
@@ -133,8 +129,6 @@ export class RepliesPagesClientsManager extends BasePagesClientsManager {
         ipfsClients: Record<ReplySortName, { [ipfsClientUrl: string]: PagesIpfsGatewayClient }>;
     };
 
-    _pageCidsToSortTypes: Record<string, ReplySortName[]>;
-
     protected getSortTypes() {
         return Object.keys(REPLIES_SORT_TYPES);
     }
@@ -145,8 +139,6 @@ export class PostsPagesClientsManager extends BasePagesClientsManager {
         ipfsGateways: Record<PostSortName, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
         ipfsClients: Record<PostSortName, { [ipfsClientUrl: string]: PagesIpfsGatewayClient }>;
     };
-
-    _pageCidsToSortTypes: Record<string, PostSortName[]>;
 
     protected getSortTypes() {
         return Object.keys(POSTS_SORT_TYPES);
