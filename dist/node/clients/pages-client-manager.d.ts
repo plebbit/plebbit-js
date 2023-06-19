@@ -39,7 +39,6 @@ export declare class RepliesPagesClientsManager extends BasePagesClientsManager 
             [ipfsClientUrl: string]: PagesIpfsGatewayClient;
         }>;
     };
-    _pageCidsToSortTypes: Record<string, ReplySortName[]>;
     protected getSortTypes(): string[];
 }
 export declare class PostsPagesClientsManager extends BasePagesClientsManager {
@@ -51,6 +50,5 @@ export declare class PostsPagesClientsManager extends BasePagesClientsManager {
             [ipfsClientUrl: string]: PagesIpfsGatewayClient;
         }>;
     };
-    _pageCidsToSortTypes: Record<string, PostSortName[]>;
     protected getSortTypes(): string[];
 }

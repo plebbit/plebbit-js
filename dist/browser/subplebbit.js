@@ -187,8 +187,8 @@ var Subplebbit = /** @class */ (function (_super) {
                         this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
                         if (!this.signer && mergedProps.signer)
                             this.signer = new signer_1.Signer(mergedProps.signer);
-                        if (!mergedProps.posts) return [3 /*break*/, 2];
-                        return [4 /*yield*/, (0, util_1.parseRawPages)(mergedProps.posts, this.plebbit)];
+                        if (!newProps["posts"]) return [3 /*break*/, 2];
+                        return [4 /*yield*/, (0, util_1.parseRawPages)(newProps["posts"], this.plebbit)];
                     case 1:
                         parsedPages = _a.sent();
                         this.posts.updateProps(__assign(__assign({}, parsedPages), { plebbit: this.plebbit, subplebbitAddress: this.address, pageCids: mergedProps.posts.pageCids }));

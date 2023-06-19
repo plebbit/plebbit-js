@@ -136,19 +136,20 @@ var BasePagesClientsManager = /** @class */ (function (_super) {
         }
     };
     BasePagesClientsManager.prototype.updatePageCidsToSortTypes = function (newPageCids) {
-        for (var _i = 0, _a = Object.keys(newPageCids); _i < _a.length; _i++) {
-            var sortType = _a[_i];
-            var pageCid = newPageCids[sortType];
+        for (var _i = 0, _a = Object.entries(newPageCids); _i < _a.length; _i++) {
+            var _b = _a[_i], sortType = _b[0], pageCid = _b[1];
             this._updatePageCidsSortCache(pageCid, [sortType]);
         }
     };
     BasePagesClientsManager.prototype.updatePageCidsToSortTypesToIncludeSubsequent = function (nextPageCid, previousPageCid) {
         var sortTypes = constants_1.pageCidToSortTypesCache.get(previousPageCid);
-        (0, assert_1.default)(Array.isArray(sortTypes));
+        if (!Array.isArray(sortTypes))
+            return;
         this._updatePageCidsSortCache(nextPageCid, sortTypes);
     };
     BasePagesClientsManager.prototype.updateIpfsState = function (newState, sortTypes) {
-        (0, assert_1.default)(Array.isArray(sortTypes), "Can't determine sort type");
+        if (!Array.isArray(sortTypes))
+            return;
         (0, assert_1.default)(typeof this._defaultIpfsProviderUrl === "string");
         for (var _i = 0, sortTypes_1 = sortTypes; _i < sortTypes_1.length; _i++) {
             var sortType = sortTypes_1[_i];
@@ -157,7 +158,8 @@ var BasePagesClientsManager = /** @class */ (function (_super) {
         }
     };
     BasePagesClientsManager.prototype.updateGatewayState = function (newState, gateway, sortTypes) {
-        (0, assert_1.default)(Array.isArray(sortTypes), "Can't determine sort type");
+        if (!Array.isArray(sortTypes))
+            return;
         for (var _i = 0, sortTypes_2 = sortTypes; _i < sortTypes_2.length; _i++) {
             var sortType = sortTypes_2[_i];
             this.clients.ipfsGateways[sortType][gateway].state = newState;
@@ -172,7 +174,6 @@ var BasePagesClientsManager = /** @class */ (function (_super) {
                     case 0:
                         if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 2];
                         sortTypes = constants_1.pageCidToSortTypesCache.get(pageCid);
-                        (0, assert_1.default)(Array.isArray(sortTypes), "Page cid is not mapped to a sort type");
                         this.updateIpfsState("fetching-ipfs", sortTypes);
                         _b = (_a = JSON).parse;
                         return [4 /*yield*/, this._fetchCidP2P(pageCid)];

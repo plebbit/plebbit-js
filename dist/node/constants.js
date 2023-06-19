@@ -14,7 +14,7 @@ exports.subplebbitForPublishingCache = new lru_cache_1.default({
     max: 100,
     ttl: 600000
 }); // Cache for only 10 mins
-exports.pageCidToSortTypesCache = new lru_cache_1.default({ max: 5000 });
+exports.pageCidToSortTypesCache = new lru_cache_1.default({ max: 500 });
 exports.commentValidationCache = new lru_cache_1.default({ max: 50000 });
 exports.commentUpdateValidationCache = new lru_cache_1.default({ max: 10000 });
 //# sourceMappingURL=constants.js.map
