@@ -74,7 +74,7 @@ var Post = /** @class */ (function (_super) {
         return _super.call(this, props, plebbit) || this;
     }
     Post.prototype._initProps = function (props) {
-        assert_1.default.equal(props["parentCid"], undefined);
+        assert_1.default.equal(props["parentCid"], undefined, "A post can't have parentCid defined");
         _super.prototype._initProps.call(this, props);
         this.parentCid = undefined;
     };
@@ -82,8 +82,7 @@ var Post = /** @class */ (function (_super) {
         return __assign(__assign({}, _super.prototype.toJSONPubsubMessagePublication.call(this)), { title: this.title, parentCid: undefined, link: this.link });
     };
     Post.prototype.toJSONAfterChallengeVerification = function () {
-        assert_1.default.equal(this.depth, 0);
-        assert_1.default.equal(this.parentCid, undefined);
+        assert_1.default.equal(this.depth, 0, "A post can't have depth not equal to 0");
         return __assign(__assign({}, _super.prototype.toJSONAfterChallengeVerification.call(this)), { depth: this.depth, parentCid: this.parentCid, title: this.title });
     };
     Post.prototype.publish = function () {

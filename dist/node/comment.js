@@ -76,6 +76,7 @@ var signatures_1 = require("./signer/signatures");
 var assert_1 = __importDefault(require("assert"));
 var plebbit_error_1 = require("./plebbit-error");
 var client_manager_1 = require("./clients/client-manager");
+var util_2 = require("./util");
 var Comment = /** @class */ (function (_super) {
     __extends(Comment, _super);
     function Comment(props, plebbit) {
@@ -95,7 +96,6 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype._initProps = function (props) {
         // This function is called once at in the constructor
         _super.prototype._initProps.call(this, props);
-        this.postCid = props.postCid;
         this.setCid(props.cid);
         this.parentCid = props.parentCid;
         this.ipnsName = props.ipnsName; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
@@ -109,6 +109,7 @@ var Comment = /** @class */ (function (_super) {
         this.spoiler = props.spoiler;
         this.protocolVersion = props.protocolVersion;
         this.flair = props.flair;
+        this.postCid = props.postCid ? props.postCid : this.depth === 0 ? this.cid : undefined;
         this.setPreviousCid(props.previousCid);
         this.replies = new pages_1.RepliesPages({
             pages: undefined,
@@ -315,28 +316,38 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, commentIpfs, res, commentInstance, signatureValidity, err;
+            var log, commentIpfs, commentIpfsValidation, res, commentInstance, signatureValidity, err;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:comment:update");
                         this._loadingOperation = retry_1.default.operation({ forever: true, factor: 2 });
-                        if (!(this.cid && !this.ipnsName)) return [3 /*break*/, 2];
+                        if (!(this.cid && !this.ipnsName)) return [3 /*break*/, 3];
                         return [4 /*yield*/, this._retryLoadingCommentIpfs(log)];
                     case 1:
                         commentIpfs = _a.sent();
-                        (0, assert_1.default)(commentIpfs.ipnsName);
+                        return [4 /*yield*/, (0, signatures_1.verifyComment)(commentIpfs, this._plebbit.resolveAuthorAddresses, this._clientsManager, true)];
+                    case 2:
+                        commentIpfsValidation = _a.sent();
+                        if (!commentIpfsValidation.valid) {
+                            this.emit("error", new plebbit_error_1.PlebbitError((0, util_2.getErrorCodeFromMessage)(commentIpfsValidation.reason), {
+                                commentIpfs: commentIpfs,
+                                commentIpfsValidation: commentIpfsValidation,
+                                cid: this.cid
+                            }));
+                            return [2 /*return*/];
+                        }
                         this._initProps(__assign(__assign({}, commentIpfs), { cid: this.cid }));
                         this.emit("update", this);
-                        _a.label = 2;
-                    case 2: return [4 /*yield*/, this._retryLoadingCommentUpdate(log)];
-                    case 3:
+                        _a.label = 3;
+                    case 3: return [4 /*yield*/, this._retryLoadingCommentUpdate(log)];
+                    case 4:
                         res = _a.sent();
-                        if (!(res && this.updatedAt !== res.updatedAt)) return [3 /*break*/, 6];
+                        if (!(res && this.updatedAt !== res.updatedAt)) return [3 /*break*/, 7];
                         log("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
                         commentInstance = lodash_1.default.pick(this, ["cid", "signature"]);
                         return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(res, this._plebbit.resolveAuthorAddresses, this._clientsManager, this.subplebbitAddress, commentInstance, true)];
-                    case 4:
+                    case 5:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid) {
                             this._setUpdatingState("failed");
@@ -347,19 +358,19 @@ var Comment = /** @class */ (function (_super) {
                         }
                         this._setUpdatingState("succeeded");
                         return [4 /*yield*/, this._initCommentUpdate(res)];
-                    case 5:
+                    case 6:
                         _a.sent();
                         this.emit("update", this);
-                        return [3 /*break*/, 8];
-                    case 6:
-                        if (!res) return [3 /*break*/, 8];
+                        return [3 /*break*/, 9];
+                    case 7:
+                        if (!res) return [3 /*break*/, 9];
                         log.trace("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
                         this._setUpdatingState("succeeded");
                         return [4 /*yield*/, this._initCommentUpdate(res)];
-                    case 7:
+                    case 8:
                         _a.sent();
-                        _a.label = 8;
-                    case 8: return [2 /*return*/];
+                        _a.label = 9;
+                    case 9: return [2 /*return*/];
                 }
             });
         });
