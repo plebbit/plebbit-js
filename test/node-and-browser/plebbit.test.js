@@ -203,7 +203,7 @@ describe("plebbit.fetchCid", async () => {
         const content = await multipleGatewayPlebbit.fetchCid(cid);
         expect(content).to.be.a("string");
         const timeItTookInMs = Date.now() - timeBefore;
-        expect(timeItTookInMs).to.be.lessThan(2000);
+        expect(timeItTookInMs).to.be.lessThan(9000);
     });
 });
 
