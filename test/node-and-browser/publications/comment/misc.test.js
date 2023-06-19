@@ -15,6 +15,7 @@ const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { default: waitUntil } = require("async-wait-until");
 const stringify = require("safe-stable-stringify");
+const { verifyComment } = require("../../../../dist/node/signer");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -131,6 +132,30 @@ describe("createComment", async () => {
         await new Promise((resolve) => createdComment.once("error", resolve));
 
         expect(createdComment.ipnsName).to.be.undefined; // Make sure it didn't use the props from the invalid comment
+
+        await createdComment.stop();
+    });
+
+    it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a post`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+
+        const originalPost = subplebbit.posts.pages.hot.comments[0];
+
+        const recreatedPost = await plebbit.createComment({ cid: originalPost.cid });
+
+        recreatedPost.update();
+
+        await new Promise((resolve) => recreatedPost.once("update", resolve));
+        // Comment ipfs props should be defined now, but not CommentUpdate
+        expect(recreatedPost.updatedAt).to.be.undefined;
+
+        expect(recreatedPost.toJSONIpfs()).to.deep.equal(originalPost.toJSONIpfs());
+
+        await new Promise((resolve) => recreatedPost.once("update", resolve));
+        expect(recreatedPost.updatedAt).to.be.a("number");
+        expect(recreatedPost.toJSON()).to.deep.equal(originalPost.toJSON());
+
+        await recreatedPost.stop();
     });
 });
 
