@@ -455,6 +455,7 @@ An object which may have the following keys:
 | ipfsGatewayUrls | `strings[]` or `undefined` | `['https://cloudflare-ipfs.com']` | Optional URLs of IPFS gateways |
 | ipfsHttpClientsOptions | `(string \| IpfsHttpClientOptions)[]` or `undefined` | `undefined` | Optional URLs of IPFS APIs or [IpfsHttpClientOptions](https://www.npmjs.com/package/ipfs-http-client#options), `'http://localhost:5001/api/v0'` to use a local IPFS node |
 | pubsubHttpClientsOptions | `(string \| IpfsHttpClientOptions)[]` or `undefined` | `['https://pubsubprovider.xyz/api/v0']` | Optional URLs or [IpfsHttpClientOptions](https://www.npmjs.com/package/ipfs-http-client#options) used for pubsub publishing when `ipfsHttpClientOptions` isn't available, like in the browser |
+| plebbitRpcUrls | `string[]` or `undefined` | `undefined` | Optional websocket URLs of plebbit RPC servers, required to run a sub from a browser/electron/webview |
 | dataPath | `string`  or `undefined` | .plebbit folder in the current working directory | (Node only) Optional folder path to create/resume the user and subplebbit databases |
 | chainProviders | `{[chainTicker: string]: ChainProvider}` or `undefined` | default providers for supported chains | Optional provider RPC URLs and chain IDs |
 | resolveAuthorAddresses | `boolean`  or `undefined` | `true` | Optionally disable resolving crypto domain author addresses, which can be done lazily later to save time |
