@@ -1,0 +1,23 @@
+/TODO.md
+
+# generated preload.js file for karma electron tests
+karma-electron-preload.js
+
+# webpack bundles for karma browser tests
+test-karma-webpack
+
+# plebbit-js database files
+.plebbit
+.plebbit/
+
+# build folder 
+dist/
+/dist/
+dist
+
+node_modules/
+packages/*/dist/
+packages/example/.next/
+.env.local
+yarn-error.log
+.env

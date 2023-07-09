@@ -41,6 +41,7 @@
     "dependencies": {
         "@adraffy/ens-normalize": "1.8.3",
         "@keyv/sqlite": "3.6.2",
+        "@plebbit/plebbit-js-rpc": "file:rpc",
         "@plebbit/plebbit-logger": "github:plebbit/plebbit-logger",
         "@types/node-fetch": "2.6.2",
         "@types/proper-lockfile": "4.1.2",

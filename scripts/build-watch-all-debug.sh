@@ -5,6 +5,10 @@
 # give any useful errors and you simply want to run "npm run build:watch"
 # which builds both for node and browser but hides the browser part
 
+# go to current folder
+cd "$(dirname "$0")"
+cd ..
+
 xterm -geometry "-0+0" -e "npm run build:node:watch" &
 xterm -geometry "+0+0" -e "npm run build:browser:watch" &
 xterm -geometry "-0-0" -e "npm run webpack:watch" &

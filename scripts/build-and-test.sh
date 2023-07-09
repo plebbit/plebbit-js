@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# go to current folder
+cd "$(dirname "$0")"
+cd ..
+
 # build and bundle
 npm install
 npm run build
