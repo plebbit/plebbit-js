@@ -42,6 +42,8 @@ Post extends Comment /* (IPFS file) */ {
   depth: 0 // posts have 0 depth, added by the subplebbit owner not author
   title: string
   link?: string
+  linkWidth?: number // author can optionally provide dimensions of image/video link which helps UI clients with infinite scrolling feeds
+  linkHeight?: number
   thumbnailUrl?: string // fetched by subplebbit owner, not author, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
 }
 Vote extends Publication {
