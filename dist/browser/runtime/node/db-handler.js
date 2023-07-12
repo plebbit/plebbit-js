@@ -1050,55 +1050,52 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    // TODO rewrite this
+    DbHandler.prototype._calcActiveUserCount = function (commentsRaw, votesRaw) {
+        var res = {};
+        var _loop_1 = function (timeframe) {
+            var propertyName = "".concat(timeframe.toLowerCase(), "ActiveUserCount");
+            var _b = [Math.max(0, (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[timeframe]), (0, util_1.timestamp)()], from = _b[0], to = _b[1];
+            var authors = lodash_1.default.uniq(__spreadArray(__spreadArray([], commentsRaw
+                .filter(function (comment) { return comment.timestamp >= from && comment.timestamp <= to; })
+                .map(function (comment) { return comment.authorAddress; }), true), votesRaw.filter(function (vote) { return vote.timestamp >= from && vote.timestamp <= to; }).map(function (vote) { return vote.authorAddress; }), true));
+            res[propertyName] = authors.length;
+        };
+        for (var _i = 0, _a = Object.keys(util_1.TIMEFRAMES_TO_SECONDS); _i < _a.length; _i++) {
+            var timeframe = _a[_i];
+            _loop_1(timeframe);
+        }
+        return res;
+    };
+    DbHandler.prototype._calcPostCount = function (commentsRaw) {
+        var res = {};
+        var _loop_2 = function (timeframe) {
+            var propertyName = "".concat(timeframe.toLowerCase(), "PostCount");
+            var _b = [Math.max(0, (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[timeframe]), (0, util_1.timestamp)()], from = _b[0], to = _b[1];
+            var posts = commentsRaw
+                .filter(function (comment) { return comment.timestamp >= from && comment.timestamp <= to; })
+                .filter(function (comment) { return comment.depth === 0; });
+            res[propertyName] = posts.length;
+        };
+        for (var _i = 0, _a = Object.keys(util_1.TIMEFRAMES_TO_SECONDS); _i < _a.length; _i++) {
+            var timeframe = _a[_i];
+            _loop_2(timeframe);
+        }
+        return res;
+    };
     DbHandler.prototype.querySubplebbitStats = function (trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var stats, combinedStats;
-            var _this = this;
+            var commentsRaw, votesRaw, res;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, Promise.all(["PostCount", "ActiveUserCount"].map(function (statType) { return __awaiter(_this, void 0, void 0, function () {
-                            var _this = this;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0: return [4 /*yield*/, Promise.all(Object.keys(util_1.TIMEFRAMES_TO_SECONDS).map(function (timeframe) { return __awaiter(_this, void 0, void 0, function () {
-                                            var propertyName, _a, from, to, res, query, res;
-                                            var _b, _c;
-                                            return __generator(this, function (_d) {
-                                                switch (_d.label) {
-                                                    case 0:
-                                                        propertyName = "".concat(timeframe.toLowerCase()).concat(statType);
-                                                        _a = [Math.max(0, (0, util_1.timestamp)() - util_1.TIMEFRAMES_TO_SECONDS[timeframe]), (0, util_1.timestamp)()], from = _a[0], to = _a[1];
-                                                        if (!(statType === "ActiveUserCount")) return [3 /*break*/, 2];
-                                                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
-                                                                .countDistinct("comments.authorAddress")
-                                                                .join(TABLES.VOTES, "".concat(TABLES.COMMENTS, ".authorAddress"), "=", "".concat(TABLES.VOTES, ".authorAddress"))
-                                                                .whereBetween("comments.timestamp", [from, to])];
-                                                    case 1:
-                                                        res = (_d.sent())[0]["count(distinct `comments`.`authorAddress`)"];
-                                                        return [2 /*return*/, (_b = {}, _b[propertyName] = res, _b)];
-                                                    case 2:
-                                                        if (!(statType === "PostCount")) return [3 /*break*/, 4];
-                                                        query = this._baseTransaction(trx)(TABLES.COMMENTS)
-                                                            .count()
-                                                            .whereBetween("timestamp", [from, to])
-                                                            .whereNull("parentCid");
-                                                        return [4 /*yield*/, query];
-                                                    case 3:
-                                                        res = _d.sent();
-                                                        return [2 /*return*/, (_c = {}, _c[propertyName] = res[0]["count(*)"], _c)];
-                                                    case 4: return [2 /*return*/];
-                                                }
-                                            });
-                                        }); }))];
-                                    case 1: return [2 /*return*/, _a.sent()];
-                                }
-                            });
-                        }); }))];
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).select(["depth", "authorAddress", "timestamp"])];
                     case 1:
-                        stats = _a.sent();
-                        combinedStats = Object.assign.apply(Object, __spreadArray([{}], stats.flat(), false));
-                        return [2 /*return*/, combinedStats];
+                        commentsRaw = _a.sent();
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.VOTES).select(["timestamp", "authorAddress"])];
+                    case 2:
+                        votesRaw = _a.sent();
+                        res = __assign(__assign({}, this._calcActiveUserCount(commentsRaw, votesRaw)), this._calcPostCount(commentsRaw));
+                        //@ts-expect-error
+                        return [2 /*return*/, res];
                 }
             });
         });

@@ -64,6 +64,8 @@ export declare class DbHandler {
     queryCommentsByCids(cids: string[], trx?: Transaction): Promise<CommentsTableRow[]>;
     queryParents(rootComment: Pick<CommentsTableRow, "cid" | "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]>;
     queryCommentsToBeUpdated(ipnsKeyNames: string[], trx?: Transaction): Promise<CommentsTableRow[]>;
+    private _calcActiveUserCount;
+    private _calcPostCount;
     querySubplebbitStats(trx?: Transaction): Promise<SubplebbitStats>;
     queryCommentsUnderComment(parentCid: string | null, trx?: Transaction): Promise<CommentsTableRow[]>;
     queryComment(cid: string, trx?: Transaction): Promise<CommentsTableRow | undefined>;
