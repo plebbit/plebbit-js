@@ -86,6 +86,7 @@ import { SubplebbitClientsManager } from "./clients/client-manager";
 import * as cborg from "cborg";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import { encryptEd25519AesGcmPublicKeyBuffer } from "./signer/encryption";
+import pLimit from "p-limit";
 
 export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
     // public
@@ -1310,7 +1311,16 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         const depthsKeySorted = Object.keys(commentsGroupedByDepth).sort((a, b) => Number(b) - Number(a)); // Make sure comments with higher depths are sorted first
 
-        for (const depthKey of depthsKeySorted) await Promise.all(commentsGroupedByDepth[depthKey].map(this._updateComment.bind(this)));
+        const concurrencyLimit = 10;
+        const queueLimit = pLimit(concurrencyLimit);
+
+        const updatePromises: Promise<any>[] = [];
+
+        for (const depthKey of depthsKeySorted)
+            updatePromises.push(
+                ...commentsGroupedByDepth[depthKey].map((comment) => queueLimit(() => this._updateComment.bind(this)(comment)))
+            );
+        await Promise.all(updatePromises);
     }
 
     private async _repinCommentsIPFSIfNeeded() {
@@ -1327,17 +1337,24 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const unpinnedComments = await Promise.all(
             (await this.dbHandler.queryCommentsByCids(unpinnedCommentsCids)).map((dbRes) => this.plebbit.createComment(dbRes))
         );
+        const concurrencyLimit = 10;
 
-        await Promise.all(
-            unpinnedComments.map(async (comment) => {
-                const commentIpfsContent = deterministicStringify(comment.toJSONIpfs());
-                const contentHash: string = await Hash.of(commentIpfsContent);
+        const queueLimit = pLimit(concurrencyLimit);
 
-                assert.equal(contentHash, comment.cid);
+        const repinPromises: Promise<any>[] = [];
 
-                await this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
-            })
-        );
+        for (const unpinnedComment of unpinnedComments)
+            repinPromises.push(
+                queueLimit(async () => {
+                    const commentIpfsContent = deterministicStringify(unpinnedComment.toJSONIpfs());
+                    const contentHash: string = await Hash.of(commentIpfsContent);
+
+                    assert.equal(contentHash, unpinnedComment.cid);
+
+                    await this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
+                })
+            );
+        await Promise.all(repinPromises);
 
         log(`${unpinnedComments.length} comments' IPFS have been repinned`);
     }
