@@ -616,38 +616,45 @@ export class DbHandler {
         return uniqComments;
     }
 
-    // TODO rewrite this
-    async querySubplebbitStats(trx?: Transaction): Promise<SubplebbitStats> {
-        const stats = await Promise.all(
-            ["PostCount", "ActiveUserCount"].map(
-                async (statType) =>
-                    await Promise.all(
-                        Object.keys(TIMEFRAMES_TO_SECONDS).map(async (timeframe) => {
-                            const propertyName = `${timeframe.toLowerCase()}${statType}`;
-                            const [from, to] = [Math.max(0, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe]), timestamp()];
-                            if (statType === "ActiveUserCount") {
-                                const res = (
-                                    await this._baseTransaction(trx)(TABLES.COMMENTS)
-                                        .countDistinct("comments.authorAddress")
-                                        .join(TABLES.VOTES, `${TABLES.COMMENTS}.authorAddress`, `=`, `${TABLES.VOTES}.authorAddress`)
-                                        .whereBetween("comments.timestamp", [from, to])
-                                )[0]["count(distinct `comments`.`authorAddress`)"];
-                                return { [propertyName]: res };
-                            } else if (statType === "PostCount") {
-                                const query = this._baseTransaction(trx)(TABLES.COMMENTS)
-                                    .count()
-                                    .whereBetween("timestamp", [from, to])
-                                    .whereNull("parentCid");
-                                const res = await query;
-                                return { [propertyName]: res[0]["count(*)"] };
-                            }
-                        })
-                    )
-            )
-        );
+    private _calcActiveUserCount(
+        commentsRaw: Pick<CommentsTableRow, "depth" | "authorAddress" | "timestamp">[],
+        votesRaw: Pick<VotesTableRow, "authorAddress" | "timestamp">[]
+    ) {
+        const res = {};
+        for (const timeframe of Object.keys(TIMEFRAMES_TO_SECONDS)) {
+            const propertyName = `${timeframe.toLowerCase()}ActiveUserCount`;
+            const [from, to] = [Math.max(0, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe]), timestamp()];
+            const authors = lodash.uniq([
+                ...commentsRaw
+                    .filter((comment) => comment.timestamp >= from && comment.timestamp <= to)
+                    .map((comment) => comment.authorAddress),
+                ...votesRaw.filter((vote) => vote.timestamp >= from && vote.timestamp <= to).map((vote) => vote.authorAddress)
+            ]);
+            res[propertyName] = authors.length;
+        }
+        return res;
+    }
 
-        const combinedStats: SubplebbitStats = Object.assign({}, ...stats.flat());
-        return combinedStats;
+    private _calcPostCount(commentsRaw: Pick<CommentsTableRow, "depth" | "authorAddress" | "timestamp">[]) {
+        const res = {};
+        for (const timeframe of Object.keys(TIMEFRAMES_TO_SECONDS)) {
+            const propertyName = `${timeframe.toLowerCase()}PostCount`;
+            const [from, to] = [Math.max(0, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe]), timestamp()];
+            const posts = commentsRaw
+                .filter((comment) => comment.timestamp >= from && comment.timestamp <= to)
+                .filter((comment) => comment.depth === 0);
+
+            res[propertyName] = posts.length;
+        }
+        return res;
+    }
+
+    async querySubplebbitStats(trx?: Transaction): Promise<SubplebbitStats> {
+        const commentsRaw = await this._baseTransaction(trx)(TABLES.COMMENTS).select(["depth", "authorAddress", "timestamp"]);
+        const votesRaw = await this._baseTransaction(trx)(TABLES.VOTES).select(["timestamp", "authorAddress"]);
+        const res = { ...this._calcActiveUserCount(commentsRaw, votesRaw), ...this._calcPostCount(commentsRaw) };
+        //@ts-expect-error
+        return res;
     }
 
     async queryCommentsUnderComment(parentCid: string | null, trx?: Transaction): Promise<CommentsTableRow[]> {
