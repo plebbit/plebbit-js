@@ -34,6 +34,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     // public (CommentType)
     title?: string;
     link?: string;
+    linkWidth?: number;
+    linkHeight?: number;
     thumbnailUrl?: string;
     protocolVersion: ProtocolVersion;
     cid?: string;
@@ -112,6 +114,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.spoiler = props.spoiler;
         this.protocolVersion = props.protocolVersion;
         this.flair = props.flair;
+        this.linkWidth = props.linkWidth;
+        this.linkHeight = props.linkHeight;
         this.postCid = props.postCid ? props.postCid : this.depth === 0 ? this.cid : undefined;
         this.setPreviousCid(props.previousCid);
         this.replies = new RepliesPages({
@@ -235,6 +239,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             flair: this.flair,
             spoiler: this.spoiler,
             link: this.link,
+            linkWidth: this.linkWidth,
+            linkHeight: this.linkHeight,
             title: this.title
         };
     }

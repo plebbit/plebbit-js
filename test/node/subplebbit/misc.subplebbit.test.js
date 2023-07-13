@@ -325,7 +325,7 @@ describe(`subplebbit.updatingState`, async () => {
     });
 });
 
-describe(`Generation of thumbnail urls`, async () => {
+describe(`comment.link`, async () => {
     let plebbit, subplebbit;
 
     before(async () => {
@@ -367,6 +367,21 @@ describe(`Generation of thumbnail urls`, async () => {
         const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
         expect(post.link).to.equal(link);
         expect(post.thumbnailUrl).to.be.undefined;
+    });
+
+    it(`comment.linkWidth is undefined if comment.link is a link of a gif`, async () => {
+        const link = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
+        const linkWidth = 200;
+        const linkHeight = 200;
+        const post = await publishRandomPost(subplebbit.address, plebbit, { link, linkWidth, linkHeight }, true);
+        expect(post.link).to.equal(link);
+        expect(post.linkHeight).to.equal(linkHeight);
+        expect(post.linkWidth).to.equal(linkWidth);
+
+        const postInSubPages = subplebbit.posts.pages.hot.comments.find((comment) => comment.cid === post.cid);
+        expect(postInSubPages.link).to.equal(link);
+        expect(postInSubPages.linkHeight).to.equal(linkHeight);
+        expect(postInSubPages.linkWidth).to.equal(linkWidth);
     });
 });
 

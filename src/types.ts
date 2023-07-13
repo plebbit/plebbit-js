@@ -85,6 +85,8 @@ export interface CreateCommentOptions extends CreatePublicationOptions {
     content?: string; // Content of the comment, link posts have no content
     title?: string; // If comment is a post, it needs a title
     link?: string; // If comment is a post, it might be a link post
+    linkWidth?: number; // author can optionally provide dimensions of image/video link which helps UI clients with infinite scrolling feeds
+    linkHeight?: number;
     spoiler?: boolean; // Hide the comment thumbnail behind spoiler warning
     flair?: Flair; // Author or mod chosen colored label for the comment
 }
