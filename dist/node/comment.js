@@ -109,6 +109,8 @@ var Comment = /** @class */ (function (_super) {
         this.spoiler = props.spoiler;
         this.protocolVersion = props.protocolVersion;
         this.flair = props.flair;
+        this.linkWidth = props.linkWidth;
+        this.linkHeight = props.linkHeight;
         this.postCid = props.postCid ? props.postCid : this.depth === 0 ? this.cid : undefined;
         this.setPreviousCid(props.previousCid);
         this.replies = new pages_1.RepliesPages({
@@ -207,7 +209,7 @@ var Comment = /** @class */ (function (_super) {
         return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.depth === 0 ? undefined : this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl });
     };
     Comment.prototype.toJSONPubsubMessagePublication = function () {
-        return __assign(__assign({}, _super.prototype.toJSONPubsubMessagePublication.call(this)), { content: this.content, parentCid: this.parentCid, flair: this.flair, spoiler: this.spoiler, link: this.link, title: this.title });
+        return __assign(__assign({}, _super.prototype.toJSONPubsubMessagePublication.call(this)), { content: this.content, parentCid: this.parentCid, flair: this.flair, spoiler: this.spoiler, link: this.link, linkWidth: this.linkWidth, linkHeight: this.linkHeight, title: this.title });
     };
     Comment.prototype.toJSONAfterChallengeVerification = function () {
         (0, assert_1.default)(this.cid && this.postCid);

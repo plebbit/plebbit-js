@@ -8,6 +8,8 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     clients: CommentClientsManager["clients"];
     title?: string;
     link?: string;
+    linkWidth?: number;
+    linkHeight?: number;
     thumbnailUrl?: string;
     protocolVersion: ProtocolVersion;
     cid?: string;
