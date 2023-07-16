@@ -74,6 +74,8 @@ export interface CreateCommentOptions extends CreatePublicationOptions {
     content?: string;
     title?: string;
     link?: string;
+    linkWidth?: number;
+    linkHeight?: number;
     spoiler?: boolean;
     flair?: Flair;
 }
