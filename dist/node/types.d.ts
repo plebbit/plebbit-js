@@ -461,7 +461,8 @@ export interface ChallengesTableRow extends Omit<ChallengeMessageType, "type" | 
     challengeTypes: ChallengeType["type"][];
     insertedAt: number;
 }
-export interface ChallengesTableRowInsert extends Omit<ChallengesTableRow, "insertedAt"> {
+export interface ChallengesTableRowInsert extends Omit<ChallengesTableRow, "insertedAt" | "challengeTypes"> {
+    challengeTypes: string;
 }
 export interface ChallengeAnswersTableRow extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encryptedChallengeAnswers"> {
     insertedAt: number;
@@ -472,7 +473,8 @@ export interface ChallengeAnswersTableRowInsert extends Omit<ChallengeAnswersTab
 export interface ChallengeVerificationsTableRow extends Omit<ChallengeVerificationMessageType, "type" | "encryptedPublication"> {
     insertedAt: number;
 }
-export interface ChallengeVerificationsTableRowInsert extends Omit<ChallengeVerificationsTableRow, "insertedAt"> {
+export interface ChallengeVerificationsTableRowInsert extends Omit<ChallengeVerificationsTableRow, "insertedAt" | "challengeErrors"> {
+    challengeErrors?: string;
 }
 export interface SignersTableRow extends Required<Pick<SignerType, "privateKey" | "ipnsKeyName" | "type">> {
     insertedAt: number;

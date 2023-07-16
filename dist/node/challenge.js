@@ -16,6 +16,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChallengeVerificationMessage = exports.ChallengeAnswerMessage = exports.ChallengeMessage = exports.ChallengeRequestMessage = void 0;
 var lodash_1 = __importDefault(require("lodash"));
+var assert_1 = __importDefault(require("assert"));
 var ChallengeRequestMessage = /** @class */ (function () {
     function ChallengeRequestMessage(props) {
         this.type = "CHALLENGEREQUEST";
@@ -40,7 +41,9 @@ var ChallengeRequestMessage = /** @class */ (function () {
         };
     };
     ChallengeRequestMessage.prototype.toJSONForDb = function () {
-        var acceptedChallengeTypes = Array.isArray(this.acceptedChallengeTypes) ? JSON.stringify(this.acceptedChallengeTypes) : this.acceptedChallengeTypes;
+        var acceptedChallengeTypes = Array.isArray(this.acceptedChallengeTypes)
+            ? JSON.stringify(this.acceptedChallengeTypes)
+            : this.acceptedChallengeTypes;
         return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedPublication"])), { acceptedChallengeTypes: acceptedChallengeTypes });
     };
     return ChallengeRequestMessage;
@@ -68,7 +71,9 @@ var ChallengeMessage = /** @class */ (function () {
         };
     };
     ChallengeMessage.prototype.toJSONForDb = function (challengeTypes) {
-        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedChallenges"])), { challengeTypes: challengeTypes });
+        (0, assert_1.default)(Array.isArray(challengeTypes), "Challenge types need to be array, (".concat(challengeTypes, ") is not an array"));
+        var challengeTypesFormattedForDb = JSON.stringify(challengeTypes);
+        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedChallenges"])), { challengeTypes: challengeTypesFormattedForDb });
     };
     return ChallengeMessage;
 }());
@@ -95,7 +100,8 @@ var ChallengeAnswerMessage = /** @class */ (function () {
         };
     };
     ChallengeAnswerMessage.prototype.toJSONForDb = function (challengeAnswers) {
-        var challengeAnswersFormattedForDb = Array.isArray(challengeAnswers) ? JSON.stringify(challengeAnswers) : challengeAnswers;
+        (0, assert_1.default)(Array.isArray(challengeAnswers), "Challenge answers need to be array, (".concat(challengeAnswers, ") is not an array"));
+        var challengeAnswersFormattedForDb = JSON.stringify(challengeAnswers);
         return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedChallengeAnswers"])), { challengeAnswers: challengeAnswersFormattedForDb });
     };
     return ChallengeAnswerMessage;
@@ -129,7 +135,10 @@ var ChallengeVerificationMessage = /** @class */ (function () {
         };
     };
     ChallengeVerificationMessage.prototype.toJSONForDb = function () {
-        return __assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedPublication"]));
+        var challengeErrorsFormattedForDb = Array.isArray(this.challengeErrors)
+            ? JSON.stringify(this.challengeErrors)
+            : this.challengeErrors;
+        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedPublication"])), { challengeErrors: challengeErrorsFormattedForDb });
     };
     return ChallengeVerificationMessage;
 }());
