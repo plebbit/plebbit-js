@@ -141,6 +141,8 @@ var Publication = /** @class */ (function (_super) {
     };
     Publication.prototype._initProps = function (props) {
         this.subplebbitAddress = props.subplebbitAddress;
+        if (this.subplebbitAddress)
+            this.shortSubplebbitAddress = (0, util_1.shortifyAddress)(this.subplebbitAddress);
         this.timestamp = props.timestamp;
         this.signer = this.signer || props["signer"];
         this.signature = props.signature;

@@ -8,6 +8,7 @@ import { JsonSignature } from "./signer/constants";
 declare class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     clients: PublicationClientsManager["clients"];
     subplebbitAddress: string;
+    shortSubplebbitAddress: string;
     timestamp: number;
     signature: JsonSignature;
     signer: Signer;
