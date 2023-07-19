@@ -88,7 +88,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
     _initProps(props: PublicationType) {
         this.subplebbitAddress = props.subplebbitAddress;
-        this.shortSubplebbitAddress = shortifyAddress(this.subplebbitAddress);
+        if (this.subplebbitAddress) this.shortSubplebbitAddress = shortifyAddress(this.subplebbitAddress);
         this.timestamp = props.timestamp;
         this.signer = this.signer || props["signer"];
         this.signature = props.signature;
