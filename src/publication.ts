@@ -20,7 +20,7 @@ import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
 import { Plebbit } from "./plebbit";
 import { signChallengeAnswer, signChallengeRequest, verifyChallengeMessage, verifyChallengeVerification } from "./signer/signatures";
-import { throwWithErrorCode, timestamp } from "./util";
+import { shortifyAddress, throwWithErrorCode, timestamp } from "./util";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { Comment } from "./comment";
 import { PlebbitError } from "./plebbit-error";
@@ -38,6 +38,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     clients: PublicationClientsManager["clients"];
 
     subplebbitAddress: string;
+    shortSubplebbitAddress: string;
     timestamp: number;
     signature: JsonSignature;
     signer: Signer;
@@ -87,6 +88,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
     _initProps(props: PublicationType) {
         this.subplebbitAddress = props.subplebbitAddress;
+        this.shortSubplebbitAddress = shortifyAddress(this.subplebbitAddress);
         this.timestamp = props.timestamp;
         this.signer = this.signer || props["signer"];
         this.signature = props.signature;
