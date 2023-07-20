@@ -98,7 +98,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.clients = this._clientsManager.clients;
     }
 
-    _initProps(props: CommentType) {
+    _initProps(props: Omit<CommentType, "shortSubplebbitAddress">) {
         // This function is called once at in the constructor
         super._initProps(props);
         this.setCid(props.cid);
@@ -201,7 +201,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                       lastChildCid: this.lastChildCid,
                       lastReplyTimestamp: this.lastReplyTimestamp
                   }
-                : {})
+                : {}),
+            shortSubplebbitAddress: this.shortSubplebbitAddress
         };
     }
 
@@ -267,6 +268,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         return {
             ...this.toJSONAfterChallengeVerification(),
             shortCid: this.shortCid,
+            shortSubplebbitAddress: this.shortSubplebbitAddress,
             author: this.author.toJSON(),
             original: this.original,
             upvoteCount: this.upvoteCount,

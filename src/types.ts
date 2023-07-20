@@ -424,6 +424,7 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     cid?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
     shortCid?: string;
     ipnsName?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
+    shortSubplebbitAddress: string;
 }
 
 export interface CommentWithCommentUpdate
