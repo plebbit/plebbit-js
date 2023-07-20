@@ -1,33 +1,6 @@
-#### API
-
-```
-method: getComment, params: [cid: string]
-method: getCommentUpdate, params: [cid: string, ipnsName: string, updatedAtAfter?: number]
-method: getCommentPage, params: [pageCid, commentCid]
-method: getSubplebbitUpdate, params: [address: string, updatedAtAfter?: number]
-method: getSubplebbitPage, params: [pageCid, subplebbitAddress]
-method: createSubplebbit, params: [createSubplebbitOptions]
-method: startSubplebbit, params: [address: string]
-method: stopSubplebbit, params: [address: string]
-method: editSubplebbit, params: [address: string, subplebbitEditOptions]
-method: listSubplebbits, params: []
-method: publishComment, params: [comment]
-method: publishVote, params: [vote]
-method: publishCommentEdit, params: [commentEdit]
-method: publishChallengeAnswers, params: [challengeRequestId: string (base58), answers]
-method: getDefaults, params: []
-method: fetchCid, params: [cid: string]
-method: getPeers, params: []
-method: getStats, params: []
-```
-
-#### Example
+## Get started running the plebbit JSON-RPC websocket server
 
 ```js
-// ------
-// server
-// ------
-
 const {PlebbitWsServer} = require('@plebbit/plebbit-js/rpc')
 const port = 8080
 const plebbitOptions = {ipfsHttpClientsOptions: ['http://localhost:5001/api/v0']}
@@ -43,12 +16,12 @@ plebbitWebSocketServer.wss.wss.on('connection', (socket, request) => {
 plebbitWebSocketServer.on('error', console.log)
 
 console.log(`test server plebbit wss listening on port ${port}`)
+```
 
-// --------------------------------------------------
-// client (any JSON RPC websocket compatible library)
-// --------------------------------------------------
+## Get started making client requests
 
-const WebSocketClient = require('rpc-websockets').Client
+```js
+const WebSocketClient = require('rpc-websockets').Client // or any JSON RPC websocket compatible library
 webSocketClient = new WebSocketClient(`ws://localhost:${port}`)
 
 // debug raw JSON RPC messages
@@ -69,4 +42,298 @@ console.log(commentUpdate)
 // wait for the next comment update
 const nextCommentUpdate = await webSocketClient.call('getCommentUpdate', [comment.cid, comment.ipnsName, commentUpdate.updatedAt])
 console.log(nextCommentUpdate)
+```
+
+# JSON-RPC Websocket API
+
+- `method: getComment, params: [cid: string], result: Comment`
+- `method: getCommentPage, params: [pageCid, commentCid]`
+- `method: getSubplebbitPage, params: [pageCid, subplebbitAddress]`
+- `method: createSubplebbit, params: [createSubplebbitOptions]`
+- `method: startSubplebbit, params: [address: string]`
+- `method: stopSubplebbit, params: [address: string]`
+- `method: editSubplebbit, params: [address: string, subplebbitEditOptions]`
+- `method: listSubplebbits, params: []`
+- `method: getDefaults, params: []`
+- `method: fetchCid, params: [cid: string]`
+- `method: getPeers, params: []`
+- `method: getStats, params: []`
+
+# JSON-RPC Pubsub Websocket API
+
+- [`method: commentUpdate, params: [cid: string, ipnsName: string]`](#commentupdate)
+- [`method: subplebbitUpdate, params: [address: string]`](#subplebbitupdate)
+- [`method: publishComment, params: [comment]`](#publishcomment)
+- `method: publishVote, params: [vote]`
+- `method: publishCommentEdit, params: [commentEdit]`
+- `method: publishChallengeAnswers, params: [subscriptionId: number, challengeAnswers: string[]]`
+- [`method: unsubscribe, params: [subscriptionId: number]`](#unsubscribe)
+
+## commentUpdate
+
+Subscribe to a comment update to receive notifications when the comment is updated, e.g. has a new reply
+
+### Parameters:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| cid | `string` | CID of the comment |
+| ipnsName | `string` | IPNS name of the comment |
+
+### Result:
+
+`<number>` - Subscription id \(needed to unsubscribe\)
+
+### Code sample:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "commentUpdate",
+  "params": [
+    "Qm...",
+    "12D3KooW..."
+  ]
+}
+```
+
+### Response:
+
+```json
+{ "jsonrpc": "2.0", "result": 23784, "id": 1 }
+```
+
+#### Notification Format:
+
+The notification format is the same as seen in the plebbit-js [Comment Events](https://github.com/plebbit/plebbit-js#comment-events)
+
+`update` event:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "commentUpdate",
+  "params": {
+    "result": {
+      "cid": "Qm...",
+      "upvoteCount": 1,
+      "downvoteCount": 0,
+      "replyCount": 0,
+      "updatedAt": 1689886478
+    },
+    "event": "update",
+    "subscription": 23784
+  }
+}
+```
+
+`statechange` event:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "commentUpdate",
+  "params": {
+    "result": "fetching-ipfs",
+    "event": "statechange",
+    "subscription": 23784
+  }
+}
+```
+
+## subplebbitUpdate
+
+Subscribe to a subplebbit update to receive notifications when the subplebbit is updated, e.g. has a new post
+
+### Parameters:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| address | `string` | address of the subplebbit |
+
+### Result:
+
+`<number>` - Subscription id \(needed to unsubscribe\)
+
+### Code sample:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "subplebbitUpdate",
+  "params": [
+    "memes.eth"
+  ]
+}
+```
+
+### Response:
+
+```json
+{ "jsonrpc": "2.0", "result": 23784, "id": 1 }
+```
+
+#### Notification Format:
+
+The notification format is the same as seen in the plebbit-js [Subplebbit Events](https://github.com/plebbit/plebbit-js#subplebbit-events)
+
+`update` event:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "subplebbitUpdate",
+  "params": {
+    "result": {
+      "title": "Memes",
+      "description": "Publish memes here",
+      "updatedAt": 1689886478
+    },
+    "event": "update",
+    "subscription": 23784
+  }
+}
+```
+
+`statechange` event:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "subplebbitUpdate",
+  "params": {
+    "result": "fetching-ipfs",
+    "event": "statechange",
+    "subscription": 23784
+  }
+}
+```
+
+## publishComment
+
+Publish a comment and subscribe to receive notifications of the challenge pubsub message received and other publishing state changes
+
+### Parameters:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| comment | `Comment` | Comment to publish |
+
+### Result:
+
+`<number>` - Subscription id \(needed to unsubscribe and publishChallengeAnswers\)
+
+### Code sample:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "publishComment",
+  "params": [
+    {
+      "title": "Hello",
+      "content": "World",
+      "author": {"address": "john.eth"},
+      "signature": {
+        "signature": "...",
+        "publicKey": "...",
+        "type": "ed25519",
+        "signedPropertyNames": ["title", "content", "author"]
+      }
+    }
+  ]
+}
+```
+
+### Response:
+
+```json
+{ "jsonrpc": "2.0", "result": 23784, "id": 1 }
+```
+
+#### Notification Format:
+
+The notification format is the same as seen in the plebbit-js [Comment Events](https://github.com/plebbit/plebbit-js#comment-events)
+
+`challenge` event:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "publishComment",
+  "params": {
+    "result": {
+      "type": "CHALLENGE",
+      "challenges": [
+        {"type": "text/plain", "challenge": "2+2"},
+        {"type": "text/plain", "challenge": "5+5"}
+      ]
+    },
+    "event": "challenge",
+    "subscription": 23784
+  }
+}
+```
+
+`challengeverification` event:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "publishComment",
+  "params": {
+    "result": {
+      "type": "CHALLENGEVERIFICATION",
+      "challengeSuccess": true,
+      "publication": {
+        "cid": "Qm...",
+        "title": "Hello",
+        "content": "World",
+        "author": {"address": "john.eth"},
+        "signature": {
+          "signature": "...",
+          "publicKey": "...",
+          "type": "ed25519",
+          "signedPropertyNames": ["title", "content", "author"]
+        }
+      }
+    },
+    "event": "challengeverification",
+    "subscription": 23784
+  }
+}
+```
+
+## unsubscribe
+
+Unsubscribe from notifications
+
+### Parameters:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| subscriptionId | `number` | id of the account subscription to cancel |
+
+### Result:
+
+`<bool>` - unsubscribe success message
+
+### Code sample:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "unsubscribe",
+  "params": [23784]
+}
+```
+
+### Response:
+
+```json
+{ "jsonrpc": "2.0", "result": true, "id": 1 }
 ```
