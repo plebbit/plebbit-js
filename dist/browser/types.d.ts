@@ -358,6 +358,7 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     cid?: string;
     shortCid?: string;
     ipnsName?: string;
+    shortSubplebbitAddress: string;
 }
 export interface CommentWithCommentUpdate extends Omit<CommentType, "replyCount" | "downvoteCount" | "upvoteCount" | "replies" | "updatedAt" | "original" | "cid" | "shortCid" | "postCid" | "depth" | "ipnsKeyName" | "signer">, Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth" | "shortCid">>, Omit<CommentUpdate, "author" | "replies"> {
     replies?: PagesTypeJson;

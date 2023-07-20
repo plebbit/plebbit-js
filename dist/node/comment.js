@@ -171,7 +171,7 @@ var Comment = /** @class */ (function (_super) {
         var _a;
         var base = this.cid
             ? __assign(__assign({}, this.toJSONAfterChallengeVerification()), { shortCid: this.shortCid }) : this.toJSONPubsubMessagePublication();
-        return __assign(__assign({}, base), (typeof this.updatedAt === "number"
+        return __assign(__assign(__assign({}, base), (typeof this.updatedAt === "number"
             ? {
                 author: this.author.toJSON(),
                 original: this.original,
@@ -192,7 +192,7 @@ var Comment = /** @class */ (function (_super) {
                 lastChildCid: this.lastChildCid,
                 lastReplyTimestamp: this.lastReplyTimestamp
             }
-            : {}));
+            : {})), { shortSubplebbitAddress: this.shortSubplebbitAddress });
     };
     Comment.prototype.toJSONPagesIpfs = function (commentUpdate) {
         (0, assert_1.default)(this.cid && this.postCid);
@@ -222,7 +222,7 @@ var Comment = /** @class */ (function (_super) {
     Comment.prototype.toJSONMerged = function () {
         var _a;
         (0, assert_1.default)(this.ipnsName && typeof this.updatedAt === "number" && this.original && this.shortCid);
-        return __assign(__assign({}, this.toJSONAfterChallengeVerification()), { shortCid: this.shortCid, author: this.author.toJSON(), original: this.original, upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replyCount: this.replyCount, updatedAt: this.updatedAt, deleted: this.deleted, pinned: this.pinned, locked: this.locked, removed: this.removed, reason: this.reason, edit: this.edit, protocolVersion: this.protocolVersion, spoiler: this.spoiler, flair: this.flair, replies: (_a = this.replies) === null || _a === void 0 ? void 0 : _a.toJSON(), lastChildCid: this.lastChildCid, lastReplyTimestamp: this.lastReplyTimestamp });
+        return __assign(__assign({}, this.toJSONAfterChallengeVerification()), { shortCid: this.shortCid, shortSubplebbitAddress: this.shortSubplebbitAddress, author: this.author.toJSON(), original: this.original, upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replyCount: this.replyCount, updatedAt: this.updatedAt, deleted: this.deleted, pinned: this.pinned, locked: this.locked, removed: this.removed, reason: this.reason, edit: this.edit, protocolVersion: this.protocolVersion, spoiler: this.spoiler, flair: this.flair, replies: (_a = this.replies) === null || _a === void 0 ? void 0 : _a.toJSON(), lastChildCid: this.lastChildCid, lastReplyTimestamp: this.lastReplyTimestamp });
     };
     Comment.prototype.setCommentIpnsKey = function (ipnsKey) {
         // Contains name and id

@@ -44,7 +44,7 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     _clientsManager: CommentClientsManager;
     constructor(props: CommentType, plebbit: Plebbit);
     _initClients(): void;
-    _initProps(props: CommentType): void;
+    _initProps(props: Omit<CommentType, "shortSubplebbitAddress">): void;
     _initCommentUpdate(props: CommentUpdate): Promise<void>;
     getType(): PublicationTypeName;
     toJSON(): CommentType;
