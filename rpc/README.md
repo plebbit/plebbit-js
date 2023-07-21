@@ -18,6 +18,8 @@ plebbitWebSocketServer.on('error', console.log)
 console.log(`test server plebbit wss listening on port ${port}`)
 ```
 
+## Get started making client requests
+
 ```js
 const WebSocketClient = require('rpc-websockets').Client // or any JSON RPC websocket compatible library
 const webSocketClient = new WebSocketClient(`ws://localhost:${port}`)
