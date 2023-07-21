@@ -18,8 +18,6 @@ plebbitWebSocketServer.on('error', console.log)
 console.log(`test server plebbit wss listening on port ${port}`)
 ```
 
-## Get started making client requests
-
 ```js
 const WebSocketClient = require('rpc-websockets').Client // or any JSON RPC websocket compatible library
 const webSocketClient = new WebSocketClient(`ws://localhost:${port}`)
@@ -29,45 +27,6 @@ webSocketClient.socket.on('message', (message) => console.log('from server:', me
 
 // wait for websocket connection  to open
 await new Promise((resolve) => webSocketClient.on('open', resolve))
-
-// save all subscription messages (ie json rpc messages without 'id', also called json rpc 'notifications')
-// NOTE: it is possible to receive a subscription message before receiving the subscription id
-const subscriptionsMessages
-webSocketClient.socket.on('message', (jsonMessage) => {
-  const message = JSON.parse(jsonMessage)
-  const subscriptionId = message?.params?.subscription
-  if (subscriptionId) {
-    if (!subscriptionsMessages[subscriptionId]) {
-      subscriptionsMessages[subscriptionId] = []
-    }
-    // in production, don't keep all messages forever, expire them after some time
-    subscriptionsMessages[subscriptionId].push(message)
-  }
-})
-
-// get comment
-const commentCid = 'Qm...'
-const comment = await webSocketClient.call('getComment', [commentCid])
-console.log(comment)
-
-// get comment update
-const subscriptionId = await webSocketClient.call('commentUpdate', [comment.cid, comment.ipnsName])
-new Subscription({subscriptionId}).on('message', console.log)
-
-// wait for the next comment update
-const nextCommentUpdate = await webSocketClient.call('getCommentUpdate', [comment.cid, comment.ipnsName, commentUpdate.updatedAt])
-console.log(nextCommentUpdate)
-```
-
-```js
-const {PlebbitWsClient} = require('@plebbit/plebbit-js/rpc')
-const plebbitWsClient = new PlebbitWsClient(`ws://localhost:${port}`)
-
-// debug raw JSON RPC messages in console (optional)
-plebbitWsClient.ws.on('message', (message) => console.log('from server:', message.toString()))
-
-// wait for websocket connection  to open
-await new Promise((resolve) => plebbitWsClient.on('open', resolve))
 
 // save all subscription messages (ie json rpc messages without 'id', also called json rpc 'notifications')
 // NOTE: it is possible to receive a subscription message before receiving the subscription id
