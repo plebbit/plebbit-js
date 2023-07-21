@@ -6,7 +6,7 @@ const port = 8080
 const plebbitOptions = {ipfsHttpClientsOptions: ['http://localhost:5001/api/v0']}
 const plebbitWebSocketServer = await PlebbitWsServer({port, plebbitOptions})
 
-// debug raw JSON RPC messages
+// debug raw JSON RPC messages in console (optional)
 plebbitWebSocketServer.wss.wss.on('connection', (socket, request) => {
   console.log('connection')
   socket.on('message', (message) => console.log(message.toString()))
@@ -24,7 +24,7 @@ console.log(`test server plebbit wss listening on port ${port}`)
 const WebSocketClient = require('rpc-websockets').Client // or any JSON RPC websocket compatible library
 webSocketClient = new WebSocketClient(`ws://localhost:${port}`)
 
-// debug raw JSON RPC messages
+// debug raw JSON RPC messages in console (optional)
 webSocketClient.socket.on('message', (message) => console.log('from server:', message.toString()))
 
 // wait for websocket connection  to open

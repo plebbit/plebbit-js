@@ -7,8 +7,8 @@ PlebbitRpc.setPlebbitJs(PlebbitJsMock)
 ;(async () => {
   const plebbitWebSocketServer = await PlebbitRpc.PlebbitWsServer({port})
 
-  // debug raw JSON RPC messages
-  plebbitWebSocketServer.wss.wss.on('connection', (socket, request) => {
+  // debug raw JSON RPC messages in console (optional)
+  plebbitWebSocketServer.ws.on('connection', (socket, request) => {
     console.log('connection')
     socket.on('message', (message) => console.log(message.toString()))
   })

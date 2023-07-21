@@ -1,6 +1,6 @@
 const {expect} = require('chai')
 const testServerConfig = require('../test-server/config')
 
-describe('plebbit-js-rpc', () => {
+describe('plebbit-ws-server', () => {
   before(async () => {})
 })

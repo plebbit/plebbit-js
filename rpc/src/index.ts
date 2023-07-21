@@ -1,10 +1,11 @@
-import {Server as WebSocketServer} from 'rpc-websockets'
+import {Server as RpcWebsocketsServer} from 'rpc-websockets'
 import PlebbitJs, {setPlebbitJs} from './lib/plebbit-js'
 const {toString: uint8ArrayToString} = require('uint8arrays/to-string')
-import {clone} from './utils'
+import {clone, generateSubscriptionId} from './utils'
 import Logger from '@plebbit/plebbit-logger'
 import {EventEmitter} from 'events'
 const log = Logger('plebbit-js-rpc:plebbit-ws-server')
+import {PlebbitWsServerClassOptions, PlebbitWsServerOptions, SendOptions} from './types'
 
 // store started subplebbits to be able to stop them
 const startedSubplebbits: {[address: string]: 'pending' | any} = {}
@@ -19,61 +20,82 @@ const getStartedSubplebbit = async (address: string) => {
 // store publishing publications so they can be used by publishChallengeAnswers
 const publishing: {[challengeRequestId: string]: any} = {}
 
-type PlebbitWsServerClassOptions = {
-  port: number
-  plebbit: any
-}
-
 class PlebbitWsServer extends EventEmitter {
   plebbit: any
-  wss: WebSocketServer
+  rpcWebsockets: RpcWebsocketsServer
+  ws: any
+  connections: {[connectionId: string]: any} = {}
+  subscriptionCleanups: {[subscriptionId: number]: Function} = {}
 
   constructor({port, plebbit}: PlebbitWsServerClassOptions) {
     super()
     this.plebbit = plebbit
-    this.wss = new WebSocketServer({
+    this.rpcWebsockets = new RpcWebsocketsServer({
       port,
       // might be needed to specify host for security later
       // host: 'localhost'
     })
+    this.ws = this.rpcWebsockets.wss
 
     // forward errors to PlebbitWsServer
-    this.wss.on('error', (error) => {
+    this.rpcWebsockets.on('error', (error) => {
       this.emit('error', error)
     })
     this.plebbit.on('error', (error: any) => {
       this.emit('error', error)
     })
 
+    // save connections to send messages to them later
+    this.ws.on('connection', (ws: any) => {
+      this.connections[ws._id] = ws
+    })
+
     // register all JSON RPC methods
-    this.wssRegister('getComment', this.getComment.bind(this))
-    this.wssRegister('getCommentUpdate', this.getCommentUpdate.bind(this))
-    this.wssRegister('getSubplebbitUpdate', this.getSubplebbitUpdate.bind(this))
-    this.wssRegister('getSubplebbitPage', this.getSubplebbitPage.bind(this))
-    this.wssRegister('createSubplebbit', this.createSubplebbit.bind(this))
-    this.wssRegister('startSubplebbit', this.startSubplebbit.bind(this))
-    this.wssRegister('stopSubplebbit', this.stopSubplebbit.bind(this))
-    this.wssRegister('editSubplebbit', this.editSubplebbit.bind(this))
-    this.wssRegister('listSubplebbits', this.listSubplebbits.bind(this))
-    this.wssRegister('publishComment', this.publishComment.bind(this))
-    this.wssRegister('publishVote', this.publishVote.bind(this))
-    this.wssRegister('publishCommentEdit', this.publishCommentEdit.bind(this))
-    this.wssRegister('publishChallengeAnswers', this.publishChallengeAnswers.bind(this))
-    this.wssRegister('fetchCid', this.fetchCid.bind(this))
+    this.rpcWebsocketsRegister('getComment', this.getComment.bind(this))
+    this.rpcWebsocketsRegister('getCommentUpdate', this.getCommentUpdate.bind(this))
+    this.rpcWebsocketsRegister('getSubplebbitUpdate', this.getSubplebbitUpdate.bind(this))
+    this.rpcWebsocketsRegister('getSubplebbitPage', this.getSubplebbitPage.bind(this))
+    this.rpcWebsocketsRegister('createSubplebbit', this.createSubplebbit.bind(this))
+    this.rpcWebsocketsRegister('startSubplebbit', this.startSubplebbit.bind(this))
+    this.rpcWebsocketsRegister('stopSubplebbit', this.stopSubplebbit.bind(this))
+    this.rpcWebsocketsRegister('editSubplebbit', this.editSubplebbit.bind(this))
+    this.rpcWebsocketsRegister('listSubplebbits', this.listSubplebbits.bind(this))
+    this.rpcWebsocketsRegister('publishComment', this.publishComment.bind(this))
+    this.rpcWebsocketsRegister('publishVote', this.publishVote.bind(this))
+    this.rpcWebsocketsRegister('publishCommentEdit', this.publishCommentEdit.bind(this))
+    this.rpcWebsocketsRegister('publishChallengeAnswers', this.publishChallengeAnswers.bind(this))
+    this.rpcWebsocketsRegister('fetchCid', this.fetchCid.bind(this))
+    // JSON RPC pubsub methods
+    this.rpcWebsocketsRegister('commentUpdate', this.commentUpdate.bind(this))
+    this.rpcWebsocketsRegister('unsubscribe', this.unsubscribe.bind(this))
   }
 
   // util function to log errors of registered methods
-  wssRegister(method: string, callback: Function) {
-    const callbackWithLog = async (params: any) => {
+  rpcWebsocketsRegister(method: string, callback: Function) {
+    const callbackWithLog = async (params: any, connectionId: string) => {
       try {
-        const res = await callback(params)
+        const res = await callback(params, connectionId)
         return res
       } catch (e) {
         log.error(`${callback.name} error`, {params, error: e})
         throw e
       }
     }
-    this.wss.register(method, callbackWithLog)
+    this.rpcWebsockets.register(method, callbackWithLog)
+  }
+
+  // send json rpc notification message (no id field, needs subscription id)
+  send({method, result, subscription, event, connectionId}: SendOptions) {
+    const message = {
+      jsonrpc: '2.0',
+      method,
+      params: {
+        result, 
+        subscription, 
+        event
+      }
+    }
+    this.connections[connectionId]?.send?.(JSON.stringify(message))
   }
 
   async getComment(params: any) {
@@ -99,7 +121,6 @@ class PlebbitWsServer extends EventEmitter {
     comment.update().catch((error: any) => log.error('getCommentUpdate update error', {error, params}))
     await new Promise((resolve) =>
       comment.on('update', () => {
-        console.log(comment)
         if (comment.updatedAt && comment.updatedAt > updatedAtAfter) {
           resolve(comment)
         }
@@ -108,6 +129,40 @@ class PlebbitWsServer extends EventEmitter {
     comment.stop().catch((error: any) => log.error('getCommentUpdate stop error', {error, params}))
 
     return clone(comment)
+  }
+
+  async commentUpdate(params: any, connectionId: string) {
+    const cid = params[0]
+    const ipnsName = params[1]
+
+    const subscriptionId = generateSubscriptionId()
+    this.subscriptionCleanups[subscriptionId] = () => {
+      comment.stop().catch((error: any) => log.error('commentUpdate stop error', {error, params}))
+      comment.removeAllListeners('update')
+      comment.removeAllListeners('updatingstatechange')
+    }
+
+    const comment = await this.plebbit.createComment({cid, ipnsName})
+    comment.on('update', () => this.send({method: 'commentUpdate', subscription: subscriptionId, event: 'update', result: clone(comment), connectionId}))
+    comment.on('updatingstatechange', () => this.send({method: 'commentUpdate', subscription: subscriptionId, event: 'updatingstatechange', result: comment.updatingState, connectionId}))
+    // dont start before client receives his subscriptionId
+    setTimeout(() => {
+      comment.update().catch((error: any) => log.error('commentUpdate update error', {error, params}))
+    }, 5)
+
+    return subscriptionId
+  }
+
+  async unsubscribe(params: any) {
+    const subscriptionId = params[0]
+
+    if (!this.subscriptionCleanups[subscriptionId]) {
+      throw Error(`no subscription with id '${subscriptionId}'`)
+    }
+
+    this.subscriptionCleanups[subscriptionId]()
+    delete this.subscriptionCleanups[subscriptionId]
+    return true
   }
 
   async getSubplebbitUpdate(params: any) {
@@ -170,23 +225,21 @@ class PlebbitWsServer extends EventEmitter {
       throw e
     }
 
-    // returning undefined is invalid JSON RPC
-    return null
+    return true
   }
 
   async stopSubplebbit(params: any) {
     const address = params[0]
 
     if (!(await getStartedSubplebbit(address))) {
-      return null
+      return true
     }
 
     const subplebbit = await this.plebbit.createSubplebbit({address})
     await subplebbit.stop()
     delete startedSubplebbits[address]
 
-    // returning undefined is invalid JSON RPC
-    return null
+    return true
   }
 
   async editSubplebbit(params: any) {
@@ -291,11 +344,6 @@ class PlebbitWsServer extends EventEmitter {
     const res = await this.plebbit.fetchCid(cid)
     return clone(res)
   }
-}
-
-type PlebbitWsServerOptions = {
-  port: number
-  plebbitOptions?: any
 }
 
 const createPlebbitWsServer = async ({port, plebbitOptions}: PlebbitWsServerOptions) => {
