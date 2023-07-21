@@ -363,6 +363,8 @@ class Publication extends EventEmitter {
     this.simulateChallengeEvent()
   }
 
+  async stop() {}
+
   simulateChallengeEvent() {
     this.publishingState = 'waiting-challenge-answers'
     this.emit('publishingstatechange', 'waiting-challenge-answers')
@@ -465,8 +467,6 @@ export class Comment extends Publication {
       this.simulateUpdateEvent()
     })
   }
-
-  async stop() {}
 
   simulateUpdateEvent() {
     // if timestamp isn't defined, simulate fetching the comment ipfs

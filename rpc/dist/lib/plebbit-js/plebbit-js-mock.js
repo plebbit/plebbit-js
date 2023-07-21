@@ -353,6 +353,9 @@ class Publication extends events_1.default {
             this.simulateChallengeEvent();
         });
     }
+    stop() {
+        return __awaiter(this, void 0, void 0, function* () { });
+    }
     simulateChallengeEvent() {
         this.publishingState = 'waiting-challenge-answers';
         this.emit('publishingstatechange', 'waiting-challenge-answers');
@@ -432,9 +435,6 @@ class Comment extends Publication {
                 this.simulateUpdateEvent();
             });
         });
-    }
-    stop() {
-        return __awaiter(this, void 0, void 0, function* () { });
     }
     simulateUpdateEvent() {
         // if timestamp isn't defined, simulate fetching the comment ipfs

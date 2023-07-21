@@ -7,7 +7,7 @@ const plebbitOptions = {ipfsHttpClientsOptions: ['http://localhost:5001/api/v0']
 const plebbitWebSocketServer = await PlebbitWsServer({port, plebbitOptions})
 
 // debug raw JSON RPC messages in console (optional)
-plebbitWebSocketServer.wss.wss.on('connection', (socket, request) => {
+plebbitWebSocketServer.ws.on('connection', (socket, request) => {
   console.log('connection')
   socket.on('message', (message) => console.log(message.toString()))
 })
@@ -22,7 +22,7 @@ console.log(`test server plebbit wss listening on port ${port}`)
 
 ```js
 const WebSocketClient = require('rpc-websockets').Client // or any JSON RPC websocket compatible library
-webSocketClient = new WebSocketClient(`ws://localhost:${port}`)
+const webSocketClient = new WebSocketClient(`ws://localhost:${port}`)
 
 // debug raw JSON RPC messages in console (optional)
 webSocketClient.socket.on('message', (message) => console.log('from server:', message.toString()))
@@ -30,18 +30,102 @@ webSocketClient.socket.on('message', (message) => console.log('from server:', me
 // wait for websocket connection  to open
 await new Promise((resolve) => webSocketClient.on('open', resolve))
 
+// save all subscription messages (ie json rpc messages without 'id', also called json rpc 'notifications')
+// NOTE: it is possible to receive a subscription message before receiving the subscription id
+const subscriptionsMessages
+webSocketClient.socket.on('message', (jsonMessage) => {
+  const message = JSON.parse(jsonMessage)
+  const subscriptionId = message?.params?.subscription
+  if (subscriptionId) {
+    if (!subscriptionsMessages[subscriptionId]) {
+      subscriptionsMessages[subscriptionId] = []
+    }
+    // in production, don't keep all messages forever, expire them after some time
+    subscriptionsMessages[subscriptionId].push(message)
+  }
+})
+
 // get comment
 const commentCid = 'Qm...'
 const comment = await webSocketClient.call('getComment', [commentCid])
 console.log(comment)
 
 // get comment update
-const commentUpdate = await webSocketClient.call('getCommentUpdate', [comment.cid, comment.ipnsName])
-console.log(commentUpdate)
+const subscriptionId = await webSocketClient.call('commentUpdate', [comment.cid, comment.ipnsName])
+new Subscription({subscriptionId}).on('message', console.log)
 
 // wait for the next comment update
 const nextCommentUpdate = await webSocketClient.call('getCommentUpdate', [comment.cid, comment.ipnsName, commentUpdate.updatedAt])
 console.log(nextCommentUpdate)
+```
+
+```js
+const {PlebbitWsClient} = require('@plebbit/plebbit-js/rpc')
+const plebbitWsClient = new PlebbitWsClient(`ws://localhost:${port}`)
+
+// debug raw JSON RPC messages in console (optional)
+plebbitWsClient.ws.on('message', (message) => console.log('from server:', message.toString()))
+
+// wait for websocket connection  to open
+await new Promise((resolve) => plebbitWsClient.on('open', resolve))
+
+// save all subscription messages (ie json rpc messages without 'id', also called json rpc 'notifications')
+// NOTE: it is possible to receive a subscription message before receiving the subscription id
+const subscriptionsMessages = {}
+webSocketClient.socket.on('message', (jsonMessage) => {
+  const message = JSON.parse(jsonMessage)
+  const subscriptionId = message?.params?.subscription
+  if (subscriptionId) {
+    if (!subscriptionsMessages[subscriptionId]) {
+      subscriptionsMessages[subscriptionId] = []
+    }
+    subscriptionsMessages[subscriptionId].push(message)
+    // delete the message after 1 minute to not cause memory leak
+    setTimeout(() => subscriptionsMessages[subscriptionId].shift(), 60000)
+  }
+})
+
+class Subscription extends EventEmitter {
+  constructor(subscriptionId) {
+    super()
+    let emittingMessages = false
+    this.on('newListener', (eventName) => {
+      // emit all subscription messages received before the listener started
+      if (eventName === 'message') {
+        for (const message of subscriptionsMessages[subscriptionId] || []) {
+          this.emit('message', message)
+        }
+      }
+      // emit all new messages
+      if (!emittingMessages) {
+        emittingMessages = true
+        webSocketClient.socket.on('message', emitMessage)
+      }
+    })
+    // stop listening if listener is removed
+    this.on('removeListener', (eventName) => {
+      if (eventName === 'message' && this.listenerCount('message') === 0) {
+        emittingMessages = false
+        webSocketClient.socket.off('message', emitMessage)
+      }
+    })
+    function emitMessage(jsonMessage) {
+      const message = JSON.parse(jsonMessage)
+      if (subscriptionId === message?.params?.subscription) {
+        this.emit('message', message)
+      }
+    }
+  }
+}
+
+// get comment
+const commentCid = 'Qm...'
+const comment = await webSocketClient.call('getComment', [commentCid])
+console.log(comment)
+
+// get comment updates
+const subscriptionId = await webSocketClient.call('commentUpdate', [comment.cid, comment.ipnsName])
+new Subscription(subscriptionId).on('message', console.log)
 ```
 
 # JSON-RPC Websocket API
