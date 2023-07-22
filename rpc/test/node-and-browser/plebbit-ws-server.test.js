@@ -144,7 +144,6 @@ describe('plebbit-ws-server', () => {
 
     // wait for all subscription messages to arrive
     await waitFor(() => subscriptionsMessages[subscriptionId]?.length > 3)
-    console.log(subscriptionsMessages[subscriptionId])
 
     expect(subscriptionsMessages[subscriptionId][0].method).to.equal('commentUpdate')
     expect(subscriptionsMessages[subscriptionId][0].params.event).to.equal('updatingstatechange')
@@ -189,7 +188,6 @@ describe('plebbit-ws-server', () => {
 
     // wait for all subscription messages to arrive
     await waitFor(() => subscriptionsMessages[subscriptionId]?.length > 2)
-    console.log(subscriptionsMessages[subscriptionId][2].params.result.challenges[0].type)
 
     expect(subscriptionsMessages[subscriptionId][0].method).to.equal('publishComment')
     expect(subscriptionsMessages[subscriptionId][0].params.event).to.equal('publishingstatechange')
@@ -224,7 +222,6 @@ describe('plebbit-ws-server', () => {
 
     // wait for all subscription messages to arrive
     await waitFor(() => subscriptionsMessages[subscriptionId]?.length > 2)
-    console.log(subscriptionsMessages[subscriptionId][2].params.result.challenges[0].type)
 
     expect(subscriptionsMessages[subscriptionId][0].method).to.equal('publishVote')
     expect(subscriptionsMessages[subscriptionId][0].params.event).to.equal('publishingstatechange')
@@ -259,7 +256,6 @@ describe('plebbit-ws-server', () => {
 
     // wait for all subscription messages to arrive
     await waitFor(() => subscriptionsMessages[subscriptionId]?.length > 2)
-    console.log(subscriptionsMessages[subscriptionId][2].params.result.challenges[0].type)
 
     expect(subscriptionsMessages[subscriptionId][0].method).to.equal('publishCommentEdit')
     expect(subscriptionsMessages[subscriptionId][0].params.event).to.equal('publishingstatechange')
