@@ -387,6 +387,7 @@ PubsubSignature {
   - `comment.postCid`
   - `comment.parentCid`
   - `comment.subplebbitAddress`
+  - `comment.shortSubplebbitAddress`
   - `comment.title`
   - `comment.content`
   - `comment.link`
