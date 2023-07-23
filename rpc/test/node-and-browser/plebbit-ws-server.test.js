@@ -2,9 +2,15 @@ const {expect} = require('chai')
 const testServerConfig = require('../test-server/config')
 const WebSocketClient = require('rpc-websockets').Client
 
+const waitFor = async (callback) => {
+  while (!Boolean(await callback())) {
+    await new Promise(r => setTimeout(r, 10))
+  }
+}
+
 let webSocketClient
-let getNextSubscriptionMessage
 let webSocketClientCall
+const subscriptionsMessages = {}
 
 describe('plebbit-ws-server', () => {
   before(async () => {
@@ -13,8 +19,19 @@ describe('plebbit-ws-server', () => {
     // wait for websocket connection to open
     await new Promise((resolve) => webSocketClient.on('open', resolve))
 
-    // debug raw JSON RPC messages in console (optional)
-    webSocketClient.socket.on('message', (message) => console.log('from server:', message.toString()))
+    // save all subscription messages (ie json rpc messages without 'id', also called json rpc 'notifications')
+    // NOTE: it is possible to receive a subscription message before receiving the subscription id
+    webSocketClient.socket.on('message', (jsonMessage) => {
+      const message = JSON.parse(jsonMessage)
+      const subscriptionId = message?.params?.subscription
+      if (subscriptionId) {
+        if (!subscriptionsMessages[subscriptionId]) {
+          subscriptionsMessages[subscriptionId] = []
+        }
+        // in production, don't keep all messages forever, expire them after some time
+        subscriptionsMessages[subscriptionId].push(message)
+      }
+    })
 
     // util function for better error logs
     webSocketClientCall = async (...args) => {
@@ -28,13 +45,8 @@ describe('plebbit-ws-server', () => {
       }
     }
 
-    // util function for listening to subscription messages
-    getNextSubscriptionMessage = (subscriptionId) => new Promise(resolve => webSocketClient.socket.on('message', (jsonMessage) => {
-      const message = JSON.parse(jsonMessage)
-      if (message?.params?.subscription === subscriptionId) {
-        resolve(message)
-      }
-    }))
+    // debug raw JSON RPC messages in console (optional)
+    webSocketClient.socket.on('message', (message) => console.log('from server:', message.toString()))
   })
 
   after(async () => {
@@ -47,21 +59,6 @@ describe('plebbit-ws-server', () => {
     expect(comment?.cid).to.equal(commentCid)
     expect(typeof comment?.timestamp).to.equal('number')
     expect(comment?.updatedAt).to.equal(undefined)
-  })
-
-  it('getCommentUpdate', async () => {
-    const commentCid = 'comment cid'
-    const commentIpns = 'comment ipns'
-    const comment = await webSocketClientCall('getCommentUpdate', [commentCid, commentIpns])
-    expect(comment?.cid).to.equal(commentCid)
-    expect(typeof comment?.updatedAt).to.equal('number')
-  })
-
-  it('getSubplebbitUpdate', async () => {
-    const subplebbitAddress = 'subplebbit address'
-    const subplebbit = await webSocketClientCall('getSubplebbitUpdate', [subplebbitAddress])
-    expect(subplebbit?.address).to.equal(subplebbitAddress)
-    expect(typeof subplebbit?.updatedAt).to.equal('number')
   })
 
   it('getSubplebbitPage', async () => {
@@ -133,46 +130,6 @@ describe('plebbit-ws-server', () => {
     expect(subplebbits?.[1]).to.equal('list subplebbit address 2')
   })
 
-  it('publishComment', async () => {
-    const createCommentOptions = {
-      timestamp: 1000,
-      content: 'content',
-      title: 'title',
-    }
-    const challengeMessage = await webSocketClientCall('publishComment', [createCommentOptions])
-    expect(challengeMessage?.challenges?.[0]?.type).to.equal('text')
-    expect(typeof challengeMessage?.challengeRequestId).to.equal('string')
-
-    const challengeVerificationMessage = await webSocketClientCall('publishChallengeAnswers', [challengeMessage.challengeRequestId, ['4']])
-    expect(challengeVerificationMessage?.challengeSuccess).to.equal(true)
-  })
-
-  it('publishVote', async () => {
-    const createVoteOptions = {
-      commentCid: 'comment cid',
-      vote: 1,
-    }
-    const challengeMessage = await webSocketClientCall('publishVote', [createVoteOptions])
-    expect(challengeMessage?.challenges?.[0]?.type).to.equal('text')
-    expect(typeof challengeMessage?.challengeRequestId).to.equal('string')
-
-    const challengeVerificationMessage = await webSocketClientCall('publishChallengeAnswers', [challengeMessage.challengeRequestId, ['4']])
-    expect(challengeVerificationMessage?.challengeSuccess).to.equal(true)
-  })
-
-  it('publishCommentEdit', async () => {
-    const createCommentEditOptions = {
-      commentCid: 'comment cid',
-      vote: 1,
-    }
-    const challengeMessage = await webSocketClientCall('publishCommentEdit', [createCommentEditOptions])
-    expect(challengeMessage?.challenges?.[0]?.type).to.equal('text')
-    expect(typeof challengeMessage?.challengeRequestId).to.equal('string')
-
-    const challengeVerificationMessage = await webSocketClientCall('publishChallengeAnswers', [challengeMessage.challengeRequestId, ['4']])
-    expect(challengeVerificationMessage?.challengeSuccess).to.equal(true)
-  })
-
   it('fetchCid', async () => {
     const cid = 'statscid'
     const res = await webSocketClientCall('fetchCid', [cid])
@@ -185,17 +142,141 @@ describe('plebbit-ws-server', () => {
     const subscriptionId = await webSocketClientCall('commentUpdate', [commentCid, commentIpns])
     expect(typeof subscriptionId).to.equal('number')
 
-    const message1 = await getNextSubscriptionMessage(subscriptionId)
-    expect(message1.method).to.equal('commentUpdate')
-    expect(message1.params.event).to.equal('updatingstatechange')
-    expect(message1.params.result).to.equal('fetching-ipfs')
+    // wait for all subscription messages to arrive
+    await waitFor(() => subscriptionsMessages[subscriptionId]?.length > 3)
 
-    const message2 = await getNextSubscriptionMessage(subscriptionId)
-    expect(message2.method).to.equal('commentUpdate')
-    expect(message2.params.event).to.equal('update')
-    expect(message2.params.result.cid).to.equal(commentCid)
+    expect(subscriptionsMessages[subscriptionId][0].method).to.equal('commentUpdate')
+    expect(subscriptionsMessages[subscriptionId][0].params.event).to.equal('updatingstatechange')
+    expect(subscriptionsMessages[subscriptionId][0].params.result).to.equal('fetching-ipfs')
+
+    expect(subscriptionsMessages[subscriptionId][1].method).to.equal('commentUpdate')
+    expect(subscriptionsMessages[subscriptionId][1].params.event).to.equal('update')
+    expect(subscriptionsMessages[subscriptionId][1].params.result.cid).to.equal(commentCid)
 
     const unsubscribed = await webSocketClientCall('unsubscribe', [subscriptionId])
     expect(unsubscribed).to.equal(true)
+  })
+
+  it('subplebbitUpdate', async () => {
+    const subplebbitAddress = 'subplebbit address'
+    const subscriptionId = await webSocketClientCall('subplebbitUpdate', [subplebbitAddress])
+    expect(typeof subscriptionId).to.equal('number')
+
+    // wait for all subscription messages to arrive
+    await waitFor(() => subscriptionsMessages[subscriptionId]?.length > 3)
+
+    expect(subscriptionsMessages[subscriptionId][0].method).to.equal('subplebbitUpdate')
+    expect(subscriptionsMessages[subscriptionId][0].params.event).to.equal('updatingstatechange')
+    expect(subscriptionsMessages[subscriptionId][0].params.result).to.equal('fetching-ipns')
+
+    expect(subscriptionsMessages[subscriptionId][1].method).to.equal('subplebbitUpdate')
+    expect(subscriptionsMessages[subscriptionId][1].params.event).to.equal('update')
+    expect(subscriptionsMessages[subscriptionId][1].params.result.address).to.equal(subplebbitAddress)
+
+    const unsubscribed = await webSocketClientCall('unsubscribe', [subscriptionId])
+    expect(unsubscribed).to.equal(true)
+  })
+
+  it('publishComment', async () => {
+    const createCommentOptions = {
+      timestamp: 1000,
+      content: 'content',
+      title: 'title',
+    }
+    const subscriptionId = await webSocketClientCall('publishComment', [createCommentOptions])
+    expect(typeof subscriptionId).to.equal('number')
+
+    // wait for all subscription messages to arrive
+    await waitFor(() => subscriptionsMessages[subscriptionId]?.length > 2)
+
+    expect(subscriptionsMessages[subscriptionId][0].method).to.equal('publishComment')
+    expect(subscriptionsMessages[subscriptionId][0].params.event).to.equal('publishingstatechange')
+    expect(subscriptionsMessages[subscriptionId][0].params.result).to.equal('publishing-challenge-request')
+
+    expect(subscriptionsMessages[subscriptionId][1].method).to.equal('publishComment')
+    expect(subscriptionsMessages[subscriptionId][1].params.event).to.equal('publishingstatechange')
+    expect(subscriptionsMessages[subscriptionId][1].params.result).to.equal('waiting-challenge-answers')
+
+    expect(subscriptionsMessages[subscriptionId][2].method).to.equal('publishComment')
+    expect(subscriptionsMessages[subscriptionId][2].params.event).to.equal('challenge')
+    expect(subscriptionsMessages[subscriptionId][2].params.result.challenges[0].type).to.equal('text')
+
+    const publishChallengeAnswers = await webSocketClientCall('publishChallengeAnswers', [subscriptionId, ['4']])
+    expect(publishChallengeAnswers).to.equal(true)
+
+    // wait for all subscription messages to arrive
+    await waitFor(() => subscriptionsMessages[subscriptionId]?.length > 4)
+
+    expect(subscriptionsMessages[subscriptionId][5].method).to.equal('publishComment')
+    expect(subscriptionsMessages[subscriptionId][5].params.event).to.equal('challengeverification')
+    expect(subscriptionsMessages[subscriptionId][5].params.result.challengeSuccess).to.equal(true)
+  })
+
+  it('publishVote', async () => {
+    const createVoteOptions = {
+      commentCid: 'comment cid',
+      vote: 1,
+    }
+    const subscriptionId = await webSocketClientCall('publishVote', [createVoteOptions])
+    expect(typeof subscriptionId).to.equal('number')
+
+    // wait for all subscription messages to arrive
+    await waitFor(() => subscriptionsMessages[subscriptionId]?.length > 2)
+
+    expect(subscriptionsMessages[subscriptionId][0].method).to.equal('publishVote')
+    expect(subscriptionsMessages[subscriptionId][0].params.event).to.equal('publishingstatechange')
+    expect(subscriptionsMessages[subscriptionId][0].params.result).to.equal('publishing-challenge-request')
+
+    expect(subscriptionsMessages[subscriptionId][1].method).to.equal('publishVote')
+    expect(subscriptionsMessages[subscriptionId][1].params.event).to.equal('publishingstatechange')
+    expect(subscriptionsMessages[subscriptionId][1].params.result).to.equal('waiting-challenge-answers')
+
+    expect(subscriptionsMessages[subscriptionId][2].method).to.equal('publishVote')
+    expect(subscriptionsMessages[subscriptionId][2].params.event).to.equal('challenge')
+    expect(subscriptionsMessages[subscriptionId][2].params.result.challenges[0].type).to.equal('text')
+
+    const publishChallengeAnswers = await webSocketClientCall('publishChallengeAnswers', [subscriptionId, ['4']])
+    expect(publishChallengeAnswers).to.equal(true)
+
+    // wait for all subscription messages to arrive
+    await waitFor(() => subscriptionsMessages[subscriptionId]?.length > 4)
+
+    expect(subscriptionsMessages[subscriptionId][5].method).to.equal('publishVote')
+    expect(subscriptionsMessages[subscriptionId][5].params.event).to.equal('challengeverification')
+    expect(subscriptionsMessages[subscriptionId][5].params.result.challengeSuccess).to.equal(true)
+  })
+
+  it('publishCommentEdit', async () => {
+    const createCommentEditOptions = {
+      commentCid: 'comment cid',
+      vote: 1,
+    }
+    const subscriptionId = await webSocketClientCall('publishCommentEdit', [createCommentEditOptions])
+    expect(typeof subscriptionId).to.equal('number')
+
+    // wait for all subscription messages to arrive
+    await waitFor(() => subscriptionsMessages[subscriptionId]?.length > 2)
+
+    expect(subscriptionsMessages[subscriptionId][0].method).to.equal('publishCommentEdit')
+    expect(subscriptionsMessages[subscriptionId][0].params.event).to.equal('publishingstatechange')
+    expect(subscriptionsMessages[subscriptionId][0].params.result).to.equal('publishing-challenge-request')
+
+    expect(subscriptionsMessages[subscriptionId][1].method).to.equal('publishCommentEdit')
+    expect(subscriptionsMessages[subscriptionId][1].params.event).to.equal('publishingstatechange')
+    expect(subscriptionsMessages[subscriptionId][1].params.result).to.equal('waiting-challenge-answers')
+
+    expect(subscriptionsMessages[subscriptionId][2].method).to.equal('publishCommentEdit')
+    expect(subscriptionsMessages[subscriptionId][2].params.event).to.equal('challenge')
+    expect(subscriptionsMessages[subscriptionId][2].params.result.challenges[0].type).to.equal('text')
+
+    const publishChallengeAnswers = await webSocketClientCall('publishChallengeAnswers', [subscriptionId, ['4']])
+    expect(publishChallengeAnswers).to.equal(true)
+
+    // wait for all subscription messages to arrive
+    await waitFor(() => subscriptionsMessages[subscriptionId]?.length > 4)
+
+    expect(subscriptionsMessages[subscriptionId][5].method).to.equal('publishCommentEdit')
+    expect(subscriptionsMessages[subscriptionId][5].params.event).to.equal('challengeverification')
+    expect(subscriptionsMessages[subscriptionId][5].params.result.challengeSuccess).to.equal(true)
   })
 })

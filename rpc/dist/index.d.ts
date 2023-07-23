@@ -1,35 +1,42 @@
 /// <reference types="node" />
-import { Server as WebSocketServer } from 'rpc-websockets';
+import { Server as RpcWebsocketsServer } from 'rpc-websockets';
 import { setPlebbitJs } from './lib/plebbit-js';
 import { EventEmitter } from 'events';
-type PlebbitWsServerClassOptions = {
-    port: number;
-    plebbit: any;
-};
+import { PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotificationOptions } from './types';
 declare class PlebbitWsServer extends EventEmitter {
     plebbit: any;
-    wss: WebSocketServer;
+    rpcWebsockets: RpcWebsocketsServer;
+    ws: any;
+    connections: {
+        [connectionId: string]: any;
+    };
+    subscriptionCleanups: {
+        [connectionId: string]: {
+            [subscriptionId: number]: () => void;
+        };
+    };
+    publishing: {
+        [subscriptionId: number]: any;
+    };
     constructor({ port, plebbit }: PlebbitWsServerClassOptions);
-    wssRegister(method: string, callback: Function): void;
+    rpcWebsocketsRegister(method: string, callback: Function): void;
+    jsonRpcSendNotification({ method, result, subscription, event, connectionId }: JsonRpcSendNotificationOptions): void;
     getComment(params: any): Promise<any>;
-    getCommentUpdate(params: any): Promise<any>;
-    getSubplebbitUpdate(params: any): Promise<any>;
     getSubplebbitPage(params: any): Promise<any>;
     createSubplebbit(params: any): Promise<any>;
-    startSubplebbit(params: any): Promise<null>;
-    stopSubplebbit(params: any): Promise<null>;
+    startSubplebbit(params: any): Promise<boolean>;
+    stopSubplebbit(params: any): Promise<boolean>;
     editSubplebbit(params: any): Promise<any>;
     listSubplebbits(params: any): Promise<any>;
-    publishComment(params: any): Promise<any>;
-    publishVote(params: any): Promise<any>;
-    publishCommentEdit(params: any): Promise<any>;
-    publishChallengeAnswers(params: any): Promise<any>;
     fetchCid(params: any): Promise<any>;
+    commentUpdate(params: any, connectionId: string): Promise<number>;
+    subplebbitUpdate(params: any, connectionId: string): Promise<number>;
+    publishComment(params: any, connectionId: string): Promise<number>;
+    publishVote(params: any, connectionId: string): Promise<number>;
+    publishCommentEdit(params: any, connectionId: string): Promise<number>;
+    publishChallengeAnswers(params: any): Promise<boolean>;
+    unsubscribe(params: any, connectionId: string): Promise<boolean>;
 }
-type PlebbitWsServerOptions = {
-    port: number;
-    plebbitOptions?: any;
-};
 declare const PlebbitRpc: {
     PlebbitWsServer: ({ port, plebbitOptions }: PlebbitWsServerOptions) => Promise<PlebbitWsServer>;
     setPlebbitJs: typeof setPlebbitJs;

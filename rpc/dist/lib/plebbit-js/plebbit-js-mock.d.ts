@@ -61,6 +61,7 @@ declare class Publication extends EventEmitter {
     state: string | undefined;
     publishingState: string | undefined;
     publish(): Promise<void>;
+    stop(): Promise<void>;
     simulateChallengeEvent(): void;
     publishChallengeAnswers(challengeAnswers: string[]): Promise<void>;
     simulateChallengeVerificationEvent(): void;
@@ -82,7 +83,6 @@ export declare class Comment extends Publication {
     publishingState: string;
     constructor(createCommentOptions?: any);
     update(): Promise<void>;
-    stop(): Promise<void>;
     simulateUpdateEvent(): void;
     simulateFetchCommentIpfsUpdateEvent(): Promise<void>;
 }

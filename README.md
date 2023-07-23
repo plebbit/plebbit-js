@@ -340,6 +340,10 @@ PubsubSignature {
   - [`plebbit.listSubplebbits()`](#plebbitlistsubplebbits)
   - [`plebbit.getDefaults()`](#plebbitgetdefaults)
   - `plebbit.fetchCid(cid)`
+  - `Plebbit.getShortAddress(address)`
+  - `Plebbit.getShortCid(cid)`
+  - `Plebbit.setNativeFunctions(nativeFunctions)`
+  - `Plebbit.nativeFunctions`
 - [Subplebbit API](#subplebbit-api)
   - [`subplebbit.edit(subplebbitEditOptions)`](#subplebbiteditsubplebbiteditoptions)
   - [`subplebbit.start()`](#subplebbitstart)
@@ -387,6 +391,7 @@ PubsubSignature {
   - `comment.postCid`
   - `comment.parentCid`
   - `comment.subplebbitAddress`
+  - `comment.shortSubplebbitAddress`
   - `comment.title`
   - `comment.content`
   - `comment.link`
