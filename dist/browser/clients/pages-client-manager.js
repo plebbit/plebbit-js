@@ -125,6 +125,9 @@ var BasePagesClientsManager = /** @class */ (function (_super) {
     BasePagesClientsManager.prototype.postFetchGatewayFailure = function (gatewayUrl, path, loadType) {
         this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
     };
+    BasePagesClientsManager.prototype.postFetchGatewayAborted = function (gatewayUrl, path, loadType) {
+        this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
+    };
     BasePagesClientsManager.prototype._updatePageCidsSortCache = function (pageCid, sortTypes) {
         var curSortTypes = constants_1.pageCidToSortTypesCache.get(pageCid);
         if (!curSortTypes) {

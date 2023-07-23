@@ -310,11 +310,13 @@ var BaseClientsManager = /** @class */ (function () {
     BaseClientsManager.prototype.preFetchGateway = function (gatewayUrl, path, loadType) { };
     BaseClientsManager.prototype.postFetchGatewaySuccess = function (gatewayUrl, path, loadType) { };
     BaseClientsManager.prototype.postFetchGatewayFailure = function (gatewayUrl, path, loadType) { };
-    BaseClientsManager.prototype._fetchWithGateway = function (gateway, path, loadType) {
+    BaseClientsManager.prototype.postFetchGatewayAborted = function (gatewayUrl, path, loadType) { };
+    BaseClientsManager.prototype._fetchWithGateway = function (gateway, path, loadType, abortController) {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
             var log, url, timeBefore, isCid, resText, timeElapsedMs, e_4;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:fetchWithGateway");
                         url = "".concat(gateway).concat(path);
@@ -322,39 +324,44 @@ var BaseClientsManager = /** @class */ (function () {
                         timeBefore = Date.now();
                         isCid = path.includes("/ipfs/");
                         this.preFetchGateway(gateway, path, loadType);
-                        _a.label = 1;
+                        _c.label = 1;
                     case 1:
-                        _a.trys.push([1, 6, , 8]);
-                        return [4 /*yield*/, this._fetchWithLimit(url, { cache: isCid ? "force-cache" : "no-store" })];
+                        _c.trys.push([1, 6, , 10]);
+                        return [4 /*yield*/, this._fetchWithLimit(url, { cache: isCid ? "force-cache" : "no-store", signal: abortController.signal })];
                     case 2:
-                        resText = _a.sent();
+                        resText = _c.sent();
                         if (!isCid) return [3 /*break*/, 4];
                         return [4 /*yield*/, this._verifyContentIsSameAsCid(resText, path.split("/ipfs/")[1])];
                     case 3:
-                        _a.sent();
-                        _a.label = 4;
+                        _c.sent();
+                        _c.label = 4;
                     case 4:
                         this.postFetchGatewaySuccess(gateway, path, loadType);
                         timeElapsedMs = Date.now() - timeBefore;
                         return [4 /*yield*/, this._plebbit.stats.recordGatewaySuccess(gateway, isCid ? "cid" : "ipns", timeElapsedMs)];
                     case 5:
-                        _a.sent();
+                        _c.sent();
                         return [2 /*return*/, resText];
                     case 6:
-                        e_4 = _a.sent();
+                        e_4 = _c.sent();
+                        if (!(((_b = (_a = e_4 === null || e_4 === void 0 ? void 0 : e_4.details) === null || _a === void 0 ? void 0 : _a.error) === null || _b === void 0 ? void 0 : _b.type) === "aborted")) return [3 /*break*/, 7];
+                        this.postFetchGatewayAborted(gateway, path, loadType);
+                        return [2 /*return*/, undefined];
+                    case 7:
                         this.postFetchGatewayFailure(gateway, path, loadType);
                         return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns")];
-                    case 7:
-                        _a.sent();
+                    case 8:
+                        _c.sent();
                         return [2 /*return*/, { error: e_4 }];
-                    case 8: return [2 /*return*/];
+                    case 9: return [3 /*break*/, 10];
+                    case 10: return [2 /*return*/];
                 }
             });
         });
     };
     BaseClientsManager.prototype.fetchFromMultipleGateways = function (loadOpts, loadType) {
         return __awaiter(this, void 0, void 0, function () {
-            var path, _firstResolve, type, concurrencyLimit, queueLimit, gatewaysSorted, _a, gatewayPromises, res;
+            var path, _firstResolve, type, concurrencyLimit, queueLimit, gatewaysSorted, _a, controllers, gatewayPromises, res;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -383,12 +390,16 @@ var BaseClientsManager = /** @class */ (function () {
                         _b.label = 3;
                     case 3:
                         gatewaysSorted = _a;
-                        gatewayPromises = gatewaysSorted.map(function (gateway) { return queueLimit(function () { return _this._fetchWithGateway(gateway, path, loadType); }); });
+                        controllers = new Array(gatewaysSorted.length).fill(null).map(function (x) { return new AbortController(); });
+                        gatewayPromises = gatewaysSorted.map(function (gateway, i) {
+                            return queueLimit(function () { return _this._fetchWithGateway(gateway, path, loadType, controllers[i]); });
+                        });
                         return [4 /*yield*/, Promise.race([_firstResolve(gatewayPromises), Promise.allSettled(gatewayPromises)])];
                     case 4:
                         res = _b.sent();
                         if (typeof res === "string") {
                             queueLimit.clearQueue();
+                            controllers.forEach(function (control) { return control.abort(); });
                             return [2 /*return*/, res];
                         } //@ts-expect-error
                         else
