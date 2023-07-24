@@ -251,13 +251,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private async _createCommentInstance(
-        options: CreateCommentOptions | CommentIpfsType | CommentPubsubMessage | CommentWithCommentUpdate,
-        subplebbit?: SubplebbitIpfsType
+        options: CreateCommentOptions | CommentIpfsType | CommentPubsubMessage | CommentWithCommentUpdate
     ) {
         options = options as CreateCommentOptions | CommentIpfsType | CommentPubsubMessage;
         const comment = new Comment(<CommentType>options, this);
 
-        comment["subplebbit"] = subplebbit;
         //@ts-expect-error
         if (typeof options["updatedAt"] === "number") await comment._initCommentUpdate(<CommentUpdate>options);
         return comment;
