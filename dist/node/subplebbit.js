@@ -1660,20 +1660,20 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype._updateCommentsThatNeedToBeUpdated = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, trx, commentsToUpdate, commentsGroupedByDepth, depthsKeySorted, _i, depthsKeySorted_1, depthKey;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var log, trx, commentsToUpdate, commentsGroupedByDepth, depthsKeySorted, _i, depthsKeySorted_1, depthKey, _a, _b, comment;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:_updateCommentsThatNeedToBeUpdated");
                         return [4 /*yield*/, this.dbHandler.createTransaction("_updateCommentsThatNeedToBeUpdated")];
                     case 1:
-                        trx = _a.sent();
+                        trx = _c.sent();
                         return [4 /*yield*/, this.dbHandler.queryCommentsToBeUpdated(this._ipfsNodeIpnsKeyNames, trx)];
                     case 2:
-                        commentsToUpdate = _a.sent();
+                        commentsToUpdate = _c.sent();
                         return [4 /*yield*/, this.dbHandler.commitTransaction("_updateCommentsThatNeedToBeUpdated")];
                     case 3:
-                        _a.sent();
+                        _c.sent();
                         if (commentsToUpdate.length === 0)
                             return [2 /*return*/];
                         this._subplebbitUpdateTrigger = true;
@@ -1681,25 +1681,33 @@ var Subplebbit = /** @class */ (function (_super) {
                         commentsGroupedByDepth = lodash_1.default.groupBy(commentsToUpdate, "depth");
                         depthsKeySorted = Object.keys(commentsGroupedByDepth).sort(function (a, b) { return Number(b) - Number(a); });
                         _i = 0, depthsKeySorted_1 = depthsKeySorted;
-                        _a.label = 4;
+                        _c.label = 4;
                     case 4:
-                        if (!(_i < depthsKeySorted_1.length)) return [3 /*break*/, 7];
+                        if (!(_i < depthsKeySorted_1.length)) return [3 /*break*/, 9];
                         depthKey = depthsKeySorted_1[_i];
-                        return [4 /*yield*/, Promise.all(commentsGroupedByDepth[depthKey].map(this._updateComment.bind(this)))];
+                        _a = 0, _b = commentsGroupedByDepth[depthKey];
+                        _c.label = 5;
                     case 5:
-                        _a.sent();
-                        _a.label = 6;
+                        if (!(_a < _b.length)) return [3 /*break*/, 8];
+                        comment = _b[_a];
+                        return [4 /*yield*/, this._updateComment(comment)];
                     case 6:
+                        _c.sent();
+                        _c.label = 7;
+                    case 7:
+                        _a++;
+                        return [3 /*break*/, 5];
+                    case 8:
                         _i++;
                         return [3 /*break*/, 4];
-                    case 7: return [2 /*return*/];
+                    case 9: return [2 /*return*/];
                 }
             });
         });
     };
     Subplebbit.prototype._repinCommentsIPFSIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, dbCommentsCids, pinnedCids, unpinnedCommentsCids, unpinnedComments, _a, _b;
+            var log, dbCommentsCids, pinnedCids, unpinnedCommentsCids, unpinnedComments, _a, _b, _i, unpinnedComments_1, comment, commentIpfsContent, contentHash;
             var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
@@ -1720,25 +1728,24 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 3: return [4 /*yield*/, _b.apply(_a, [(_c.sent()).map(function (dbRes) { return _this.plebbit.createComment(dbRes); })])];
                     case 4:
                         unpinnedComments = _c.sent();
-                        return [4 /*yield*/, Promise.all(unpinnedComments.map(function (comment) { return __awaiter(_this, void 0, void 0, function () {
-                                var commentIpfsContent, contentHash;
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0:
-                                            commentIpfsContent = (0, safe_stable_stringify_1.stringify)(comment.toJSONIpfs());
-                                            return [4 /*yield*/, ipfs_only_hash_1.default.of(commentIpfsContent)];
-                                        case 1:
-                                            contentHash = _a.sent();
-                                            assert_1.default.equal(contentHash, comment.cid);
-                                            return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true })];
-                                        case 2:
-                                            _a.sent();
-                                            return [2 /*return*/];
-                                    }
-                                });
-                            }); }))];
+                        _i = 0, unpinnedComments_1 = unpinnedComments;
+                        _c.label = 5;
                     case 5:
+                        if (!(_i < unpinnedComments_1.length)) return [3 /*break*/, 9];
+                        comment = unpinnedComments_1[_i];
+                        commentIpfsContent = (0, safe_stable_stringify_1.stringify)(comment.toJSONIpfs());
+                        return [4 /*yield*/, ipfs_only_hash_1.default.of(commentIpfsContent)];
+                    case 6:
+                        contentHash = _c.sent();
+                        assert_1.default.equal(contentHash, comment.cid);
+                        return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true })];
+                    case 7:
                         _c.sent();
+                        _c.label = 8;
+                    case 8:
+                        _i++;
+                        return [3 /*break*/, 5];
+                    case 9:
                         log("".concat(unpinnedComments.length, " comments' IPFS have been repinned"));
                         return [2 /*return*/];
                 }
