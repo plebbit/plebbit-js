@@ -264,6 +264,11 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         return cachedSubplebbit;
     }
 
+    async stop() {
+        if (this.subplebbit) await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
+        this._updatePublishingState("stopped");
+    }
+
     async publish() {
         const log = Logger("plebbit-js:publication:publish");
         this._updateState("publishing");

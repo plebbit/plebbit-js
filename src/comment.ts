@@ -427,6 +427,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     }
 
     async stop() {
+        await super.stop();
         this._loadingOperation?.stop();
         this._updateInterval = clearTimeout(this._updateInterval);
         this._setUpdatingState("stopped");
