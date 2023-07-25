@@ -35,6 +35,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     protected _updateState(newState: Publication["state"]): void;
     private _pubsubTopicWithfallback;
     _getSubplebbitCache(): Pick<SubplebbitIpfsType, "address" | "encryption" | "pubsubTopic">;
+    stop(): Promise<void>;
     publish(): Promise<void>;
 }
 export default Publication;

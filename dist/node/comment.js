@@ -407,12 +407,17 @@ var Comment = /** @class */ (function (_super) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_b) {
-                (_a = this._loadingOperation) === null || _a === void 0 ? void 0 : _a.stop();
-                this._updateInterval = clearTimeout(this._updateInterval);
-                this._setUpdatingState("stopped");
-                this._updateState("stopped");
-                this._isUpdating = false;
-                return [2 /*return*/];
+                switch (_b.label) {
+                    case 0: return [4 /*yield*/, _super.prototype.stop.call(this)];
+                    case 1:
+                        _b.sent();
+                        (_a = this._loadingOperation) === null || _a === void 0 ? void 0 : _a.stop();
+                        this._updateInterval = clearTimeout(this._updateInterval);
+                        this._setUpdatingState("stopped");
+                        this._updateState("stopped");
+                        this._isUpdating = false;
+                        return [2 /*return*/];
+                }
             });
         });
     };

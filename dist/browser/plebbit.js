@@ -355,7 +355,7 @@ var Plebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Plebbit.prototype._createCommentInstance = function (options, subplebbit) {
+    Plebbit.prototype._createCommentInstance = function (options) {
         return __awaiter(this, void 0, void 0, function () {
             var comment;
             return __generator(this, function (_a) {
@@ -363,7 +363,6 @@ var Plebbit = /** @class */ (function (_super) {
                     case 0:
                         options = options;
                         comment = new comment_1.Comment(options, this);
-                        comment["subplebbit"] = subplebbit;
                         if (!(typeof options["updatedAt"] === "number")) return [3 /*break*/, 2];
                         return [4 /*yield*/, comment._initCommentUpdate(options)];
                     case 1:
@@ -376,24 +375,23 @@ var Plebbit = /** @class */ (function (_super) {
     };
     Plebbit.prototype.createComment = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, finalOptions, _a;
+            var log, formattedOptions, fieldsFilled, _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createComment");
-                        finalOptions = options instanceof comment_1.Comment ? options.toJSON() : options;
-                        if (!options["signer"] || options["signature"])
-                            return [2 /*return*/, this._createCommentInstance(finalOptions, options["subplebbit"])];
-                        return [4 /*yield*/, this._initMissingFields(options, log)];
-                    case 1:
-                        //@ts-ignore
-                        finalOptions = (_b.sent());
-                        _a = finalOptions;
-                        return [4 /*yield*/, (0, signatures_1.signComment)(finalOptions, finalOptions.signer, this)];
+                        formattedOptions = options instanceof comment_1.Comment ? options.toJSON() : options;
+                        formattedOptions["protocolVersion"] = formattedOptions["protocolVersion"] || version_1.default.PROTOCOL_VERSION;
+                        if (!(options["signature"] || options["cid"])) return [3 /*break*/, 1];
+                        return [2 /*return*/, this._createCommentInstance(formattedOptions)];
+                    case 1: return [4 /*yield*/, this._initMissingFields(formattedOptions, log)];
                     case 2:
+                        fieldsFilled = _b.sent();
+                        _a = fieldsFilled;
+                        return [4 /*yield*/, (0, signatures_1.signComment)(fieldsFilled, fieldsFilled.signer, this)];
+                    case 3:
                         _a.signature = _b.sent();
-                        finalOptions.protocolVersion = version_1.default.PROTOCOL_VERSION;
-                        return [2 /*return*/, this._createCommentInstance(finalOptions)];
+                        return [2 /*return*/, this._createCommentInstance(fieldsFilled)];
                 }
             });
         });
@@ -502,7 +500,8 @@ var Plebbit = /** @class */ (function (_super) {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createVote");
-                        if (!options["signer"])
+                        options["protocolVersion"] = options["protocolVersion"] || version_1.default.PROTOCOL_VERSION;
+                        if (options["signature"])
                             return [2 /*return*/, new vote_1.default(options, this)];
                         return [4 /*yield*/, this._initMissingFields(options, log)];
                     case 1:
@@ -511,7 +510,6 @@ var Plebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signatures_1.signVote)(finalOptions, finalOptions.signer, this)];
                     case 2:
                         _a.signature = _b.sent();
-                        finalOptions.protocolVersion = version_1.default.PROTOCOL_VERSION;
                         return [2 /*return*/, new vote_1.default(finalOptions, this)];
                 }
             });
@@ -524,16 +522,18 @@ var Plebbit = /** @class */ (function (_super) {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createCommentEdit");
-                        if (!options.signer || options.signature)
+                        options["protocolVersion"] = options["protocolVersion"] || version_1.default.PROTOCOL_VERSION;
+                        if (options["signature"])
                             return [2 /*return*/, new comment_edit_1.CommentEdit(options, this)]; // User just wants to instantiate a CommentEdit object, not publish
                         return [4 /*yield*/, this._initMissingFields(options, log)];
                     case 1:
                         finalOptions = _b.sent();
+                        //@ts-expect-error
                         _a = finalOptions;
-                        return [4 /*yield*/, (0, signatures_1.signCommentEdit)(finalOptions, finalOptions.signer, this)];
+                        return [4 /*yield*/, (0, signatures_1.signCommentEdit)(finalOptions, options.signer, this)];
                     case 2:
+                        //@ts-expect-error
                         _a.signature = _b.sent();
-                        finalOptions.protocolVersion = version_1.default.PROTOCOL_VERSION;
                         return [2 /*return*/, new comment_edit_1.CommentEdit(finalOptions, this)];
                 }
             });
