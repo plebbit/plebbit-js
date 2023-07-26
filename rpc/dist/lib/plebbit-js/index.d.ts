@@ -6,6 +6,8 @@ declare const PlebbitJs: {
             node: import("../../../../dist/node/types").NativeFunctions;
             browser: import("../../../../dist/node/types").NativeFunctions;
         };
+        getShortCid: typeof import("../../../../dist/node/util").shortifyCid;
+        getShortAddress: typeof import("../../../../dist/node/util").shortifyAddress;
     };
 };
 /**

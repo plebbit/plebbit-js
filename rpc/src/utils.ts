@@ -4,4 +4,4 @@ import {randomInt} from 'crypto'
 export const clone = (obj: any) => JSON.parse(JSON.stringify(obj))
 
 const maxRandomInt = 281474976710655
-export const generateSubscriptionId = () => randomInt(0, maxRandomInt)
+export const generateSubscriptionId = () => randomInt(1, maxRandomInt)

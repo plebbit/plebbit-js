@@ -6,5 +6,5 @@ const crypto_1 = require("crypto");
 const clone = (obj) => JSON.parse(JSON.stringify(obj));
 exports.clone = clone;
 const maxRandomInt = 281474976710655;
-const generateSubscriptionId = () => (0, crypto_1.randomInt)(0, maxRandomInt);
+const generateSubscriptionId = () => (0, crypto_1.randomInt)(1, maxRandomInt);
 exports.generateSubscriptionId = generateSubscriptionId;
