@@ -264,17 +264,21 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         return cachedSubplebbit;
     }
 
+    async stop() {
+        if (this.subplebbit) await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
+        this._updatePublishingState("stopped");
+    }
+
     async publish() {
         const log = Logger("plebbit-js:publication:publish");
-        this._updateState("publishing");
-
         this._validatePublicationFields();
+
+        this._updateState("publishing");
 
         const options = { acceptedChallengeTypes: [] };
         this.subplebbit = this._getSubplebbitCache() || (await this._clientsManager.fetchSubplebbitForPublishing(this.subplebbitAddress));
-        this._updatePublishingState("publishing-challenge-request");
-
         this._validateSubFields();
+        this._updatePublishingState("publishing-challenge-request");
 
         await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
 

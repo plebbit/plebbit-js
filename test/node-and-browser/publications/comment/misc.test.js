@@ -161,7 +161,7 @@ describe("createComment", async () => {
     it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a reply`, async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-        const originalReply = subplebbit.posts.pages.hot.comments.find(post => post.replyCount > 0).replies.pages.topAll.comments[0];
+        const originalReply = subplebbit.posts.pages.hot.comments.find((post) => post.replyCount > 0).replies.pages.topAll.comments[0];
 
         const recreatedReply = await plebbit.createComment({ cid: originalReply.cid });
 
@@ -732,6 +732,43 @@ describe(`comment.clients`, async () => {
 
                 await comment.replies.getPage(comment.replies.pageCids.new);
                 await comment.stop();
+                expect(actualStates).to.deep.equal(expectedStates);
+            });
+
+            it(`Correct state of 'new' sort is correct after fetching from responsive and unresponsive gateway `, async () => {
+                const gateways = [
+                    "http://localhost:33417", // This gateway will take 10s to respond
+                    "http://127.0.0.1:18080" // This one is immediate
+                ];
+                const multipleGatewayPlebbit = await Plebbit({ ipfsGatewayUrls: gateways });
+
+                const comment = await multipleGatewayPlebbit.getComment(commentCid);
+                await comment.update();
+                await new Promise((resolve) => comment.once("update", resolve));
+                await comment.stop();
+
+                const expectedStates = {
+                    [gateways[0]]: [
+                        "fetching-ipfs",
+                        "stopped" // It stopped after fetching the IPFS
+                    ],
+                    [gateways[1]]: [
+                        "fetching-ipfs",
+                        "stopped" // It stopped after it was aborted
+                    ]
+                };
+
+                const actualStates = { [gateways[0]]: [], [gateways[1]]: [] };
+                for (const gatewayUrl of gateways)
+                    comment.replies.clients.ipfsGateways["new"][gatewayUrl].on("statechange", (newState) => {
+                        actualStates[gatewayUrl].push(newState);
+                    });
+
+                const timeBefore = Date.now();
+                await comment.replies.getPage(comment.replies.pageCids.new);
+                const timeItTookInMs = Date.now() - timeBefore;
+                expect(timeItTookInMs).to.be.lessThan(9000);
+
                 expect(actualStates).to.deep.equal(expectedStates);
             });
         });

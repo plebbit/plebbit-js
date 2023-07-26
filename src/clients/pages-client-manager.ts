@@ -70,6 +70,10 @@ export class BasePagesClientsManager extends BaseClientsManager {
         this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
     }
 
+    postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType): void {
+        this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
+    }
+
     _updatePageCidsSortCache(pageCid: string, sortTypes: string[]) {
         const curSortTypes: string[] | undefined = pageCidToSortTypesCache.get(pageCid);
         if (!curSortTypes) {

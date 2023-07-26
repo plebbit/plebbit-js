@@ -42,6 +42,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createSigner = exports.Signer = exports.decryptEd25519AesGcmPublicKeyBuffer = exports.decryptEd25519AesGcm = exports.encryptEd25519AesGcm = exports.verifyVote = exports.verifySubplebbit = exports.verifyComment = void 0;
 var assert_1 = __importDefault(require("assert"));
 var util_1 = require("./util");
+var util_2 = require("../util");
 var signatures_1 = require("./signatures");
 Object.defineProperty(exports, "verifyComment", { enumerable: true, get: function () { return signatures_1.verifyComment; } });
 Object.defineProperty(exports, "verifySubplebbit", { enumerable: true, get: function () { return signatures_1.verifySubplebbit; } });
@@ -57,6 +58,7 @@ var Signer = /** @class */ (function () {
         this.privateKey = props.privateKey;
         this.publicKey = props.publicKey;
         this.address = props.address;
+        this.shortAddress = (0, util_2.shortifyAddress)(this.address);
         this.ipnsKeyName = props.ipnsKeyName;
         this.ipfsKey =
             ((_b = (_a = props.ipfsKey) === null || _a === void 0 ? void 0 : _a.constructor) === null || _b === void 0 ? void 0 : _b.name) === "Object"

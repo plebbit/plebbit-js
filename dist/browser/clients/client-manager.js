@@ -142,6 +142,9 @@ var ClientsManager = /** @class */ (function (_super) {
     ClientsManager.prototype.postFetchGatewaySuccess = function (gatewayUrl, path, loadType) {
         this.updateGatewayState("stopped", gatewayUrl);
     };
+    ClientsManager.prototype.postFetchGatewayAborted = function (gatewayUrl, path, loadType) {
+        this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
+    };
     ClientsManager.prototype.preResolveTextRecord = function (address, txtRecordName, chain, chainProviderUrl) {
         var newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
         this.updateChainProviderState(newState, chain, chainProviderUrl);

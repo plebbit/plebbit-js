@@ -2,6 +2,7 @@ import assert from "assert";
 import { SingersTableRowInsert } from "../types";
 import { CreateSignerOptions, SignerType } from "./constants";
 import { generatePrivateKey, getPublicKeyFromPrivateKey, getPlebbitAddressFromPrivateKey } from "./util";
+import { shortifyAddress } from "../util";
 export { verifyComment, verifySubplebbit, verifyVote } from "./signatures";
 export { encryptEd25519AesGcm, decryptEd25519AesGcm, decryptEd25519AesGcmPublicKeyBuffer } from "./encryption";
 
@@ -10,6 +11,7 @@ export class Signer implements SignerType {
     privateKey: string;
     publicKey?: string;
     address: string;
+    shortAddress: string;
     ipfsKey?: Uint8Array;
     ipnsKeyName?: string;
 
@@ -18,6 +20,7 @@ export class Signer implements SignerType {
         this.privateKey = props.privateKey;
         this.publicKey = props.publicKey;
         this.address = props.address;
+        this.shortAddress = shortifyAddress(this.address);
         this.ipnsKeyName = props.ipnsKeyName;
 
         this.ipfsKey =

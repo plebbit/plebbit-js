@@ -7,6 +7,7 @@ export declare class Signer implements SignerType {
     privateKey: string;
     publicKey?: string;
     address: string;
+    shortAddress: string;
     ipfsKey?: Uint8Array;
     ipnsKeyName?: string;
     constructor(props: SignerType);

@@ -1310,7 +1310,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         const depthsKeySorted = Object.keys(commentsGroupedByDepth).sort((a, b) => Number(b) - Number(a)); // Make sure comments with higher depths are sorted first
 
-        for (const depthKey of depthsKeySorted) await Promise.all(commentsGroupedByDepth[depthKey].map(this._updateComment.bind(this)));
+        for (const depthKey of depthsKeySorted) for (const comment of commentsGroupedByDepth[depthKey]) await this._updateComment(comment);
     }
 
     private async _repinCommentsIPFSIfNeeded() {
@@ -1328,16 +1328,12 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             (await this.dbHandler.queryCommentsByCids(unpinnedCommentsCids)).map((dbRes) => this.plebbit.createComment(dbRes))
         );
 
-        await Promise.all(
-            unpinnedComments.map(async (comment) => {
-                const commentIpfsContent = deterministicStringify(comment.toJSONIpfs());
-                const contentHash: string = await Hash.of(commentIpfsContent);
-
-                assert.equal(contentHash, comment.cid);
-
-                await this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
-            })
-        );
+        for (const comment of unpinnedComments) {
+            const commentIpfsContent = deterministicStringify(comment.toJSONIpfs());
+            const contentHash: string = await Hash.of(commentIpfsContent);
+            assert.equal(contentHash, comment.cid);
+            await this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
+        }
 
         log(`${unpinnedComments.length} comments' IPFS have been repinned`);
     }

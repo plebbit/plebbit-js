@@ -178,7 +178,15 @@ export class BaseClientsManager {
 
     postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType) {}
 
-    protected async _fetchWithGateway(gateway: string, path: string, loadType: LoadType): Promise<string | { error: PlebbitError }> {
+    postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType) {}
+
+
+    protected async _fetchWithGateway(
+        gateway: string,
+        path: string,
+        loadType: LoadType,
+        abortController: AbortController
+    ): Promise<string | { error: PlebbitError }> {
         const log = Logger("plebbit-js:plebbit:fetchWithGateway");
         const url = `${gateway}${path}`;
 
@@ -189,16 +197,23 @@ export class BaseClientsManager {
 
         this.preFetchGateway(gateway, path, loadType);
         try {
-            const resText = await this._fetchWithLimit(url, { cache: isCid ? "force-cache" : "no-store" });
+            const resText = await this._fetchWithLimit(url, { cache: isCid ? "force-cache" : "no-store", signal: abortController.signal });
             if (isCid) await this._verifyContentIsSameAsCid(resText, path.split("/ipfs/")[1]);
             this.postFetchGatewaySuccess(gateway, path, loadType);
             const timeElapsedMs = Date.now() - timeBefore;
             await this._plebbit.stats.recordGatewaySuccess(gateway, isCid ? "cid" : "ipns", timeElapsedMs);
             return resText;
         } catch (e) {
-            this.postFetchGatewayFailure(gateway, path, loadType);
-            await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
-            return { error: e };
+            if (e?.details?.error?.type === "aborted"){
+                this.postFetchGatewayAborted(gateway, path, loadType);
+                return undefined;
+            }
+            else {
+                this.postFetchGatewayFailure(gateway, path, loadType);
+                await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
+                return { error: e };
+    
+            }
         }
     }
 
@@ -229,11 +244,15 @@ export class BaseClientsManager {
                 ? Object.keys(this._plebbit.clients.ipfsGateways)
                 : await this._plebbit.stats.sortGatewaysAccordingToScore(type);
 
-        const gatewayPromises = gatewaysSorted.map((gateway) => queueLimit(() => this._fetchWithGateway(gateway, path, loadType)));
+        const controllers = new Array(gatewaysSorted.length).fill(null).map((x) => new AbortController());
+        const gatewayPromises = gatewaysSorted.map((gateway, i) =>
+            queueLimit(() => this._fetchWithGateway(gateway, path, loadType, controllers[i]))
+        );
 
         const res = await Promise.race([_firstResolve(gatewayPromises), Promise.allSettled(gatewayPromises)]);
         if (typeof res === "string") {
             queueLimit.clearQueue();
+            controllers.forEach((control) => control.abort());
             return res;
         } //@ts-expect-error
         else throw res[0].value.error;

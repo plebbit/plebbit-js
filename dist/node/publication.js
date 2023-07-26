@@ -315,6 +315,23 @@ var Publication = /** @class */ (function (_super) {
         var cachedSubplebbit = constants_1.subplebbitForPublishingCache.get(this.subplebbitAddress);
         return cachedSubplebbit;
     };
+    Publication.prototype.stop = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!this.subplebbit) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        this._updatePublishingState("stopped");
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     Publication.prototype.publish = function () {
         return __awaiter(this, void 0, void 0, function () {
             var log, options, _a, _b, _c, encryptedPublication, challengeRequestId, toSignMsg, _d, _e, _f, e_1;
@@ -323,8 +340,8 @@ var Publication = /** @class */ (function (_super) {
                 switch (_h.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:publication:publish");
-                        this._updateState("publishing");
                         this._validatePublicationFields();
+                        this._updateState("publishing");
                         options = { acceptedChallengeTypes: [] };
                         _a = this;
                         _b = this._getSubplebbitCache();
@@ -335,8 +352,8 @@ var Publication = /** @class */ (function (_super) {
                         _h.label = 2;
                     case 2:
                         _a.subplebbit = _b;
-                        this._updatePublishingState("publishing-challenge-request");
                         this._validateSubFields();
+                        this._updatePublishingState("publishing-challenge-request");
                         return [4 /*yield*/, this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
                     case 3:
                         _h.sent();

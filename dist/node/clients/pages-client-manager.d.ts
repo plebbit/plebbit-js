@@ -23,6 +23,7 @@ export declare class BasePagesClientsManager extends BaseClientsManager {
     preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void;
     postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType): void;
     postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType): void;
+    postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType): void;
     _updatePageCidsSortCache(pageCid: string, sortTypes: string[]): void;
     updatePageCidsToSortTypes(newPageCids: BasePages["pageCids"]): void;
     updatePageCidsToSortTypesToIncludeSubsequent(nextPageCid: string, previousPageCid: string): void;

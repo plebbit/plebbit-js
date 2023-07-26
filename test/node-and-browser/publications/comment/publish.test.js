@@ -16,6 +16,7 @@ const chai = require("chai");
 const { messages } = require("../../../../dist/node/errors");
 const chaiAsPromised = require("chai-as-promised");
 const { default: waitUntil } = require("async-wait-until");
+const { signComment } = require("../../../../dist/node/signer/signatures");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -116,6 +117,24 @@ describe("publishing comments", async () => {
         const post = await generateMockPost(subAddress, gatewayPlebbit);
 
         await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY);
+    });
+
+    it(`Can publish a comment whose signature is defined prior to plebbit.createComment()`, async () => {
+        const signer = await plebbit.createSigner();
+        const props = {
+            subplebbitAddress: "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
+            timestamp: Date.now() / 1000 ,
+            author: { address: signer.address, displayName: "Mock Author - 1690130836.1711266" + Math.random() },
+            protocolVersion: "1.0.0",
+            content: "Mock content - 1690130836.1711266" + Math.random(),
+            title: "Mock Post - 1690130836.1711266" + Math.random()
+        };
+
+        
+        props.signature = await signComment(props, signer, plebbit);
+        const post = await plebbit.createComment(props);
+        expect(post.signature).to.deep.equal(props.signature);
+        await publishWithExpectedResult(post, true);
     });
 
     it(`Can publish a comment when all ipfs gateways are down except one`, async () => {

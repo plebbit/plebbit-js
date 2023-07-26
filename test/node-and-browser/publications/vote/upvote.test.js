@@ -74,6 +74,7 @@ describe("Test upvote", async () => {
         const originalDownvote = lodash.clone(postToVote.downvoteCount);
         const vote = await plebbit.createVote({
             ...previousVotes[0].toJSON(),
+            signature: undefined,
             signer: previousVotes[0].signer,
             vote: -1
         });
@@ -92,6 +93,7 @@ describe("Test upvote", async () => {
         const originalDownvote = lodash.clone(replyToVote.downvoteCount);
         const vote = await plebbit.createVote({
             ...previousVotes[1].toJSON(),
+            signature: undefined,
             signer: previousVotes[1].signer,
             vote: -1
         });
@@ -109,6 +111,7 @@ describe("Test upvote", async () => {
         const vote = await plebbit.createVote({
             ...previousVotes[0].toJSON(),
             signer: previousVotes[0].signer,
+            signature: undefined,
             timestamp: timestamp()
         });
         await publishWithExpectedResult(vote, true);

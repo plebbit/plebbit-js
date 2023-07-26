@@ -29,9 +29,9 @@ export interface JsonSignature extends Omit<PubsubSignature, "signature" | "publ
     publicKey: string;
 }
 export type SignatureTypes = PublicationTypeName | "challengerequestmessage" | "challengemessage" | "challengeanswermessage" | "challengeverificationmessage";
-export declare const CommentSignedPropertyNames: readonly (keyof CreateCommentOptions)[];
-export declare const CommentEditSignedPropertyNames: readonly (keyof CreateCommentEditOptions)[];
-export declare const VoteSignedPropertyNames: readonly (keyof CreateVoteOptions)[];
+export declare const CommentSignedPropertyNames: readonly (keyof Omit<CreateCommentOptions, "signer">)[];
+export declare const CommentEditSignedPropertyNames: readonly (keyof Omit<CreateCommentEditOptions, "signer">)[];
+export declare const VoteSignedPropertyNames: readonly (keyof Omit<CreateVoteOptions, "signer">)[];
 export declare const CommentUpdateSignedPropertyNames: readonly (keyof CommentUpdate)[];
 export declare const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[];
 export declare const ChallengeRequestMessageSignedPropertyNames: readonly (keyof ChallengeRequestMessage)[];

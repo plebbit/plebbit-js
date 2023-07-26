@@ -23,7 +23,8 @@ export declare class BaseClientsManager {
     preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void;
     postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType): void;
     postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType): void;
-    protected _fetchWithGateway(gateway: string, path: string, loadType: LoadType): Promise<string | {
+    postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType): void;
+    protected _fetchWithGateway(gateway: string, path: string, loadType: LoadType, abortController: AbortController): Promise<string | {
         error: PlebbitError;
     }>;
     fetchFromMultipleGateways(loadOpts: {

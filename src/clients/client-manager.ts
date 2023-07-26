@@ -92,6 +92,10 @@ export class ClientsManager extends BaseClientsManager {
         this.updateGatewayState("stopped", gatewayUrl);
     }
 
+    postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType) {
+        this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
+    }
+
     preResolveTextRecord(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",

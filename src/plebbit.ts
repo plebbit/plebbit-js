@@ -251,13 +251,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private async _createCommentInstance(
-        options: CreateCommentOptions | CommentIpfsType | CommentPubsubMessage | CommentWithCommentUpdate,
-        subplebbit?: SubplebbitIpfsType
+        options: CreateCommentOptions | CommentIpfsType | CommentPubsubMessage | CommentWithCommentUpdate
     ) {
         options = options as CreateCommentOptions | CommentIpfsType | CommentPubsubMessage;
         const comment = new Comment(<CommentType>options, this);
 
-        comment["subplebbit"] = subplebbit;
         //@ts-expect-error
         if (typeof options["updatedAt"] === "number") await comment._initCommentUpdate(<CommentUpdate>options);
         return comment;
@@ -268,17 +266,16 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     ): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
 
-        let finalOptions = options instanceof Comment ? options.toJSON() : options;
+        const formattedOptions = options instanceof Comment ? options.toJSON() : options;
+        formattedOptions["protocolVersion"] = formattedOptions["protocolVersion"] || env.PROTOCOL_VERSION;
 
-        if (!options["signer"] || options["signature"]) return this._createCommentInstance(finalOptions, options["subplebbit"]);
-
-        //@ts-ignore
-        finalOptions = <CommentType>await this._initMissingFields(options, log);
-
-        finalOptions.signature = await signComment(<CreateCommentOptions>finalOptions, finalOptions.signer, this);
-        finalOptions.protocolVersion = env.PROTOCOL_VERSION;
-
-        return this._createCommentInstance(finalOptions);
+        if (options["signature"] || options["cid"]) return this._createCommentInstance(formattedOptions);
+        else {
+            //@ts-expect-error
+            const fieldsFilled = <CommentType>await this._initMissingFields(formattedOptions, log);
+            fieldsFilled.signature = await signComment(<CreateCommentOptions>fieldsFilled, fieldsFilled.signer, this);
+            return this._createCommentInstance(fieldsFilled);
+        }
     }
 
     _canRunSub(): boolean {
@@ -342,22 +339,24 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async createVote(options: CreateVoteOptions | VoteType | VotePubsubMessage): Promise<Vote> {
         const log = Logger("plebbit-js:plebbit:createVote");
-        if (!options["signer"]) return new Vote(<VoteType>options, this);
+        options["protocolVersion"] = options["protocolVersion"] || env.PROTOCOL_VERSION;
+
+        if (options["signature"]) return new Vote(<VoteType>options, this);
         //@ts-ignore
         const finalOptions: VoteType = <VoteType>await this._initMissingFields(options, log);
         finalOptions.signature = await signVote(<CreateVoteOptions>finalOptions, finalOptions.signer, this);
-        finalOptions.protocolVersion = env.PROTOCOL_VERSION;
         return new Vote(finalOptions, this);
     }
 
     async createCommentEdit(options: CreateCommentEditOptions | CommentEditType): Promise<CommentEdit> {
         const log = Logger("plebbit-js:plebbit:createCommentEdit");
+        options["protocolVersion"] = options["protocolVersion"] || env.PROTOCOL_VERSION;
 
-        if (!options.signer || options.signature) return new CommentEdit(<CommentEditType>options, this); // User just wants to instantiate a CommentEdit object, not publish
+        if (options["signature"]) return new CommentEdit(<CommentEditType>options, this); // User just wants to instantiate a CommentEdit object, not publish
         //@ts-ignore
         const finalOptions: CommentEditType = <CommentEditType>await this._initMissingFields(options, log);
-        finalOptions.signature = await signCommentEdit(<CreateCommentEditOptions>finalOptions, finalOptions.signer, this);
-        finalOptions.protocolVersion = env.PROTOCOL_VERSION;
+        //@ts-expect-error
+        finalOptions.signature = await signCommentEdit(<CreateCommentEditOptions>finalOptions, options.signer, this);
         return new CommentEdit(finalOptions, this);
     }
 

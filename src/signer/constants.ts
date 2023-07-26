@@ -66,7 +66,7 @@ export type SignatureTypes =
 // ---------------------------
 // SignedPropertyNames
 
-export const CommentSignedPropertyNames: readonly (keyof CreateCommentOptions)[] = [
+export const CommentSignedPropertyNames: readonly (keyof Omit<CreateCommentOptions, "signer">)[] = [
     "subplebbitAddress",
     "author",
     "timestamp",
@@ -76,7 +76,7 @@ export const CommentSignedPropertyNames: readonly (keyof CreateCommentOptions)[]
     "parentCid"
 ] as const;
 
-export const CommentEditSignedPropertyNames: readonly (keyof CreateCommentEditOptions)[] = [
+export const CommentEditSignedPropertyNames: readonly (keyof Omit<CreateCommentEditOptions, "signer">)[] = [
     "author",
     "timestamp",
     "subplebbitAddress",
@@ -93,7 +93,7 @@ export const CommentEditSignedPropertyNames: readonly (keyof CreateCommentEditOp
     "commentAuthor"
 ] as const;
 
-export const VoteSignedPropertyNames: readonly (keyof CreateVoteOptions)[] = [
+export const VoteSignedPropertyNames: readonly (keyof Omit<CreateVoteOptions, "signer">)[] = [
     "subplebbitAddress",
     "author",
     "timestamp",
