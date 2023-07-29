@@ -635,6 +635,7 @@ var BaseClientsManager = /** @class */ (function () {
                     case 15:
                         e_6 = _b.sent();
                         if (i === timeouts.length - 1) {
+                            log.error("Failed to resolve address (".concat(address, ") text record (").concat(txtRecordName, ") using providers "), providersSorted, e_6);
                             this.emitError(e_6);
                             throw e_6;
                         }

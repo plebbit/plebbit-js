@@ -383,18 +383,21 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.update = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var updateLoop;
+            var log, updateLoop;
             var _this = this;
             return __generator(this, function (_a) {
                 if (this._updateInterval)
                     return [2 /*return*/]; // Do nothing if it's already updating
+                log = (0, plebbit_logger_1.default)("plebbit-js:comment:update");
                 this._isUpdating = true;
                 this._updateState("updating");
                 updateLoop = (function () { return __awaiter(_this, void 0, void 0, function () {
                     var _this = this;
                     return __generator(this, function (_a) {
                         if (this._isUpdating)
-                            this.updateOnce().finally(function () { return (_this._updateInterval = setTimeout(updateLoop, _this._plebbit.updateInterval)); });
+                            this.updateOnce()
+                                .catch(function (e) { return log.error("Failed to update comment", e); })
+                                .finally(function () { return (_this._updateInterval = setTimeout(updateLoop, _this._plebbit.updateInterval)); });
                         return [2 /*return*/];
                     });
                 }); }).bind(this);
