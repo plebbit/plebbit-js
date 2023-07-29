@@ -358,6 +358,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             // User may have attempted to call plebbit.createComment({cid}).update
             // plebbit-js should be able to retrieve ipnsName from the IPFS file
             const commentIpfs: CommentIpfsType = await this._retryLoadingCommentIpfs(log); // Will keep retrying to load until comment.stop() is called
+            // Can potentially throw if resolver if not working
             const commentIpfsValidation = await verifyComment(
                 commentIpfs,
                 this._plebbit.resolveAuthorAddresses,
@@ -385,6 +386,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
             //@ts-expect-error
             const commentInstance: Pick<CommentWithCommentUpdate, "cid" | "signature"> = lodash.pick(this, ["cid", "signature"]);
+            // Can potentially throw if resolver if not working
             const signatureValidity = await verifyCommentUpdate(
                 res,
                 this._plebbit.resolveAuthorAddresses,
@@ -417,11 +419,14 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
     async update() {
         if (this._updateInterval) return; // Do nothing if it's already updating
+        const log = Logger("plebbit-js:comment:update");
         this._isUpdating = true;
         this._updateState("updating");
         const updateLoop = (async () => {
             if (this._isUpdating)
-                this.updateOnce().finally(() => (this._updateInterval = setTimeout(updateLoop, this._plebbit.updateInterval)));
+                this.updateOnce()
+                    .catch((e) => log.error("Failed to update comment", e))
+                    .finally(() => (this._updateInterval = setTimeout(updateLoop, this._plebbit.updateInterval)));
         }).bind(this);
         updateLoop();
     }

@@ -469,12 +469,18 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     async update() {
         if (this._updateInterval || this._sync) return; // No need to do anything if subplebbit is already updating
 
+        const log = Logger("plebbit-js:subplebbit:update");
         this._setState("updating");
         const updateLoop = (async () => {
-            if (this._updateInterval) this.updateOnce().finally(() => setTimeout(updateLoop, this.plebbit.updateInterval));
+            if (this._updateInterval)
+                this.updateOnce()
+                    .catch((e) => log.error(`Failed to update subplebbit`, e))
+                    .finally(() => setTimeout(updateLoop, this.plebbit.updateInterval));
         }).bind(this);
 
-        this.updateOnce().finally(() => (this._updateInterval = setTimeout(updateLoop, this.plebbit.updateInterval)));
+        this.updateOnce()
+            .catch((e) => log.error(`Failed to update subplebbit`, e))
+            .finally(() => (this._updateInterval = setTimeout(updateLoop, this.plebbit.updateInterval)));
     }
 
     private pubsubTopicWithfallback() {

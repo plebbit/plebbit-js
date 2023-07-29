@@ -180,7 +180,6 @@ export class BaseClientsManager {
 
     postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType) {}
 
-
     protected async _fetchWithGateway(
         gateway: string,
         path: string,
@@ -204,15 +203,13 @@ export class BaseClientsManager {
             await this._plebbit.stats.recordGatewaySuccess(gateway, isCid ? "cid" : "ipns", timeElapsedMs);
             return resText;
         } catch (e) {
-            if (e?.details?.error?.type === "aborted"){
+            if (e?.details?.error?.type === "aborted") {
                 this.postFetchGatewayAborted(gateway, path, loadType);
                 return undefined;
-            }
-            else {
+            } else {
                 this.postFetchGatewayFailure(gateway, path, loadType);
                 await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
                 return { error: e };
-    
             }
         }
     }
@@ -417,6 +414,7 @@ export class BaseClientsManager {
                 }
             } catch (e) {
                 if (i === timeouts.length - 1) {
+                    log.error(`Failed to resolve address (${address}) text record (${txtRecordName}) using providers `, providersSorted, e);
                     this.emitError(e);
                     throw e;
                 }
