@@ -340,6 +340,7 @@ PubsubSignature {
   - [`plebbit.listSubplebbits()`](#plebbitlistsubplebbits)
   - [`plebbit.getDefaults()`](#plebbitgetdefaults)
   - `plebbit.fetchCid(cid)`
+  - `plebbit.resolveAuthorAddress(address)`
   - `Plebbit.getShortAddress(address)`
   - `Plebbit.getShortCid(cid)`
   - `Plebbit.setNativeFunctions(nativeFunctions)`
