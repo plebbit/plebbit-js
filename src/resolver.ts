@@ -2,9 +2,10 @@ import { Plebbit } from "./plebbit";
 import { Chain } from "./types";
 import assert from "assert";
 import Logger from "@plebbit/plebbit-logger";
-import { createPublicClient, http } from "viem";
+import { PublicClient, createPublicClient, http } from "viem";
 import * as chains from "viem/chains";
 import { ethers } from "ethers";
+import * as lib from "@ensdomains/eth-ens-namehash"; // ESM
 
 export const viemPublicClient = createPublicClient({
     chain: chains.mainnet,
@@ -29,7 +30,7 @@ export class Resolver {
     }
 
     // cache the chain providers because only 1 should be running at the same time
-    _getChainProvider(chainTicker: Chain, chainProviderUrl: string) {
+    _getChainProvider(chainTicker: Chain, chainProviderUrl: string): PublicClient {
         assert(chainTicker && typeof chainTicker === "string", `invalid chainTicker '${chainTicker}'`);
         assert(this.plebbit.chainProviders, `invalid chainProviders '${this.plebbit.chainProviders}'`);
         assert(this.plebbit.chainProviders[chainTicker].urls.includes(chainProviderUrl));
@@ -40,6 +41,7 @@ export class Resolver {
         } else {
             const chainId = this.plebbit.chainProviders[chainTicker].chainId;
             const chain = Object.values(chains).find((chain) => chain.id === chainId);
+            assert(chain, `Was not able to find a chain with id ${chainId}`);
             return createPublicClient({
                 chain: chain,
                 transport: http(chainProviderUrl)
@@ -65,7 +67,7 @@ export class Resolver {
         else {
             // Using viem or custom RPC
             const chainProvider = this._getChainProvider(chain, chainProviderUrl);
-            txtRecordResult = await chainProvider.getEnsText({ name: ethers.ensNormalize(address), key: txtRecordName });
+            txtRecordResult = await chainProvider.getEnsText({ name: lib.normalize(address), key: txtRecordName });
         }
 
         log(

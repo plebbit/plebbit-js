@@ -45,6 +45,7 @@ import Storage from "./runtime/node/storage";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import { ClientsManager } from "./clients/client-manager";
 import { subplebbitForPublishingCache } from "./constants";
+import assert from "assert";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
@@ -149,6 +150,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 chainId: 137
             }
         };
+        if (this.chainProviders.eth && !this.chainProviders.eth.chainId) this.chainProviders.eth.chainId = 1;
+        for (const chainTicker of Object.keys(this.chainProviders))
+            assert(
+                typeof this.chainProviders[chainTicker].chainId === "number",
+                `chain id for chainTicker (${chainTicker}) must be defined`
+            );
+
         this.clients.chainProviders = this.chainProviders;
 
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
