@@ -40,7 +40,6 @@
     ],
     "dependencies": {
         "@ensdomains/eth-ens-namehash": "2.0.15",
-        "@adraffy/ens-normalize": "1.8.3",
         "@keyv/sqlite": "3.6.2",
         "@plebbit/plebbit-logger": "github:plebbit/plebbit-logger#9525ca9539479918931c3b334e8d490d1c87e507",
         "@types/node-fetch": "2.6.2",
