@@ -86,6 +86,7 @@ var stats_1 = __importDefault(require("./stats"));
 var storage_1 = __importDefault(require("./runtime/node/storage"));
 var client_manager_1 = require("./clients/client-manager");
 var constants_1 = require("./constants");
+var assert_1 = __importDefault(require("assert"));
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
     function Plebbit(options) {
@@ -185,6 +186,12 @@ var Plebbit = /** @class */ (function (_super) {
                 chainId: 137
             }
         };
+        if (this.chainProviders.eth && !this.chainProviders.eth.chainId)
+            this.chainProviders.eth.chainId = 1;
+        for (var _i = 0, _a = Object.keys(this.chainProviders); _i < _a.length; _i++) {
+            var chainTicker = _a[_i];
+            (0, assert_1.default)(typeof this.chainProviders[chainTicker].chainId === "number", "chain id for chainTicker (".concat(chainTicker, ") must be defined"));
+        }
         this.clients.chainProviders = this.chainProviders;
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
         this.resolver = new resolver_1.Resolver({

@@ -68,6 +68,7 @@ var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var viem_1 = require("viem");
 var chains = __importStar(require("viem/chains"));
 var ethers_1 = require("ethers");
+var lib = __importStar(require("@ensdomains/eth-ens-namehash")); // ESM
 exports.viemPublicClient = (0, viem_1.createPublicClient)({
     chain: chains.mainnet,
     transport: (0, viem_1.http)()
@@ -96,6 +97,7 @@ var Resolver = /** @class */ (function () {
         else {
             var chainId_1 = this.plebbit.chainProviders[chainTicker].chainId;
             var chain = Object.values(chains).find(function (chain) { return chain.id === chainId_1; });
+            (0, assert_1.default)(chain, "Was not able to find a chain with id ".concat(chainId_1));
             return (0, viem_1.createPublicClient)({
                 chain: chain,
                 transport: (0, viem_1.http)(chainProviderUrl)
@@ -133,7 +135,7 @@ var Resolver = /** @class */ (function () {
                         return [3 /*break*/, 4];
                     case 2:
                         chainProvider = this._getChainProvider(chain, chainProviderUrl);
-                        return [4 /*yield*/, chainProvider.getEnsText({ name: ethers_1.ethers.ensNormalize(address), key: txtRecordName })];
+                        return [4 /*yield*/, chainProvider.getEnsText({ name: lib.normalize(address), key: txtRecordName })];
                     case 3:
                         txtRecordResult = _a.sent();
                         _a.label = 4;
