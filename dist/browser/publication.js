@@ -119,6 +119,7 @@ var Publication = /** @class */ (function (_super) {
     function Publication(props, plebbit) {
         var _this = _super.call(this) || this;
         _this._plebbit = plebbit;
+        _this._receivedChallenge = false;
         _this._updatePublishingState("stopped");
         _this._updateState("stopped");
         _this._initClients();
@@ -363,7 +364,6 @@ var Publication = /** @class */ (function (_super) {
                     case 2:
                         _a.subplebbit = _b;
                         this._validateSubFields();
-                        this._receivedChallenge = false;
                         _c = this;
                         return [4 /*yield*/, this._plebbit.createSigner()];
                     case 3:
