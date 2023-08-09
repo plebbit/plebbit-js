@@ -102,10 +102,16 @@ describe("challengerequest", async () => {
 
     it(`Sub responds with error to a challenge request with invalid pubsubMessage.encryptedPublication.signature`, async () => {
         const comment = await generateMockPost(signers[0].address, plebbit);
-        const originalPublish = comment._clientsManager.pubsubPublish.bind(comment._clientsManager);
-        comment._clientsManager.pubsubPublish = () => undefined;
+        const originalPublish = comment._clientsManager.pubsubPublishOnProvider.bind(comment._clientsManager);
+        comment._clientsManager.pubsubPublishOnProvider = () => undefined;
 
-        await comment.publish(); // comment._challengeRequest should be defined now, although it hasn't been published
+        try {
+            await comment.publish(); // comment._challengeRequest should be defined now, although it hasn't been published
+        } catch {}
+
+        comment._clientsManager.pubsubPublishOnProvider = originalPublish;
+
+        expect(comment._challengeRequest).to.be.a("object");
 
         const commentObjToEncrypt = JSON.parse(JSON.stringify(comment.toJSONPubsubMessagePublication()));
 
@@ -126,7 +132,7 @@ describe("challengerequest", async () => {
 
         comment._challengeRequest.signature = await signChallengeRequest(comment._challengeRequest, comment.pubsubMessageSigner);
 
-        await originalPublish(comment.subplebbit.pubsubTopic, comment._challengeRequest);
+        await comment._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, comment._challengeRequest);
 
         await new Promise((resolve) => {
             comment.once("challengeverification", (verificationMsg) => {
