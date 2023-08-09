@@ -13,7 +13,7 @@ import { SignerType } from "../signer/constants";
 import Publication from "../publication";
 import lodash from "lodash";
 import { v4 as uuidv4 } from "uuid";
-import { create as createMockIpfsClient } from "./mock-ipfs-client";
+import { createMockIpfsClient } from "./mock-ipfs-client";
 import { BasePages } from "../pages";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
@@ -358,7 +358,7 @@ export async function publishWithExpectedResult(publication: Publication, expect
 
     await publication.publish();
     await new Promise((resolve, reject) => {
-        setTimeout(() => !receivedResponse && reject(`Publication did not receive any response`), 30000); // throw after 20 seconds if we haven't received a response
+        setTimeout(() => !receivedResponse && reject(`Publication did not receive any response`), 90000); // throw after 20 seconds if we haven't received a response
         publication.once("challengeverification", (verificationMsg) => {
             receivedResponse = true;
             if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {

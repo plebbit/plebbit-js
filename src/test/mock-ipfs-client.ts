@@ -11,12 +11,15 @@ class IpfsHttpClient {
     public pubsub: IpfsHttpClientPublicAPI["pubsub"];
     private subscriptions: { topic: string; rawCallback: MessageHandlerFn; callback: (...args: any[]) => any }[];
 
-    constructor() {
+    constructor(dropRate?: number) {
+        // dropRate should be between 0 and 1
         this.subscriptions = [];
 
         this.pubsub = {
             publish: async (topic: string, message: Uint8Array) => {
-                ioClient.emit(topic, message);
+                if (typeof dropRate === "number") {
+                    if (Math.random() > dropRate) ioClient.emit(topic, message);
+                } else ioClient.emit(topic, message);
             },
             subscribe: async (topic: string, rawCallback: MessageHandlerFn) => {
                 const callback = (msg: Buffer) => {
@@ -46,4 +49,4 @@ class IpfsHttpClient {
     }
 }
 
-export const create = () => new IpfsHttpClient();
+export const createMockIpfsClient = (dropRate?: number) => new IpfsHttpClient(dropRate);

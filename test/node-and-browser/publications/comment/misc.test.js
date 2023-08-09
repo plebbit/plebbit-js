@@ -13,7 +13,7 @@ const lodash = require("lodash");
 const { messages } = require("../../../../dist/node/errors");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
-const { create } = require("../../../../dist/node/test/mock-ipfs-client");
+const { createMockIpfsClient } = require("../../../../dist/node/test/mock-ipfs-client");
 
 const { default: waitUntil } = require("async-wait-until");
 const stringify = require("safe-stable-stringify");
@@ -653,7 +653,7 @@ describe(`comment.clients`, async () => {
                 pubsubHttpClientsOptions: [offlinePubsubUrl, upPubsubUrl]
             });
 
-            plebbit.clients.pubsubClients[upPubsubUrl]._client = create(); // Use mock pubsub to be on the same pubsub as the sub
+            plebbit.clients.pubsubClients[upPubsubUrl]._client = createMockIpfsClient(); // Use mock pubsub to be on the same pubsub as the sub
 
             const mockPost = await generateMockPost(signers[0].address, plebbit);
 

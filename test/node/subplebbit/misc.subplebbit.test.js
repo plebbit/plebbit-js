@@ -5,8 +5,11 @@ const {
     createMockSub,
     mockGatewayPlebbit,
     publishRandomReply,
-    publishVote
+    publishVote,
+    generateMockPost
 } = require("../../../dist/node/test/test-util");
+const { createMockIpfsClient } = require("../../../dist/node/test/mock-ipfs-client");
+
 const signers = require("../../fixtures/signers");
 const { getThumbnailUrlOfLink } = require("../../../dist/node/runtime/node/util");
 const path = require("path");
@@ -691,5 +694,38 @@ describe(`subplebbit.statsCid`, async () => {
 
             for (const postCountKey of postCountKeys) expect(statsAfterNewPost[postCountKey]).to.equal(statsBefore[postCountKey]);
         });
+    });
+});
+
+describe.skip(`Challenge exchange resiliency`, async () => {
+    // In production we have a lot of flakiness when it comes to publishing over pubsub
+    // These tests will produce scenarios where the drop rate of pubsub msgs is very high
+    // The goal is to make sure publications are received and the challenge exchange is stable
+    // We're assuming the dropping happens only in CHALLENGEREQUEST
+
+    const dropRate = 0.05;
+    const numberOfPostsToPublish = 300;
+    let subplebbit, plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+        for (const pubsubProviderUrl of Object.keys(plebbit.clients.pubsubClients)) {
+            plebbit.clients.pubsubClients[pubsubProviderUrl]._client = createMockIpfsClient(dropRate);
+        }
+
+        const subplebbitPlebbit = await mockPlebbit();
+        subplebbit = await createMockSub({}, subplebbitPlebbit);
+        await subplebbit.start();
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+    });
+
+    after(async () => {
+        await subplebbit.stop();
+    });
+
+    it(`${numberOfPostsToPublish} posts are published without any issues (no challenge)`, async () => {
+        // TODO should use a sub with challenge
+        await Promise.all(
+            new Array(numberOfPostsToPublish).fill(null).map((x) => publishRandomPost(subplebbit.address, plebbit, {}, false))
+        );
     });
 });
