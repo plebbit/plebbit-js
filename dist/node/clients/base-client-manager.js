@@ -103,45 +103,54 @@ var BaseClientsManager = /** @class */ (function () {
         return this._plebbit.clients.ipfsClients[this._defaultIpfsProviderUrl];
     };
     // Pubsub methods
-    BaseClientsManager.prototype.pubsubSubscribe = function (pubsubTopic, handler) {
+    BaseClientsManager.prototype.pubsubSubscribeOnProvider = function (pubsubTopic, handler, pubsubProviderUrl) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, providersSorted, providerToError, i, pubsubProviderUrl, timeBefore, e_1, combinedError;
+            var log, timeBefore, e_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:client-manager:pubsubSubscribe");
-                        return [4 /*yield*/, this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe")];
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:client-manager:pubsubSubscribeOnProvider");
+                        timeBefore = Date.now();
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 4, , 6]);
+                        return [4 /*yield*/, this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler)];
+                    case 2:
+                        _a.sent();
+                        return [4 /*yield*/, this._plebbit.stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore)];
+                    case 3:
+                        _a.sent();
+                        return [2 /*return*/];
+                    case 4:
+                        e_1 = _a.sent();
+                        return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe")];
+                    case 5:
+                        _a.sent();
+                        log.error("Failed to subscribe to pubsub topic (".concat(pubsubTopic, ") to (").concat(pubsubProviderUrl, ")"));
+                        throw new plebbit_error_1.PlebbitError("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic: pubsubTopic, pubsubProviderUrl: pubsubProviderUrl, error: e_1 });
+                    case 6: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    BaseClientsManager.prototype.pubsubSubscribe = function (pubsubTopic, handler) {
+        return __awaiter(this, void 0, void 0, function () {
+            var providersSorted, providerToError, i, pubsubProviderUrl, combinedError;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe")];
                     case 1:
                         providersSorted = _a.sent();
                         providerToError = {};
-                        i = 0;
-                        _a.label = 2;
-                    case 2:
-                        if (!(i < providersSorted.length)) return [3 /*break*/, 9];
-                        pubsubProviderUrl = providersSorted[i];
-                        timeBefore = Date.now();
-                        _a.label = 3;
-                    case 3:
-                        _a.trys.push([3, 6, , 8]);
-                        return [4 /*yield*/, this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler)];
-                    case 4:
-                        _a.sent();
-                        return [4 /*yield*/, this._plebbit.stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore)];
-                    case 5:
-                        _a.sent();
-                        return [2 /*return*/];
-                    case 6:
-                        e_1 = _a.sent();
-                        return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe")];
-                    case 7:
-                        _a.sent();
-                        log.error("Failed to subscribe to pubsub topic (".concat(pubsubTopic, ") to (").concat(pubsubProviderUrl, ")"));
-                        providerToError[pubsubProviderUrl] = e_1;
-                        return [3 /*break*/, 8];
-                    case 8:
-                        i++;
-                        return [3 /*break*/, 2];
-                    case 9:
+                        for (i = 0; i < providersSorted.length; i++) {
+                            pubsubProviderUrl = providersSorted[i];
+                            try {
+                                return [2 /*return*/, this.pubsubSubscribeOnProvider(pubsubTopic, handler, pubsubProviderUrl)];
+                            }
+                            catch (e) {
+                                providerToError[pubsubProviderUrl] = e;
+                            }
+                        }
                         combinedError = new plebbit_error_1.PlebbitError("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic: pubsubTopic, providerToError: providerToError });
                         this.emitError(combinedError);
                         throw combinedError;
@@ -180,20 +189,21 @@ var BaseClientsManager = /** @class */ (function () {
     };
     BaseClientsManager.prototype.prePubsubPublishProvider = function (pubsubTopic, pubsubProvider) { };
     BaseClientsManager.prototype.postPubsubPublishProviderSuccess = function (pubsubTopic, pubsubProvider) { };
-    BaseClientsManager.prototype.postPubsubPublishProviderFailure = function (pubsubTopic, pubsubProvider) { };
-    BaseClientsManager.prototype._publishToPubsubProvider = function (pubsubTopic, data, pubsubProvider) {
+    BaseClientsManager.prototype.postPubsubPublishProviderFailure = function (pubsubTopic, pubsubProvider, error) { };
+    BaseClientsManager.prototype.pubsubPublishOnProvider = function (pubsubTopic, data, pubsubProvider) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, timeBefore, error_1;
+            var log, dataBinary, timeBefore, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:pubsubPublish");
+                        dataBinary = cborg.encode(data);
                         this.prePubsubPublishProvider(pubsubTopic, pubsubProvider);
                         timeBefore = Date.now();
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 3, , 5]);
-                        return [4 /*yield*/, this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.publish(pubsubTopic, data)];
+                        return [4 /*yield*/, this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.publish(pubsubTopic, dataBinary)];
                     case 2:
                         _a.sent();
                         this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
@@ -201,7 +211,7 @@ var BaseClientsManager = /** @class */ (function () {
                         return [3 /*break*/, 5];
                     case 3:
                         error_1 = _a.sent();
-                        this.postPubsubPublishProviderFailure(pubsubTopic, pubsubProvider);
+                        this.postPubsubPublishProviderFailure(pubsubTopic, pubsubProvider, error_1);
                         return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(pubsubProvider, "pubsub-publish")];
                     case 4:
                         _a.sent();
@@ -214,12 +224,11 @@ var BaseClientsManager = /** @class */ (function () {
     };
     BaseClientsManager.prototype.pubsubPublish = function (pubsubTopic, data) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, dataBinary, providersSorted, providerToError, i, pubsubProviderUrl, e_2, combinedError;
+            var log, providersSorted, providerToError, i, pubsubProviderUrl, e_2, combinedError;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:client-manager:pubsubPublish");
-                        dataBinary = cborg.encode(data);
                         return [4 /*yield*/, this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-publish")];
                     case 1:
                         providersSorted = _a.sent();
@@ -232,7 +241,7 @@ var BaseClientsManager = /** @class */ (function () {
                         _a.label = 3;
                     case 3:
                         _a.trys.push([3, 5, , 6]);
-                        return [4 /*yield*/, this._publishToPubsubProvider(pubsubTopic, dataBinary, pubsubProviderUrl)];
+                        return [4 /*yield*/, this.pubsubPublishOnProvider(pubsubTopic, data, pubsubProviderUrl)];
                     case 4: return [2 /*return*/, _a.sent()];
                     case 5:
                         e_2 = _a.sent();
@@ -309,7 +318,7 @@ var BaseClientsManager = /** @class */ (function () {
     };
     BaseClientsManager.prototype.preFetchGateway = function (gatewayUrl, path, loadType) { };
     BaseClientsManager.prototype.postFetchGatewaySuccess = function (gatewayUrl, path, loadType) { };
-    BaseClientsManager.prototype.postFetchGatewayFailure = function (gatewayUrl, path, loadType) { };
+    BaseClientsManager.prototype.postFetchGatewayFailure = function (gatewayUrl, path, loadType, error) { };
     BaseClientsManager.prototype.postFetchGatewayAborted = function (gatewayUrl, path, loadType) { };
     BaseClientsManager.prototype._fetchWithGateway = function (gateway, path, loadType, abortController) {
         var _a, _b;
@@ -348,7 +357,7 @@ var BaseClientsManager = /** @class */ (function () {
                         this.postFetchGatewayAborted(gateway, path, loadType);
                         return [2 /*return*/, undefined];
                     case 7:
-                        this.postFetchGatewayFailure(gateway, path, loadType);
+                        this.postFetchGatewayFailure(gateway, path, loadType, e_4);
                         return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns")];
                     case 8:
                         _c.sent();
@@ -525,7 +534,7 @@ var BaseClientsManager = /** @class */ (function () {
     };
     BaseClientsManager.prototype.preResolveTextRecord = function (address, txtRecordName, chain, chainProviderUrl) { };
     BaseClientsManager.prototype.postResolveTextRecordSuccess = function (address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl) { };
-    BaseClientsManager.prototype.postResolveTextRecordFailure = function (address, txtRecordName, chain, chainProviderUrl) { };
+    BaseClientsManager.prototype.postResolveTextRecordFailure = function (address, txtRecordName, chain, chainProviderUrl, error) { };
     BaseClientsManager.prototype._resolveTextRecordSingleChainProvider = function (address, txtRecordName, chain, chainproviderUrl) {
         return __awaiter(this, void 0, void 0, function () {
             var timeBefore, resolvedTextRecord, e_5;
@@ -547,7 +556,7 @@ var BaseClientsManager = /** @class */ (function () {
                         return [2 /*return*/, resolvedTextRecord];
                     case 4:
                         e_5 = _a.sent();
-                        this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl);
+                        this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, e_5);
                         return [4 /*yield*/, this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain)];
                     case 5:
                         _a.sent();

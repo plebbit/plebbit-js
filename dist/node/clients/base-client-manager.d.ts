@@ -12,17 +12,18 @@ export declare class BaseClientsManager {
     toJSON(): any;
     getDefaultPubsub(): import("../types").PubsubClient;
     getDefaultIpfs(): import("../types").IpfsClient;
+    pubsubSubscribeOnProvider(pubsubTopic: string, handler: MessageHandlerFn, pubsubProviderUrl: string): Promise<void>;
     pubsubSubscribe(pubsubTopic: string, handler: MessageHandlerFn): Promise<void>;
     pubsubUnsubscribe(pubsubTopic: string, handler?: MessageHandlerFn): Promise<void>;
     protected prePubsubPublishProvider(pubsubTopic: string, pubsubProvider: string): void;
     protected postPubsubPublishProviderSuccess(pubsubTopic: string, pubsubProvider: string): void;
-    protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string): void;
-    protected _publishToPubsubProvider(pubsubTopic: string, data: Uint8Array, pubsubProvider: string): Promise<void>;
+    protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string, error: PlebbitError): void;
+    pubsubPublishOnProvider(pubsubTopic: string, data: PubsubMessage, pubsubProvider: string): Promise<void>;
     pubsubPublish(pubsubTopic: string, data: PubsubMessage): Promise<void>;
     private _fetchWithLimit;
     preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void;
     postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType): void;
-    postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType): void;
+    postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType, error: PlebbitError): void;
     postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType): void;
     protected _fetchWithGateway(gateway: string, path: string, loadType: LoadType, abortController: AbortController): Promise<string | {
         error: PlebbitError;
@@ -38,7 +39,7 @@ export declare class BaseClientsManager {
     private _resolveTextRecordWithCache;
     preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: Chain, chainProviderUrl: string): void;
     postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: Chain, chainProviderUrl: string): void;
-    postResolveTextRecordFailure(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: Chain, chainProviderUrl: string): void;
+    postResolveTextRecordFailure(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: Chain, chainProviderUrl: string, error: Error): void;
     private _resolveTextRecordSingleChainProvider;
     private _resolveTextRecordConcurrently;
     resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | undefined>;

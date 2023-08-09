@@ -2,7 +2,7 @@ import { IpfsHttpClientPublicAPI } from "../types";
 declare class IpfsHttpClient {
     pubsub: IpfsHttpClientPublicAPI["pubsub"];
     private subscriptions;
-    constructor();
+    constructor(dropRate?: number);
 }
-export declare const create: () => IpfsHttpClient;
+export declare const createMockIpfsClient: (dropRate?: number) => IpfsHttpClient;
 export {};

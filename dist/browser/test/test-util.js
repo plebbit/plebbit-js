@@ -220,7 +220,7 @@ function _mockSubplebbitPlebbit(signers, plebbitOptions) {
                     }); };
                     for (_i = 0, _a = Object.keys(plebbit.clients.pubsubClients); _i < _a.length; _i++) {
                         pubsubUrl = _a[_i];
-                        plebbit.clients.pubsubClients[pubsubUrl]._client = (0, mock_ipfs_client_1.create)();
+                        plebbit.clients.pubsubClients[pubsubUrl]._client = (0, mock_ipfs_client_1.createMockIpfsClient)();
                     }
                     return [2 /*return*/, plebbit];
             }
@@ -472,7 +472,7 @@ function mockPlebbit(plebbitOptions, forceMockPubsub) {
                     if (!(plebbitOptions === null || plebbitOptions === void 0 ? void 0 : plebbitOptions.pubsubHttpClientsOptions) || forceMockPubsub)
                         for (_i = 0, _a = Object.keys(plebbit.clients.pubsubClients); _i < _a.length; _i++) {
                             pubsubUrl = _a[_i];
-                            plebbit.clients.pubsubClients[pubsubUrl]._client = (0, mock_ipfs_client_1.create)();
+                            plebbit.clients.pubsubClients[pubsubUrl]._client = (0, mock_ipfs_client_1.createMockIpfsClient)();
                         }
                     plebbit.on("error", function () { });
                     return [2 /*return*/, plebbit];
@@ -600,7 +600,7 @@ function publishWithExpectedResult(publication, expectedChallengeSuccess, expect
                 case 1:
                     _a.sent();
                     return [4 /*yield*/, new Promise(function (resolve, reject) {
-                            setTimeout(function () { return !receivedResponse && reject("Publication did not receive any response"); }, 30000); // throw after 20 seconds if we haven't received a response
+                            setTimeout(function () { return !receivedResponse && reject("Publication did not receive any response"); }, 90000); // throw after 20 seconds if we haven't received a response
                             publication.once("challengeverification", function (verificationMsg) {
                                 receivedResponse = true;
                                 if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {

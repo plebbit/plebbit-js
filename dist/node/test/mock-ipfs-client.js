@@ -40,20 +40,26 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.create = void 0;
+exports.createMockIpfsClient = void 0;
 var socket_io_client_1 = __importDefault(require("socket.io-client"));
 var port = 25963;
 if (globalThis["window"] && !globalThis["window"]["io"])
     globalThis["window"]["io"] = (0, socket_io_client_1.default)("ws://localhost:".concat(port));
 var ioClient = ((_a = globalThis["window"]) === null || _a === void 0 ? void 0 : _a["io"]) || (0, socket_io_client_1.default)("ws://localhost:".concat(port));
 var IpfsHttpClient = /** @class */ (function () {
-    function IpfsHttpClient() {
+    function IpfsHttpClient(dropRate) {
         var _this = this;
+        // dropRate should be between 0 and 1
         this.subscriptions = [];
         this.pubsub = {
             publish: function (topic, message) { return __awaiter(_this, void 0, void 0, function () {
                 return __generator(this, function (_a) {
-                    ioClient.emit(topic, message);
+                    if (typeof dropRate === "number") {
+                        if (Math.random() > dropRate)
+                            ioClient.emit(topic, message);
+                    }
+                    else
+                        ioClient.emit(topic, message);
                     return [2 /*return*/];
                 });
             }); },
@@ -97,6 +103,6 @@ var IpfsHttpClient = /** @class */ (function () {
     }
     return IpfsHttpClient;
 }());
-var create = function () { return new IpfsHttpClient(); };
-exports.create = create;
+var createMockIpfsClient = function (dropRate) { return new IpfsHttpClient(dropRate); };
+exports.createMockIpfsClient = createMockIpfsClient;
 //# sourceMappingURL=mock-ipfs-client.js.map

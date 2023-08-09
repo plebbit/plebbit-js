@@ -113,6 +113,7 @@ var client_manager_1 = require("./clients/client-manager");
 var cborg = __importStar(require("cborg"));
 var lodash_1 = __importDefault(require("lodash"));
 var constants_1 = require("./constants");
+var challengeDeadline = 20; // If we didn't receive a challenge within 20 seconds, then retry publishing request
 var Publication = /** @class */ (function (_super) {
     __extends(Publication, _super);
     function Publication(props, plebbit) {
@@ -123,6 +124,7 @@ var Publication = /** @class */ (function (_super) {
         _this._initClients();
         _this._initProps(props);
         _this.handleChallengeExchange = _this.handleChallengeExchange.bind(_this);
+        _this.publish = _this.publish.bind(_this);
         _this.on("error", function () {
             var _a;
             var args = [];
@@ -186,6 +188,7 @@ var Publication = /** @class */ (function (_super) {
                             this.emit("error", error);
                             return [2 /*return*/];
                         }
+                        this._receivedChallenge = true;
                         log("Received encrypted challenges.  Will decrypt and emit them on \"challenge\" event. User shoud publish solution by calling publishChallengeAnswers");
                         _b = (_a = JSON).parse;
                         return [4 /*yield*/, (0, signer_1.decryptEd25519AesGcm)(msgParsed.encryptedChallenges, this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)];
@@ -193,7 +196,7 @@ var Publication = /** @class */ (function (_super) {
                         decryptedChallenges = _b.apply(_a, [_e.sent()]);
                         decryptedChallenge = __assign(__assign({}, msgParsed), { challenges: decryptedChallenges });
                         this._updatePublishingState("waiting-challenge-answers");
-                        this._clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
+                        this._clientsManager.updatePubsubState("waiting-challenge-answers", this._currentPubsubProvider);
                         this.emit("challenge", decryptedChallenge);
                         return [3 /*break*/, 10];
                     case 3:
@@ -211,6 +214,7 @@ var Publication = /** @class */ (function (_super) {
                             this.emit("error", error);
                             return [2 /*return*/];
                         }
+                        this._receivedChallenge = true;
                         decryptedPublication = void 0;
                         if (!msgParsed.challengeSuccess) return [3 /*break*/, 7];
                         this._updatePublishingState("succeeded");
@@ -231,7 +235,7 @@ var Publication = /** @class */ (function (_super) {
                     case 8: return [4 /*yield*/, this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
                     case 9:
                         _e.sent();
-                        this._clientsManager.updatePubsubState("stopped", undefined);
+                        this._clientsManager.updatePubsubState("stopped", this._currentPubsubProvider);
                         this.emit("challengeverification", __assign(__assign({}, msgParsed), { publication: decryptedPublication }), this instanceof comment_1.Comment && decryptedPublication ? this : undefined);
                         _e.label = 10;
                     case 10: return [2 /*return*/];
@@ -336,11 +340,17 @@ var Publication = /** @class */ (function (_super) {
         return __awaiter(this, void 0, void 0, function () {
             var log, options, _a, _b, _c, encryptedPublication, challengeRequestId, toSignMsg, _d, _e, _f, e_1;
             var _g;
+            var _this = this;
             return __generator(this, function (_h) {
                 switch (_h.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:publication:publish");
                         this._validatePublicationFields();
+                        if (!Array.isArray(this._pubsubProviders)) {
+                            this._pubsubProviders = Object.keys(this._plebbit.clients.pubsubClients);
+                            if (this._pubsubProviders.length === 1)
+                                this._pubsubProviders.push(this._pubsubProviders[0]); // Same provider should be retried twice if publishing fails
+                        }
                         this._updateState("publishing");
                         options = { acceptedChallengeTypes: [] };
                         _a = this;
@@ -353,19 +363,16 @@ var Publication = /** @class */ (function (_super) {
                     case 2:
                         _a.subplebbit = _b;
                         this._validateSubFields();
-                        this._updatePublishingState("publishing-challenge-request");
-                        return [4 /*yield*/, this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
-                    case 3:
-                        _h.sent();
+                        this._receivedChallenge = false;
                         _c = this;
                         return [4 /*yield*/, this._plebbit.createSigner()];
-                    case 4:
+                    case 3:
                         _c.pubsubMessageSigner = _h.sent();
                         return [4 /*yield*/, (0, signer_1.encryptEd25519AesGcm)(JSON.stringify(this.toJSONPubsubMessagePublication()), this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)];
-                    case 5:
+                    case 4:
                         encryptedPublication = _h.sent();
                         return [4 /*yield*/, (0, util_2.getBufferedPlebbitAddressFromPublicKey)(this.pubsubMessageSigner.publicKey)];
-                    case 6:
+                    case 5:
                         challengeRequestId = _h.sent();
                         toSignMsg = {
                             type: "CHALLENGEREQUEST",
@@ -381,31 +388,53 @@ var Publication = /** @class */ (function (_super) {
                         _f = [__assign({}, toSignMsg)];
                         _g = {};
                         return [4 /*yield*/, (0, signatures_1.signChallengeRequest)(toSignMsg, this.pubsubMessageSigner)];
-                    case 7:
+                    case 6:
                         _d._challengeRequest = new (_e.apply(challenge_1.ChallengeRequestMessage, [void 0, __assign.apply(void 0, _f.concat([(_g.signature = _h.sent(), _g)]))]))();
                         log.trace("Attempting to publish ".concat(this.getType(), " with challenge id (").concat(this._challengeRequest.challengeRequestId, ") to pubsub topic (").concat(this._pubsubTopicWithfallback(), ")"));
-                        this._clientsManager.updatePubsubState("subscribing-pubsub", undefined);
-                        _h.label = 8;
+                        _h.label = 7;
+                    case 7:
+                        if (!(this._pubsubProviders.length > 0)) return [3 /*break*/, 14];
+                        this._currentPubsubProvider = this._pubsubProviders.shift();
+                        return [4 /*yield*/, this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
                     case 8:
-                        _h.trys.push([8, 11, , 12]);
-                        return [4 /*yield*/, this._clientsManager.pubsubSubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange)];
-                    case 9:
                         _h.sent();
-                        return [4 /*yield*/, this._clientsManager.pubsubPublish(this._pubsubTopicWithfallback(), this._challengeRequest)];
+                        this._updatePublishingState("publishing-challenge-request");
+                        this._clientsManager.updatePubsubState("subscribing-pubsub", this._currentPubsubProvider); // TODO this shouldn't be here, should be handled in client-manager
+                        _h.label = 9;
+                    case 9:
+                        _h.trys.push([9, 12, , 13]);
+                        return [4 /*yield*/, this._clientsManager.pubsubSubscribeOnProvider(this._pubsubTopicWithfallback(), this.handleChallengeExchange, this._currentPubsubProvider)];
                     case 10:
                         _h.sent();
-                        return [3 /*break*/, 12];
+                        return [4 /*yield*/, this._clientsManager.pubsubPublishOnProvider(this._pubsubTopicWithfallback(), this._challengeRequest, this._currentPubsubProvider)];
                     case 11:
-                        e_1 = _h.sent();
-                        this._clientsManager.updatePubsubState("stopped", undefined);
-                        this._updatePublishingState("failed");
-                        this.emit("error", e_1);
-                        throw e_1;
+                        _h.sent();
+                        return [3 /*break*/, 13];
                     case 12:
-                        this._clientsManager.updatePubsubState("waiting-challenge", undefined);
+                        e_1 = _h.sent();
+                        this._clientsManager.updatePubsubState("stopped", this._currentPubsubProvider);
+                        this._updatePublishingState("failed");
+                        log.error("Failed to publish challenge request using provider ", this._currentPubsubProvider);
+                        if (this._pubsubProviders.length === 0) {
+                            this.emit("error", e_1);
+                            throw e_1;
+                        }
+                        return [3 /*break*/, 7];
+                    case 13:
+                        this._clientsManager.updatePubsubState("waiting-challenge", this._currentPubsubProvider);
                         this._updatePublishingState("waiting-challenge");
                         log("Sent a challenge request (".concat(this._challengeRequest.challengeRequestId, ")"));
                         this.emit("challengerequest", __assign(__assign({}, this._challengeRequest), { publication: this.toJSONPubsubMessagePublication() }));
+                        return [3 /*break*/, 14];
+                    case 14:
+                        // to handle cases where request is published but we didn't receive response within certain timeframe (20s for now)
+                        // Maybe the sub didn't receive the request, or the provider did not relay the challenge from sub for some reason
+                        setTimeout(function () {
+                            if (_this._pubsubProviders.length > 0 && !_this._receivedChallenge) {
+                                log("Re-publishing publication after ".concat(challengeDeadline, "s of not receiving challenge"));
+                                _this.publish();
+                            }
+                        }, challengeDeadline * 1000);
                         return [2 /*return*/];
                 }
             });
