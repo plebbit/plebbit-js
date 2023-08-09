@@ -74,6 +74,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     constructor(props: PublicationType, plebbit: Plebbit) {
         super();
         this._plebbit = plebbit;
+        this._receivedChallenge = false;
         this._updatePublishingState("stopped");
         this._updateState("stopped");
         this._initClients();
@@ -291,7 +292,6 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this.subplebbit = this._getSubplebbitCache() || (await this._clientsManager.fetchSubplebbitForPublishing(this.subplebbitAddress));
         this._validateSubFields();
 
-        this._receivedChallenge = false;
         this.pubsubMessageSigner = await this._plebbit.createSigner();
 
         const encryptedPublication = await encryptEd25519AesGcm(
