@@ -46,22 +46,30 @@ export class BaseClientsManager {
 
     // Pubsub methods
 
-    async pubsubSubscribe(pubsubTopic: string, handler: MessageHandlerFn) {
-        const log = Logger("plebbit-js:plebbit:client-manager:pubsubSubscribe");
+    async pubsubSubscribeOnProvider(pubsubTopic: string, handler: MessageHandlerFn, pubsubProviderUrl: string) {
+        const log = Logger("plebbit-js:plebbit:client-manager:pubsubSubscribeOnProvider");
 
+        const timeBefore = Date.now();
+        try {
+            await this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler);
+            await this._plebbit.stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore);
+            return;
+        } catch (e) {
+            await this._plebbit.stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe");
+            log.error(`Failed to subscribe to pubsub topic (${pubsubTopic}) to (${pubsubProviderUrl})`);
+            throw new PlebbitError("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic, pubsubProviderUrl, error: e });
+        }
+    }
+
+    async pubsubSubscribe(pubsubTopic: string, handler: MessageHandlerFn) {
         const providersSorted = await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe");
         const providerToError: Record<string, PlebbitError> = {};
 
         for (let i = 0; i < providersSorted.length; i++) {
             const pubsubProviderUrl = providersSorted[i];
-            const timeBefore = Date.now();
             try {
-                await this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler);
-                await this._plebbit.stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore);
-                return;
+                return this.pubsubSubscribeOnProvider(pubsubTopic, handler, pubsubProviderUrl);
             } catch (e) {
-                await this._plebbit.stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe");
-                log.error(`Failed to subscribe to pubsub topic (${pubsubTopic}) to (${pubsubProviderUrl})`);
                 providerToError[pubsubProviderUrl] = e;
             }
         }
@@ -85,18 +93,19 @@ export class BaseClientsManager {
 
     protected postPubsubPublishProviderSuccess(pubsubTopic: string, pubsubProvider: string) {}
 
-    protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string) {}
+    protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string, error: PlebbitError) {}
 
-    protected async _publishToPubsubProvider(pubsubTopic: string, data: Uint8Array, pubsubProvider: string) {
+    async pubsubPublishOnProvider(pubsubTopic: string, data: PubsubMessage, pubsubProvider: string) {
         const log = Logger("plebbit-js:plebbit:pubsubPublish");
+        const dataBinary = cborg.encode(data);
         this.prePubsubPublishProvider(pubsubTopic, pubsubProvider);
         const timeBefore = Date.now();
         try {
-            await this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.publish(pubsubTopic, data);
+            await this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.publish(pubsubTopic, dataBinary);
             this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
             this._plebbit.stats.recordGatewaySuccess(pubsubProvider, "pubsub-publish", Date.now() - timeBefore); // Awaiting this statement will bug out tests
         } catch (error) {
-            this.postPubsubPublishProviderFailure(pubsubTopic, pubsubProvider);
+            this.postPubsubPublishProviderFailure(pubsubTopic, pubsubProvider, error);
             await this._plebbit.stats.recordGatewayFailure(pubsubProvider, "pubsub-publish");
             throwWithErrorCode("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic, pubsubProvider, error });
         }
@@ -104,15 +113,13 @@ export class BaseClientsManager {
 
     async pubsubPublish(pubsubTopic: string, data: PubsubMessage): Promise<void> {
         const log = Logger("plebbit-js:plebbit:client-manager:pubsubPublish");
-        const dataBinary = cborg.encode(data);
-
         const providersSorted = await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-publish");
         const providerToError: Record<string, PlebbitError> = {};
 
         for (let i = 0; i < providersSorted.length; i++) {
             const pubsubProviderUrl = providersSorted[i];
             try {
-                return await this._publishToPubsubProvider(pubsubTopic, dataBinary, pubsubProviderUrl);
+                return await this.pubsubPublishOnProvider(pubsubTopic, data, pubsubProviderUrl);
             } catch (e) {
                 log.error(`Failed to publish to pubsub topic (${pubsubTopic}) to (${pubsubProviderUrl})`);
                 providerToError[pubsubProviderUrl] = e;
@@ -176,7 +183,7 @@ export class BaseClientsManager {
 
     postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType) {}
 
-    postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType) {}
+    postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType, error: PlebbitError) {}
 
     postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType) {}
 
@@ -207,7 +214,7 @@ export class BaseClientsManager {
                 this.postFetchGatewayAborted(gateway, path, loadType);
                 return undefined;
             } else {
-                this.postFetchGatewayFailure(gateway, path, loadType);
+                this.postFetchGatewayFailure(gateway, path, loadType, e);
                 await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
                 return { error: e };
             }
@@ -332,7 +339,8 @@ export class BaseClientsManager {
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
         chain: Chain,
-        chainProviderUrl: string
+        chainProviderUrl: string,
+        error: Error
     ) {}
 
     private async _resolveTextRecordSingleChainProvider(
@@ -349,7 +357,7 @@ export class BaseClientsManager {
             await this._plebbit.stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
             return resolvedTextRecord;
         } catch (e) {
-            this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl);
+            this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, e);
             await this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain);
             return { error: e };
         }
