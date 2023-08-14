@@ -258,8 +258,15 @@ export class BaseClientsManager {
             queueLimit.clearQueue();
             controllers.forEach((control) => control.abort());
             return res;
-        } //@ts-expect-error
-        else throw res[0].value.error;
+        } else {
+            const gatewayToError: Record<string, PlebbitError> = {};
+            for (let i = 0; i < res.length; i++) if (res[i]["value"]) gatewayToError[gatewaysSorted[i]] = res[i]["value"].error;
+
+            const errorCode = type === "cid" ? "ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY" : "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY";
+            const combinedError = new PlebbitError(errorCode, { loadOpts, gatewayToError });
+
+            throw combinedError;
+        }
     }
 
     // IPFS P2P methods
