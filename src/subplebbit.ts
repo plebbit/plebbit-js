@@ -1022,7 +1022,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 this.dbHandler.insertChallenge(challengeMessage.toJSONForDb(challengeTypes), undefined),
                 this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage)
             ]);
-            log.trace(
+            log(
                 `(${decryptedRequest.challengeRequestId}): `,
                 `Published ${challengeMessage.type} over pubsub: `,
                 lodash.omit(toSignChallenge, ["encryptedChallenges"])
