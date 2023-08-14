@@ -61,7 +61,8 @@ export async function getThumbnailUrlOfLink(url: string, subplebbit: Subplebbit,
         const plebbitError = new PlebbitError("ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK", {
             url,
             downloadLimit: options.downloadLimit,
-            proxyHttpUrl
+            proxyHttpUrl,
+            error: e
         });
         log.error(String(plebbitError));
         subplebbit.emit("error", plebbitError);

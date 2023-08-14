@@ -262,7 +262,7 @@ export class BaseClientsManager {
             const gatewayToError: Record<string, PlebbitError> = {};
             for (let i = 0; i < res.length; i++) if (res[i]["value"]) gatewayToError[gatewaysSorted[i]] = res[i]["value"].error;
 
-            const errorCode = type === "cid" ? "ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY" : "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY";
+            const errorCode = Object.values(gatewayToError)[0].code;
             const combinedError = new PlebbitError(errorCode, { loadOpts, gatewayToError });
 
             throw combinedError;
