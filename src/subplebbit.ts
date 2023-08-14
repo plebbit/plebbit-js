@@ -576,32 +576,54 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const commentEdit = await this.plebbit.createCommentEdit(commentEditRaw);
 
         const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
+        const editSignedByOriginalAuthor = commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey;
+        const editorModRole = this.roles && this.roles[commentEdit.author.address];
+
         const editorAddress = await getPlebbitAddressFromPublicKey(commentEdit.signature.publicKey);
-        const modRole = this.roles && this.roles[commentEdit.author.address];
-        if (commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey) {
-            // CommentEdit is signed by original author
+
+        if (editSignedByOriginalAuthor && editorModRole) {
+            const combinedEditFields = [...AUTHOR_EDIT_FIELDS, ...MOD_EDIT_FIELDS];
+            for (const editField of Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON()))) {
+                if (!combinedEditFields.includes(<any>editField)) {
+                    const error = new PlebbitError("ERR_SUB_COMMENT_EDIT_MOD_AUTHOR_INVALID_FIELD", {
+                        invalidField: editField,
+                        allowedFields: combinedEditFields
+                    });
+                    log(`(${challengeRequestId}): `, String(error));
+                    return error.message;
+                }
+            }
+            await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId));
+            log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEdit.toJSON());
+        } else if (editSignedByOriginalAuthor) {
             for (const editField of Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON()))) {
                 if (!AUTHOR_EDIT_FIELDS.includes(<any>editField)) {
-                    const msg = messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD;
-                    log(`(${challengeRequestId}): `, msg);
-                    return msg;
+                    const error = new PlebbitError("ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD", {
+                        invalidField: editField,
+                        allowedFields: AUTHOR_EDIT_FIELDS
+                    });
+                    log(`(${challengeRequestId}): `, String(error));
+                    return error.message;
                 }
             }
 
             await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId));
             log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEdit.toJSON());
-        } else if (modRole) {
+        } else if (editorModRole) {
             log.trace(
                 `(${challengeRequestId}): `,
-                `${modRole.role} (${editorAddress}) is attempting to CommentEdit ${commentToBeEdited?.cid} with CommentEdit: `,
+                `${editorModRole.role} (${editorAddress}) is attempting to CommentEdit ${commentToBeEdited?.cid} with CommentEdit: `,
                 commentEdit.toJSON()
             );
 
             for (const editField of Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON()))) {
                 if (!MOD_EDIT_FIELDS.includes(<any>editField)) {
-                    const msg = messages.ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD;
-                    log(`(${challengeRequestId}): `, msg);
-                    return msg;
+                    const error = new PlebbitError("ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD", {
+                        invalidField: editField,
+                        allowedFields: AUTHOR_EDIT_FIELDS
+                    });
+                    log(`(${challengeRequestId}): `, String(error));
+                    return error.message;
                 }
             }
 
