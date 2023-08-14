@@ -264,6 +264,27 @@ export async function startSubplebbits(props: {
     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 }
 
+export function mockDefaultOptionsForNodeTests() {
+    // If browser, then test in RPC only
+    // If node, test in local and RPC
+    if (window) {
+        // We're running this code in browser
+        return lodash.pick(mockDefaultOptionsForNodeAndBrowserTests(), "rpc");
+    } else return mockDefaultOptionsForNodeAndBrowserTests();
+}
+
+export function mockDefaultOptionsForNodeAndBrowserTests() {
+    const rpcOptions: PlebbitOptions = { plebbitRpcClientsOptions: ["ws://localhost:39652"] };
+
+    return {
+        rpc: rpcOptions,
+        local: {
+            ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
+            pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`, `http://localhost:42234/api/v0`, `http://localhost:42254/api/v0`]
+        }
+    };
+}
+
 export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubsub = false) {
     const plebbit = await PlebbitIndex({
         ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
