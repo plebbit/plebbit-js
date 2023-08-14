@@ -123,14 +123,13 @@ describe("publishing comments", async () => {
         const signer = await plebbit.createSigner();
         const props = {
             subplebbitAddress: "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
-            timestamp: Date.now() / 1000 ,
+            timestamp: Date.now() / 1000,
             author: { address: signer.address, displayName: "Mock Author - 1690130836.1711266" + Math.random() },
             protocolVersion: "1.0.0",
             content: "Mock content - 1690130836.1711266" + Math.random(),
             title: "Mock Post - 1690130836.1711266" + Math.random()
         };
 
-        
         props.signature = await signComment(props, signer, plebbit);
         const post = await plebbit.createComment(props);
         expect(post.signature).to.deep.equal(props.signature);
@@ -325,6 +324,17 @@ describe(`comment.publishingState`, async () => {
     it(`publishingState is stopped by default`, async () => {
         const comment = await generateMockPost(subplebbitAddress, plebbit);
         expect(comment.publishingState).to.equal("stopped");
+    });
+
+    it(`comment.publishingState stays as stopped after calling comment.update()`, async () => {
+        const sub = await plebbit.getSubplebbit(subplebbitAddress);
+        const commentCid = sub.posts.pages.hot.comments[0].cid;
+        const comment = await plebbit.createComment({ cid: commentCid });
+        expect(comment.publishingState).to.equal("stopped");
+        comment.on("publishingstatechange", () => expect.fail("should not change publishing state"));
+        comment.update();
+        await new Promise((resolve) => comment.once("update", resolve));
+        await new Promise((resolve) => comment.once("update", resolve));
     });
 
     it(`publishing states is in correct order upon publishing a comment with IPFS client (uncached)`, async () => {
