@@ -62,6 +62,7 @@ export declare class PublicationClientsManager extends ClientsManager {
         }>;
     };
     _publication: Publication;
+    _attemptingToResolve: boolean;
     constructor(publication: Publication);
     protected _initIpfsClients(): void;
     protected _initPubsubClients(): void;

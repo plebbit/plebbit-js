@@ -53,6 +53,7 @@ export declare enum messages {
     ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED = "The parent of this publication has been deleted",
     ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD = "CommentEdit includes a field that cannot be used for authors",
     ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD = "CommentEdit includes a field that cannot be used for mods",
+    ERR_SUB_COMMENT_EDIT_MOD_AUTHOR_INVALID_FIELD = "CommentEdit includes a field that cannot be used for both mods and authors",
     ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
     ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED = "The post of this publication has been deleted",
     ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED = "The post of this publication has been removed",
@@ -76,5 +77,6 @@ export declare enum messages {
     ERR_FAILED_TO_IMPORT_IPFS_KEY = "Subplebbit failed to import IPFS key",
     ERR_PUBSUB_FAILED_TO_SUBSCRIBE = "Failed to subscribe on pubsub",
     ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE = "Failed to unsubscribe on pubsub",
-    ERR_PUBSUB_FAILED_TO_PUBLISH = "Failed to publish on pubsub"
+    ERR_PUBSUB_FAILED_TO_PUBLISH = "Failed to publish on pubsub",
+    ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST = "Did not receive response to challenge request in the specified time"
 }

@@ -62,7 +62,6 @@ var Stats = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:stats:gateway:success");
-                        log.trace("Attempting to record gateway (".concat(gatewayUrl, ") success for type (").concat(type, ") that took ").concat(timeElapsedMs, "ms"));
                         countKey = this._getSuccessCountKey(gatewayUrl, type);
                         averageKey = this._getSuccessAverageKey(gatewayUrl, type);
                         return [4 /*yield*/, this._plebbit._storage.getItem(averageKey)];
@@ -95,7 +94,6 @@ var Stats = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:stats:gateway:failure");
-                        log.trace("Attempting to record gateway (".concat(gatewayUrl, ") failure for type (").concat(type, ")"));
                         countKey = this._getFailuresCountKey(gatewayUrl, type);
                         return [4 /*yield*/, this._plebbit._storage.getItem(countKey)];
                     case 1:
@@ -133,7 +131,7 @@ var Stats = /** @class */ (function () {
                     ? this._plebbit.clients.chainProviders[type].urls
                     : Object.keys(this._plebbit.clients[gatewayType]);
                 score = function (gatewayUrl) { return __awaiter(_this, void 0, void 0, function () {
-                    var failureCounts, successCounts, successAverageMs, gatewayScore;
+                    var failureCounts, successCounts, successAverageMs;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
                             case 0: return [4 /*yield*/, this._plebbit._storage.getItem(this._getFailuresCountKey(gatewayUrl, type))];
@@ -145,9 +143,7 @@ var Stats = /** @class */ (function () {
                                 return [4 /*yield*/, this._plebbit._storage.getItem(this._getSuccessAverageKey(gatewayUrl, type))];
                             case 3:
                                 successAverageMs = (_a.sent()) || 0;
-                                gatewayScore = this._gatewayScore(failureCounts, successCounts, successAverageMs);
-                                log.trace("gateway (".concat(gatewayUrl, ") score is (").concat(gatewayScore, ") for type (").concat(type, ")"));
-                                return [2 /*return*/, score];
+                                return [2 /*return*/, this._gatewayScore(failureCounts, successCounts, successAverageMs)];
                         }
                     });
                 }); };

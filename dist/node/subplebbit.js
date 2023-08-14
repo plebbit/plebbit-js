@@ -728,45 +728,70 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.handleCommentEdit = function (commentEditRaw, challengeRequestId) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, commentEdit, commentToBeEdited, editorAddress, modRole, _i, _a, editField, msg, _b, _c, editField, msg, msg, msg;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
+            var log, commentEdit, commentToBeEdited, editSignedByOriginalAuthor, editorModRole, editorAddress, combinedEditFields, _i, _a, editField, error, _b, _c, editField, error, _d, _e, editField, error, msg, msg;
+            return __generator(this, function (_f) {
+                switch (_f.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:handleCommentEdit");
                         return [4 /*yield*/, this.plebbit.createCommentEdit(commentEditRaw)];
                     case 1:
-                        commentEdit = _d.sent();
+                        commentEdit = _f.sent();
                         return [4 /*yield*/, this.dbHandler.queryComment(commentEdit.commentCid, undefined)];
                     case 2:
-                        commentToBeEdited = _d.sent();
+                        commentToBeEdited = _f.sent();
+                        editSignedByOriginalAuthor = commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey;
+                        editorModRole = this.roles && this.roles[commentEdit.author.address];
                         return [4 /*yield*/, (0, util_2.getPlebbitAddressFromPublicKey)(commentEdit.signature.publicKey)];
                     case 3:
-                        editorAddress = _d.sent();
-                        modRole = this.roles && this.roles[commentEdit.author.address];
-                        if (!(commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey)) return [3 /*break*/, 5];
-                        // CommentEdit is signed by original author
+                        editorAddress = _f.sent();
+                        if (!(editSignedByOriginalAuthor && editorModRole)) return [3 /*break*/, 5];
+                        combinedEditFields = __spreadArray(__spreadArray([], comment_edit_1.AUTHOR_EDIT_FIELDS, true), comment_edit_1.MOD_EDIT_FIELDS, true);
                         for (_i = 0, _a = Object.keys((0, util_1.removeKeysWithUndefinedValues)(commentEdit.toJSON())); _i < _a.length; _i++) {
                             editField = _a[_i];
-                            if (!comment_edit_1.AUTHOR_EDIT_FIELDS.includes(editField)) {
-                                msg = errors_1.messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD;
-                                log("(".concat(challengeRequestId, "): "), msg);
-                                return [2 /*return*/, msg];
+                            if (!combinedEditFields.includes(editField)) {
+                                error = new plebbit_error_1.PlebbitError("ERR_SUB_COMMENT_EDIT_MOD_AUTHOR_INVALID_FIELD", {
+                                    invalidField: editField,
+                                    allowedFields: combinedEditFields
+                                });
+                                log("(".concat(challengeRequestId, "): "), String(error));
+                                return [2 /*return*/, error.message];
                             }
                         }
                         return [4 /*yield*/, this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId))];
                     case 4:
-                        _d.sent();
+                        _f.sent();
                         log.trace("(".concat(challengeRequestId, "): "), "Updated comment (".concat(commentEdit.commentCid, ") with CommentEdit: "), commentEdit.toJSON());
-                        return [3 /*break*/, 8];
+                        return [3 /*break*/, 10];
                     case 5:
-                        if (!modRole) return [3 /*break*/, 7];
-                        log.trace("(".concat(challengeRequestId, "): "), "".concat(modRole.role, " (").concat(editorAddress, ") is attempting to CommentEdit ").concat(commentToBeEdited === null || commentToBeEdited === void 0 ? void 0 : commentToBeEdited.cid, " with CommentEdit: "), commentEdit.toJSON());
+                        if (!editSignedByOriginalAuthor) return [3 /*break*/, 7];
                         for (_b = 0, _c = Object.keys((0, util_1.removeKeysWithUndefinedValues)(commentEdit.toJSON())); _b < _c.length; _b++) {
                             editField = _c[_b];
+                            if (!comment_edit_1.AUTHOR_EDIT_FIELDS.includes(editField)) {
+                                error = new plebbit_error_1.PlebbitError("ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD", {
+                                    invalidField: editField,
+                                    allowedFields: comment_edit_1.AUTHOR_EDIT_FIELDS
+                                });
+                                log("(".concat(challengeRequestId, "): "), String(error));
+                                return [2 /*return*/, error.message];
+                            }
+                        }
+                        return [4 /*yield*/, this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId))];
+                    case 6:
+                        _f.sent();
+                        log.trace("(".concat(challengeRequestId, "): "), "Updated comment (".concat(commentEdit.commentCid, ") with CommentEdit: "), commentEdit.toJSON());
+                        return [3 /*break*/, 10];
+                    case 7:
+                        if (!editorModRole) return [3 /*break*/, 9];
+                        log.trace("(".concat(challengeRequestId, "): "), "".concat(editorModRole.role, " (").concat(editorAddress, ") is attempting to CommentEdit ").concat(commentToBeEdited === null || commentToBeEdited === void 0 ? void 0 : commentToBeEdited.cid, " with CommentEdit: "), commentEdit.toJSON());
+                        for (_d = 0, _e = Object.keys((0, util_1.removeKeysWithUndefinedValues)(commentEdit.toJSON())); _d < _e.length; _d++) {
+                            editField = _e[_d];
                             if (!comment_edit_1.MOD_EDIT_FIELDS.includes(editField)) {
-                                msg = errors_1.messages.ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD;
-                                log("(".concat(challengeRequestId, "): "), msg);
-                                return [2 /*return*/, msg];
+                                error = new plebbit_error_1.PlebbitError("ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD", {
+                                    invalidField: editField,
+                                    allowedFields: comment_edit_1.AUTHOR_EDIT_FIELDS
+                                });
+                                log("(".concat(challengeRequestId, "): "), String(error));
+                                return [2 /*return*/, error.message];
                             }
                         }
                         if (typeof commentEdit.locked === "boolean" && commentToBeEdited.depth !== 0) {
@@ -775,14 +800,14 @@ var Subplebbit = /** @class */ (function (_super) {
                             return [2 /*return*/, msg];
                         }
                         return [4 /*yield*/, this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId))];
-                    case 6:
-                        _d.sent();
-                        return [3 /*break*/, 8];
-                    case 7:
+                    case 8:
+                        _f.sent();
+                        return [3 /*break*/, 10];
+                    case 9:
                         msg = "Editor (non-mod) - (".concat(editorAddress, ") attempted to edit a comment (").concat(commentEdit.commentCid, ") without having original author keys.");
                         log("(".concat(challengeRequestId, "): "), msg);
                         return [2 /*return*/, errors_1.messages.ERR_UNAUTHORIZED_COMMENT_EDIT];
-                    case 8: return [2 /*return*/];
+                    case 10: return [2 /*return*/];
                 }
             });
         });

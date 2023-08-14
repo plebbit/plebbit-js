@@ -113,7 +113,6 @@ var client_manager_1 = require("./clients/client-manager");
 var cborg = __importStar(require("cborg"));
 var lodash_1 = __importDefault(require("lodash"));
 var constants_1 = require("./constants");
-var challengeDeadline = 20; // If we didn't receive a challenge within 20 seconds, then retry publishing request
 var Publication = /** @class */ (function (_super) {
     __extends(Publication, _super);
     function Publication(props, plebbit) {
@@ -134,6 +133,7 @@ var Publication = /** @class */ (function (_super) {
             }
             return (_a = _this._plebbit).emit.apply(_a, __spreadArray(["error"], args, false));
         });
+        _this._reattemptPublishingAfterSeconds = 20;
         // public method should be bound
         _this.publishChallengeAnswers = _this.publishChallengeAnswers.bind(_this);
         return _this;
@@ -431,10 +431,18 @@ var Publication = /** @class */ (function (_super) {
                         // Maybe the sub didn't receive the request, or the provider did not relay the challenge from sub for some reason
                         setTimeout(function () {
                             if (_this._pubsubProviders.length > 0 && !_this._receivedChallenge) {
-                                log("Re-publishing publication after ".concat(challengeDeadline, "s of not receiving challenge"));
+                                log("Re-publishing publication after ".concat(_this._reattemptPublishingAfterSeconds, "s of not receiving challenge"));
+                                _this._clientsManager.updatePubsubState("stopped", _this._currentPubsubProvider);
+                                _this._plebbit.stats.recordGatewayFailure(_this._currentPubsubProvider, "pubsub-publish");
+                                _this._plebbit.stats.recordGatewayFailure(_this._currentPubsubProvider, "pubsub-subscribe");
+                                _this.emit("error", new plebbit_error_1.PlebbitError("ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST", {
+                                    pubsubProvider: _this._currentPubsubProvider,
+                                    challengeRequest: _this._challengeRequest,
+                                    reattemptPublishingAfterSeconds: _this._reattemptPublishingAfterSeconds
+                                }));
                                 _this.publish();
                             }
-                        }, challengeDeadline * 1000);
+                        }, this._reattemptPublishingAfterSeconds * 1000);
                         return [2 /*return*/];
                 }
             });

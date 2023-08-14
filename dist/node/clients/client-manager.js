@@ -265,7 +265,7 @@ var PublicationClientsManager = /** @class */ (function (_super) {
     // Resolver methods here
     PublicationClientsManager.prototype.preResolveTextRecord = function (address, txtRecordName, resolvedTextRecord, chain) {
         _super.prototype.preResolveTextRecord.call(this, address, txtRecordName, resolvedTextRecord, chain);
-        if (this._publication.publishingState === "stopped")
+        if (this._publication.publishingState === "stopped" && this._attemptingToResolve)
             this._publication._updatePublishingState("resolving-subplebbit-address");
     };
     PublicationClientsManager.prototype.emitError = function (e) {
@@ -279,9 +279,11 @@ var PublicationClientsManager = /** @class */ (function (_super) {
                     case 0:
                         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
                             (0, util_1.throwWithErrorCode)("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress: subplebbitAddress });
+                        this._attemptingToResolve = true;
                         return [4 /*yield*/, this.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
                     case 1:
                         subIpns = _e.sent();
+                        this._attemptingToResolve = false;
                         (0, assert_1.default)(typeof subIpns === "string");
                         this._publication._updatePublishingState("fetching-subplebbit-ipns");
                         if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 4];

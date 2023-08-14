@@ -64,6 +64,7 @@ var messages;
     messages["ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED"] = "The parent of this publication has been deleted";
     messages["ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD"] = "CommentEdit includes a field that cannot be used for authors";
     messages["ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD"] = "CommentEdit includes a field that cannot be used for mods";
+    messages["ERR_SUB_COMMENT_EDIT_MOD_AUTHOR_INVALID_FIELD"] = "CommentEdit includes a field that cannot be used for both mods and authors";
     messages["ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY"] = "Can't lock replies. Only posts";
     messages["ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED"] = "The post of this publication has been deleted";
     messages["ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED"] = "The post of this publication has been removed";
@@ -91,5 +92,6 @@ var messages;
     messages["ERR_PUBSUB_FAILED_TO_SUBSCRIBE"] = "Failed to subscribe on pubsub";
     messages["ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE"] = "Failed to unsubscribe on pubsub";
     messages["ERR_PUBSUB_FAILED_TO_PUBLISH"] = "Failed to publish on pubsub";
+    messages["ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST"] = "Did not receive response to challenge request in the specified time";
 })(messages || (exports.messages = messages = {}));
 //# sourceMappingURL=errors.js.map

@@ -114,7 +114,8 @@ function getThumbnailUrlOfLink(url, subplebbit, proxyHttpUrl) {
                     plebbitError = new plebbit_error_1.PlebbitError("ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK", {
                         url: url,
                         downloadLimit: options.downloadLimit,
-                        proxyHttpUrl: proxyHttpUrl
+                        proxyHttpUrl: proxyHttpUrl,
+                        error: e_1
                     });
                     log.error(String(plebbitError));
                     subplebbit.emit("error", plebbitError);

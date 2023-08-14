@@ -370,7 +370,7 @@ var BaseClientsManager = /** @class */ (function () {
     };
     BaseClientsManager.prototype.fetchFromMultipleGateways = function (loadOpts, loadType) {
         return __awaiter(this, void 0, void 0, function () {
-            var path, _firstResolve, type, concurrencyLimit, queueLimit, gatewaysSorted, _a, controllers, gatewayPromises, res;
+            var path, _firstResolve, type, concurrencyLimit, queueLimit, gatewaysSorted, _a, controllers, gatewayPromises, res, gatewayToError, i, errorCode, combinedError;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -410,9 +410,16 @@ var BaseClientsManager = /** @class */ (function () {
                             queueLimit.clearQueue();
                             controllers.forEach(function (control) { return control.abort(); });
                             return [2 /*return*/, res];
-                        } //@ts-expect-error
-                        else
-                            throw res[0].value.error;
+                        }
+                        else {
+                            gatewayToError = {};
+                            for (i = 0; i < res.length; i++)
+                                if (res[i]["value"])
+                                    gatewayToError[gatewaysSorted[i]] = res[i]["value"].error;
+                            errorCode = Object.values(gatewayToError)[0].code;
+                            combinedError = new plebbit_error_1.PlebbitError(errorCode, { loadOpts: loadOpts, gatewayToError: gatewayToError });
+                            throw combinedError;
+                        }
                         return [2 /*return*/];
                 }
             });

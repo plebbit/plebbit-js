@@ -23,6 +23,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     private _pubsubProviders;
     private _currentPubsubProvider;
     private _receivedChallenge;
+    private _reattemptPublishingAfterSeconds;
     _clientsManager: PublicationClientsManager | CommentClientsManager;
     _plebbit: Plebbit;
     constructor(props: PublicationType, plebbit: Plebbit);
