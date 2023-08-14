@@ -16,7 +16,7 @@ describe(`Resolving text records`, async () => {
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["viem"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
-        expect(resolvedAuthorAddress).to.equal("12D3KooWCgebdyrXRz4VERrQVpqAchXZ4ZbLum1CGB1V1jquxHnj");
+        expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
     });
 
     it(`Can resolve correctly with just ethers.js`, async () => {
@@ -24,14 +24,14 @@ describe(`Resolving text records`, async () => {
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["ethers.js"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
-        expect(resolvedAuthorAddress).to.equal("12D3KooWCgebdyrXRz4VERrQVpqAchXZ4ZbLum1CGB1V1jquxHnj");
+        expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
     });
     it(`Can resolve correctly with custom chain provider`, async () => {
         const plebbit = await Plebbit({ chainProviders: { eth: { urls: ["https://cloudflare-eth.com/"], chainId: 1 } } }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["https://cloudflare-eth.com/"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
-        expect(resolvedAuthorAddress).to.equal("12D3KooWCgebdyrXRz4VERrQVpqAchXZ4ZbLum1CGB1V1jquxHnj");
+        expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
     });
     it(`Can resolve correctly with viem, ethers.js and a custom chain provider`, async () => {
         const plebbit = await Plebbit({
@@ -40,7 +40,7 @@ describe(`Resolving text records`, async () => {
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["https://cloudflare-eth.com/", "viem", "ethers.js"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
-        expect(resolvedAuthorAddress).to.equal("12D3KooWCgebdyrXRz4VERrQVpqAchXZ4ZbLum1CGB1V1jquxHnj");
+        expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
     });
 });
 
