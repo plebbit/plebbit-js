@@ -12,7 +12,7 @@ if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeF
 
 describe(`Resolving text records`, async () => {
     it(`Can resolve correctly with just viem`, async () => {
-        const plebbit = await Plebbit({ chainProviders: { eth: { urls: ["viem"], chainId: 1 } } }); // Should have viem defined
+        const plebbit = await mockPlebbit({ chainProviders: { eth: { urls: ["viem"], chainId: 1 } } }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["viem"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
@@ -20,21 +20,21 @@ describe(`Resolving text records`, async () => {
     });
 
     it(`Can resolve correctly with just ethers.js`, async () => {
-        const plebbit = await Plebbit({ chainProviders: { eth: { urls: ["ethers.js"], chainId: 1 } } }); // Should have viem defined
+        const plebbit = await mockPlebbit({ chainProviders: { eth: { urls: ["ethers.js"], chainId: 1 } } }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["ethers.js"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
         expect(resolvedAuthorAddress).to.equal("12D3KooWCgebdyrXRz4VERrQVpqAchXZ4ZbLum1CGB1V1jquxHnj");
     });
     it(`Can resolve correctly with custom chain provider`, async () => {
-        const plebbit = await Plebbit({ chainProviders: { eth: { urls: ["https://cloudflare-eth.com/"], chainId: 1 } } }); // Should have viem defined
+        const plebbit = await mockPlebbit({ chainProviders: { eth: { urls: ["https://cloudflare-eth.com/"], chainId: 1 } } }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["https://cloudflare-eth.com/"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
         expect(resolvedAuthorAddress).to.equal("12D3KooWCgebdyrXRz4VERrQVpqAchXZ4ZbLum1CGB1V1jquxHnj");
     });
     it(`Can resolve correctly with viem, ethers.js and a custom chain provider`, async () => {
-        const plebbit = await Plebbit({
+        const plebbit = await mockPlebbit({
             chainProviders: { eth: { urls: ["https://cloudflare-eth.com/", "viem", "ethers.js"], chainId: 1 } }
         }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
@@ -120,7 +120,7 @@ describe(`Vote with authors as domains`, async () => {
 
 describe(`Resolving resiliency`, async () => {
     it(`Resolver retries four times before throwing error`, async () => {
-        const regularPlebbit = await Plebbit();
+        const regularPlebbit = await mockPlebbit();
 
         regularPlebbit.resolver._getChainProvider = regularPlebbit.resolver._resolveViaEthers = () => {
             throw Error("Failed just because");

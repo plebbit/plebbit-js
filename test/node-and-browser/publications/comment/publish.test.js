@@ -101,13 +101,16 @@ describe("publishing comments", async () => {
         await publishWithExpectedResult(post, true);
     });
 
-    it(`publish() can be caught if subplebbit failed to load`, async () => {
+    it(`publish() can be caught if subplebbit failed to load (gateway)`, async () => {
+        // RPC exception
         const downPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:28080", "http://127.0.0.1:28480"] });
         const post = await generateMockPost(subplebbitAddress, downPlebbit);
         post._getSubplebbitCache = () => undefined;
 
         await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY);
     });
+
+    it(`publish() can be caught if subplebbit failed to load (P2P or RPC)`);
 
     it(`comment.publish() can be caught if one of the gateways threw 429 status code`, async () => {
         const subAddress = signers[7].address;
@@ -123,14 +126,13 @@ describe("publishing comments", async () => {
         const signer = await plebbit.createSigner();
         const props = {
             subplebbitAddress: "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
-            timestamp: Date.now() / 1000 ,
+            timestamp: Date.now() / 1000,
             author: { address: signer.address, displayName: "Mock Author - 1690130836.1711266" + Math.random() },
             protocolVersion: "1.0.0",
             content: "Mock content - 1690130836.1711266" + Math.random(),
             title: "Mock Post - 1690130836.1711266" + Math.random()
         };
 
-        
         props.signature = await signComment(props, signer, plebbit);
         const post = await plebbit.createComment(props);
         expect(post.signature).to.deep.equal(props.signature);

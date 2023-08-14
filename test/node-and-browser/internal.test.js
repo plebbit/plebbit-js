@@ -8,7 +8,6 @@ const { expect, assert } = chai;
 const { messages } = require("../../dist/node/errors");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 // TODO rewrite this
 describe("Test util functions", async () => {
@@ -25,7 +24,7 @@ describe("Test util functions", async () => {
             await assert.isRejected(fetch("https://ifconfig.me"));
         });
 
-    describe("loadIpnsAsJson", async () => {
+    describe("loading IPNS", async () => {
         it("Throws if provided with invalid ipns", async () => {
             const gibberishIpns = "12345";
             await assert.isRejected(

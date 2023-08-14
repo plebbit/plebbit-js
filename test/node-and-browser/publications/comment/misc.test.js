@@ -764,6 +764,7 @@ describe(`comment.clients`, async () => {
             });
 
             it(`Correct state of 'new' sort is correct after fetching from responsive and unresponsive gateway `, async () => {
+                // RPC exception
                 const gateways = [
                     "http://localhost:33417", // This gateway will take 10s to respond
                     "http://127.0.0.1:18080" // This one is immediate
