@@ -32,8 +32,6 @@ import { JsonSignature } from "./signer/constants";
 import lodash from "lodash";
 import { subplebbitForPublishingCache } from "./constants";
 
-const challengeDeadline = 20; // If we didn't receive a challenge within 20 seconds, then retry publishing request
-
 class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     // Only publication props
     clients: PublicationClientsManager["clients"];
@@ -68,6 +66,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     private _pubsubProviders: string[];
     private _currentPubsubProvider: string;
     private _receivedChallenge: boolean;
+    private _reattemptPublishingAfterSeconds: number;
     _clientsManager: PublicationClientsManager | CommentClientsManager;
     _plebbit: Plebbit;
 
@@ -82,6 +81,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
         this.publish = this.publish.bind(this);
         this.on("error", (...args) => this._plebbit.emit("error", ...args));
+        this._reattemptPublishingAfterSeconds = 20;
 
         // public method should be bound
         this.publishChallengeAnswers = this.publishChallengeAnswers.bind(this);
@@ -364,10 +364,21 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         // Maybe the sub didn't receive the request, or the provider did not relay the challenge from sub for some reason
         setTimeout(() => {
             if (this._pubsubProviders.length > 0 && !this._receivedChallenge) {
-                log(`Re-publishing publication after ${challengeDeadline}s of not receiving challenge`);
+                log(`Re-publishing publication after ${this._reattemptPublishingAfterSeconds}s of not receiving challenge`);
+                this._clientsManager.updatePubsubState("stopped", this._currentPubsubProvider);
+                this._plebbit.stats.recordGatewayFailure(this._currentPubsubProvider, "pubsub-publish");
+                this._plebbit.stats.recordGatewayFailure(this._currentPubsubProvider, "pubsub-subscribe");
+                this.emit(
+                    "error",
+                    new PlebbitError("ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST", {
+                        pubsubProvider: this._currentPubsubProvider,
+                        challengeRequest: this._challengeRequest,
+                        reattemptPublishingAfterSeconds: this._reattemptPublishingAfterSeconds
+                    })
+                );
                 this.publish();
             }
-        }, challengeDeadline * 1000);
+        }, this._reattemptPublishingAfterSeconds * 1000);
     }
 }
 

@@ -97,5 +97,6 @@ export enum messages {
     // Pubsub errors
     ERR_PUBSUB_FAILED_TO_SUBSCRIBE = "Failed to subscribe on pubsub",
     ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE = "Failed to unsubscribe on pubsub",
-    ERR_PUBSUB_FAILED_TO_PUBLISH = "Failed to publish on pubsub"
+    ERR_PUBSUB_FAILED_TO_PUBLISH = "Failed to publish on pubsub",
+    ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST = "Did not receive response to challenge request in the specified time"
 }
