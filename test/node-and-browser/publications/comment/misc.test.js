@@ -671,6 +671,41 @@ describe(`comment.clients`, async () => {
 
             expect(actualStates).to.deep.equal(expectedStates);
         });
+
+        it(`Correct order of pubsubClients state when provider 1 is not responding and moving on to the other one`, async () => {
+            const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
+            const upPubsubUrl = "http://localhost:15002/api/v0";
+            const plebbit = await mockPlebbit({
+                pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
+            });
+
+            plebbit.clients.pubsubClients[upPubsubUrl]._client = createMockIpfsClient(); // Use mock pubsub to be on the same pubsub as the sub
+
+            const mockPost = await generateMockPost(signers[0].address, plebbit);
+            mockPost._reattemptPublishingAfterSeconds = 5;
+
+            const expectedStates = {
+                [notRespondingPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "stopped", "waiting-challenge", "stopped"],
+                [upPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "stopped", "waiting-challenge", "stopped"]
+            };
+
+            const actualStates = { [notRespondingPubsubUrl]: [], [upPubsubUrl]: [] };
+
+            for (const pubsubUrl of Object.keys(expectedStates))
+                mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
+
+            await Promise.all([
+                publishWithExpectedResult(mockPost, true),
+                new Promise((resolve) =>
+                    mockPost.once("error", (error) => {
+                        expect(error.code).to.equal("ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST");
+                        resolve();
+                    })
+                )
+            ]);
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
     });
 
     describe(`comment.clients.chainProviders`, async () => {
