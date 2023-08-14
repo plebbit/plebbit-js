@@ -26,7 +26,6 @@ export default class Stats {
     async recordGatewaySuccess(gatewayUrl: string, type: StatTypes, timeElapsedMs: number) {
         const log = Logger("plebbit-js:stats:gateway:success");
 
-        log.trace(`Attempting to record gateway (${gatewayUrl}) success for type (${type}) that took ${timeElapsedMs}ms`);
         const countKey = this._getSuccessCountKey(gatewayUrl, type);
         const averageKey = this._getSuccessAverageKey(gatewayUrl, type);
 
@@ -53,8 +52,6 @@ export default class Stats {
 
     async recordGatewayFailure(gatewayUrl: string, type: StatTypes) {
         const log = Logger("plebbit-js:stats:gateway:failure");
-
-        log.trace(`Attempting to record gateway (${gatewayUrl}) failure for type (${type})`);
 
         const countKey = this._getFailuresCountKey(gatewayUrl, type);
 
@@ -95,9 +92,7 @@ export default class Stats {
             const successCounts: number = (await this._plebbit._storage.getItem(this._getSuccessCountKey(gatewayUrl, type))) || 0;
             const successAverageMs: number = (await this._plebbit._storage.getItem(this._getSuccessAverageKey(gatewayUrl, type))) || 0;
 
-            const gatewayScore = this._gatewayScore(failureCounts, successCounts, successAverageMs);
-            log.trace(`gateway (${gatewayUrl}) score is (${gatewayScore}) for type (${type})`);
-            return score;
+            return this._gatewayScore(failureCounts, successCounts, successAverageMs);
         };
 
         const gatewaysSorted = lodash.sortBy(gateways, score);
