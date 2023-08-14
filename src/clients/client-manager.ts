@@ -190,6 +190,7 @@ export class PublicationClientsManager extends ClientsManager {
         chainProviders: Record<Chain, { [chainProviderUrl: string]: GenericChainProviderClient }>;
     };
     _publication: Publication;
+    _attemptingToResolve: boolean;
 
     constructor(publication: Publication) {
         super(publication._plebbit);
@@ -233,7 +234,8 @@ export class PublicationClientsManager extends ClientsManager {
         chain: string
     ): void {
         super.preResolveTextRecord(address, txtRecordName, resolvedTextRecord, chain);
-        if (this._publication.publishingState === "stopped") this._publication._updatePublishingState("resolving-subplebbit-address");
+        if (this._publication.publishingState === "stopped" && this._attemptingToResolve)
+            this._publication._updatePublishingState("resolving-subplebbit-address");
     }
 
     emitError(e: PlebbitError): void {
@@ -244,7 +246,9 @@ export class PublicationClientsManager extends ClientsManager {
         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
             throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
 
+        this._attemptingToResolve = true;
         const subIpns = await this.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
+        this._attemptingToResolve = false;
         assert(typeof subIpns === "string");
 
         this._publication._updatePublishingState("fetching-subplebbit-ipns");
