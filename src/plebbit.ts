@@ -45,6 +45,7 @@ import Storage from "./runtime/node/storage";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import { ClientsManager } from "./clients/client-manager";
 import { subplebbitForPublishingCache } from "./constants";
+import PlebbitRpcClient from "./clients/plebbit-rpc-client";
 import assert from "assert";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
@@ -55,8 +56,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
     };
     resolver: Resolver;
+    plebbitRpcClient?: PlebbitRpcClient;
     ipfsHttpClientsOptions?: IpfsHttpClientOptions[];
     pubsubHttpClientsOptions: IpfsHttpClientOptions[];
+    plebbitRpcClientsOptions?: string[];
     dataPath?: string;
     resolveAuthorAddresses?: boolean;
     chainProviders: { [chainTicker: string]: ChainProvider };
@@ -71,7 +74,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     constructor(options: PlebbitOptions = {}) {
         super();
-        this._pubsubSubscriptions = {};
         const acceptedOptions: (keyof PlebbitOptions)[] = [
             "chainProviders",
             "dataPath",
@@ -79,12 +81,17 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             "ipfsHttpClientsOptions",
             "pubsubHttpClientsOptions",
             "resolveAuthorAddresses",
+            "plebbitRpcClientsOptions",
             "publishInterval",
             "updateInterval",
             "noData"
         ];
         for (const option of Object.keys(options))
             if (!acceptedOptions.includes(<keyof PlebbitOptions>option)) throwWithErrorCode("ERR_PLEBBIT_OPTION_NOT_ACCEPTED", { option });
+
+        if (options.plebbitRpcClientsOptions) this.plebbitRpcClient = new PlebbitRpcClient(this);
+
+        this._pubsubSubscriptions = {};
 
         //@ts-expect-error
         this.clients = {};
@@ -213,11 +220,14 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         this._initResolver(options);
         // Init clients manager
         this._clientsManager = new ClientsManager(this);
+
+        if (this.plebbitRpcClient) await this.plebbitRpcClient.init();
     }
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
             throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
+        if (this.plebbitRpcClient) return this.plebbitRpcClient.getSubplebbit(subplebbitAddress);
         const resolvedSubplebbitAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
         const subplebbitJson: SubplebbitIpfsType = JSON.parse(await this._clientsManager.fetchSubplebbitIpns(resolvedSubplebbitAddress));
         const signatureValidity = await verifySubplebbit(subplebbitJson, this.resolveAuthorAddresses, this._clientsManager, true);
@@ -234,6 +244,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async getComment(cid: string): Promise<Comment> {
         if (!isIPFS.cid(cid)) throwWithErrorCode("ERR_CID_IS_INVALID", `getComment: cid (${cid}) is invalid as a CID`);
+        if (this.plebbitRpcClient) return this.plebbitRpcClient.getComment(cid);
         const commentJson: CommentIpfsType = JSON.parse(await this.fetchCid(cid));
         const signatureValidity = await verifyComment(commentJson, this.resolveAuthorAddresses, this._clientsManager, true);
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { cid, signatureValidity });
@@ -298,6 +309,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async createSubplebbit(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType = {}): Promise<Subplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
+        if (this.plebbitRpcClient) return this.plebbitRpcClient.createSubplebbit(options);
         const canRunSub = this._canRunSub();
 
         const localSub = async () => {
@@ -373,13 +385,15 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     async listSubplebbits(): Promise<string[]> {
+        if (this.plebbitRpcClient) return this.plebbitRpcClient.listSubplebbits();
         const canRunSub = this._canRunSub();
         if (!canRunSub || !this.dataPath) return [];
         return nativeFunctions.listSubplebbits(this.dataPath);
     }
 
     async fetchCid(cid: string) {
-        return this._clientsManager.fetchCid(cid);
+        if (this.plebbitRpcClient) return this.plebbitRpcClient.fetchCid(cid);
+        else return this._clientsManager.fetchCid(cid);
     }
 
     // Used to pre-subscribe so publishing on pubsub would be faster

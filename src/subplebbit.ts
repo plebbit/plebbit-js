@@ -491,7 +491,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._updateInterval = clearTimeout(this._updateInterval);
         this._loadingOperation?.stop();
         this._setUpdatingState("stopped");
-        if (this._sync) {
+        if (this.plebbit.plebbitRpcClient) {
+            await this.plebbit.plebbitRpcClient.stopSubplebbit(this.address);
+        } else if (this._sync) {
             await this._clientsManager
                 .getDefaultPubsub()
                 ._client.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
@@ -1390,6 +1392,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     async start() {
         const log = Logger("plebbit-js:subplebbit:start");
 
+        if (this.plebbit.plebbitRpcClient) return this.plebbit.plebbitRpcClient.startSubplebbit(this.address);
         if (!this.signer?.address) throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED");
         if (!this._clientsManager.getDefaultIpfs())
             throwWithErrorCode("ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE", { ipfsHttpClientOptions: this.plebbit.ipfsHttpClientsOptions });

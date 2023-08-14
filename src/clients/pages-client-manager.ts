@@ -112,7 +112,13 @@ export class BasePagesClientsManager extends BaseClientsManager {
     }
 
     async fetchPage(pageCid: string): Promise<PageIpfs> {
-        if (this._defaultIpfsProviderUrl) {
+        // THIS IS WRONG, it should use fetchSubplebbitPage or fetchCommentPage
+        if (this._plebbit.plebbitRpcClient) {
+            // Updating the states should be part of the events
+            const page: PageIpfs = JSON.parse(await this._plebbit.plebbitRpcClient.fetchCid(pageCid));
+            if (page.nextCid) this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
+            return page;
+        } else if (this._defaultIpfsProviderUrl) {
             const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(pageCid);
             this.updateIpfsState("fetching-ipfs", sortTypes);
             const page: PageIpfs = JSON.parse(await this._fetchCidP2P(pageCid));

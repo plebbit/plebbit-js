@@ -27,6 +27,7 @@ export interface PlebbitOptions {
     ipfsGatewayUrls?: string[];
     ipfsHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
     pubsubHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
+    plebbitRpcClientsOptions?: string[]; // Optional websocket URLs of plebbit RPC servers, required to run a sub from a browser/electron/webview
     dataPath?: string;
     chainProviders?: { [chainTicker: string]: ChainProvider };
     resolveAuthorAddresses?: boolean;
