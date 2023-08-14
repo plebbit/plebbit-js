@@ -141,7 +141,7 @@ describe("createComment", async () => {
     it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a post`, async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-        const originalPost = subplebbit.posts.pages.hot.comments[0];
+        const originalPost = subplebbit.posts.pages.hot.comments[5];
 
         const recreatedPost = await plebbit.createComment({ cid: originalPost.cid });
 

@@ -16,7 +16,6 @@ const { default: waitUntil } = require("async-wait-until");
 const lodash = require("lodash");
 
 const subplebbitAddress = signers[0].address;
-const updateInterval = 300;
 const roles = [
     { role: "owner", signer: signers[1] },
     { role: "admin", signer: signers[2] },
@@ -134,6 +133,19 @@ describe(`Removing post`, async () => {
             expect(postInPage.removed).to.equal(false);
             expect(postInPage.reason).to.equal("To unremove a post");
         }
+    });
+
+    it(`Mods can remove their own comments`, async () => {
+        const post = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer }, false);
+
+        const removeEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: post.subplebbitAddress,
+            commentCid: post.cid,
+            reason: "For mods to remove their own post",
+            removed: true,
+            signer: roles[2].signer
+        });
+        await publishWithExpectedResult(removeEdit, true);
     });
 });
 
