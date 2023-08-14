@@ -331,10 +331,13 @@ describe(`comment.publishingState`, async () => {
         const commentCid = sub.posts.pages.hot.comments[0].cid;
         const comment = await plebbit.createComment({ cid: commentCid });
         expect(comment.publishingState).to.equal("stopped");
-        comment.on("publishingstatechange", () => expect.fail("should not change publishing state"));
+        comment.on("publishingstatechange", (newState) => {
+            if (newState !== "stopped") expect.fail("Should not change publishing state");
+        });
         comment.update();
         await new Promise((resolve) => comment.once("update", resolve));
         await new Promise((resolve) => comment.once("update", resolve));
+        await comment.stop();
     });
 
     it(`publishing states is in correct order upon publishing a comment with IPFS client (uncached)`, async () => {
