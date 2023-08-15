@@ -83,13 +83,13 @@ var Vote = /** @class */ (function (_super) {
         return __assign(__assign({}, _super.prototype.toJSONPubsubMessagePublication.call(this)), { commentCid: this.commentCid, vote: this.vote });
     };
     Vote.prototype.toJSON = function () {
-        return this.toJSONPubsubMessagePublication();
+        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { shortSubplebbitAddress: this.shortSubplebbitAddress, author: this.author.toJSON() });
     };
     Vote.prototype.getType = function () {
         return "vote";
     };
     Vote.prototype.toJSONForDb = function (challengeRequestId) {
-        return __assign(__assign({}, this.toJSON()), { authorAddress: this.author.address, challengeRequestId: challengeRequestId });
+        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { authorAddress: this.author.address, challengeRequestId: challengeRequestId });
     };
     Vote.prototype._validateSignature = function () {
         return __awaiter(this, void 0, void 0, function () {

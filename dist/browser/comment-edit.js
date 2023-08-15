@@ -130,10 +130,10 @@ var CommentEdit = /** @class */ (function (_super) {
         return __assign(__assign({}, _super.prototype.toJSONPubsubMessagePublication.call(this)), { commentCid: this.commentCid, content: this.content, reason: this.reason, deleted: this.deleted, flair: this.flair, spoiler: this.spoiler, pinned: this.pinned, locked: this.locked, removed: this.removed, commentAuthor: this.commentAuthor });
     };
     CommentEdit.prototype.toJSON = function () {
-        return this.toJSONPubsubMessagePublication();
+        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { shortSubplebbitAddress: this.shortSubplebbitAddress, author: this.author.toJSON() });
     };
     CommentEdit.prototype.toJSONForDb = function (challengeRequestId) {
-        return __assign(__assign({}, this.toJSON()), { author: this.author.toJSONIpfs(), authorAddress: this.author.address, challengeRequestId: challengeRequestId });
+        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { author: this.author.toJSONIpfs(), authorAddress: this.author.address, challengeRequestId: challengeRequestId });
     };
     CommentEdit.prototype.getType = function () {
         return "commentedit";

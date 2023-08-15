@@ -192,7 +192,7 @@ var Comment = /** @class */ (function (_super) {
                 lastChildCid: this.lastChildCid,
                 lastReplyTimestamp: this.lastReplyTimestamp
             }
-            : {})), { shortSubplebbitAddress: this.shortSubplebbitAddress });
+            : {})), { shortSubplebbitAddress: this.shortSubplebbitAddress, author: this.author.toJSON() });
     };
     Comment.prototype.toJSONPagesIpfs = function (commentUpdate) {
         (0, assert_1.default)(this.cid && this.postCid);
