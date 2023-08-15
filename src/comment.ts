@@ -202,7 +202,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                       lastReplyTimestamp: this.lastReplyTimestamp
                   }
                 : {}),
-            shortSubplebbitAddress: this.shortSubplebbitAddress
+            shortSubplebbitAddress: this.shortSubplebbitAddress,
+            author: this.author.toJSON()
         };
     }
 

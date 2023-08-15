@@ -48,7 +48,6 @@ export const AUTHOR_EDIT_FIELDS: (keyof AuthorCommentEdit)[] = [
 
 export class CommentEdit extends Publication implements CommentEditType {
     commentCid: string;
-    shortCid: string;
     content?: string;
     reason?: string;
     deleted?: boolean;
@@ -97,12 +96,16 @@ export class CommentEdit extends Publication implements CommentEditType {
     }
 
     toJSON() {
-        return this.toJSONPubsubMessagePublication();
+        return {
+            ...this.toJSONPubsubMessagePublication(),
+            shortSubplebbitAddress: this.shortSubplebbitAddress,
+            author: this.author.toJSON()
+        };
     }
 
     toJSONForDb(challengeRequestId: ChallengeRequestMessage["challengeRequestId"]): CommentEditsTableRowInsert {
         return {
-            ...this.toJSON(),
+            ...this.toJSONPubsubMessagePublication(),
             author: this.author.toJSONIpfs(),
             authorAddress: this.author.address,
             challengeRequestId: challengeRequestId
