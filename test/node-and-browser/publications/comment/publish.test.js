@@ -44,6 +44,24 @@ describe("publishing comments", async () => {
         await waitTillCommentIsInParentPages(post, plebbit, { link });
     });
 
+    it(`comment.author.shortAddress is defined throughout publishing`, async () => {
+        const post = await generateMockPost(subplebbitAddress, plebbit, false);
+        expect(post.author.shortAddress).to.be.a("string").with.length.above(0);
+        expect(JSON.parse(JSON.stringify(post)).author.shortAddress)
+            .to.be.a("string")
+            .with.length.above(0);
+        await publishWithExpectedResult(post, true);
+        expect(JSON.parse(JSON.stringify(post)).author.shortAddress)
+            .to.be.a("string")
+            .with.length.above(0);
+        await post.update();
+        await new Promise((resolve) => post.once("update", resolve));
+        expect(JSON.parse(JSON.stringify(post)).author.shortAddress)
+            .to.be.a("string")
+            .with.length.above(0);
+        await post.stop();
+    });
+
     it(`Can publish a post with author.avatar. Can also validate it after publishing`, async () => {
         const commentProps = {
             title: "Random " + Math.random(),
