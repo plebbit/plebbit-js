@@ -35,7 +35,7 @@ import { Plebbit } from "../../plebbit";
 import sumBy from "lodash/sumBy";
 import lodash from "lodash";
 
-import * as lockfile from "proper-lockfile";
+import * as lockfile from "@plebbit/proper-lockfile";
 import { PageOptions } from "../../sort-handler";
 
 const TABLES = Object.freeze({
