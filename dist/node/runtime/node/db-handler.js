@@ -94,7 +94,7 @@ var util_2 = require("./util");
 var version_1 = __importDefault(require("../../version"));
 var sumBy_1 = __importDefault(require("lodash/sumBy"));
 var lodash_1 = __importDefault(require("lodash"));
-var lockfile = __importStar(require("proper-lockfile"));
+var lockfile = __importStar(require("@plebbit/proper-lockfile"));
 var TABLES = Object.freeze({
     COMMENTS: "comments",
     COMMENT_UPDATES: "commentUpdates",
