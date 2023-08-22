@@ -440,6 +440,35 @@ describe(`Migration to a new IPFS repo`, async () => {
         );
         expect(ipnsLoaded.cid).to.equal(postFromPage.cid); // Make sure it was loaded correctly
     });
+
+    it(`Comments' commentUpdate IPNS is republished after expiring`, async () => {
+        const plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        const sub = await createMockSub({}, plebbit);
+        sub._commentUpdateIpnsLifetimeSeconds = 2; // Republish IPNS every 2 seconds
+        await sub.start();
+        await new Promise((resolve) => sub.once("update", resolve));
+        const post = await publishRandomPost(sub.address, plebbit, {}, false);
+
+        await post.update();
+
+        const updatedAtArray = [];
+
+        await new Promise((resolve) => {
+            post.on("update", () => {
+                updatedAtArray.push(post.updatedAt);
+                if (updatedAtArray.length === 8) {
+                    resolve();
+                }
+            });
+        });
+        await sub.stop();
+        await post.stop();
+
+        const bufferSeconds = 1;
+        for (let i = 0; i < updatedAtArray.length - 1; i++)
+            if (updatedAtArray[i + 1] - updatedAtArray[i] > sub._commentUpdateIpnsLifetimeSeconds + bufferSeconds)
+                expect.fail(`Sub should be publishing a new comment update every ${sub._commentUpdateIpnsLifetimeSeconds}`);
+    });
 });
 
 describe(`subplebbit.clients (Local)`, async () => {
