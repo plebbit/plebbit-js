@@ -612,9 +612,9 @@ var DbHandler = /** @class */ (function () {
                                             return [4 /*yield*/, createTableFunctions[i].bind(this)(table)];
                                         case 2:
                                             _a.sent();
-                                            return [3 /*break*/, 12];
+                                            return [3 /*break*/, 9];
                                         case 3:
-                                            if (!(tableExists && needToMigrate)) return [3 /*break*/, 12];
+                                            if (!(tableExists && needToMigrate)) return [3 /*break*/, 9];
                                             log("Migrating table ".concat(table, " to new schema"));
                                             return [4 /*yield*/, this._knex.raw("PRAGMA foreign_keys = OFF")];
                                         case 4:
@@ -623,27 +623,17 @@ var DbHandler = /** @class */ (function () {
                                             return [4 /*yield*/, createTableFunctions[i].bind(this)(tempTableName)];
                                         case 5:
                                             _a.sent();
-                                            if (!(table.startsWith("challenge") && priorDbVersion <= 6)) return [3 /*break*/, 8];
-                                            // Skip copying challenge tables if current db version is 6 or lower
-                                            return [4 /*yield*/, this._knex.schema.dropTable(table)];
+                                            return [4 /*yield*/, this._copyTable(table, tempTableName)];
                                         case 6:
-                                            // Skip copying challenge tables if current db version is 6 or lower
                                             _a.sent();
-                                            return [4 /*yield*/, this._knex.schema.renameTable(tempTableName, table)];
+                                            return [4 /*yield*/, this._knex.schema.dropTable(table)];
                                         case 7:
                                             _a.sent();
-                                            return [3 /*break*/, 12];
-                                        case 8: return [4 /*yield*/, this._copyTable(table, tempTableName)];
-                                        case 9:
-                                            _a.sent();
-                                            return [4 /*yield*/, this._knex.schema.dropTable(table)];
-                                        case 10:
-                                            _a.sent();
                                             return [4 /*yield*/, this._knex.schema.renameTable(tempTableName, table)];
-                                        case 11:
+                                        case 8:
                                             _a.sent();
-                                            _a.label = 12;
-                                        case 12: return [2 /*return*/];
+                                            _a.label = 9;
+                                        case 9: return [2 /*return*/];
                                     }
                                 });
                             }); }))];
@@ -999,9 +989,9 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.queryCommentsToBeUpdated = function (ipnsKeyNames, trx) {
+    DbHandler.prototype.queryCommentsToBeUpdated = function (ipnsKeyNames, ipnsLifetimeSeconds, trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var allComments, criteriaOneTwoThree, lastUpdatedAtWithBuffer, criteriaFour, comments, parents, _a, _b, authorComments, uniqComments;
+            var allComments, ipnsBufferSeconds, criteriaOneTwoThree, lastUpdatedAtWithBuffer, criteriaFour, comments, parents, _a, _b, authorComments, uniqComments;
             var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
@@ -1012,11 +1002,14 @@ var DbHandler = /** @class */ (function () {
                         allComments = _c.sent();
                         this._needToUpdateCommentUpdates = false;
                         return [2 /*return*/, allComments];
-                    case 2: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
-                            .select("".concat(TABLES.COMMENTS, ".*"))
-                            .leftJoin(TABLES.COMMENT_UPDATES, "".concat(TABLES.COMMENTS, ".cid"), "".concat(TABLES.COMMENT_UPDATES, ".cid"))
-                            .whereNull("".concat(TABLES.COMMENT_UPDATES, ".updatedAt"))
-                            .orWhereNotIn("ipnsKeyName", ipnsKeyNames)];
+                    case 2:
+                        ipnsBufferSeconds = ipnsLifetimeSeconds * 0.01;
+                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
+                                .select("".concat(TABLES.COMMENTS, ".*"))
+                                .leftJoin(TABLES.COMMENT_UPDATES, "".concat(TABLES.COMMENTS, ".cid"), "".concat(TABLES.COMMENT_UPDATES, ".cid"))
+                                .whereNull("".concat(TABLES.COMMENT_UPDATES, ".updatedAt"))
+                                .orWhereNotIn("ipnsKeyName", ipnsKeyNames)
+                                .orWhere("".concat(TABLES.COMMENT_UPDATES, ".updatedAt"), "<=", (0, util_1.timestamp)() + ipnsBufferSeconds - ipnsLifetimeSeconds)];
                     case 3:
                         criteriaOneTwoThree = _c.sent();
                         lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");

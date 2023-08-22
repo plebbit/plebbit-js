@@ -134,6 +134,7 @@ var Subplebbit = /** @class */ (function (_super) {
         _this._setStartedState("stopped");
         _this._setUpdatingState("stopped");
         _this._sync = false;
+        _this._commentUpdateIpnsLifetimeSeconds = 8640000; // 100 days, arbitrary number
         // these functions might get separated from their `this` when used
         _this.start = _this.start.bind(_this);
         _this.update = _this.update.bind(_this);
@@ -1275,7 +1276,7 @@ var Subplebbit = /** @class */ (function (_super) {
                             ])];
                     case 15:
                         _k.sent();
-                        log.trace("(".concat(decryptedRequest.challengeRequestId, "): "), "Published ".concat(challengeMessage.type, " over pubsub: "), lodash_1.default.omit(toSignChallenge, ["encryptedChallenges"]));
+                        log("(".concat(decryptedRequest.challengeRequestId, "): "), "Published ".concat(challengeMessage.type, " over pubsub: "), lodash_1.default.omit(toSignChallenge, ["encryptedChallenges"]));
                         this._clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
                         this.emit("challengemessage", __assign(__assign({}, challengeMessage), { challenges: providedChallenges }));
                         _k.label = 16;
@@ -1506,7 +1507,8 @@ var Subplebbit = /** @class */ (function (_super) {
                         file = _a.sent();
                         return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
                                 key: signerRaw.ipnsKeyName,
-                                allowOffline: true
+                                allowOffline: true,
+                                lifetime: "".concat(this._commentUpdateIpnsLifetimeSeconds, "s")
                             })];
                     case 4:
                         _a.sent();
@@ -1698,7 +1700,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.dbHandler.createTransaction("_updateCommentsThatNeedToBeUpdated")];
                     case 1:
                         trx = _c.sent();
-                        return [4 /*yield*/, this.dbHandler.queryCommentsToBeUpdated(this._ipfsNodeIpnsKeyNames, trx)];
+                        return [4 /*yield*/, this.dbHandler.queryCommentsToBeUpdated(this._ipfsNodeIpnsKeyNames, this._commentUpdateIpnsLifetimeSeconds, trx)];
                     case 2:
                         commentsToUpdate = _c.sent();
                         return [4 /*yield*/, this.dbHandler.commitTransaction("_updateCommentsThatNeedToBeUpdated")];

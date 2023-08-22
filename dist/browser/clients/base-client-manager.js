@@ -493,12 +493,10 @@ var BaseClientsManager = /** @class */ (function () {
     // Resolver methods here
     BaseClientsManager.prototype._getCachedTextRecord = function (address, txtRecord) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, resolveCache, resolvedTimestamp, stale;
+            var resolveCache, resolvedTimestamp, stale;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:client-manager:resolveTextRecord");
-                        return [4 /*yield*/, this._plebbit._storage.getItem("".concat(address, "_").concat(txtRecord))];
+                    case 0: return [4 /*yield*/, this._plebbit._storage.getItem("".concat(address, "_").concat(txtRecord))];
                     case 1:
                         resolveCache = _a.sent();
                         if (!(typeof resolveCache === "string")) return [3 /*break*/, 3];
@@ -507,7 +505,6 @@ var BaseClientsManager = /** @class */ (function () {
                         resolvedTimestamp = _a.sent();
                         (0, assert_1.default)(typeof resolvedTimestamp === "number", "Cache of address (".concat(address, ") txt record (").concat(txtRecord, ") has no timestamp"));
                         stale = (0, util_1.timestamp)() - resolvedTimestamp > 3600;
-                        log.trace("Retrieved cache of address (".concat(address, ") text record (").concat(txtRecord, "):"), { stale: stale, resolveCache: resolveCache });
                         return [2 /*return*/, { stale: stale, resolveCache: resolveCache }];
                     case 3: return [2 /*return*/, undefined];
                 }
