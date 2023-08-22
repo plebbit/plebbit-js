@@ -567,7 +567,7 @@ export class DbHandler {
         return parents;
     }
 
-    async queryCommentsToBeUpdated(ipnsKeyNames: string[], trx?: Transaction): Promise<CommentsTableRow[]> {
+    async queryCommentsToBeUpdated(ipnsKeyNames: string[], ipnsLifetimeSeconds: number, trx?: Transaction): Promise<CommentsTableRow[]> {
         if (this._needToUpdateCommentUpdates) {
             const allComments = await this._baseTransaction(trx)(TABLES.COMMENTS);
             this._needToUpdateCommentUpdates = false;
@@ -579,16 +579,25 @@ export class DbHandler {
         // 3 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit OR
 
         // 4 - Comments that new votes, CommentEdit or other comments were published under them
+        // 5 - CommentUpdate IPNS has expired (timestamp() >= updatedAt + lifetime + 100)
 
         // After retrieving all comments with any of criteria above, also add their parents to the list to update
 
         // Also add all comments of each author to the list
 
+        // updatedAt + ipnsLifetimeSeconds = expiry
+        // timestamp() > expiry - buffer => we should update the IPNS
+        // timestamp() + buffer > updatedAt + ipnsLifetimeSeconds
+        // timestamp() + buffer - ipnsLifetimeSeconds > updatedAt
+
+        const ipnsBufferSeconds = ipnsLifetimeSeconds * 0.01;
+
         const criteriaOneTwoThree: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
             .leftJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
-            .orWhereNotIn("ipnsKeyName", ipnsKeyNames);
+            .orWhereNotIn("ipnsKeyName", ipnsKeyNames)
+            .orWhere(`${TABLES.COMMENT_UPDATES}.updatedAt`, "<=", timestamp() + ipnsBufferSeconds - ipnsLifetimeSeconds);
         const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
         const criteriaFour: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)

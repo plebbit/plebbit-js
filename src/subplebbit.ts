@@ -133,6 +133,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private _ipfsNodeIpnsKeyNames: string[];
     private _subplebbitUpdateTrigger: boolean;
     private _loadingOperation: RetryOperation;
+    private _commentUpdateIpnsLifetimeSeconds: number;
     _clientsManager: SubplebbitClientsManager;
 
     constructor(plebbit: Plebbit) {
@@ -144,6 +145,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._setStartedState("stopped");
         this._setUpdatingState("stopped");
         this._sync = false;
+        this._commentUpdateIpnsLifetimeSeconds = 8640000; // 100 days, arbitrary number
 
         // these functions might get separated from their `this` when used
         this.start = this.start.bind(this);
@@ -1224,7 +1226,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(options));
         await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: signerRaw.ipnsKeyName,
-            allowOffline: true
+            allowOffline: true,
+            lifetime: `${this._commentUpdateIpnsLifetimeSeconds}s`
         });
     }
 
@@ -1326,7 +1329,11 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const log = Logger(`plebbit-js:subplebbit:_updateCommentsThatNeedToBeUpdated`);
 
         const trx = await this.dbHandler.createTransaction("_updateCommentsThatNeedToBeUpdated");
-        const commentsToUpdate = await this.dbHandler!.queryCommentsToBeUpdated(this._ipfsNodeIpnsKeyNames, trx);
+        const commentsToUpdate = await this.dbHandler!.queryCommentsToBeUpdated(
+            this._ipfsNodeIpnsKeyNames,
+            this._commentUpdateIpnsLifetimeSeconds,
+            trx
+        );
         await this.dbHandler.commitTransaction("_updateCommentsThatNeedToBeUpdated");
         if (commentsToUpdate.length === 0) return;
 
