@@ -664,32 +664,43 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype._copyTable = function (srcTable, dstTable) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, dstTableColumns, _a, _b, srcRecords, srcRecordFiltered, _i, srcRecordFiltered_1, srcRecord;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var log, dstTableColumns, _a, _b, srcRecords, srcRecordFiltered, _i, srcRecordFiltered_1, srcRecord, _c, _d, srcRecordKey, _e, srcRecordFiltered_2, srcRecord;
+            return __generator(this, function (_f) {
+                switch (_f.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
                         _b = (_a = Object).keys;
                         return [4 /*yield*/, this._knex(dstTable).columnInfo()];
                     case 1:
-                        dstTableColumns = _b.apply(_a, [_c.sent()]);
+                        dstTableColumns = _b.apply(_a, [_f.sent()]);
                         return [4 /*yield*/, this._knex(srcTable).select("*")];
                     case 2:
-                        srcRecords = _c.sent();
+                        srcRecords = _f.sent();
                         if (!(srcRecords.length > 0)) return [3 /*break*/, 6];
                         log("Attempting to copy ".concat(srcRecords.length, " ").concat(srcTable));
                         srcRecordFiltered = srcRecords.map(function (record) { return lodash_1.default.pick(record, dstTableColumns); });
-                        _i = 0, srcRecordFiltered_1 = srcRecordFiltered;
-                        _c.label = 3;
+                        // Need to make sure that array fields are json strings
+                        for (_i = 0, srcRecordFiltered_1 = srcRecordFiltered; _i < srcRecordFiltered_1.length; _i++) {
+                            srcRecord = srcRecordFiltered_1[_i];
+                            for (_c = 0, _d = Object.keys(srcRecord); _c < _d.length; _c++) {
+                                srcRecordKey = _d[_c];
+                                if (Array.isArray(srcRecord[srcRecordKey])) {
+                                    srcRecord[srcRecordKey] = JSON.stringify(srcRecord[srcRecordKey]);
+                                    (0, assert_1.default)(srcRecord[srcRecordKey] !== "[object Object]", "DB value shouldn't be [object Object]");
+                                }
+                            }
+                        }
+                        _e = 0, srcRecordFiltered_2 = srcRecordFiltered;
+                        _f.label = 3;
                     case 3:
-                        if (!(_i < srcRecordFiltered_1.length)) return [3 /*break*/, 6];
-                        srcRecord = srcRecordFiltered_1[_i];
+                        if (!(_e < srcRecordFiltered_2.length)) return [3 /*break*/, 6];
+                        srcRecord = srcRecordFiltered_2[_e];
                         return [4 /*yield*/, this._knex(dstTable).insert(srcRecord)];
                     case 4:
-                        _c.sent();
-                        _c.label = 5;
+                        _f.sent();
+                        _f.label = 5;
                     case 5:
-                        _i++;
+                        _e++;
                         return [3 /*break*/, 3];
                     case 6:
                         log("copied table ".concat(srcTable, " to table ").concat(dstTable));
