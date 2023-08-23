@@ -11,11 +11,6 @@ const { mockPlebbit, publishRandomReply, publishRandomPost } = require("../../di
 
 const plebbitVersion = require("../../dist/node/version");
 
-const databases = [
-    { version: 5, address: "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR" },
-    { version: 6, address: "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR" },
-    { version: 8, address: "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR" }
-];
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const plebbitOptions = {
@@ -25,12 +20,26 @@ const plebbitOptions = {
 };
 console.log(`PlebbitOptions for db.subplebbit.test.js`, plebbitOptions);
 
-const copyDbToDataPath = async (databaseObj, plebbit) => {
-    const dbPath = path.join(process.cwd(), "test", "fixtures", "subplebbits_dbs", `version_${databaseObj.version}`, databaseObj.address);
+const getDatabasesToMigrate = () => {
+    const dbRootPath = path.join(process.cwd(), "test", "fixtures", "subplebbits_dbs");
+    const versions = fs.readdirSync(dbRootPath); // version_6, version_7, version_8 etc
+    const databasesToMigrate = []; // {version: number; path: string; address: string}[]
 
-    const subAddress = path.basename(dbPath);
-    const newPath = path.join(plebbit.dataPath, "subplebbits", subAddress);
-    await fs.promises.cp(dbPath, newPath);
+    for (const version of versions) {
+        const databases = fs.readdirSync(path.join(dbRootPath, version)); // Would give a list of databases
+
+        for (const database of databases) {
+            const fullDbPath = path.join(dbRootPath, version, database);
+            const versionNumberParsed = parseInt(version.replace(/[^\d.]/g, ""));
+            databasesToMigrate.push({ path: fullDbPath, version: versionNumberParsed, address: database });
+        }
+    }
+    return databasesToMigrate;
+};
+
+const copyDbToDataPath = async (databaseObj, plebbit) => {
+    const newPath = path.join(plebbit.dataPath, "subplebbits", databaseObj.address);
+    await fs.promises.cp(databaseObj.path, newPath);
 };
 describe(`DB importing`, async () => {
     let plebbit;
@@ -40,26 +49,30 @@ describe(`DB importing`, async () => {
     });
 
     it(`Subplebbit will show up in listSubplebbits if its db was copied to datapath/subplebbits`, async () => {
-        await copyDbToDataPath(databases[0], plebbit);
+        const databasesToMigrate = getDatabasesToMigrate();
+        await copyDbToDataPath(databasesToMigrate[0], plebbit);
         const listedSubs = await plebbit.listSubplebbits();
-        expect(listedSubs).to.include(databases[0].address);
+        expect(listedSubs).to.include(databasesToMigrate[0].address);
     });
 });
 
 describe("DB Migration", () => {
-    databases.map((database) =>
-        it(`Can migrate from DB version ${database.version} to ${plebbitVersion.default.DB_VERSION}`, async () => {
+    const databasesToMigrate = getDatabasesToMigrate();
+
+    databasesToMigrate.map((databaseInfo) =>
+        it(`Can migrate from DB version ${databaseInfo.version} to ${plebbitVersion.default.DB_VERSION} - address ( ${databaseInfo.address})`, async () => {
             // Once we start the sub, it's gonna attempt to migrate to the latest DB version
 
             const plebbit = await mockPlebbit({ ...plebbitOptions, dataPath: tempy.directory() });
 
             console.log(
-                `We're using datapath (${plebbit.dataPath}) For testing migration from db version (${database.version}) to ${plebbitVersion.default.DB_VERSION}`
+                `We're using datapath (${plebbit.dataPath}) For testing migration from db version (${databaseInfo.version}) to ${plebbitVersion.default.DB_VERSION}`
             );
-            await copyDbToDataPath(database, plebbit);
+            await copyDbToDataPath(databaseInfo, plebbit);
 
-            const subplebbit = await plebbit.createSubplebbit({ address: database.address });
+            const subplebbit = await plebbit.createSubplebbit({ address: databaseInfo.address });
 
+            // TODO it should go through full challenge exchange
             subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
 
             await assert.isFulfilled(subplebbit.start());
