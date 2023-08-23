@@ -411,6 +411,12 @@ export class DbHandler {
             log(`Attempting to copy ${srcRecords.length} ${srcTable}`);
             // Remove fields that are not in dst table. Will prevent errors when migration from db version 2 to 3
             const srcRecordFiltered = srcRecords.map((record) => lodash.pick(record, dstTableColumns));
+            // Need to make sure that array fields are json strings
+            for (const srcRecord of srcRecordFiltered)
+                for (const srcRecordKey of Object.keys(srcRecord))
+                    if (Array.isArray(srcRecordFiltered[srcRecordKey]))
+                        srcRecordFiltered[srcRecordKey] = JSON.stringify(srcRecordFiltered[srcRecordKey]);
+
             // Have to use a for loop because if I inserted them as a whole it throw a "UNIQUE constraint failed: comments6.signature"
             // Probably can be fixed but not worth the time
             for (const srcRecord of srcRecordFiltered) await this._knex(dstTable).insert(srcRecord);
