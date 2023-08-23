@@ -414,8 +414,10 @@ export class DbHandler {
             // Need to make sure that array fields are json strings
             for (const srcRecord of srcRecordFiltered)
                 for (const srcRecordKey of Object.keys(srcRecord))
-                    if (Array.isArray(srcRecordFiltered[srcRecordKey]))
-                        srcRecordFiltered[srcRecordKey] = JSON.stringify(srcRecordFiltered[srcRecordKey]);
+                    if (Array.isArray(srcRecord[srcRecordKey])) {
+                        srcRecord[srcRecordKey] = JSON.stringify(srcRecord[srcRecordKey]);
+                        assert(srcRecord[srcRecordKey] !== "[object Object]", "DB value shouldn't be [object Object]");
+                    }
 
             // Have to use a for loop because if I inserted them as a whole it throw a "UNIQUE constraint failed: comments6.signature"
             // Probably can be fixed but not worth the time
