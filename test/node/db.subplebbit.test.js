@@ -7,7 +7,7 @@ const tempy = require("tempy");
 
 const path = require("path");
 const fs = require("fs");
-const { mockPlebbit, publishRandomReply, publishRandomPost } = require("../../dist/node/test/test-util");
+const { mockPlebbit, generateMockPost, publishWithExpectedResult } = require("../../dist/node/test/test-util");
 
 const plebbitVersion = require("../../dist/node/version");
 
@@ -60,7 +60,7 @@ describe("DB Migration", () => {
     const databasesToMigrate = getDatabasesToMigrate();
 
     databasesToMigrate.map((databaseInfo) =>
-        it(`Can migrate from DB version ${databaseInfo.version} to ${plebbitVersion.default.DB_VERSION} - address ( ${databaseInfo.address})`, async () => {
+        it(`Can migrate from DB version ${databaseInfo.version} to ${plebbitVersion.default.DB_VERSION} - address (${databaseInfo.address})`, async () => {
             // Once we start the sub, it's gonna attempt to migrate to the latest DB version
 
             const plebbit = await mockPlebbit({ ...plebbitOptions, dataPath: tempy.directory() });
@@ -72,16 +72,26 @@ describe("DB Migration", () => {
 
             const subplebbit = await plebbit.createSubplebbit({ address: databaseInfo.address });
 
-            // TODO it should go through full challenge exchange
-            subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
-
             await assert.isFulfilled(subplebbit.start());
+            subplebbit.setValidateCaptchaAnswerCallback(async (challengeAnswerMessage) => {
+                const challengeSuccess = challengeAnswerMessage.challengeAnswers[0] === "1234";
+                const challengeErrors = challengeSuccess ? undefined : ["User answered image captcha incorrectly"];
+                return [challengeSuccess, challengeErrors];
+            });
             const currentDbVersion = await subplebbit.dbHandler.getDbVersion();
             expect(currentDbVersion).to.equal(plebbitVersion.default.DB_VERSION); // If they're equal, that means all tables have been migrated
 
             await new Promise((resolve) => subplebbit.once("update", resolve)); // Ensure IPNS is published
-            const post = await publishRandomPost(subplebbit.address, plebbit);
-            await publishRandomReply(post, plebbit);
+            const mockPost = await generateMockPost(subplebbit.address, plebbit);
+            mockPost.removeAllListeners();
+
+            mockPost.once("challenge", async (challengeMsg) => {
+                expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
+                await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
+            });
+
+            await publishWithExpectedResult(mockPost, true);
+
             await subplebbit.stop();
             await subplebbit.delete();
         }).timeout(400000)
