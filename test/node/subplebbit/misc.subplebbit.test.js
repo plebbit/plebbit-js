@@ -372,7 +372,8 @@ describe(`comment.link`, async () => {
         expect(post.thumbnailUrl).to.be.undefined;
     });
 
-    it(`comment.linkWidth is undefined if comment.link is a link of a gif`, async () => {
+    // Rewrite this test's title
+    it(`comment.linkWidth and linkHeight is defined if the author defines them`, async () => {
         const link = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
         const linkWidth = 200;
         const linkHeight = 200;
