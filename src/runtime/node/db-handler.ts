@@ -163,6 +163,8 @@ export class DbHandler {
             table.integer("linkWidth").nullable().checkPositive();
             table.integer("linkHeight").nullable().checkPositive();
             table.string("thumbnailUrl").nullable();
+            table.integer("thumbnailWidth").nullable();
+            table.integer("thumbnailHeight").nullable();
             table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);

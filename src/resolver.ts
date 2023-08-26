@@ -70,7 +70,7 @@ export class Resolver {
             txtRecordResult = await chainProvider.getEnsText({ name: lib.normalize(address), key: txtRecordName });
         }
 
-        log(
+        log.trace(
             `Resolved text record name (${txtRecordName}) of address (${address}) to ${txtRecordResult} with chainProvider (${chainProviderUrl})`
         );
 

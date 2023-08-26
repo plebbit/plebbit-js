@@ -421,6 +421,8 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     original?: Pick<Partial<CommentType>, "author" | "content" | "flair" | "protocolVersion">;
     deleted?: CommentType["edit"]["deleted"];
     thumbnailUrl?: string;
+    thumbnailWidth?: number;
+    thumbnailHeight?: number;
     cid?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
     shortCid?: string;
     ipnsName?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
@@ -451,7 +453,7 @@ export interface CommentWithCommentUpdate
 export interface CommentIpfsType
     extends Omit<CreateCommentOptions, "signer" | "timestamp" | "author">,
         PublicationType,
-        Pick<CommentType, "previousCid" | "postCid" | "thumbnailUrl">,
+        Pick<CommentType, "previousCid" | "postCid" | "thumbnailUrl" | "thumbnailWidth" | "thumbnailHeight">,
         Pick<Required<CommentType>, "depth" | "ipnsName"> {
     author: AuthorIpfsType;
 }
@@ -464,9 +466,12 @@ export interface PostType extends Omit<CommentType, "parentCid" | "depth"> {
 }
 
 export interface PostIpfsWithCid
-    extends Omit<CommentIpfsType, "cid" | "postCid" | "depth" | "parentCid" | "title" | "link" | "thumbnailUrl">,
+    extends Omit<
+            CommentIpfsType,
+            "cid" | "postCid" | "depth" | "parentCid" | "title" | "link" | "thumbnailUrl" | "thumbnailWidth" | "thumbnailHeight"
+        >,
         Pick<CommentWithCommentUpdate, "cid" | "postCid">,
-        Pick<PostType, "depth" | "parentCid" | "title" | "link" | "thumbnailUrl"> {}
+        Pick<PostType, "depth" | "parentCid" | "title" | "link" | "thumbnailUrl" | "thumbnailWidth" | "thumbnailHeight"> {}
 
 export interface CommentEditType extends PublicationType, Omit<CreateCommentEditOptions, "signer"> {
     author: CommentIpfsType["author"];
