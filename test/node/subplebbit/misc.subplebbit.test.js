@@ -344,11 +344,33 @@ describe(`comment.link`, async () => {
     after(async () => {
         await subplebbit.stop();
     });
-    it(`Generates thumbnail url for youtube video correctly`, async () => {
+    it(`Generates thumbnail url for youtube video correctly with thumbnailWidth and thumbnailHeight`, async () => {
         const url = "https://www.youtube.com/watch?v=TLysAkFM4cA";
         const expectedThumbnailUrl = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
-        const thumbnailUrl = await getThumbnailUrlOfLink(url);
-        expect(thumbnailUrl).to.equal(expectedThumbnailUrl);
+        const thumbnailInfo = await getThumbnailUrlOfLink(url);
+        expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
+        expect(thumbnailInfo.thumbnailWidth).to.equal(1280);
+        expect(thumbnailInfo.thumbnailHeight).to.equal(720);
+    });
+
+    it(`generates thumbnail url for html page with thumbnailWidth and thumbnailHeight`, async () => {
+        const url =
+            "https://www.correiobraziliense.com.br/politica/2023/06/5101828-moraes-determina-novo-bloqueio-das-redes-sociais-e-canais-de-monark.html";
+        const expectedThumbnailUrl =
+            "https://midias.correiobraziliense.com.br/_midias/jpg/2022/03/23/675x450/1_monark-7631489.jpg?20230614170105?20230614170105";
+        const thumbnailInfo = await getThumbnailUrlOfLink(url);
+        expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
+        expect(thumbnailInfo.thumbnailWidth).to.equal(675);
+        expect(thumbnailInfo.thumbnailHeight).to.equal(450);
+    });
+
+    it(`Generates thumbnail url for html page with no ogWidth and ogHeight correctly with thumbnailWidth and thumbnailHeight`, async () => {
+        const url = "https://pleb.bz/p/reddit-screenshots.eth/c/QmUBqbdaVNNCaPUYZjqizYYL42wgr4YBfxDAcjxLJ59vid?redirect=plebones.eth.limo";
+        const expectedThumbnailUrl = "https://i.imgur.com/6Ogacyq.png";
+        const thumbnailInfo = await getThumbnailUrlOfLink(url);
+        expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
+        expect(thumbnailInfo.thumbnailWidth).to.equal(512);
+        expect(thumbnailInfo.thumbnailHeight).to.equal(497);
     });
 
     it(`comment.thumbnailUrl is populated by subplebbit in challengeVerification`, async () => {
@@ -356,6 +378,8 @@ describe(`comment.link`, async () => {
         const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
         expect(post.link).to.equal(link);
         expect(post.thumbnailUrl).to.equal("https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg");
+        expect(post.thumbnailWidth).to.equal(1280);
+        expect(post.thumbnailHeight).to.equal(720);
     });
 
     it(`comment.thumbnailUrl is undefined if comment.link is a link of a jpg`, async () => {
@@ -363,6 +387,8 @@ describe(`comment.link`, async () => {
         const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
         expect(post.link).to.equal(link);
         expect(post.thumbnailUrl).to.be.undefined;
+        expect(post.thumbnailWidth).to.be.undefined;
+        expect(post.thumbnailHeight).to.be.undefined;
     });
 
     it(`comment.thumbnailUrl is undefined if comment.link is a link of a gif`, async () => {
@@ -370,6 +396,8 @@ describe(`comment.link`, async () => {
         const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
         expect(post.link).to.equal(link);
         expect(post.thumbnailUrl).to.be.undefined;
+        expect(post.thumbnailWidth).to.be.undefined;
+        expect(post.thumbnailHeight).to.be.undefined;
     });
 
     // Rewrite this test's title
@@ -381,11 +409,15 @@ describe(`comment.link`, async () => {
         expect(post.link).to.equal(link);
         expect(post.linkHeight).to.equal(linkHeight);
         expect(post.linkWidth).to.equal(linkWidth);
+        expect(post.thumbnailWidth).to.be.undefined;
+        expect(post.thumbnailHeight).to.be.undefined;
 
         const postInSubPages = subplebbit.posts.pages.hot.comments.find((comment) => comment.cid === post.cid);
         expect(postInSubPages.link).to.equal(link);
         expect(postInSubPages.linkHeight).to.equal(linkHeight);
         expect(postInSubPages.linkWidth).to.equal(linkWidth);
+        expect(postInSubPages.thumbnailWidth).to.be.undefined;
+        expect(postInSubPages.thumbnailHeight).to.be.undefined;
     });
 });
 
