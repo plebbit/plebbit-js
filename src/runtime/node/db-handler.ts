@@ -357,7 +357,7 @@ export class DbHandler {
         const priorDbVersion = await this.getDbVersion();
 
         log.trace(`current db version: ${priorDbVersion}`);
-        const needToMigrate = priorDbVersion !== env.DB_VERSION;
+        const needToMigrate = priorDbVersion < env.DB_VERSION;
         const createTableFunctions = [
             this._createCommentsTable,
             this._createCommentUpdatesTable,
