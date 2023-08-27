@@ -833,8 +833,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 const thumbnailInfo = await getThumbnailUrlOfLink(commentToInsert.link, this, this.settings.fetchThumbnailUrlsProxyUrl);
                 if (thumbnailInfo) {
                     commentToInsert.thumbnailUrl = thumbnailInfo.thumbnailUrl;
-                    commentToInsert.thumbnailWidth = thumbnailInfo.thumbnailWidth;
-                    commentToInsert.thumbnailHeight = thumbnailInfo.thumbnailHeight;
+                    commentToInsert.thumbnailUrlWidth = thumbnailInfo.thumbnailWidth;
+                    commentToInsert.thumbnailUrlHeight = thumbnailInfo.thumbnailHeight;
                 }
             }
 

@@ -37,8 +37,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     linkWidth?: number;
     linkHeight?: number;
     thumbnailUrl?: string;
-    thumbnailWidth?: number;
-    thumbnailHeight?: number;
+    thumbnailUrlWidth?: number;
+    thumbnailUrlHeight?: number;
     protocolVersion: ProtocolVersion;
     cid?: string;
     parentCid?: string;
@@ -111,8 +111,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.link = props.link;
         this.title = props.title;
         this.thumbnailUrl = props.thumbnailUrl;
-        this.thumbnailWidth = props.thumbnailWidth;
-        this.thumbnailHeight = props.thumbnailHeight;
+        this.thumbnailUrlWidth = props.thumbnailUrlWidth;
+        this.thumbnailUrlHeight = props.thumbnailUrlHeight;
         this.content = props.content;
         this.original = props.original;
         this.spoiler = props.spoiler;
@@ -234,8 +234,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             postCid: this.depth === 0 ? undefined : this.postCid,
             depth: this.depth,
             thumbnailUrl: this.thumbnailUrl,
-            thumbnailWidth: this.thumbnailWidth,
-            thumbnailHeight: this.thumbnailHeight
+            thumbnailUrlWidth: this.thumbnailUrlWidth,
+            thumbnailUrlHeight: this.thumbnailUrlHeight
         };
     }
 
