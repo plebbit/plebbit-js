@@ -587,7 +587,7 @@ var DbHandler = /** @class */ (function () {
                     case 1:
                         priorDbVersion = _a.sent();
                         log.trace("current db version: ".concat(priorDbVersion));
-                        needToMigrate = priorDbVersion !== version_1.default.DB_VERSION;
+                        needToMigrate = priorDbVersion < version_1.default.DB_VERSION;
                         createTableFunctions = [
                             this._createCommentsTable,
                             this._createCommentUpdatesTable,
