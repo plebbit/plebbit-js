@@ -378,8 +378,8 @@ describe(`comment.link`, async () => {
         const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
         expect(post.link).to.equal(link);
         expect(post.thumbnailUrl).to.equal("https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg");
-        expect(post.thumbnailWidth).to.equal(1280);
-        expect(post.thumbnailHeight).to.equal(720);
+        expect(post.thumbnailUrlWidth).to.equal(1280);
+        expect(post.thumbnailUrlHeight).to.equal(720);
     });
 
     it(`comment.thumbnailUrl is undefined if comment.link is a link of a jpg`, async () => {
@@ -387,8 +387,8 @@ describe(`comment.link`, async () => {
         const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
         expect(post.link).to.equal(link);
         expect(post.thumbnailUrl).to.be.undefined;
-        expect(post.thumbnailWidth).to.be.undefined;
-        expect(post.thumbnailHeight).to.be.undefined;
+        expect(post.thumbnailUrlWidth).to.be.undefined;
+        expect(post.thumbnailUrlHeight).to.be.undefined;
     });
 
     it(`comment.thumbnailUrl is undefined if comment.link is a link of a gif`, async () => {
@@ -396,11 +396,10 @@ describe(`comment.link`, async () => {
         const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
         expect(post.link).to.equal(link);
         expect(post.thumbnailUrl).to.be.undefined;
-        expect(post.thumbnailWidth).to.be.undefined;
-        expect(post.thumbnailHeight).to.be.undefined;
+        expect(post.thumbnailUrlWidth).to.be.undefined;
+        expect(post.thumbnailUrlHeight).to.be.undefined;
     });
 
-    // Rewrite this test's title
     it(`comment.linkWidth and linkHeight is defined if the author defines them`, async () => {
         const link = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
         const linkWidth = 200;
@@ -409,15 +408,15 @@ describe(`comment.link`, async () => {
         expect(post.link).to.equal(link);
         expect(post.linkHeight).to.equal(linkHeight);
         expect(post.linkWidth).to.equal(linkWidth);
-        expect(post.thumbnailWidth).to.be.undefined;
-        expect(post.thumbnailHeight).to.be.undefined;
+        expect(post.thumbnailUrlWidth).to.be.undefined;
+        expect(post.thumbnailUrlHeight).to.be.undefined;
 
         const postInSubPages = subplebbit.posts.pages.hot.comments.find((comment) => comment.cid === post.cid);
         expect(postInSubPages.link).to.equal(link);
         expect(postInSubPages.linkHeight).to.equal(linkHeight);
         expect(postInSubPages.linkWidth).to.equal(linkWidth);
-        expect(postInSubPages.thumbnailWidth).to.be.undefined;
-        expect(postInSubPages.thumbnailHeight).to.be.undefined;
+        expect(postInSubPages.thumbnailUrlWidth).to.be.undefined;
+        expect(postInSubPages.thumbnailUrlHeight).to.be.undefined;
     });
 });
 
