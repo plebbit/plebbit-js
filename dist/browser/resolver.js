@@ -140,7 +140,7 @@ var Resolver = /** @class */ (function () {
                         txtRecordResult = _a.sent();
                         _a.label = 4;
                     case 4:
-                        log("Resolved text record name (".concat(txtRecordName, ") of address (").concat(address, ") to ").concat(txtRecordResult, " with chainProvider (").concat(chainProviderUrl, ")"));
+                        log.trace("Resolved text record name (".concat(txtRecordName, ") of address (").concat(address, ") to ").concat(txtRecordResult, " with chainProvider (").concat(chainProviderUrl, ")"));
                         return [2 /*return*/, txtRecordResult];
                 }
             });

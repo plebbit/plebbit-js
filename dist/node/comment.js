@@ -104,6 +104,8 @@ var Comment = /** @class */ (function (_super) {
         this.link = props.link;
         this.title = props.title;
         this.thumbnailUrl = props.thumbnailUrl;
+        this.thumbnailUrlWidth = props.thumbnailUrlWidth;
+        this.thumbnailUrlHeight = props.thumbnailUrlHeight;
         this.content = props.content;
         this.original = props.original;
         this.spoiler = props.spoiler;
@@ -206,7 +208,7 @@ var Comment = /** @class */ (function (_super) {
             throw Error("comment.ipnsName should be defined before calling toJSONIpfs");
         if (typeof this.depth !== "number")
             throw Error("comment.depth should be defined before calling toJSONIpfs");
-        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.depth === 0 ? undefined : this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl });
+        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.depth === 0 ? undefined : this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl, thumbnailUrlWidth: this.thumbnailUrlWidth, thumbnailUrlHeight: this.thumbnailUrlHeight });
     };
     Comment.prototype.toJSONPubsubMessagePublication = function () {
         return __assign(__assign({}, _super.prototype.toJSONPubsubMessagePublication.call(this)), { content: this.content, parentCid: this.parentCid, flair: this.flair, spoiler: this.spoiler, link: this.link, linkWidth: this.linkWidth, linkHeight: this.linkHeight, title: this.title });

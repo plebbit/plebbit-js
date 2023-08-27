@@ -315,6 +315,8 @@ var DbHandler = /** @class */ (function () {
                             table.integer("linkWidth").nullable().checkPositive();
                             table.integer("linkHeight").nullable().checkPositive();
                             table.string("thumbnailUrl").nullable();
+                            table.integer("thumbnailUrlWidth").nullable();
+                            table.integer("thumbnailUrlHeight").nullable();
                             table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);
