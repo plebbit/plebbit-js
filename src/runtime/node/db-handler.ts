@@ -74,13 +74,27 @@ export class DbHandler {
     }
 
     async initDbIfNeeded() {
+        const log = Logger("plebbit-js:subplebbit:db-handler:initDbIfNeeded");
         assert(
             typeof this._subplebbit.address === "string" && this._subplebbit.address.length > 0,
             `DbHandler needs to be an instantiated with a Subplebbit that has a valid address, (${this._subplebbit.address}) was provided`
         );
         await this.initDbConfigIfNeeded();
         if (!this._knex) this._knex = knex(this._dbConfig);
-        if (!this._createdTables) await this.createTablesIfNeeded();
+        if (!this._createdTables)
+            try {
+                await this.createTablesIfNeeded();
+            } catch (e) {
+                log.error(
+                    `Sub (${
+                        this._subplebbit.address
+                    }) failed to create/migrate tables. Current db version (${await this.getDbVersion()}), latest db version (${
+                        env.DB_VERSION
+                    }). Error`,
+                    e
+                );
+                throw e;
+            }
         if (!this._keyv) this._keyv = new Keyv(`sqlite://${(<any>this._dbConfig.connection).filename}`);
     }
 
@@ -382,6 +396,7 @@ export class DbHandler {
                     log(`Migrating table ${table} to new schema`);
                     await this._knex.raw("PRAGMA foreign_keys = OFF");
                     const tempTableName = `${table}${env.DB_VERSION}`;
+                    await this._knex.schema.dropTableIfExists(tempTableName);
                     await createTableFunctions[i].bind(this)(tempTableName);
                     await this._copyTable(table, tempTableName);
                     await this._knex.schema.dropTable(table);
